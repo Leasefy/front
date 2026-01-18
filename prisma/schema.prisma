@@ -1,0 +1,273 @@
+// Arriendo Facil - Database Schema
+// Prisma ORM with PostgreSQL (Neon serverless)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// USER MODEL (syncs with Clerk)
+// =============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  phone     String?
+  role      UserRole @default(TENANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  properties   Property[]
+  applications Application[]
+  notes        CandidateNote[]
+}
+
+enum UserRole {
+  TENANT
+  LANDLORD
+  BOTH
+}
+
+// =============================================================================
+// PROPERTY MODEL
+// =============================================================================
+
+model Property {
+  id            String         @id @default(cuid())
+  title         String
+  description   String
+  address       String
+  city          String
+  neighborhood  String
+  priceMonthly  Int // COP (Colombian Pesos)
+  deposit       Int // COP
+  bedrooms      Int
+  bathrooms     Int
+  area          Int // m2
+  petFriendly   Boolean        @default(false)
+  furnished     Boolean        @default(false)
+  parking       Boolean        @default(false)
+  availableFrom DateTime
+  rules         String?
+  status        PropertyStatus @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  ownerId      String
+  owner        User            @relation(fields: [ownerId], references: [id])
+  images       PropertyImage[]
+  applications Application[]
+
+  @@index([city, neighborhood])
+  @@index([priceMonthly])
+  @@index([status])
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  RENTED
+  INACTIVE
+}
+
+model PropertyImage {
+  id          String   @id @default(cuid())
+  url         String
+  blurDataUrl String?
+  order       Int      @default(0)
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+// =============================================================================
+// APPLICATION MODEL (Tenant applies to Property)
+// =============================================================================
+
+model Application {
+  id          String            @id @default(cuid())
+  status      ApplicationStatus @default(DRAFT)
+  submittedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Applicant info (from wizard)
+  applicantId String
+  applicant   User   @relation(fields: [applicantId], references: [id])
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  // ---------------------------------------------------------------------------
+  // IDENTITY DATA (Step 1 of wizard)
+  // ---------------------------------------------------------------------------
+  documentType   String? // CC, CE, Pasaporte
+  documentNumber String?
+  birthDate      DateTime?
+
+  // ---------------------------------------------------------------------------
+  // EMPLOYMENT DATA (Step 2 of wizard)
+  // ---------------------------------------------------------------------------
+  employmentType   String? // employed, independent, unemployed
+  companyName      String?
+  jobTitle         String?
+  monthlyIncome    Int? // COP
+  employmentMonths Int?
+  contractType     String? // indefinido, fijo, prestacion
+
+  // ---------------------------------------------------------------------------
+  // FINANCIAL DATA (Step 3 of wizard)
+  // ---------------------------------------------------------------------------
+  monthlyDebt     Int? // COP
+  monthlyExpenses Int? // COP
+  hasCosigner     Boolean @default(false)
+  cosignerName    String?
+  cosignerPhone   String?
+
+  // ---------------------------------------------------------------------------
+  // STABILITY DATA (Step 4 of wizard)
+  // ---------------------------------------------------------------------------
+  currentAddressMonths  Int?
+  previousLandlord      String?
+  previousLandlordPhone String?
+
+  // ---------------------------------------------------------------------------
+  // REFERENCES (Step 5 of wizard)
+  // ---------------------------------------------------------------------------
+  personalRefName     String?
+  personalRefPhone    String?
+  personalRefRelation String?
+
+  // ---------------------------------------------------------------------------
+  // DOCUMENTS (Step 6 of wizard - UploadThing URLs)
+  // ---------------------------------------------------------------------------
+  identityDocUrl String?
+  incomeProofUrl String?
+
+  // Relations
+  riskScore RiskScoreResult?
+  events    ApplicationEvent[]
+  notes     CandidateNote[]
+
+  @@index([status])
+  @@index([applicantId])
+  @@index([propertyId])
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_INFO
+  PREAPPROVED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+// =============================================================================
+// RISK SCORE RESULT (Phase 6 output - AI Scoring Engine)
+// =============================================================================
+
+model RiskScoreResult {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  totalScore     Int // 0-100
+  level          RiskLevel
+  recommendation String // Text recommendation for landlord
+
+  // Subscores JSON - breakdown by category
+  // Format: { financial: 85, stability: 72, employment: 90, references: 65 }
+  subscoresJson Json
+
+  // ---------------------------------------------------------------------------
+  // EXPLAINABILITY (Core differentiator - Phase 6)
+  // ---------------------------------------------------------------------------
+
+  // Drivers: 3-6 key factors that influenced the score
+  // Format: [{ text: "Ingreso estable con contrato indefinido", impact: "positive", weight: 0.3 }]
+  driversJson Json
+
+  // Flags: Risk warnings to display as chips
+  // Format: [{ type: "warning", text: "Deuda mensual elevada" }]
+  flagsJson Json
+
+  // Conditions: Suggested requirements if landlord proceeds
+  // Format: [{ type: "cosigner", text: "Se recomienda codeudor" }]
+  conditionsJson Json
+
+  // Raw features for future ML training
+  featuresJson Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([totalScore])
+}
+
+// Risk levels with score ranges:
+// A: 80-100 (Excellent - auto-approve recommended)
+// B: 60-79  (Good - approve with standard terms)
+// C: 40-59  (Fair - approve with conditions)
+// D: 0-39   (Poor - decline or require strong conditions)
+enum RiskLevel {
+  A
+  B
+  C
+  D
+}
+
+// =============================================================================
+// APPLICATION EVENT (State Machine Audit Trail - Phase 9)
+// =============================================================================
+
+model ApplicationEvent {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  type       String // status_change, note_added, document_requested, score_calculated, etc.
+  fromStatus ApplicationStatus?
+  toStatus   ApplicationStatus?
+  metadata   Json? // Additional event-specific data
+  createdAt  DateTime           @default(now())
+
+  // Who triggered the event
+  actorId   String?
+  actorType String? // tenant, landlord, system
+
+  @@index([applicationId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// CANDIDATE NOTE (Landlord private notes on applicants)
+// =============================================================================
+
+model CandidateNote {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([authorId])
+}

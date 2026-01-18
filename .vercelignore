@@ -1,0 +1,6 @@
+.git
+.env.local
+.env*.local
+node_modules
+prisma/seed.ts
+src/lib/seed-data.ts

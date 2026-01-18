@@ -30,8 +30,14 @@ Progress: ███░░░░░░░ 30%
 | 01-foundation | 3/4 | 30min | 10min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8min), 01-02 (10min), 01-03 (12min)
+- Last 5 plans: 01-01 (8min), 01-02 (5min), 01-03 (12min)
 - Trend: Stable
+
+### 01-02 UI Configuration
+- shadcn/ui with slate theme and CSS variables
+- Risk level badges (A/B green, C yellow, D red)
+- Core components: Button, Card, Input, Badge, Label, Skeleton
+- Demo page in Spanish for Colombia locale
 
 ## Accumulated Context
 
@@ -48,6 +54,8 @@ Recent decisions affecting current work:
 - Prisma 7.x config: Uses prisma.config.ts for connection URL (not schema.prisma)
 - Monetary values: COP as integers, not floats
 - Explainability: JSON fields for flexible score explanation data
+- UI: Slate base with blue primary, new-york shadcn style
+- Risk badges: variant="risk-a|b|c|d" for A/B/C/D levels
 
 ### Pending Todos
 

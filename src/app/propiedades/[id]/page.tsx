@@ -83,7 +83,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
 
             {/* Desktop CTA - visible on lg screens */}
             <div className="mt-8 hidden lg:block">
-              <Link href={`/postular/${property.id}`}>
+              <Link href={`/aplicar/${property.id}`}>
                 <Button size="lg" className="w-full text-lg">
                   Postularme a esta propiedad
                 </Button>
@@ -113,7 +113,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                 </span>
               </p>
             </div>
-            <Link href={`/postular/${property.id}`}>
+            <Link href={`/aplicar/${property.id}`}>
               <Button size="lg">Postularme</Button>
             </Link>
           </div>

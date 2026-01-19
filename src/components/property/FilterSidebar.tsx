@@ -1,9 +1,8 @@
 'use client';
 
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -20,6 +19,12 @@ export interface FilterSidebarProps {
   availableCities: string[];
   resultsCount: number;
   hasActiveFilters: boolean;
+  /** Show personalization filter (only for logged-in users with profile) */
+  showPersonalization?: boolean;
+  /** Whether "only for me" filter is active */
+  onlyAffordable?: boolean;
+  /** Toggle "only for me" filter */
+  onOnlyAffordableChange?: (value: boolean) => void;
 }
 
 const BEDROOM_OPTIONS = [1, 2, 3, 4] as const;
@@ -31,8 +36,8 @@ const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
 ];
 
 /**
- * Sidebar component for filtering properties
- * Collapsible on mobile, sticky on desktop
+ * FilterSidebar - Luxterra style
+ * Minimal design, square corners, small text
  */
 export function FilterSidebar({
   filters,
@@ -44,6 +49,9 @@ export function FilterSidebar({
   availableCities,
   resultsCount,
   hasActiveFilters,
+  showPersonalization = false,
+  onlyAffordable = false,
+  onOnlyAffordableChange,
 }: FilterSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [minPriceInput, setMinPriceInput] = useState(
@@ -77,35 +85,75 @@ export function FilterSidebar({
 
   const filterContent = (
     <div className="space-y-6">
+      {/* Personalization toggle - only for logged-in users with profile */}
+      {showPersonalization && onOnlyAffordableChange && (
+        <div className="pb-4 border-b border-gray-200">
+          <button
+            onClick={() => onOnlyAffordableChange(!onlyAffordable)}
+            className={cn(
+              'w-full flex items-center gap-3 p-3 rounded-sm transition-all',
+              onlyAffordable
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+            )}
+          >
+            <div
+              className={cn(
+                'w-5 h-5 rounded-sm border flex items-center justify-center transition-colors',
+                onlyAffordable
+                  ? 'bg-green-600 border-green-600'
+                  : 'bg-white border-gray-300'
+              )}
+            >
+              {onlyAffordable && (
+                <svg
+                  className="w-3 h-3 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-medium text-gray-900 tracking-tight">
+                Solo propiedades para mi
+              </p>
+              <p className="text-xs text-gray-500 tracking-tight mt-0.5">
+                Ver solo lo que calificas segun tu perfil
+              </p>
+            </div>
+          </button>
+        </div>
+      )}
+
       {/* Results count and reset */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-gray-500 tracking-tight">
           {resultsCount} {resultsCount === 1 ? 'propiedad' : 'propiedades'}
         </p>
         {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={handleReset}
-            className="h-8 text-muted-foreground hover:text-foreground"
+            className="text-xs text-gray-500 hover:text-gray-900 transition-colors tracking-tight"
           >
-            <X className="mr-1 h-4 w-4" />
-            Limpiar filtros
-          </Button>
+            Limpiar
+          </button>
         )}
       </div>
 
       {/* City filter */}
       <div className="space-y-2">
-        <Label htmlFor="city-filter">Ciudad</Label>
+        <Label className="text-xs text-gray-900 tracking-tight">Ciudad</Label>
         <select
-          id="city-filter"
           value={filters.city ?? ''}
           onChange={(e) => onCityChange(e.target.value || null)}
           className={cn(
-            'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1',
-            'text-sm shadow-sm transition-colors',
-            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+            'flex h-10 w-full rounded-sm border border-gray-200 bg-white px-3 py-2',
+            'text-xs text-gray-900 tracking-tight transition-colors',
+            'focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300'
           )}
         >
           <option value="">Todas las ciudades</option>
@@ -119,7 +167,7 @@ export function FilterSidebar({
 
       {/* Price range filter */}
       <div className="space-y-2">
-        <Label>Precio mensual (COP)</Label>
+        <Label className="text-xs text-gray-900 tracking-tight">Precio mensual (COP)</Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -127,57 +175,64 @@ export function FilterSidebar({
             value={minPriceInput}
             onChange={(e) => setMinPriceInput(e.target.value)}
             onBlur={handleMinPriceBlur}
-            className="h-9"
+            className="h-10 rounded-sm border-gray-200 bg-white text-xs text-gray-900 placeholder:text-gray-400 tracking-tight"
           />
-          <span className="text-muted-foreground">-</span>
+          <span className="text-gray-400 text-xs">-</span>
           <Input
             type="number"
             placeholder="Max"
             value={maxPriceInput}
             onChange={(e) => setMaxPriceInput(e.target.value)}
             onBlur={handleMaxPriceBlur}
-            className="h-9"
+            className="h-10 rounded-sm border-gray-200 bg-white text-xs text-gray-900 placeholder:text-gray-400 tracking-tight"
           />
         </div>
       </div>
 
       {/* Bedrooms filter */}
       <div className="space-y-2">
-        <Label>Habitaciones</Label>
+        <Label className="text-xs text-gray-900 tracking-tight">Habitaciones</Label>
         <div className="flex flex-wrap gap-2">
           {BEDROOM_OPTIONS.map((num) => (
-            <Button
+            <button
               key={num}
-              variant={filters.bedrooms === num ? 'default' : 'outline'}
-              size="sm"
               onClick={() =>
                 onBedroomsChange(filters.bedrooms === num ? null : num)
               }
-              className="min-w-[3rem]"
+              className={cn(
+                'h-9 min-w-[2.5rem] px-3 rounded-sm text-xs tracking-tight transition-all',
+                filters.bedrooms === num
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              )}
             >
               {num === 4 ? '4+' : num}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
       {/* Property type filter */}
       <div className="space-y-2">
-        <Label>Tipo de propiedad</Label>
+        <Label className="text-xs text-gray-900 tracking-tight">Tipo de propiedad</Label>
         <div className="flex flex-wrap gap-2">
           {PROPERTY_TYPE_OPTIONS.map(({ value, label }) => (
-            <Button
+            <button
               key={value}
-              variant={filters.propertyType === value ? 'default' : 'outline'}
-              size="sm"
               onClick={() =>
                 onPropertyTypeChange(
                   filters.propertyType === value ? null : value
                 )
               }
+              className={cn(
+                'h-9 px-3 rounded-sm text-xs tracking-tight transition-all',
+                filters.propertyType === value
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              )}
             >
               {label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -188,19 +243,24 @@ export function FilterSidebar({
     <>
       {/* Mobile toggle button */}
       <div className="lg:hidden">
-        <Button
-          variant="outline"
+        <button
           onClick={() => setIsOpen(true)}
-          className="mb-4 w-full"
+          className={cn(
+            'mb-4 w-full flex items-center justify-center gap-2 h-10 rounded-sm',
+            'bg-white text-gray-700 border border-gray-200',
+            'text-xs tracking-tight transition-colors hover:bg-gray-50'
+          )}
         >
-          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M3 6h18M6 12h12M9 18h6" />
+          </svg>
           Filtros
           {hasActiveFilters && (
-            <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+            <span className="ml-2 rounded-sm bg-gray-900 px-2 py-0.5 text-xs text-white">
               Activos
             </span>
           )}
-        </Button>
+        </button>
       </div>
 
       {/* Mobile drawer */}
@@ -212,22 +272,24 @@ export function FilterSidebar({
             onClick={() => setIsOpen(false)}
           />
           {/* Drawer */}
-          <div className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-background p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Filtros</h2>
-              <Button
-                variant="ghost"
-                size="icon"
+          <div className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto bg-white p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-lg font-normal text-gray-900 tracking-tight">Filtros</h2>
+              <button
                 onClick={() => setIsOpen(false)}
+                className="w-8 h-8 rounded-sm bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
               >
-                <X className="h-5 w-5" />
-              </Button>
+                <X className="h-4 w-4" />
+              </button>
             </div>
             {filterContent}
-            <div className="mt-6">
-              <Button className="w-full" onClick={() => setIsOpen(false)}>
-                Ver resultados
-              </Button>
+            <div className="mt-8">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-full h-10 rounded-sm bg-gray-900 text-white text-xs tracking-tight hover:bg-gray-800 transition-colors"
+              >
+                Ver {resultsCount} resultados
+              </button>
             </div>
           </div>
         </div>
@@ -235,8 +297,8 @@ export function FilterSidebar({
 
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 lg:block">
-        <div className="sticky top-8 rounded-lg border bg-card p-4">
-          <h2 className="mb-4 text-lg font-semibold">Filtros</h2>
+        <div className="sticky top-24 bg-white p-5 rounded-sm">
+          <h2 className="mb-6 text-base font-normal text-gray-900 tracking-tight">Filtros</h2>
           {filterContent}
         </div>
       </aside>

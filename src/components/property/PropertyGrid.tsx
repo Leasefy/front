@@ -2,11 +2,14 @@
 
 import { PropertyCard } from '@/components/property/PropertyCard';
 import type { Property } from '@/lib/types/property';
+import type { QualificationResult } from '@/lib/scoring/qualificationScore';
 
 export interface PropertyGridProps {
   properties: Property[];
   isWishlisted: (id: string) => boolean;
   onWishlistToggle: (id: string) => void;
+  /** Map of property ID to qualification result (for personalization badges) */
+  qualifications?: Map<string, QualificationResult>;
 }
 
 /**
@@ -17,6 +20,7 @@ export function PropertyGrid({
   properties,
   isWishlisted,
   onWishlistToggle,
+  qualifications,
 }: PropertyGridProps) {
   if (properties.length === 0) {
     return (
@@ -40,6 +44,7 @@ export function PropertyGrid({
           property={property}
           isWishlisted={isWishlisted(property.id)}
           onWishlistToggle={onWishlistToggle}
+          qualification={qualifications?.get(property.id)}
         />
       ))}
     </div>

@@ -2,11 +2,11 @@
 
 ## Overview
 
-Construir un marketplace de arriendos para Colombia con Risk Score AI que permite a propietarios evaluar candidatos de forma rápida, transparente y explicable. El journey va desde la infraestructura base hasta una experiencia premium completa: catálogo → postulación → scoring → decisión.
+Frontend experience para marketplace de arriendos en Colombia con Risk Score AI. El backend será desarrollado por otra persona basándose en esta experiencia. Enfoque: UX premium con mock data realista.
 
 ## Milestones
 
-- 🚧 **v1.0 MVP** - Phases 1-10 (in progress)
+- 🚧 **v1.0 Frontend MVP** - Phases 1-7 (in progress)
 
 ## Phases
 
@@ -14,174 +14,156 @@ Construir un marketplace de arriendos para Colombia con Risk Score AI que permit
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Project setup, tooling, database, Vercel deploy
-- [ ] **Phase 2: Authentication** - Clerk magic link, user roles, session persistence
-- [ ] **Phase 3: Property Catalog** - Listings, filters, wishlist, property detail
-- [ ] **Phase 4: Property Management** - Landlord CRUD, photo upload
-- [ ] **Phase 5: Application Wizard** - Multi-step form, document upload, autosave
-- [ ] **Phase 6: Risk Score Engine** - Scoring pipeline, models, explainability
-- [ ] **Phase 7: Tenant Experience** - My applications, tracking, withdrawal
-- [ ] **Phase 8: Landlord Experience** - Candidates ranking, decisions, details
-- [ ] **Phase 9: State Machine** - Application states, timeline, events
-- [ ] **Phase 10: UX Polish** - Skeletons, empty states, micro-interactions
+- [ ] **Phase 1: Foundation & Design System** - Project setup, UI components, mock data structure
+- [ ] **Phase 2: Property Catalog** - Listings, filters, wishlist, property detail
+- [ ] **Phase 3: Application Wizard** - Multi-step form, document upload UI, review
+- [ ] **Phase 4: Risk Score Display** - AI explanation UI, conversational scoring, level badges
+- [ ] **Phase 5: Landlord Dashboard** - Candidates view, score details, decision UI
+- [ ] **Phase 6: Tenant Tracking** - My applications, timeline, status display
+- [ ] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
 
 ## Phase Details
 
-### Phase 1: Foundation
-**Goal**: Project scaffolded, configured, and deploying to Vercel
+### Phase 1: Foundation & Design System
+**Goal**: Project configured with design system and mock data ready
 **Depends on**: Nothing (first phase)
-**Requirements**: FUND-01, FUND-02, FUND-03, FUND-04, FUND-05
 **Success Criteria** (what must be TRUE):
   1. `npm run dev` starts development server without errors
   2. `npm run build` completes successfully
-  3. Vercel preview deployment works
-  4. Prisma can connect to database and run migrations
-  5. Seed script populates demo properties and users
-**Research**: Unlikely (established patterns from STACK.md)
+  3. Design system components ready (Button, Card, Input, Badge, etc.)
+  4. Mock data files with realistic Colombian properties, candidates, scores
+  5. TypeScript types defined for all data structures
+  6. Basic layout with navigation shell
+**Research**: Unlikely (established patterns)
 **Plans**: TBD
 
-### Phase 2: Authentication
-**Goal**: Users can register, login, and maintain sessions with role distinction
-**Depends on**: Phase 1
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05
-**Success Criteria** (what must be TRUE):
-  1. User can receive magic link email and log in
-  2. Session persists after browser refresh
-  3. User can log out from any page
-  4. User type (tenant/landlord) is established at registration
-  5. Protected routes redirect unauthenticated users
-**Research**: Likely (Clerk integration patterns)
-**Research topics**: Clerk Next.js 14 App Router setup, webhook sync to database, role management
-**Plans**: TBD
-
-### Phase 3: Property Catalog
+### Phase 2: Property Catalog
 **Goal**: Users can discover and explore available properties
-**Depends on**: Phase 1, Phase 2
-**Requirements**: CATL-01, CATL-02, CATL-03, CATL-04, CATL-05, CATL-06, CATL-07
+**Depends on**: Phase 1
 **Success Criteria** (what must be TRUE):
-  1. User can browse property cards with photos, price, and key details
-  2. User can filter by city, neighborhood, price, bedrooms, amenities
-  3. User can save/unsave properties to wishlist (persists without account via localStorage)
-  4. User can view full property detail with image carousel
-  5. Property detail has sticky "Postularme" CTA
-**Research**: Unlikely (standard UI patterns, research covers stack)
+  1. Property listing page with grid of cards
+  2. Filter sidebar: city, price range, bedrooms, amenities
+  3. Property cards show: photo, price, location, key features
+  4. Wishlist functionality (localStorage)
+  5. Property detail page with image carousel
+  6. Sticky "Postularme" CTA on detail page
+  7. Responsive design (mobile-first)
+**Research**: Unlikely (standard UI patterns)
 **Plans**: TBD
 
-### Phase 4: Property Management
-**Goal**: Landlords can manage their property listings
-**Depends on**: Phase 2, Phase 3
-**Requirements**: PROP-01, PROP-02, PROP-03, PROP-04, PROP-05
+### Phase 3: Application Wizard
+**Goal**: Complete application flow experience
+**Depends on**: Phase 2
 **Success Criteria** (what must be TRUE):
-  1. Landlord can see list of own properties
-  2. Landlord can create new property with all required fields
-  3. Landlord can edit existing property details
-  4. Landlord can upload multiple photos with drag-and-drop
-  5. Photos display with lazy loading and blur placeholders
-**Research**: Likely (UploadThing integration)
-**Research topics**: UploadThing file router, image optimization, blur placeholder generation
+  1. Multi-step wizard (6 steps): Personal → Employment → Income → References → Documents → Review
+  2. Progress indicator showing current step
+  3. Form validation with clear error messages
+  4. Document upload UI with preview (mock - no real upload)
+  5. Review step showing all entered information
+  6. Submit confirmation with success state
+  7. Form state persists in localStorage (resume capability)
+**Research**: Likely (React Hook Form wizard patterns)
+**Research topics**: Multi-step form UX, Zustand/localStorage persistence
 **Plans**: TBD
 
-### Phase 5: Application Wizard
-**Goal**: Tenants can complete a comprehensive application with documents
-**Depends on**: Phase 3, Phase 4
-**Requirements**: APPL-01, APPL-02, APPL-03, APPL-04, APPL-05, APPL-06, APPL-07, APPL-08
+### Phase 4: Risk Score Display
+**Goal**: Premium AI scoring visualization - THE core differentiator
+**Depends on**: Phase 3
 **Success Criteria** (what must be TRUE):
-  1. Tenant can start application from property detail
-  2. Wizard shows clear progress (step X of Y)
-  3. Partially completed application auto-saves and can be resumed
-  4. Tenant can upload and preview identity/income documents
-  5. Tenant can review all information before final submit
-  6. Submit triggers Risk Score calculation
-**Research**: Likely (multi-step form patterns, Zustand persistence)
-**Research topics**: React Hook Form wizard pattern, Zustand persist middleware, UploadThing for documents
+  1. Score card with A/B/C/D level badge (prominent but not dominant)
+  2. **Conversational AI explanation** - "Basado en lo que veo, este candidato..."
+  3. Asesor de confianza tone - professional but warm
+  4. Key drivers displayed as supporting points
+  5. Risk flags shown as subtle warnings (not alarmist)
+  6. Suggested conditions based on profile
+  7. Score breakdown by category (collapsible detail)
+**Research**: Likely (conversational UI patterns, AI explanation UX)
+**Research topics**: Explainable AI UX patterns, conversational interfaces
 **Plans**: TBD
 
-### Phase 6: Risk Score Engine
-**Goal**: Applications receive explainable risk scores with drivers and flags
-**Depends on**: Phase 5
-**Requirements**: SCOR-01, SCOR-02, SCOR-03, SCOR-04, SCOR-05, SCOR-06, SCOR-07, SCOR-08, SCOR-09, SCOR-10, SCOR-11
+### Phase 5: Landlord Dashboard
+**Goal**: Landlords can evaluate and decide on candidates
+**Depends on**: Phase 4
 **Success Criteria** (what must be TRUE):
-  1. Submitted application triggers scoring pipeline (via Inngest)
-  2. Score 0-100 calculated with breakdown by category
-  3. Level A/B/C/D assigned with text recommendation
-  4. 3-6 driver explanations generated explaining score factors
-  5. Risk flags (chips) generated for concerning patterns
-  6. Suggested conditions generated based on risk profile
-  7. All features and outcomes persisted for future ML
-**Research**: Likely (Inngest background jobs, scoring algorithm design)
-**Research topics**: Inngest function patterns, scoring model weights calibration, fair scoring principles
+  1. Dashboard showing properties with application counts
+  2. Candidates list per property (ranked by score)
+  3. Candidate card: photo, name, score badge, key metrics
+  4. Candidate detail modal/page with full AI explanation
+  5. Decision buttons: Pre-aprobar, Aprobar, Rechazar
+  6. Notes functionality (UI only, localStorage)
+  7. Request more info action (UI state only)
+**Research**: Unlikely (builds on Phase 4 patterns)
 **Plans**: TBD
 
-### Phase 7: Tenant Experience
-**Goal**: Tenants can track and manage their applications
-**Depends on**: Phase 5, Phase 6
-**Requirements**: TENT-01, TENT-02, TENT-03, TENT-04, TENT-05
+### Phase 6: Tenant Tracking
+**Goal**: Tenants can track their application status
+**Depends on**: Phase 3, Phase 5
 **Success Criteria** (what must be TRUE):
-  1. Tenant can view list of all applications with current status
-  2. Tenant can see detailed timeline of application events
-  3. Tenant can see which verifications are complete/pending
-  4. Tenant can respond to landlord information requests
-  5. Tenant can withdraw application (changes status to WITHDRAWN)
-**Research**: Unlikely (standard CRUD + state display)
+  1. "Mis Postulaciones" page listing all applications
+  2. Application card: property thumbnail, status badge, date
+  3. Timeline view of application events
+  4. Status states: Enviada, En revisión, Pre-aprobada, Aprobada, Rechazada
+  5. Detail view with current status explanation
+  6. Withdraw application action (UI state change)
+**Research**: Unlikely (standard tracking patterns)
 **Plans**: TBD
 
-### Phase 8: Landlord Experience
-**Goal**: Landlords can evaluate, compare, and decide on candidates
-**Depends on**: Phase 6, Phase 7
-**Requirements**: LAND-01, LAND-02, LAND-03, LAND-04, LAND-05, LAND-06, LAND-07, LAND-08, LAND-09, LAND-10, LAND-11, LAND-12
+### Phase 7: UX Polish
+**Goal**: Premium, polished experience across all flows
+**Depends on**: Phase 2, Phase 5, Phase 6
 **Success Criteria** (what must be TRUE):
-  1. Landlord can view candidates per property ranked by fit
-  2. Candidate cards show score level, rent-to-income ratio, key flags
-  3. Landlord can view detailed candidate profile with AI summary
-  4. Landlord can request additional information from candidate
-  5. Landlord can pre-approve, approve, or reject candidates
-  6. Landlord can add private notes to candidate files
-**Research**: Unlikely (builds on existing patterns)
-**Plans**: TBD
-
-### Phase 9: State Machine
-**Goal**: Application lifecycle is clearly tracked with visible timeline
-**Depends on**: Phase 7, Phase 8
-**Requirements**: STAT-01, STAT-02, STAT-03, STAT-04
-**Success Criteria** (what must be TRUE):
-  1. Applications enforce valid state transitions only
-  2. Every state change creates timestamped event
-  3. Timeline displays all events in chronological order
-  4. Status changes immediately visible to tenant
-**Research**: Unlikely (state machine is straightforward)
-**Plans**: TBD
-
-### Phase 10: UX Polish
-**Goal**: Premium, polished user experience across all flows
-**Depends on**: Phase 3, Phase 7, Phase 8
-**Requirements**: UXPL-01, UXPL-02, UXPL-03, UXPL-04, UXPL-05
-**Success Criteria** (what must be TRUE):
-  1. All list views show skeleton loaders while loading
-  2. Empty states have clear messaging and CTAs
-  3. Property cards are large with high-quality optimized photos
-  4. Hover and transition effects feel smooth and intentional
-  5. Verification badges display consistently across views
+  1. Skeleton loaders for all list/detail views
+  2. Empty states with helpful messaging and CTAs
+  3. Smooth page transitions and micro-interactions
+  4. Loading states for all async-looking operations
+  5. Error states with recovery options
+  6. Responsive breakpoints tested (mobile, tablet, desktop)
+  7. Accessibility audit passed (keyboard nav, screen reader)
 **Research**: Unlikely (UI polish patterns)
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
-| 2. Authentication | 0/TBD | Not started | - |
-| 3. Property Catalog | 0/TBD | Not started | - |
-| 4. Property Management | 0/TBD | Not started | - |
-| 5. Application Wizard | 0/TBD | Not started | - |
-| 6. Risk Score Engine | 0/TBD | Not started | - |
-| 7. Tenant Experience | 0/TBD | Not started | - |
-| 8. Landlord Experience | 0/TBD | Not started | - |
-| 9. State Machine | 0/TBD | Not started | - |
-| 10. UX Polish | 0/TBD | Not started | - |
+| 1. Foundation & Design System | 4/4 | Complete | 2026-01-18 |
+| 2. Property Catalog | 0/TBD | Not started | - |
+| 3. Application Wizard | 0/TBD | Not started | - |
+| 4. Risk Score Display | 0/TBD | Not started | - |
+| 5. Landlord Dashboard | 0/TBD | Not started | - |
+| 6. Tenant Tracking | 0/TBD | Not started | - |
+| 7. UX Polish | 0/TBD | Not started | - |
+
+## Notes
+
+### What's NOT in scope (backend responsibility)
+- Database setup and migrations
+- API endpoints
+- Authentication backend (Clerk webhooks, user sync)
+- Scoring algorithm implementation
+- File upload to cloud storage
+- Email notifications
+- State machine enforcement
+
+### Mock Data Strategy
+All screens work with realistic mock data:
+- 15+ properties across Colombian cities
+- 10+ candidate profiles with varied risk levels
+- Pre-calculated scores with explanations
+- Sample application data in different states
+
+### Integration Points (for backend developer)
+When backend is ready, these need API connections:
+- Property listing and filtering
+- Application submission
+- Score retrieval
+- Status updates
+- User authentication state
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-18*
+*Last updated: 2026-01-18 (reorganized for frontend-first)*
+*Vision: FRONTEND-VISION.md*

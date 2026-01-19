@@ -3,18 +3,35 @@
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-01-16)
+See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
-**Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos, no dias, con explicabilidad total del scoring AI.
-**Current focus:** Phase 1 - Foundation
+**Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
+**Current focus:** Phase 2 - Property Catalog (frontend-first approach)
 
 ## Current Position
 
-Phase: 1 of 10 (Foundation)
-Plan: 4 of 4 complete
-Status: Phase complete
-Last activity: 2026-01-18 - Completed 01-04-PLAN.md (Seed Data)
+Phase: 2 of 7 (Property Catalog)
+Plan: 0 of TBD
+Status: Ready to plan
+Last activity: 2026-01-18 - Roadmap reorganized for frontend-first development
 
-Progress: ████░░░░░░ 40%
+Progress: ██░░░░░░░░ 14%
+
+## Roadmap Reorganization (2026-01-18)
+
+**Major change:** Project refocused to frontend-only development.
+- Backend will be developed by another person
+- All phases now focus on UX/UI with mock data
+- Reduced from 10 phases to 7 phases
+
+**New phases:**
+1. Foundation & Design System ✅ (complete from previous work)
+2. Property Catalog ← NEXT
+3. Application Wizard
+4. Risk Score Display (MOST IMPORTANT)
+5. Landlord Dashboard
+6. Tenant Tracking
+7. UX Polish
 
 ## Performance Metrics
 
@@ -29,71 +46,43 @@ Progress: ████░░░░░░ 40%
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
 
-**Recent Trend:**
-- Last 5 plans: 01-01 (8min), 01-02 (5min), 01-03 (12min), 01-04 (8min)
-- Trend: Stable
-
-### 01-02 UI Configuration
-- shadcn/ui with slate theme and CSS variables
-- Risk level badges (A/B green, C yellow, D red)
-- Core components: Button, Card, Input, Badge, Label, Skeleton
-- Demo page in Spanish for Colombia locale
-
 ## Accumulated Context
 
-### Decisions
+### Key Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- Stack validated: Next.js 14 + Clerk + Prisma + Neon + UploadThing + Inngest
-- Scoring: Hybrid rule-based (no ML for MVP), save data for future
-- Auth: Email magic link only (no SMS/WhatsApp)
-- Deploy: Vercel
-- Seed data: Realistic Colombian data with varied risk profiles for testing
-- Prisma 7.x config: Uses prisma.config.ts for connection URL (not schema.prisma)
-- Monetary values: COP as integers, not floats
-- Explainability: JSON fields for flexible score explanation data
+- **Frontend-first approach**: Backend handled separately, we build UX with mock data
+- **Risk Score UX**: Conversational "asesor de confianza" tone, not dashboard metrics
+- **Mock data strategy**: Realistic Colombian data, all flows functional
+- Stack: Next.js 14 + shadcn/ui + Tailwind
 - UI: Slate base with blue primary, new-york shadcn style
 - Risk badges: variant="risk-a|b|c|d" for A/B/C/D levels
 
+### What's Complete (Phase 1)
+
+- Project scaffolded with Next.js 14
+- shadcn/ui configured with slate theme
+- Core components: Button, Card, Input, Badge, Label, Skeleton
+- Risk level badge variants (A/B/C/D colors)
+- Prisma schema defined (for backend reference)
+- Seed data structure (for mock data reference)
+- TypeScript configured
+
+### What's NOT in Scope
+
+Backend responsibilities (for other developer):
+- Database setup and migrations
+- API endpoints
+- Authentication backend
+- Scoring algorithm
+- File upload to cloud
+- Email notifications
+
 ### Pending Todos
 
-- Configure Neon database and run `prisma db push`
-- Run `npm run db:seed` after database connection configured
-- Deploy to Vercel (Phase 2)
-
-### MVP Analysis (2026-01-18)
-
-Existing Bolt MVP analyzed at ai-risk-scoring-rent-ui2l.bolt.host:
-- Has: Property catalog, application wizard, tracking
-- Missing: Risk scoring engine, explainability, landlord dashboard
-- Key differentiator: AI scoring with A/B/C/D levels and driver explanations
-
-### Schema Ready
-
-Complete database schema created:
-- User (syncs with Clerk)
-- Property + PropertyImage
-- Application (6-step wizard data)
-- RiskScoreResult (explainability JSON)
-- ApplicationEvent (audit trail)
-- CandidateNote (landlord notes)
-
-### Seed Data Ready
-
-Comprehensive Colombian demo data created:
-- 5 landlords, 15 tenants (A:3, B:5, C:4, D:3)
-- 19 properties across 5 cities (Bogota, Medellin, Cali, Barranquilla, Cartagena)
-- 10 applications in varied statuses
-- 5 pre-calculated risk scores for testing
-
-### Blockers/Concerns
-
-**User action needed:** Configure DATABASE_URL in .env.local with Neon connection string before seeding.
+None - ready to start Phase 2
 
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 01-04-PLAN.md (Phase 1 complete)
-Resume file: .planning/phases/02-deployment/02-01-PLAN.md
+Stopped at: Roadmap reorganization complete
+Next action: `/gsd:discuss-phase 2` or `/gsd:plan-phase 2`

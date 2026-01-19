@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 3 of 7 (Application Wizard)
-Plan: 1 of TBD
+Plan: 2 of TBD
 Status: In progress
-Last activity: 2026-01-19 - Completed 03-01-PLAN.md (Wizard Foundation)
+Last activity: 2026-01-19 - Completed 03-02-PLAN.md (Wizard Steps 1-3)
 
-Progress: ███░░░░░░░ 32%
+Progress: ████░░░░░░ 38%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -27,7 +27,7 @@ Progress: ███░░░░░░░ 32%
 **New phases:**
 1. Foundation & Design System (complete)
 2. Property Catalog (complete)
-3. Application Wizard (IN PROGRESS - Plan 1/? complete)
+3. Application Wizard (IN PROGRESS - Plan 2/? complete)
 4. Risk Score Display (MOST IMPORTANT)
 5. Landlord Dashboard
 6. Tenant Tracking
@@ -36,9 +36,9 @@ Progress: ███░░░░░░░ 32%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 8 min
-- Total execution time: 1.0 hours
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -46,7 +46,7 @@ Progress: ███░░░░░░░ 32%
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
-| 03-application-wizard | 1/? | 4min | 4min |
+| 03-application-wizard | 2/? | 12min | 6min |
 
 ## Accumulated Context
 
@@ -67,6 +67,9 @@ Progress: ███░░░░░░░ 32%
 - **Application route**: `/aplicar/[propertyId]` for wizard flow
 - **Wizard state**: localStorage per property with SSR-safe hydration
 - **Step completion**: Minimum fields per step (name+doc, salary, etc.)
+- **Touched validation**: Show errors only after field blur
+- **Currency input**: Format with locale separators on change
+- **Conditional employment**: Show/hide fields based on status
 
 ### What's Complete (Phase 1)
 
@@ -99,6 +102,11 @@ Progress: ███░░░░░░░ 32%
 - WizardNavigation component (`src/components/wizard/WizardNavigation.tsx`)
 - WizardShell container (`src/components/wizard/WizardShell.tsx`)
 - Wizard page route (`src/app/aplicar/[propertyId]/page.tsx`)
+- **Select component (radix-ui)** (`src/components/ui/select.tsx`)
+- **Validation utilities** (`src/lib/validation/applicationValidation.ts`)
+- **StepPersonal component** - identity, contact, stability fields
+- **StepEmployment component** - conditional job fields
+- **StepIncome component** - currency inputs with capacity summary
 
 ### What's NOT in Scope
 
@@ -112,11 +120,11 @@ Backend responsibilities (for other developer):
 
 ### Pending Todos
 
-None - ready for next plan in Phase 3 (Personal & Employment steps)
+None - ready for next plan in Phase 3 (Steps 4-6: References, Documents, Review)
 
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
-Next action: Continue with 03-02-PLAN.md (Personal & Employment Form Steps)
+Next action: Continue with 03-03-PLAN.md (Steps 4-6: References, Documents, Review)

@@ -44,6 +44,7 @@ export function WizardShell({
     prevStep,
     submitApplication,
     isLoading,
+    canSubmit,
   } = useApplication();
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
@@ -135,6 +136,7 @@ export function WizardShell({
                 onNext={nextStep}
                 onSubmit={submitApplication}
                 isSubmitting={isLoading}
+                isValid={currentStep === totalSteps ? canSubmit : true}
               />
             </div>
           </div>

@@ -62,6 +62,13 @@ interface ApplicationContextValue {
   setHasCoSigner: (value: boolean) => void;
   updateCoSigner: (data: Partial<CoSignerInfo>) => void;
 
+  // Terms acceptance
+  acceptTerms: boolean;
+  setAcceptTerms: (value: boolean) => void;
+  authorizeVerification: boolean;
+  setAuthorizeVerification: (value: boolean) => void;
+  canSubmit: boolean;
+
   // Actions
   clearApplication: () => void;
   submitApplication: () => Promise<void>;
@@ -99,6 +106,8 @@ export function ApplicationProvider({
   );
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [authorizeVerification, setAuthorizeVerification] = useState(false);
 
   const totalSteps = WIZARD_STEPS.length;
 
@@ -307,6 +316,13 @@ export function ApplicationProvider({
   );
 
   // ========================================================================
+  // Computed: can submit (all steps complete + terms accepted)
+  // ========================================================================
+
+  const canSubmit =
+    completedSteps.length >= 5 && acceptTerms && authorizeVerification;
+
+  // ========================================================================
   // Context value
   // ========================================================================
 
@@ -331,6 +347,12 @@ export function ApplicationProvider({
 
     setHasCoSigner,
     updateCoSigner,
+
+    acceptTerms,
+    setAcceptTerms,
+    authorizeVerification,
+    setAuthorizeVerification,
+    canSubmit,
 
     clearApplication,
     submitApplication,

@@ -1,0 +1,130 @@
+'use client';
+
+import { useCallback } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { DocumentUpload } from '@/components/wizard/DocumentUpload';
+import { useApplication } from '@/lib/context/ApplicationContext';
+import type { DocumentUpload as DocumentUploadType } from '@/lib/types/application';
+
+// ============================================================================
+// Component
+// ============================================================================
+
+/**
+ * StepDocuments - Step 5 of application wizard
+ * Collects required and optional documents for verification
+ */
+export function StepDocuments() {
+  const { application, updateDocuments } = useApplication();
+  const documents = application.documents;
+
+  // Handle document change
+  const handleDocumentChange = useCallback(
+    (
+      field: 'idDocument' | 'incomeProof' | 'employmentLetter' | 'bankStatements' | 'creditReport',
+      data: DocumentUploadType | null
+    ) => {
+      updateDocuments({ [field]: data });
+    },
+    [updateDocuments]
+  );
+
+  // Check if required documents are missing
+  const missingRequired =
+    !documents.idDocument?.fileName &&
+    !documents.idDocument?.file &&
+    !documents.incomeProof?.fileName &&
+    !documents.incomeProof?.file;
+
+  return (
+    <div className="space-y-6">
+      {/* Warning about file persistence */}
+      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-sm">
+        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-amber-800 font-medium">
+            Importante sobre tus documentos
+          </p>
+          <p className="text-xs text-amber-700 mt-1">
+            Los archivos se guardan temporalmente. Si cierras esta pagina, tendras que
+            volver a subirlos.
+          </p>
+        </div>
+      </div>
+
+      {/* Required Documents Section */}
+      <section>
+        <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+          Documentos Requeridos
+          <span className="text-xs text-red-500">*</span>
+        </h3>
+
+        <div className="space-y-6">
+          {/* ID Document */}
+          <DocumentUpload
+            label="Documento de identidad"
+            required
+            accept=".pdf,.jpg,.jpeg,.png"
+            maxSizeMB={5}
+            value={documents.idDocument || null}
+            onChange={(data) => handleDocumentChange('idDocument', data)}
+            hint="Cedula de ciudadania o extranjeria por ambos lados"
+          />
+
+          {/* Income Proof */}
+          <DocumentUpload
+            label="Comprobante de ingresos"
+            required
+            accept=".pdf,.jpg,.jpeg,.png"
+            maxSizeMB={5}
+            value={documents.incomeProof || null}
+            onChange={(data) => handleDocumentChange('incomeProof', data)}
+            hint="Ultimos 3 desprendibles de nomina o declaracion de renta"
+          />
+        </div>
+      </section>
+
+      {/* Optional Documents Section */}
+      <section>
+        <h3 className="text-sm font-medium text-gray-900 mb-4">
+          Documentos Opcionales
+          <span className="text-xs text-gray-500 font-normal ml-2">
+            (mejoran tu perfil)
+          </span>
+        </h3>
+
+        <div className="space-y-6">
+          {/* Employment Letter */}
+          <DocumentUpload
+            label="Carta laboral"
+            accept=".pdf"
+            maxSizeMB={5}
+            value={documents.employmentLetter || null}
+            onChange={(data) => handleDocumentChange('employmentLetter', data)}
+            hint="Carta con fecha reciente indicando cargo y salario"
+          />
+
+          {/* Bank Statements */}
+          <DocumentUpload
+            label="Extractos bancarios"
+            accept=".pdf"
+            maxSizeMB={5}
+            value={documents.bankStatements || null}
+            onChange={(data) => handleDocumentChange('bankStatements', data)}
+            hint="Ultimos 3 meses de tu cuenta principal"
+          />
+
+          {/* Credit Report */}
+          <DocumentUpload
+            label="Reporte de credito"
+            accept=".pdf"
+            maxSizeMB={5}
+            value={documents.creditReport || null}
+            onChange={(data) => handleDocumentChange('creditReport', data)}
+            hint="Descarga gratuita de Datacredito o TransUnion"
+          />
+        </div>
+      </section>
+    </div>
+  );
+}

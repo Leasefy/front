@@ -6,12 +6,13 @@
  * with varied risk profiles (A/B/C/D) for scoring engine testing.
  */
 
+// Use stub for frontend-only development (replace with @prisma/client when backend is ready)
 import {
   UserRole,
   PropertyStatus,
   ApplicationStatus,
   RiskLevel,
-} from '@prisma/client'
+} from '@/lib/prisma-stub'
 
 // =============================================================================
 // TYPE DEFINITIONS

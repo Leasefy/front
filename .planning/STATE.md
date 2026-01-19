@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 3 Complete - Ready for Phase 4 Risk Score Display
+**Current focus:** Phase 3 Complete (including AI Search) - Ready for Phase 4 Risk Score Display
 
 ## Current Position
 
 Phase: 3 of 7 (Application Wizard) - COMPLETE
-Plan: 3 of 3
+Plan: 4 of 4 (AI Search added as parallel plan)
 Status: Phase complete
-Last activity: 2026-01-19 - Completed 03-03-PLAN.md (Wizard Steps 4-6)
+Last activity: 2026-01-19 - Completed 03-04-PLAN.md (AI-Powered Property Search)
 
-Progress: ██████░░░░ 55%
+Progress: ██████░░░░ 58%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ██████░░░░ 55%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 7.8 min
-- Total execution time: 1.3 hours
+- Total plans completed: 10
+- Average duration: 7.95 min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
@@ -46,7 +46,7 @@ Progress: ██████░░░░ 55%
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
-| 03-application-wizard | 3/3 | 18.5min | 6.2min |
+| 03-application-wizard | 4/4 | 26.5min | 6.6min |
 
 ## Accumulated Context
 
@@ -73,6 +73,8 @@ Progress: ██████░░░░ 55%
 - **Terms in context**: Manage terms acceptance in ApplicationContext for global validation
 - **File persistence warning**: Explicit warning that files don't persist (browser limitation)
 - **Reference arrays memoized**: useMemo to avoid React hooks dependency warnings
+- **AI Search parsing**: Regex-based Spanish NLP for city/type/bedrooms/price/area/amenities
+- **Search UX**: ChatGPT-style input with example chips, bidirectional filter sync
 
 ### What's Complete (Phase 1)
 
@@ -117,6 +119,9 @@ Progress: ██████░░░░ 55%
 - **ConfirmationScreen component** - success, tracking code, next steps
 - **Checkbox component** (radix-ui)
 - Terms state management in context with canSubmit validation
+- **AI-powered search** - ChatGPT-style natural language input (`src/components/property/AISearchInput.tsx`)
+- **Search query parser** - Spanish NLP regex parsing (`src/lib/search/parseSearchQuery.ts`)
+- Enhanced usePropertyFilters with setFromParsedQuery for AI search integration
 
 ### What's NOT in Scope
 
@@ -135,6 +140,6 @@ None - Phase 3 complete. Ready for Phase 4: Risk Score Display
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 03-03-PLAN.md (Phase 3 complete)
+Stopped at: Completed 03-04-PLAN.md (AI-Powered Property Search)
 Resume file: None
 Next action: Start Phase 4 - Risk Score Display (MOST IMPORTANT phase for product value)

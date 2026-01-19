@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 3 of 7 (Application Wizard) - COMPLETE
-Plan: 4 of 4 (AI Search added as parallel plan)
+Plan: 5 of 5 (Personalization Features added)
 Status: Phase complete
-Last activity: 2026-01-19 - Completed 03-04-PLAN.md (AI-Powered Property Search)
+Last activity: 2026-01-19 - Completed 03-05-PLAN.md (Personalization Features)
 
-Progress: ██████░░░░ 58%
+Progress: ███████░░░ 65%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ██████░░░░ 58%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 7.95 min
-- Total execution time: 1.4 hours
+- Total plans completed: 11
+- Average duration: 7.6 min
+- Total execution time: 1.5 hours
 
 **By Phase:**
 
@@ -46,7 +46,7 @@ Progress: ██████░░░░ 58%
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
-| 03-application-wizard | 4/4 | 26.5min | 6.6min |
+| 03-application-wizard | 5/5 | 30.5min | 6.1min |
 
 ## Accumulated Context
 
@@ -75,6 +75,10 @@ Progress: ██████░░░░ 58%
 - **Reference arrays memoized**: useMemo to avoid React hooks dependency warnings
 - **AI Search parsing**: Regex-based Spanish NLP for city/type/bedrooms/price/area/amenities
 - **Search UX**: ChatGPT-style input with example chips, bidirectional filter sync
+- **User profile simulation**: localStorage + toggle for testing personalization without auth
+- **30% affordability rule**: Rent + admin <= 30% of available income (industry standard)
+- **Match scoring algorithm**: Affordability (ideal 22%) + city + bedrooms + type preferences
+- **Qualification badges**: Bottom-right of card image, green for "Califica", amber for "Fuera de presupuesto"
 
 ### What's Complete (Phase 1)
 
@@ -122,6 +126,12 @@ Progress: ██████░░░░ 58%
 - **AI-powered search** - ChatGPT-style natural language input (`src/components/property/AISearchInput.tsx`)
 - **Search query parser** - Spanish NLP regex parsing (`src/lib/search/parseSearchQuery.ts`)
 - Enhanced usePropertyFilters with setFromParsedQuery for AI search integration
+- **UserProfileContext** - Mock user profile with localStorage persistence (`src/lib/context/UserProfileContext.tsx`)
+- **Qualification scoring** - 30% affordability + preference matching (`src/lib/scoring/qualificationScore.ts`)
+- **ForYouCarousel** - Personalized top 6 matches carousel (`src/components/property/ForYouCarousel.tsx`)
+- **Qualification badges** - Califica/Fuera de presupuesto on PropertyCard
+- **"Solo propiedades para mi"** toggle in FilterSidebar
+- Simulation toggle for testing personalization features
 
 ### What's NOT in Scope
 
@@ -140,6 +150,6 @@ None - Phase 3 complete. Ready for Phase 4: Risk Score Display
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 03-04-PLAN.md (AI-Powered Property Search)
+Stopped at: Completed 03-05-PLAN.md (Personalization Features)
 Resume file: None
 Next action: Start Phase 4 - Risk Score Display (MOST IMPORTANT phase for product value)

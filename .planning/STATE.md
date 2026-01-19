@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 2 - Property Catalog (frontend-first approach)
+**Current focus:** Phase 3 - Application Wizard (frontend-first approach)
 
 ## Current Position
 
-Phase: 2 of 7 (Property Catalog)
-Plan: 2 of TBD
+Phase: 3 of 7 (Application Wizard)
+Plan: 1 of TBD
 Status: In progress
-Last activity: 2026-01-19 - Completed 02-02-PLAN.md (Catalog Grid & Filters)
+Last activity: 2026-01-19 - Completed 03-01-PLAN.md (Wizard Foundation)
 
-Progress: ██░░░░░░░░ 22%
+Progress: ███░░░░░░░ 32%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -26,8 +26,8 @@ Progress: ██░░░░░░░░ 22%
 
 **New phases:**
 1. Foundation & Design System (complete)
-2. Property Catalog (IN PROGRESS - Plan 2/? complete)
-3. Application Wizard
+2. Property Catalog (complete)
+3. Application Wizard (IN PROGRESS - Plan 1/? complete)
 4. Risk Score Display (MOST IMPORTANT)
 5. Landlord Dashboard
 6. Tenant Tracking
@@ -36,16 +36,17 @@ Progress: ██░░░░░░░░ 22%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 9 min
-- Total execution time: 0.9 hours
+- Total plans completed: 7
+- Average duration: 8 min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
-| 02-property-catalog | 2/? | 15min | 7.5min |
+| 02-property-catalog | 2/2 | 15min | 7.5min |
+| 03-application-wizard | 1/? | 4min | 4min |
 
 ## Accumulated Context
 
@@ -63,6 +64,9 @@ Progress: ██░░░░░░░░ 22%
 - **Filter hook pattern**: Custom hook with memoized filtering for clean separation
 - **Mobile filters**: Bottom drawer on mobile, sticky sidebar on desktop
 - **Wishlist storage**: localStorage with JSON serialization
+- **Application route**: `/aplicar/[propertyId]` for wizard flow
+- **Wizard state**: localStorage per property with SSR-safe hydration
+- **Step completion**: Minimum fields per step (name+doc, salary, etc.)
 
 ### What's Complete (Phase 1)
 
@@ -74,7 +78,7 @@ Progress: ██░░░░░░░░ 22%
 - Seed data structure (for mock data reference)
 - TypeScript configured
 
-### What's Complete (Phase 2 - In Progress)
+### What's Complete (Phase 2)
 
 - Property TypeScript types (`src/lib/types/property.ts`)
 - Mock properties data - 16 Colombian properties (`src/lib/data/mock-properties.ts`)
@@ -85,6 +89,16 @@ Progress: ██░░░░░░░░ 22%
 - FilterSidebar component (`src/components/property/FilterSidebar.tsx`)
 - PropertyGrid component (`src/components/property/PropertyGrid.tsx`)
 - Propiedades listing page (`src/app/propiedades/page.tsx`)
+- Property detail page with carousel and CTA (`src/app/propiedades/[id]/page.tsx`)
+
+### What's Complete (Phase 3 - In Progress)
+
+- Application TypeScript types (`src/lib/types/application.ts`)
+- ApplicationContext with localStorage persistence (`src/lib/context/ApplicationContext.tsx`)
+- WizardProgress component - 6 steps (`src/components/wizard/WizardProgress.tsx`)
+- WizardNavigation component (`src/components/wizard/WizardNavigation.tsx`)
+- WizardShell container (`src/components/wizard/WizardShell.tsx`)
+- Wizard page route (`src/app/aplicar/[propertyId]/page.tsx`)
 
 ### What's NOT in Scope
 
@@ -98,11 +112,11 @@ Backend responsibilities (for other developer):
 
 ### Pending Todos
 
-None - ready for next plan in Phase 2
+None - ready for next plan in Phase 3 (Personal & Employment steps)
 
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
-Next action: Continue with 02-03-PLAN.md (Property Details)
+Next action: Continue with 03-02-PLAN.md (Personal & Employment Form Steps)

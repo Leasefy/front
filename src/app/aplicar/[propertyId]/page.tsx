@@ -10,6 +10,11 @@ import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationCo
 import { mockProperties } from '@/lib/data/mock-properties';
 import { WIZARD_STEPS } from '@/lib/types/application';
 
+// Step components
+import { StepPersonal } from '@/components/wizard/steps/StepPersonal';
+import { StepEmployment } from '@/components/wizard/steps/StepEmployment';
+import { StepIncome } from '@/components/wizard/steps/StepIncome';
+
 // ============================================================================
 // Page props
 // ============================================================================
@@ -84,12 +89,11 @@ export default function AplicarPage({ params }: AplicarPageProps) {
 }
 
 // ============================================================================
-// Step content placeholder component
+// Step content component
 // ============================================================================
 
 /**
- * Renders placeholder content for each wizard step
- * This will be replaced with actual form components in PLAN-02/03
+ * Renders the appropriate step component based on current step
  */
 function WizardStepContent() {
   const { currentStep, application } = useApplication();
@@ -97,58 +101,16 @@ function WizardStepContent() {
 
   return (
     <div className="space-y-6">
-      {/* Placeholder content based on step */}
-      {currentStep === 1 && (
-        <StepPlaceholder
-          title="Informacion Personal"
-          description="Aqui iran los campos para datos personales: nombre, documento, fecha de nacimiento, telefono, email, direccion actual, estado civil y dependientes."
-          fields={[
-            'Nombre completo',
-            'Tipo de documento',
-            'Numero de documento',
-            'Fecha de nacimiento',
-            'Telefono',
-            'Email',
-            'Direccion actual',
-            'Tiempo en direccion actual',
-            'Estado civil',
-            'Numero de dependientes',
-          ]}
-        />
-      )}
+      {/* Step 1: Personal Information */}
+      {currentStep === 1 && <StepPersonal />}
 
-      {currentStep === 2 && (
-        <StepPlaceholder
-          title="Informacion de Empleo"
-          description="Aqui iran los campos para datos laborales: estado laboral, empresa, industria, cargo, tipo de contrato, antiguedad."
-          fields={[
-            'Estado laboral',
-            'Nombre de la empresa',
-            'Industria',
-            'Cargo',
-            'Tipo de contrato',
-            'Tiempo en el trabajo',
-            'Telefono del empleador',
-            'Direccion del empleador',
-          ]}
-        />
-      )}
+      {/* Step 2: Employment Information */}
+      {currentStep === 2 && <StepEmployment />}
 
-      {currentStep === 3 && (
-        <StepPlaceholder
-          title="Informacion de Ingresos"
-          description="Aqui iran los campos para ingresos y capacidad de pago: salario mensual, ingresos adicionales, obligaciones financieras."
-          fields={[
-            'Salario mensual',
-            'Ingresos adicionales',
-            'Fuente de ingresos adicionales',
-            'Obligaciones mensuales (deudas, creditos)',
-            'Ingreso total (calculado)',
-            'Disponible para arriendo (calculado)',
-          ]}
-        />
-      )}
+      {/* Step 3: Income Information */}
+      {currentStep === 3 && <StepIncome />}
 
+      {/* Step 4: References - Placeholder */}
       {currentStep === 4 && (
         <StepPlaceholder
           title="Referencias"
@@ -161,6 +123,7 @@ function WizardStepContent() {
         />
       )}
 
+      {/* Step 5: Documents - Placeholder */}
       {currentStep === 5 && (
         <StepPlaceholder
           title="Documentos"
@@ -175,6 +138,7 @@ function WizardStepContent() {
         />
       )}
 
+      {/* Step 6: Review - Placeholder */}
       {currentStep === 6 && (
         <StepPlaceholder
           title="Revision y Envio"
@@ -189,21 +153,12 @@ function WizardStepContent() {
           ]}
         />
       )}
-
-      {/* Debug info (development only) */}
-      <div className="mt-8 p-4 bg-gray-100 rounded-sm text-xs text-gray-600">
-        <p className="font-medium mb-2">Debug Info:</p>
-        <p>Step: {stepConfig?.key}</p>
-        <p>Application ID: {application.id}</p>
-        <p>Property ID: {application.propertyId}</p>
-        <p>Status: {application.status}</p>
-      </div>
     </div>
   );
 }
 
 // ============================================================================
-// Placeholder component
+// Placeholder component for future steps
 // ============================================================================
 
 interface StepPlaceholderProps {
@@ -217,7 +172,7 @@ function StepPlaceholder({ title, description, fields }: StepPlaceholderProps) {
     <div className="space-y-4">
       <div className="p-4 bg-blue-50 border border-blue-100 rounded-sm">
         <p className="text-sm text-blue-800">
-          <strong>Placeholder:</strong> {description}
+          <strong>Proximamente:</strong> {description}
         </p>
       </div>
 

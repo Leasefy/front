@@ -2,15 +2,20 @@
 
 import { useState, useCallback, useEffect } from 'react';
 
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { FilterSidebar } from '@/components/property/FilterSidebar';
+import { AISearchInput } from '@/components/property/AISearchInput';
 import { usePropertyFilters } from '@/lib/hooks/usePropertyFilters';
 import { mockProperties } from '@/lib/data/mock-properties';
+import { SectionLabel } from '@/components/ui/section-label';
+import { parseSearchQuery } from '@/lib/search/parseSearchQuery';
 
 const WISHLIST_STORAGE_KEY = 'arriendo-facil-wishlist';
 
 /**
- * Property listing page with filtering and wishlist functionality
+ * Property listing page - Luxterra style
  * Route: /propiedades
  */
 export default function PropiedadesPage() {
@@ -40,10 +45,28 @@ export default function PropiedadesPage() {
     setBedrooms,
     setPropertyType,
     resetFilters,
+    setFromParsedQuery,
+    setSearchQuery,
     filteredProperties,
     availableCities,
     hasActiveFilters,
   } = usePropertyFilters(mockProperties);
+
+  /**
+   * Handle AI search submission
+   * Parses the query and updates filters
+   */
+  const handleAISearch = useCallback(
+    (query: string) => {
+      if (!query.trim()) {
+        resetFilters();
+        return;
+      }
+      const parsed = parseSearchQuery(query);
+      setFromParsedQuery(parsed);
+    },
+    [setFromParsedQuery, resetFilters]
+  );
 
   const isWishlisted = useCallback(
     (id: string) => wishlistedIds.includes(id),
@@ -57,40 +80,67 @@ export default function PropiedadesPage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">
-          Encuentra tu proximo hogar
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {filteredProperties.length}{' '}
-          {filteredProperties.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}
-        </p>
-      </div>
+    <>
+      <Navbar />
+      <main className="min-h-screen">
+        {/* Hero Header with AI Search - Luxterra style */}
+        <section className="bg-background pt-32 pb-12">
+          <div className="container-wide">
+            <SectionLabel className="text-muted-foreground mb-4">Propiedades</SectionLabel>
+            <h1 className="heading-display text-foreground mb-4">
+              Encuentra tu proximo hogar
+            </h1>
+            <p className="body-text text-muted-foreground max-w-xl mb-8">
+              Explora nuestra seleccion de propiedades en las mejores ubicaciones de Colombia
+            </p>
 
-      {/* Main content: Sidebar + Grid */}
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <FilterSidebar
-          filters={filters}
-          onCityChange={setCity}
-          onPriceRangeChange={setPriceRange}
-          onBedroomsChange={setBedrooms}
-          onPropertyTypeChange={setPropertyType}
-          onReset={resetFilters}
-          availableCities={availableCities}
-          resultsCount={filteredProperties.length}
-          hasActiveFilters={hasActiveFilters}
-        />
+            {/* AI Search Input */}
+            <AISearchInput
+              value={filters.searchQuery}
+              onChange={setSearchQuery}
+              onSearch={handleAISearch}
+              className="max-w-3xl"
+            />
+          </div>
+        </section>
 
-        <main className="flex-1">
-          <PropertyGrid
-            properties={filteredProperties}
-            isWishlisted={isWishlisted}
-            onWishlistToggle={handleWishlistToggle}
-          />
-        </main>
-      </div>
-    </div>
+        {/* Listing Section */}
+        <section className="light-section bg-[#f7f7f7] section-padding">
+          <div className="container-wide">
+            {/* Results count */}
+            <div className="mb-8">
+              <p className="text-xs text-gray-600 tracking-tight">
+                {filteredProperties.length}{' '}
+                {filteredProperties.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}
+              </p>
+            </div>
+
+            {/* Main content: Sidebar + Grid */}
+            <div className="flex flex-col gap-8 lg:flex-row">
+              <FilterSidebar
+                filters={filters}
+                onCityChange={setCity}
+                onPriceRangeChange={setPriceRange}
+                onBedroomsChange={setBedrooms}
+                onPropertyTypeChange={setPropertyType}
+                onReset={resetFilters}
+                availableCities={availableCities}
+                resultsCount={filteredProperties.length}
+                hasActiveFilters={hasActiveFilters}
+              />
+
+              <div className="flex-1">
+                <PropertyGrid
+                  properties={filteredProperties}
+                  isWishlisted={isWishlisted}
+                  onWishlistToggle={handleWishlistToggle}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
   );
 }

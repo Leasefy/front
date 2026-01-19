@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import type { Property, PropertyType } from '@/lib/types/property';
+import type { ParsedQuery } from '@/lib/search/parseSearchQuery';
 
 /**
  * Property filter state
@@ -12,6 +13,8 @@ export interface PropertyFilters {
   maxPrice: number | null;
   bedrooms: number | null;
   propertyType: PropertyType | null;
+  /** Stores the raw search query for display */
+  searchQuery: string;
 }
 
 const initialFilters: PropertyFilters = {
@@ -20,6 +23,7 @@ const initialFilters: PropertyFilters = {
   maxPrice: null,
   bedrooms: null,
   propertyType: null,
+  searchQuery: '',
 };
 
 /**
@@ -58,6 +62,29 @@ export function usePropertyFilters(properties: Property[]) {
 
   const resetFilters = useCallback(() => {
     setFilters(initialFilters);
+  }, []);
+
+  /**
+   * Set filters from a parsed natural language query
+   * Used by AISearchInput to update filters
+   */
+  const setFromParsedQuery = useCallback((parsed: ParsedQuery) => {
+    setFilters((prev) => ({
+      ...prev,
+      city: parsed.city,
+      propertyType: parsed.propertyType,
+      bedrooms: parsed.bedrooms,
+      minPrice: parsed.minPrice,
+      maxPrice: parsed.maxPrice,
+      searchQuery: parsed.rawQuery,
+    }));
+  }, []);
+
+  /**
+   * Set just the search query (for controlled input)
+   */
+  const setSearchQuery = useCallback((query: string) => {
+    setFilters((prev) => ({ ...prev, searchQuery: query }));
   }, []);
 
   // Check if any filter is active
@@ -116,6 +143,8 @@ export function usePropertyFilters(properties: Property[]) {
     setBedrooms,
     setPropertyType,
     resetFilters,
+    setFromParsedQuery,
+    setSearchQuery,
     filteredProperties,
     availableCities,
     hasActiveFilters,

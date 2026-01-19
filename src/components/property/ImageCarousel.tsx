@@ -18,8 +18,44 @@ export interface ImageCarouselProps {
 export function ImageCarousel({ images, alt, className }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Handle empty images array
-  if (!images || images.length === 0) {
+  // Compute these values before any hooks to ensure consistent hook order
+  const safeImages = images && images.length > 0 ? images : [];
+  const totalImages = safeImages.length;
+  const hasMultipleImages = totalImages > 1;
+  const isEmpty = totalImages === 0;
+
+  const goToPrevious = useCallback(() => {
+    if (totalImages === 0) return;
+    setCurrentIndex((prev) => (prev === 0 ? totalImages - 1 : prev - 1));
+  }, [totalImages]);
+
+  const goToNext = useCallback(() => {
+    if (totalImages === 0) return;
+    setCurrentIndex((prev) => (prev === totalImages - 1 ? 0 : prev + 1));
+  }, [totalImages]);
+
+  const goToIndex = useCallback((index: number) => {
+    setCurrentIndex(index);
+  }, []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (totalImages === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        goToPrevious();
+      } else if (e.key === 'ArrowRight') {
+        goToNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [goToPrevious, goToNext, totalImages]);
+
+  // Handle empty images array - render after hooks
+  if (isEmpty) {
     return (
       <div
         className={cn(
@@ -32,41 +68,12 @@ export function ImageCarousel({ images, alt, className }: ImageCarouselProps) {
     );
   }
 
-  const totalImages = images.length;
-  const hasMultipleImages = totalImages > 1;
-
-  const goToPrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev === 0 ? totalImages - 1 : prev - 1));
-  }, [totalImages]);
-
-  const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev === totalImages - 1 ? 0 : prev + 1));
-  }, [totalImages]);
-
-  const goToIndex = useCallback((index: number) => {
-    setCurrentIndex(index);
-  }, []);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        goToPrevious();
-      } else if (e.key === 'ArrowRight') {
-        goToNext();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToPrevious, goToNext]);
-
   return (
     <div className={cn('relative', className)}>
       {/* Main image */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
         <Image
-          src={images[currentIndex]}
+          src={safeImages[currentIndex]}
           alt={`${alt} - Imagen ${currentIndex + 1} de ${totalImages}`}
           fill
           className="object-cover transition-opacity duration-300"
@@ -109,7 +116,7 @@ export function ImageCarousel({ images, alt, className }: ImageCarouselProps) {
       {/* Thumbnail strip */}
       {hasMultipleImages && (
         <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-          {images.map((image, index) => (
+          {safeImages.map((image, index) => (
             <button
               key={index}
               onClick={() => goToIndex(index)}
@@ -138,7 +145,7 @@ export function ImageCarousel({ images, alt, className }: ImageCarouselProps) {
       {/* Dots indicator (shown on mobile when thumbnails hidden) */}
       {hasMultipleImages && (
         <div className="mt-3 flex justify-center gap-2 md:hidden">
-          {images.map((_, index) => (
+          {safeImages.map((_, index) => (
             <button
               key={index}
               onClick={() => goToIndex(index)}

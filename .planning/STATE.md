@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 2 of 7 (Property Catalog)
-Plan: 1 of TBD
+Plan: 2 of TBD
 Status: In progress
-Last activity: 2026-01-19 - Completed 02-01-PLAN.md (Property Data Foundation)
+Last activity: 2026-01-19 - Completed 02-02-PLAN.md (Catalog Grid & Filters)
 
-Progress: ██░░░░░░░░ 18%
+Progress: ██░░░░░░░░ 22%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -26,7 +26,7 @@ Progress: ██░░░░░░░░ 18%
 
 **New phases:**
 1. Foundation & Design System (complete)
-2. Property Catalog (IN PROGRESS - Plan 1/? complete)
+2. Property Catalog (IN PROGRESS - Plan 2/? complete)
 3. Application Wizard
 4. Risk Score Display (MOST IMPORTANT)
 5. Landlord Dashboard
@@ -36,16 +36,16 @@ Progress: ██░░░░░░░░ 18%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 9 min
-- Total execution time: 0.75 hours
+- Total execution time: 0.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | 38min | 9.5min |
-| 02-property-catalog | 1/? | 7min | 7min |
+| 02-property-catalog | 2/? | 15min | 7.5min |
 
 ## Accumulated Context
 
@@ -60,6 +60,9 @@ Progress: ██░░░░░░░░ 18%
 - **Property types**: Comprehensive Property interface with all catalog fields
 - **Currency format**: $ 2.500.000 format using es-CO locale
 - **Prisma stub**: Use stub for frontend-only development (no generate needed)
+- **Filter hook pattern**: Custom hook with memoized filtering for clean separation
+- **Mobile filters**: Bottom drawer on mobile, sticky sidebar on desktop
+- **Wishlist storage**: localStorage with JSON serialization
 
 ### What's Complete (Phase 1)
 
@@ -78,6 +81,10 @@ Progress: ██░░░░░░░░ 18%
 - PropertyCard component (`src/components/property/PropertyCard.tsx`)
 - Format utilities for COP currency (`src/lib/format.ts`)
 - Prisma stub for build compatibility (`src/lib/prisma-stub.ts`)
+- usePropertyFilters hook (`src/lib/hooks/usePropertyFilters.ts`)
+- FilterSidebar component (`src/components/property/FilterSidebar.tsx`)
+- PropertyGrid component (`src/components/property/PropertyGrid.tsx`)
+- Propiedades listing page (`src/app/propiedades/page.tsx`)
 
 ### What's NOT in Scope
 
@@ -96,6 +103,6 @@ None - ready for next plan in Phase 2
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
-Next action: Continue with 02-02-PLAN.md (Catalog Grid & Filters)
+Next action: Continue with 02-03-PLAN.md (Property Details)

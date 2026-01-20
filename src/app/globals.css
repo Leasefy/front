@@ -4,55 +4,112 @@
 
 @layer base {
   :root {
-    /* Luxterra dark theme - #111112 */
-    --background: 240 6% 7%;
+    /* ========================================================
+     * LIGHT THEME - Notion-inspired, premium minimal
+     * Very light grays (almost white) with subtle depth
+     * ======================================================== */
+
+    /* Base colors - Light, airy, Notion-like */
+    --background: 0 0% 98.5%;           /* #FBFBFB - Almost white */
+    --foreground: 240 10% 10%;          /* #17181C - Near black text */
+
+    /* Cards - Pure white with subtle contrast */
+    --card: 0 0% 100%;                  /* #FFFFFF - White cards */
+    --card-foreground: 240 10% 10%;     /* #17181C */
+
+    /* Popovers/Dropdowns */
+    --popover: 0 0% 100%;               /* #FFFFFF */
+    --popover-foreground: 240 10% 10%;  /* #17181C */
+
+    /* Primary - Refined purple accent */
+    --primary: 258 90% 58%;             /* Slightly deeper purple */
+    --primary-foreground: 0 0% 100%;    /* White on primary */
+
+    /* Secondary - Subtle gray */
+    --secondary: 240 5% 96%;            /* #F4F4F5 - Light gray */
+    --secondary-foreground: 240 10% 20%; /* Dark gray text */
+
+    /* Muted - For subdued UI elements */
+    --muted: 240 5% 94%;                /* #EFEFEF */
+    --muted-foreground: 240 5% 45%;     /* #6E6E77 - Gray text */
+
+    /* Accent - Same as primary for consistency */
+    --accent: 258 90% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive - Refined red */
+    --destructive: 0 72% 51%;           /* #DC2626 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders - Subtle, barely visible */
+    --border: 240 6% 92%;               /* #EAEAEB - Very light border */
+    --input: 240 6% 92%;                /* Same as border */
+    --ring: 258 90% 58%;                /* Primary for focus rings */
+
+    /* Chart colors */
+    --chart-1: 258 90% 58%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 50%;
+    --chart-4: 43 74% 55%;
+    --chart-5: 27 87% 60%;
+
+    /* ========================================================
+     * Border Radius Scale
+     * Minimal, refined - 2px base like Luxterra
+     * ======================================================== */
+    --radius: 0.125rem;                 /* 2px base */
+    --radius-sm: 0.125rem;              /* 2px - Subtle */
+    --radius-md: 0.25rem;               /* 4px - Default for inputs */
+    --radius-lg: 0.5rem;                /* 8px - Cards, modals */
+    --radius-xl: 0.75rem;               /* 12px - Large containers */
+    --radius-full: 9999px;              /* Pill buttons */
+
+    /* ========================================================
+     * Risk Level Colors (unchanged - they work on light bg)
+     * ======================================================== */
+    --risk-a: 142.1 76.2% 36.3%;        /* Emerald - Level A */
+    --risk-b: 217 91% 60%;              /* Blue - Level B */
+    --risk-c: 45 93% 47%;               /* Amber - Level C */
+    --risk-d: 0 84% 60%;                /* Red - Level D */
+
+    /* ========================================================
+     * Semantic Colors
+     * ======================================================== */
+    --success: 142.1 76.2% 36.3%;       /* Emerald green */
+    --warning: 45 93% 47%;              /* Amber */
+    --info: 217 91% 60%;                /* Blue */
+
+    /* ========================================================
+     * Typography (will be used with utility classes)
+     * ======================================================== */
+    --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+
+    /* ========================================================
+     * Spacing Grid (4px base)
+     * ======================================================== */
+    --space-0: 0;
+    --space-1: 0.25rem;                 /* 4px */
+    --space-2: 0.5rem;                  /* 8px */
+    --space-3: 0.75rem;                 /* 12px */
+    --space-4: 1rem;                    /* 16px */
+    --space-5: 1.25rem;                 /* 20px */
+    --space-6: 1.5rem;                  /* 24px */
+    --space-8: 2rem;                    /* 32px */
+    --space-10: 2.5rem;                 /* 40px */
+    --space-12: 3rem;                   /* 48px */
+    --space-16: 4rem;                   /* 64px */
+  }
+
+  /* ========================================================
+   * Dark Section Variant (for hero overlays, etc.)
+   * ======================================================== */
+  .dark-section {
+    --background: 240 6% 7%;            /* #111112 - Near black */
     --foreground: 0 0% 100%;
     --card: 240 6% 10%;
     --card-foreground: 0 0% 100%;
-    --popover: 240 6% 10%;
-    --popover-foreground: 0 0% 100%;
-    /* Purple accent */
-    --primary: 258 100% 66%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 6% 15%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 6% 20%;
     --muted-foreground: 240 5% 65%;
-    --accent: 258 100% 66%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
     --border: 240 6% 20%;
-    --input: 240 6% 15%;
-    --ring: 258 100% 66%;
-    --chart-1: 258 100% 66%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    /* CRITICAL: Luxterra uses 2px radius, almost square */
-    --radius: 2px;
-
-    /* Risk level colors */
-    --risk-a: 142.1 76.2% 36.3%;
-    --risk-b: 142.1 70.6% 45.3%;
-    --risk-c: 47.9 95.8% 53.1%;
-    --risk-d: 0 84.2% 60.2%;
-
-    /* Section colors */
-    --section-light: 0 0% 97%;
-    --section-dark: 240 6% 7%;
-    --text-secondary: 240 5% 55%;
-  }
-
-  /* Light sections */
-  .light-section {
-    --background: 0 0% 97%;
-    --foreground: 240 6% 7%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 6% 7%;
-    --muted-foreground: 240 5% 45%;
-    --border: 240 6% 90%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -88,23 +145,135 @@
 }
 
 @layer utilities {
-  /* Section padding - Luxterra uses 60px top, 32px bottom */
+  /* ==========================================================
+   * LAYOUT UTILITIES
+   * ========================================================== */
+
+  /* Section padding - Consistent vertical rhythm */
   .section-padding {
     @apply py-16 md:py-20 lg:py-24;
   }
 
+  .section-padding-sm {
+    @apply py-8 md:py-12 lg:py-16;
+  }
+
+  /* Container variants */
   .container-wide {
     @apply mx-auto max-w-7xl px-6 lg:px-8;
   }
+
+  .container-narrow {
+    @apply mx-auto max-w-4xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-content {
+    @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ==========================================================
+   * TYPOGRAPHY SCALE
+   * Premium, refined hierarchy
+   * ========================================================== */
+
+  /* Display - Hero headings, massive impact */
+  .text-display {
+    @apply text-4xl md:text-5xl lg:text-[58px] font-normal tracking-[-0.072em] leading-[1.05];
+  }
+
+  /* Heading 1 - Page titles */
+  .text-h1 {
+    @apply text-3xl md:text-4xl font-semibold tracking-[-0.02em] leading-tight;
+  }
+
+  /* Heading 2 - Section titles */
+  .text-h2 {
+    @apply text-2xl md:text-3xl font-semibold tracking-[-0.02em] leading-tight;
+  }
+
+  /* Heading 3 - Subsection titles */
+  .text-h3 {
+    @apply text-xl md:text-2xl font-medium tracking-[-0.01em] leading-snug;
+  }
+
+  /* Heading 4 - Card titles, smaller sections */
+  .text-h4 {
+    @apply text-lg font-medium tracking-tight leading-snug;
+  }
+
+  /* Body Large - Intro paragraphs, emphasis */
+  .text-body-lg {
+    @apply text-lg tracking-[-0.02em] leading-relaxed;
+  }
+
+  /* Body - Default paragraph text */
+  .text-body {
+    @apply text-base tracking-[-0.01em] leading-relaxed;
+  }
+
+  /* Body Small - Secondary content */
+  .text-body-sm {
+    @apply text-sm tracking-normal leading-relaxed;
+  }
+
+  /* Caption - Labels, metadata */
+  .text-caption {
+    @apply text-xs tracking-tight leading-normal;
+  }
+
+  /* Overline - Section labels, categories */
+  .text-overline {
+    @apply text-xs font-medium uppercase tracking-widest;
+  }
+
+  /* Legacy aliases for compatibility */
+  .heading-display { @apply text-display; }
+  .body-text { @apply text-body-lg; }
+  .text-small { @apply text-caption; }
+
+  /* Stat numbers - large with tight tracking */
+  .stat-number {
+    @apply text-5xl md:text-6xl lg:text-7xl font-normal tracking-[-0.05em];
+  }
+
+  /* ==========================================================
+   * VISUAL EFFECTS
+   * ========================================================== */
 
   /* Glass effect for navbar */
   .glass {
     @apply bg-white/95 backdrop-blur-md;
   }
 
+  /* Subtle shadow for elevated elements */
+  .shadow-subtle {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Card styles - minimal */
+  .card-minimal {
+    @apply rounded-sm border border-border bg-card overflow-hidden shadow-subtle;
+  }
+
+  .card-interactive {
+    @apply card-minimal transition-all duration-200 hover:shadow-elevated hover:border-border/80;
+  }
+
+  /* ==========================================================
+   * TRANSITIONS & HOVER EFFECTS
+   * ========================================================== */
+
   /* Smooth transitions */
   .transition-smooth {
     @apply transition-all duration-500 ease-out;
+  }
+
+  .transition-fast {
+    @apply transition-all duration-200 ease-out;
   }
 
   /* Hover scale effect - subtle like Luxterra */
@@ -113,12 +282,25 @@
   }
 
   .hover-scale:hover {
-    @apply scale-105;
+    @apply scale-[1.02];
   }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-elevated;
+  }
+
+  /* ==========================================================
+   * UI ELEMENTS
+   * ========================================================== */
 
   /* Section label - small 12px with dot indicator */
   .section-label-dot {
-    @apply flex items-center gap-2 text-xs tracking-tight;
+    @apply flex items-center gap-2 text-xs tracking-tight text-muted-foreground;
   }
 
   .section-label-dot::before {
@@ -126,40 +308,25 @@
     @apply h-1.5 w-1.5 rounded-full bg-current opacity-60;
   }
 
-  /* Large display heading - Luxterra: 58px, weight 400, letter-spacing -4.176px */
-  .heading-display {
-    @apply text-4xl md:text-5xl lg:text-[58px] font-normal tracking-[-0.072em] leading-[1.05];
-  }
-
-  /* Body text - Luxterra: 18px, letter-spacing -0.72px */
-  .body-text {
-    @apply text-lg tracking-[-0.04em] leading-relaxed;
-  }
-
-  /* Small text - 12px like labels */
-  .text-small {
-    @apply text-xs tracking-tight;
-  }
-
-  /* Stat numbers - large with tight tracking */
-  .stat-number {
-    @apply text-5xl md:text-6xl lg:text-7xl font-normal tracking-[-0.05em];
-  }
-
-  /* Card styles - 2px radius, minimal */
-  .card-minimal {
-    @apply rounded-sm overflow-hidden;
-  }
-
-  /* Pill button - 40px radius */
+  /* Pill button */
   .btn-pill {
     @apply rounded-full;
+  }
+
+  /* Divider */
+  .divider {
+    @apply h-px w-full bg-border;
   }
 
   /* Image overlay gradient */
   .image-overlay::after {
     content: '';
     @apply absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none;
+  }
+
+  /* Focus ring - consistent across all interactive elements */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
   }
 
   /* AI Search typing animation */

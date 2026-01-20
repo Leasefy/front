@@ -13,3 +13,6 @@ export * from './risk-score';
 
 // Candidate types
 export * from './candidate';
+
+// Subscription types
+export * from './subscription';

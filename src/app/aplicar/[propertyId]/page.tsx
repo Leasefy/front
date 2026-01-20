@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useState, useCallback } from 'react';
+import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 // ============================================================================
 
 interface AplicarPageProps {
-  params: Promise<{ propertyId: string }>;
+  params: Promise<{ propertyId: string }> | { propertyId: string };
 }
 
 // ============================================================================
@@ -36,8 +37,14 @@ interface AplicarPageProps {
  * Route: /aplicar/[propertyId]
  */
 export default function AplicarPage({ params }: AplicarPageProps) {
-  const resolvedParams = use(params);
+  // Handle both Promise and direct params (Next.js version compatibility)
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const searchParams = useSearchParams();
   const property = mockProperties.find((p) => p.id === resolvedParams.propertyId);
+
+  // Get pre-filled name and email from URL params (lead capture)
+  const initialName = searchParams.get('name') || '';
+  const initialEmail = searchParams.get('email') || '';
 
   // 404 handling
   if (!property) {
@@ -84,7 +91,11 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   }
 
   return (
-    <ApplicationProvider propertyId={property.id}>
+    <ApplicationProvider
+      propertyId={property.id}
+      initialName={initialName}
+      initialEmail={initialEmail}
+    >
       <WizardContent property={property} />
     </ApplicationProvider>
   );

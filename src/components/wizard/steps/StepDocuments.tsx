@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, FileText, FolderOpen } from 'lucide-react';
 import { DocumentUpload } from '@/components/wizard/DocumentUpload';
 import { useApplication } from '@/lib/context/ApplicationContext';
+import { validateDocumentsStep } from '@/lib/validation/applicationValidation';
 import type { DocumentUpload as DocumentUploadType } from '@/lib/types/application';
 
 // ============================================================================
@@ -12,11 +13,22 @@ import type { DocumentUpload as DocumentUploadType } from '@/lib/types/applicati
 
 /**
  * StepDocuments - Step 5 of application wizard
- * Collects required and optional documents for verification
+ * Collects documents with Luxterra-style UI
  */
 export function StepDocuments() {
-  const { application, updateDocuments } = useApplication();
+  const { application, updateDocuments, attemptedAdvance } = useApplication();
   const documents = application.documents;
+
+  // Validate documents
+  const validation = validateDocumentsStep(documents);
+
+  // Get error for document (only show if user tried to advance)
+  const getDocumentError = useCallback(
+    (fieldName: string): string | undefined => {
+      return attemptedAdvance ? validation.errors[fieldName] : undefined;
+    },
+    [attemptedAdvance, validation.errors]
+  );
 
   // Handle document change
   const handleDocumentChange = useCallback(
@@ -29,23 +41,16 @@ export function StepDocuments() {
     [updateDocuments]
   );
 
-  // Check if required documents are missing
-  const missingRequired =
-    !documents.idDocument?.fileName &&
-    !documents.idDocument?.file &&
-    !documents.incomeProof?.fileName &&
-    !documents.incomeProof?.file;
-
   return (
     <div className="space-y-6">
       {/* Warning about file persistence */}
-      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-sm">
+      <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
         <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm text-amber-800 font-medium">
             Importante sobre tus documentos
           </p>
-          <p className="text-xs text-amber-700 mt-1">
+          <p className="text-xs text-amber-700/80 mt-1">
             Los archivos se guardan temporalmente. Si cierras esta pagina, tendras que
             volver a subirlos.
           </p>
@@ -54,10 +59,13 @@ export function StepDocuments() {
 
       {/* Required Documents Section */}
       <section>
-        <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
-          Documentos Requeridos
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="h-5 w-5 text-black/60" />
+          <h3 className="text-sm font-medium text-black">
+            Documentos Requeridos
+          </h3>
           <span className="text-xs text-red-500">*</span>
-        </h3>
+        </div>
 
         <div className="space-y-6">
           {/* ID Document */}
@@ -69,6 +77,7 @@ export function StepDocuments() {
             value={documents.idDocument || null}
             onChange={(data) => handleDocumentChange('idDocument', data)}
             hint="Cedula de ciudadania o extranjeria por ambos lados"
+            error={getDocumentError('idDocument')}
           />
 
           {/* Income Proof */}
@@ -80,18 +89,22 @@ export function StepDocuments() {
             value={documents.incomeProof || null}
             onChange={(data) => handleDocumentChange('incomeProof', data)}
             hint="Ultimos 3 desprendibles de nomina o declaracion de renta"
+            error={getDocumentError('incomeProof')}
           />
         </div>
       </section>
 
       {/* Optional Documents Section */}
       <section>
-        <h3 className="text-sm font-medium text-gray-900 mb-4">
-          Documentos Opcionales
-          <span className="text-xs text-gray-500 font-normal ml-2">
+        <div className="flex items-center gap-2 mb-4">
+          <FolderOpen className="h-5 w-5 text-black/60" />
+          <h3 className="text-sm font-medium text-black">
+            Documentos Opcionales
+          </h3>
+          <span className="text-xs text-black/40 ml-1">
             (mejoran tu perfil)
           </span>
-        </h3>
+        </div>
 
         <div className="space-y-6">
           {/* Employment Letter */}

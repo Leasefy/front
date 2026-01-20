@@ -11,9 +11,6 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
@@ -30,7 +27,7 @@ import {
 
 /**
  * StepReview - Step 6 of application wizard
- * Shows summary of all data with edit capability and terms acceptance
+ * Luxterra-style summary with edit capability and terms acceptance
  */
 export function StepReview() {
   const {
@@ -65,15 +62,6 @@ export function StepReview() {
   const employmentRefCount = references.employmentReferences?.length || 0;
   const personalRefCount = references.personalReferences?.length || 0;
 
-  // Count documents
-  const uploadedDocs = [
-    documents.idDocument?.fileName || documents.idDocument?.file,
-    documents.incomeProof?.fileName || documents.incomeProof?.file,
-    documents.employmentLetter?.fileName || documents.employmentLetter?.file,
-    documents.bankStatements?.fileName || documents.bankStatements?.file,
-    documents.creditReport?.fileName || documents.creditReport?.file,
-  ].filter(Boolean).length;
-
   const handleTermsChange = useCallback(
     (checked: boolean) => {
       setAcceptTerms(checked);
@@ -92,13 +80,13 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-sm">
+        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
           <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-amber-800 font-medium">
               Algunos pasos estan incompletos
             </p>
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-xs text-amber-700/80 mt-1">
               Completa todos los pasos antes de enviar tu aplicacion.
             </p>
           </div>
@@ -107,21 +95,21 @@ export function StepReview() {
 
       {/* Personal Information Summary */}
       <SummaryCard
-        icon={<User className="h-5 w-5 text-blue-600" />}
+        icon={<User className="h-5 w-5 text-black/60" />}
         title="Informacion Personal"
         onEdit={() => goToStep(1)}
       >
         <div className="space-y-1.5 text-sm">
-          <p className="font-medium text-gray-900">{personal.fullName || '-'}</p>
-          <p className="text-gray-600">
+          <p className="font-medium text-black">{personal.fullName || '-'}</p>
+          <p className="text-black/60">
             {getOptionLabel(DOCUMENT_TYPES, personal.documentType)} {personal.documentNumber || ''}
           </p>
-          <p className="text-gray-600">
+          <p className="text-black/60">
             {personal.email || '-'} | {personal.phone || '-'}
           </p>
-          <p className="text-gray-600">{personal.currentAddress || '-'}</p>
+          <p className="text-black/60">{personal.currentAddress || '-'}</p>
           {personal.timeAtCurrentAddress !== undefined && personal.timeAtCurrentAddress > 0 && (
-            <p className="text-gray-500 text-xs">
+            <p className="text-black/40 text-xs">
               {personal.timeAtCurrentAddress} meses en direccion actual
             </p>
           )}
@@ -130,24 +118,24 @@ export function StepReview() {
 
       {/* Employment Summary */}
       <SummaryCard
-        icon={<Briefcase className="h-5 w-5 text-green-600" />}
+        icon={<Briefcase className="h-5 w-5 text-black/60" />}
         title="Empleo"
         onEdit={() => goToStep(2)}
       >
         <div className="space-y-1.5 text-sm">
-          <p className="font-medium text-gray-900">
+          <p className="font-medium text-black">
             {getOptionLabel(EMPLOYMENT_STATUS_OPTIONS, employment.employmentStatus)}
             {employment.contractType &&
               ` - ${getOptionLabel(CONTRACT_TYPE_OPTIONS, employment.contractType)}`}
           </p>
           {employment.companyName && (
-            <p className="text-gray-600">{employment.companyName}</p>
+            <p className="text-black/60">{employment.companyName}</p>
           )}
           {employment.position && (
-            <p className="text-gray-600">{employment.position}</p>
+            <p className="text-black/60">{employment.position}</p>
           )}
           {employment.timeAtJob !== undefined && employment.timeAtJob > 0 && (
-            <p className="text-gray-500 text-xs">
+            <p className="text-black/40 text-xs">
               {employment.timeAtJob} meses de antiguedad
             </p>
           )}
@@ -156,35 +144,35 @@ export function StepReview() {
 
       {/* Income Summary */}
       <SummaryCard
-        icon={<DollarSign className="h-5 w-5 text-emerald-600" />}
+        icon={<DollarSign className="h-5 w-5 text-black/60" />}
         title="Ingresos"
         onEdit={() => goToStep(3)}
       >
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Salario:</span>
-            <span className="font-medium">
+            <span className="text-black/60">Salario:</span>
+            <span className="font-medium text-black">
               {income.monthlySalary ? formatCurrency(income.monthlySalary) : '-'}
             </span>
           </div>
           {income.additionalIncome !== undefined && income.additionalIncome > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Adicional:</span>
-              <span className="font-medium">
+              <span className="text-black/60">Adicional:</span>
+              <span className="font-medium text-black">
                 {formatCurrency(income.additionalIncome)}
               </span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-600">Obligaciones:</span>
+            <span className="text-black/60">Obligaciones:</span>
             <span className="font-medium text-red-600">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
             </span>
           </div>
-          <div className="border-t border-gray-200 pt-2 flex justify-between">
-            <span className="text-gray-700 font-medium">Disponible:</span>
+          <div className="border-t border-black/5 pt-2 flex justify-between">
+            <span className="text-black font-medium">Disponible:</span>
             <span className="font-semibold text-emerald-600">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
@@ -194,23 +182,23 @@ export function StepReview() {
 
       {/* References Summary */}
       <SummaryCard
-        icon={<Users className="h-5 w-5 text-purple-600" />}
+        icon={<Users className="h-5 w-5 text-black/60" />}
         title="Referencias"
         onEdit={() => goToStep(4)}
       >
-        <div className="space-y-1.5 text-sm text-gray-600">
-          <p>
-            <Check className="h-4 w-4 inline mr-1 text-green-500" />
+        <div className="space-y-1.5 text-sm text-black/60">
+          <p className="flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-500" />
             {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
             {landlordCount !== 1 ? 'es' : ''}
           </p>
-          <p>
-            <Check className="h-4 w-4 inline mr-1 text-green-500" />
+          <p className="flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-500" />
             {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
             {employmentRefCount !== 1 ? 'es' : ''}
           </p>
-          <p>
-            <Check className="h-4 w-4 inline mr-1 text-green-500" />
+          <p className="flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-500" />
             {personalRefCount} referencia{personalRefCount !== 1 ? 's' : ''} personal
             {personalRefCount !== 1 ? 'es' : ''}
           </p>
@@ -219,11 +207,11 @@ export function StepReview() {
 
       {/* Documents Summary */}
       <SummaryCard
-        icon={<FileText className="h-5 w-5 text-orange-600" />}
+        icon={<FileText className="h-5 w-5 text-black/60" />}
         title="Documentos"
         onEdit={() => goToStep(5)}
       >
-        <div className="space-y-1.5 text-sm text-gray-600">
+        <div className="space-y-1.5 text-sm text-black/60">
           <DocumentStatus
             label="Documento de identidad"
             uploaded={!!documents.idDocument?.fileName || !!documents.idDocument?.file}
@@ -250,41 +238,60 @@ export function StepReview() {
       </SummaryCard>
 
       {/* Terms and Conditions */}
-      <div className="border-t border-gray-200 pt-6 space-y-4">
+      <div className="border-t border-black/5 pt-6 space-y-4">
         <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <Checkbox
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
               id="acceptTerms"
               checked={acceptTerms}
-              onCheckedChange={handleTermsChange}
+              onChange={(e) => handleTermsChange(e.target.checked)}
+              className={cn(
+                'mt-0.5 h-4 w-4 rounded-sm border border-black/20',
+                'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
+                'checked:bg-black checked:border-black',
+                'appearance-none cursor-pointer relative',
+                'after:content-[""] after:absolute after:hidden',
+                'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
+                'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
+                'checked:after:block'
+              )}
             />
-            <Label htmlFor="acceptTerms" className="text-sm text-gray-700 cursor-pointer">
+            <span className="text-sm text-black/70">
               Acepto los{' '}
-              <a href="#" className="text-blue-600 hover:underline">
+              <a href="#" className="text-black underline hover:no-underline">
                 terminos y condiciones
               </a>{' '}
               del servicio
-            </Label>
-          </div>
+            </span>
+          </label>
 
-          <div className="flex items-start gap-3">
-            <Checkbox
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
               id="authorizeVerification"
               checked={authorizeVerification}
-              onCheckedChange={handleAuthorizationChange}
+              onChange={(e) => handleAuthorizationChange(e.target.checked)}
+              className={cn(
+                'mt-0.5 h-4 w-4 rounded-sm border border-black/20',
+                'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
+                'checked:bg-black checked:border-black',
+                'appearance-none cursor-pointer relative',
+                'after:content-[""] after:absolute after:hidden',
+                'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
+                'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
+                'checked:after:block'
+              )}
             />
-            <Label
-              htmlFor="authorizeVerification"
-              className="text-sm text-gray-700 cursor-pointer"
-            >
+            <span className="text-sm text-black/70">
               Autorizo la verificacion de mis datos personales, laborales y
               crediticios
-            </Label>
-          </div>
+            </span>
+          </label>
         </div>
 
         {!acceptTerms || !authorizeVerification ? (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-black/40">
             Acepta los terminos y autoriza la verificacion para continuar.
           </p>
         ) : null}
@@ -294,7 +301,7 @@ export function StepReview() {
 }
 
 // ============================================================================
-// SummaryCard Component
+// SummaryCard Component - Luxterra style
 // ============================================================================
 
 interface SummaryCardProps {
@@ -306,22 +313,24 @@ interface SummaryCardProps {
 
 function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+    <div className="bg-white border border-black/5 rounded-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-black/5">
         <div className="flex items-center gap-2">
           {icon}
-          <h4 className="text-sm font-medium text-gray-900">{title}</h4>
+          <h4 className="text-sm font-medium text-black">{title}</h4>
         </div>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           onClick={onEdit}
-          className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          className={cn(
+            'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
+            'text-black/60 hover:text-black',
+            'rounded-sm hover:bg-black/5 transition-colors'
+          )}
         >
-          <Pencil className="h-3.5 w-3.5 mr-1" />
+          <Pencil className="h-3.5 w-3.5" />
           Editar
-        </Button>
+        </button>
       </div>
       <div className="px-4 py-3">{children}</div>
     </div>
@@ -340,11 +349,14 @@ interface DocumentStatusProps {
 
 function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
   return (
-    <p className={cn(!uploaded && required && 'text-red-600')}>
+    <p className={cn(
+      'flex items-center gap-2',
+      !uploaded && required && 'text-red-600'
+    )}>
       {uploaded ? (
-        <Check className="h-4 w-4 inline mr-1 text-green-500" />
+        <Check className="h-4 w-4 text-emerald-500" />
       ) : (
-        <span className="h-4 w-4 inline-block mr-1 text-center">
+        <span className="h-4 w-4 flex items-center justify-center text-xs">
           {required ? '!' : '-'}
         </span>
       )}
@@ -359,7 +371,7 @@ function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
 // ============================================================================
 
 export function useReviewValidation() {
-  const { application, isStepCompleted } = useApplication();
+  const { isStepCompleted } = useApplication();
 
   const allStepsComplete =
     isStepCompleted(1) &&

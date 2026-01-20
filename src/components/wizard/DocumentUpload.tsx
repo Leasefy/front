@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -27,8 +26,7 @@ type UploadState = 'idle' | 'dragging' | 'uploading' | 'success' | 'error';
 // ============================================================================
 
 /**
- * DocumentUpload - Drag and drop file upload component
- * Features: drag-drop, click to browse, validation, preview, mock upload
+ * DocumentUpload - Luxterra-style drag and drop file upload
  */
 export function DocumentUpload({
   label,
@@ -165,44 +163,42 @@ export function DocumentUpload({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-black/70">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
 
       {/* Upload zone or file preview */}
       {state === 'success' && hasFile ? (
-        // Compact file preview
-        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-sm">
+        // Compact file preview - Luxterra style
+        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-sm">
           <div className="flex-shrink-0">
-            <File className="h-5 w-5 text-green-600" />
+            <File className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-black truncate">
               {value?.fileName}
             </p>
             {value?.file && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-black/40">
                 {formatFileSize(value.file.size)}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Check className="h-4 w-4 text-green-600" />
-            <Button
+            <Check className="h-4 w-4 text-emerald-600" />
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={handleRemove}
-              className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
+              className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Eliminar</span>
-            </Button>
+            </button>
           </div>
         </div>
       ) : (
-        // Drop zone
+        // Drop zone - Luxterra style
         <div
           onClick={handleClick}
           onDrop={handleDrop}
@@ -210,10 +206,10 @@ export function DocumentUpload({
           onDragLeave={handleDragLeave}
           className={cn(
             'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
-            state === 'dragging' && 'border-blue-400 bg-blue-50',
-            state === 'uploading' && 'border-gray-300 bg-gray-50 cursor-wait',
-            state === 'error' && 'border-red-300 bg-red-50',
-            state === 'idle' && 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            state === 'dragging' && 'border-black/40 bg-black/[0.02]',
+            state === 'uploading' && 'border-black/10 bg-black/[0.02] cursor-wait',
+            state === 'error' && 'border-red-300 bg-red-50/50',
+            state === 'idle' && 'border-black/10 hover:border-black/20 hover:bg-black/[0.02]'
           )}
         >
           <input
@@ -226,42 +222,46 @@ export function DocumentUpload({
 
           {state === 'uploading' ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-              <p className="text-sm text-gray-600">Subiendo...</p>
+              <Loader2 className="h-8 w-8 text-black/40 animate-spin" />
+              <p className="text-sm text-black/60">Subiendo...</p>
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
               <AlertCircle className="h-8 w-8 text-red-500" />
               <p className="text-sm text-red-600">{displayError}</p>
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   setState('idle');
                   setUploadError('');
                 }}
+                className={cn(
+                  'inline-flex items-center px-3 py-1.5 text-xs font-medium',
+                  'rounded-sm border border-black/10 bg-white',
+                  'text-black/70 hover:text-black hover:border-black/20',
+                  'transition-colors'
+                )}
               >
                 Intentar de nuevo
-              </Button>
+              </button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
               <Upload
                 className={cn(
                   'h-8 w-8',
-                  state === 'dragging' ? 'text-blue-500' : 'text-gray-400'
+                  state === 'dragging' ? 'text-black/60' : 'text-black/30'
                 )}
               />
               <div>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium text-blue-600 hover:underline">
+                <p className="text-sm text-black/60">
+                  <span className="font-medium text-black hover:underline">
                     Haz clic para subir
                   </span>{' '}
                   o arrastra tu archivo
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-black/40 mt-1">
                   {accept
                     .split(',')
                     .map((t) => t.replace('.', '').toUpperCase())
@@ -276,7 +276,7 @@ export function DocumentUpload({
 
       {/* Hint text */}
       {hint && !displayError && state !== 'error' && (
-        <p className="text-xs text-gray-500">{hint}</p>
+        <p className="text-xs text-black/40">{hint}</p>
       )}
 
       {/* External error (from form validation) */}

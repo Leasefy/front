@@ -12,6 +12,18 @@ const nextConfig = {
         hostname: "uploadthing.com",
         pathname: "/f/**",
       },
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+      },
     ],
   },
 };

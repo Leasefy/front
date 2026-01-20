@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useMemo,
   type ReactNode,
 } from 'react';
 import {
@@ -20,7 +21,12 @@ import {
   computeTotalIncome,
   computeAvailableForRent,
   WIZARD_STEPS,
+  type ValidationResult,
 } from '@/lib/types/application';
+import {
+  validateStep,
+  getMissingFieldsList,
+} from '@/lib/validation/applicationValidation';
 
 // ============================================================================
 // Local storage key
@@ -76,6 +82,14 @@ interface ApplicationContextValue {
   // Computed values
   completedSteps: number[];
   isStepCompleted: (step: number) => boolean;
+
+  // Step validation
+  validateCurrentStep: () => ValidationResult;
+  currentStepValidation: ValidationResult;
+  currentStepMissingFields: string[];
+  attemptedAdvance: boolean;
+  setAttemptedAdvance: (value: boolean) => void;
+  tryAdvanceStep: () => boolean;
 }
 
 // ============================================================================
@@ -91,6 +105,8 @@ const ApplicationContext = createContext<ApplicationContextValue | null>(null);
 interface ApplicationProviderProps {
   propertyId: string;
   children: ReactNode;
+  initialName?: string;
+  initialEmail?: string;
 }
 
 // ============================================================================
@@ -100,14 +116,23 @@ interface ApplicationProviderProps {
 export function ApplicationProvider({
   propertyId,
   children,
+  initialName,
+  initialEmail,
 }: ApplicationProviderProps) {
-  const [application, setApplication] = useState<Application>(() =>
-    createEmptyApplication(propertyId)
-  );
+  const [application, setApplication] = useState<Application>(() => {
+    const emptyApp = createEmptyApplication(propertyId);
+    // Pre-fill name and email if provided from lead capture
+    if (initialName || initialEmail) {
+      emptyApp.personal.fullName = initialName || '';
+      emptyApp.personal.email = initialEmail || '';
+    }
+    return emptyApp;
+  });
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
+  const [attemptedAdvance, setAttemptedAdvance] = useState(false);
 
   const totalSteps = WIZARD_STEPS.length;
 
@@ -316,6 +341,47 @@ export function ApplicationProvider({
   );
 
   // ========================================================================
+  // Step validation
+  // ========================================================================
+
+  const validateCurrentStep = useCallback((): ValidationResult => {
+    return validateStep(
+      application.currentStep,
+      {
+        personal: application.personal,
+        employment: application.employment,
+        income: application.income,
+        references: application.references,
+        documents: application.documents,
+      },
+      { acceptTerms, authorizeVerification }
+    );
+  }, [application, acceptTerms, authorizeVerification]);
+
+  const currentStepValidation = useMemo(() => validateCurrentStep(), [validateCurrentStep]);
+
+  const currentStepMissingFields = useMemo(() => {
+    return getMissingFieldsList(application.currentStep, currentStepValidation.errors);
+  }, [application.currentStep, currentStepValidation.errors]);
+
+  const tryAdvanceStep = useCallback((): boolean => {
+    const validation = validateCurrentStep();
+    if (validation.isValid) {
+      setAttemptedAdvance(false);
+      nextStep();
+      return true;
+    } else {
+      setAttemptedAdvance(true);
+      return false;
+    }
+  }, [validateCurrentStep, nextStep]);
+
+  // Reset attemptedAdvance when changing steps
+  useEffect(() => {
+    setAttemptedAdvance(false);
+  }, [application.currentStep]);
+
+  // ========================================================================
   // Computed: can submit (all steps complete + terms accepted)
   // ========================================================================
 
@@ -359,6 +425,13 @@ export function ApplicationProvider({
 
     completedSteps,
     isStepCompleted,
+
+    validateCurrentStep,
+    currentStepValidation,
+    currentStepMissingFields,
+    attemptedAdvance,
+    setAttemptedAdvance,
+    tryAdvanceStep,
   };
 
   return (

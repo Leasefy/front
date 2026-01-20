@@ -9,13 +9,118 @@ import { Property, PROPERTY_AMENITIES } from '@/lib/types/property';
 const getAmenities = (ids: string[]) =>
   PROPERTY_AMENITIES.filter((a) => ids.includes(a.id));
 
-// Helper to generate placeholder image URLs
-const getImages = (propertyNum: number, count: number = 4) =>
-  Array.from(
-    { length: count },
-    (_, i) =>
-      `https://placehold.co/800x600/e2e8f0/64748b/png?text=Propiedad+${propertyNum}+Foto+${i + 1}`
-  );
+// Premium Unsplash images for luxury real estate
+const PROPERTY_IMAGES = {
+  // Bogota - Modern apartments and homes
+  'prop-001': [
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+  ],
+  'prop-002': [
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=800&h=600&fit=crop',
+  ],
+  'prop-003': [
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800&h=600&fit=crop',
+  ],
+  'prop-004': [
+    'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566752734-2a0cd66c42f7?w=800&h=600&fit=crop',
+  ],
+  'prop-005': [
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&h=600&fit=crop',
+  ],
+  // Medellin - Tropical modern
+  'prop-006': [
+    'https://images.unsplash.com/photo-1600047509358-9dc75507daeb?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=800&h=600&fit=crop',
+  ],
+  'prop-007': [
+    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop',
+  ],
+  'prop-008': [
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&h=600&fit=crop',
+  ],
+  'prop-009': [
+    'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+  ],
+  // Cali - Bright and airy
+  'prop-010': [
+    'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+  ],
+  'prop-011': [
+    'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=800&h=600&fit=crop',
+  ],
+  'prop-012': [
+    'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=800&h=600&fit=crop',
+  ],
+  // Barranquilla - Coastal luxury
+  'prop-013': [
+    'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600047509358-9dc75507daeb?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop',
+  ],
+  'prop-014': [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=600&fit=crop',
+  ],
+  // Cartagena - Colonial elegance
+  'prop-015': [
+    'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?w=800&h=600&fit=crop',
+  ],
+  'prop-016': [
+    'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600566752734-2a0cd66c42f7?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=800&h=600&fit=crop',
+  ],
+};
+
+// Get images for a property
+const getImages = (propertyId: string) => PROPERTY_IMAGES[propertyId as keyof typeof PROPERTY_IMAGES] || [
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+];
 
 export const mockProperties: Property[] = [
   // BOGOTA (5 properties)
@@ -37,9 +142,8 @@ export const mockProperties: Property[] = [
     area: 75,
     floor: 8,
     amenities: getAmenities(['parking', 'gym', 'security', 'elevator']),
-    images: getImages(1),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Chapinero+Alto',
+    images: getImages('prop-001'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
     landlordId: 'landlord-001',
     createdAt: '2025-01-15T10:00:00Z',
     updatedAt: '2025-01-15T10:00:00Z',
@@ -61,8 +165,8 @@ export const mockProperties: Property[] = [
     bathrooms: 3,
     area: 180,
     amenities: getAmenities(['parking', 'pets', 'storage', 'terrace']),
-    images: getImages(2, 5),
-    thumbnailUrl: 'https://placehold.co/800x600/e2e8f0/64748b/png?text=Usaquen',
+    images: getImages('prop-002'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
     landlordId: 'landlord-002',
     createdAt: '2025-01-10T14:30:00Z',
     updatedAt: '2025-01-12T09:00:00Z',
@@ -85,9 +189,8 @@ export const mockProperties: Property[] = [
     area: 35,
     floor: 3,
     amenities: getAmenities(['security', 'laundry']),
-    images: getImages(3, 3),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Teusaquillo',
+    images: getImages('prop-003'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
     landlordId: 'landlord-003',
     createdAt: '2025-01-08T11:00:00Z',
     updatedAt: '2025-01-08T11:00:00Z',
@@ -117,8 +220,8 @@ export const mockProperties: Property[] = [
       'terrace',
       'bbq',
     ]),
-    images: getImages(4, 5),
-    thumbnailUrl: 'https://placehold.co/800x600/e2e8f0/64748b/png?text=Rosales',
+    images: getImages('prop-004'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
     landlordId: 'landlord-001',
     createdAt: '2025-01-05T16:00:00Z',
     updatedAt: '2025-01-14T10:30:00Z',
@@ -141,9 +244,8 @@ export const mockProperties: Property[] = [
     area: 18,
     floor: 2,
     amenities: getAmenities(['furnished', 'laundry', 'security']),
-    images: getImages(5, 3),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=La+Candelaria',
+    images: getImages('prop-005'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
     landlordId: 'landlord-004',
     createdAt: '2025-01-13T08:00:00Z',
     updatedAt: '2025-01-13T08:00:00Z',
@@ -175,9 +277,8 @@ export const mockProperties: Property[] = [
       'elevator',
       'balcony',
     ]),
-    images: getImages(6),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=El+Poblado',
+    images: getImages('prop-006'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600047509358-9dc75507daeb?w=800&h=600&fit=crop',
     landlordId: 'landlord-005',
     createdAt: '2025-01-11T12:00:00Z',
     updatedAt: '2025-01-11T12:00:00Z',
@@ -199,9 +300,8 @@ export const mockProperties: Property[] = [
     bathrooms: 2,
     area: 200,
     amenities: getAmenities(['parking', 'pool', 'pets', 'terrace', 'bbq']),
-    images: getImages(7, 5),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Envigado',
+    images: getImages('prop-007'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop',
     landlordId: 'landlord-006',
     createdAt: '2025-01-09T15:00:00Z',
     updatedAt: '2025-01-09T15:00:00Z',
@@ -224,9 +324,8 @@ export const mockProperties: Property[] = [
     area: 40,
     floor: 5,
     amenities: getAmenities(['furnished', 'security', 'elevator', 'laundry']),
-    images: getImages(8, 3),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Laureles',
+    images: getImages('prop-008'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
     landlordId: 'landlord-007',
     createdAt: '2025-01-01T10:00:00Z',
     updatedAt: '2025-01-06T14:00:00Z',
@@ -249,8 +348,8 @@ export const mockProperties: Property[] = [
     area: 95,
     floor: 4,
     amenities: getAmenities(['parking', 'storage', 'security', 'elevator']),
-    images: getImages(9),
-    thumbnailUrl: 'https://placehold.co/800x600/e2e8f0/64748b/png?text=Belen',
+    images: getImages('prop-009'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=800&h=600&fit=crop',
     landlordId: 'landlord-005',
     createdAt: '2025-01-07T09:30:00Z',
     updatedAt: '2025-01-07T09:30:00Z',
@@ -282,9 +381,8 @@ export const mockProperties: Property[] = [
       'elevator',
       'balcony',
     ]),
-    images: getImages(10),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Ciudad+Jardin',
+    images: getImages('prop-010'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
     landlordId: 'landlord-008',
     createdAt: '2025-01-12T11:00:00Z',
     updatedAt: '2025-01-12T11:00:00Z',
@@ -306,8 +404,8 @@ export const mockProperties: Property[] = [
     bathrooms: 3,
     area: 250,
     amenities: getAmenities(['parking', 'pool', 'pets', 'terrace', 'bbq']),
-    images: getImages(11, 5),
-    thumbnailUrl: 'https://placehold.co/800x600/e2e8f0/64748b/png?text=Pance',
+    images: getImages('prop-011'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&h=600&fit=crop',
     landlordId: 'landlord-009',
     createdAt: '2025-01-04T13:00:00Z',
     updatedAt: '2025-01-04T13:00:00Z',
@@ -330,9 +428,8 @@ export const mockProperties: Property[] = [
     area: 28,
     floor: 2,
     amenities: getAmenities(['furnished', 'security', 'laundry']),
-    images: getImages(12, 3),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Melendez',
+    images: getImages('prop-012'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=800&h=600&fit=crop',
     landlordId: 'landlord-010',
     createdAt: '2025-01-14T08:00:00Z',
     updatedAt: '2025-01-15T16:00:00Z',
@@ -364,9 +461,8 @@ export const mockProperties: Property[] = [
       'elevator',
       'terrace',
     ]),
-    images: getImages(13, 5),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Buenavista',
+    images: getImages('prop-013'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=800&h=600&fit=crop',
     landlordId: 'landlord-011',
     createdAt: '2025-01-03T10:00:00Z',
     updatedAt: '2025-01-03T10:00:00Z',
@@ -388,9 +484,8 @@ export const mockProperties: Property[] = [
     bathrooms: 2,
     area: 180,
     amenities: getAmenities(['parking', 'pets', 'terrace']),
-    images: getImages(14),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=El+Prado',
+    images: getImages('prop-014'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
     landlordId: 'landlord-012',
     createdAt: '2025-01-02T14:00:00Z',
     updatedAt: '2025-01-02T14:00:00Z',
@@ -422,9 +517,8 @@ export const mockProperties: Property[] = [
       'elevator',
       'balcony',
     ]),
-    images: getImages(15, 5),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Bocagrande',
+    images: getImages('prop-015'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=800&h=600&fit=crop',
     landlordId: 'landlord-013',
     createdAt: '2025-01-06T12:00:00Z',
     updatedAt: '2025-01-06T12:00:00Z',
@@ -446,9 +540,8 @@ export const mockProperties: Property[] = [
     bathrooms: 3,
     area: 280,
     amenities: getAmenities(['terrace', 'furnished']),
-    images: getImages(16, 5),
-    thumbnailUrl:
-      'https://placehold.co/800x600/e2e8f0/64748b/png?text=Centro+Historico',
+    images: getImages('prop-016'),
+    thumbnailUrl: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&h=600&fit=crop',
     landlordId: 'landlord-014',
     createdAt: '2024-12-28T10:00:00Z',
     updatedAt: '2025-01-10T11:00:00Z',

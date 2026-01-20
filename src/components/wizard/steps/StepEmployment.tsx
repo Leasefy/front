@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+  Briefcase,
+  Building2,
+  Factory,
+  FileText,
+  Clock,
+  Phone,
+  MapPin,
+} from 'lucide-react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   EMPLOYMENT_STATUS_OPTIONS,
@@ -22,6 +21,11 @@ import {
   validateEmploymentStep,
   requiresJobDetails,
 } from '@/lib/validation/applicationValidation';
+import {
+  FormField,
+  LightInput,
+  LightSelect,
+} from '../WizardFormField';
 
 // ============================================================================
 // Component
@@ -29,11 +33,10 @@ import {
 
 /**
  * StepEmployment - Step 2 of application wizard
- * Collects employment information for stability assessment
- * Shows conditional fields based on employment status
+ * Collects employment information with Luxterra-style inputs
  */
 export function StepEmployment() {
-  const { application, updateEmployment } = useApplication();
+  const { application, updateEmployment, attemptedAdvance } = useApplication();
   const employment = application.employment;
 
   // Track which fields have been touched for error display
@@ -50,12 +53,12 @@ export function StepEmployment() {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
   }, []);
 
-  // Get error message for a field (only if touched)
+  // Get error message for a field (show if touched OR if user attempted to advance)
   const getError = useCallback(
     (fieldName: string): string | undefined => {
-      return touched[fieldName] ? validation.errors[fieldName] : undefined;
+      return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors]
+    [touched, validation.errors, attemptedAdvance]
   );
 
   // Handle input changes
@@ -101,30 +104,21 @@ export function StepEmployment() {
         error={getError('employmentStatus')}
         required
       >
-        <Select
+        <LightSelect
+          id="employmentStatus"
           value={employment.employmentStatus || ''}
-          onValueChange={handleStatusChange}
-        >
-          <SelectTrigger
-            id="employmentStatus"
-            className={cn(getError('employmentStatus') && 'border-red-500')}
-            onBlur={() => handleBlur('employmentStatus')}
-          >
-            <SelectValue placeholder="Selecciona tu situacion" />
-          </SelectTrigger>
-          <SelectContent>
-            {EMPLOYMENT_STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status.value} value={status.value}>
-                {status.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={handleStatusChange}
+          onBlur={() => handleBlur('employmentStatus')}
+          options={EMPLOYMENT_STATUS_OPTIONS}
+          placeholder="Selecciona tu situacion"
+          icon={<Briefcase className="h-4 w-4" />}
+          hasError={!!getError('employmentStatus')}
+        />
       </FormField>
 
       {/* Status-specific messages */}
       {employment.employmentStatus === 'unemployed' && (
-        <div className="p-4 bg-amber-50 border border-amber-100 rounded-sm">
+        <div className="p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
           <p className="text-sm text-amber-800">
             Estar desempleado no descalifica tu aplicacion. Podras incluir otras
             fuentes de ingreso en el siguiente paso.
@@ -133,7 +127,7 @@ export function StepEmployment() {
       )}
 
       {employment.employmentStatus === 'retired' && (
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-sm">
+        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
           <p className="text-sm text-blue-800">
             Como pensionado, tu pension mensual se registrara en el paso de ingresos.
           </p>
@@ -141,7 +135,7 @@ export function StepEmployment() {
       )}
 
       {employment.employmentStatus === 'student' && (
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-sm">
+        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
           <p className="text-sm text-blue-800">
             Si eres estudiante, puedes registrar ingresos de trabajo de medio tiempo
             o apoyo familiar en el siguiente paso.
@@ -152,8 +146,8 @@ export function StepEmployment() {
       {/* Job Details Section - Only shown for employed/self-employed */}
       {showJobDetails && (
         <>
-          <div className="border-t border-gray-100 pt-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">
+          <div className="border-t border-black/5 pt-6">
+            <h3 className="text-sm font-medium text-black mb-4">
               Informacion del empleo
             </h3>
           </div>
@@ -165,13 +159,14 @@ export function StepEmployment() {
             error={getError('companyName')}
             required
           >
-            <Input
+            <LightInput
               id="companyName"
               placeholder="Empresa donde trabajas"
               value={employment.companyName || ''}
               onChange={(e) => handleInputChange('companyName', e.target.value)}
               onBlur={() => handleBlur('companyName')}
-              className={cn(getError('companyName') && 'border-red-500')}
+              icon={<Building2 className="h-4 w-4" />}
+              hasError={!!getError('companyName')}
             />
           </FormField>
 
@@ -183,25 +178,16 @@ export function StepEmployment() {
               error={getError('industry')}
               required
             >
-              <Select
+              <LightSelect
+                id="industry"
                 value={employment.industry || ''}
-                onValueChange={(value) => handleInputChange('industry', value)}
-              >
-                <SelectTrigger
-                  id="industry"
-                  className={cn(getError('industry') && 'border-red-500')}
-                  onBlur={() => handleBlur('industry')}
-                >
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INDUSTRY_OPTIONS.map((ind) => (
-                    <SelectItem key={ind.value} value={ind.value}>
-                      {ind.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => handleInputChange('industry', value)}
+                onBlur={() => handleBlur('industry')}
+                options={INDUSTRY_OPTIONS}
+                placeholder="Seleccionar"
+                icon={<Factory className="h-4 w-4" />}
+                hasError={!!getError('industry')}
+              />
             </FormField>
 
             <FormField
@@ -210,13 +196,14 @@ export function StepEmployment() {
               error={getError('position')}
               required
             >
-              <Input
+              <LightInput
                 id="position"
                 placeholder="Tu cargo actual"
                 value={employment.position || ''}
                 onChange={(e) => handleInputChange('position', e.target.value)}
                 onBlur={() => handleBlur('position')}
-                className={cn(getError('position') && 'border-red-500')}
+                icon={<FileText className="h-4 w-4" />}
+                hasError={!!getError('position')}
               />
             </FormField>
           </div>
@@ -230,25 +217,15 @@ export function StepEmployment() {
                 error={getError('contractType')}
                 required
               >
-                <Select
+                <LightSelect
+                  id="contractType"
                   value={employment.contractType || ''}
-                  onValueChange={(value) => handleInputChange('contractType', value)}
-                >
-                  <SelectTrigger
-                    id="contractType"
-                    className={cn(getError('contractType') && 'border-red-500')}
-                    onBlur={() => handleBlur('contractType')}
-                  >
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTRACT_TYPE_OPTIONS.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => handleInputChange('contractType', value)}
+                  onBlur={() => handleBlur('contractType')}
+                  options={CONTRACT_TYPE_OPTIONS}
+                  placeholder="Seleccionar"
+                  hasError={!!getError('contractType')}
+                />
               </FormField>
             )}
 
@@ -258,7 +235,7 @@ export function StepEmployment() {
               error={getError('timeAtJob')}
               hint="En meses"
             >
-              <Input
+              <LightInput
                 id="timeAtJob"
                 type="number"
                 min={0}
@@ -271,20 +248,19 @@ export function StepEmployment() {
                   )
                 }
                 onBlur={() => handleBlur('timeAtJob')}
-                className={cn(
-                  'max-w-[120px]',
-                  getError('timeAtJob') && 'border-red-500'
-                )}
+                icon={<Clock className="h-4 w-4" />}
+                hasError={!!getError('timeAtJob')}
+                className="max-w-[180px]"
               />
             </FormField>
           </div>
 
           {/* Employer Contact - Optional */}
-          <div className="border-t border-gray-100 pt-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
+          <div className="border-t border-black/5 pt-6">
+            <h3 className="text-sm font-medium text-black mb-1">
               Contacto del empleador
             </h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-black/40 mb-4">
               Opcional - para verificacion de empleo
             </p>
           </div>
@@ -295,7 +271,7 @@ export function StepEmployment() {
               htmlFor="employerPhone"
               error={getError('employerPhone')}
             >
-              <Input
+              <LightInput
                 id="employerPhone"
                 type="tel"
                 placeholder="3XX XXX XXXX"
@@ -307,7 +283,8 @@ export function StepEmployment() {
                   )
                 }
                 onBlur={() => handleBlur('employerPhone')}
-                className={cn(getError('employerPhone') && 'border-red-500')}
+                icon={<Phone className="h-4 w-4" />}
+                hasError={!!getError('employerPhone')}
               />
             </FormField>
 
@@ -316,52 +293,19 @@ export function StepEmployment() {
               htmlFor="employerAddress"
               error={getError('employerAddress')}
             >
-              <Input
+              <LightInput
                 id="employerAddress"
                 placeholder="Ciudad, direccion"
                 value={employment.employerAddress || ''}
                 onChange={(e) => handleInputChange('employerAddress', e.target.value)}
                 onBlur={() => handleBlur('employerAddress')}
-                className={cn(getError('employerAddress') && 'border-red-500')}
+                icon={<MapPin className="h-4 w-4" />}
+                hasError={!!getError('employerAddress')}
               />
             </FormField>
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-// ============================================================================
-// FormField Helper Component
-// ============================================================================
-
-interface FormFieldProps {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}
-
-function FormField({
-  label,
-  htmlFor,
-  error,
-  hint,
-  required,
-  children,
-}: FormFieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      {children}
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
-      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

@@ -279,6 +279,207 @@ export function validateIncomeStep(data: Partial<IncomeInfo>): ValidationResult 
 }
 
 // ============================================================================
+// Step 4: References Validation
+// ============================================================================
+
+import type { ReferenceInfo, PreviousLandlordReference, EmploymentReference, PersonalReference } from '@/lib/types/application';
+
+function isValidLandlordRef(ref: Partial<PreviousLandlordReference>): boolean {
+  return !!(
+    ref.name && ref.name.trim().length >= 2 &&
+    ref.phone && isValidColombianPhone(ref.phone) &&
+    ref.address && ref.address.trim().length >= 5 &&
+    ref.duration && ref.duration > 0
+  );
+}
+
+function isValidEmploymentRef(ref: Partial<EmploymentReference>): boolean {
+  return !!(
+    ref.name && ref.name.trim().length >= 2 &&
+    ref.phone && isValidColombianPhone(ref.phone) &&
+    ref.company && ref.company.trim().length >= 2 &&
+    ref.relationship && ref.relationship.trim().length >= 2
+  );
+}
+
+function isValidPersonalRef(ref: Partial<PersonalReference>): boolean {
+  return !!(
+    ref.name && ref.name.trim().length >= 2 &&
+    ref.phone && isValidColombianPhone(ref.phone) &&
+    ref.relationship && ref.relationship.trim().length >= 2
+  );
+}
+
+export function validateReferencesStep(data: Partial<ReferenceInfo>): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  // Check landlord references (min 1)
+  const landlords = data.previousLandlords || [];
+  if (landlords.length === 0) {
+    errors.previousLandlords = 'Agrega al menos un arrendador anterior';
+  } else {
+    const invalidLandlords = landlords.filter((ref, idx) => !isValidLandlordRef(ref));
+    if (invalidLandlords.length > 0) {
+      errors.previousLandlords = 'Completa todos los campos de los arrendadores anteriores';
+    }
+  }
+
+  // Check employment references (min 1)
+  const employmentRefs = data.employmentReferences || [];
+  if (employmentRefs.length === 0) {
+    errors.employmentReferences = 'Agrega al menos una referencia laboral';
+  } else {
+    const invalidEmployment = employmentRefs.filter((ref, idx) => !isValidEmploymentRef(ref));
+    if (invalidEmployment.length > 0) {
+      errors.employmentReferences = 'Completa todos los campos de las referencias laborales';
+    }
+  }
+
+  // Check personal references (min 1)
+  const personalRefs = data.personalReferences || [];
+  if (personalRefs.length === 0) {
+    errors.personalReferences = 'Agrega al menos una referencia personal';
+  } else {
+    const invalidPersonal = personalRefs.filter((ref, idx) => !isValidPersonalRef(ref));
+    if (invalidPersonal.length > 0) {
+      errors.personalReferences = 'Completa todos los campos de las referencias personales';
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+// ============================================================================
+// Step 5: Documents Validation
+// ============================================================================
+
+import type { DocumentInfo, DocumentUpload } from '@/lib/types/application';
+
+function hasDocument(doc: DocumentUpload | null | undefined): boolean {
+  return !!(doc && (doc.file || doc.fileName));
+}
+
+export function validateDocumentsStep(data: Partial<DocumentInfo>): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  // ID Document - required
+  if (!hasDocument(data.idDocument)) {
+    errors.idDocument = 'Documento de identidad es requerido';
+  }
+
+  // Income proof - required
+  if (!hasDocument(data.incomeProof)) {
+    errors.incomeProof = 'Comprobante de ingresos es requerido';
+  }
+
+  // Optional documents don't need validation
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+// ============================================================================
+// Step 6: Review Validation (terms acceptance)
+// ============================================================================
+
+export function validateReviewStep(acceptTerms: boolean, authorizeVerification: boolean): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  if (!acceptTerms) {
+    errors.acceptTerms = 'Debes aceptar los terminos y condiciones';
+  }
+
+  if (!authorizeVerification) {
+    errors.authorizeVerification = 'Debes autorizar la verificacion de datos';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+// ============================================================================
+// Master validation function for any step
+// ============================================================================
+
+export function validateStep(
+  step: number,
+  data: {
+    personal: Partial<PersonalInfo>;
+    employment: Partial<EmploymentInfo>;
+    income: Partial<IncomeInfo>;
+    references: Partial<ReferenceInfo>;
+    documents: Partial<DocumentInfo>;
+  },
+  terms?: { acceptTerms: boolean; authorizeVerification: boolean }
+): ValidationResult {
+  switch (step) {
+    case 1:
+      return validatePersonalStep(data.personal);
+    case 2:
+      return validateEmploymentStep(data.employment);
+    case 3:
+      return validateIncomeStep(data.income);
+    case 4:
+      return validateReferencesStep(data.references);
+    case 5:
+      return validateDocumentsStep(data.documents);
+    case 6:
+      return terms
+        ? validateReviewStep(terms.acceptTerms, terms.authorizeVerification)
+        : { isValid: false, errors: { general: 'Faltan terminos' } };
+    default:
+      return { isValid: true, errors: {} };
+  }
+}
+
+// ============================================================================
+// Get missing fields list for user-friendly display
+// ============================================================================
+
+export function getMissingFieldsList(step: number, errors: Record<string, string>): string[] {
+  const fieldLabels: Record<string, string> = {
+    // Personal
+    fullName: 'Nombre completo',
+    documentType: 'Tipo de documento',
+    documentNumber: 'Numero de documento',
+    dateOfBirth: 'Fecha de nacimiento',
+    phone: 'Telefono celular',
+    email: 'Email',
+    currentAddress: 'Direccion actual',
+    maritalStatus: 'Estado civil',
+    // Employment
+    employmentStatus: 'Situacion laboral',
+    companyName: 'Nombre de la empresa',
+    industry: 'Industria',
+    position: 'Cargo',
+    contractType: 'Tipo de contrato',
+    // Income
+    monthlySalary: 'Salario mensual',
+    additionalIncomeSource: 'Fuente de ingreso adicional',
+    monthlyObligations: 'Obligaciones mensuales',
+    // References
+    previousLandlords: 'Arrendadores anteriores',
+    employmentReferences: 'Referencias laborales',
+    personalReferences: 'Referencias personales',
+    // Documents
+    idDocument: 'Documento de identidad',
+    incomeProof: 'Comprobante de ingresos',
+    // Review
+    acceptTerms: 'Terminos y condiciones',
+    authorizeVerification: 'Autorizacion de verificacion',
+  };
+
+  return Object.keys(errors).map(key => fieldLabels[key] || key);
+}
+
+// ============================================================================
 // Combined validation for step completion check
 // ============================================================================
 

@@ -1,28 +1,18 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { User, FileText, Calendar, Phone, MapPin, Users, Heart, Mail } from 'lucide-react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   DOCUMENT_TYPES,
   MARITAL_STATUS_OPTIONS,
 } from '@/lib/types/application';
+import { validatePersonalStep } from '@/lib/validation/applicationValidation';
 import {
-  validatePersonalStep,
-  isValidColombianPhone,
-  isValidEmail,
-  isAdult,
-  isValidDocument,
-} from '@/lib/validation/applicationValidation';
+  FormField,
+  LightInput,
+  LightSelect,
+} from '../WizardFormField';
 
 // ============================================================================
 // Component
@@ -30,10 +20,10 @@ import {
 
 /**
  * StepPersonal - Step 1 of application wizard
- * Collects personal information for identity and stability assessment
+ * Collects personal information with Luxterra-style inputs
  */
 export function StepPersonal() {
-  const { application, updatePersonal } = useApplication();
+  const { application, updatePersonal, attemptedAdvance } = useApplication();
   const personal = application.personal;
 
   // Track which fields have been touched for error display
@@ -47,12 +37,12 @@ export function StepPersonal() {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
   }, []);
 
-  // Get error message for a field (only if touched)
+  // Get error message for a field (show if touched OR if user attempted to advance)
   const getError = useCallback(
     (fieldName: string): string | undefined => {
-      return touched[fieldName] ? validation.errors[fieldName] : undefined;
+      return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors]
+    [touched, validation.errors, attemptedAdvance]
   );
 
   // Handle text input changes
@@ -72,13 +62,33 @@ export function StepPersonal() {
         error={getError('fullName')}
         required
       >
-        <Input
+        <LightInput
           id="fullName"
           placeholder="Como aparece en tu documento"
           value={personal.fullName || ''}
           onChange={(e) => handleInputChange('fullName', e.target.value)}
           onBlur={() => handleBlur('fullName')}
-          className={cn(getError('fullName') && 'border-red-500')}
+          icon={<User className="h-4 w-4" />}
+          hasError={!!getError('fullName')}
+        />
+      </FormField>
+
+      {/* Email */}
+      <FormField
+        label="Correo electronico"
+        htmlFor="email"
+        error={getError('email')}
+        required
+      >
+        <LightInput
+          id="email"
+          type="email"
+          placeholder="tu@email.com"
+          value={personal.email || ''}
+          onChange={(e) => handleInputChange('email', e.target.value)}
+          onBlur={() => handleBlur('email')}
+          icon={<Mail className="h-4 w-4" />}
+          hasError={!!getError('email')}
         />
       </FormField>
 
@@ -90,25 +100,16 @@ export function StepPersonal() {
           error={getError('documentType')}
           required
         >
-          <Select
+          <LightSelect
+            id="documentType"
             value={personal.documentType || ''}
-            onValueChange={(value) => handleInputChange('documentType', value)}
-          >
-            <SelectTrigger
-              id="documentType"
-              className={cn(getError('documentType') && 'border-red-500')}
-              onBlur={() => handleBlur('documentType')}
-            >
-              <SelectValue placeholder="Seleccionar" />
-            </SelectTrigger>
-            <SelectContent>
-              {DOCUMENT_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(value) => handleInputChange('documentType', value)}
+            onBlur={() => handleBlur('documentType')}
+            options={DOCUMENT_TYPES}
+            placeholder="Seleccionar tipo"
+            icon={<FileText className="h-4 w-4" />}
+            hasError={!!getError('documentType')}
+          />
         </FormField>
 
         <FormField
@@ -117,7 +118,7 @@ export function StepPersonal() {
           error={getError('documentNumber')}
           required
         >
-          <Input
+          <LightInput
             id="documentNumber"
             placeholder="Sin puntos ni guiones"
             value={personal.documentNumber || ''}
@@ -125,7 +126,8 @@ export function StepPersonal() {
               handleInputChange('documentNumber', e.target.value.replace(/\D/g, ''))
             }
             onBlur={() => handleBlur('documentNumber')}
-            className={cn(getError('documentNumber') && 'border-red-500')}
+            icon={<FileText className="h-4 w-4" />}
+            hasError={!!getError('documentNumber')}
           />
         </FormField>
       </div>
@@ -138,13 +140,14 @@ export function StepPersonal() {
           error={getError('dateOfBirth')}
           required
         >
-          <Input
+          <LightInput
             id="dateOfBirth"
             type="date"
             value={personal.dateOfBirth || ''}
             onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
             onBlur={() => handleBlur('dateOfBirth')}
-            className={cn(getError('dateOfBirth') && 'border-red-500')}
+            icon={<Calendar className="h-4 w-4" />}
+            hasError={!!getError('dateOfBirth')}
             max={new Date().toISOString().split('T')[0]}
           />
         </FormField>
@@ -155,7 +158,7 @@ export function StepPersonal() {
           error={getError('phone')}
           required
         >
-          <Input
+          <LightInput
             id="phone"
             type="tel"
             placeholder="3XX XXX XXXX"
@@ -164,28 +167,11 @@ export function StepPersonal() {
               handleInputChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))
             }
             onBlur={() => handleBlur('phone')}
-            className={cn(getError('phone') && 'border-red-500')}
+            icon={<Phone className="h-4 w-4" />}
+            hasError={!!getError('phone')}
           />
         </FormField>
       </div>
-
-      {/* Email */}
-      <FormField
-        label="Correo electronico"
-        htmlFor="email"
-        error={getError('email')}
-        required
-      >
-        <Input
-          id="email"
-          type="email"
-          placeholder="tu@email.com"
-          value={personal.email || ''}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          onBlur={() => handleBlur('email')}
-          className={cn(getError('email') && 'border-red-500')}
-        />
-      </FormField>
 
       {/* Current Address */}
       <FormField
@@ -194,13 +180,14 @@ export function StepPersonal() {
         error={getError('currentAddress')}
         required
       >
-        <Input
+        <LightInput
           id="currentAddress"
           placeholder="Calle, numero, barrio, ciudad"
           value={personal.currentAddress || ''}
           onChange={(e) => handleInputChange('currentAddress', e.target.value)}
           onBlur={() => handleBlur('currentAddress')}
-          className={cn(getError('currentAddress') && 'border-red-500')}
+          icon={<MapPin className="h-4 w-4" />}
+          hasError={!!getError('currentAddress')}
         />
       </FormField>
 
@@ -211,7 +198,7 @@ export function StepPersonal() {
         error={getError('timeAtCurrentAddress')}
         hint="En meses"
       >
-        <Input
+        <LightInput
           id="timeAtCurrentAddress"
           type="number"
           min={0}
@@ -224,10 +211,8 @@ export function StepPersonal() {
             )
           }
           onBlur={() => handleBlur('timeAtCurrentAddress')}
-          className={cn(
-            'max-w-[120px]',
-            getError('timeAtCurrentAddress') && 'border-red-500'
-          )}
+          hasError={!!getError('timeAtCurrentAddress')}
+          className="max-w-[180px]"
         />
       </FormField>
 
@@ -239,34 +224,25 @@ export function StepPersonal() {
           error={getError('maritalStatus')}
           required
         >
-          <Select
+          <LightSelect
+            id="maritalStatus"
             value={personal.maritalStatus || ''}
-            onValueChange={(value) => handleInputChange('maritalStatus', value)}
-          >
-            <SelectTrigger
-              id="maritalStatus"
-              className={cn(getError('maritalStatus') && 'border-red-500')}
-              onBlur={() => handleBlur('maritalStatus')}
-            >
-              <SelectValue placeholder="Seleccionar" />
-            </SelectTrigger>
-            <SelectContent>
-              {MARITAL_STATUS_OPTIONS.map((status) => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(value) => handleInputChange('maritalStatus', value)}
+            onBlur={() => handleBlur('maritalStatus')}
+            options={MARITAL_STATUS_OPTIONS}
+            placeholder="Seleccionar"
+            icon={<Heart className="h-4 w-4" />}
+            hasError={!!getError('maritalStatus')}
+          />
         </FormField>
 
         <FormField
           label="Numero de dependientes"
           htmlFor="dependents"
           error={getError('dependents')}
-          hint="Personas que dependen de ti economicamente"
+          hint="Personas que dependen de ti"
         >
-          <Input
+          <LightInput
             id="dependents"
             type="number"
             min={0}
@@ -280,48 +256,11 @@ export function StepPersonal() {
               )
             }
             onBlur={() => handleBlur('dependents')}
-            className={cn('max-w-[120px]', getError('dependents') && 'border-red-500')}
+            icon={<Users className="h-4 w-4" />}
+            hasError={!!getError('dependents')}
           />
         </FormField>
       </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// FormField Helper Component
-// ============================================================================
-
-interface FormFieldProps {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}
-
-function FormField({
-  label,
-  htmlFor,
-  error,
-  hint,
-  required,
-  children,
-}: FormFieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      {children}
-      {hint && !error && (
-        <p className="text-xs text-gray-500">{hint}</p>
-      )}
-      {error && (
-        <p className="text-xs text-red-500">{error}</p>
-      )}
     </div>
   );
 }

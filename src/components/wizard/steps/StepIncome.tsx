@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { DollarSign, Wallet, CreditCard, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   validateIncomeStep,
-  parseCurrency,
   formatCurrencyInput,
 } from '@/lib/validation/applicationValidation';
+import {
+  FormField,
+  LightInput,
+} from '../WizardFormField';
 
 // ============================================================================
 // Component
@@ -19,11 +20,10 @@ import {
 
 /**
  * StepIncome - Step 3 of application wizard
- * Collects income and obligations for payment capacity assessment
- * Shows computed capacity summary in real-time
+ * Collects income and obligations with Luxterra-style inputs
  */
 export function StepIncome() {
-  const { application, updateIncome } = useApplication();
+  const { application, updateIncome, attemptedAdvance } = useApplication();
   const income = application.income;
 
   // Track which fields have been touched for error display
@@ -44,12 +44,12 @@ export function StepIncome() {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
   }, []);
 
-  // Get error message for a field (only if touched)
+  // Get error message for a field (show if touched OR if user attempted to advance)
   const getError = useCallback(
     (fieldName: string): string | undefined => {
-      return touched[fieldName] ? validation.errors[fieldName] : undefined;
+      return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors]
+    [touched, validation.errors, attemptedAdvance]
   );
 
   // Handle currency input changes
@@ -109,11 +109,11 @@ export function StepIncome() {
     return 'good';
   }, [availableForRent, recommendedRent]);
 
-  const capacityColors = {
-    insufficient: 'bg-red-50 border-red-100 text-red-800',
-    limited: 'bg-amber-50 border-amber-100 text-amber-800',
-    moderate: 'bg-blue-50 border-blue-100 text-blue-800',
-    good: 'bg-green-50 border-green-100 text-green-800',
+  const capacityStyles = {
+    insufficient: 'bg-red-50/50 border-red-200/50 text-red-900',
+    limited: 'bg-amber-50/50 border-amber-200/50 text-amber-900',
+    moderate: 'bg-blue-50/50 border-blue-200/50 text-blue-900',
+    good: 'bg-emerald-50/50 border-emerald-200/50 text-emerald-900',
   };
 
   return (
@@ -126,21 +126,15 @@ export function StepIncome() {
         hint="Tu salario base mensual antes de deducciones"
         required
       >
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-            $
-          </span>
-          <Input
-            id="monthlySalary"
-            type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={displayValues.monthlySalary}
-            onChange={(e) => handleCurrencyChange('monthlySalary', e.target.value)}
-            onBlur={() => handleCurrencyBlur('monthlySalary')}
-            className={cn('pl-7', getError('monthlySalary') && 'border-red-500')}
-          />
-        </div>
+        <CurrencyInput
+          id="monthlySalary"
+          placeholder="0"
+          value={displayValues.monthlySalary}
+          onChange={(e) => handleCurrencyChange('monthlySalary', e.target.value)}
+          onBlur={() => handleCurrencyBlur('monthlySalary')}
+          hasError={!!getError('monthlySalary')}
+          icon={<Wallet className="h-4 w-4" />}
+        />
       </FormField>
 
       {/* Additional Income */}
@@ -150,21 +144,15 @@ export function StepIncome() {
         error={getError('additionalIncome')}
         hint="Arriendos, inversiones, trabajo freelance, etc."
       >
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-            $
-          </span>
-          <Input
-            id="additionalIncome"
-            type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={displayValues.additionalIncome}
-            onChange={(e) => handleCurrencyChange('additionalIncome', e.target.value)}
-            onBlur={() => handleCurrencyBlur('additionalIncome')}
-            className={cn('pl-7', getError('additionalIncome') && 'border-red-500')}
-          />
-        </div>
+        <CurrencyInput
+          id="additionalIncome"
+          placeholder="0"
+          value={displayValues.additionalIncome}
+          onChange={(e) => handleCurrencyChange('additionalIncome', e.target.value)}
+          onBlur={() => handleCurrencyBlur('additionalIncome')}
+          hasError={!!getError('additionalIncome')}
+          icon={<PiggyBank className="h-4 w-4" />}
+        />
       </FormField>
 
       {/* Additional Income Source - Required if additional income > 0 */}
@@ -175,13 +163,13 @@ export function StepIncome() {
           error={getError('additionalIncomeSource')}
           required
         >
-          <Input
+          <LightInput
             id="additionalIncomeSource"
             placeholder="Ej: Arriendo de propiedad, trabajo freelance"
             value={income.additionalIncomeSource || ''}
             onChange={(e) => handleSourceChange(e.target.value)}
             onBlur={() => handleBlur('additionalIncomeSource')}
-            className={cn(getError('additionalIncomeSource') && 'border-red-500')}
+            hasError={!!getError('additionalIncomeSource')}
           />
         </FormField>
       )}
@@ -194,131 +182,148 @@ export function StepIncome() {
         hint="Creditos, deudas, cuotas de vehiculo, otros arriendos, pensiones alimenticias"
         required
       >
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-            $
-          </span>
-          <Input
-            id="monthlyObligations"
-            type="text"
-            inputMode="numeric"
-            placeholder="0"
-            value={displayValues.monthlyObligations}
-            onChange={(e) => handleCurrencyChange('monthlyObligations', e.target.value)}
-            onBlur={() => handleCurrencyBlur('monthlyObligations')}
-            className={cn('pl-7', getError('monthlyObligations') && 'border-red-500')}
-          />
-        </div>
+        <CurrencyInput
+          id="monthlyObligations"
+          placeholder="0"
+          value={displayValues.monthlyObligations}
+          onChange={(e) => handleCurrencyChange('monthlyObligations', e.target.value)}
+          onBlur={() => handleCurrencyBlur('monthlyObligations')}
+          hasError={!!getError('monthlyObligations')}
+          icon={<CreditCard className="h-4 w-4" />}
+        />
       </FormField>
 
       {/* Capacity Summary Card */}
       {totalIncome > 0 && (
-        <Card className={cn('mt-8 border', capacityColors[capacityLevel])}>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-              <span className="text-lg">📊</span>
-              Tu capacidad de pago
-            </h3>
+        <div className={cn(
+          'mt-8 p-5 border rounded-sm',
+          capacityStyles[capacityLevel]
+        )}>
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Tu capacidad de pago
+          </h3>
 
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span>Ingreso total mensual:</span>
-                <span className="font-medium">{formatCurrency(totalIncome)}</span>
-              </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="opacity-80">Ingreso total mensual:</span>
+              <span className="font-medium">{formatCurrency(totalIncome)}</span>
+            </div>
 
-              <div className="flex justify-between">
-                <span>Obligaciones mensuales:</span>
-                <span className="font-medium text-red-600">
-                  - {formatCurrency(obligations)}
+            <div className="flex justify-between">
+              <span className="opacity-80">Obligaciones mensuales:</span>
+              <span className="font-medium">- {formatCurrency(obligations)}</span>
+            </div>
+
+            <div className="border-t border-current/10 pt-2 flex justify-between">
+              <span>Disponible:</span>
+              <span className="font-semibold">{formatCurrency(availableForRent)}</span>
+            </div>
+          </div>
+
+          {/* Recommended Rent */}
+          {availableForRent > 0 && (
+            <div className="mt-4 pt-4 border-t border-current/10">
+              <p className="text-xs opacity-70 mb-2">
+                Regla del 30%: El arriendo no deberia superar el 30% de tu
+                disponibilidad
+              </p>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Arriendo recomendado:</span>
+                <span className="text-lg font-bold">
+                  {formatCurrency(recommendedRent)}
                 </span>
               </div>
-
-              <div className="border-t border-current/20 pt-2 flex justify-between">
-                <span>Disponible:</span>
-                <span className="font-semibold">{formatCurrency(availableForRent)}</span>
-              </div>
             </div>
+          )}
 
-            {/* Recommended Rent */}
-            {availableForRent > 0 && (
-              <div className="mt-4 pt-4 border-t border-current/20">
-                <p className="text-xs opacity-80 mb-2">
-                  Regla del 30%: El arriendo no deberia superar el 30% de tu
-                  disponibilidad
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Arriendo recomendado:</span>
-                  <span className="text-lg font-bold">
-                    {formatCurrency(recommendedRent)}
-                  </span>
-                </div>
-              </div>
+          {/* Capacity Message */}
+          <div className="mt-4">
+            {capacityLevel === 'insufficient' && (
+              <p className="text-xs opacity-80">
+                Tus obligaciones actuales superan tus ingresos. Considera agregar
+                un codeudor para mejorar tu aplicacion.
+              </p>
             )}
-
-            {/* Capacity Message */}
-            <div className="mt-4">
-              {capacityLevel === 'insufficient' && (
-                <p className="text-xs">
-                  Tus obligaciones actuales superan tus ingresos. Considera agregar
-                  un codeudor para mejorar tu aplicacion.
-                </p>
-              )}
-              {capacityLevel === 'limited' && (
-                <p className="text-xs">
-                  Tu capacidad de pago es limitada. Busca propiedades dentro de tu
-                  presupuesto recomendado.
-                </p>
-              )}
-              {capacityLevel === 'moderate' && (
-                <p className="text-xs">
-                  Tienes una capacidad de pago moderada. Hay buenas opciones de
-                  arriendo dentro de tu rango.
-                </p>
-              )}
-              {capacityLevel === 'good' && (
-                <p className="text-xs">
-                  Excelente! Tienes buena capacidad de pago para opciones de
-                  arriendo variadas.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            {capacityLevel === 'limited' && (
+              <p className="text-xs opacity-80">
+                Tu capacidad de pago es limitada. Busca propiedades dentro de tu
+                presupuesto recomendado.
+              </p>
+            )}
+            {capacityLevel === 'moderate' && (
+              <p className="text-xs opacity-80">
+                Tienes una capacidad de pago moderada. Hay buenas opciones de
+                arriendo dentro de tu rango.
+              </p>
+            )}
+            {capacityLevel === 'good' && (
+              <p className="text-xs opacity-80">
+                Tienes buena capacidad de pago para opciones de arriendo variadas.
+              </p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
 // ============================================================================
-// FormField Helper Component
+// CurrencyInput - Luxterra-style currency input with $ prefix
 // ============================================================================
 
-interface FormFieldProps {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
+interface CurrencyInputProps {
+  id: string;
+  value: string;
+  placeholder?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur: () => void;
+  hasError?: boolean;
+  icon?: React.ReactNode;
 }
 
-function FormField({
-  label,
-  htmlFor,
-  error,
-  hint,
-  required,
-  children,
-}: FormFieldProps) {
+function CurrencyInput({
+  id,
+  value,
+  placeholder,
+  onChange,
+  onBlur,
+  hasError,
+  icon,
+}: CurrencyInputProps) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      {children}
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40">
+          {icon}
+        </div>
+      )}
+      <span className={cn(
+        "absolute top-1/2 -translate-y-1/2 text-black/60 text-sm font-medium",
+        icon ? 'left-11' : 'left-4'
+      )}>
+        $
+      </span>
+      <input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        className={cn(
+          'w-full h-12 rounded-sm',
+          'bg-black/5 text-black placeholder:text-black/40',
+          'border border-black/10',
+          'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
+          'transition-colors',
+          icon ? 'pl-16' : 'pl-9',
+          'pr-4',
+          hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+        )}
+      />
     </div>
   );
 }

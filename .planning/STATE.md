@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 10 (Post-Approval Flow) - In Progress
-Plan: 2 of 4 complete (Contract Signing + Pricing Page)
+Plan: 3 of 4 complete (Contract Signing + Pricing Page + Coupon System)
 Status: Phase 10 in progress
-Last activity: 2026-01-20 - Completed 10-01-PLAN (Contract Signing)
+Last activity: 2026-01-20 - Completed 10-03-PLAN (Coupon System)
 
-Progress: ████████████████████████████░░ 94%
+Progress: █████████████████████████████░ 97%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -39,9 +39,9 @@ Progress: ███████████████████████�
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31
+- Total plans completed: 32
 - Average duration: 6.1 min
-- Total execution time: 3.2 hours
+- Total execution time: 3.3 hours
 
 **By Phase:**
 
@@ -56,7 +56,7 @@ Progress: ███████████████████████�
 | 07-ux-polish | 6/6 | 33min | 5.5min |
 | 08-authentication-ui | 2/2 | 13.5min | 6.75min |
 | 09-interactive-map | 2/2 | 17min | 8.5min |
-| 10-post-approval-flow | 2/4 | 15min | 7.5min |
+| 10-post-approval-flow | 3/4 | 19.5min | 6.5min |
 
 ## Accumulated Context
 
@@ -154,6 +154,9 @@ Progress: ███████████████████████�
 - **Freemium pricing model**: Free/Pro ($49,900)/Business ($149,900) with 20% yearly discount
 - **Feature gating**: AI scoring in Pro, API access in Business tier
 - **Billing toggle pattern**: Monthly/Yearly with savings badge
+- **Coupon types**: PERCENTAGE, FIXED_AMOUNT, FREE_MONTHS, FULL_ACCESS for flexible discounts
+- **Trial calculation**: isTrialCoupon and getTrialDuration utilities for centralized logic
+- **Coupon validation**: Spanish error messages for all validation cases
 
 ### What's Complete (Phase 1)
 
@@ -375,9 +378,17 @@ All 8 phases executed successfully. The frontend is fully functional with:
 - **Upgrade page** - `/panel/upgrade` with checkout flow
 - **Dashboard upgrade CTA** - Sidebar prompt for free users
 
+**Plan 3 - Coupon System:**
+- **Coupon types** - CouponType, Coupon, CouponValidationResult, AppliedCoupon (`src/lib/types/coupon.ts`)
+- **Mock coupons** - 11 test coupons covering all types (`src/lib/data/mock-coupons.ts`)
+- **Coupon validation** - validateCoupon, calculateDiscountedPrice, isTrialCoupon (`src/lib/utils/coupon-validation.ts`)
+- **CouponInput component** - Input with validation, success/error states (`src/components/pricing/CouponInput.tsx`)
+- **PriceSummary component** - Price breakdown with discount display (`src/components/pricing/PriceSummary.tsx`)
+- **Checkout page** - `/panel/checkout` with coupon integration, plan summary, billing toggle
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 10-01-PLAN (Contract Signing)
+Stopped at: Completed 10-03-PLAN (Coupon System)
 Resume file: None
-Status: Phase 10 Post-Approval Flow in progress (2/4 plans complete)
+Status: Phase 10 Post-Approval Flow in progress (3/4 plans complete)

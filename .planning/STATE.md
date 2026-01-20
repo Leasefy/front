@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 10 - Post-Approval Flow
+**Current focus:** Phase 10 - Post-Approval Flow (COMPLETE)
 
 ## Current Position
 
-Phase: 10 (Post-Approval Flow) - In Progress
-Plan: 3 of 4 complete (Contract Signing + Pricing Page + Coupon System)
-Status: Phase 10 in progress
-Last activity: 2026-01-20 - Completed 10-03-PLAN (Coupon System)
+Phase: 10 (Post-Approval Flow) - COMPLETE
+Plan: 4 of 4 complete (All plans done)
+Status: MVP Frontend Complete
+Last activity: 2026-01-20 - Completed 10-04-PLAN (Post-Contract Dashboards)
 
-Progress: █████████████████████████████░ 97%
+Progress: ██████████████████████████████ 100%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -34,14 +34,14 @@ Progress: ███████████████████████�
 7. UX Polish (COMPLETE)
 8. Authentication UI (COMPLETE) - Split-layout auth, protected routes, user menu
 9. Interactive Map (COMPLETE) - Airbnb-style map with price markers and clustering
-10. Post-Approval Flow (IN PROGRESS) - Contract generation, pricing, success flow
+10. Post-Approval Flow (COMPLETE) - Contract generation, pricing, coupons, leases
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 33
 - Average duration: 6.1 min
-- Total execution time: 3.3 hours
+- Total execution time: 3.4 hours
 
 **By Phase:**
 
@@ -56,7 +56,7 @@ Progress: ███████████████████████�
 | 07-ux-polish | 6/6 | 33min | 5.5min |
 | 08-authentication-ui | 2/2 | 13.5min | 6.75min |
 | 09-interactive-map | 2/2 | 17min | 8.5min |
-| 10-post-approval-flow | 3/4 | 19.5min | 6.5min |
+| 10-post-approval-flow | 4/4 | 25min | 6.25min |
 
 ## Accumulated Context
 
@@ -157,6 +157,9 @@ Progress: ███████████████████████�
 - **Coupon types**: PERCENTAGE, FIXED_AMOUNT, FREE_MONTHS, FULL_ACCESS for flexible discounts
 - **Trial calculation**: isTrialCoupon and getTrialDuration utilities for centralized logic
 - **Coupon validation**: Spanish error messages for all validation cases
+- **Lease view pattern**: LeaseCard accepts 'view' prop for landlord/tenant rendering
+- **Payment methods Colombian**: PSE, cards, Nequi, Daviplata with cash as coming soon
+- **Payment history responsive**: Desktop table, mobile cards
 
 ### What's Complete (Phase 1)
 
@@ -329,17 +332,6 @@ Backend responsibilities (for other developer):
 - **Mobile user menu** - User info and auth state in mobile navigation
 - **Return URL redirect** - After login, redirects to intended page
 
-### MVP Frontend Complete!
-
-All 8 phases executed successfully. The frontend is fully functional with:
-- Property catalog with AI-powered search
-- Application wizard with 6-step form
-- Risk score display with conversational AI explanations
-- Landlord dashboard with candidate management
-- Tenant application tracking
-- UX polish (accessibility, animations, responsive)
-- Mock authentication with protected routes
-
 ### What's Complete (Phase 9) - COMPLETE
 
 **Plan 1 - Map Foundation:**
@@ -358,7 +350,7 @@ All 8 phases executed successfully. The frontend is fully functional with:
 - **Bidirectional hover sync** - List-map interaction
 - **Click to scroll** - Marker click scrolls to property in list
 
-### What's Complete (Phase 10) - IN PROGRESS
+### What's Complete (Phase 10) - COMPLETE
 
 **Plan 1 - Contract Signing:**
 - **Contract types** - Contract, ContractClause, ContractTemplate, Signature interfaces (`src/lib/types/contract.ts`)
@@ -386,9 +378,35 @@ All 8 phases executed successfully. The frontend is fully functional with:
 - **PriceSummary component** - Price breakdown with discount display (`src/components/pricing/PriceSummary.tsx`)
 - **Checkout page** - `/panel/checkout` with coupon integration, plan summary, billing toggle
 
+**Plan 4 - Post-Contract Dashboards:**
+- **Lease types** - Lease, Payment, PaymentMethod, LeaseSummaryStats (`src/lib/types/lease.ts`)
+- **Mock leases** - 4 leases with 16 payments (`src/lib/data/mock-leases.ts`)
+- **LeaseCard component** - Dual-view for landlord/tenant (`src/components/lease/LeaseCard.tsx`)
+- **PaymentHistory component** - Responsive table/cards (`src/components/lease/PaymentHistory.tsx`)
+- **PaymentMethodSelector** - Colombian payment methods (`src/components/lease/PaymentMethodSelector.tsx`)
+- **Landlord leases page** - `/panel/leases` with stats and payment history
+- **Tenant lease dashboard** - `/mi-arriendo` with payment flow
+- **Navigation links** - Added lease links to Navbar
+
+## MVP FRONTEND COMPLETE
+
+All 10 phases executed successfully. The frontend is fully functional with:
+- Property catalog with AI-powered search and interactive map
+- Application wizard with 6-step form
+- Risk score display with conversational AI explanations
+- Landlord dashboard with candidate management
+- Tenant application tracking
+- Contract generation and signing
+- Pricing and subscription management with coupon support
+- Lease dashboards with payment tracking
+- UX polish (accessibility, animations, responsive)
+- Mock authentication with protected routes
+
+**Ready for backend integration and production deployment.**
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 10-03-PLAN (Coupon System)
+Stopped at: Completed 10-04-PLAN (Post-Contract Dashboards)
 Resume file: None
-Status: Phase 10 Post-Approval Flow in progress (3/4 plans complete)
+Status: MVP Frontend Complete - All phases done

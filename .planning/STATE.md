@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 5 COMPLETE - Landlord Dashboard
+**Current focus:** Phase 6 IN PROGRESS - Tenant Tracking
 
 ## Current Position
 
-Phase: 5 of 7 (Landlord Dashboard) - COMPLETE
-Plan: 3 of 3 (Detail & Decisions complete)
-Status: Phase complete
-Last activity: 2026-01-20 - Completed PLAN-03-detail-and-decisions.md
+Phase: 6 of 7 (Tenant Tracking)
+Plan: 1 of 3 (Types and Cards complete)
+Status: In progress
+Last activity: 2026-01-19 - Completed PLAN-01-types-and-cards.md
 
-Progress: █████████████░ 95%
+Progress: ██████████████░ 96%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: █████████████░ 95%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 6.7 min
-- Total execution time: 2.3 hours
+- Total plans completed: 19
+- Average duration: 6.6 min
+- Total execution time: 2.4 hours
 
 **By Phase:**
 
@@ -49,6 +49,7 @@ Progress: █████████████░ 95%
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
 | 04-risk-score-display | 4/4 | 18min | 4.5min |
 | 05-landlord-dashboard | 3/3 | 28min | 9.3min |
+| 06-tenant-tracking | 1/3 | 8min | 8min |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Progress: █████████████░ 95%
 - **Confirmation for reject**: Require confirmation dialog for reject action
 - **localStorage decisions**: Persist decisions to localStorage under 'arriendo-facil-decisions'
 - **Notes auto-save**: Auto-save notes on blur
+- **Tenant status states**: submitted, under_review, pre_approved, approved, rejected, withdrawn
+- **Tracking code format**: AF-XXXXXX for recognizable tenant codes
+- **Event timeline pattern**: ApplicationEvent with chronological history and Spanish descriptions
 
 ### What's Complete (Phase 1)
 
@@ -210,13 +214,22 @@ Backend responsibilities (for other developer):
 - **Panel layout** - DecisionProvider wrapper (`src/app/panel/layout.tsx`)
 - **shadcn components** - Sheet, Dialog, Textarea
 
+### What's Complete (Phase 6) - IN PROGRESS
+
+- **TenantApplication types** - Status, events, tracking code (`src/lib/types/tenant-application.ts`)
+- **Mock tenant applications** - 6 applications in various states (`src/lib/data/mock-tenant-applications.ts`)
+- **ApplicationStatusBadge** - Status badge with Spanish labels (`src/components/tenant/ApplicationStatusBadge.tsx`)
+- **ApplicationCard** - Card with property thumbnail, status, tracking (`src/components/tenant/ApplicationCard.tsx`)
+- **Tenant components barrel export** (`src/components/tenant/index.ts`)
+
 ### Pending Todos
 
-None for Phase 5. Ready for Phase 6: Tenant Tracking.
+- PLAN-02: Applications list page at `/mis-solicitudes`
+- PLAN-03: Application detail page with timeline
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed PLAN-03-detail-and-decisions.md
+Last session: 2026-01-19
+Stopped at: Completed PLAN-01-types-and-cards.md
 Resume file: None
-Next action: Create Phase 6 roadmap and plans for Tenant Tracking
+Next action: Execute PLAN-02-applications-list.md

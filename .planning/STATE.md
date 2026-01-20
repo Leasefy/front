@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 5 IN PROGRESS - Landlord Dashboard
+**Current focus:** Phase 5 COMPLETE - Landlord Dashboard
 
 ## Current Position
 
-Phase: 5 of 7 (Landlord Dashboard) - IN PROGRESS
-Plan: 2 of 3 (Candidate Cards complete)
-Status: In progress
-Last activity: 2026-01-20 - Completed PLAN-02-candidate-cards.md
+Phase: 5 of 7 (Landlord Dashboard) - COMPLETE
+Plan: 3 of 3 (Detail & Decisions complete)
+Status: Phase complete
+Last activity: 2026-01-20 - Completed PLAN-03-detail-and-decisions.md
 
-Progress: ████████████░ 91%
+Progress: █████████████░ 95%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -29,16 +29,16 @@ Progress: ████████████░ 91%
 2. Property Catalog (COMPLETE)
 3. Application Wizard (COMPLETE)
 4. Risk Score Display (COMPLETE) - THE differentiator
-5. Landlord Dashboard - NEXT
-6. Tenant Tracking
+5. Landlord Dashboard (COMPLETE)
+6. Tenant Tracking - NEXT
 7. UX Polish
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: 6.5 min
-- Total execution time: 2.1 hours
+- Total plans completed: 18
+- Average duration: 6.7 min
+- Total execution time: 2.3 hours
 
 **By Phase:**
 
@@ -48,7 +48,7 @@ Progress: ████████████░ 91%
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
 | 04-risk-score-display | 4/4 | 18min | 4.5min |
-| 05-landlord-dashboard | 2/3 | 16min | 8min |
+| 05-landlord-dashboard | 3/3 | 28min | 9.3min |
 
 ## Accumulated Context
 
@@ -98,6 +98,10 @@ Progress: ████████████░ 91%
 - **Metrics compact format**: `$XM/mes | X anos estable | icon` for quick visual scanning
 - **AI snippet truncation**: First 2 sentences or 150 chars, respecting sentence boundaries
 - **Level-based card styling**: A/B colored accents, C/D muted for visual hierarchy
+- **Drawer over page**: Use Sheet drawer for candidate details instead of separate page
+- **Confirmation for reject**: Require confirmation dialog for reject action
+- **localStorage decisions**: Persist decisions to localStorage under 'arriendo-facil-decisions'
+- **Notes auto-save**: Auto-save notes on blur
 
 ### What's Complete (Phase 1)
 
@@ -185,7 +189,7 @@ Backend responsibilities (for other developer):
 - File upload to cloud
 - Email notifications
 
-### What's Complete (Phase 5) - IN PROGRESS
+### What's Complete (Phase 5) - COMPLETE
 
 - **Landlord types** - LandlordProperty, LandlordCandidate, DashboardSummary (`src/lib/types/landlord.ts`)
 - **Mock landlord data** - 12 candidates across 3 properties (`src/lib/data/mock-landlord-data.ts`)
@@ -198,14 +202,21 @@ Backend responsibilities (for other developer):
 - **CandidateList** - Responsive grid sorted by score (`src/components/landlord/CandidateList.tsx`)
 - **Property Candidates page** - `/panel/[propertyId]` with candidate list (`src/app/panel/[propertyId]/page.tsx`)
 - **Landlord components barrel export** (`src/components/landlord/index.ts`)
+- **DecisionContext** - State management for decisions and notes (`src/lib/context/DecisionContext.tsx`)
+- **DecisionButtons** - Card and detail variants for decision actions (`src/components/landlord/DecisionButtons.tsx`)
+- **CandidateDetail** - Full drawer with RiskScoreDisplay (`src/components/landlord/CandidateDetail.tsx`)
+- **CandidateNotes** - Notes with auto-save (`src/components/landlord/CandidateNotes.tsx`)
+- **DecisionConfirmation** - Dialog for reject/approve confirmation (`src/components/landlord/DecisionConfirmation.tsx`)
+- **Panel layout** - DecisionProvider wrapper (`src/app/panel/layout.tsx`)
+- **shadcn components** - Sheet, Dialog, Textarea
 
 ### Pending Todos
 
-PLAN-03: Candidate detail view with full risk score and decision workflow
+None for Phase 5. Ready for Phase 6: Tenant Tracking.
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed PLAN-02-candidate-cards.md
+Stopped at: Completed PLAN-03-detail-and-decisions.md
 Resume file: None
-Next action: Execute PLAN-03-detail-and-decisions.md
+Next action: Create Phase 6 roadmap and plans for Tenant Tracking

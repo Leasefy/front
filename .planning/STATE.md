@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 4 - Risk Score Display (MOST IMPORTANT phase for product value)
+**Current focus:** Phase 4 COMPLETE - Ready for Phase 5 (Landlord Dashboard)
 
 ## Current Position
 
-Phase: 4 of 7 (Risk Score Display)
-Plan: 3 of 5 (AI Explanation Display complete)
-Status: In progress
-Last activity: 2026-01-20 - Completed 04-03-PLAN.md (Conversational AI Explanation)
+Phase: 4 of 7 (Risk Score Display) - COMPLETE
+Plan: 4 of 4 (Integration Demo complete)
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 04-04-PLAN.md (Integration Demo)
 
-Progress: █████████░ 78%
+Progress: ██████████ 82%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -25,20 +25,20 @@ Progress: █████████░ 78%
 - Reduced from 10 phases to 7 phases
 
 **New phases:**
-1. Foundation & Design System (complete)
-2. Property Catalog (complete)
+1. Foundation & Design System (COMPLETE)
+2. Property Catalog (COMPLETE)
 3. Application Wizard (COMPLETE)
-4. Risk Score Display (MOST IMPORTANT) - IN PROGRESS
-5. Landlord Dashboard
+4. Risk Score Display (COMPLETE) - THE differentiator
+5. Landlord Dashboard - NEXT
 6. Tenant Tracking
 7. UX Polish
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 6.8 min
-- Total execution time: 1.8 hours
+- Total plans completed: 15
+- Average duration: 6.5 min
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -47,7 +47,7 @@ Progress: █████████░ 78%
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
-| 04-risk-score-display | 3/5 | 13min | 4.3min |
+| 04-risk-score-display | 4/4 | 18min | 4.5min |
 
 ## Accumulated Context
 
@@ -90,6 +90,7 @@ Progress: █████████░ 78%
 - **Risk flags styling**: Muted professional colors (gray/amber/rose) - non-alarmist
 - **Animation sequence**: Badge -> explanation -> drivers -> flags -> conditions
 - **Actionable language**: "Considere solicitar..." not "Debe requerir..." for helpful tone
+- **Demo components**: Separate /components/demo directory for testing utilities
 
 ### What's Complete (Phase 1)
 
@@ -144,7 +145,7 @@ Progress: █████████░ 78%
 - **"Solo propiedades para mi"** toggle in FilterSidebar
 - Simulation toggle for testing personalization features
 
-### What's Complete (Phase 4) - IN PROGRESS
+### What's Complete (Phase 4) - COMPLETE
 
 - **RiskScore type** - Full type system for risk assessment (`src/lib/types/risk-score.ts`)
 - **Candidate type** - Applicant profiles with scores (`src/lib/types/candidate.ts`)
@@ -157,13 +158,15 @@ Progress: █████████░ 78%
 - **ScoreProgressBar component** - Animated progress with colors (`src/components/score/ScoreProgressBar.tsx`)
 - **CategoryBreakdown component** - Accordion with category details (`src/components/score/CategoryBreakdown.tsx`)
 - **Score components barrel export** - Central import point (`src/components/score/index.ts`)
-- **Demo page** - Visual verification at `/demo/score`
 - **AIExplanation component** - Conversational narrative with typing animation
 - **useTypingAnimation hook** - Typewriter effect with punctuation pauses
 - **KeyDrivers component** - Positive factors with level-colored checkmarks
 - **RiskFlags component** - Non-alarmist warnings with severity styling
 - **SuggestedConditions component** - Actionable recommendations
 - **RiskScoreDisplay component** - Full composite with animation sequencing
+- **CandidateSelector component** - Dropdown grouped by level (`src/components/demo/CandidateSelector.tsx`)
+- **DemoControls component** - Variant and animation controls (`src/components/demo/DemoControls.tsx`)
+- **Demo page** - Interactive testing at `/demo/score` (`src/app/demo/score/page.tsx`)
 
 ### What's NOT in Scope
 
@@ -177,11 +180,11 @@ Backend responsibilities (for other developer):
 
 ### Pending Todos
 
-None for Plan 3. Ready for Plan 4: Integration Demo Page
+None for Phase 4. Ready for Phase 5: Landlord Dashboard
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 04-03-PLAN.md (Conversational AI Explanation)
+Stopped at: Completed Phase 4 (Risk Score Display) - All plans complete
 Resume file: None
-Next action: Continue Phase 4 - Plan 4: Integration Demo
+Next action: Start Phase 5 - Landlord Dashboard

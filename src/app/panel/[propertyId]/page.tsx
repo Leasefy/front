@@ -1,37 +1,50 @@
 'use client';
 
-import { useState, useCallback, use } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { CandidateList, CandidateDetail } from '@/components/landlord';
-import { formatCurrency } from '@/lib/format';
+import {
+  CandidateList,
+  CandidateDetail,
+  PropertyHeader,
+  TabNavigation,
+} from '@/components/landlord';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
 import { getCandidateById } from '@/lib/data/mock-candidates';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
+import type { Tab } from '@/components/landlord';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface PropertyCandidatesPageProps {
-  params: Promise<{
+  params: {
     propertyId: string;
-  }>;
+  };
 }
+
+// Tab configuration
+const TABS: Tab[] = [
+  { id: 'candidates', label: 'Candidatos' },
+  { id: 'documents', label: 'Documentos', disabled: true },
+  { id: 'activity', label: 'Actividad', disabled: true },
+];
 
 // ============================================================================
 // Component
 // ============================================================================
 
 export default function PropertyCandidatesPage({ params }: PropertyCandidatesPageProps) {
-  const { propertyId } = use(params);
+  const { propertyId } = params;
 
   // Get property and candidates data
   const property = getLandlordProperty(propertyId);
   const initialCandidates = getCandidatesForProperty(propertyId);
+
+  // State for tabs
+  const [activeTab, setActiveTab] = useState('candidates');
 
   // State for candidate list
   const [candidates, setCandidates] = useState(initialCandidates);
@@ -39,6 +52,14 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // State for detail drawer
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Build tabs with counts
+  const tabsWithCounts: Tab[] = TABS.map((tab) => {
+    if (tab.id === 'candidates') {
+      return { ...tab, count: candidates.length };
+    }
+    return tab;
+  });
 
   // Handle view details - open drawer with full candidate data
   const handleViewDetails = useCallback((candidateId: string) => {
@@ -73,8 +94,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // Property not found
   if (!property) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="min-h-screen">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">
               Propiedad no encontrada
@@ -92,99 +113,62 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-        {/* Back Navigation */}
-        <Link
-          href="/panel"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-6"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
-            />
-          </svg>
-          Volver a mis propiedades
-        </Link>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Property Header */}
+        <PropertyHeader property={property} candidates={candidates} />
 
-        {/* Property Header Card */}
-        <Card className="mb-8">
-          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <div className="flex items-start gap-4">
-              {/* Property Thumbnail */}
-              <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-slate-200 sm:h-20 sm:w-32">
-                {property.thumbnailUrl && (
-                  <Image
-                    src={property.thumbnailUrl}
-                    alt={property.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 96px, 128px"
-                  />
-                )}
-              </div>
+        {/* Tab Navigation */}
+        <TabNavigation
+          tabs={tabsWithCounts}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          className="mt-6"
+        />
 
-              {/* Property Info */}
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900 sm:text-xl">
-                  {property.title}
-                </h1>
-                <p className="text-sm text-slate-600">
-                  {property.neighborhood}, {property.city}
+        {/* Tab Content */}
+        <div className="mt-6">
+          {activeTab === 'candidates' && (
+            <>
+              {/* Section Header */}
+              {candidates.length > 0 && (
+                <p className="text-sm text-slate-500 mb-4">
+                  Ordenados por puntuacion (mejor primero)
                 </p>
-                <div className="mt-1 flex items-center gap-3 text-sm">
-                  <span className="font-medium text-slate-900">
-                    {formatCurrency(property.monthlyRent)}/mes
-                  </span>
-                  <span className="text-slate-400">|</span>
-                  <span className="text-slate-600">
-                    {property.bedrooms} hab. | {property.area} m²
-                  </span>
-                </div>
-              </div>
-            </div>
+              )}
 
-            {/* Candidate Count Badge */}
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-                {candidates.length} {candidates.length === 1 ? 'candidato' : 'candidatos'}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Candidate List */}
+              <CandidateList
+                candidates={candidates}
+                onViewDetails={handleViewDetails}
+                onDecision={handleDecision}
+                groupByLevel={false}
+              />
+            </>
+          )}
 
-        {/* Section Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Candidatos
-          </h2>
-          {candidates.length > 0 && (
-            <p className="text-sm text-slate-500">
-              Ordenados por puntuacion (mejor primero)
-            </p>
+          {activeTab === 'documents' && (
+            <div className="text-center py-12 bg-white rounded-sm border border-slate-100">
+              <p className="text-slate-500">
+                La seccion de documentos estara disponible pronto
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'activity' && (
+            <div className="text-center py-12 bg-white rounded-sm border border-slate-100">
+              <p className="text-slate-500">
+                La seccion de actividad estara disponible pronto
+              </p>
+            </div>
           )}
         </div>
-
-        {/* Candidate List */}
-        <CandidateList
-          candidates={candidates}
-          onViewDetails={handleViewDetails}
-          onDecision={handleDecision}
-          groupByLevel={false}
-        />
       </div>
 
       {/* Candidate Detail Drawer */}
       <CandidateDetail
         candidate={selectedCandidate}
+        propertyId={propertyId}
         isOpen={isDetailOpen}
         onClose={handleCloseDetail}
       />

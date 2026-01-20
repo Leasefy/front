@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Phone, X } from 'lucide-react';
+import Link from 'next/link';
+import { Mail, Phone, X, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Sheet,
@@ -27,6 +28,8 @@ import type { Candidate } from '@/lib/types/candidate';
 export interface CandidateDetailProps {
   /** Full candidate data with RiskScore */
   candidate: Candidate | null;
+  /** Property ID for contract generation link */
+  propertyId: string;
   /** Whether the drawer is open */
   isOpen: boolean;
   /** Callback to close the drawer */
@@ -48,6 +51,7 @@ export interface CandidateDetailProps {
  */
 export function CandidateDetail({
   candidate,
+  propertyId,
   isOpen,
   onClose,
 }: CandidateDetailProps) {
@@ -196,6 +200,19 @@ export function CandidateDetail({
 
           {/* Footer: Decision Buttons (sticky) */}
           <div className="border-t border-border bg-background p-4">
+            {/* Generate Contract Button - shown when approved */}
+            {currentStatus === 'approved' && (
+              <Link
+                href={`/panel/${propertyId}/contract/${candidate.id}`}
+                className="mb-3 block"
+              >
+                <Button className="w-full" size="lg">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generar contrato
+                </Button>
+              </Link>
+            )}
+
             <DecisionButtons
               candidateId={candidate.id}
               currentStatus={currentStatus}

@@ -3,13 +3,14 @@
 import { useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CandidateList } from '@/components/landlord/CandidateList';
+import { CandidateList, CandidateDetail } from '@/components/landlord';
 import { formatCurrency } from '@/lib/format';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
+import { getCandidateById } from '@/lib/data/mock-candidates';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
+import type { Candidate } from '@/lib/types/candidate';
 
 // ============================================================================
 // Types
@@ -27,25 +28,35 @@ interface PropertyCandidatesPageProps {
 
 export default function PropertyCandidatesPage({ params }: PropertyCandidatesPageProps) {
   const { propertyId } = use(params);
-  const router = useRouter();
 
   // Get property and candidates data
   const property = getLandlordProperty(propertyId);
   const initialCandidates = getCandidatesForProperty(propertyId);
 
-  // State for candidate decisions (in real app, this would update backend)
+  // State for candidate list
   const [candidates, setCandidates] = useState(initialCandidates);
 
-  // Handle view details - navigate to detail page (PLAN-03)
-  const handleViewDetails = useCallback(
-    (candidateId: string) => {
-      // Will be implemented in PLAN-03
-      router.push(`/panel/${propertyId}/candidato/${candidateId}`);
-    },
-    [propertyId, router]
-  );
+  // State for detail drawer
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  // Handle decision - update candidate status
+  // Handle view details - open drawer with full candidate data
+  const handleViewDetails = useCallback((candidateId: string) => {
+    const fullCandidate = getCandidateById(candidateId);
+    if (fullCandidate) {
+      setSelectedCandidate(fullCandidate);
+      setIsDetailOpen(true);
+    }
+  }, []);
+
+  // Handle close detail drawer
+  const handleCloseDetail = useCallback(() => {
+    setIsDetailOpen(false);
+    // Clear selected candidate after animation completes
+    setTimeout(() => setSelectedCandidate(null), 300);
+  }, []);
+
+  // Handle decision - update candidate status in local state
   const handleDecision = useCallback(
     (candidateId: string, newStatus: LandlordCandidateStatus) => {
       setCandidates((prev) =>
@@ -135,7 +146,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   </span>
                   <span className="text-slate-400">|</span>
                   <span className="text-slate-600">
-                    {property.bedrooms} hab. | {property.area} m\u00B2
+                    {property.bedrooms} hab. | {property.area} m²
                   </span>
                 </div>
               </div>
@@ -170,6 +181,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           groupByLevel={false}
         />
       </div>
+
+      {/* Candidate Detail Drawer */}
+      <CandidateDetail
+        candidate={selectedCandidate}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
+      />
     </div>
   );
 }

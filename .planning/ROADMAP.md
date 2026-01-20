@@ -6,7 +6,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 
 ## Milestones
 
-- ✅ **v1.0 Frontend MVP** - Phases 1-8 (complete)
+- ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
 
 ## Phases
 
@@ -22,6 +22,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - [x] **Phase 6: Tenant Tracking** - My applications, timeline, status display
 - [x] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
 - [x] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
+- [x] **Phase 9: Interactive Map** - Airbnb-style map with clustering, price markers, filter sync
 
 ## Phase Details
 
@@ -138,10 +139,26 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 **Research**: Unlikely (standard auth UI patterns)
 **Plans**: TBD
 
+### Phase 9: Interactive Map
+**Goal**: Airbnb-style interactive map for property discovery
+**Depends on**: Phase 2 (Property Catalog)
+**Success Criteria** (what must be TRUE):
+  1. Split layout: property list (left) + interactive map (right) on desktop
+  2. Map shows property markers with rent price labels (e.g., "$2.5M")
+  3. Marker clustering: zoom out shows cluster counts, zoom in shows individual markers
+  4. Click marker to filter/highlight that property in the list
+  5. Map bounds sync: moving map filters visible properties
+  6. Responsive: map toggle button on mobile (show/hide map)
+  7. Smooth animations and interactions (Airbnb-quality UX)
+  8. Works with existing filter system
+**Research**: Likely (map library selection: Mapbox vs Google Maps vs Leaflet)
+**Research topics**: react-map-gl, supercluster for clustering, Mapbox pricing
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -153,6 +170,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 6. Tenant Tracking | 2/2 | Complete | 2026-01-19 |
 | 7. UX Polish | 6/6 | Complete | 2026-01-20 |
 | 8. Authentication UI | 2/2 | Complete | 2026-01-19 |
+| 9. Interactive Map | 2/2 | Complete | 2026-01-20 |
 
 ## Notes
 
@@ -182,5 +200,5 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-19 (Phase 8 Authentication UI complete - MVP done!)*
+*Last updated: 2026-01-20 (Phase 9 Interactive Map complete)*
 *Vision: FRONTEND-VISION.md*

@@ -16,3 +16,6 @@ export * from './candidate';
 
 // Subscription types
 export * from './subscription';
+
+// Lease types
+export * from './lease';

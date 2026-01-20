@@ -14,10 +14,10 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation & Design System** - Project setup, UI components, mock data structure
-- [ ] **Phase 2: Property Catalog** - Listings, filters, wishlist, property detail
-- [ ] **Phase 3: Application Wizard** - Multi-step form, document upload UI, review
-- [ ] **Phase 4: Risk Score Display** - AI explanation UI, conversational scoring, level badges
+- [x] **Phase 1: Foundation & Design System** - Project setup, UI components, mock data structure
+- [x] **Phase 2: Property Catalog** - Listings, filters, wishlist, property detail
+- [x] **Phase 3: Application Wizard** - Multi-step form, document upload UI, review
+- [x] **Phase 4: Risk Score Display** - AI explanation UI, conversational scoring, level badges
 - [ ] **Phase 5: Landlord Dashboard** - Candidates view, score details, decision UI
 - [ ] **Phase 6: Tenant Tracking** - My applications, timeline, status display
 - [ ] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
@@ -130,9 +130,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Design System | 4/4 | Complete | 2026-01-18 |
-| 2. Property Catalog | 0/TBD | Not started | - |
-| 3. Application Wizard | 0/TBD | Not started | - |
-| 4. Risk Score Display | 0/TBD | Not started | - |
+| 2. Property Catalog | 2/2 | Complete | 2026-01-18 |
+| 3. Application Wizard | 5/5 | Complete | 2026-01-19 |
+| 4. Risk Score Display | 4/4 | Complete | 2026-01-19 |
 | 5. Landlord Dashboard | 0/TBD | Not started | - |
 | 6. Tenant Tracking | 0/TBD | Not started | - |
 | 7. UX Polish | 0/TBD | Not started | - |
@@ -165,5 +165,5 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-18 (reorganized for frontend-first)*
+*Last updated: 2026-01-19 (Phase 4 Risk Score Display complete)*
 *Vision: FRONTEND-VISION.md*

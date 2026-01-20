@@ -23,6 +23,8 @@ export interface Property {
   city: string;
   neighborhood: string;
   address: string;
+  latitude: number;
+  longitude: number;
 
   // Pricing (COP as integers)
   monthlyRent: number;

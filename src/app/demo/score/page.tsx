@@ -1,10 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import {
   LevelBadge,
   ScoreCard,
   CategoryBreakdown,
   ScoreProgressBar,
+  AIExplanation,
+  KeyDrivers,
+  RiskFlags,
+  SuggestedConditions,
+  RiskScoreDisplay,
 } from '@/components/score';
 import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 import type { RiskLevel } from '@/lib/types/risk-score';
@@ -219,10 +225,135 @@ export default function ScoreDemoPage() {
           </div>
         </section>
 
+        {/* AI Explanation Components Section */}
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">
+            6. AI Explanation Components
+          </h2>
+
+          {/* KeyDrivers */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              KeyDrivers Component:
+            </h3>
+            <div className="bg-white rounded-sm border border-slate-200 p-6">
+              <KeyDrivers
+                drivers={levelACandidate.riskScore.drivers}
+                level="A"
+              />
+            </div>
+          </div>
+
+          {/* RiskFlags */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              RiskFlags Component (Level C with flags):
+            </h3>
+            <div className="bg-white rounded-sm border border-slate-200 p-6">
+              <RiskFlags flags={levelCCandidate.riskScore.flags} />
+            </div>
+          </div>
+
+          {/* SuggestedConditions */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              SuggestedConditions Component:
+            </h3>
+            <div className="bg-white rounded-sm border border-slate-200 p-6">
+              <SuggestedConditions
+                conditions={levelDCandidate.riskScore.suggestedConditions}
+              />
+            </div>
+          </div>
+
+          {/* Full AIExplanation */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              AIExplanation Component (Complete):
+            </h3>
+            <AIExplanation
+              explanation={levelBCandidate.riskScore.aiExplanation}
+              drivers={levelBCandidate.riskScore.drivers}
+              flags={levelBCandidate.riskScore.flags}
+              suggestedConditions={levelBCandidate.riskScore.suggestedConditions}
+              level="B"
+            />
+          </div>
+        </section>
+
+        {/* RiskScoreDisplay Section */}
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">
+            7. RiskScoreDisplay Component
+          </h2>
+
+          {/* Compact variant */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              Compact Variant:
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <RiskScoreDisplay candidate={levelACandidate} variant="compact" />
+              <RiskScoreDisplay candidate={levelDCandidate} variant="compact" />
+            </div>
+          </div>
+
+          {/* Full variant */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-slate-600 mb-3">
+              Full Variant (Level B - with flags and conditions):
+            </h3>
+            <div className="bg-white rounded-sm border border-slate-200">
+              <RiskScoreDisplay candidate={levelBCandidate} variant="full" />
+            </div>
+          </div>
+
+          {/* Full variant with animation toggle */}
+          <FullDisplayWithAnimation candidate={levelCCandidate} />
+        </section>
+
         {/* Mobile Test Note */}
         <div className="text-center text-sm text-slate-500 py-4">
           Resize the window to test mobile responsiveness.
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sub-component for demonstrating animation toggle
+ */
+function FullDisplayWithAnimation({ candidate }: { candidate: typeof MOCK_CANDIDATES[0] }) {
+  const [animationKey, setAnimationKey] = useState(0);
+  const [animate, setAnimate] = useState(false);
+
+  const handleReplayAnimation = () => {
+    setAnimate(true);
+    setAnimationKey((k) => k + 1);
+  };
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-slate-600">
+          Full Variant with Animation (Level C):
+        </h3>
+        <button
+          type="button"
+          onClick={handleReplayAnimation}
+          className="px-3 py-1 text-xs font-medium text-white bg-primary rounded-sm hover:bg-primary/90 transition-colors"
+        >
+          Replay Animation
+        </button>
+      </div>
+      <div className="bg-white rounded-sm border border-slate-200">
+        <RiskScoreDisplay
+          key={animationKey}
+          candidate={candidate}
+          variant="full"
+          showAnimation={animate}
+        />
       </div>
     </div>
   );

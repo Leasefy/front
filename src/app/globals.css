@@ -4,82 +4,260 @@
 
 @layer base {
   :root {
-    /* Arriendo Facil brand colors - Slate base with blue primary */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    /* Professional blue for PropTech trust */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    /* Red for risk level D and destructive actions */
+    /* Luxterra dark theme - #111112 */
+    --background: 240 6% 7%;
+    --foreground: 0 0% 100%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 100%;
+    /* Purple accent */
+    --primary: 258 100% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 6% 20%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 258 100% 66%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --chart-1: 12 76% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 20%;
+    --input: 240 6% 15%;
+    --ring: 258 100% 66%;
+    --chart-1: 258 100% 66%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    /* CRITICAL: Luxterra uses 2px radius, almost square */
+    --radius: 2px;
 
-    /* Risk level colors for scoring */
+    /* Risk level colors */
     --risk-a: 142.1 76.2% 36.3%;
     --risk-b: 142.1 70.6% 45.3%;
     --risk-c: 47.9 95.8% 53.1%;
     --risk-d: 0 84.2% 60.2%;
-  }
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
 
-    /* Risk level colors for scoring - dark mode */
-    --risk-a: 142.1 70.6% 45.3%;
-    --risk-b: 142.1 64.2% 52.2%;
-    --risk-c: 47.9 95.8% 53.1%;
-    --risk-d: 0 72.2% 50.6%;
+    /* Section colors */
+    --section-light: 0 0% 97%;
+    --section-dark: 240 6% 7%;
+    --text-secondary: 240 5% 55%;
+  }
+
+  /* Light sections */
+  .light-section {
+    --background: 0 0% 97%;
+    --foreground: 240 6% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 7%;
+    --muted-foreground: 240 5% 45%;
+    --border: 240 6% 90%;
+  }
+
+  /* Lenis smooth scroll - Luxterra style */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
   }
 }
-
-
 
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01";
+  }
+}
+
+@layer utilities {
+  /* Section padding - Luxterra uses 60px top, 32px bottom */
+  .section-padding {
+    @apply py-16 md:py-20 lg:py-24;
+  }
+
+  .container-wide {
+    @apply mx-auto max-w-7xl px-6 lg:px-8;
+  }
+
+  /* Glass effect for navbar */
+  .glass {
+    @apply bg-white/95 backdrop-blur-md;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-500 ease-out;
+  }
+
+  /* Hover scale effect - subtle like Luxterra */
+  .hover-scale {
+    @apply transition-transform duration-700 ease-out;
+  }
+
+  .hover-scale:hover {
+    @apply scale-105;
+  }
+
+  /* Section label - small 12px with dot indicator */
+  .section-label-dot {
+    @apply flex items-center gap-2 text-xs tracking-tight;
+  }
+
+  .section-label-dot::before {
+    content: '';
+    @apply h-1.5 w-1.5 rounded-full bg-current opacity-60;
+  }
+
+  /* Large display heading - Luxterra: 58px, weight 400, letter-spacing -4.176px */
+  .heading-display {
+    @apply text-4xl md:text-5xl lg:text-[58px] font-normal tracking-[-0.072em] leading-[1.05];
+  }
+
+  /* Body text - Luxterra: 18px, letter-spacing -0.72px */
+  .body-text {
+    @apply text-lg tracking-[-0.04em] leading-relaxed;
+  }
+
+  /* Small text - 12px like labels */
+  .text-small {
+    @apply text-xs tracking-tight;
+  }
+
+  /* Stat numbers - large with tight tracking */
+  .stat-number {
+    @apply text-5xl md:text-6xl lg:text-7xl font-normal tracking-[-0.05em];
+  }
+
+  /* Card styles - 2px radius, minimal */
+  .card-minimal {
+    @apply rounded-sm overflow-hidden;
+  }
+
+  /* Pill button - 40px radius */
+  .btn-pill {
+    @apply rounded-full;
+  }
+
+  /* Image overlay gradient */
+  .image-overlay::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none;
+  }
+
+  /* AI Search typing animation */
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+  }
+
+  /* Sparkle animation for AI indicator */
+  @keyframes sparkle {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+  }
+
+  .animate-sparkle {
+    animation: sparkle 1.5s ease-in-out infinite;
+  }
+
+  /* Staggered fade in for search results */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+  }
+
+  /* Typing dots animation */
+  @keyframes typing-dot {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+
+  .typing-dot {
+    animation: typing-dot 1.4s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(1) { animation-delay: 0s; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  /* Smooth accordion animation */
+  @keyframes accordion-down {
+    from { height: 0; opacity: 0; }
+    to { height: var(--radix-accordion-content-height); opacity: 1; }
+  }
+
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); opacity: 1; }
+    to { height: 0; opacity: 0; }
+  }
+
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+
+  /* Simple fade in animation */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out forwards;
+  }
+
+  /* Scale in animation for badges */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
   }
 }

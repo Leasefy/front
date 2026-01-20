@@ -2,8 +2,10 @@
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { FileText, Building2, User, Calendar, CreditCard } from 'lucide-react';
+import { FileText, Building2, User, Calendar, CreditCard, Shield } from 'lucide-react';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
+import type { SelectedInsurance } from '@/lib/types/insurance';
+import { getInsuranceById } from '@/lib/data/mock-insurance';
 
 // ============================================================================
 // Types
@@ -14,6 +16,8 @@ export interface ContractPreviewProps {
   contract: Contract;
   /** Contract template with clauses */
   template: ContractTemplate;
+  /** Selected insurance policy (optional) */
+  selectedInsurance?: SelectedInsurance;
   /** Additional CSS classes */
   className?: string;
 }
@@ -32,7 +36,13 @@ export interface ContractPreviewProps {
  * - Clauses section with all terms
  * - Signature section showing signing status
  */
-export function ContractPreview({ contract, template, className }: ContractPreviewProps) {
+export function ContractPreview({ contract, template, selectedInsurance, className }: ContractPreviewProps) {
+  // Get insurance policy details if selected
+  const insurancePolicy =
+    selectedInsurance?.policyId && selectedInsurance.tier !== 'none'
+      ? getInsuranceById(selectedInsurance.policyId)
+      : null;
+
   return (
     <div
       className={cn(
@@ -85,6 +95,37 @@ export function ContractPreview({ contract, template, className }: ContractPrevi
           </div>
         </div>
       </div>
+
+      {/* Insurance (if selected) */}
+      {insurancePolicy && (
+        <div className="border-b border-slate-100 p-6">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Shield className="h-4 w-4 text-slate-400" />
+            Poliza de Seguro
+          </h3>
+          <div className="rounded-sm border border-emerald-100 bg-emerald-50 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-slate-900">{insurancePolicy.name}</p>
+                <p className="text-sm text-slate-600">{insurancePolicy.description}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-semibold text-slate-900">
+                  {formatCurrency(insurancePolicy.monthlyPremium)}
+                </p>
+                <p className="text-xs text-slate-500">/mes</p>
+              </div>
+            </div>
+            {insurancePolicy.features.length > 0 && (
+              <ul className="mt-3 pt-3 border-t border-emerald-200 grid gap-1 text-sm text-slate-600">
+                {insurancePolicy.features.slice(0, 4).map((feature, i) => (
+                  <li key={i}>• {feature}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Property & Dates */}
       <div className="border-b border-slate-100 p-6">

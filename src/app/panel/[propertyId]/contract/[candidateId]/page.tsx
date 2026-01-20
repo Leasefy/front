@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { ContractTimeline } from '@/components/contract/ContractTimeline';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
+import { InsuranceSelector } from '@/components/contract/InsuranceSelector';
+import { getInsuranceById } from '@/lib/data/mock-insurance';
+import type { SelectedInsurance } from '@/lib/types/insurance';
 import {
   getContractById,
   getContractSteps,
@@ -91,6 +94,11 @@ export default function ContractPage({ params }: ContractPageProps) {
   const [selectedType, setSelectedType] = useState<ContractType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  const [selectedInsurance, setSelectedInsurance] = useState<SelectedInsurance>({
+    policyId: null,
+    tier: 'none',
+    monthlyPremium: 0,
+  });
 
   // Get existing contract or null
   useEffect(() => {
@@ -292,12 +300,26 @@ export default function ContractPage({ params }: ContractPageProps) {
 
             {/* Center: Contract Preview */}
             <div className="lg:col-span-6">
-              <ContractPreview contract={contract} template={template} />
+              <ContractPreview
+                contract={contract}
+                template={template}
+                selectedInsurance={selectedInsurance}
+              />
             </div>
 
             {/* Right: Actions */}
             <div className="lg:col-span-3">
               <div className="sticky top-6 space-y-4">
+                {/* Insurance Selection (before signing) */}
+                {isLandlordTurn && (
+                  <div className="rounded-sm border border-slate-200 bg-white p-4">
+                    <InsuranceSelector
+                      selected={selectedInsurance}
+                      onSelect={setSelectedInsurance}
+                    />
+                  </div>
+                )}
+
                 {/* Signing Form or Status */}
                 {isLandlordTurn && (
                   <SignatureForm

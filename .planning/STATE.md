@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 4 COMPLETE - Ready for Phase 5 (Landlord Dashboard)
+**Current focus:** Phase 5 IN PROGRESS - Landlord Dashboard
 
 ## Current Position
 
-Phase: 4 of 7 (Risk Score Display) - COMPLETE
-Plan: 4 of 4 (Integration Demo complete)
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 04-04-PLAN.md (Integration Demo)
+Phase: 5 of 7 (Landlord Dashboard) - IN PROGRESS
+Plan: 1 of 3 (Dashboard Foundation complete)
+Status: In progress
+Last activity: 2026-01-19 - Completed PLAN-01-dashboard-foundation.md
 
-Progress: ██████████ 82%
+Progress: ███████████░ 86%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ██████████ 82%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 6.5 min
-- Total execution time: 1.9 hours
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -48,6 +48,7 @@ Progress: ██████████ 82%
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
 | 04-risk-score-display | 4/4 | 18min | 4.5min |
+| 05-landlord-dashboard | 1/3 | 8min | 8min |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Progress: ██████████ 82%
 - **Animation sequence**: Badge -> explanation -> drivers -> flags -> conditions
 - **Actionable language**: "Considere solicitar..." not "Debe requerir..." for helpful tone
 - **Demo components**: Separate /components/demo directory for testing utilities
+- **Landlord status types**: pending/pre-approved/approved/rejected/more-info
+- **Dashboard route**: `/panel` for landlord entry point, `/panel/[propertyId]` for details
+- **Candidate distribution**: 12 candidates across 3 properties for realistic testing
 
 ### What's Complete (Phase 1)
 
@@ -178,13 +182,22 @@ Backend responsibilities (for other developer):
 - File upload to cloud
 - Email notifications
 
+### What's Complete (Phase 5) - IN PROGRESS
+
+- **Landlord types** - LandlordProperty, LandlordCandidate, DashboardSummary (`src/lib/types/landlord.ts`)
+- **Mock landlord data** - 12 candidates across 3 properties (`src/lib/data/mock-landlord-data.ts`)
+- **PropertyDashboardCard** - Property card with candidate count badge (`src/components/landlord/PropertyDashboardCard.tsx`)
+- **DashboardSummary** - Aggregate stats component (`src/components/landlord/DashboardSummary.tsx`)
+- **Dashboard page** - Landlord entry at `/panel` (`src/app/panel/page.tsx`)
+
 ### Pending Todos
 
-None for Phase 4. Ready for Phase 5: Landlord Dashboard
+PLAN-02: Candidate cards with risk badges and quick actions
+PLAN-03: Property detail view with candidate list and decision workflow
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed Phase 4 (Risk Score Display) - All plans complete
+Last session: 2026-01-19
+Stopped at: Completed PLAN-01-dashboard-foundation.md
 Resume file: None
-Next action: Start Phase 5 - Landlord Dashboard
+Next action: Execute PLAN-02-candidate-cards.md

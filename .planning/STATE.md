@@ -13,7 +13,7 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 Phase: 7 of 7 (UX Polish) - IN PROGRESS
 Plan: 5 of 6 (Plans 01-05 complete)
 Status: Executing Phase 7 plans
-Last activity: 2026-01-20 - Completed 07-05-PLAN.md (AI Search Enhancement)
+Last activity: 2026-01-20 - Completed 07-04-PLAN.md (Property Detail Redesign)
 
 Progress: ███████████████░ 99.2%
 
@@ -124,6 +124,10 @@ Progress: ███████████████░ 99.2%
 - **Framer Motion grid**: AnimatePresence mode='popLayout' for smooth layout transitions in PropertyGrid
 - **Search loading UX**: 1.2s simulated AI processing for conversational feel
 - **Contextual result text**: 'encontradas' vs 'disponibles' based on active filters
+- **PropertyAccordion pattern**: Reusable accordion using shadcn with configurable defaultOpen sections
+- **StickyCTA separation**: Separate desktop and mobile CTA components for different layouts
+- **Image grid over carousel**: Keep Luxterra-style 3-image grid for hero, better visual impact
+- **Accordion animations**: Radix accordion with tailwind keyframes (0.2s ease-out)
 
 ### What's Complete (Phase 1)
 
@@ -261,6 +265,12 @@ Backend responsibilities (for other developer):
 - **Skeleton barrel export** - Centralized exports (`src/components/skeleton/index.ts`)
 - **PropertyGrid isLoading** - Displays skeletons during loading state
 - **Design System Polish** - Light theme, typography scale, radius scale, spacing grid (`src/app/globals.css`)
+- **PropertyAccordion component** - Reusable accordion for property sections (`src/components/property/PropertyAccordion.tsx`)
+- **StickyCTA component** - Sticky CTA card with lead capture (`src/components/property/StickyCTA.tsx`)
+- **MobileStickyCTA component** - Fixed bottom CTA for mobile
+- **ImageCarousel hero variant** - Full-width, taller hero mode with gallery integration
+- **Property Detail redesign** - Luxterra-style with reusable components
+- **Accordion animations** - Tailwind keyframes for smooth accordion transitions
 - **AI Search Enhancement** - Framer Motion animations, loading state, contextual results
 
 ### Pending Todos
@@ -270,6 +280,6 @@ Phase 7 plan 06 (Responsive & Accessibility) remaining.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 07-05-PLAN.md (AI Search Enhancement)
+Stopped at: Completed 07-04-PLAN.md (Property Detail Redesign)
 Resume file: None
 Next action: Execute PLAN-06 (Responsive & Accessibility)

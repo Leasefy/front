@@ -106,7 +106,7 @@ export default function MisAplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <main id="main-content" className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -177,6 +177,6 @@ export default function MisAplicacionesPage() {
         onClose={handleCloseDetail}
         onWithdraw={handleWithdraw}
       />
-    </div>
+    </main>
   );
 }

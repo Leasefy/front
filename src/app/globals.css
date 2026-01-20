@@ -452,4 +452,37 @@
   .animate-scale-in {
     animation: scale-in 0.3s ease-out forwards;
   }
+
+  /* ==========================================================
+   * ACCESSIBILITY UTILITIES
+   * ========================================================== */
+
+  /* Minimum touch target size (44x44px for WCAG 2.1 AAA) */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Touch target for inline elements */
+  .touch-target-inline {
+    @apply min-h-[44px] inline-flex items-center;
+  }
+
+  /* Reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (forced-colors: active) {
+    .focus-ring:focus-visible {
+      outline: 3px solid CanvasText;
+    }
+  }
 }

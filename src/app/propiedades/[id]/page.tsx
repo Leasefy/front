@@ -47,7 +47,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-white flex items-center justify-center">
+        <main id="main-content" className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-normal text-black tracking-tight">
               Propiedad no encontrada
@@ -75,7 +75,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white">
+      <main id="main-content" className="min-h-screen bg-white">
         {/* Hero Image Grid - Luxterra style */}
         <section className="pt-28 md:pt-32">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -83,6 +83,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               {/* Main large image */}
               <button
                 onClick={() => openGallery(0)}
+                aria-label={`Ver galeria de imagenes de ${property.title}`}
                 className="md:col-span-2 relative overflow-hidden rounded-lg cursor-pointer group"
               >
                 <Image
@@ -100,6 +101,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                 {property.images[1] && (
                   <button
                     onClick={() => openGallery(1)}
+                    aria-label="Ver imagen 2 en galeria"
                     className="relative overflow-hidden rounded-lg cursor-pointer group"
                   >
                     <Image
@@ -115,6 +117,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                 {property.images[2] ? (
                   <button
                     onClick={() => openGallery(2)}
+                    aria-label="Ver imagen 3 en galeria"
                     className="relative overflow-hidden rounded-lg cursor-pointer group"
                   >
                     <Image
@@ -215,6 +218,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                       <button
                         key={index}
                         onClick={() => openGallery(index)}
+                        aria-label={`Ver imagen ${index + 1} en galeria`}
                         className="relative aspect-[4/3] overflow-hidden group cursor-pointer"
                       >
                         <Image

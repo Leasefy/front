@@ -1,7 +1,7 @@
 'use client';
 
 import { X, SlidersHorizontal, Check } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,6 +54,8 @@ export function FilterSidebar({
   onOnlyAffordableChange,
 }: FilterSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [minPriceInput, setMinPriceInput] = useState(
     filters.minPrice?.toString() ?? ''
   );
@@ -88,6 +90,28 @@ export function FilterSidebar({
     setMaxPriceInput('');
     onReset();
   };
+
+  // Handle Escape key to close drawer
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isOpen]);
+
+  // Add keyboard listener when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Focus the close button when drawer opens
+      closeButtonRef.current?.focus();
+      // Prevent body scroll when drawer is open
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
 
   // Count active filters for badge
   const activeFilterCount = [
@@ -162,6 +186,7 @@ export function FilterSidebar({
         <select
           value={filters.city ?? ''}
           onChange={(e) => onCityChange(e.target.value || null)}
+          aria-label="Filtrar por ciudad"
           className={cn(
             'flex h-11 w-full rounded-sm border bg-white px-3 py-2',
             'text-sm text-gray-900 tracking-tight',
@@ -194,6 +219,7 @@ export function FilterSidebar({
               value={minPriceInput}
               onChange={(e) => setMinPriceInput(e.target.value)}
               onBlur={handleMinPriceBlur}
+              aria-label="Precio minimo"
               className={cn(
                 'h-11 rounded-sm border bg-white text-sm placeholder:text-gray-400 tracking-tight',
                 'transition-all duration-200',
@@ -212,6 +238,7 @@ export function FilterSidebar({
               value={maxPriceInput}
               onChange={(e) => setMaxPriceInput(e.target.value)}
               onBlur={handleMaxPriceBlur}
+              aria-label="Precio maximo"
               className={cn(
                 'h-11 rounded-sm border bg-white text-sm placeholder:text-gray-400 tracking-tight',
                 'transition-all duration-200',
@@ -235,6 +262,8 @@ export function FilterSidebar({
               onClick={() =>
                 onBedroomsChange(filters.bedrooms === num ? null : num)
               }
+              aria-pressed={filters.bedrooms === num}
+              aria-label={`${num === 4 ? '4 o mas' : num} habitaciones`}
               className={cn(
                 'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.bedrooms === num
@@ -260,6 +289,8 @@ export function FilterSidebar({
                   filters.propertyType === value ? null : value
                 )
               }
+              aria-pressed={filters.propertyType === value}
+              aria-label={`Tipo de propiedad: ${label}`}
               className={cn(
                 'h-10 px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.propertyType === value
@@ -300,29 +331,38 @@ export function FilterSidebar({
 
       {/* Mobile drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="filter-drawer-title"
+        >
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in-up"
             style={{ animationDuration: '150ms' }}
             onClick={() => setIsOpen(false)}
+            aria-hidden="true"
           />
           {/* Drawer */}
           <div
+            ref={drawerRef}
             className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white rounded-t-lg animate-fade-in-up"
             style={{ animationDuration: '200ms' }}
           >
             {/* Handle */}
             <div className="sticky top-0 bg-white pt-3 pb-2 border-b border-gray-100">
-              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" />
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" aria-hidden="true" />
             </div>
 
             {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
-              <h2 className="text-lg font-medium text-gray-900 tracking-tight">Filtros</h2>
+              <h2 id="filter-drawer-title" className="text-lg font-medium text-gray-900 tracking-tight">Filtros</h2>
               <button
+                ref={closeButtonRef}
                 onClick={() => setIsOpen(false)}
                 className="w-9 h-9 rounded-sm bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                aria-label="Cerrar filtros"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -152,7 +152,7 @@ function PropiedadesContent() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
+      <main id="main-content" className="min-h-screen">
         {/* Hero Header with AI Search - Luxterra style */}
         <section className="bg-background pt-32 pb-12">
           <div className="container-wide">
@@ -279,6 +279,8 @@ function SimulationToggle({
     <div className="shrink-0">
       <button
         onClick={isSimulating ? onDisable : onEnable}
+        aria-pressed={isSimulating}
+        aria-label={isSimulating ? 'Desactivar simulacion de usuario' : 'Activar simulacion de usuario'}
         className={cn(
           'flex items-center gap-2 px-4 py-2 rounded-sm text-xs transition-all',
           isSimulating

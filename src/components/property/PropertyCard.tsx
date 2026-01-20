@@ -140,26 +140,26 @@ export function PropertyCard({
         </div>
 
         {/* Features row - icons with text */}
-        <div className="flex items-center gap-4 text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-4 text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100" aria-label="Caracteristicas de la propiedad">
           <div className="flex items-center gap-1.5">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="1" />
               <path d="M3 9h18M9 21V9" />
             </svg>
-            <span>{formatArea(area)}</span>
+            <span aria-label={`Area: ${formatArea(area)}`}>{formatArea(area)}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
             </svg>
-            <span>{bedrooms} Bed</span>
+            <span aria-label={`${bedrooms} habitaciones`}>{bedrooms} Bed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
               <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
             </svg>
-            <span>{bathrooms} Bath</span>
+            <span aria-label={`${bathrooms} banos`}>{bathrooms} Bath</span>
           </div>
         </div>
       </div>

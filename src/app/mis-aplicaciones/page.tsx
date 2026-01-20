@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { FileText, CheckCircle2, XCircle, Clock, ArrowRight } from 'lucide-react';
+import { FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ApplicationCard } from '@/components/tenant/ApplicationCard';
 import { ApplicationDetail } from '@/components/tenant/ApplicationDetail';
 import { useTenantApplications } from '@/lib/context/TenantApplicationContext';
@@ -35,32 +34,6 @@ function SummaryCard({ icon: Icon, label, value, color }: SummaryCardProps) {
           <p className="text-sm text-slate-500">{label}</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Empty State Component
-// ============================================================================
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="p-4 bg-slate-100 rounded-full mb-4">
-        <FileText className="h-8 w-8 text-slate-400" />
-      </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">
-        No tienes aplicaciones aun
-      </h3>
-      <p className="text-sm text-slate-500 mb-6 max-w-sm">
-        Explora las propiedades disponibles y aplica a la que mas te guste para comenzar tu proceso de arrendamiento.
-      </p>
-      <Button asChild>
-        <Link href="/propiedades">
-          Explorar propiedades
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Link>
-      </Button>
     </div>
   );
 }
@@ -146,7 +119,12 @@ export default function MisAplicacionesPage() {
         </div>
 
         {applications.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon={FileText}
+            title="No tienes aplicaciones aun"
+            description="Explora propiedades y envia tu primera aplicacion."
+            action={{ label: 'Explorar propiedades', href: '/propiedades' }}
+          />
         ) : (
           <>
             {/* Summary Cards */}

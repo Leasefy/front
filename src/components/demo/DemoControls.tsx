@@ -64,21 +64,21 @@ export function DemoControls({
       {/* Variant Selection */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">Variante</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {variants.map((v) => (
             <button
               key={v.value}
               type="button"
               onClick={() => onVariantChange(v.value)}
               className={cn(
-                'flex flex-col items-start px-3 py-2 rounded-sm border text-left transition-colors',
+                'flex flex-col items-start px-3 py-2 rounded-sm border text-left transition-colors min-w-0',
                 variant === v.value
                   ? 'border-primary bg-primary/5 text-primary'
                   : 'border-slate-200 hover:border-slate-300 text-slate-700'
               )}
             >
-              <span className="text-sm font-medium">{v.label}</span>
-              <span className="text-xs text-muted-foreground">{v.description}</span>
+              <span className="text-sm font-medium truncate w-full">{v.label}</span>
+              <span className="text-xs text-muted-foreground truncate w-full hidden sm:block">{v.description}</span>
             </button>
           ))}
         </div>

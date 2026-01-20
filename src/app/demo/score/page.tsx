@@ -82,7 +82,7 @@ export default function ScoreDemoPage() {
                 <p className="text-sm text-slate-500">Demo interactivo</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
               <Info className="h-3 w-3" />
               <span>Pagina de desarrollo</span>
             </div>

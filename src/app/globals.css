@@ -142,6 +142,31 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01";
   }
+
+  /* ==========================================================
+   * FOCUS STYLES - Accessibility
+   * Clear focus indicators for keyboard navigation
+   * ========================================================== */
+
+  /* Global focus-visible for all focusable elements */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Remove outline for mouse users (non-keyboard focus) */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Skip link for screen reader users */
+  .skip-link {
+    @apply sr-only;
+  }
+
+  .skip-link:focus {
+    @apply not-sr-only fixed left-4 top-4 z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground;
+  }
 }
 
 @layer utilities {

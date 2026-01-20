@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SmoothScroll } from "@/components/providers/SmoothScroll";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,9 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" className="lenis">
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+        {/* Skip link for keyboard/screen reader users */}
+        <a href="#main-content" className="skip-link">
+          Saltar al contenido principal
+        </a>
+        <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
   );

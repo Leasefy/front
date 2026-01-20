@@ -63,13 +63,15 @@ export function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden w-10 h-10 flex items-center justify-center text-black"
-            aria-label="Toggle menu"
+            className="md:hidden min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-black"
+            aria-label={isMobileMenuOpen ? 'Cerrar menu' : 'Abrir menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             ) : (
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -77,11 +79,11 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-black/5">
+        <div id="mobile-menu" className="md:hidden bg-white border-t border-black/5">
           <div className="px-6 py-4 space-y-1">
             <Link
               href="/propiedades"
-              className="block py-3 text-sm text-black/70 hover:text-black transition-colors"
+              className="block min-h-[44px] py-3 text-sm text-black/70 hover:text-black transition-colors flex items-center"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Explorar propiedades
@@ -89,14 +91,14 @@ export function Navbar() {
             <div className="pt-3 mt-3 border-t border-black/5 space-y-1">
               <Link
                 href="/iniciar-sesion"
-                className="block py-3 text-sm text-black/70 hover:text-black transition-colors"
+                className="block min-h-[44px] py-3 text-sm text-black/70 hover:text-black transition-colors flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Iniciar sesion
               </Link>
               <Link
                 href="/registrarme"
-                className="block py-3 text-sm font-medium text-black hover:text-black/70 transition-colors"
+                className="block min-h-[44px] py-3 text-sm font-medium text-black hover:text-black/70 transition-colors flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Registrarme

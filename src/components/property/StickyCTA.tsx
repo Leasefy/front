@@ -52,21 +52,22 @@ export function StickyCTA({
               <button
                 onClick={onWishlistToggle}
                 className={cn(
-                  'w-10 h-10 flex items-center justify-center border transition-colors',
+                  'min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border transition-colors',
                   isWishlisted
                     ? 'border-red-200 bg-red-50 text-red-500'
                     : 'border-black/10 hover:bg-black/5 text-black/60'
                 )}
                 aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                aria-pressed={isWishlisted}
               >
-                <Heart className={cn('w-5 h-5', isWishlisted && 'fill-current')} />
+                <Heart className={cn('w-5 h-5', isWishlisted && 'fill-current')} aria-hidden="true" />
               </button>
             )}
             <button
-              className="w-10 h-10 flex items-center justify-center border border-black/10 hover:bg-black/5 text-black/60 transition-colors"
+              className="min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border border-black/10 hover:bg-black/5 text-black/60 transition-colors"
               aria-label="Compartir propiedad"
             >
-              <Share2 className="w-5 h-5" />
+              <Share2 className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -139,7 +140,7 @@ export function MobileStickyCTA({
           </p>
         </div>
         <Link href={`/aplicar/${propertyId}`}>
-          <button className="px-6 py-3 bg-black text-white text-sm font-medium tracking-tight">
+          <button className="min-h-[44px] px-6 py-3 bg-black text-white text-sm font-medium tracking-tight hover:bg-black/90 transition-colors">
             Postularme
           </button>
         </Link>

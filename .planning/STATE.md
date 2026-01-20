@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 4 of 7 (Risk Score Display)
-Plan: 1 of 5 (Types and Mock Data complete)
+Plan: 2 of 5 (Score Card Components complete)
 Status: In progress
-Last activity: 2026-01-20 - Completed 04-01-PLAN.md (Risk Score Types & Mock Data)
+Last activity: 2026-01-20 - Completed 04-02-PLAN.md (Score Card Component)
 
-Progress: ████████░░ 70%
+Progress: ████████░░ 72%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ████████░░ 70%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 7.3 min
-- Total execution time: 1.6 hours
+- Total plans completed: 13
+- Average duration: 7.0 min
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -47,7 +47,7 @@ Progress: ████████░░ 70%
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
-| 04-risk-score-display | 1/5 | 5.5min | 5.5min |
+| 04-risk-score-display | 2/5 | 9min | 4.5min |
 
 ## Accumulated Context
 
@@ -83,6 +83,9 @@ Progress: ████████░░ 70%
 - **Risk score thresholds**: A>=85, B>=70, C>=50, D<50 (industry standard credit mapping)
 - **Risk level colors**: emerald/blue/amber/red for A/B/C/D levels
 - **AI explanation tone**: Conversational Spanish "asesor de confianza" style
+- **Score component structure**: Composable components with barrel export
+- **Level badge sizes**: sm (24px), md (32px), lg (48px) with optional labels
+- **Progress bar animation**: CSS transition for smooth visual feedback
 
 ### What's Complete (Phase 1)
 
@@ -145,6 +148,12 @@ Progress: ████████░░ 70%
 - **Mock AI explanations** - 19 templates across all levels (`src/lib/data/mock-explanations.ts`)
 - **Mock candidates** - 12 realistic Colombian profiles (`src/lib/data/mock-candidates.ts`)
 - **Central exports** - Index files for types, data, constants
+- **LevelBadge component** - Circular badge with sm/md/lg sizes (`src/components/score/LevelBadge.tsx`)
+- **ScoreCard component** - Compact and full variants (`src/components/score/ScoreCard.tsx`)
+- **ScoreProgressBar component** - Animated progress with colors (`src/components/score/ScoreProgressBar.tsx`)
+- **CategoryBreakdown component** - Accordion with category details (`src/components/score/CategoryBreakdown.tsx`)
+- **Score components barrel export** - Central import point (`src/components/score/index.ts`)
+- **Demo page** - Visual verification at `/demo/score`
 
 ### What's NOT in Scope
 
@@ -158,11 +167,11 @@ Backend responsibilities (for other developer):
 
 ### Pending Todos
 
-None for Plan 1. Ready for Plan 2: Risk Score Overview Card
+None for Plan 2. Ready for Plan 3: AI Explanation Display
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 04-01-PLAN.md (Risk Score Types & Mock Data)
+Stopped at: Completed 04-02-PLAN.md (Score Card Components)
 Resume file: None
-Next action: Continue Phase 4 - Plan 2: Risk Score Overview Card
+Next action: Continue Phase 4 - Plan 3: AI Explanation Display

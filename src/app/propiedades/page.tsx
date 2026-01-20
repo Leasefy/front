@@ -46,8 +46,15 @@ export default function PropiedadesPage() {
 function PropiedadesContent() {
   const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const [onlyAffordable, setOnlyAffordable] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const { profile, isSimulating, enableSimulation, disableSimulation } =
     useUserProfile();
+
+  // Simulate initial loading state to demonstrate skeleton loaders
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Load wishlist from localStorage on mount
   useEffect(() => {
@@ -218,6 +225,7 @@ function PropiedadesContent() {
                   isWishlisted={isWishlisted}
                   onWishlistToggle={handleWishlistToggle}
                   qualifications={showPersonalization ? qualifications : undefined}
+                  isLoading={isInitialLoading}
                 />
               </div>
             </div>

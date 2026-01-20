@@ -117,6 +117,10 @@ Progress: ███████████████░ 98.5%
 - **Skeleton component naming**: [ComponentName]Skeleton pattern
 - **isLoading prop pattern**: Grid/list components accept isLoading for skeleton display
 - **Skeleton barrel export**: src/components/skeleton/ with centralized index.ts
+- **Light theme default**: Notion-inspired almost-white background (#FBFBFB), dark-section variant for overlays
+- **Typography scale**: text-display, text-h1-h4, text-body variants, text-caption, text-overline
+- **Border radius scale**: 2px base (--radius-sm through --radius-full CSS variables)
+- **Spacing grid**: 4px base documented as CSS custom properties (--space-1 through --space-16)
 
 ### What's Complete (Phase 1)
 
@@ -253,6 +257,7 @@ Backend responsibilities (for other developer):
 - **ApplicationCardSkeleton** - Skeleton for application cards (`src/components/skeleton/ApplicationCardSkeleton.tsx`)
 - **Skeleton barrel export** - Centralized exports (`src/components/skeleton/index.ts`)
 - **PropertyGrid isLoading** - Displays skeletons during loading state
+- **Design System Polish** - Light theme, typography scale, radius scale, spacing grid (`src/app/globals.css`)
 
 ### Pending Todos
 
@@ -260,7 +265,7 @@ Phase 7 plans 04-06 remaining.
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Completed 07-02-PLAN.md (Skeleton Loaders)
+Last session: 2026-01-20
+Stopped at: Completed 07-01-PLAN.md (Design System Polish)
 Resume file: None
 Next action: Execute PLAN-04 through PLAN-06

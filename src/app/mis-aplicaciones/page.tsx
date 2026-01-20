@@ -6,6 +6,7 @@ import { FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ApplicationCard } from '@/components/tenant/ApplicationCard';
 import { ApplicationDetail } from '@/components/tenant/ApplicationDetail';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useTenantApplications } from '@/lib/context/TenantApplicationContext';
 import { mockProperties } from '@/lib/data/mock-properties';
 import type { TenantApplication } from '@/lib/types/tenant-application';
@@ -39,10 +40,10 @@ function SummaryCard({ icon: Icon, label, value, color }: SummaryCardProps) {
 }
 
 // ============================================================================
-// Main Page Component
+// Main Page Content (Protected)
 // ============================================================================
 
-export default function MisAplicacionesPage() {
+function MisAplicacionesContent() {
   const { applications, summary, withdrawApplication, isHydrated } = useTenantApplications();
   const [selectedApplication, setSelectedApplication] = useState<TenantApplication | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -178,5 +179,17 @@ export default function MisAplicacionesPage() {
         onWithdraw={handleWithdraw}
       />
     </main>
+  );
+}
+
+// ============================================================================
+// Main Page Component (with Protection)
+// ============================================================================
+
+export default function MisAplicacionesPage() {
+  return (
+    <ProtectedRoute allowedRoles={['tenant']}>
+      <MisAplicacionesContent />
+    </ProtectedRoute>
   );
 }

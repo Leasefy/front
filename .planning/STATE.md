@@ -6,14 +6,14 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 10 - Post-Approval Flow (COMPLETE)
+**Current focus:** Phase 10 - Post-Approval Flow (COMPLETE + Gap Closures)
 
 ## Current Position
 
-Phase: 10 (Post-Approval Flow) - COMPLETE
-Plan: 4 of 4 complete (All plans done)
+Phase: 10 (Post-Approval Flow) - COMPLETE + Gap Closures
+Plan: 5 of 5 complete (All plans + gap closure done)
 Status: MVP Frontend Complete
-Last activity: 2026-01-20 - Completed 10-04-PLAN (Post-Contract Dashboards)
+Last activity: 2026-01-20 - Completed 10-05-PLAN (Insurance Selection Gap Closure)
 
 Progress: ██████████████████████████████ 100%
 
@@ -56,7 +56,7 @@ Progress: ███████████████████████�
 | 07-ux-polish | 6/6 | 33min | 5.5min |
 | 08-authentication-ui | 2/2 | 13.5min | 6.75min |
 | 09-interactive-map | 2/2 | 17min | 8.5min |
-| 10-post-approval-flow | 4/4 | 25min | 6.25min |
+| 10-post-approval-flow | 5/5 | 29.2min | 5.84min |
 
 ## Accumulated Context
 
@@ -160,6 +160,7 @@ Progress: ███████████████████████�
 - **Lease view pattern**: LeaseCard accepts 'view' prop for landlord/tenant rendering
 - **Payment methods Colombian**: PSE, cards, Nequi, Daviplata with cash as coming soon
 - **Payment history responsive**: Desktop table, mobile cards
+- **Insurance tiers**: none ($0), basic ($45k COP), premium ($89k COP) with recommended badge on basic
 
 ### What's Complete (Phase 1)
 
@@ -388,6 +389,14 @@ Backend responsibilities (for other developer):
 - **Tenant lease dashboard** - `/mi-arriendo` with payment flow
 - **Navigation links** - Added lease links to Navbar
 
+**Plan 5 - Insurance Selection (Gap Closure):**
+- **Insurance types** - InsurancePolicy, InsuranceCoverage, SelectedInsurance (`src/lib/types/insurance.ts`)
+- **Mock insurance** - 3 tiers: none, basic ($45k), premium ($89k) (`src/lib/data/mock-insurance.ts`)
+- **InsuranceSelector component** - Policy cards with selection state (`src/components/contract/InsuranceSelector.tsx`)
+- **Contract signing integration** - Insurance selector before signature form
+- **ContractPreview update** - Shows selected insurance policy details
+- **Gap closed** - "Insurance policy options presented during signing"
+
 ## MVP FRONTEND COMPLETE
 
 All 10 phases executed successfully. The frontend is fully functional with:
@@ -407,6 +416,6 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 10-04-PLAN (Post-Contract Dashboards)
+Stopped at: Completed 10-05-PLAN (Insurance Selection Gap Closure)
 Resume file: None
-Status: MVP Frontend Complete - All phases done
+Status: MVP Frontend Complete - All phases done + gap closures

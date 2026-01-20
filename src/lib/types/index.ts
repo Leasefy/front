@@ -19,3 +19,6 @@ export * from './subscription';
 
 // Lease types
 export * from './lease';
+
+// Coupon types
+export * from './coupon';

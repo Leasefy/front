@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 6 IN PROGRESS - Tenant Tracking
+**Current focus:** Phase 6 COMPLETE - Tenant Tracking
 
 ## Current Position
 
-Phase: 6 of 7 (Tenant Tracking)
-Plan: 1 of 3 (Types and Cards complete)
-Status: In progress
-Last activity: 2026-01-19 - Completed PLAN-01-types-and-cards.md
+Phase: 6 of 7 (Tenant Tracking) - COMPLETE
+Plan: 2 of 2 (Page and Timeline complete)
+Status: Phase complete
+Last activity: 2026-01-20 - Completed PLAN-02-page-and-timeline.md
 
-Progress: ██████████████░ 96%
+Progress: ███████████████ 98%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ██████████████░ 96%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: 6.6 min
-- Total execution time: 2.4 hours
+- Total plans completed: 20
+- Average duration: 6.5 min
+- Total execution time: 2.5 hours
 
 **By Phase:**
 
@@ -49,7 +49,7 @@ Progress: ██████████████░ 96%
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
 | 04-risk-score-display | 4/4 | 18min | 4.5min |
 | 05-landlord-dashboard | 3/3 | 28min | 9.3min |
-| 06-tenant-tracking | 1/3 | 8min | 8min |
+| 06-tenant-tracking | 2/2 | 14min | 7min |
 
 ## Accumulated Context
 
@@ -106,6 +106,9 @@ Progress: ██████████████░ 96%
 - **Tenant status states**: submitted, under_review, pre_approved, approved, rejected, withdrawn
 - **Tracking code format**: AF-XXXXXX for recognizable tenant codes
 - **Event timeline pattern**: ApplicationEvent with chronological history and Spanish descriptions
+- **Timeline order**: Oldest first (top-to-bottom chronological flow)
+- **Tenant detail drawer**: Sheet drawer pattern for application detail (consistent with CandidateDetail)
+- **Withdraw confirmation**: Dialog confirmation for destructive withdraw action
 
 ### What's Complete (Phase 1)
 
@@ -214,22 +217,26 @@ Backend responsibilities (for other developer):
 - **Panel layout** - DecisionProvider wrapper (`src/app/panel/layout.tsx`)
 - **shadcn components** - Sheet, Dialog, Textarea
 
-### What's Complete (Phase 6) - IN PROGRESS
+### What's Complete (Phase 6) - COMPLETE
 
 - **TenantApplication types** - Status, events, tracking code (`src/lib/types/tenant-application.ts`)
 - **Mock tenant applications** - 6 applications in various states (`src/lib/data/mock-tenant-applications.ts`)
 - **ApplicationStatusBadge** - Status badge with Spanish labels (`src/components/tenant/ApplicationStatusBadge.tsx`)
 - **ApplicationCard** - Card with property thumbnail, status, tracking (`src/components/tenant/ApplicationCard.tsx`)
 - **Tenant components barrel export** (`src/components/tenant/index.ts`)
+- **TenantApplicationContext** - localStorage persistence with withdraw functionality (`src/lib/context/TenantApplicationContext.tsx`)
+- **ApplicationTimeline** - Chronological event display with icons (`src/components/tenant/ApplicationTimeline.tsx`)
+- **ApplicationDetail** - Drawer with timeline, progress, withdraw button (`src/components/tenant/ApplicationDetail.tsx`)
+- **Mis Aplicaciones page** - `/mis-aplicaciones` with summary cards and list (`src/app/mis-aplicaciones/page.tsx`)
+- **Format utilities** - formatDate, formatDateTime, formatRelativeTime (`src/lib/format.ts`)
 
 ### Pending Todos
 
-- PLAN-02: Applications list page at `/mis-solicitudes`
-- PLAN-03: Application detail page with timeline
+None for Phase 6. Ready for Phase 7: UX Polish.
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Completed PLAN-01-types-and-cards.md
+Last session: 2026-01-20
+Stopped at: Completed PLAN-02-page-and-timeline.md
 Resume file: None
-Next action: Execute PLAN-02-applications-list.md
+Next action: Create Phase 7 roadmap and plans for UX Polish

@@ -6,7 +6,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 
 ## Milestones
 
-- 🚧 **v1.0 Frontend MVP** - Phases 1-8 (in progress)
+- ✅ **v1.0 Frontend MVP** - Phases 1-8 (complete)
 
 ## Phases
 
@@ -21,7 +21,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - [x] **Phase 5: Landlord Dashboard** - Candidates view, score details, decision UI
 - [x] **Phase 6: Tenant Tracking** - My applications, timeline, status display
 - [x] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
-- [ ] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
+- [x] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
 
 ## Phase Details
 
@@ -152,7 +152,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 5. Landlord Dashboard | 3/3 | Complete | 2026-01-19 |
 | 6. Tenant Tracking | 2/2 | Complete | 2026-01-19 |
 | 7. UX Polish | 6/6 | Complete | 2026-01-20 |
-| 8. Authentication UI | 0/2 | Pending | - |
+| 8. Authentication UI | 2/2 | Complete | 2026-01-19 |
 
 ## Notes
 
@@ -182,5 +182,5 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-19 (Added Phase 8: Authentication UI)*
+*Last updated: 2026-01-19 (Phase 8 Authentication UI complete - MVP done!)*
 *Vision: FRONTEND-VISION.md*

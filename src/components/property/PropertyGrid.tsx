@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ import type { QualificationResult } from '@/lib/scoring/qualificationScore';
 
 const INITIAL_ITEMS = 9;
 const LOAD_MORE_ITEMS = 6;
+const SKELETON_COUNT = 6;
 
 export interface PropertyGridProps {
   properties: Property[];
@@ -18,6 +20,8 @@ export interface PropertyGridProps {
   onWishlistToggle: (id: string) => void;
   /** Map of property ID to qualification result (for personalization badges) */
   qualifications?: Map<string, QualificationResult>;
+  /** Show skeleton loaders instead of content */
+  isLoading?: boolean;
 }
 
 /**
@@ -30,9 +34,10 @@ export function PropertyGrid({
   isWishlisted,
   onWishlistToggle,
   qualifications,
+  isLoading: externalLoading = false,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadedIndices, setLoadedIndices] = useState<number[]>([]);
 
   // Reset display count when properties change (new search/filter)
@@ -46,7 +51,7 @@ export function PropertyGrid({
   const remainingCount = properties.length - displayCount;
 
   const handleLoadMore = useCallback(() => {
-    setIsLoading(true);
+    setIsLoadingMore(true);
 
     // Simulate loading for smooth UX
     setTimeout(() => {
@@ -58,12 +63,25 @@ export function PropertyGrid({
       );
       setLoadedIndices(newIndices);
       setDisplayCount(newCount);
-      setIsLoading(false);
+      setIsLoadingMore(false);
 
       // Clear animation tracking after animation completes
       setTimeout(() => setLoadedIndices([]), 500);
     }, 300);
   }, [displayCount, properties.length]);
+
+  // Show skeleton grid when loading
+  if (externalLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
+            <PropertyCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (properties.length === 0) {
     return (
@@ -109,10 +127,10 @@ export function PropertyGrid({
             variant="outline"
             size="lg"
             onClick={handleLoadMore}
-            disabled={isLoading}
+            disabled={isLoadingMore}
             className="min-w-[200px] text-sm tracking-tight"
           >
-            {isLoading ? (
+            {isLoadingMore ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Cargando...

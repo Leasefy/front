@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 3 Complete (including AI Search) - Ready for Phase 4 Risk Score Display
+**Current focus:** Phase 4 - Risk Score Display (MOST IMPORTANT phase for product value)
 
 ## Current Position
 
-Phase: 3 of 7 (Application Wizard) - COMPLETE
-Plan: 5 of 5 (Personalization Features added)
-Status: Phase complete
-Last activity: 2026-01-19 - Completed 03-05-PLAN.md (Personalization Features)
+Phase: 4 of 7 (Risk Score Display)
+Plan: 1 of 5 (Types and Mock Data complete)
+Status: In progress
+Last activity: 2026-01-20 - Completed 04-01-PLAN.md (Risk Score Types & Mock Data)
 
-Progress: ███████░░░ 65%
+Progress: ████████░░ 70%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -28,7 +28,7 @@ Progress: ███████░░░ 65%
 1. Foundation & Design System (complete)
 2. Property Catalog (complete)
 3. Application Wizard (COMPLETE)
-4. Risk Score Display (MOST IMPORTANT) - UP NEXT
+4. Risk Score Display (MOST IMPORTANT) - IN PROGRESS
 5. Landlord Dashboard
 6. Tenant Tracking
 7. UX Polish
@@ -36,9 +36,9 @@ Progress: ███████░░░ 65%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 7.6 min
-- Total execution time: 1.5 hours
+- Total plans completed: 12
+- Average duration: 7.3 min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -47,6 +47,7 @@ Progress: ███████░░░ 65%
 | 01-foundation | 4/4 | 38min | 9.5min |
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
+| 04-risk-score-display | 1/5 | 5.5min | 5.5min |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Progress: ███████░░░ 65%
 - **30% affordability rule**: Rent + admin <= 30% of available income (industry standard)
 - **Match scoring algorithm**: Affordability (ideal 22%) + city + bedrooms + type preferences
 - **Qualification badges**: Bottom-right of card image, green for "Califica", amber for "Fuera de presupuesto"
+- **Risk score thresholds**: A>=85, B>=70, C>=50, D<50 (industry standard credit mapping)
+- **Risk level colors**: emerald/blue/amber/red for A/B/C/D levels
+- **AI explanation tone**: Conversational Spanish "asesor de confianza" style
 
 ### What's Complete (Phase 1)
 
@@ -133,6 +137,15 @@ Progress: ███████░░░ 65%
 - **"Solo propiedades para mi"** toggle in FilterSidebar
 - Simulation toggle for testing personalization features
 
+### What's Complete (Phase 4) - IN PROGRESS
+
+- **RiskScore type** - Full type system for risk assessment (`src/lib/types/risk-score.ts`)
+- **Candidate type** - Applicant profiles with scores (`src/lib/types/candidate.ts`)
+- **Risk level constants** - Colors, labels, thresholds (`src/lib/constants/risk-levels.ts`)
+- **Mock AI explanations** - 19 templates across all levels (`src/lib/data/mock-explanations.ts`)
+- **Mock candidates** - 12 realistic Colombian profiles (`src/lib/data/mock-candidates.ts`)
+- **Central exports** - Index files for types, data, constants
+
 ### What's NOT in Scope
 
 Backend responsibilities (for other developer):
@@ -145,11 +158,11 @@ Backend responsibilities (for other developer):
 
 ### Pending Todos
 
-None - Phase 3 complete. Ready for Phase 4: Risk Score Display
+None for Plan 1. Ready for Plan 2: Risk Score Overview Card
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Completed 03-05-PLAN.md (Personalization Features)
+Last session: 2026-01-20
+Stopped at: Completed 04-01-PLAN.md (Risk Score Types & Mock Data)
 Resume file: None
-Next action: Start Phase 4 - Risk Score Display (MOST IMPORTANT phase for product value)
+Next action: Continue Phase 4 - Plan 2: Risk Score Overview Card

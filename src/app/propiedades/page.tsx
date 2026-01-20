@@ -47,6 +47,7 @@ function PropiedadesContent() {
   const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const [onlyAffordable, setOnlyAffordable] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const { profile, isSimulating, enableSimulation, disableSimulation } =
     useUserProfile();
 
@@ -89,16 +90,24 @@ function PropiedadesContent() {
 
   /**
    * Handle AI search submission
-   * Parses the query and updates filters
+   * Parses the query and updates filters with animated loading state
    */
   const handleAISearch = useCallback(
-    (query: string) => {
+    async (query: string) => {
       if (!query.trim()) {
         resetFilters();
         return;
       }
+
+      // Show searching animation for conversational feel
+      setIsSearching(true);
+
+      // Simulate AI processing time for magical feel
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
       const parsed = parseSearchQuery(query);
       setFromParsedQuery(parsed);
+      setIsSearching(false);
     },
     [setFromParsedQuery, resetFilters]
   );
@@ -172,6 +181,7 @@ function PropiedadesContent() {
               value={filters.searchQuery}
               onChange={setSearchQuery}
               onSearch={handleAISearch}
+              isSearching={isSearching}
               className="max-w-3xl"
             />
           </div>

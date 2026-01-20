@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Search } from 'lucide-react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { cn } from '@/lib/utils';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/qualificationScore';
 
@@ -96,29 +96,39 @@ export function PropertyGrid({
 
   return (
     <div className="space-y-8">
-      {/* Property Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {displayedProperties.map((property, index) => (
-          <div
-            key={property.id}
-            className={cn(
-              loadedIndices.includes(index) && 'animate-fade-in-up'
-            )}
-            style={{
-              animationDelay: loadedIndices.includes(index)
-                ? `${(index - Math.min(...loadedIndices)) * 100}ms`
-                : undefined
-            }}
-          >
-            <PropertyCard
-              property={property}
-              isWishlisted={isWishlisted(property.id)}
-              onWishlistToggle={onWishlistToggle}
-              qualification={qualifications?.get(property.id)}
-            />
-          </div>
-        ))}
-      </div>
+      {/* Property Grid with Framer Motion animations */}
+      <motion.div
+        className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        layout
+      >
+        <AnimatePresence mode="popLayout">
+          {displayedProperties.map((property, index) => (
+            <motion.div
+              key={property.id}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{
+                duration: 0.3,
+                delay: loadedIndices.includes(index)
+                  ? (index - Math.min(...loadedIndices)) * 0.05
+                  : index < INITIAL_ITEMS
+                    ? index * 0.05
+                    : 0,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              }}
+              layout
+            >
+              <PropertyCard
+                property={property}
+                isWishlisted={isWishlisted(property.id)}
+                onWishlistToggle={onWishlistToggle}
+                qualification={qualifications?.get(property.id)}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Load More Section */}
       {hasMore && (

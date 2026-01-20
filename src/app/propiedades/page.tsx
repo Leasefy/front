@@ -199,11 +199,24 @@ function PropiedadesContent() {
         {/* Listing Section */}
         <section className="light-section bg-[#f7f7f7] section-padding">
           <div className="container-wide">
-            {/* Results count */}
+            {/* Results count - contextual based on search/filter state */}
             <div className="mb-8">
               <p className="text-xs text-gray-600 tracking-tight">
-                {displayProperties.length}{' '}
-                {displayProperties.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}
+                {hasActiveFilters || filters.searchQuery ? (
+                  <>
+                    {displayProperties.length}{' '}
+                    {displayProperties.length === 1
+                      ? 'propiedad encontrada'
+                      : 'propiedades encontradas'}
+                  </>
+                ) : (
+                  <>
+                    {displayProperties.length}{' '}
+                    {displayProperties.length === 1
+                      ? 'propiedad disponible'
+                      : 'propiedades disponibles'}
+                  </>
+                )}
                 {onlyAffordable && showPersonalization && (
                   <span className="text-green-600 ml-2">
                     (filtrado por tu presupuesto)

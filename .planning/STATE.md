@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 9 - Interactive Map
+**Current focus:** Phase 10 - Post-Approval Flow
 
 ## Current Position
 
-Phase: 9 (Interactive Map) - COMPLETE
-Plan: 2 of 2 complete (Map Integration)
-Status: Phase 9 complete!
-Last activity: 2026-01-20 - Completed 09-02-PLAN (Map Integration)
+Phase: 10 (Post-Approval Flow) - In Progress
+Plan: 2 of 3 complete (Pricing Page)
+Status: Phase 10 in progress
+Last activity: 2026-01-20 - Completed 10-02-PLAN (Pricing Page)
 
-Progress: ████████████████████ 100%
+Progress: ████████████████████████████░░ 93%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -34,13 +34,14 @@ Progress: ████████████████████ 100%
 7. UX Polish (COMPLETE)
 8. Authentication UI (COMPLETE) - Split-layout auth, protected routes, user menu
 9. Interactive Map (COMPLETE) - Airbnb-style map with price markers and clustering
+10. Post-Approval Flow (IN PROGRESS) - Contract generation, pricing, success flow
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
-- Average duration: 6.2 min
-- Total execution time: 3.0 hours
+- Total plans completed: 31
+- Average duration: 6.1 min
+- Total execution time: 3.2 hours
 
 **By Phase:**
 
@@ -55,6 +56,7 @@ Progress: ████████████████████ 100%
 | 07-ux-polish | 6/6 | 33min | 5.5min |
 | 08-authentication-ui | 2/2 | 13.5min | 6.75min |
 | 09-interactive-map | 2/2 | 17min | 8.5min |
+| 10-post-approval-flow | 2/3 | 10min | 5min |
 
 ## Accumulated Context
 
@@ -149,6 +151,9 @@ Progress: ████████████████████ 100%
 - **Cluster config**: 50px radius, max zoom 14, min 2 points
 - **Mobile map toggle**: Hidden map on mobile, toggle button at bottom center
 - **Property ref callback**: Track DOM refs for scroll-to-property behavior
+- **Freemium pricing model**: Free/Pro ($49,900)/Business ($149,900) with 20% yearly discount
+- **Feature gating**: AI scoring in Pro, API access in Business tier
+- **Billing toggle pattern**: Monthly/Yearly with savings badge
 
 ### What's Complete (Phase 1)
 
@@ -350,9 +355,28 @@ All 8 phases executed successfully. The frontend is fully functional with:
 - **Bidirectional hover sync** - List-map interaction
 - **Click to scroll** - Marker click scrolls to property in list
 
+### What's Complete (Phase 10) - IN PROGRESS
+
+**Plan 1 - Contract Generation:**
+- **Contract types** - Contract, ContractClause, ContractTemplate types
+- **Mock contracts** - Sample contract data with clauses
+- **ContractPreview component** - Contract document with signature areas
+- **SignatureForm component** - Digital signature capture
+- **Contract signing page** - `/panel/[propertyId]/contract/[candidateId]`
+- **"Generar contrato" button** - Added to CandidateDetail drawer
+
+**Plan 2 - Pricing Page:**
+- **Subscription types** - PlanId, BillingCycle, Plan, Subscription interfaces
+- **Mock subscriptions** - Free/Pro/Business plans with features
+- **PricingCard component** - Individual plan card with features
+- **PricingTable component** - Grid with billing toggle
+- **Pricing page** - Public `/pricing` with comparison and FAQ
+- **Upgrade page** - `/panel/upgrade` with checkout flow
+- **Dashboard upgrade CTA** - Sidebar prompt for free users
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 09-02-PLAN (Map Integration)
+Stopped at: Completed 10-02-PLAN (Pricing Page)
 Resume file: None
-Status: Phase 9 Interactive Map COMPLETE!
+Status: Phase 10 Post-Approval Flow in progress (2/3 plans complete)

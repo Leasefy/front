@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 8 - Authentication UI
+**Current focus:** Phase 9 - Interactive Map
 
 ## Current Position
 
-Phase: 8 of 8 (Authentication UI) - COMPLETE
-Plan: 2 of 2 (All plans complete)
-Status: MVP Frontend Complete!
-Last activity: 2026-01-20 - Completed 08-02-PLAN (Auth State & Protected Routes)
+Phase: 9 (Interactive Map) - In Progress
+Plan: 1 of 4 complete (Map Foundation)
+Status: Plan 01 complete, continuing to Plan 02
+Last activity: 2026-01-20 - Completed 09-01-PLAN (Map Foundation)
 
-Progress: ████████████████ 100%
+Progress: ████████████████▒▒▒▒ 87%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -33,6 +33,7 @@ Progress: ████████████████ 100%
 6. Tenant Tracking (COMPLETE)
 7. UX Polish (COMPLETE)
 8. Authentication UI (COMPLETE) - Split-layout auth, protected routes, user menu
+9. Interactive Map (IN PROGRESS) - Airbnb-style map with price markers and clustering
 
 ## Performance Metrics
 
@@ -53,6 +54,7 @@ Progress: ████████████████ 100%
 | 06-tenant-tracking | 2/2 | 14min | 7min |
 | 07-ux-polish | 6/6 | 33min | 5.5min |
 | 08-authentication-ui | 2/2 | 13.5min | 6.75min |
+| 09-interactive-map | 1/4 | 8min | 8min |
 
 ## Accumulated Context
 
@@ -139,6 +141,9 @@ Progress: ████████████████ 100%
 - **Auth split-layout**: Image+testimonial left, form right on desktop
 - **Suspense for useSearchParams**: Next.js 14 requirement for client components
 - **Demo credentials hint**: Show login credentials on auth form for testing
+- **react-map-gl v8 import**: Use 'react-map-gl/mapbox' not 'react-map-gl' for Mapbox support
+- **Property coordinates**: All 16 mock properties have realistic Colombian coordinates
+- **Map constants**: COLOMBIA_BOUNDS, CITY_COORDINATES, ZOOM_LEVELS, CLUSTER_CONFIG defined
 
 ### What's Complete (Phase 1)
 
@@ -322,9 +327,18 @@ All 8 phases executed successfully. The frontend is fully functional with:
 - UX polish (accessibility, animations, responsive)
 - Mock authentication with protected routes
 
+### What's Complete (Phase 9) - IN PROGRESS
+
+**Plan 1 - Map Foundation:**
+- **Property coordinates** - latitude/longitude fields added to Property type
+- **Mock data coordinates** - All 16 properties have realistic Colombian coordinates
+- **Mapbox dependencies** - react-map-gl 8.1.0, mapbox-gl 3.18.0 installed
+- **PropertyMap component** - Basic map with Colombia bounds and fallback
+- **Map constants** - Bounds, city coordinates, zoom levels, cluster config
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed Phase 8 - MVP Frontend Complete!
+Stopped at: Completed 09-01-PLAN (Map Foundation)
 Resume file: None
-Next action: Backend integration (different developer)
+Next action: Execute 09-02-PLAN (Price Markers & Clustering)

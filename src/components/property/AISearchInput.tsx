@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useCallback, KeyboardEvent } from 'react';
-import { Search, ArrowRight } from 'lucide-react';
+import { useState, useCallback, KeyboardEvent, useRef, useEffect } from 'react';
+import { Sparkles, ArrowRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
  * Example search queries for user guidance
+ * Varied examples showing different search patterns
  */
 const EXAMPLE_QUERIES = [
-  'Casa con piscina en Cali',
-  'Estudio economico en Bogota',
-  '3 habitaciones en El Poblado',
-  'Apartamento amoblado 2M',
+  'Apartamento en Bogota con 2 habitaciones',
+  'Casa con piscina en Medellin',
+  'Estudio economico en Chapinero',
+  '3 habitaciones cerca al parque',
 ];
 
 interface AISearchInputProps {
@@ -25,30 +26,43 @@ interface AISearchInputProps {
   placeholder?: string;
   /** Optional CSS classes */
   className?: string;
+  /** Whether search is currently processing */
+  isSearching?: boolean;
 }
 
 /**
  * ChatGPT-style natural language search input
- * Large, prominent input with example queries and search button
+ * Large, conversational input with AI indicator, animations, and loading states
  */
 export function AISearchInput({
   value,
   onChange,
   onSearch,
-  placeholder = 'Describe lo que buscas... "Apto en Medellin, 80m2, 1-2M COP"',
+  placeholder = 'Describe tu hogar ideal...',
   className,
+  isSearching = false,
 }: AISearchInputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, [value]);
 
   const handleSubmit = useCallback(() => {
-    if (value.trim()) {
+    if (value.trim() && !isSearching) {
+      setHasSearched(true);
       onSearch(value.trim());
     }
-  }, [value, onSearch]);
+  }, [value, onSearch, isSearching]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      // Submit on Enter (without Shift)
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
@@ -60,6 +74,7 @@ export function AISearchInput({
   const handleExampleClick = useCallback(
     (example: string) => {
       onChange(example);
+      setHasSearched(true);
       onSearch(example);
     },
     [onChange, onSearch]
@@ -67,111 +82,147 @@ export function AISearchInput({
 
   const handleClear = useCallback(() => {
     onChange('');
+    setHasSearched(false);
     onSearch('');
+    textareaRef.current?.focus();
   }, [onChange, onSearch]);
 
   return (
     <div className={cn('w-full', className)}>
-      {/* Main Search Box */}
+      {/* Main Search Box - ChatGPT style */}
       <div
         className={cn(
-          'bg-white rounded-sm border p-4 shadow-sm transition-all duration-200',
+          'relative bg-white rounded-sm border transition-all duration-300',
           isFocused
-            ? 'border-gray-400 shadow-md'
-            : 'border-gray-200 hover:border-gray-300'
+            ? 'border-gray-400 shadow-lg'
+            : 'border-gray-200 hover:border-gray-300 shadow-sm'
         )}
       >
-        <div className="relative">
-          {/* Search Icon */}
-          <Search
-            className={cn(
-              'absolute left-3 top-4 w-5 h-5 transition-colors duration-200',
-              isFocused ? 'text-gray-600' : 'text-gray-400'
-            )}
-          />
+        {/* AI Indicator */}
+        <div className="absolute left-4 top-4 flex items-center gap-2">
+          <div className={cn(
+            'w-8 h-8 rounded-sm bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center',
+            isSearching && 'animate-pulse-subtle'
+          )}>
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+        </div>
 
-          {/* Textarea Input */}
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={placeholder}
-            rows={2}
-            className={cn(
-              'w-full pl-11 pr-24 py-3 text-base resize-none',
-              'border-0 focus:ring-0 focus:outline-none',
-              'placeholder:text-gray-400 text-gray-900',
-              'leading-relaxed'
-            )}
-          />
+        {/* Textarea Input */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={placeholder}
+          rows={1}
+          disabled={isSearching}
+          className={cn(
+            'w-full pl-16 pr-28 py-4 text-base resize-none min-h-[56px]',
+            'border-0 focus:ring-0 focus:outline-none',
+            'placeholder:text-gray-400 text-gray-900',
+            'leading-relaxed tracking-tight',
+            'disabled:bg-white disabled:cursor-not-allowed'
+          )}
+        />
 
-          {/* Search/Clear Button */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {value && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className={cn(
-                  'text-xs text-gray-500 hover:text-gray-700',
-                  'transition-colors duration-200'
-                )}
-              >
-                Limpiar
-              </button>
-            )}
+        {/* Action Buttons */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {value && !isSearching && (
             <button
               type="button"
-              onClick={handleSubmit}
-              disabled={!value.trim()}
-              className={cn(
-                'px-4 py-2 rounded-sm text-sm font-medium',
-                'transition-all duration-200',
-                'flex items-center gap-2',
-                value.trim()
-                  ? 'bg-gray-900 text-white hover:bg-gray-800 active:bg-gray-700'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              )}
+              onClick={handleClear}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-sm hover:bg-gray-100"
+              aria-label="Limpiar busqueda"
             >
-              Buscar
-              <ArrowRight className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!value.trim() || isSearching}
+            className={cn(
+              'px-4 py-2.5 rounded-sm text-sm font-medium tracking-tight',
+              'transition-all duration-200',
+              'flex items-center gap-2',
+              value.trim() && !isSearching
+                ? 'bg-gray-900 text-white hover:bg-gray-800 active:scale-95'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            )}
+          >
+            Buscar
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Example Chips */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-gray-500">Ejemplos:</span>
-        {EXAMPLE_QUERIES.map((example, index) => (
-          <span key={example} className="flex items-center gap-2">
+      {/* Loading State */}
+      {isSearching && (
+        <div className="mt-4 flex items-center gap-3 animate-fade-in-up">
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+          </div>
+          <span className="text-sm text-gray-500 tracking-tight">
+            Buscando el inmueble de tus suenos...
+          </span>
+        </div>
+      )}
+
+      {/* Example Chips - Only show when no search active */}
+      {!hasSearched && !isSearching && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 animate-fade-in-up">
+          <span className="text-xs text-gray-400 tracking-tight">Prueba:</span>
+          {EXAMPLE_QUERIES.map((example) => (
             <button
+              key={example}
               type="button"
               onClick={() => handleExampleClick(example)}
               className={cn(
-                'text-xs text-gray-600 hover:text-gray-900',
-                'transition-colors duration-200 hover:underline'
+                'px-3 py-1.5 text-xs text-gray-600 tracking-tight',
+                'bg-white border border-gray-200 rounded-sm',
+                'hover:bg-gray-50 hover:border-gray-300 transition-all duration-200',
+                'active:scale-95'
               )}
             >
               {example}
             </button>
-            {index < EXAMPLE_QUERIES.length - 1 && (
-              <span className="text-gray-300">&middot;</span>
-            )}
-          </span>
-        ))}
-      </div>
-
-      {/* Active Search Indicator */}
-      {value && (
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-xs text-gray-500">
-            Buscando propiedades que coincidan...
-          </span>
+          ))}
         </div>
       )}
+
+      {/* Active Search Indicator */}
+      {hasSearched && !isSearching && value && (
+        <div className="mt-4 flex items-center gap-2 animate-fade-in-up">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          <span className="text-xs text-gray-500 tracking-tight">
+            Mostrando resultados para &quot;{value}&quot;
+          </span>
+          <button
+            onClick={handleClear}
+            className="text-xs text-violet-600 hover:text-violet-700 tracking-tight hover:underline"
+          >
+            Nueva busqueda
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Typing dots animation component
+ */
+export function TypingDots({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex items-center gap-1', className)}>
+      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
     </div>
   );
 }

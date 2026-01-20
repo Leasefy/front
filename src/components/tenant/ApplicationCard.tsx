@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { MapPin, Calendar, Hash, ChevronRight, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -15,6 +14,8 @@ import { canWithdraw } from '@/lib/types/tenant-application';
 export interface ApplicationCardProps {
   /** Application to display */
   application: TenantApplication;
+  /** Callback when card is clicked */
+  onClick?: () => void;
   /** Callback when user wants to withdraw */
   onWithdraw?: (id: string) => void;
   /** Additional CSS classes */
@@ -35,6 +36,7 @@ export interface ApplicationCardProps {
  */
 export function ApplicationCard({
   application,
+  onClick,
   onWithdraw,
   className,
 }: ApplicationCardProps) {
@@ -56,11 +58,13 @@ export function ApplicationCard({
   };
 
   return (
-    <Link
-      href={`/mis-solicitudes/${id}`}
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        'block bg-white border border-slate-200 rounded-sm overflow-hidden',
+        'w-full text-left bg-white border border-slate-200 rounded-sm overflow-hidden',
         'hover:border-slate-300 hover:shadow-sm transition-all duration-200',
+        'focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary',
         'group',
         className
       )}
@@ -142,6 +146,6 @@ export function ApplicationCard({
           <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
         </div>
       </div>
-    </Link>
+    </button>
   );
 }

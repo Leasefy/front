@@ -15,6 +15,12 @@ export interface PropertyCardProps {
   onWishlistToggle?: (propertyId: string) => void;
   /** Qualification result for personalization badge (only shown when provided) */
   qualification?: QualificationResult;
+  /** Whether this card is highlighted (e.g., from map hover) */
+  isHighlighted?: boolean;
+  /** Callback when mouse enters card (for map sync) */
+  onHoverStart?: () => void;
+  /** Callback when mouse leaves card (for map sync) */
+  onHoverEnd?: () => void;
   className?: string;
 }
 
@@ -27,6 +33,9 @@ export function PropertyCard({
   isWishlisted = false,
   onWishlistToggle,
   qualification,
+  isHighlighted = false,
+  onHoverStart,
+  onHoverEnd,
   className,
 }: PropertyCardProps) {
   const {
@@ -59,7 +68,13 @@ export function PropertyCard({
   return (
     <Link
       href={`/propiedades/${id}`}
-      className={cn('group block', className)}
+      className={cn(
+        'group block transition-all duration-150',
+        isHighlighted && 'ring-2 ring-primary ring-offset-2 rounded-sm',
+        className
+      )}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
     >
       {/* Image container with badges - Luxterra: 2px radius */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-sm">

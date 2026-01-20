@@ -22,6 +22,12 @@ export interface PropertyGridProps {
   qualifications?: Map<string, QualificationResult>;
   /** Show skeleton loaders instead of content */
   isLoading?: boolean;
+  /** Currently hovered property ID (for map sync) */
+  hoveredPropertyId?: string | null;
+  /** Callback when property is hovered (for map sync) */
+  onPropertyHover?: (id: string | null) => void;
+  /** Ref callback for property elements (for scroll-to-property) */
+  propertyRefCallback?: (id: string, el: HTMLDivElement | null) => void;
 }
 
 /**
@@ -35,6 +41,9 @@ export function PropertyGrid({
   onWishlistToggle,
   qualifications,
   isLoading: externalLoading = false,
+  hoveredPropertyId,
+  onPropertyHover,
+  propertyRefCallback,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -105,6 +114,7 @@ export function PropertyGrid({
           {displayedProperties.map((property, index) => (
             <motion.div
               key={property.id}
+              ref={(el) => propertyRefCallback?.(property.id, el)}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -124,6 +134,9 @@ export function PropertyGrid({
                 isWishlisted={isWishlisted(property.id)}
                 onWishlistToggle={onWishlistToggle}
                 qualification={qualifications?.get(property.id)}
+                isHighlighted={hoveredPropertyId === property.id}
+                onHoverStart={() => onPropertyHover?.(property.id)}
+                onHoverEnd={() => onPropertyHover?.(null)}
               />
             </motion.div>
           ))}

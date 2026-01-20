@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { User, UserX } from 'lucide-react';
 
 import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { FilterSidebar } from '@/components/property/FilterSidebar';
 import { AISearchInput } from '@/components/property/AISearchInput';
 import { ForYouCarousel } from '@/components/property/ForYouCarousel';
+import { PropertyMap, MapToggle, type MapBounds } from '@/components/map';
 import { usePropertyFilters } from '@/lib/hooks/usePropertyFilters';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -29,7 +29,7 @@ import { formatCurrency } from '@/lib/format';
 const WISHLIST_STORAGE_KEY = 'arriendo-facil-wishlist';
 
 /**
- * Property listing page - Luxterra style
+ * Property listing page with split layout
  * Route: /propiedades
  */
 export default function PropiedadesPage() {
@@ -41,13 +41,19 @@ export default function PropiedadesPage() {
 }
 
 /**
- * Main content component with personalization
+ * Main content component with personalization and map
  */
 function PropiedadesContent() {
   const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const [onlyAffordable, setOnlyAffordable] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
+  const [showMap, setShowMap] = useState(false); // Mobile map toggle
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   const { profile, isSimulating, enableSimulation, disableSimulation } =
     useUserProfile();
 
@@ -149,6 +155,21 @@ function PropiedadesContent() {
 
   const showPersonalization = profile?.hasCompletedProfile ?? false;
 
+  // Handle property selection from map - scroll to property in list
+  const handlePropertySelect = useCallback((id: string) => {
+    setSelectedPropertyId(id);
+    // Scroll property into view
+    propertyRefs.current[id]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, []);
+
+  // Property ref callback for scroll-to behavior
+  const propertyRefCallback = useCallback((id: string, el: HTMLDivElement | null) => {
+    propertyRefs.current[id] = el;
+  }, []);
+
   return (
     <>
       <Navbar />
@@ -196,66 +217,101 @@ function PropiedadesContent() {
           </section>
         )}
 
-        {/* Listing Section */}
-        <section className="light-section bg-[#f7f7f7] section-padding">
-          <div className="container-wide">
-            {/* Results count - contextual based on search/filter state */}
-            <div className="mb-8">
-              <p className="text-xs text-gray-600 tracking-tight">
-                {hasActiveFilters || filters.searchQuery ? (
-                  <>
-                    {displayProperties.length}{' '}
-                    {displayProperties.length === 1
-                      ? 'propiedad encontrada'
-                      : 'propiedades encontradas'}
-                  </>
-                ) : (
-                  <>
-                    {displayProperties.length}{' '}
-                    {displayProperties.length === 1
-                      ? 'propiedad disponible'
-                      : 'propiedades disponibles'}
-                  </>
-                )}
-                {onlyAffordable && showPersonalization && (
-                  <span className="text-green-600 ml-2">
-                    (filtrado por tu presupuesto)
-                  </span>
-                )}
-              </p>
-            </div>
+        {/* Split Layout Section: List + Map */}
+        <section className="light-section bg-[#f7f7f7]">
+          <div className="flex min-h-[calc(100vh-200px)]">
+            {/* List Panel - 55% on desktop */}
+            <div
+              className={cn(
+                'w-full lg:w-[55%] overflow-auto',
+                showMap && 'hidden lg:block'
+              )}
+            >
+              <div className="container-wide lg:pr-4 py-8">
+                {/* Results count - contextual based on search/filter state */}
+                <div className="mb-8">
+                  <p className="text-xs text-gray-600 tracking-tight">
+                    {hasActiveFilters || filters.searchQuery ? (
+                      <>
+                        {displayProperties.length}{' '}
+                        {displayProperties.length === 1
+                          ? 'propiedad encontrada'
+                          : 'propiedades encontradas'}
+                      </>
+                    ) : (
+                      <>
+                        {displayProperties.length}{' '}
+                        {displayProperties.length === 1
+                          ? 'propiedad disponible'
+                          : 'propiedades disponibles'}
+                      </>
+                    )}
+                    {onlyAffordable && showPersonalization && (
+                      <span className="text-green-600 ml-2">
+                        (filtrado por tu presupuesto)
+                      </span>
+                    )}
+                  </p>
+                </div>
 
-            {/* Main content: Sidebar + Grid */}
-            <div className="flex flex-col gap-8 lg:flex-row">
-              <FilterSidebar
-                filters={filters}
-                onCityChange={setCity}
-                onPriceRangeChange={setPriceRange}
-                onBedroomsChange={setBedrooms}
-                onPropertyTypeChange={setPropertyType}
-                onReset={resetFilters}
-                availableCities={availableCities}
-                resultsCount={displayProperties.length}
-                hasActiveFilters={hasActiveFilters}
-                showPersonalization={showPersonalization}
-                onlyAffordable={onlyAffordable}
-                onOnlyAffordableChange={setOnlyAffordable}
-              />
+                {/* Main content: Sidebar + Grid */}
+                <div className="flex flex-col gap-8 lg:flex-row">
+                  <FilterSidebar
+                    filters={filters}
+                    onCityChange={setCity}
+                    onPriceRangeChange={setPriceRange}
+                    onBedroomsChange={setBedrooms}
+                    onPropertyTypeChange={setPropertyType}
+                    onReset={resetFilters}
+                    availableCities={availableCities}
+                    resultsCount={displayProperties.length}
+                    hasActiveFilters={hasActiveFilters}
+                    showPersonalization={showPersonalization}
+                    onlyAffordable={onlyAffordable}
+                    onOnlyAffordableChange={setOnlyAffordable}
+                  />
 
-              <div className="flex-1">
-                <PropertyGrid
-                  properties={displayProperties}
-                  isWishlisted={isWishlisted}
-                  onWishlistToggle={handleWishlistToggle}
-                  qualifications={showPersonalization ? qualifications : undefined}
-                  isLoading={isInitialLoading}
-                />
+                  <div className="flex-1">
+                    <PropertyGrid
+                      properties={displayProperties}
+                      isWishlisted={isWishlisted}
+                      onWishlistToggle={handleWishlistToggle}
+                      qualifications={showPersonalization ? qualifications : undefined}
+                      isLoading={isInitialLoading}
+                      hoveredPropertyId={hoveredPropertyId}
+                      onPropertyHover={setHoveredPropertyId}
+                      propertyRefCallback={propertyRefCallback}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Map Panel - 45% on desktop, full screen on mobile when toggled */}
+            <div
+              className={cn(
+                'w-full lg:w-[45%] h-[calc(100vh-200px)] lg:sticky lg:top-0',
+                !showMap && 'hidden lg:block'
+              )}
+            >
+              <PropertyMap
+                properties={displayProperties}
+                selectedPropertyId={selectedPropertyId}
+                hoveredPropertyId={hoveredPropertyId}
+                onPropertySelect={handlePropertySelect}
+                onPropertyHover={setHoveredPropertyId}
+                onMapMove={setMapBounds}
+                className="h-full"
+              />
+            </div>
           </div>
+
+          {/* Mobile Toggle Button */}
+          <MapToggle showMap={showMap} onToggle={() => setShowMap(!showMap)} />
         </section>
       </main>
-      <Footer />
+      {/* Footer removed in split layout mode - uncomment if needed */}
+      {/* <Footer /> */}
     </>
   );
 }

@@ -46,18 +46,11 @@ export default function UpgradePage() {
 
     setIsProcessing(true);
 
-    // Mock checkout delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // Small delay for visual feedback
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // In real app, would redirect to payment provider
-    alert(
-      `Redirigiendo al checkout para el plan ${newPlan?.name} (${
-        billingCycle === 'yearly' ? 'anual' : 'mensual'
-      })...`
-    );
-
-    setIsProcessing(false);
-    // router.push(`/panel/checkout?plan=${selectedPlan}&billing=${billingCycle}`);
+    // Redirect to checkout with selected plan and billing cycle
+    router.push(`/panel/checkout?plan=${selectedPlan}&billing=${billingCycle}`);
   };
 
   const canUpgrade =

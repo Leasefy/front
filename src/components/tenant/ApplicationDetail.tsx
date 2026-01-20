@@ -1,0 +1,308 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import { MapPin, Hash, AlertTriangle, X } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/format';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ApplicationStatusBadge } from './ApplicationStatusBadge';
+import { ApplicationTimeline } from './ApplicationTimeline';
+import { getStatusProgress, canWithdraw } from '@/lib/types/tenant-application';
+import type { TenantApplication } from '@/lib/types/tenant-application';
+import type { Property } from '@/lib/types/property';
+
+// ============================================================================
+// Status Explanations
+// ============================================================================
+
+const STATUS_EXPLANATIONS: Record<string, string> = {
+  submitted: 'Tu aplicacion ha sido recibida y esta en cola para revision.',
+  under_review: 'El propietario esta revisando tu aplicacion.',
+  pre_approved: 'El propietario esta interesado! Te contactaran pronto.',
+  approved: 'Felicitaciones! Tu aplicacion ha sido aprobada.',
+  rejected: 'Lo sentimos, tu aplicacion no fue aprobada esta vez.',
+  withdrawn: 'Has retirado esta aplicacion.',
+};
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface ApplicationDetailProps {
+  /** The application to display */
+  application: TenantApplication | null;
+  /** The property associated with the application */
+  property: Property | null;
+  /** Whether the drawer is open */
+  open: boolean;
+  /** Callback to close the drawer */
+  onClose: () => void;
+  /** Callback when user confirms withdrawal */
+  onWithdraw: (id: string) => void;
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+/**
+ * ApplicationDetail - Full application view drawer with timeline and withdraw action
+ *
+ * Layout:
+ * - Header: Property title, status badge
+ * - Property info: Image, address, rent
+ * - Tracking code display
+ * - Timeline of events
+ * - Status explanation text
+ * - Withdraw button (only if status allows)
+ */
+export function ApplicationDetail({
+  application,
+  property,
+  open,
+  onClose,
+  onWithdraw,
+}: ApplicationDetailProps) {
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+
+  // Don't render content if no application or property
+  if (!application || !property) {
+    return (
+      <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            No hay aplicacion seleccionada
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  const {
+    id,
+    status,
+    trackingCode,
+    submittedAt,
+    events,
+  } = application;
+
+  const {
+    title,
+    thumbnailUrl,
+    neighborhood,
+    city,
+    address,
+    monthlyRent,
+    adminFee,
+  } = property;
+
+  const progress = getStatusProgress(status);
+  const showWithdrawButton = canWithdraw(status);
+  const statusExplanation = STATUS_EXPLANATIONS[status] || '';
+
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
+
+  const handleWithdrawClick = () => {
+    setShowWithdrawConfirm(true);
+  };
+
+  const handleWithdrawConfirm = () => {
+    onWithdraw(id);
+    setShowWithdrawConfirm(false);
+    onClose();
+  };
+
+  const handleWithdrawCancel = () => {
+    setShowWithdrawConfirm(false);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl">
+          {/* Close Button */}
+          <SheetClose asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4 z-10 rounded-full bg-white/80 backdrop-blur-sm"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Cerrar</span>
+            </Button>
+          </SheetClose>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Property Header with Image */}
+            <div className="relative">
+              {/* Property Image */}
+              <div className="relative aspect-[16/9] w-full">
+                <Image
+                  src={thumbnailUrl}
+                  alt={title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 640px"
+                  priority
+                />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                {/* Status badge overlay */}
+                <div className="absolute bottom-4 left-4">
+                  <ApplicationStatusBadge status={status} size="md" />
+                </div>
+              </div>
+            </div>
+
+            {/* Property Info */}
+            <SheetHeader className="border-b border-border px-6 py-4">
+              <SheetTitle className="text-lg font-semibold text-foreground">
+                {title}
+              </SheetTitle>
+              <div className="space-y-1">
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span>{address}, {neighborhood}, {city}</span>
+                </p>
+                <p className="text-base font-medium text-foreground">
+                  {formatCurrency(monthlyRent)}
+                  <span className="text-muted-foreground text-sm font-normal">/mes</span>
+                  {adminFee > 0 && (
+                    <span className="text-muted-foreground text-sm font-normal">
+                      {' '}+ {formatCurrency(adminFee)} admin
+                    </span>
+                  )}
+                </p>
+              </div>
+            </SheetHeader>
+
+            {/* Tracking Info */}
+            <div className="border-b border-border px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Codigo de seguimiento
+                  </p>
+                  <p className="flex items-center gap-1.5 text-base font-mono font-semibold text-foreground mt-0.5">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    {trackingCode}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Aplicaste el
+                  </p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">
+                    {formatDate(submittedAt)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                  <span>Progreso</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-500',
+                      status === 'approved' && 'bg-emerald-500',
+                      status === 'rejected' && 'bg-red-500',
+                      status === 'withdrawn' && 'bg-slate-400',
+                      ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-blue-500'
+                    )}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Status Explanation */}
+            <div className="border-b border-border px-6 py-4">
+              <h3 className="text-sm font-semibold text-foreground mb-2">
+                Estado actual
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {statusExplanation}
+              </p>
+            </div>
+
+            {/* Timeline */}
+            <div className="px-6 py-4">
+              <h3 className="text-sm font-semibold text-foreground mb-4">
+                Historial
+              </h3>
+              <ApplicationTimeline events={events} />
+            </div>
+          </div>
+
+          {/* Footer: Withdraw Button (sticky) */}
+          {showWithdrawButton && (
+            <div className="border-t border-border bg-background p-4">
+              <Button
+                variant="outline"
+                className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                onClick={handleWithdrawClick}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Retirar aplicacion
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Withdraw Confirmation Dialog */}
+      <Dialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar retiro</DialogTitle>
+            <DialogDescription>
+              Estas seguro de que quieres retirar tu aplicacion para{' '}
+              <span className="font-medium text-foreground">{title}</span>?
+              Esta accion no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleWithdrawCancel}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleWithdrawConfirm}
+            >
+              Si, retirar aplicacion
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

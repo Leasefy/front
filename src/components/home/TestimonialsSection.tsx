@@ -97,7 +97,7 @@ export function TestimonialsSection() {
 
           {/* Right - Testimonial Cards */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout">
               {[0, 1].map((offset) => {
                 const index = (currentIndex + offset) % testimonials.length;
                 const testimonial = testimonials[index];

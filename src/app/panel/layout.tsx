@@ -2,6 +2,7 @@
 
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardSidebar } from '@/components/landlord/DashboardSidebar';
 
 interface PanelLayoutProps {
   children: React.ReactNode;
@@ -10,14 +11,31 @@ interface PanelLayoutProps {
 /**
  * Panel Layout - Wraps the landlord dashboard with DecisionProvider
  *
- * This layout:
- * 1. Protects all /panel/* routes (landlord only)
- * 2. Provides decision state management (localStorage persistence)
+ * Layout structure:
+ * +------------------+------------------------------+
+ * | Sidebar (240px)  |   Main Content               |
+ * |                  |   - Header                   |
+ * | - Logo           |   - Page Content             |
+ * | - Nav Items      |                              |
+ * | - User Menu      |                              |
+ * +------------------+------------------------------+
+ *
+ * Mobile: Sidebar becomes sheet drawer
  */
 export default function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <ProtectedRoute allowedRoles={['landlord']}>
-      <DecisionProvider>{children}</DecisionProvider>
+      <DecisionProvider>
+        <div className="min-h-screen bg-[#FBFBFB]">
+          {/* Sidebar */}
+          <DashboardSidebar />
+
+          {/* Main content area */}
+          <main className="lg:pl-60">
+            {children}
+          </main>
+        </div>
+      </DecisionProvider>
     </ProtectedRoute>
   );
 }

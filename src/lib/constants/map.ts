@@ -40,15 +40,15 @@ export const INITIAL_VIEW_STATE = {
   zoom: 5,
 };
 
-// Map style options
+// Free MapLibre-compatible tile styles (no token required)
 export const MAP_STYLES = {
-  light: 'mapbox://styles/mapbox/light-v11',
-  dark: 'mapbox://styles/mapbox/dark-v11',
-  streets: 'mapbox://styles/mapbox/streets-v12',
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  // CartoCDN free tiles - clean, modern look
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  voyager: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
 };
 
-// Default map style
+// Default map style (Carto Positron - clean light style)
 export const MAP_STYLE = MAP_STYLES.light;
 
 // Cluster configuration for property markers

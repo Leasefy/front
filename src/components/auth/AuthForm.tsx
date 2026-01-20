@@ -306,6 +306,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
             type="password"
             icon="password"
             placeholder="Minimo 8 caracteres"
+            isNewPassword
             {...registerForm.register('password', {
               required: 'La contrasena es requerida',
               minLength: {

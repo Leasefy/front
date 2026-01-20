@@ -35,10 +35,10 @@ export function PhotoGalleryModal({
     if (isOpen && initialImageIndex > 0 && imageRefs.current[initialImageIndex]) {
       setTimeout(() => {
         imageRefs.current[initialImageIndex]?.scrollIntoView({
-          behavior: 'instant',
+          behavior: 'smooth',
           block: 'start',
         });
-      }, 100);
+      }, 150);
     }
   }, [isOpen, initialImageIndex]);
 

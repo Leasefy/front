@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useCallback, useState, useEffect } from 'react';
-import Map, { MapRef, Marker } from 'react-map-gl/mapbox';
+import Map, { MapRef, Marker } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Property } from '@/lib/types/property';
 import { INITIAL_VIEW_STATE, MAP_STYLE, ZOOM_LEVELS } from '@/lib/constants/map';
 import { useSupercluster } from '@/lib/hooks/useSupercluster';
@@ -26,12 +27,28 @@ interface PropertyMapProps {
   className?: string;
 }
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-
 /**
  * Interactive property map with price markers and clustering
  * Airbnb/Zillow style with bidirectional list-map interaction
  */
+// Calculate initial bounds from properties
+function getInitialBounds(properties: Property[]): MapBounds {
+  if (properties.length === 0) {
+    // Default to Colombia bounds
+    return { north: 13.5, south: -4.5, east: -66.5, west: -82.0 };
+  }
+
+  const lats = properties.map(p => p.latitude);
+  const lngs = properties.map(p => p.longitude);
+
+  return {
+    north: Math.max(...lats) + 1,
+    south: Math.min(...lats) - 1,
+    east: Math.max(...lngs) + 1,
+    west: Math.min(...lngs) - 1,
+  };
+}
+
 export function PropertyMap({
   properties,
   onMapMove,
@@ -42,7 +59,8 @@ export function PropertyMap({
   className,
 }: PropertyMapProps) {
   const mapRef = useRef<MapRef>(null);
-  const [bounds, setBounds] = useState<MapBounds | null>(null);
+  // Initialize bounds from properties so markers render immediately
+  const [bounds, setBounds] = useState<MapBounds>(() => getInitialBounds(properties));
   const [zoom, setZoom] = useState(INITIAL_VIEW_STATE.zoom);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
 
@@ -97,33 +115,13 @@ export function PropertyMap({
     }
   }, [hoveredPropertyId, properties, zoom]);
 
-  // Don't render without token
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'YOUR_MAPBOX_TOKEN') {
-    return (
-      <div
-        className={cn('flex items-center justify-center bg-slate-100', className)}
-        role="img"
-        aria-label="Mapa no disponible"
-      >
-        <div className="text-center p-8">
-          <p className="text-sm text-muted-foreground">
-            Configure NEXT_PUBLIC_MAPBOX_TOKEN para ver el mapa
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Obten un token gratis en{' '}
-            <a
-              href="https://www.mapbox.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-foreground"
-            >
-              mapbox.com
-            </a>
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Handle map load - ensure bounds are set after map is ready
+  const handleMapLoad = useCallback(() => {
+    // Small delay to ensure map is fully initialized
+    setTimeout(() => {
+      updateMapState();
+    }, 100);
+  }, [updateMapState]);
 
   return (
     <div className={cn('relative w-full h-full', className)}>
@@ -131,12 +129,11 @@ export function PropertyMap({
         ref={mapRef}
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
-        mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
         mapStyle={MAP_STYLE}
-        onLoad={updateMapState}
+        onLoad={handleMapLoad}
         onMoveEnd={updateMapState}
-        attributionControl={false}
+        attributionControl={true}
         reuseMaps
       >
         {points.map((point) => {

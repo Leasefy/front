@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Search } from 'lucide-react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
@@ -83,7 +82,7 @@ export function PropertyGrid({
   if (externalLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
             <PropertyCardSkeleton key={index} />
           ))}
@@ -105,43 +104,26 @@ export function PropertyGrid({
 
   return (
     <div className="space-y-8">
-      {/* Property Grid with Framer Motion animations */}
-      <motion.div
-        className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-        layout
-      >
-        <AnimatePresence mode="popLayout">
-          {displayedProperties.map((property, index) => (
-            <motion.div
-              key={property.id}
-              ref={(el) => propertyRefCallback?.(property.id, el)}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{
-                duration: 0.3,
-                delay: loadedIndices.includes(index)
-                  ? (index - Math.min(...loadedIndices)) * 0.05
-                  : index < INITIAL_ITEMS
-                    ? index * 0.05
-                    : 0,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              }}
-              layout
-            >
-              <PropertyCard
-                property={property}
-                isWishlisted={isWishlisted(property.id)}
-                onWishlistToggle={onWishlistToggle}
-                qualification={qualifications?.get(property.id)}
-                isHighlighted={hoveredPropertyId === property.id}
-                onHoverStart={() => onPropertyHover?.(property.id)}
-                onHoverEnd={() => onPropertyHover?.(null)}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
+      {/* Property Grid - 2 columns for split view */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {displayedProperties.map((property) => (
+          <div
+            key={property.id}
+            ref={(el) => propertyRefCallback?.(property.id, el)}
+            className="animate-in fade-in duration-300"
+          >
+            <PropertyCard
+              property={property}
+              isWishlisted={isWishlisted(property.id)}
+              onWishlistToggle={onWishlistToggle}
+              qualification={qualifications?.get(property.id)}
+              isHighlighted={hoveredPropertyId === property.id}
+              onHoverStart={() => onPropertyHover?.(property.id)}
+              onHoverEnd={() => onPropertyHover?.(null)}
+            />
+          </div>
+        ))}
+      </div>
 
       {/* Load More Section */}
       {hasMore && (

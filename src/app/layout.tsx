@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "mapbox-gl/dist/mapbox-gl.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
 

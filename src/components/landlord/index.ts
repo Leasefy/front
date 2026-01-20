@@ -3,9 +3,29 @@
  * @module components/landlord
  */
 
+// Dashboard layout components (from redesign)
+export { DashboardSidebar } from './DashboardSidebar';
+export { DashboardHeader } from './DashboardHeader';
+
+// Dashboard KPI components (from redesign)
+export { KPICard } from './KPICard';
+export type { KPICardProps } from './KPICard';
+export { KPIGrid } from './KPIGrid';
+
 // Dashboard components (from PLAN-01)
 export { DashboardSummary } from './DashboardSummary';
 export { PropertyDashboardCard } from './PropertyDashboardCard';
+
+// Risk visualization (from redesign)
+export { RiskGauge, RiskGaugeMini } from './RiskGauge';
+
+// Activity feed (from redesign)
+export { ActivityFeed } from './ActivityFeed';
+
+// Property detail components (from redesign)
+export { TabNavigation } from './TabNavigation';
+export type { Tab } from './TabNavigation';
+export { PropertyHeader } from './PropertyHeader';
 
 // Candidate display components (from PLAN-02)
 export { CandidateCard } from './CandidateCard';

@@ -12,7 +12,7 @@ Esta fase completa el journey de arriendo desde la aprobación del candidato has
 | 02 | Pricing Page & Subscription Plans | 1 | Complete |
 | 03 | Coupon System | 2 | Complete |
 | 04 | Post-Contract Dashboards | 2 | Complete |
-| 05 | Insurance Selection During Signing (Gap Closure) | 3 | Pending |
+| 05 | Insurance Selection During Signing (Gap Closure) | 3 | Complete |
 
 ## Execution Strategy
 
@@ -26,35 +26,36 @@ Plans 03 + 04 (complete):
 - Coupon system (depends on pricing)
 - Post-contract dashboards (depends on contracts)
 
-### Wave 3: Gap Closure
-Plan 05 (pending):
+### Wave 3: Gap Closure ✓
+Plan 05 (complete):
 - Insurance selection during signing (closes verification gap #3)
 
 ## Key Deliverables
 
 ### Contract System
-- [ ] Contract types (Básico, Amoblado, Compartido)
-- [ ] Deel-style sequential signing flow
-- [ ] E-signature with legal compliance
-- [ ] Contract preview and status timeline
+- [x] Contract types (Básico, Amoblado, Compartido)
+- [x] Deel-style sequential signing flow
+- [x] E-signature with legal compliance
+- [x] Contract preview and status timeline
+- [x] Insurance selection during signing
 
 ### Pricing System
-- [ ] Free/Pro/Business plans with features
-- [ ] Public pricing page
-- [ ] Upgrade flow in dashboard
-- [ ] Billing cycle toggle (monthly/yearly)
+- [x] Free/Pro/Business plans with features
+- [x] Public pricing page
+- [x] Upgrade flow in dashboard
+- [x] Billing cycle toggle (monthly/yearly)
 
 ### Coupon System
-- [ ] 4 coupon types (PERCENTAGE, FIXED, FREE_MONTHS, FULL_ACCESS)
-- [ ] Validation with error messages
-- [ ] Checkout integration
-- [ ] Price summary with discounts
+- [x] 4 coupon types (PERCENTAGE, FIXED, FREE_MONTHS, FULL_ACCESS)
+- [x] Validation with error messages
+- [x] Checkout integration
+- [x] Price summary with discounts
 
 ### Post-Contract Dashboards
-- [ ] Landlord: Active leases view
-- [ ] Tenant: My lease dashboard
-- [ ] Payment history
-- [ ] Payment method selection (PSE, cards, Nequi)
+- [x] Landlord: Active leases view
+- [x] Tenant: My lease dashboard
+- [x] Payment history
+- [x] Payment method selection (PSE, cards, Nequi)
 
 ## Dependencies
 
@@ -73,4 +74,6 @@ Plan 05 (pending):
 
 *Phase: 10-post-approval-flow*
 *Created: 2026-01-20*
-*Plans: 4*
+*Completed: 2026-01-20*
+*Plans: 5/5 Complete*
+*Verification: 9/9 must-haves passed*

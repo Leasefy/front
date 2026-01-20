@@ -8,6 +8,8 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: 'email' | 'password' | 'user';
+  /** Determines autocomplete value for password fields */
+  isNewPassword?: boolean;
 }
 
 /**
@@ -15,10 +17,19 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
  * Password input has show/hide toggle
  */
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
-  ({ className, type = 'text', label, error, icon, ...props }, ref) => {
+  ({ className, type = 'text', label, error, icon, isNewPassword, autoComplete, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword && showPassword ? 'text' : type;
+
+    // Determine autoComplete value based on type and context
+    const getAutoComplete = () => {
+      if (autoComplete) return autoComplete;
+      if (type === 'email') return 'email';
+      if (type === 'password') return isNewPassword ? 'new-password' : 'current-password';
+      if (icon === 'user') return 'name';
+      return undefined;
+    };
 
     const IconComponent = {
       email: Mail,
@@ -44,6 +55,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
           <input
             type={inputType}
             ref={ref}
+            autoComplete={getAutoComplete()}
             className={cn(
               'flex h-11 w-full rounded-sm border bg-white px-3 py-2 text-sm',
               'transition-colors placeholder:text-muted-foreground',

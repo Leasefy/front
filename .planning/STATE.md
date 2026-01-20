@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 7 COMPLETE - MVP Ready
+**Current focus:** Phase 8 - Authentication UI
 
 ## Current Position
 
-Phase: 7 of 7 (UX Polish) - COMPLETE
-Plan: 6 of 6 (All plans complete)
-Status: MVP Frontend Complete
-Last activity: 2026-01-20 - Completed 07-06-PLAN.md (Responsive & Accessibility Polish)
+Phase: 8 of 8 (Authentication UI) - IN PROGRESS
+Plan: 1 of 2 (Auth Pages complete)
+Status: Plan 01 complete, Plan 02 pending
+Last activity: 2026-01-20 - Completed 08-01-PLAN (Auth Pages)
 
-Progress: ████████████████ 100%
+Progress: ███████████████░ 93.75%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -24,7 +24,7 @@ Progress: ████████████████ 100%
 - All phases now focus on UX/UI with mock data
 - Reduced from 10 phases to 7 phases
 
-**All phases COMPLETE:**
+**Phase status:**
 1. Foundation & Design System (COMPLETE)
 2. Property Catalog (COMPLETE)
 3. Application Wizard (COMPLETE)
@@ -32,13 +32,14 @@ Progress: ████████████████ 100%
 5. Landlord Dashboard (COMPLETE)
 6. Tenant Tracking (COMPLETE)
 7. UX Polish (COMPLETE)
+8. Authentication UI (IN PROGRESS) - Auth pages complete, protected routes pending
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
-- Average duration: 6.2 min
-- Total execution time: 2.7 hours
+- Total plans completed: 27
+- Average duration: 6.1 min
+- Total execution time: 2.8 hours
 
 **By Phase:**
 
@@ -51,6 +52,7 @@ Progress: ████████████████ 100%
 | 05-landlord-dashboard | 3/3 | 28min | 9.3min |
 | 06-tenant-tracking | 2/2 | 14min | 7min |
 | 07-ux-polish | 6/6 | 33min | 5.5min |
+| 08-authentication-ui | 1/2 | 5.5min | 5.5min |
 
 ## Accumulated Context
 
@@ -134,6 +136,9 @@ Progress: ████████████████ 100%
 - **Contrast adjustment**: --muted-foreground from 45% to 40% lightness for WCAG AA
 - **Gray-500 for text**: Replaced gray-400 with gray-500 for readable text elements
 - **Reduced motion**: @media (prefers-reduced-motion) disables animations
+- **Auth split-layout**: Image+testimonial left, form right on desktop
+- **Suspense for useSearchParams**: Next.js 14 requirement for client components
+- **Demo credentials hint**: Show login credentials on auth form for testing
 
 ### What's Complete (Phase 1)
 
@@ -285,13 +290,24 @@ Backend responsibilities (for other developer):
 - **Touch targets** - 44px minimum for mobile accessibility
 - **Reduced motion** - Respects prefers-reduced-motion preference
 
+### What's Complete (Phase 8 - Plan 1)
+
+- **Auth page** - Split-layout at `/auth` with image+testimonial left, form right
+- **AuthForm component** - Login/register tabs with react-hook-form validation
+- **AuthInput component** - Input with icons, password toggle, error states
+- **SocialButtons component** - Google and Apple styled buttons with proper icons
+- **Testimonial component** - Quote card with avatar for social proof
+- **Divider component** - "o continua con email" line-text-line pattern
+- **Auth barrel export** - Centralized exports (`src/components/auth/index.ts`)
+- **react-hook-form dependency** - Added for form validation
+
 ### Pending Todos
 
-None - MVP Frontend Complete!
+- Execute Phase 8 Plan 02: Auth State (protected routes, user menu)
 
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 07-06-PLAN.md (Responsive & Accessibility Polish)
+Stopped at: Completed 08-01-PLAN (Auth Pages)
 Resume file: None
-Next action: MVP Complete - Ready for backend integration
+Next action: Execute Phase 8 Plan 02

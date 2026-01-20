@@ -11,11 +11,11 @@ See: .planning/FRONTEND-VISION.md (created 2026-01-18)
 ## Current Position
 
 Phase: 5 of 7 (Landlord Dashboard) - IN PROGRESS
-Plan: 1 of 3 (Dashboard Foundation complete)
+Plan: 2 of 3 (Candidate Cards complete)
 Status: In progress
-Last activity: 2026-01-19 - Completed PLAN-01-dashboard-foundation.md
+Last activity: 2026-01-20 - Completed PLAN-02-candidate-cards.md
 
-Progress: ███████████░ 86%
+Progress: ████████████░ 91%
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -36,9 +36,9 @@ Progress: ███████████░ 86%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: 6.5 min
-- Total execution time: 2.0 hours
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -48,7 +48,7 @@ Progress: ███████████░ 86%
 | 02-property-catalog | 2/2 | 15min | 7.5min |
 | 03-application-wizard | 5/5 | 30.5min | 6.1min |
 | 04-risk-score-display | 4/4 | 18min | 4.5min |
-| 05-landlord-dashboard | 1/3 | 8min | 8min |
+| 05-landlord-dashboard | 2/3 | 16min | 8min |
 
 ## Accumulated Context
 
@@ -95,6 +95,9 @@ Progress: ███████████░ 86%
 - **Landlord status types**: pending/pre-approved/approved/rejected/more-info
 - **Dashboard route**: `/panel` for landlord entry point, `/panel/[propertyId]` for details
 - **Candidate distribution**: 12 candidates across 3 properties for realistic testing
+- **Metrics compact format**: `$XM/mes | X anos estable | icon` for quick visual scanning
+- **AI snippet truncation**: First 2 sentences or 150 chars, respecting sentence boundaries
+- **Level-based card styling**: A/B colored accents, C/D muted for visual hierarchy
 
 ### What's Complete (Phase 1)
 
@@ -189,15 +192,20 @@ Backend responsibilities (for other developer):
 - **PropertyDashboardCard** - Property card with candidate count badge (`src/components/landlord/PropertyDashboardCard.tsx`)
 - **DashboardSummary** - Aggregate stats component (`src/components/landlord/DashboardSummary.tsx`)
 - **Dashboard page** - Landlord entry at `/panel` (`src/app/panel/page.tsx`)
+- **CandidateCard** - Quick comparison card with metrics, AI snippet, decision buttons (`src/components/landlord/CandidateCard.tsx`)
+- **CandidateMetrics** - Income, stability, history display in compact/full variants (`src/components/landlord/CandidateMetrics.tsx`)
+- **AISnippet** - Truncated AI explanation with level-appropriate styling (`src/components/landlord/AISnippet.tsx`)
+- **CandidateList** - Responsive grid sorted by score (`src/components/landlord/CandidateList.tsx`)
+- **Property Candidates page** - `/panel/[propertyId]` with candidate list (`src/app/panel/[propertyId]/page.tsx`)
+- **Landlord components barrel export** (`src/components/landlord/index.ts`)
 
 ### Pending Todos
 
-PLAN-02: Candidate cards with risk badges and quick actions
-PLAN-03: Property detail view with candidate list and decision workflow
+PLAN-03: Candidate detail view with full risk score and decision workflow
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Completed PLAN-01-dashboard-foundation.md
+Last session: 2026-01-20
+Stopped at: Completed PLAN-02-candidate-cards.md
 Resume file: None
-Next action: Execute PLAN-02-candidate-cards.md
+Next action: Execute PLAN-03-detail-and-decisions.md

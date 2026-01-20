@@ -7,6 +7,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 ## Milestones
 
 - ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
+- 🚧 **v1.1 Post-Approval Flow** - Phase 10 (in progress)
 
 ## Phases
 
@@ -23,6 +24,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - [x] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
 - [x] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
 - [x] **Phase 9: Interactive Map** - Airbnb-style map with clustering, price markers, filter sync
+- [ ] **Phase 10: Post-Approval Flow** - Contracts, payments, pricing, coupons, post-rental views
 
 ## Phase Details
 
@@ -155,10 +157,31 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 **Research topics**: react-map-gl, supercluster for clustering, Mapbox pricing
 **Plans**: TBD
 
+### Phase 10: Post-Approval Flow
+**Goal**: Complete the rental journey from candidate approval to active lease
+**Depends on**: Phase 5 (Landlord Dashboard)
+**Success Criteria** (what must be TRUE):
+  1. Contract generation UI with template selection
+  2. Deel-style sequential signature flow (landlord first, then tenant)
+  3. Insurance policy options presented during signing
+  4. Pricing page with Free/Pro/Business tiers
+  5. Subscription selection and checkout UI (mock)
+  6. Coupon system with percentage, fixed amount, and free trial support
+  7. Post-contract landlord dashboard (active lease view, payment tracking)
+  8. Post-contract tenant dashboard (my lease, payment history, documents)
+  9. Payment method selection UI (PSE, cards, Nequi)
+**Research**: Completed (see POST_APPROVAL_STRATEGY.md)
+**Research topics**: Deel contract UX, Colombian e-signature law, rental pricing models
+**Plans**:
+  - PLAN-01: Contract Generation & Signing UI
+  - PLAN-02: Pricing Page & Subscription Plans
+  - PLAN-03: Coupon System
+  - PLAN-04: Post-Contract Dashboards
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -171,6 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. UX Polish | 6/6 | Complete | 2026-01-20 |
 | 8. Authentication UI | 2/2 | Complete | 2026-01-19 |
 | 9. Interactive Map | 2/2 | Complete | 2026-01-20 |
+| 10. Post-Approval Flow | 4/5 | In Progress | - |
 
 ## Notes
 
@@ -200,5 +224,5 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-20 (Phase 9 Interactive Map complete)*
+*Last updated: 2026-01-20 (Phase 10 Post-Approval Flow added)*
 *Vision: FRONTEND-VISION.md*

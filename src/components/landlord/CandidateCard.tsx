@@ -1,12 +1,21 @@
 'use client';
 
+import { useState } from 'react';
+import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LevelBadge } from '@/components/score/LevelBadge';
 import { CandidateMetrics } from './CandidateMetrics';
 import { AISnippet } from './AISnippet';
-import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';
+import { DecisionConfirmation } from './DecisionConfirmation';
+import { useDecisions } from '@/lib/context/DecisionContext';
+import {
+  CANDIDATE_STATUS_LABELS,
+  CANDIDATE_STATUS_COLORS,
+  type LandlordCandidate,
+  type LandlordCandidateStatus,
+} from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
 import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 
@@ -20,7 +29,7 @@ export interface CandidateCardProps {
   /** Callback when user clicks "Ver mas" */
   onViewDetails: (id: string) => void;
   /** Callback when user makes a decision */
-  onDecision: (id: string, status: LandlordCandidateStatus) => void;
+  onDecision?: (id: string, status: LandlordCandidateStatus) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -59,10 +68,15 @@ function getHistoryRating(
  * CandidateCard - Quick comparison card for landlord screening
  *
  * Layout:
- * - Header: Photo, name, occupation, risk badge
+ * - Header: Photo, name, occupation, risk badge, status badge
  * - Metrics: Income, employment stability, rental history
  * - AI Snippet: Brief assessment summary
  * - Actions: Pre-approve, View More, Reject buttons
+ *
+ * Features:
+ * - Integrates with DecisionContext for state persistence
+ * - Shows current status badge when decision made
+ * - Visual styling changes for decided candidates
  */
 export function CandidateCard({
   candidate,
@@ -70,6 +84,13 @@ export function CandidateCard({
   onDecision,
   className,
 }: CandidateCardProps) {
+  const { getDecision, setDecision } = useDecisions();
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+
+  // Get current decision from context
+  const decision = getDecision(candidate.id);
+  const currentStatus = decision?.status || candidate.status || 'pending';
+
   // Get full candidate data for metrics
   const fullCandidate = getFullCandidateData(candidate.id);
 
@@ -81,96 +102,157 @@ export function CandidateCard({
     : 'limited';
   const aiExplanation = fullCandidate?.riskScore.aiExplanation || '';
 
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
+
+  const handleDecision = (status: LandlordCandidateStatus) => {
+    if (status === 'rejected') {
+      setShowRejectConfirm(true);
+      return;
+    }
+    setDecision(candidate.id, status);
+    onDecision?.(candidate.id, status);
+  };
+
+  const handleRejectConfirm = () => {
+    setDecision(candidate.id, 'rejected');
+    onDecision?.(candidate.id, 'rejected');
+    setShowRejectConfirm(false);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  // Card styling based on status
+  const cardStyles = cn(
+    'flex flex-col transition-all hover:shadow-md',
+    currentStatus === 'rejected' && 'opacity-60',
+    currentStatus === 'approved' && 'ring-2 ring-emerald-200',
+    currentStatus === 'pre-approved' && 'ring-2 ring-blue-200',
+    className
+  );
+
   return (
-    <Card
-      className={cn(
-        'flex flex-col transition-shadow hover:shadow-md',
-        className
-      )}
-    >
-      {/* Header: Photo + Info + Badge */}
-      <CardHeader className="flex-row items-start gap-4 pb-3">
-        {/* Photo Placeholder */}
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
-          {candidate.photo ? (
-            <div
-              className="h-full w-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${candidate.photo})` }}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-xl font-medium text-slate-400">
-              {candidate.fullName
-                .split(' ')
-                .slice(0, 2)
-                .map((n) => n[0])
-                .join('')}
+    <>
+      <Card className={cardStyles}>
+        {/* Header: Photo + Info + Badge */}
+        <CardHeader className="flex-row items-start gap-4 pb-3">
+          {/* Photo Placeholder */}
+          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
+            {candidate.photo ? (
+              <div
+                className="h-full w-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${candidate.photo})` }}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xl font-medium text-slate-400">
+                {candidate.fullName
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((n) => n[0])
+                  .join('')}
+              </div>
+            )}
+          </div>
+
+          {/* Name and Occupation */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 truncate">
+                {candidate.fullName.split(' ').slice(0, 2).join(' ')}
+              </h3>
+              {/* Status Badge */}
+              {currentStatus !== 'pending' && (
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0',
+                    CANDIDATE_STATUS_COLORS[currentStatus]
+                  )}
+                >
+                  {CANDIDATE_STATUS_LABELS[currentStatus]}
+                </span>
+              )}
             </div>
-          )}
-        </div>
+            <p className="text-sm text-slate-600 truncate">
+              {candidate.occupation}
+            </p>
+            <p className="text-xs text-slate-500">{candidate.age} anos</p>
+          </div>
 
-        {/* Name and Occupation */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 truncate">
-            {candidate.fullName.split(' ').slice(0, 2).join(' ')}
-          </h3>
-          <p className="text-sm text-slate-600 truncate">
-            {candidate.occupation}
-          </p>
-          <p className="text-xs text-slate-500">
-            {candidate.age} anos
-          </p>
-        </div>
+          {/* Risk Badge */}
+          <LevelBadge level={candidate.riskLevel} size="md" />
+        </CardHeader>
 
-        {/* Risk Badge */}
-        <LevelBadge level={candidate.riskLevel} size="md" />
-      </CardHeader>
+        {/* Metrics Section */}
+        <CardContent className="border-t border-slate-100 py-3">
+          <CandidateMetrics
+            income={monthlyIncome}
+            employmentMonths={employmentMonths}
+            historyRating={historyRating}
+            variant="compact"
+          />
+        </CardContent>
 
-      {/* Metrics Section */}
-      <CardContent className="border-t border-slate-100 py-3">
-        <CandidateMetrics
-          income={monthlyIncome}
-          employmentMonths={employmentMonths}
-          historyRating={historyRating}
-          variant="compact"
-        />
-      </CardContent>
+        {/* AI Snippet */}
+        <CardContent className="border-t border-slate-100 py-3">
+          <AISnippet
+            explanation={aiExplanation}
+            level={candidate.riskLevel}
+            maxLength={150}
+          />
+        </CardContent>
 
-      {/* AI Snippet */}
-      <CardContent className="border-t border-slate-100 py-3">
-        <AISnippet
-          explanation={aiExplanation}
-          level={candidate.riskLevel}
-          maxLength={150}
-        />
-      </CardContent>
+        {/* Action Buttons */}
+        <CardFooter className="flex gap-2 border-t border-slate-100 pt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn(
+              'flex-1 transition-colors',
+              currentStatus === 'pre-approved'
+                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+            )}
+            onClick={() => handleDecision('pre-approved')}
+          >
+            <Check className="mr-1 h-3.5 w-3.5" />
+            Pre-aprobar
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={() => onViewDetails(candidate.id)}
+          >
+            Ver mas
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn(
+              'flex-1 transition-colors',
+              currentStatus === 'rejected'
+                ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
+            )}
+            onClick={() => handleDecision('rejected')}
+          >
+            <X className="mr-1 h-3.5 w-3.5" />
+            Rechazar
+          </Button>
+        </CardFooter>
+      </Card>
 
-      {/* Action Buttons */}
-      <CardFooter className="flex gap-2 border-t border-slate-100 pt-3">
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-          onClick={() => onDecision(candidate.id, 'pre-approved')}
-        >
-          Pre-aprobar
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1"
-          onClick={() => onViewDetails(candidate.id)}
-        >
-          Ver mas
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-          onClick={() => onDecision(candidate.id, 'rejected')}
-        >
-          Rechazar
-        </Button>
-      </CardFooter>
-    </Card>
+      {/* Reject Confirmation Dialog */}
+      <DecisionConfirmation
+        action="reject"
+        candidateName={candidate.fullName}
+        isOpen={showRejectConfirm}
+        onConfirm={handleRejectConfirm}
+        onCancel={() => setShowRejectConfirm(false)}
+      />
+    </>
   );
 }

@@ -31,7 +31,7 @@
 
     /* Muted - For subdued UI elements */
     --muted: 240 5% 94%;                /* #EFEFEF */
-    --muted-foreground: 240 5% 45%;     /* #6E6E77 - Gray text */
+    --muted-foreground: 240 5% 40%;     /* #616166 - Gray text, WCAG AA compliant */
 
     /* Accent - Same as primary for consistency */
     --accent: 258 90% 58%;

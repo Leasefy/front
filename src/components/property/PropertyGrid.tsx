@@ -148,7 +148,7 @@ export function PropertyGrid({
             ) : (
               <>
                 Cargar mas
-                <span className="ml-2 text-gray-400">
+                <span className="ml-2 text-gray-500">
                   ({remainingCount} {remainingCount === 1 ? 'propiedad' : 'propiedades'})
                 </span>
               </>
@@ -156,7 +156,7 @@ export function PropertyGrid({
           </Button>
 
           {/* Progress indicator */}
-          <div className="flex items-center gap-3 text-xs text-gray-400 tracking-tight">
+          <div className="flex items-center gap-3 text-xs text-gray-500 tracking-tight">
             <span>
               Mostrando {displayedProperties.length} de {properties.length}
             </span>
@@ -173,7 +173,7 @@ export function PropertyGrid({
       {/* End of results indicator */}
       {!hasMore && properties.length > INITIAL_ITEMS && (
         <div className="flex justify-center pt-4">
-          <p className="text-xs text-gray-400 tracking-tight">
+          <p className="text-xs text-gray-500 tracking-tight">
             Has visto todas las propiedades disponibles
           </p>
         </div>

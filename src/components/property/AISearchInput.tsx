@@ -176,7 +176,7 @@ export function AISearchInput({
       {/* Example Chips - Only show when no search active */}
       {!hasSearched && !isSearching && (
         <div className="mt-4 flex flex-wrap items-center gap-2 animate-fade-in-up">
-          <span className="text-xs text-gray-400 tracking-tight">Prueba:</span>
+          <span className="text-xs text-gray-500 tracking-tight">Prueba:</span>
           {EXAMPLE_QUERIES.map((example) => (
             <button
               key={example}

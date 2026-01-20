@@ -78,12 +78,12 @@ export function PropertiesSection() {
                 </div>
 
                 {/* Location */}
-                <p className="text-[13px] text-gray-400 tracking-[-0.01em] mt-1">
+                <p className="text-[13px] text-gray-500 tracking-[-0.01em] mt-1">
                   {property.neighborhood}, {property.city}
                 </p>
 
                 {/* Features row - Luxterra: with icons, NO border */}
-                <div className="flex items-center gap-5 text-[13px] text-gray-400 mt-4">
+                <div className="flex items-center gap-5 text-[13px] text-gray-500 mt-4">
                   <div className="flex items-center gap-1.5">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M4 4h16v16H4z" />

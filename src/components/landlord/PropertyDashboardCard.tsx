@@ -74,7 +74,7 @@ export function PropertyDashboardCard({
       className={cn('group block', className)}
     >
       {/* Card container with white background */}
-      <div className="bg-white rounded-sm border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="bg-white rounded-[2px] border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
         {/* Image container with candidate count badge */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <Image
@@ -99,7 +99,7 @@ export function PropertyDashboardCard({
           {/* Property status overlay if no candidates */}
           {candidateCount === 0 && (
             <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-              <span className="bg-white text-slate-700 text-xs px-4 py-2 rounded-sm">
+              <span className="bg-white text-slate-700 text-xs px-4 py-2 rounded-[2px]">
                 Sin candidatos
               </span>
             </div>
@@ -136,7 +136,7 @@ export function PropertyDashboardCard({
             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
               {/* Pending count */}
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-sm">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-[2px]">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span>{pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}</span>
                 </div>
@@ -144,7 +144,7 @@ export function PropertyDashboardCard({
 
               {/* Urgent badge */}
               {hasUrgent && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-sm">
+                <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-[2px]">
                   <AlertCircle className="w-3.5 h-3.5" />
                   <span>Urgente</span>
                 </div>

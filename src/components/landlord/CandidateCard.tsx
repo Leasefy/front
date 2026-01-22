@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { borderRadius, transitions, hoverEffects, cardStyles, badgeStyles } from '@/lib/design-tokens';
 import { LevelBadge } from '@/components/score/LevelBadge';
 import { CandidateMetrics } from './CandidateMetrics';
 import { AISnippet } from './AISnippet';
 import { DecisionConfirmation } from './DecisionConfirmation';
-import { useDecisions } from '@/lib/context/DecisionContext';
+import { ContractConfirmation } from './ContractConfirmation';
+import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
 import {
   CANDIDATE_STATUS_LABELS,
   CANDIDATE_STATUS_COLORS,
@@ -26,6 +29,10 @@ import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 export interface CandidateCardProps {
   /** The candidate to display */
   candidate: LandlordCandidate;
+  /** Property ID for contract generation */
+  propertyId: string;
+  /** All candidate IDs for this property (for pre-approval limit check) */
+  allCandidateIds?: string[];
   /** Callback when user clicks "Ver mas" */
   onViewDetails: (id: string) => void;
   /** Callback when user makes a decision */
@@ -80,16 +87,23 @@ function getHistoryRating(
  */
 export function CandidateCard({
   candidate,
+  propertyId,
+  allCandidateIds = [],
   onViewDetails,
   onDecision,
   className,
 }: CandidateCardProps) {
-  const { getDecision, setDecision } = useDecisions();
+  const { getDecision, setDecision, canPreApprove, getPreApprovedCount } = useDecisions();
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [showContractConfirm, setShowContractConfirm] = useState(false);
 
   // Get current decision from context
   const decision = getDecision(candidate.id);
   const currentStatus = decision?.status || candidate.status || 'pending';
+
+  // Pre-approval limit check
+  const preApprovedCount = getPreApprovedCount(allCandidateIds);
+  const canStillPreApprove = canPreApprove(allCandidateIds);
 
   // Get full candidate data for metrics
   const fullCandidate = getFullCandidateData(candidate.id);
@@ -111,14 +125,34 @@ export function CandidateCard({
       setShowRejectConfirm(true);
       return;
     }
+
+    // Check pre-approval limit
+    if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
+      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      });
+      return;
+    }
+
     setDecision(candidate.id, status);
     onDecision?.(candidate.id, status);
+
+    // Show confirmation dialog or toast
+    if (status === 'approved') {
+      // Show contract generation dialog
+      setShowContractConfirm(true);
+    } else if (status === 'pre-approved') {
+      toast.success('Candidato pre-aprobado', {
+        description: `${preApprovedCount + 1} de ${MAX_PRE_APPROVALS} pre-aprobados`,
+      });
+    }
   };
 
   const handleRejectConfirm = () => {
     setDecision(candidate.id, 'rejected');
     onDecision?.(candidate.id, 'rejected');
     setShowRejectConfirm(false);
+    toast.info('Candidato rechazado');
   };
 
   // ---------------------------------------------------------------------------
@@ -126,8 +160,9 @@ export function CandidateCard({
   // ---------------------------------------------------------------------------
 
   // Card styling based on status
-  const cardStyles = cn(
-    'flex flex-col transition-all hover:shadow-md',
+  const cardClassName = cn(
+    cardStyles.interactive,
+    'flex flex-col',
     currentStatus === 'rejected' && 'opacity-60',
     currentStatus === 'approved' && 'ring-2 ring-emerald-200',
     currentStatus === 'pre-approved' && 'ring-2 ring-blue-200',
@@ -136,11 +171,15 @@ export function CandidateCard({
 
   return (
     <>
-      <Card className={cardStyles}>
+      <Card className={cardClassName}>
         {/* Header: Photo + Info + Badge */}
         <CardHeader className="flex-row items-start gap-4 pb-3">
           {/* Photo Placeholder */}
-          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
+          <div className={cn(
+            'h-14 w-14 flex-shrink-0 overflow-hidden',
+            borderRadius.sm,
+            'bg-muted'
+          )}>
             {candidate.photo ? (
               <div
                 className="h-full w-full bg-cover bg-center"
@@ -167,7 +206,8 @@ export function CandidateCard({
               {currentStatus !== 'pending' && (
                 <span
                   className={cn(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0',
+                    badgeStyles.pill,
+                    'px-2 py-0.5 flex-shrink-0',
                     CANDIDATE_STATUS_COLORS[currentStatus]
                   )}
                 >
@@ -186,7 +226,7 @@ export function CandidateCard({
         </CardHeader>
 
         {/* Metrics Section */}
-        <CardContent className="border-t border-slate-100 py-3">
+        <CardContent className={cn('border-t border-border py-3')}>
           <CandidateMetrics
             income={monthlyIncome}
             employmentMonths={employmentMonths}
@@ -196,7 +236,7 @@ export function CandidateCard({
         </CardContent>
 
         {/* AI Snippet */}
-        <CardContent className="border-t border-slate-100 py-3">
+        <CardContent className={cn('border-t border-border py-3')}>
           <AISnippet
             explanation={aiExplanation}
             level={candidate.riskLevel}
@@ -205,42 +245,42 @@ export function CandidateCard({
         </CardContent>
 
         {/* Action Buttons */}
-        <CardFooter className="flex gap-2 border-t border-slate-100 pt-3">
+        <CardFooter className={cn('flex gap-2 border-t border-border pt-3')}>
+          {/* Primary: Aprobar (black) */}
+          <Button
+            size="sm"
+            variant="default"
+            showArrow={false}
+            className={cn(
+              'flex-1',
+              currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+            )}
+            onClick={() => handleDecision('approved')}
+          >
+            <Check className="mr-1 h-3.5 w-3.5" />
+            Aprobar
+          </Button>
+          {/* Secondary: Pre-aprobar */}
           <Button
             size="sm"
             variant="outline"
             className={cn(
               'flex-1 transition-colors',
-              currentStatus === 'pre-approved'
-                ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
-                : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+              currentStatus === 'pre-approved' && 'bg-blue-50 text-blue-700 border-blue-300'
             )}
             onClick={() => handleDecision('pre-approved')}
           >
             <Check className="mr-1 h-3.5 w-3.5" />
             Pre-aprobar
           </Button>
+          {/* Ver mas */}
           <Button
             size="sm"
             variant="outline"
             className="flex-1"
             onClick={() => onViewDetails(candidate.id)}
           >
-            Ver mas
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className={cn(
-              'flex-1 transition-colors',
-              currentStatus === 'rejected'
-                ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
-                : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
-            )}
-            onClick={() => handleDecision('rejected')}
-          >
-            <X className="mr-1 h-3.5 w-3.5" />
-            Rechazar
+            Ver más
           </Button>
         </CardFooter>
       </Card>
@@ -252,6 +292,15 @@ export function CandidateCard({
         isOpen={showRejectConfirm}
         onConfirm={handleRejectConfirm}
         onCancel={() => setShowRejectConfirm(false)}
+      />
+
+      {/* Contract Generation Dialog */}
+      <ContractConfirmation
+        candidateName={candidate.fullName}
+        propertyId={propertyId}
+        candidateId={candidate.id}
+        isOpen={showContractConfirm}
+        onClose={() => setShowContractConfirm(false)}
       />
     </>
   );

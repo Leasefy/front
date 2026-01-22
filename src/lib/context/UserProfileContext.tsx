@@ -9,8 +9,18 @@ import {
   type ReactNode,
 } from 'react';
 import type { PropertyType } from '@/lib/types/property';
+import { StorageManager } from '@/lib/utils/storage';
+import { contextLogger } from '@/lib/utils/logger';
 
 const USER_PROFILE_STORAGE_KEY = 'arriendo-facil-user-profile';
+
+interface UserProfileStorage {
+  isSimulating: boolean;
+  profile: UserProfile | null;
+}
+
+// Storage manager instance
+const storage = new StorageManager<UserProfileStorage>(USER_PROFILE_STORAGE_KEY);
 
 /**
  * User profile for personalization
@@ -70,25 +80,28 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
   // Load simulation state from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.isSimulating) {
-          setIsSimulating(true);
-          setProfile(parsed.profile || MOCK_USER_PROFILE);
-        }
-      } catch {
-        // Ignore parse errors
-      }
+    const saved = storage.get({
+      suppressErrors: true,
+      onError: (error) => {
+        contextLogger.error('Failed to load user profile from localStorage', error);
+      },
+    });
+
+    if (saved?.isSimulating) {
+      setIsSimulating(true);
+      setProfile(saved.profile || MOCK_USER_PROFILE);
     }
   }, []);
 
   // Save state to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem(
-      USER_PROFILE_STORAGE_KEY,
-      JSON.stringify({ isSimulating, profile })
+    storage.set(
+      { isSimulating, profile },
+      {
+        onError: (error) => {
+          contextLogger.error('Failed to save user profile to localStorage', error);
+        },
+      }
     );
   }, [isSimulating, profile]);
 

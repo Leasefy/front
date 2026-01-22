@@ -142,29 +142,31 @@ export function RiskScoreDisplay({
 
   return (
     <Wrapper {...wrapperProps}>
-      {/* Header: Badge + Score + Label */}
-      <div
-        className={cn(
-          'flex items-center gap-4 pb-6 border-b border-border',
-          showAnimation && 'animate-fade-in'
-        )}
-      >
-        <LevelBadge
-          level={riskScore.level}
-          size="lg"
-          className={showAnimation ? 'animate-scale-in' : ''}
-        />
-        <div className="flex flex-col">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {riskScore.numericScore}
-            </span>
-            <span className="text-lg text-muted-foreground">/100</span>
+      {/* Header: Badge + Score + Label - Only show for non-embedded */}
+      {!isEmbedded && (
+        <div
+          className={cn(
+            'flex items-center gap-4 pb-6 border-b border-border',
+            showAnimation && 'animate-fade-in'
+          )}
+        >
+          <LevelBadge
+            level={riskScore.level}
+            size="lg"
+            className={showAnimation ? 'animate-scale-in' : ''}
+          />
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-foreground">
+                {riskScore.numericScore}
+              </span>
+              <span className="text-lg text-muted-foreground">/100</span>
+            </div>
+            <span className={cn('text-sm font-medium', colors.text)}>{label}</span>
+            <span className="text-xs text-muted-foreground mt-1">{candidate.fullName}</span>
           </div>
-          <span className={cn('text-sm font-medium', colors.text)}>{label}</span>
-          <span className="text-xs text-muted-foreground mt-1">{candidate.fullName}</span>
         </div>
-      </div>
+      )}
 
       {/* AI Explanation */}
       <AIExplanation

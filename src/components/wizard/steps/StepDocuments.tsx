@@ -44,7 +44,7 @@ export function StepDocuments() {
   return (
     <div className="space-y-6">
       {/* Warning about file persistence */}
-      <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
+      <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-[2px]">
         <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm text-amber-800 font-medium">

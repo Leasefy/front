@@ -18,13 +18,13 @@ export function PropertyDetailSkeleton() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 h-[50vh] md:h-[70vh]">
             {/* Main large image */}
-            <div className="md:col-span-2 relative overflow-hidden rounded-lg">
+            <div className="md:col-span-2 relative overflow-hidden rounded-[2px]">
               <Skeleton className="h-full w-full" />
             </div>
             {/* Side images stack */}
             <div className="hidden md:grid grid-rows-2 gap-3 md:gap-4">
-              <Skeleton className="w-full h-full rounded-lg" />
-              <Skeleton className="w-full h-full rounded-lg" />
+              <Skeleton className="w-full h-full rounded-[2px]" />
+              <Skeleton className="w-full h-full rounded-[2px]" />
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function PropertyDetailSkeleton() {
               <Skeleton className="h-4 w-16 mb-4" />
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="aspect-[4/3] rounded-sm" />
+                  <Skeleton key={i} className="aspect-[4/3] rounded-[2px]" />
                 ))}
               </div>
             </div>
@@ -98,7 +98,7 @@ export function PropertyDetailSkeleton() {
             {/* Map Placeholder */}
             <div className="mt-12">
               <Skeleton className="h-4 w-32 mb-4" />
-              <Skeleton className="aspect-[16/9] rounded-sm" />
+              <Skeleton className="aspect-[16/9] rounded-[2px]" />
             </div>
           </div>
 
@@ -120,8 +120,8 @@ export function PropertyDetailSkeleton() {
 
                 {/* Form Fields */}
                 <div className="space-y-3 mb-4">
-                  <Skeleton className="h-11 w-full rounded-sm" />
-                  <Skeleton className="h-11 w-full rounded-sm" />
+                  <Skeleton className="h-11 w-full rounded-[2px]" />
+                  <Skeleton className="h-11 w-full rounded-[2px]" />
                 </div>
 
                 {/* CTA Button */}

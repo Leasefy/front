@@ -1,6 +1,11 @@
 /**
  * Mock subscription data for pricing and plans
  * @module lib/data/mock-subscriptions
+ *
+ * Modelo híbrido:
+ * - Propietarios DIY: Suscripción mensual
+ * - Propietarios Hands-off: % del arriendo (administración)
+ * - Inmobiliarias: Suscripción + API
  */
 
 import type {
@@ -65,17 +70,42 @@ export const PLAN_FEATURES: Record<string, Omit<PlanFeature, 'included'>> = {
     name: 'Verificacion de antecedentes',
     description: 'Consulta en bases de datos oficiales',
   },
+  rent_collection: {
+    id: 'rent_collection',
+    name: 'Cobro de arriendos',
+    description: 'Recibimos el pago y te transferimos',
+  },
+  tenant_communication: {
+    id: 'tenant_communication',
+    name: 'Comunicacion con inquilino',
+    description: 'Gestionamos toda la comunicacion',
+  },
+  monthly_reports: {
+    id: 'monthly_reports',
+    name: 'Reportes mensuales',
+    description: 'Estado de tu propiedad cada mes',
+  },
+  maintenance_coord: {
+    id: 'maintenance_coord',
+    name: 'Coordinacion de mantenimiento',
+    description: 'Gestionamos reparaciones y mantenimiento',
+  },
+  insurance_included: {
+    id: 'insurance_included',
+    name: 'Poliza de arriendo',
+    description: 'Proteccion contra impago incluida',
+  },
 };
 
 /**
- * Available subscription plans
+ * Available subscription plans for DIY owners
  * Prices in COP (Colombian Peso)
  */
 export const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Gratis',
-    description: 'Perfecto para empezar a arrendar',
+    description: 'Perfecto para empezar',
     price: {
       monthly: 0,
       yearly: 0,
@@ -91,21 +121,21 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'pro',
-    name: 'Pro',
-    description: 'Para propietarios serios',
+    name: 'Propietario',
+    description: 'Tu administras, nosotros te damos las herramientas',
     price: {
-      monthly: 49900,
-      yearly: 479000, // ~20% discount
+      monthly: 149900,
+      yearly: 1439000, // ~20% discount
     },
     features: [
-      { ...PLAN_FEATURES.property_listing, included: true, limit: 5 },
+      { ...PLAN_FEATURES.property_listing, included: true, limit: 10 },
       { ...PLAN_FEATURES.basic_search, included: true },
       { ...PLAN_FEATURES.unlimited_contracts, included: true, limit: 'unlimited' },
       { ...PLAN_FEATURES.ai_scoring, included: true },
       { ...PLAN_FEATURES.document_verification, included: true },
       { ...PLAN_FEATURES.background_check, included: true },
       { ...PLAN_FEATURES.priority_support, included: true },
-      { ...PLAN_FEATURES.advanced_analytics, included: false },
+      { ...PLAN_FEATURES.advanced_analytics, included: true },
       { ...PLAN_FEATURES.api_access, included: false },
     ],
     highlighted: true,
@@ -113,11 +143,11 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'business',
-    name: 'Business',
-    description: 'Para administradores de propiedades',
+    name: 'Inmobiliaria',
+    description: 'Para agencias y administradores profesionales',
     price: {
-      monthly: 149900,
-      yearly: 1439000, // ~20% discount
+      monthly: 499900,
+      yearly: 4799000, // ~20% discount
     },
     features: [
       { ...PLAN_FEATURES.property_listing, included: true, limit: 'unlimited' },
@@ -131,6 +161,101 @@ export const PLANS: Plan[] = [
       { ...PLAN_FEATURES.api_access, included: true },
       { ...PLAN_FEATURES.multi_property, included: true, limit: 'unlimited' },
     ],
+  },
+];
+
+/**
+ * Property management service tiers
+ * Fee is percentage of monthly rent
+ */
+export interface ManagementTier {
+  id: string;
+  name: string;
+  description: string;
+  feePercentage: number;
+  features: string[];
+  highlighted?: boolean;
+  badge?: string;
+}
+
+export const MANAGEMENT_TIERS: ManagementTier[] = [
+  {
+    id: 'basic',
+    name: 'Administracion Basica',
+    description: 'Cobro y pago de arriendos',
+    feePercentage: 5,
+    features: [
+      'Cobro de arriendos (PSE, tarjeta, efectivo)',
+      'Transferencia mensual a tu cuenta',
+      'Comunicacion basica con inquilino',
+      'Reporte mensual de pagos',
+      'Soporte por WhatsApp',
+    ],
+  },
+  {
+    id: 'complete',
+    name: 'Administracion Completa',
+    description: 'Nos encargamos de todo',
+    feePercentage: 6,
+    features: [
+      'Todo lo del plan Basico',
+      'Busqueda y seleccion de inquilinos (AI)',
+      'Verificacion de antecedentes incluida',
+      'Contratos digitales incluidos',
+      'Coordinacion de mantenimiento',
+      'Visitas de inspeccion semestral',
+      'Gestion de servicios publicos',
+      'Soporte prioritario 24/7',
+    ],
+    highlighted: true,
+    badge: 'Recomendado',
+  },
+];
+
+/**
+ * Add-on services
+ */
+export interface AddOn {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  priceType: 'one-time' | 'monthly' | 'percentage';
+  icon: string;
+}
+
+export const ADD_ONS: AddOn[] = [
+  {
+    id: 'insurance',
+    name: 'Poliza de Arriendo',
+    description: 'Proteccion contra impago (12-24 meses) + danos a propiedad + servicios',
+    price: 2,
+    priceType: 'percentage',
+    icon: 'shield',
+  },
+  {
+    id: 'photos',
+    name: 'Fotos Profesionales',
+    description: 'Sesion fotografica profesional de tu propiedad',
+    price: 150000,
+    priceType: 'one-time',
+    icon: 'camera',
+  },
+  {
+    id: 'featured',
+    name: 'Publicacion Destacada',
+    description: 'Tu propiedad aparece primero en busquedas',
+    price: 50000,
+    priceType: 'monthly',
+    icon: 'star',
+  },
+  {
+    id: 'maintenance',
+    name: 'Mantenimiento Coordinado',
+    description: 'Gestionamos reparaciones con proveedores verificados',
+    price: 10,
+    priceType: 'percentage',
+    icon: 'wrench',
   },
 ];
 
@@ -175,7 +300,7 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
     feature: 'Propiedades',
     description: 'Numero de propiedades que puedes publicar',
     free: '1',
-    pro: '5',
+    pro: '10',
     business: 'Ilimitadas',
   },
   {
@@ -217,12 +342,19 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
     feature: 'Analiticas avanzadas',
     description: 'Reportes de conversion y candidatos',
     free: false,
-    pro: false,
+    pro: true,
     business: true,
   },
   {
     feature: 'Acceso API',
     description: 'Integra con tus sistemas',
+    free: false,
+    pro: false,
+    business: true,
+  },
+  {
+    feature: 'White-label',
+    description: 'Tu marca en la plataforma',
     free: false,
     pro: false,
     business: true,

@@ -244,7 +244,7 @@ export function StepReferences() {
           {landlords.map((landlord, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-black/5 rounded-[2px] space-y-4"
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-black/70">
@@ -254,7 +254,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removeLandlord(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-[2px] text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -370,7 +370,7 @@ export function StepReferences() {
           {employmentRefs.map((ref, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-black/5 rounded-[2px] space-y-4"
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-black/70">
@@ -380,7 +380,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removeEmploymentRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-[2px] text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -489,7 +489,7 @@ export function StepReferences() {
           {personalRefs.map((ref, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-black/5 rounded-[2px] space-y-4"
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-black/70">
@@ -499,7 +499,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removePersonalRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-[2px] text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -596,7 +596,7 @@ function AddButton({ onClick, label }: AddButtonProps) {
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-        'rounded-sm border border-black/10 bg-white',
+        'rounded-[2px] border border-black/10 bg-white',
         'text-black/70 hover:text-black hover:border-black/20',
         'transition-colors'
       )}

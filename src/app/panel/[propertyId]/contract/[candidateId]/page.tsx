@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,10 +28,10 @@ import type { Contract, ContractType } from '@/lib/types/contract';
 // ============================================================================
 
 interface ContractPageProps {
-  params: Promise<{
+  params: {
     propertyId: string;
     candidateId: string;
-  }>;
+  };
 }
 
 // ============================================================================
@@ -86,8 +86,7 @@ function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorPr
 // ============================================================================
 
 export default function ContractPage({ params }: ContractPageProps) {
-  const resolvedParams = use(params);
-  const { propertyId, candidateId } = resolvedParams;
+  const { propertyId, candidateId } = params;
 
   // State
   const [contract, setContract] = useState<Contract | null>(null);
@@ -316,6 +315,7 @@ export default function ContractPage({ params }: ContractPageProps) {
                     <InsuranceSelector
                       selected={selectedInsurance}
                       onSelect={setSelectedInsurance}
+                      monthlyRent={contract.monthlyRent}
                     />
                   </div>
                 )}

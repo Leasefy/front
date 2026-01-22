@@ -27,6 +27,8 @@ import {
   validateStep,
   getMissingFieldsList,
 } from '@/lib/validation/applicationValidation';
+import { StorageManager } from '@/lib/utils/storage';
+import { contextLogger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Local storage key
@@ -36,6 +38,10 @@ const STORAGE_KEY_PREFIX = 'arriendo-facil-application-';
 
 function getStorageKey(propertyId: string): string {
   return `${STORAGE_KEY_PREFIX}${propertyId}`;
+}
+
+function createApplicationStorage(propertyId: string): StorageManager<Application> {
+  return new StorageManager<Application>(getStorageKey(propertyId));
 }
 
 // ============================================================================
@@ -141,24 +147,19 @@ export function ApplicationProvider({
   // ========================================================================
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storageKey = getStorageKey(propertyId);
-      const stored = localStorage.getItem(storageKey);
+    const storage = createApplicationStorage(propertyId);
+    const stored = storage.get({
+      suppressErrors: true, // Silently fail for parse errors
+      onError: (error) => {
+        contextLogger.error('Failed to load application from localStorage', error);
+      },
+    });
 
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as Application;
-          // Ensure it's for the same property
-          if (parsed.propertyId === propertyId) {
-            setApplication(parsed);
-          }
-        } catch {
-          // Ignore parse errors, use empty application
-        }
-      }
-
-      setIsHydrated(true);
+    if (stored && stored.propertyId === propertyId) {
+      setApplication(stored);
     }
+
+    setIsHydrated(true);
   }, [propertyId]);
 
   // ========================================================================
@@ -166,16 +167,21 @@ export function ApplicationProvider({
   // ========================================================================
 
   useEffect(() => {
-    if (isHydrated && typeof window !== 'undefined') {
-      const storageKey = getStorageKey(propertyId);
-      // Don't save File objects to localStorage (they can't be serialized)
-      const toSave = {
-        ...application,
-        documents: sanitizeDocumentsForStorage(application.documents),
-        updatedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(storageKey, JSON.stringify(toSave));
-    }
+    if (!isHydrated) return;
+
+    const storage = createApplicationStorage(propertyId);
+    // Don't save File objects to localStorage (they can't be serialized)
+    const toSave = {
+      ...application,
+      documents: sanitizeDocumentsForStorage(application.documents),
+      updatedAt: new Date().toISOString(),
+    };
+
+    storage.set(toSave, {
+      onError: (error) => {
+        contextLogger.error('Failed to save application to localStorage', error);
+      },
+    });
   }, [application, isHydrated, propertyId]);
 
   // ========================================================================
@@ -300,10 +306,12 @@ export function ApplicationProvider({
   // ========================================================================
 
   const clearApplication = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const storageKey = getStorageKey(propertyId);
-      localStorage.removeItem(storageKey);
-    }
+    const storage = createApplicationStorage(propertyId);
+    storage.remove({
+      onError: (error) => {
+        contextLogger.error('Failed to clear application from localStorage', error);
+      },
+    });
     setApplication(createEmptyApplication(propertyId));
   }, [propertyId]);
 
@@ -320,10 +328,12 @@ export function ApplicationProvider({
       }));
 
       // Clear from localStorage after successful submission
-      if (typeof window !== 'undefined') {
-        const storageKey = getStorageKey(propertyId);
-        localStorage.removeItem(storageKey);
-      }
+      const storage = createApplicationStorage(propertyId);
+      storage.remove({
+        onError: (error) => {
+          contextLogger.error('Failed to clear application from localStorage after submission', error);
+        },
+      });
     } finally {
       setIsLoading(false);
     }

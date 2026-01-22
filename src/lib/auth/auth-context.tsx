@@ -3,8 +3,13 @@
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { User, AuthContextType } from './types'
 import { validateMockCredentials, mockUsers } from '@/lib/data/mock-users'
+import { StorageManager } from '@/lib/utils/storage'
+import { authLogger } from '@/lib/utils/logger'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
+
+// Storage manager instance
+const storage = new StorageManager<User>(AUTH_STORAGE_KEY)
 
 /**
  * Auth Context
@@ -24,26 +29,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        setUser(parsed)
-      }
-    } catch (error) {
-      console.error('Error loading auth state:', error)
-      localStorage.removeItem(AUTH_STORAGE_KEY)
-    } finally {
-      setIsLoading(false)
+    const stored = storage.get({
+      onError: (error) => {
+        authLogger.error('Error loading auth state', error)
+        storage.remove()
+      },
+    })
+
+    if (stored) {
+      setUser(stored)
     }
+    setIsLoading(false)
   }, [])
 
   // Persist user to localStorage
   const persistUser = useCallback((userData: User | null) => {
     if (userData) {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData))
+      storage.set(userData, {
+        onError: (error) => {
+          authLogger.error('Error saving auth state', error)
+        },
+      })
     } else {
-      localStorage.removeItem(AUTH_STORAGE_KEY)
+      storage.remove({
+        onError: (error) => {
+          authLogger.error('Error removing auth state', error)
+        },
+      })
     }
   }, [])
 

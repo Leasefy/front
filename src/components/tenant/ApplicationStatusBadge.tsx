@@ -44,7 +44,7 @@ export function ApplicationStatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-sm',
+        'inline-flex items-center font-medium rounded-[2px]',
         colorClasses,
         sizeClasses[size],
         className

@@ -1,41 +1,278 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { PricingTable } from '@/components/pricing';
-import { Button } from '@/components/ui/button';
-import { Shield, Zap, HeadphonesIcon, CheckCircle2 } from 'lucide-react';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Precios | Arriendo Facil',
-  description:
-    'Planes y precios de Arriendo Facil. Elige el plan que mejor se adapte a tus necesidades.',
-};
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
+import { PricingTable } from '@/components/pricing';
+import { ManagementTierCard } from '@/components/pricing/ManagementTierCard';
+import { AddOnCard } from '@/components/pricing/AddOnCard';
+import {
+  Shield,
+  Zap,
+  HeadphonesIcon,
+  CheckCircle2,
+  Home,
+  Briefcase,
+  Calculator,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { MANAGEMENT_TIERS, ADD_ONS } from '@/lib/data/mock-subscriptions';
+
+type UserType = 'owner-managed' | 'owner-diy' | 'agency';
 
 /**
- * Public pricing page
- * Accessible to all users, authenticated or not
+ * Public pricing page - Hybrid Model
+ *
+ * Three paths:
+ * 1. Property owners who want full management (% fee)
+ * 2. Property owners who self-manage (DIY subscription)
+ * 3. Real estate agencies (business subscription)
  */
 export default function PricingPage() {
+  const [userType, setUserType] = useState<UserType>('owner-managed');
+  const [exampleRent, setExampleRent] = useState(2000000);
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+
+  const toggleAddOn = (addonId: string) => {
+    setSelectedAddOns((prev) =>
+      prev.includes(addonId)
+        ? prev.filter((id) => id !== addonId)
+        : [...prev, addonId]
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#FBFBFB]">
-      {/* Hero section */}
-      <section className="py-16 px-4 sm:py-20">
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-[#FBFBFB] pt-20">
+        {/* Hero section */}
+        <section className="py-16 px-4 sm:py-20">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            Planes simples, precios transparentes
+            Arrienda sin complicaciones
           </h1>
           <p className="text-lg text-slate-600 mt-4 max-w-2xl mx-auto">
-            Elige el plan que mejor se adapte a tus necesidades. Sin sorpresas,
-            sin comisiones ocultas.
+            Tu decides cuanto control quieres. Nosotros nos adaptamos.
           </p>
         </div>
       </section>
 
-      {/* Pricing table */}
-      <section className="pb-16 px-4">
-        <div className="max-w-5xl mx-auto">
-          <PricingTable showComparison />
+      {/* User Type Selector */}
+      <section className="pb-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 p-1.5 bg-slate-100 rounded-sm">
+            <UserTypeButton
+              icon={<Home className="h-4 w-4" />}
+              label="Quiero que administren mi propiedad"
+              description="Nosotros nos encargamos de todo"
+              selected={userType === 'owner-managed'}
+              onClick={() => setUserType('owner-managed')}
+            />
+            <UserTypeButton
+              icon={<Calculator className="h-4 w-4" />}
+              label="Yo administro mi propiedad"
+              description="Herramientas para hacerlo tu mismo"
+              selected={userType === 'owner-diy'}
+              onClick={() => setUserType('owner-diy')}
+            />
+            <UserTypeButton
+              icon={<Briefcase className="h-4 w-4" />}
+              label="Soy inmobiliaria"
+              description="Soluciones para agencias"
+              selected={userType === 'agency'}
+              onClick={() => setUserType('agency')}
+            />
+          </div>
         </div>
       </section>
+
+      {/* Property Management Section */}
+      {userType === 'owner-managed' && (
+        <section className="pb-16 px-4">
+          <div className="max-w-5xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900">
+                Administracion de propiedades
+              </h2>
+              <p className="text-slate-600 mt-2">
+                Cobramos un porcentaje del arriendo. Mucho menos que el mercado
+                (10-12%).
+              </p>
+            </div>
+
+            {/* Rent Calculator */}
+            <div className="mb-8 p-4 bg-white rounded-sm border border-slate-200">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Calcula con tu arriendo mensual
+              </label>
+              <div className="flex items-center gap-4">
+                <span className="text-slate-500">$</span>
+                <input
+                  type="number"
+                  value={exampleRent}
+                  onChange={(e) =>
+                    setExampleRent(Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                  className="flex-1 h-10 px-3 border border-slate-200 rounded-sm text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  step={100000}
+                  min={0}
+                />
+                <span className="text-slate-500">COP/mes</span>
+              </div>
+            </div>
+
+            {/* Management Tiers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {MANAGEMENT_TIERS.map((tier) => (
+                <ManagementTierCard
+                  key={tier.id}
+                  tier={tier}
+                  exampleRent={exampleRent}
+                />
+              ))}
+            </div>
+
+            {/* Add-ons */}
+            <div className="mt-12">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Servicios adicionales
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {ADD_ONS.map((addon) => (
+                  <AddOnCard
+                    key={addon.id}
+                    addon={addon}
+                    exampleRent={exampleRent}
+                    selected={selectedAddOns.includes(addon.id)}
+                    onToggle={toggleAddOn}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Comparison Banner */}
+            <div className="mt-12 p-6 bg-emerald-50 border border-emerald-200 rounded-sm">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-emerald-900">
+                    Ahorra hasta un 50% vs la competencia
+                  </h4>
+                  <p className="text-sm text-emerald-700 mt-1">
+                    Mientras otros cobran 10-12%, nosotros cobramos solo 5-6%.
+                    <br />
+                    Para un arriendo de $2M, eso son $100,000 - $140,000 de
+                    ahorro al mes.
+                  </p>
+                </div>
+                <Link href="/auth">
+                  <Button size="lg">Comenzar ahora</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* DIY Subscription Section */}
+      {userType === 'owner-diy' && (
+        <section className="pb-16 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900">
+                Planes para propietarios
+              </h2>
+              <p className="text-slate-600 mt-2">
+                Tu administras, nosotros te damos las herramientas
+              </p>
+            </div>
+
+            <PricingTable showComparison />
+          </div>
+        </section>
+      )}
+
+      {/* Agency Section */}
+      {userType === 'agency' && (
+        <section className="pb-16 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900">
+                Soluciones para inmobiliarias
+              </h2>
+              <p className="text-slate-600 mt-2">
+                Herramientas profesionales para agencias y administradores
+              </p>
+            </div>
+
+            {/* Agency Benefits */}
+            <div className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <BenefitCard
+                title="API & Integraciones"
+                description="Conecta con tu software existente. Sincroniza propiedades, candidatos y contratos."
+              />
+              <BenefitCard
+                title="Multi-propiedad"
+                description="Gestiona cientos de propiedades desde un solo panel. Sin limites."
+              />
+              <BenefitCard
+                title="White-label"
+                description="Tu marca en la plataforma. Tus clientes ven tu identidad, no la nuestra."
+              />
+            </div>
+
+            {/* Agency Pricing Card */}
+            <div className="max-w-lg mx-auto">
+              <div className="rounded-sm border border-slate-200 bg-white p-8 text-center">
+                <h3 className="text-xl font-semibold text-slate-900">
+                  Plan Inmobiliaria
+                </h3>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-slate-900">
+                    $499.900
+                  </span>
+                  <span className="text-slate-500">/mes</span>
+                </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  o $4.799.000/año (ahorra 20%)
+                </p>
+
+                <ul className="mt-6 space-y-3 text-left">
+                  {[
+                    'Propiedades ilimitadas',
+                    'Usuarios ilimitados',
+                    'API REST completa',
+                    'Webhooks en tiempo real',
+                    'Soporte prioritario 24/7',
+                    'Onboarding personalizado',
+                    'White-label opcional',
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm text-slate-600">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-8 space-y-3">
+                  <Link href="/auth" className="block">
+                    <Button className="w-full" size="lg">
+                      Comenzar prueba gratis
+                    </Button>
+                  </Link>
+                  <Link href="/contacto" className="block">
+                    <Button variant="outline" className="w-full">
+                      Contactar ventas
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Value props */}
       <section className="py-16 px-4 bg-white border-t border-slate-100">
@@ -73,20 +310,20 @@ export default function PricingPage() {
 
           <div className="space-y-6">
             <FAQItem
+              question="Cual es la diferencia entre administracion y suscripcion?"
+              answer="La administracion es para propietarios que quieren desentenderse: nosotros cobramos el arriendo, gestionamos la comunicacion y coordinamos mantenimientos. La suscripcion es para quienes quieren herramientas pero prefieren administrar directamente."
+            />
+            <FAQItem
+              question="Como funciona el cobro del porcentaje?"
+              answer="Cobramos el arriendo al inquilino (PSE, tarjeta, efectivo) y te transferimos el monto menos nuestro porcentaje. Todo automatico, sin que tengas que hacer nada."
+            />
+            <FAQItem
               question="Puedo cambiar de plan en cualquier momento?"
               answer="Si, puedes actualizar o cambiar tu plan cuando quieras. Los cambios se aplican inmediatamente y ajustamos la facturacion de forma proporcional."
             />
             <FAQItem
-              question="Que pasa si cancelo mi suscripcion?"
-              answer="Puedes cancelar en cualquier momento. Tu acceso continuara hasta el final del periodo de facturacion actual."
-            />
-            <FAQItem
-              question="Ofrecen prueba gratuita?"
-              answer="El plan Gratis te permite probar la plataforma sin costo. Cuando estes listo, puedes actualizar a Pro o Business."
-            />
-            <FAQItem
-              question="Que metodos de pago aceptan?"
-              answer="Aceptamos tarjetas de credito y debito (Visa, Mastercard, American Express) y PSE para transferencias bancarias."
+              question="Que incluye la poliza de arriendo?"
+              answer="La poliza cubre entre 12 y 24 meses de arriendo en caso de impago, dependiendo del plan que elijas (Basica: 12 meses, Premium: 24 meses). Tambien incluye cobertura por danos a la propiedad, servicios publicos y reparaciones de emergencia. Es opcional y tiene un costo desde 2% del arriendo mensual."
             />
           </div>
         </div>
@@ -120,6 +357,61 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+/**
+ * User type selector button
+ */
+function UserTypeButton({
+  icon,
+  label,
+  description,
+  selected,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex-1 flex flex-col items-center gap-1 px-4 py-3 rounded-sm transition-all text-center',
+        selected
+          ? 'bg-white shadow-sm text-slate-900'
+          : 'text-slate-600 hover:text-slate-900'
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="font-medium text-sm">{label}</span>
+      </div>
+      <span className="text-xs text-slate-500">{description}</span>
+    </button>
+  );
+}
+
+/**
+ * Benefit card for agency section
+ */
+function BenefitCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-sm border border-slate-200 bg-white p-6">
+      <h4 className="font-semibold text-slate-900">{title}</h4>
+      <p className="mt-2 text-sm text-slate-600">{description}</p>
     </div>
   );
 }

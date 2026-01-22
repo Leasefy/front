@@ -80,7 +80,7 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
+        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-[2px]">
           <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-amber-800 font-medium">
@@ -247,7 +247,7 @@ export function StepReview() {
               checked={acceptTerms}
               onChange={(e) => handleTermsChange(e.target.checked)}
               className={cn(
-                'mt-0.5 h-4 w-4 rounded-sm border border-black/20',
+                'mt-0.5 h-4 w-4 rounded-[2px] border border-black/20',
                 'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
                 'checked:bg-black checked:border-black',
                 'appearance-none cursor-pointer relative',
@@ -273,7 +273,7 @@ export function StepReview() {
               checked={authorizeVerification}
               onChange={(e) => handleAuthorizationChange(e.target.checked)}
               className={cn(
-                'mt-0.5 h-4 w-4 rounded-sm border border-black/20',
+                'mt-0.5 h-4 w-4 rounded-[2px] border border-black/20',
                 'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
                 'checked:bg-black checked:border-black',
                 'appearance-none cursor-pointer relative',
@@ -313,7 +313,7 @@ interface SummaryCardProps {
 
 function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
   return (
-    <div className="bg-white border border-black/5 rounded-sm overflow-hidden">
+    <div className="bg-white border border-black/5 rounded-[2px] overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-black/5">
         <div className="flex items-center gap-2">
           {icon}
@@ -325,7 +325,7 @@ function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
           className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
             'text-black/60 hover:text-black',
-            'rounded-sm hover:bg-black/5 transition-colors'
+            'rounded-[2px] hover:bg-black/5 transition-colors'
           )}
         >
           <Pencil className="h-3.5 w-3.5" />

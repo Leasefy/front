@@ -74,7 +74,7 @@ export function CitiesSection() {
         <div className="flex flex-col items-center text-center mb-[60px]">
           {/* Label with purple dot */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#111112]" />
             <span className="text-[16px] tracking-[-0.02em] text-black/60">
               Ubicaciones
             </span>
@@ -106,7 +106,7 @@ export function CitiesSection() {
             >
               <Link
                 href={city.href}
-                className="group relative block w-full sm:w-[324px] h-[480px] rounded-sm overflow-hidden"
+                className="group relative block w-full sm:w-[324px] h-[480px] rounded-[2px] overflow-hidden"
               >
                 {/* Background Image with hover scale */}
                 <Image

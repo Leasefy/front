@@ -14,3 +14,9 @@ export type { CouponInputProps } from './CouponInput';
 
 export { PriceSummary } from './PriceSummary';
 export type { PriceSummaryProps } from './PriceSummary';
+
+export { ManagementTierCard } from './ManagementTierCard';
+export type { ManagementTierCardProps } from './ManagementTierCard';
+
+export { AddOnCard } from './AddOnCard';
+export type { AddOnCardProps } from './AddOnCard';

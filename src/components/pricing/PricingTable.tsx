@@ -40,11 +40,11 @@ export function PricingTable({
     <div className={cn('', className)}>
       {/* Billing cycle toggle */}
       <div className="flex justify-center mb-8">
-        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-sm">
+        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-[2px]">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={cn(
-              'px-4 py-2 text-sm font-medium rounded-sm transition-all',
+              'px-4 py-2 text-sm font-medium rounded-[2px] transition-all',
               billingCycle === 'monthly'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -55,7 +55,7 @@ export function PricingTable({
           <button
             onClick={() => setBillingCycle('yearly')}
             className={cn(
-              'px-4 py-2 text-sm font-medium rounded-sm transition-all',
+              'px-4 py-2 text-sm font-medium rounded-[2px] transition-all',
               billingCycle === 'yearly'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'

@@ -213,7 +213,7 @@ export function FilterBar({
 
           {/* More Filters Button */}
           <button
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-[2px] hover:bg-gray-50 transition-colors"
           >
             <SlidersHorizontal className="w-4 h-4" />
             Filtros
@@ -273,7 +273,7 @@ function FilterDropdown({
       <button
         onClick={onToggle}
         className={cn(
-          'flex items-center gap-2 px-4 py-2 text-sm border rounded-full transition-colors',
+          'flex items-center gap-2 px-4 py-2 text-sm border rounded-[2px] transition-colors',
           hasValue
             ? 'border-gray-900 bg-gray-900 text-white'
             : 'border-gray-300 hover:bg-gray-50'
@@ -289,7 +289,7 @@ function FilterDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-auto origin-top-left"
+            className="absolute top-full left-0 mt-2 bg-white rounded-[2px] shadow-lg border border-gray-200 z-50 max-h-64 overflow-auto origin-top-left"
           >
             {children}
           </motion.div>

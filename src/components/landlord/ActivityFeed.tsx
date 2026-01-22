@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   MessageSquare,
   FileText,
-  ChevronRight,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -22,42 +21,23 @@ function formatRelativeTime(isoDate: string): string {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMins < 60) {
-    return `hace ${diffMins} min`;
+    return `${diffMins}m`;
   }
   if (diffHours < 24) {
-    return `hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
+    return `${diffHours}h`;
   }
   if (diffDays < 7) {
-    return `hace ${diffDays} dia${diffDays !== 1 ? 's' : ''}`;
+    return `${diffDays}d`;
   }
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
-// Icon and color by activity type
-const activityConfig: Record<
-  ActivityType,
-  { icon: typeof UserPlus; bgColor: string; iconColor: string }
-> = {
-  application: {
-    icon: UserPlus,
-    bgColor: 'bg-blue-50',
-    iconColor: 'text-blue-500',
-  },
-  status_change: {
-    icon: CheckCircle2,
-    bgColor: 'bg-emerald-50',
-    iconColor: 'text-emerald-500',
-  },
-  message: {
-    icon: MessageSquare,
-    bgColor: 'bg-primary/10',
-    iconColor: 'text-primary',
-  },
-  document: {
-    icon: FileText,
-    bgColor: 'bg-amber-50',
-    iconColor: 'text-amber-500',
-  },
+// Icon by activity type
+const activityIcons: Record<ActivityType, typeof UserPlus> = {
+  application: UserPlus,
+  status_change: CheckCircle2,
+  message: MessageSquare,
+  document: FileText,
 };
 
 interface ActivityItemProps {
@@ -65,33 +45,27 @@ interface ActivityItemProps {
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
-  const config = activityConfig[activity.type];
-  const Icon = config.icon;
+  const Icon = activityIcons[activity.type];
 
   const content = (
-    <div className="flex items-start gap-3 p-3 rounded-sm hover:bg-slate-50 transition-colors">
+    <div className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-[2px]">
       {/* Icon */}
-      <div
-        className={cn(
-          'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
-          config.bgColor
-        )}
-      >
-        <Icon className={cn('w-4 h-4', config.iconColor)} />
+      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon className="w-4 h-4 text-slate-400" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-900 font-medium truncate">
+        <p className="text-sm text-slate-700 font-medium">
           {activity.title}
         </p>
-        <p className="text-xs text-slate-500 truncate mt-0.5">
+        <p className="text-xs text-slate-400 mt-0.5 truncate">
           {activity.description}
         </p>
       </div>
 
       {/* Time */}
-      <span className="text-xs text-slate-400 flex-shrink-0">
+      <span className="text-xs text-slate-300 flex-shrink-0">
         {formatRelativeTime(activity.timestamp)}
       </span>
     </div>
@@ -115,7 +89,8 @@ interface ActivityFeedProps {
 }
 
 /**
- * Activity Feed - Recent activity timeline
+ * Activity Feed - Luxterra style
+ * Clean, minimal list without heavy borders
  */
 export function ActivityFeed({
   activities,
@@ -124,50 +99,17 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   if (activities.length === 0) {
     return (
-      <div
-        className={cn(
-          'bg-white rounded-sm border border-slate-100 p-6 text-center',
-          className
-        )}
-      >
-        <p className="text-sm text-slate-500">No hay actividad reciente</p>
+      <div className={cn('text-sm text-slate-400 text-center py-8', className)}>
+        No hay actividad reciente
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        'bg-white rounded-sm border border-slate-100 overflow-hidden',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100">
-        <h3 className="text-sm font-medium text-slate-900">
-          Actividad Reciente
-        </h3>
-      </div>
-
-      {/* Activity list */}
-      <div className="divide-y divide-slate-50">
-        {activities.map((activity) => (
-          <ActivityItem key={activity.id} activity={activity} />
-        ))}
-      </div>
-
-      {/* View all link */}
-      {showViewAll && (
-        <div className="px-4 py-3 border-t border-slate-100">
-          <button
-            className="w-full flex items-center justify-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-            disabled
-          >
-            Ver toda la actividad
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+    <div className={className}>
+      {activities.map((activity) => (
+        <ActivityItem key={activity.id} activity={activity} />
+      ))}
     </div>
   );
 }

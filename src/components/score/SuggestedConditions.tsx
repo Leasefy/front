@@ -86,7 +86,7 @@ export function SuggestedConditions({
           <li
             key={condition.id}
             className={cn(
-              'rounded-md bg-muted/50 p-3 text-sm',
+              'rounded-[2px] bg-muted/50 p-3 text-sm',
               animate && 'animate-fade-in-up'
             )}
             style={

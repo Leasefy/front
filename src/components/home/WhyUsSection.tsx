@@ -65,12 +65,12 @@ export function WhyUsSection() {
             </div>
           </div>
 
-          {/* Right - Stats Grid - rounded-sm (2px) */}
+          {/* Right - Stats Grid - rounded-[2px] (2px) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white rounded-sm p-6 flex flex-col"
+                className="bg-white rounded-[2px] p-6 flex flex-col"
               >
                 <div className="mb-auto">
                   <p className="text-3xl md:text-4xl font-normal text-gray-900 tracking-tight">

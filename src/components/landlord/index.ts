@@ -38,6 +38,7 @@ export { DecisionButtons } from './DecisionButtons';
 export { CandidateDetail } from './CandidateDetail';
 export { CandidateNotes } from './CandidateNotes';
 export { DecisionConfirmation } from './DecisionConfirmation';
+export { ContractConfirmation } from './ContractConfirmation';
 
 // Re-export types for convenience
 export type { CandidateCardProps } from './CandidateCard';
@@ -50,3 +51,4 @@ export type { DecisionButtonsProps } from './DecisionButtons';
 export type { CandidateDetailProps } from './CandidateDetail';
 export type { CandidateNotesProps } from './CandidateNotes';
 export type { DecisionConfirmationProps } from './DecisionConfirmation';
+export type { ContractConfirmationProps } from './ContractConfirmation';

@@ -1,116 +1,105 @@
 'use client';
 
-import { Metadata } from 'next';
-import { Building2, Sparkles } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
-import { LANDLORD_PROPERTIES, getLandlordSummary } from '@/lib/data/mock-landlord-data';
+import { LANDLORD_PROPERTIES } from '@/lib/data/mock-landlord-data';
 import { getRecentActivities } from '@/lib/data/mock-activity';
+import { getDashboardData } from '@/lib/data/mock-dashboard';
 import { PropertyDashboardCard } from '@/components/landlord/PropertyDashboardCard';
 import { DashboardHeader } from '@/components/landlord/DashboardHeader';
-import { KPIGrid } from '@/components/landlord/KPIGrid';
+import { FinancialHeroSection } from '@/components/landlord/FinancialHeroSection';
+import { UrgentActionsBanner } from '@/components/landlord/UrgentActionsBanner';
 import { ActivityFeed } from '@/components/landlord/ActivityFeed';
+import { UpcomingEventsCard } from '@/components/landlord/UpcomingEventsCard';
+import { SectionLabel } from '@/components/ui/section-label';
 
 /**
- * Landlord Dashboard Page
- * Entry point for landlord experience showing properties and candidate stats
- *
- * Layout (redesigned):
- * +-----------------------------------------------------+
- * |  Buenos días, Juan!                                  |
- * |  Revisa el estado de tus propiedades...             |
- * +-----------------------------------------------------+
- * |  +----------+ +----------+ +----------+ +----------+ |
- * |  | 12       | | 5        | | 2        | | 1        | |
- * |  | candidat | | pendient | | pre-aprob| | aprobado | |
- * |  +----------+ +----------+ +----------+ +----------+ |
- * +-----------------------------------------------------+
- * |                                                      |
- * |  +--------------------+  +------------------------+ |
- * |  | Mis Propiedades    |  | Actividad Reciente     | |
- * |  |                    |  |                        | |
- * |  | [Property Grid]    |  | [Activity Feed]        | |
- * |  +--------------------+  +------------------------+ |
- * +-----------------------------------------------------+
+ * Landlord Dashboard Page - Luxterra Style
+ * Clean, minimal, elegant design with white background
  */
 export default function PanelPage() {
-  const summary = getLandlordSummary();
   const properties = LANDLORD_PROPERTIES;
   const recentActivities = getRecentActivities(5);
+  const dashboardData = getDashboardData();
 
   return (
-    <div className="min-h-screen">
-      {/* Content container */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+    <div className="min-h-screen bg-white">
+      {/* Content container - matches Luxterra max-width */}
+      <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-8 md:py-12">
         {/* Header with greeting */}
-        <DashboardHeader />
+        <DashboardHeader
+          propertyCount={properties.length}
+          monthlyIncome={dashboardData.financial.monthlyIncome}
+        />
 
-        {/* KPI Grid */}
-        <KPIGrid summary={summary} className="mt-6" />
+        {/* Subtle notifications - not colorful badges */}
+        {dashboardData.urgentActions.length > 0 && (
+          <UrgentActionsBanner
+            actions={dashboardData.urgentActions}
+            className="mt-2"
+          />
+        )}
 
-        {/* Premium Advisor Card */}
-        <div className="mt-8 p-5 bg-gradient-to-br from-primary/5 via-primary/10 to-blue-50/80 rounded-sm border border-primary/20">
-          <div className="flex items-start gap-4">
-            <div className="p-2.5 bg-white rounded-sm shadow-sm flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-primary" />
+        {/* Financial Hero Section - Luxterra style black box */}
+        <FinancialHeroSection
+          stats={dashboardData.financial}
+          className="mt-10"
+        />
+
+        {/* Properties Section */}
+        <section className="mt-16">
+          <div className="mb-8">
+            <SectionLabel className="text-slate-400 mb-3">
+              Propiedades
+            </SectionLabel>
+            <h2 className="text-[1.75rem] md:text-[2rem] font-light text-slate-900 tracking-[-0.02em]">
+              Mis Propiedades
+            </h2>
+          </div>
+
+          {/* Properties Grid - 3 columns on large screens */}
+          {properties.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {properties.map((property) => (
+                <PropertyDashboardCard key={property.id} property={property} />
+              ))}
             </div>
-            <div className="flex-1">
-              <h2 className="text-base font-medium text-slate-900 mb-1">
-                Tu asesor de confianza con IA
-              </h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Cada candidato incluye un analisis detallado con nuestra inteligencia artificial.
-                Te explicamos en lenguaje claro por que un candidato es confiable, que considerar,
-                y que condiciones sugerimos para tu tranquilidad.
+          ) : (
+            <div className="text-center py-20 border border-slate-100 rounded-[2px]">
+              <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-light text-slate-900 mb-2">
+                No tienes propiedades publicadas
+              </h3>
+              <p className="text-slate-500 text-sm">
+                Publica tu primera propiedad para comenzar
               </p>
             </div>
-          </div>
-        </div>
+          )}
+        </section>
 
-        {/* Main content grid */}
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Properties Section - 2 columns */}
-          <section className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-medium text-slate-900">
-                Mis Propiedades
-                <span className="text-slate-400 font-normal ml-2">
-                  ({properties.length})
-                </span>
-              </h2>
+        {/* Activity & Events Grid */}
+        <section className="mt-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <SectionLabel className="text-slate-400 mb-3">
+                Actividad
+              </SectionLabel>
+              <h3 className="text-xl font-light text-slate-900 tracking-[-0.02em] mb-6">
+                Actividad Reciente
+              </h3>
+              <ActivityFeed activities={recentActivities} showViewAll={false} />
             </div>
-
-            {/* Properties Grid */}
-            {properties.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {properties.map((property) => (
-                  <PropertyDashboardCard key={property.id} property={property} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 bg-white rounded-sm border border-slate-100">
-                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">
-                  No tienes propiedades publicadas
-                </h3>
-                <p className="text-slate-500 text-sm">
-                  Publica tu primera propiedad para comenzar a recibir candidatos
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* Activity Feed - 1 column */}
-          <aside className="lg:col-span-1">
-            <ActivityFeed activities={recentActivities} />
-          </aside>
-        </div>
-
-        {/* Help Text */}
-        <div className="mt-12 text-center text-sm text-slate-400">
-          <p>
-            Haz clic en una propiedad para ver los candidatos y sus analisis de riesgo
-          </p>
-        </div>
+            <div>
+              <SectionLabel className="text-slate-400 mb-3">
+                Calendario
+              </SectionLabel>
+              <h3 className="text-xl font-light text-slate-900 tracking-[-0.02em] mb-6">
+                Proximos Eventos
+              </h3>
+              <UpcomingEventsCard events={dashboardData.upcomingEvents} />
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

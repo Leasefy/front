@@ -152,11 +152,14 @@ export interface Contract {
 
   // Contract terms
   monthlyRent: number;
-  depositAmount: number;
   adminFee: number;
   startDate: string;      // ISO date
   endDate: string;        // ISO date
   paymentDueDay: number;  // 1-28
+
+  // Guarantee (deposits are PROHIBITED by Art. 16, Ley 820/2003)
+  guaranteeType: 'poliza' | 'codeudor';
+  guaranteeDetails?: string; // Policy number or co-signer name
 
   // Signatures
   landlordSignature: Signature | null;
@@ -197,11 +200,12 @@ export interface CreateContractInput {
   tenantId: string;
   templateId: string;
   monthlyRent: number;
-  depositAmount: number;
   adminFee: number;
   startDate: string;
   endDate: string;
   paymentDueDay: number;
+  guaranteeType: 'poliza' | 'codeudor';
+  guaranteeDetails?: string;
   specialConditions?: string;
 }
 

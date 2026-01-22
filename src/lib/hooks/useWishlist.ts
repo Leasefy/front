@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { StorageManager } from '@/lib/utils/storage';
+import { contextLogger } from '@/lib/utils/logger';
 
 const WISHLIST_KEY = 'arriendo-facil-wishlist';
+
+// Storage manager instance
+const storage = new StorageManager<string[]>(WISHLIST_KEY);
 
 /**
  * Hook for managing property wishlist with localStorage persistence
@@ -14,24 +19,28 @@ export function useWishlist() {
 
   // Load from localStorage on mount (client-side only)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(WISHLIST_KEY);
-      if (stored) {
-        try {
-          setWishlistedIds(JSON.parse(stored));
-        } catch {
-          // Ignore parse errors, start with empty wishlist
-        }
-      }
-      setIsHydrated(true);
+    const stored = storage.get({
+      suppressErrors: true,
+      onError: (error) => {
+        contextLogger.error('Failed to load wishlist from localStorage', error);
+      },
+    });
+
+    if (stored) {
+      setWishlistedIds(stored);
     }
+    setIsHydrated(true);
   }, []);
 
   // Save to localStorage whenever wishlistedIds changes (after hydration)
   useEffect(() => {
-    if (isHydrated && typeof window !== 'undefined') {
-      localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlistedIds));
-    }
+    if (!isHydrated) return;
+
+    storage.set(wishlistedIds, {
+      onError: (error) => {
+        contextLogger.error('Failed to save wishlist to localStorage', error);
+      },
+    });
   }, [wishlistedIds, isHydrated]);
 
   /**

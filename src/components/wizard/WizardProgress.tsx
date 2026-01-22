@@ -73,7 +73,7 @@ export function WizardProgress({
                   {/* Step circle */}
                   <div
                     className={cn(
-                      'w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-300',
+                      'w-10 h-10 rounded-[2px] flex items-center justify-center transition-all duration-300',
                       'border-2',
                       isCompleted
                         ? 'bg-primary border-primary text-white'
@@ -121,7 +121,7 @@ export function WizardProgress({
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 bg-gray-200 rounded-sm overflow-hidden">
+        <div className="h-2 bg-gray-200 rounded-[2px] overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500"
             style={{
@@ -144,7 +144,7 @@ export function WizardProgress({
                 onClick={() => handleStepClick(step.id)}
                 disabled={!isClickable}
                 className={cn(
-                  'w-8 h-8 rounded-sm flex items-center justify-center text-xs font-medium transition-all',
+                  'w-8 h-8 rounded-[2px] flex items-center justify-center text-xs font-medium transition-all',
                   isCompleted
                     ? 'bg-primary text-white'
                     : isCurrent

@@ -20,7 +20,7 @@ export function StatsSection() {
       {/* Container with padding - matches Luxterra */}
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         {/* Black container with rounded corners */}
-        <div className="bg-[#0f0f0f] rounded-sm py-16 md:py-24 px-8 md:px-16 lg:px-20">
+        <div className="bg-[#0f0f0f] rounded-[2px] py-16 md:py-24 px-8 md:px-16 lg:px-20">
           {/* Header - Centered */}
           <div className="text-center mb-16 md:mb-20">
             <SectionLabel className="text-gray-500 mb-4 justify-center">

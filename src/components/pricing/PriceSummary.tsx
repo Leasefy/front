@@ -54,7 +54,7 @@ export function PriceSummary({
   const billingLabel = billingCycle === 'monthly' ? 'mes' : 'ano';
 
   return (
-    <div className={cn('bg-slate-50 rounded-sm p-4', className)}>
+    <div className={cn('bg-slate-50 rounded-[2px] p-4', className)}>
       <h4 className="font-medium text-slate-900 mb-4 flex items-center gap-2">
         Resumen
         {appliedCoupon && (
@@ -87,7 +87,7 @@ export function PriceSummary({
 
         {/* Free period notice */}
         {isTrial && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-sm p-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-[2px] p-3">
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>

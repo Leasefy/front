@@ -84,8 +84,8 @@ export function CTASection() {
             href="/contacto"
             className="inline-flex items-center h-[50px] rounded-[2px] bg-white text-[#111112] text-[15px] tracking-[-0.15px] leading-[20px] hover:bg-white/90 transition-colors group/btn overflow-hidden"
           >
-            {/* Arrow icon container - purple background */}
-            <span className="flex items-center justify-center w-[50px] h-full bg-[#8b5cf6] rounded-l-[2px]">
+            {/* Arrow icon container - black background */}
+            <span className="flex items-center justify-center w-[50px] h-full bg-[#111112] rounded-l-[2px]">
               <svg
                 className="w-4 h-4 text-white transition-transform duration-300 group-hover/btn:translate-x-0.5"
                 fill="none"

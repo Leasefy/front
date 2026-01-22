@@ -26,8 +26,8 @@ export interface Lease {
   // Terms
   monthlyRent: number;
   adminFee: number;
-  depositAmount: number;
-  depositPaid: boolean;
+  guaranteeType: 'poliza' | 'codeudor';
+  guaranteeDetails?: string;
   startDate: string;
   endDate: string;
   paymentDueDay: number; // Day of month (1-31)

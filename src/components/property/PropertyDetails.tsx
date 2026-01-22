@@ -98,7 +98,7 @@ export function PropertyDetails({
       </div>
 
       {/* Price section */}
-      <div className="rounded-sm border bg-card p-4">
+      <div className="rounded-[2px] border bg-card p-4">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold text-foreground">
             {formatCurrency(monthlyRent)}
@@ -129,7 +129,7 @@ export function PropertyDetails({
       </div>
 
       {/* Features section */}
-      <div className="rounded-sm border bg-card p-4">
+      <div className="rounded-[2px] border bg-card p-4">
         <h2 className="mb-4 font-semibold text-foreground">Caracteristicas</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export function PropertyDetails({
 
       {/* Amenities section */}
       {amenities.length > 0 && (
-        <div className="rounded-sm border bg-card p-4">
+        <div className="rounded-[2px] border bg-card p-4">
           <h2 className="mb-4 font-semibold text-foreground">Comodidades</h2>
           <div className="flex flex-wrap gap-2">
             {amenities.map((amenity) => (
@@ -192,7 +192,7 @@ export function PropertyDetails({
       )}
 
       {/* Description section */}
-      <div className="rounded-sm border bg-card p-4">
+      <div className="rounded-[2px] border bg-card p-4">
         <h2 className="mb-4 font-semibold text-foreground">Descripcion</h2>
         <p className="text-muted-foreground leading-relaxed">{description}</p>
       </div>

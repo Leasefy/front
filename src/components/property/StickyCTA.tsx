@@ -94,14 +94,14 @@ export function StickyCTA({
             placeholder="Tu nombre"
             value={leadName}
             onChange={(e) => setLeadName(e.target.value)}
-            className="h-11 rounded-sm border-black/10 text-sm placeholder:text-black/40 focus:border-black/30 focus:ring-0"
+            className="h-11 rounded-[2px] border-black/10 text-sm placeholder:text-black/40 focus:border-black/30 focus:ring-0"
           />
           <Input
             type="email"
             placeholder="Tu correo electronico"
             value={leadEmail}
             onChange={(e) => setLeadEmail(e.target.value)}
-            className="h-11 rounded-sm border-black/10 text-sm placeholder:text-black/40 focus:border-black/30 focus:ring-0"
+            className="h-11 rounded-[2px] border-black/10 text-sm placeholder:text-black/40 focus:border-black/30 focus:ring-0"
           />
         </div>
 

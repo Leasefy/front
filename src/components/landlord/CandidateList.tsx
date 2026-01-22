@@ -5,6 +5,7 @@ import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CandidateCard } from './CandidateCard';
+import { useDecisions } from '@/lib/context/DecisionContext';
 import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';
 import type { RiskLevel } from '@/lib/types/risk-score';
 
@@ -15,6 +16,8 @@ import type { RiskLevel } from '@/lib/types/risk-score';
 export interface CandidateListProps {
   /** Array of candidates to display */
   candidates: LandlordCandidate[];
+  /** Property ID for contract generation */
+  propertyId: string;
   /** Callback when user clicks "Ver mas" */
   onViewDetails: (id: string) => void;
   /** Callback when user makes a decision */
@@ -38,6 +41,15 @@ const LEVEL_LABELS: Record<RiskLevel, string> = {
   D: 'Riesgosos',
 };
 
+// Status priority for sorting (lower = higher priority)
+const STATUS_PRIORITY: Record<LandlordCandidateStatus, number> = {
+  'approved': 0,
+  'pre-approved': 1,
+  'more-info': 2,
+  'pending': 3,
+  'rejected': 4,
+};
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -47,6 +59,28 @@ const LEVEL_LABELS: Record<RiskLevel, string> = {
  */
 function sortCandidatesByScore(candidates: LandlordCandidate[]): LandlordCandidate[] {
   return [...candidates].sort((a, b) => b.numericScore - a.numericScore);
+}
+
+/**
+ * Sort candidates by status first, then by score
+ * Status order: approved > pre-approved > more-info > pending > rejected
+ */
+function sortCandidatesByStatusAndScore(
+  candidates: LandlordCandidate[],
+  getStatus: (id: string) => LandlordCandidateStatus
+): LandlordCandidate[] {
+  return [...candidates].sort((a, b) => {
+    const statusA = getStatus(a.id);
+    const statusB = getStatus(b.id);
+    const priorityDiff = STATUS_PRIORITY[statusA] - STATUS_PRIORITY[statusB];
+
+    // If same status priority, sort by score
+    if (priorityDiff === 0) {
+      return b.numericScore - a.numericScore;
+    }
+
+    return priorityDiff;
+  });
 }
 
 /**
@@ -83,15 +117,32 @@ function groupCandidatesByLevel(
  */
 export function CandidateList({
   candidates,
+  propertyId,
   onViewDetails,
   onDecision,
   groupByLevel = false,
   className,
 }: CandidateListProps) {
-  // Sort and optionally group candidates
-  const sortedCandidates = useMemo(
-    () => sortCandidatesByScore(candidates),
+  const { getDecision } = useDecisions();
+
+  // Get all candidate IDs for pre-approval limit checks
+  const allCandidateIds = useMemo(
+    () => candidates.map((c) => c.id),
     [candidates]
+  );
+
+  // Helper to get current status from context or candidate
+  const getStatus = (id: string): LandlordCandidateStatus => {
+    const decision = getDecision(id);
+    const candidate = candidates.find((c) => c.id === id);
+    return decision?.status || candidate?.status || 'pending';
+  };
+
+  // Sort candidates by status first, then by score
+  const sortedCandidates = useMemo(
+    () => sortCandidatesByStatusAndScore(candidates, getStatus),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [candidates, getDecision]
   );
 
   const groupedCandidates = useMemo(
@@ -104,7 +155,7 @@ export function CandidateList({
     return (
       <div
         className={cn(
-          'rounded-lg border border-dashed border-slate-300 bg-slate-50',
+          'rounded-[2px] border border-dashed border-slate-300 bg-slate-50',
           className
         )}
       >
@@ -151,6 +202,8 @@ export function CandidateList({
                   <CandidateCard
                     key={candidate.id}
                     candidate={candidate}
+                    propertyId={propertyId}
+                    allCandidateIds={allCandidateIds}
                     onViewDetails={onViewDetails}
                     onDecision={onDecision}
                   />
@@ -175,6 +228,8 @@ export function CandidateList({
         <CandidateCard
           key={candidate.id}
           candidate={candidate}
+          propertyId={propertyId}
+          allCandidateIds={allCandidateIds}
           onViewDetails={onViewDetails}
           onDecision={onDecision}
         />

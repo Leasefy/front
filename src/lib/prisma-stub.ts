@@ -9,10 +9,12 @@
  * Remove this file once Prisma is properly set up.
  */
 
+import { logger } from './utils/logger';
+
 // Stub PrismaClient that does nothing
 export class PrismaClient {
   constructor(_options?: unknown) {
-    console.warn(
+    logger.warn(
       'PrismaClient stub: Database operations are not available in frontend-only mode'
     );
   }

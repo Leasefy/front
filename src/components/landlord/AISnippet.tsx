@@ -100,7 +100,7 @@ export function AISnippet({
   return (
     <div
       className={cn(
-        'rounded-lg border p-3',
+        'rounded-[2px] border p-3',
         styles.border,
         styles.bg,
         className

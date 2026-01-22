@@ -65,7 +65,7 @@ export function TestimonialsSection() {
           >
             {/* Label with purple dot */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#8b5cf6]" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
               <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
                 Testimonios
               </span>
@@ -108,7 +108,7 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, delay: offset * 0.1 }}
-                    className="bg-white rounded-sm p-8 flex flex-col"
+                    className="bg-white rounded-[2px] p-8 flex flex-col"
                   >
                     {/* Quote icon */}
                     <div className="mb-6">

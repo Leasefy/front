@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
+import { StorageManager } from '@/lib/utils/storage';
+import { contextLogger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Types
@@ -47,6 +49,14 @@ interface DecisionContextValue {
   clearDecision: (candidateId: string) => void;
   /** Check if state has been hydrated from localStorage */
   isHydrated: boolean;
+  /** Get count of pre-approved candidates for a property */
+  getPreApprovedCount: (candidateIds: string[]) => number;
+  /** Check if can pre-approve more (max 3) */
+  canPreApprove: (candidateIds: string[]) => boolean;
+  /** Auto-reject all other candidates when contract is signed */
+  autoRejectOthers: (approvedCandidateId: string, allCandidateIds: string[]) => void;
+  /** Get all decisions */
+  getAllDecisions: () => Record<string, CandidateDecision>;
 }
 
 // ============================================================================
@@ -54,6 +64,10 @@ interface DecisionContextValue {
 // ============================================================================
 
 const STORAGE_KEY = 'arriendo-facil-decisions';
+export const MAX_PRE_APPROVALS = 3;
+
+// Storage manager instance
+const storage = new StorageManager<DecisionState>(STORAGE_KEY);
 
 // ============================================================================
 // Context
@@ -88,14 +102,14 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
   // Hydrate from localStorage on mount
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as DecisionState;
-        setState(parsed);
-      }
-    } catch (error) {
-      console.error('Failed to load decisions from localStorage:', error);
+    const stored = storage.get({
+      onError: (error) => {
+        contextLogger.error('Failed to load decisions from localStorage', error);
+      },
+    });
+
+    if (stored) {
+      setState(stored);
     }
     setIsHydrated(true);
   }, []);
@@ -106,11 +120,11 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Failed to save decisions to localStorage:', error);
-    }
+    storage.set(state, {
+      onError: (error) => {
+        contextLogger.error('Failed to save decisions to localStorage', error);
+      },
+    });
   }, [state, isHydrated]);
 
   // ---------------------------------------------------------------------------
@@ -170,6 +184,62 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
     });
   }, []);
 
+  const getPreApprovedCount = useCallback(
+    (candidateIds: string[]): number => {
+      return candidateIds.filter((id) => {
+        const decision = state.decisions[id];
+        return decision?.status === 'pre-approved';
+      }).length;
+    },
+    [state.decisions]
+  );
+
+  const canPreApprove = useCallback(
+    (candidateIds: string[]): boolean => {
+      return getPreApprovedCount(candidateIds) < MAX_PRE_APPROVALS;
+    },
+    [getPreApprovedCount]
+  );
+
+  const autoRejectOthers = useCallback(
+    (approvedCandidateId: string, allCandidateIds: string[]) => {
+      const now = new Date().toISOString();
+      const newDecisions: Record<string, CandidateDecision> = {};
+
+      allCandidateIds.forEach((id) => {
+        if (id !== approvedCandidateId) {
+          // Only reject if not already rejected
+          const currentDecision = state.decisions[id];
+          if (currentDecision?.status !== 'rejected') {
+            newDecisions[id] = {
+              candidateId: id,
+              status: 'rejected',
+              changedAt: now,
+            };
+          }
+        }
+      });
+
+      if (Object.keys(newDecisions).length > 0) {
+        setState((prev) => ({
+          ...prev,
+          decisions: {
+            ...prev.decisions,
+            ...newDecisions,
+          },
+        }));
+      }
+    },
+    [state.decisions]
+  );
+
+  const getAllDecisions = useCallback(
+    (): Record<string, CandidateDecision> => {
+      return state.decisions;
+    },
+    [state.decisions]
+  );
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -181,6 +251,10 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
     setNote,
     clearDecision,
     isHydrated,
+    getPreApprovedCount,
+    canPreApprove,
+    autoRejectOthers,
+    getAllDecisions,
   };
 
   return (

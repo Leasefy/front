@@ -57,7 +57,7 @@ export function DemoControls({
   return (
     <div
       className={cn(
-        'rounded-sm border border-slate-200 bg-white p-4 space-y-4',
+        'rounded-[2px] border border-slate-200 bg-white p-4 space-y-4',
         className
       )}
     >
@@ -71,7 +71,7 @@ export function DemoControls({
               type="button"
               onClick={() => onVariantChange(v.value)}
               className={cn(
-                'flex flex-col items-start px-3 py-2 rounded-sm border text-left transition-colors min-w-0',
+                'flex flex-col items-start px-3 py-2 rounded-[2px] border text-left transition-colors min-w-0',
                 variant === v.value
                   ? 'border-primary bg-primary/5 text-primary'
                   : 'border-slate-200 hover:border-slate-300 text-slate-700'

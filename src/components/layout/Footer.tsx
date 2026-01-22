@@ -198,7 +198,7 @@ export function Footer() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="text-[15vw] md:text-[12vw] font-normal tracking-[-0.06em] leading-none select-none lowercase whitespace-nowrap bg-gradient-to-r from-white/20 via-[#8b5cf6]/30 to-white/10 bg-clip-text text-transparent"
+            className="text-[15vw] md:text-[12vw] font-normal tracking-[-0.06em] leading-none select-none lowercase whitespace-nowrap bg-gradient-to-r from-white/20 via-white/30 to-white/10 bg-clip-text text-transparent"
           >
             arriendo facil
           </motion.h2>

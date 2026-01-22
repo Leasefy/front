@@ -1,5 +1,6 @@
 'use client';
 
+import { Toaster } from 'sonner';
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardSidebar } from '@/components/landlord/DashboardSidebar';
@@ -26,7 +27,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <ProtectedRoute allowedRoles={['landlord']}>
       <DecisionProvider>
-        <div className="min-h-screen bg-[#FBFBFB]">
+        <div className="min-h-screen bg-white">
           {/* Sidebar */}
           <DashboardSidebar />
 
@@ -34,6 +35,16 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
           <main className="lg:pl-60">
             {children}
           </main>
+
+          {/* Toast notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                borderRadius: '2px',
+              },
+            }}
+          />
         </div>
       </DecisionProvider>
     </ProtectedRoute>

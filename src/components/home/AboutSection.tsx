@@ -34,7 +34,7 @@ export function AboutSection() {
   return (
     <section className="bg-white py-24 lg:py-32">
       <div className="container-wide">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-stretch">
           {/* Left Column - Text + Feature Cards */}
           <div>
             {/* Label with extended line - this sets the alignment point */}
@@ -83,9 +83,8 @@ export function AboutSection() {
             </div>
           </div>
 
-          {/* Right Column - Image starts at SAME level as label */}
-          {/* Square ratio like Luxterra */}
-          <div className="relative aspect-square">
+          {/* Right Column - Image stretches to match left column height */}
+          <div className="relative min-h-[400px]">
             <Image
               src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1200"
               alt="Interior de apartamento moderno"

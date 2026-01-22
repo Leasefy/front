@@ -35,7 +35,7 @@ function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-4 p-4 rounded-sm border',
+        'flex items-center gap-4 p-4 rounded-[2px] border',
         variantStyles[variant]
       )}
     >

@@ -60,7 +60,7 @@ export function ServicesSection() {
       {/* Outer container for centering */}
       <div className="mx-auto max-w-[1356px] px-8">
         {/* Dark inner container with rounded corners - Luxterra style */}
-        <div className="bg-[#111112] rounded-[16px] px-[60px] py-[60px] pb-[70px]">
+        <div className="bg-[#111112] rounded-[2px] px-[60px] py-[60px] pb-[70px]">
           {/* Header - Centered with gap-[10px] */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -74,7 +74,7 @@ export function ServicesSection() {
               <div className="flex-1 h-px bg-white/10" />
               <div className="flex items-center gap-2">
                 {/* Purple dot */}
-                <span className="w-[6px] h-[6px] rounded-full bg-[#8b5cf6]" />
+                <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
                 {/* Label */}
                 <span className="text-[16px] leading-[21.6px] tracking-[-0.32px] text-white/60">
                   Nuestros servicios
@@ -132,7 +132,7 @@ export function ServicesSection() {
 
                   <Link
                     href={service.href}
-                    className="inline-flex items-center justify-center w-full h-[38px] rounded-[40px] bg-white text-[#111112] text-[15px] tracking-[-0.15px] leading-[20px] font-normal hover:bg-white/90 transition-colors group/btn overflow-hidden"
+                    className="inline-flex items-center justify-center w-full h-[38px] rounded-[2px] bg-white text-[#111112] text-[15px] tracking-[-0.15px] leading-[20px] font-normal hover:bg-white/90 transition-colors group/btn overflow-hidden"
                   >
                     <span className="relative overflow-hidden h-[20px]">
                       <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">

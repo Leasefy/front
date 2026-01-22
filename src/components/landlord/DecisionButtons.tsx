@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, FileQuestion, RotateCcw } from 'lucide-react';
+import { Check, X, MessageCircle, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useDecisions } from '@/lib/context/DecisionContext';
+import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 
 // ============================================================================
@@ -12,17 +13,13 @@ import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 // ============================================================================
 
 export interface DecisionButtonsProps {
-  /** ID of the candidate */
   candidateId: string;
-  /** Current status (from context or mock data) */
+  allCandidateIds?: string[];
   currentStatus?: LandlordCandidateStatus;
-  /** Display variant: card = compact, detail = full with all options */
   variant: 'card' | 'detail';
-  /** Callback after a decision is made */
   onDecision?: (status: LandlordCandidateStatus) => void;
-  /** Callback for opening reject confirmation dialog */
   onRejectConfirm?: () => void;
-  /** Additional CSS classes */
+  onViewMore?: () => void;
   className?: string;
 }
 
@@ -30,35 +27,32 @@ export interface DecisionButtonsProps {
 // Component
 // ============================================================================
 
-/**
- * DecisionButtons - Reusable decision action buttons for candidates
- *
- * Card variant (compact):
- * [Pre-aprobar] [Rechazar]
- *
- * Detail variant (full):
- * [Pre-aprobar] [Aprobar] [Rechazar] [Mas info]
- * (with current status indicator)
- */
 export function DecisionButtons({
   candidateId,
+  allCandidateIds = [],
   currentStatus = 'pending',
   variant,
   onDecision,
   onRejectConfirm,
+  onViewMore,
   className,
 }: DecisionButtonsProps) {
-  const { setDecision, clearDecision } = useDecisions();
+  const { setDecision, canPreApprove, getPreApprovedCount } = useDecisions();
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
+  const preApprovedCount = getPreApprovedCount(allCandidateIds);
+  const canStillPreApprove = canPreApprove(allCandidateIds);
 
   const handleDecision = (status: LandlordCandidateStatus) => {
-    // For reject, trigger confirmation if callback provided
     if (status === 'rejected' && onRejectConfirm) {
       onRejectConfirm();
+      return;
+    }
+
+    if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
+      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      });
       return;
     }
 
@@ -66,148 +60,146 @@ export function DecisionButtons({
     setDecision(candidateId, status);
     onDecision?.(status);
 
-    // Brief visual feedback
+    switch (status) {
+      case 'pre-approved':
+        toast.success('Candidato pre-aprobado', {
+          description: `${preApprovedCount + 1} de ${MAX_PRE_APPROVALS} pre-aprobados`,
+        });
+        break;
+      case 'approved':
+        toast.success('Candidato aprobado', {
+          description: 'Ya puedes proceder con el contrato.',
+        });
+        break;
+      case 'rejected':
+        toast.info('Candidato rechazado');
+        break;
+      case 'more-info':
+        toast.info('Solicitud enviada', {
+          description: 'El candidato recibira una notificacion.',
+        });
+        break;
+    }
+
     setTimeout(() => setIsUpdating(false), 300);
   };
 
-  const handleReset = () => {
-    clearDecision(candidateId);
-    onDecision?.('pending');
-  };
-
   // ---------------------------------------------------------------------------
-  // Render: Card Variant (compact)
+  // Card Variant (compact - for candidate cards)
   // ---------------------------------------------------------------------------
 
   if (variant === 'card') {
     return (
       <div className={cn('flex gap-2', className)}>
+        {/* Primary: Aprobar (black) */}
+        <Button
+          size="sm"
+          variant={currentStatus === 'approved' ? 'default' : 'default'}
+          disabled={isUpdating}
+          showArrow={false}
+          className={cn(
+            'flex-1',
+            currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+          )}
+          onClick={() => handleDecision('approved')}
+        >
+          <Check className="mr-1.5 h-3.5 w-3.5" />
+          Aprobar
+        </Button>
+        {/* Secondary: Pre-aprobar */}
         <Button
           size="sm"
           variant="outline"
           disabled={isUpdating}
           className={cn(
-            'flex-1 transition-colors',
-            currentStatus === 'pre-approved'
-              ? 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
-              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
+            'flex-1',
+            currentStatus === 'pre-approved' && 'bg-blue-50 border-blue-200 text-blue-700'
           )}
           onClick={() => handleDecision('pre-approved')}
         >
-          <Check className="mr-1 h-3.5 w-3.5" />
+          <Check className="mr-1.5 h-3.5 w-3.5" />
           Pre-aprobar
         </Button>
+        {/* Ver mas */}
         <Button
           size="sm"
           variant="outline"
           disabled={isUpdating}
-          className={cn(
-            'flex-1 transition-colors',
-            currentStatus === 'rejected'
-              ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
-              : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
-          )}
-          onClick={() => handleDecision('rejected')}
+          className="flex-1"
+          onClick={onViewMore}
         >
-          <X className="mr-1 h-3.5 w-3.5" />
-          Rechazar
+          <Eye className="mr-1.5 h-3.5 w-3.5" />
+          Ver más
         </Button>
       </div>
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Render: Detail Variant (full)
+  // Detail Variant (full - for candidate detail drawer)
   // ---------------------------------------------------------------------------
 
   return (
     <div className={cn('space-y-3', className)}>
-      {/* Primary Actions Row */}
-      <div className="flex flex-wrap gap-2">
-        {/* Pre-approve Button */}
+      {/* Primary Action - Aprobar (black primary) */}
+      <Button
+        size="lg"
+        variant="default"
+        disabled={isUpdating}
+        showArrow={false}
+        className={cn(
+          'w-full',
+          currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+        )}
+        onClick={() => handleDecision('approved')}
+      >
+        <Check className="mr-2 h-5 w-5" />
+        Aprobar candidato
+      </Button>
+
+      {/* Secondary Actions - Row */}
+      <div className="grid grid-cols-3 gap-2">
         <Button
           size="sm"
-          variant={currentStatus === 'pre-approved' ? 'default' : 'outline'}
+          variant={currentStatus === 'pre-approved' ? 'secondary' : 'outline'}
           disabled={isUpdating}
           className={cn(
-            'transition-colors',
-            currentStatus === 'pre-approved'
-              ? 'bg-blue-600 hover:bg-blue-700'
-              : 'text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700'
+            'w-full',
+            currentStatus === 'pre-approved' && 'bg-blue-50 border-blue-200 text-blue-700'
           )}
           onClick={() => handleDecision('pre-approved')}
         >
-          <Check className="mr-1.5 h-4 w-4" />
+          <Check className="mr-1.5 h-3.5 w-3.5" />
           Pre-aprobar
         </Button>
 
-        {/* Approve Button */}
         <Button
           size="sm"
-          variant={currentStatus === 'approved' ? 'default' : 'outline'}
+          variant="outline"
           disabled={isUpdating}
           className={cn(
-            'transition-colors',
-            currentStatus === 'approved'
-              ? 'bg-emerald-600 hover:bg-emerald-700'
-              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
-          )}
-          onClick={() => handleDecision('approved')}
-        >
-          <Check className="mr-1.5 h-4 w-4" />
-          Aprobar
-        </Button>
-
-        {/* Reject Button */}
-        <Button
-          size="sm"
-          variant={currentStatus === 'rejected' ? 'default' : 'outline'}
-          disabled={isUpdating}
-          className={cn(
-            'transition-colors',
-            currentStatus === 'rejected'
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
+            'w-full',
+            currentStatus === 'rejected' && 'bg-red-50 border-red-200 text-red-700'
           )}
           onClick={() => handleDecision('rejected')}
         >
-          <X className="mr-1.5 h-4 w-4" />
+          <X className="mr-1.5 h-3.5 w-3.5" />
           Rechazar
         </Button>
-      </div>
 
-      {/* Secondary Actions Row */}
-      <div className="flex flex-wrap gap-2">
-        {/* Request More Info Button */}
         <Button
           size="sm"
-          variant={currentStatus === 'more-info' ? 'default' : 'outline'}
+          variant="outline"
           disabled={isUpdating}
           className={cn(
-            'transition-colors',
-            currentStatus === 'more-info'
-              ? 'bg-amber-600 hover:bg-amber-700'
-              : 'text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700'
+            'w-full text-slate-600',
+            currentStatus === 'more-info' && 'bg-amber-50 border-amber-200 text-amber-700'
           )}
           onClick={() => handleDecision('more-info')}
         >
-          <FileQuestion className="mr-1.5 h-4 w-4" />
-          Solicitar mas info
+          <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+          Más info
         </Button>
-
-        {/* Reset Button (only show if not pending) */}
-        {currentStatus !== 'pending' && (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={isUpdating}
-            className="text-slate-500 hover:text-slate-700"
-            onClick={handleReset}
-          >
-            <RotateCcw className="mr-1.5 h-4 w-4" />
-            Restablecer
-          </Button>
-        )}
       </div>
     </div>
   );

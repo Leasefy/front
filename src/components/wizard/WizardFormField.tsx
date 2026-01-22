@@ -68,7 +68,7 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full h-12 px-4 rounded-sm',
+            'w-full h-12 px-4 rounded-[2px]',
             'bg-[#1C1C1E] text-white placeholder:text-white/40',
             'border border-transparent',
             'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
@@ -125,7 +125,7 @@ export function DarkSelect({
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
+          'w-full h-12 px-4 rounded-[2px] appearance-none cursor-pointer',
           'bg-[#1C1C1E] text-white',
           'border border-transparent',
           'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
@@ -166,7 +166,7 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full h-12 px-4 rounded-sm',
+            'w-full h-12 px-4 rounded-[2px]',
             'bg-black/5 text-black placeholder:text-black/40',
             'border border-black/10',
             'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
@@ -213,7 +213,7 @@ export function LightSelect({
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
+          'w-full h-12 px-4 rounded-[2px] appearance-none cursor-pointer',
           'bg-black/5 text-black',
           'border border-black/10',
           'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',

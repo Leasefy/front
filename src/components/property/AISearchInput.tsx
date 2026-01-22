@@ -92,7 +92,7 @@ export function AISearchInput({
       {/* Main Search Box - ChatGPT style */}
       <div
         className={cn(
-          'relative bg-white rounded-sm border transition-all duration-300',
+          'relative bg-white rounded-[2px] border transition-all duration-300',
           isFocused
             ? 'border-gray-400 shadow-lg'
             : 'border-gray-200 hover:border-gray-300 shadow-sm'
@@ -101,7 +101,7 @@ export function AISearchInput({
         {/* AI Indicator */}
         <div className="absolute left-4 top-4 flex items-center gap-2">
           <div className={cn(
-            'w-8 h-8 rounded-sm bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center',
+            'w-8 h-8 rounded-[2px] bg-[#111112] flex items-center justify-center',
             isSearching && 'animate-pulse-subtle'
           )}>
             <Sparkles className="w-4 h-4 text-white" />
@@ -134,7 +134,7 @@ export function AISearchInput({
             <button
               type="button"
               onClick={handleClear}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-sm hover:bg-gray-100"
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-[2px] hover:bg-gray-100"
               aria-label="Limpiar busqueda"
             >
               <X className="w-4 h-4" />
@@ -145,7 +145,7 @@ export function AISearchInput({
             onClick={handleSubmit}
             disabled={!value.trim() || isSearching}
             className={cn(
-              'px-4 py-2.5 rounded-sm text-sm font-medium tracking-tight',
+              'px-4 py-2.5 rounded-[2px] text-sm font-medium tracking-tight',
               'transition-all duration-200',
               'flex items-center gap-2',
               value.trim() && !isSearching
@@ -163,9 +163,9 @@ export function AISearchInput({
       {isSearching && (
         <div className="mt-4 flex items-center gap-3 animate-fade-in-up">
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
-            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
-            <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
+            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
+            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
           </div>
           <span className="text-sm text-gray-500 tracking-tight">
             Buscando el inmueble de tus suenos...
@@ -184,7 +184,7 @@ export function AISearchInput({
               onClick={() => handleExampleClick(example)}
               className={cn(
                 'px-3 py-1.5 text-xs text-gray-600 tracking-tight',
-                'bg-white border border-gray-200 rounded-sm',
+                'bg-white border border-gray-200 rounded-[2px]',
                 'hover:bg-gray-50 hover:border-gray-300 transition-all duration-200',
                 'active:scale-95'
               )}
@@ -204,7 +204,7 @@ export function AISearchInput({
           </span>
           <button
             onClick={handleClear}
-            className="text-xs text-violet-600 hover:text-violet-700 tracking-tight hover:underline"
+            className="text-xs text-gray-900 hover:text-gray-700 tracking-tight hover:underline"
           >
             Nueva busqueda
           </button>
@@ -220,9 +220,9 @@ export function AISearchInput({
 export function TypingDots({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
-      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
-      <span className="w-2 h-2 rounded-full bg-violet-500 typing-dot" />
+      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
+      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
+      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cardStyles, borderRadius, transitions, borders, badgeStyles, hoverEffects } from '@/lib/design-tokens';
 import {
   MapPin,
   Calendar,
@@ -76,11 +77,13 @@ export function LeaseCard({
     <div
       onClick={onSelect}
       className={cn(
-        'bg-white rounded-sm border overflow-hidden transition-all',
-        onSelect && 'cursor-pointer hover:shadow-md',
+        'overflow-hidden',
+        borderRadius.sm,
+        transitions.standard,
+        onSelect && 'cursor-pointer',
         isSelected
-          ? 'border-primary ring-2 ring-primary/20'
-          : 'border-slate-100',
+          ? cardStyles.selected
+          : cn(cardStyles.base, hoverEffects.lift),
         className
       )}
     >
@@ -108,36 +111,36 @@ export function LeaseCard({
           {/* Header with title and rent */}
           <div className="flex items-start justify-between gap-4 mb-3">
             <div className="min-w-0">
-              <h3 className="font-semibold text-slate-900 truncate">
+              <h3 className={cn('font-semibold truncate', 'text-foreground')}>
                 {lease.propertyTitle}
               </h3>
-              <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1">
+              <div className={cn('flex items-center gap-1.5 text-sm mt-1', 'text-muted-foreground')}>
                 <MapPin className="w-4 h-4 shrink-0" />
                 <span className="truncate">{lease.propertyAddress}</span>
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-slate-900">
+              <p className={cn('text-lg font-bold', 'text-foreground')}>
                 {formatCurrency(lease.monthlyRent)}
               </p>
-              <p className="text-xs text-slate-400">/mes</p>
+              <p className={cn('text-xs', 'text-muted-foreground')}>/mes</p>
             </div>
           </div>
 
           {/* Contact info */}
-          <div className="bg-slate-50 rounded-sm p-3 mb-4">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
+          <div className={cn('p-3 mb-4', borderRadius.sm, 'bg-muted/50')}>
+            <p className={cn('text-xs font-medium uppercase tracking-wide mb-2', 'text-muted-foreground')}>
               {contactLabel}
             </p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                <User className="w-5 h-5 text-slate-500" />
+              <div className={cn('w-10 h-10', borderRadius.full, 'bg-muted flex items-center justify-center shrink-0')}>
+                <User className={cn('w-5 h-5', 'text-muted-foreground')} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-slate-900 truncate">
+                <p className={cn('font-medium truncate', 'text-foreground')}>
                   {contactName}
                 </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                <div className={cn('flex flex-wrap gap-x-3 gap-y-1 text-xs', 'text-muted-foreground')}>
                   <span className="flex items-center gap-1">
                     <Phone className="w-3 h-3" />
                     {contactPhone}
@@ -152,20 +155,20 @@ export function LeaseCard({
           </div>
 
           {/* Dates and time remaining */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 mb-4">
+          <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-2 text-sm mb-4', 'text-foreground')}>
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <Calendar className={cn('w-4 h-4', 'text-muted-foreground')} />
               <span>
                 {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
               </span>
             </div>
             {lease.status === 'active' && daysRemaining > 0 && (
-              <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+              <span className={cn('text-xs px-2 py-0.5', borderRadius.sm, 'bg-muted text-foreground')}>
                 {daysRemaining} dias restantes
               </span>
             )}
             {lease.status === 'ending_soon' && (
-              <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+              <span className={cn('text-xs px-2 py-0.5', borderRadius.sm, 'bg-amber-100 text-amber-700')}>
                 Vence pronto
               </span>
             )}

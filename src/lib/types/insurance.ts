@@ -50,8 +50,10 @@ export interface InsurancePolicy {
   name: string;
   /** Policy description */
   description: string;
-  /** Monthly premium in COP */
+  /** Monthly premium in COP (legacy, use percentageRate instead) */
   monthlyPremium: number;
+  /** Percentage of monthly rent for premium calculation */
+  percentageRate?: number;
   /** Coverage details */
   coverage: InsuranceCoverage;
   /** List of feature descriptions */

@@ -14,6 +14,8 @@ import {
   X,
   ChevronRight,
   Sparkles,
+  FileText,
+  Home,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -48,6 +50,16 @@ const NAV_ITEMS = [
     disabled: true,
   },
   {
+    label: 'Contratos',
+    href: '/panel/contratos',
+    icon: FileText,
+  },
+  {
+    label: 'Arriendos',
+    href: '/panel/leases',
+    icon: Home,
+  },
+  {
     label: 'Mensajes',
     href: '/panel/mensajes',
     icon: MessageSquare,
@@ -75,14 +87,14 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
     return (
       <div
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm',
-          'text-slate-400 cursor-not-allowed'
+          'flex items-center gap-3 px-3 py-2.5 rounded-[2px] text-sm',
+          'text-slate-300 cursor-not-allowed'
         )}
       >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-4 h-4" />
         <span className="flex-1">{item.label}</span>
         {item.badge && (
-          <span className="bg-slate-200 text-slate-500 text-xs px-2 py-0.5 rounded-full">
+          <span className="bg-slate-100 text-slate-400 text-xs px-2 py-0.5 rounded-full">
             {item.badge}
           </span>
         )}
@@ -95,27 +107,26 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
       href={item.href}
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-colors',
+        'flex items-center gap-3 px-3 py-2.5 rounded-[2px] text-sm transition-colors',
         isActive
-          ? 'bg-primary/10 text-primary font-medium'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          ? 'bg-slate-50 text-slate-900'
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
       )}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className="w-4 h-4" />
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span
           className={cn(
             'text-xs px-2 py-0.5 rounded-full',
             isActive
-              ? 'bg-primary text-white'
-              : 'bg-slate-100 text-slate-600'
+              ? 'bg-slate-900 text-white'
+              : 'bg-slate-100 text-slate-500'
           )}
         >
           {item.badge}
         </span>
       )}
-      {isActive && <ChevronRight className="w-4 h-4 text-primary" />}
     </Link>
   );
 }
@@ -138,19 +149,19 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-100">
-        <Link href="/panel" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
+      <div className="p-6 border-b border-slate-50">
+        <Link href="/panel" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-[#0f0f0f] rounded-[2px] flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-white" />
           </div>
-          <span className="text-lg font-semibold text-slate-900 tracking-tight">
+          <span className="text-lg font-light text-slate-900 tracking-[-0.02em]">
             Arrienda Seguro
           </span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-0.5">
         {NAV_ITEMS.map((item) => (
           <NavItem
             key={item.href}
@@ -164,7 +175,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Upgrade CTA for free users */}
       {MOCK_SUBSCRIPTION.planId === 'free' && (
         <div className="px-4 py-3 border-t border-slate-100">
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-sm p-3">
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-[2px] p-3">
             <p className="text-xs text-slate-600 mb-2">
               Desbloquea el analisis AI de candidatos
             </p>

@@ -2,11 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Bed, Maximize2, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Bed, Maximize2, Users, CheckCircle2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { RiskGauge } from './RiskGauge';
+import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
 import type { LandlordProperty, LandlordCandidate } from '@/lib/types/landlord';
 
 interface PropertyHeaderProps {
@@ -35,6 +36,8 @@ export function PropertyHeader({
   candidates,
   className,
 }: PropertyHeaderProps) {
+  const { getPreApprovedCount } = useDecisions();
+
   const {
     title,
     thumbnailUrl,
@@ -46,9 +49,11 @@ export function PropertyHeader({
   } = property;
 
   const riskDistribution = calculateRiskDistribution(candidates);
+  const allCandidateIds = candidates.map((c) => c.id);
+  const preApprovedCount = getPreApprovedCount(allCandidateIds);
 
   return (
-    <div className={cn('bg-white rounded-sm border border-slate-100 overflow-hidden', className)}>
+    <div className={cn('bg-white rounded-[2px] border border-slate-100 overflow-hidden', className)}>
       {/* Back Navigation */}
       <div className="px-4 sm:px-6 py-3 border-b border-slate-100">
         <Link
@@ -91,7 +96,7 @@ export function PropertyHeader({
               </div>
 
               {/* Property specs */}
-              <div className="flex items-center gap-4 mt-3 text-sm text-slate-600">
+              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-slate-600">
                 <div className="flex items-center gap-1.5">
                   <Bed className="w-4 h-4 text-slate-400" />
                   <span>{bedrooms} hab.</span>
@@ -104,6 +109,14 @@ export function PropertyHeader({
                   <Users className="w-4 h-4 text-slate-400" />
                   <span>{candidates.length} candidatos</span>
                 </div>
+                {preApprovedCount > 0 && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">
+                      {preApprovedCount}/{MAX_PRE_APPROVALS} pre-aprobados
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

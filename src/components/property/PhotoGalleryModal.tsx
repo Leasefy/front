@@ -114,11 +114,11 @@ export function PhotoGalleryModal({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-[2px] transition-colors">
               <Share2 className="w-4 h-4" />
               <span className="hidden sm:inline">Compartir</span>
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-[2px] transition-colors">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Guardar</span>
             </button>
@@ -145,7 +145,7 @@ export function PhotoGalleryModal({
                 key={index}
                 onClick={() => scrollToImage(index)}
                 className={cn(
-                  'relative aspect-[4/3] rounded-lg overflow-hidden transition-all duration-200',
+                  'relative aspect-[4/3] rounded-[2px] overflow-hidden transition-all duration-200',
                   'hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2',
                   activeIndex === index && 'ring-2 ring-gray-900 ring-offset-2'
                 )}
@@ -185,7 +185,7 @@ export function PhotoGalleryModal({
                   </div>
 
                   {/* Image - right column */}
-                  <div className="relative w-full rounded-xl overflow-hidden bg-gray-100">
+                  <div className="relative w-full rounded-[2px] overflow-hidden bg-gray-100">
                     <Image
                       src={image}
                       alt={`${propertyTitle} - Foto ${index + 1}`}

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ApplicationStatusBadge } from './ApplicationStatusBadge';
 import type { TenantApplication } from '@/lib/types/tenant-application';
 import { canWithdraw } from '@/lib/types/tenant-application';
+import { cardStyles, borderRadius, transitions, hoverEffects, focusStates, borders } from '@/lib/design-tokens';
 
 export interface ApplicationCardProps {
   /** Application to display */
@@ -62,9 +63,8 @@ export function ApplicationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full text-left bg-white border border-slate-200 rounded-sm overflow-hidden',
-        'hover:border-slate-300 hover:shadow-sm transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary',
+        'w-full text-left overflow-hidden',
+        cardStyles.interactive,
         'group',
         className
       )}
@@ -88,32 +88,45 @@ export function ApplicationCard({
         <div className="flex-1 p-3 sm:p-4 min-w-0">
           {/* Title and badge row */}
           <div className="flex items-start justify-between gap-2 mb-1.5">
-            <h3 className="text-sm sm:text-base font-medium text-slate-900 truncate group-hover:text-primary transition-colors">
+            <h3 className={cn(
+              'text-sm sm:text-base font-medium truncate',
+              'text-foreground group-hover:text-primary',
+              transitions.colors
+            )}>
               {title}
             </h3>
             <ApplicationStatusBadge status={status} size="sm" className="flex-shrink-0" />
           </div>
 
           {/* Location */}
-          <div className="flex items-center gap-1 text-xs sm:text-sm text-slate-500 mb-1">
+          <div className={cn(
+            'flex items-center gap-1 text-xs sm:text-sm mb-1',
+            'text-muted-foreground'
+          )}>
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate">{neighborhood}, {city}</span>
           </div>
 
           {/* Price */}
-          <p className="text-sm font-medium text-slate-900">
+          <p className={cn('text-sm font-medium', 'text-foreground')}>
             {formatCurrency(monthlyRent)}
-            <span className="text-slate-400 text-xs font-normal">/mes</span>
+            <span className={cn('text-xs font-normal', 'text-muted-foreground')}>/mes</span>
           </p>
         </div>
       </div>
 
       {/* Footer row - dates and tracking code */}
-      <div className="px-3 sm:px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3 sm:gap-4 text-xs text-slate-500 min-w-0">
+      <div className={cn(
+        'px-3 sm:px-4 py-2.5 border-t flex items-center justify-between gap-2',
+        'border-border bg-muted/30'
+      )}>
+        <div className={cn(
+          'flex items-center gap-3 sm:gap-4 text-xs min-w-0',
+          'text-muted-foreground'
+        )}>
           {/* Submitted date */}
           <div className="flex items-center gap-1.5 min-w-0">
-            <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
             <span className="truncate">
               <span className="hidden sm:inline">Enviada: </span>
               {formatDate(submittedAt)}
@@ -122,7 +135,7 @@ export function ApplicationCard({
 
           {/* Tracking code */}
           <div className="flex items-center gap-1.5 min-w-0">
-            <Hash className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+            <Hash className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
             <span className="font-mono truncate">{trackingCode}</span>
           </div>
         </div>
@@ -135,7 +148,7 @@ export function ApplicationCard({
               variant="ghost"
               size="sm"
               onClick={handleWithdraw}
-              className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50"
               title="Retirar solicitud"
             >
               <X className="w-4 h-4" />
@@ -143,7 +156,10 @@ export function ApplicationCard({
           )}
 
           {/* Navigate indicator */}
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
+          <ChevronRight className={cn(
+            'w-4 h-4 opacity-40 group-hover:opacity-60',
+            transitions.colors
+          )} />
         </div>
       </div>
     </button>

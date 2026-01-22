@@ -13,6 +13,16 @@ import type { InsurancePolicy } from '@/lib/types/insurance';
 // Insurance Policies
 // ============================================================================
 
+/**
+ * Insurance pricing based on Colombian market research (SURA, Bolivar):
+ * - Market standard: 50% of first month for annual, or 1-5% monthly
+ * - Coverage: 12-36 months depending on plan
+ * - Includes: rent + admin + utilities + legal assistance
+ *
+ * Our pricing (competitive):
+ * - Basic: 2% monthly (~$40k for $2M rent) - 12 months coverage
+ * - Premium: 3.5% monthly (~$70k for $2M rent) - 24 months coverage
+ */
 export const INSURANCE_POLICIES: InsurancePolicy[] = [
   {
     id: 'none',
@@ -20,6 +30,7 @@ export const INSURANCE_POLICIES: InsurancePolicy[] = [
     name: 'Sin poliza',
     description: 'Continuar sin proteccion adicional',
     monthlyPremium: 0,
+    percentageRate: 0,
     coverage: {
       propertyDamage: 0,
       personalLiability: 0,
@@ -34,19 +45,20 @@ export const INSURANCE_POLICIES: InsurancePolicy[] = [
     tier: 'basic',
     name: 'Proteccion Basica',
     description: 'Cobertura esencial para tu tranquilidad',
-    monthlyPremium: 45000, // $45,000 COP/mes
+    monthlyPremium: 0, // Calculated from percentage
+    percentageRate: 2, // 2% del arriendo mensual
     coverage: {
-      propertyDamage: 10000000, // $10M COP
-      personalLiability: 5000000, // $5M COP
+      propertyDamage: 15000000, // $15M COP
+      personalLiability: 10000000, // $10M COP
       legalAssistance: false,
       emergencyRepairs: true,
-      rentDefault: 2, // 2 months
+      rentDefault: 12, // 12 months - industry standard
     },
     features: [
-      'Danos a la propiedad hasta $10M',
-      'Responsabilidad civil hasta $5M',
+      '12 meses de renta garantizada',
+      'Cobertura de servicios publicos',
+      'Danos a la propiedad hasta $15M',
       'Reparaciones de emergencia 24/7',
-      '2 meses de renta garantizada',
     ],
     recommended: true,
   },
@@ -55,20 +67,21 @@ export const INSURANCE_POLICIES: InsurancePolicy[] = [
     tier: 'premium',
     name: 'Proteccion Premium',
     description: 'Maxima cobertura y tranquilidad total',
-    monthlyPremium: 89000, // $89,000 COP/mes
+    monthlyPremium: 0, // Calculated from percentage
+    percentageRate: 3.5, // 3.5% del arriendo mensual
     coverage: {
-      propertyDamage: 30000000, // $30M COP
-      personalLiability: 15000000, // $15M COP
+      propertyDamage: 50000000, // $50M COP
+      personalLiability: 30000000, // $30M COP
       legalAssistance: true,
       emergencyRepairs: true,
-      rentDefault: 4, // 4 months
+      rentDefault: 24, // 24 months - premium coverage
     },
     features: [
-      'Danos a la propiedad hasta $30M',
-      'Responsabilidad civil hasta $15M',
+      '24 meses de renta garantizada',
+      'Cobertura de servicios publicos',
+      'Danos a la propiedad hasta $50M',
       'Asistencia legal incluida',
       'Reparaciones de emergencia 24/7',
-      '4 meses de renta garantizada',
       'Gestor personal asignado',
     ],
   },

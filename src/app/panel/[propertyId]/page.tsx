@@ -133,13 +133,14 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               {/* Section Header */}
               {candidates.length > 0 && (
                 <p className="text-sm text-slate-500 mb-4">
-                  Ordenados por puntuacion (mejor primero)
+                  Ordenados por estado y puntuacion
                 </p>
               )}
 
               {/* Candidate List */}
               <CandidateList
                 candidates={candidates}
+                propertyId={propertyId}
                 onViewDetails={handleViewDetails}
                 onDecision={handleDecision}
                 groupByLevel={false}

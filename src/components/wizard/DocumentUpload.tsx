@@ -171,7 +171,7 @@ export function DocumentUpload({
       {/* Upload zone or file preview */}
       {state === 'success' && hasFile ? (
         // Compact file preview - Luxterra style
-        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-sm">
+        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-[2px]">
           <div className="flex-shrink-0">
             <File className="h-5 w-5 text-emerald-600" />
           </div>
@@ -190,7 +190,7 @@ export function DocumentUpload({
             <button
               type="button"
               onClick={handleRemove}
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-[2px] text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Eliminar</span>
@@ -205,7 +205,7 @@ export function DocumentUpload({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
+            'relative border-2 border-dashed rounded-[2px] p-6 text-center cursor-pointer transition-colors',
             state === 'dragging' && 'border-black/40 bg-black/[0.02]',
             state === 'uploading' && 'border-black/10 bg-black/[0.02] cursor-wait',
             state === 'error' && 'border-red-300 bg-red-50/50',
@@ -238,7 +238,7 @@ export function DocumentUpload({
                 }}
                 className={cn(
                   'inline-flex items-center px-3 py-1.5 text-xs font-medium',
-                  'rounded-sm border border-black/10 bg-white',
+                  'rounded-[2px] border border-black/10 bg-white',
                   'text-black/70 hover:text-black hover:border-black/20',
                   'transition-colors'
                 )}

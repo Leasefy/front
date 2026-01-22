@@ -80,7 +80,7 @@ export function WizardShell({
 
         {/* Mobile property summary */}
         <div className="px-4 pb-4 flex items-center gap-3">
-          <div className="relative w-14 h-14 rounded-sm overflow-hidden flex-shrink-0 bg-black/5">
+          <div className="relative w-14 h-14 rounded-[2px] overflow-hidden flex-shrink-0 bg-black/5">
             <Image
               src={property.thumbnailUrl}
               alt={property.title}
@@ -140,7 +140,7 @@ export function WizardShell({
 
             {/* Property card */}
             <div className="flex items-start gap-4">
-              <div className="relative w-16 h-16 rounded-sm overflow-hidden flex-shrink-0 bg-black/5">
+              <div className="relative w-16 h-16 rounded-[2px] overflow-hidden flex-shrink-0 bg-black/5">
                 <Image
                   src={property.thumbnailUrl}
                   alt={property.title}
@@ -251,7 +251,7 @@ export function WizardShell({
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-white rounded-sm border border-black/5 shadow-sm">
+            <div className="bg-white rounded-[2px] border border-black/5 shadow-sm">
               {/* Desktop step header - hidden on mobile since sidebar shows it */}
               <div className="hidden lg:block px-6 py-5 border-b border-black/5">
                 <div className="flex items-center gap-3">
@@ -287,7 +287,7 @@ export function WizardShell({
               {/* Validation Errors */}
               {attemptedAdvance && !currentStepValidation.isValid && (
                 <div className="px-4 lg:px-6 mb-4">
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm">
+                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-[2px]">
                     <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-red-800">

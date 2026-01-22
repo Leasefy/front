@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Sparkles } from 'lucide-react';
 import type { Plan, BillingCycle, PlanId } from '@/lib/types/subscription';
+import { cardStyles, borderRadius, transitions, shadows, borders, hoverEffects } from '@/lib/design-tokens';
 
 export interface PricingCardProps {
   plan: Plan;
@@ -56,10 +57,13 @@ export function PricingCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-sm border p-6 flex flex-col transition-shadow',
+        'p-6 flex flex-col',
+        borderRadius.sm,
+        transitions.standard,
         plan.highlighted
-          ? 'border-primary shadow-md ring-1 ring-primary relative'
-          : 'border-slate-200 hover:shadow-sm',
+          ? cardStyles.highlighted
+          : cn(cardStyles.base, hoverEffects.lift),
+        'relative',
         className
       )}
     >
@@ -75,22 +79,22 @@ export function PricingCard({
 
       {/* Header */}
       <div className="text-center mb-6 pt-2">
-        <h3 className="text-xl font-semibold text-slate-900">{plan.name}</h3>
-        <p className="text-sm text-slate-500 mt-1">{plan.description}</p>
+        <h3 className={cn('text-xl font-semibold', 'text-foreground')}>{plan.name}</h3>
+        <p className={cn('text-sm mt-1', 'text-muted-foreground')}>{plan.description}</p>
       </div>
 
       {/* Price */}
       <div className="text-center mb-6">
         <div className="flex items-baseline justify-center gap-1">
-          <span className="text-3xl font-bold text-slate-900">
+          <span className={cn('text-3xl font-bold', 'text-foreground')}>
             {price === 0 ? 'Gratis' : formatCurrency(monthlyEquivalent)}
           </span>
-          {price > 0 && <span className="text-slate-500">/mes</span>}
+          {price > 0 && <span className="text-muted-foreground">/mes</span>}
         </div>
 
         {/* Yearly billing note */}
         {billingCycle === 'yearly' && price > 0 && (
-          <p className="text-sm text-slate-500 mt-1">
+          <p className={cn('text-sm mt-1', 'text-muted-foreground')}>
             Facturado anualmente ({formatCurrency(plan.price.yearly)})
           </p>
         )}
@@ -118,7 +122,7 @@ export function PricingCard({
             <span
               className={cn(
                 'text-sm',
-                feature.included ? 'text-slate-700' : 'text-slate-400'
+                feature.included ? 'text-foreground' : 'text-muted-foreground/60'
               )}
             >
               {feature.name}
@@ -152,7 +156,7 @@ export function PricingCard({
 
       {/* Current plan indicator */}
       {isCurrentPlan && (
-        <p className="text-xs text-center text-slate-500 mt-2">
+        <p className={cn('text-xs text-center mt-2', 'text-muted-foreground')}>
           Este es tu plan actual
         </p>
       )}

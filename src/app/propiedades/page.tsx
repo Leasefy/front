@@ -7,10 +7,9 @@ import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { FilterBar } from '@/components/property/FilterBar';
 import { PropertyMap, MapToggle } from '@/components/map';
 import { usePropertyFilters } from '@/lib/hooks/usePropertyFilters';
+import { useWishlist } from '@/lib/hooks/useWishlist';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { cn } from '@/lib/utils';
-
-const WISHLIST_STORAGE_KEY = 'arriendo-facil-wishlist';
 
 /**
  * Property listing page with Zillow-style split layout
@@ -19,7 +18,6 @@ const WISHLIST_STORAGE_KEY = 'arriendo-facil-wishlist';
  * - 2-column property grid
  */
 export default function PropiedadesPage() {
-  const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
@@ -27,28 +25,14 @@ export default function PropiedadesPage() {
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const listPanelRef = useRef<HTMLDivElement>(null);
 
+  // Use wishlist hook
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
   // Simulate initial loading
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialLoading(false), 600);
     return () => clearTimeout(timer);
   }, []);
-
-  // Load wishlist from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(WISHLIST_STORAGE_KEY);
-    if (saved) {
-      try {
-        setWishlistedIds(JSON.parse(saved));
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }, []);
-
-  // Save wishlist to localStorage
-  useEffect(() => {
-    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlistedIds));
-  }, [wishlistedIds]);
 
   const {
     filters,
@@ -62,16 +46,12 @@ export default function PropiedadesPage() {
     hasActiveFilters,
   } = usePropertyFilters(mockProperties);
 
-  const isWishlisted = useCallback(
-    (id: string) => wishlistedIds.includes(id),
-    [wishlistedIds]
+  const handleWishlistToggle = useCallback(
+    (id: string) => {
+      toggleWishlist(id);
+    },
+    [toggleWishlist]
   );
-
-  const handleWishlistToggle = useCallback((id: string) => {
-    setWishlistedIds((prev) =>
-      prev.includes(id) ? prev.filter((wId) => wId !== id) : [...prev, id]
-    );
-  }, []);
 
   // Handle property selection from map
   const handlePropertySelect = useCallback((id: string) => {

@@ -14,71 +14,121 @@ import { mockProperties } from './mock-properties';
 import { MOCK_CANDIDATES } from './mock-candidates';
 
 // ============================================================================
-// Contract Clauses by Type
+// Contract Clauses by Type - Based on Ley 820 de 2003
 // ============================================================================
+
+/**
+ * IMPORTANT LEGAL NOTES:
+ * - Cash deposits are PROHIBITED in Colombia (Art. 16, Ley 820/2003)
+ * - Must use codeudor (co-signer) or poliza de arrendamiento instead
+ * - Rent increases limited to 100% of IPC annually (Art. 20)
+ * - 3 months notice required for termination (Art. 22-24)
+ */
 
 const COMMON_CLAUSES: ContractClause[] = [
   {
     id: 'clause-objeto',
     title: 'CLAUSULA PRIMERA: Objeto del Contrato',
     content:
-      'El ARRENDADOR entrega al ARRENDATARIO a titulo de arrendamiento el inmueble ubicado en la direccion indicada, para ser destinado exclusivamente a vivienda del arrendatario y su nucleo familiar.',
+      'El ARRENDADOR entrega al ARRENDATARIO a titulo de arrendamiento el inmueble ubicado en la direccion indicada en este contrato, junto con su matricula inmobiliaria correspondiente, para ser destinado exclusivamente a vivienda del arrendatario y su nucleo familiar. Queda expresamente prohibido darle un uso diferente al pactado.',
     required: true,
   },
   {
     id: 'clause-canon',
     title: 'CLAUSULA SEGUNDA: Canon de Arrendamiento',
     content:
-      'El canon de arrendamiento mensual sera la suma indicada en este contrato, pagadera por periodos mensuales anticipados dentro de los primeros cinco (5) dias de cada periodo.',
+      'El ARRENDATARIO se obliga a pagar al ARRENDADOR, como canon de arrendamiento, la suma mensual indicada en este contrato, pagadera por periodos mensuales anticipados dentro de los primeros cinco (5) dias de cada mes. El pago se realizara mediante transferencia bancaria o consignacion a la cuenta indicada por el ARRENDADOR. El no pago dentro de los diez (10) dias siguientes al vencimiento constituira mora sin necesidad de requerimiento previo.',
     required: true,
   },
   {
-    id: 'clause-deposito',
-    title: 'CLAUSULA TERCERA: Deposito de Garantia',
+    id: 'clause-garantia',
+    title: 'CLAUSULA TERCERA: Garantia del Contrato',
     content:
-      'El ARRENDATARIO entrega al ARRENDADOR la suma indicada como deposito de garantia, la cual sera devuelta al terminar el contrato, una vez verificado el estado del inmueble y el pago de todos los servicios.',
+      'De conformidad con el Articulo 16 de la Ley 820 de 2003, que prohibe expresamente los depositos en dinero efectivo, el cumplimiento de las obligaciones del presente contrato se garantiza mediante poliza de arrendamiento expedida por compania de seguros autorizada, o en su defecto, mediante codeudor o deudor solidario quien respaldara las obligaciones del ARRENDATARIO. La poliza o garantia debera mantenerse vigente durante toda la duracion del contrato y sus prorrogas.',
     required: true,
   },
   {
     id: 'clause-duracion',
-    title: 'CLAUSULA CUARTA: Duracion',
+    title: 'CLAUSULA CUARTA: Duracion y Prorroga',
     content:
-      'El termino de duracion del presente contrato es el indicado, contado a partir de la fecha de inicio estipulada. A su vencimiento, se prorrogara automaticamente por periodos iguales y sucesivos.',
+      'El termino de duracion del presente contrato es de doce (12) meses, contados a partir de la fecha de inicio estipulada. De conformidad con el Articulo 6 de la Ley 820 de 2003, a su vencimiento el contrato se prorrogara automaticamente por periodos iguales y sucesivos, salvo que alguna de las partes de aviso escrito a la otra con no menos de tres (3) meses de anticipacion a la fecha de terminacion o prorroga.',
     required: true,
   },
   {
-    id: 'clause-obligaciones-arrendatario',
-    title: 'CLAUSULA QUINTA: Obligaciones del Arrendatario',
+    id: 'clause-incremento',
+    title: 'CLAUSULA QUINTA: Incremento del Canon',
     content:
-      'Son obligaciones del ARRENDATARIO: a) Pagar el canon de arrendamiento dentro del plazo estipulado. b) Pagar oportunamente los servicios publicos. c) Mantener el inmueble en buen estado de conservacion. d) No modificar la estructura del inmueble sin autorizacion escrita. e) Permitir la visita del propietario con previo aviso. f) Restituir el inmueble al termino del contrato.',
+      'De conformidad con el Articulo 20 de la Ley 820 de 2003, cada doce (12) meses de ejecucion del contrato, el canon de arrendamiento podra ser reajustado por el ARRENDADOR. El incremento no podra exceder el ciento por ciento (100%) del Indice de Precios al Consumidor (IPC) del ano inmediatamente anterior, certificado por el DANE. El nuevo canon se aplicara a partir del mes siguiente a la fecha del aniversario del contrato.',
+    required: true,
+  },
+  {
+    id: 'clause-servicios',
+    title: 'CLAUSULA SEXTA: Servicios Publicos',
+    content:
+      'Seran de cargo del ARRENDATARIO los servicios publicos de energia electrica, gas natural, acueducto, alcantarillado, aseo y telefono o internet que se causen durante la vigencia del contrato. El ARRENDATARIO debera acreditar el pago oportuno de dichos servicios cuando el ARRENDADOR lo solicite. La desconexion de servicios por mora del ARRENDATARIO sera causal de terminacion del contrato segun el Articulo 22 numeral 2 de la Ley 820 de 2003.',
     required: true,
   },
   {
     id: 'clause-obligaciones-arrendador',
-    title: 'CLAUSULA SEXTA: Obligaciones del Arrendador',
+    title: 'CLAUSULA SEPTIMA: Obligaciones del Arrendador',
     content:
-      'Son obligaciones del ARRENDADOR: a) Entregar el inmueble en buen estado. b) Mantener en el inmueble los servicios, cosas y usos conexos. c) Abstenerse de efectuar obras que perturben el goce del arrendatario.',
+      'Son obligaciones del ARRENDADOR conforme al Articulo 8 de la Ley 820 de 2003: a) Entregar el inmueble al ARRENDATARIO en buen estado de servicio, seguridad y sanidad. b) Mantener en el inmueble los servicios, cosas y usos conexos y adicionales en buen estado. c) Entregar copia del presente contrato al ARRENDATARIO dentro de los diez (10) dias siguientes a su firma. d) Cuando se trate de vivienda sometida a regimen de propiedad horizontal, entregar copia del reglamento. e) Hacer las reparaciones locativas mayores y estructurales necesarias.',
     required: true,
   },
   {
-    id: 'clause-terminacion',
-    title: 'CLAUSULA SEPTIMA: Causales de Terminacion',
+    id: 'clause-obligaciones-arrendatario',
+    title: 'CLAUSULA OCTAVA: Obligaciones del Arrendatario',
     content:
-      'El contrato podra darse por terminado anticipadamente por: a) Mutuo acuerdo. b) Incumplimiento de las obligaciones contractuales. c) Destinacion del inmueble a fines distintos a vivienda. d) Subarriendo no autorizado.',
+      'Son obligaciones del ARRENDATARIO conforme al Articulo 9 de la Ley 820 de 2003: a) Pagar el canon de arrendamiento dentro del plazo estipulado. b) Pagar cumplidamente los servicios publicos y cuota de administracion. c) Cuidar el inmueble y las cosas recibidas en arrendamiento. d) Pagar las reparaciones locativas menores (Art. 1998 Codigo Civil). e) Restituir el inmueble a la terminacion del contrato en el estado en que lo recibio, salvo el deterioro natural. f) No subarrendar ni ceder el arriendo sin autorizacion escrita. g) Cumplir las normas de propiedad horizontal si aplica.',
     required: true,
   },
   {
-    id: 'clause-preaviso',
-    title: 'CLAUSULA OCTAVA: Preaviso',
+    id: 'clause-terminacion-arrendador',
+    title: 'CLAUSULA NOVENA: Causales de Terminacion por el Arrendador',
     content:
-      'Para terminar el contrato, cualquiera de las partes debera dar aviso escrito con no menos de tres (3) meses de anticipacion.',
+      'De conformidad con el Articulo 22 de la Ley 820 de 2003, el ARRENDADOR podra terminar unilateralmente el contrato por: a) Mora en el pago del canon de arrendamiento superior a dos (2) meses. b) Mora en el pago de servicios publicos que cause desconexion. c) Cambio de destinacion del inmueble. d) Subarriendo o cesion no autorizada. e) Incumplimiento de las normas de propiedad horizontal. f) Realizacion de mejoras o modificaciones no autorizadas. g) Cuando el arrendador necesite el inmueble para su propia habitacion por un termino no menor de un (1) ano, dando preaviso de tres (3) meses e indemnizacion equivalente a tres (3) meses de arrendamiento.',
+    required: true,
+  },
+  {
+    id: 'clause-terminacion-arrendatario',
+    title: 'CLAUSULA DECIMA: Causales de Terminacion por el Arrendatario',
+    content:
+      'De conformidad con el Articulo 24 de la Ley 820 de 2003, el ARRENDATARIO podra terminar unilateralmente el contrato por: a) Suspension de servicios publicos por accion u omision del arrendador. b) Incumplimiento de las obligaciones del arrendador. c) Renuncia voluntaria al contrato, dando preaviso de tres (3) meses y pagando indemnizacion de tres (3) meses de arrendamiento, salvo que la renuncia sea al vencimiento del contrato o de una prorroga.',
+    required: true,
+  },
+  {
+    id: 'clause-clausula-penal',
+    title: 'CLAUSULA UNDECIMA: Clausula Penal',
+    content:
+      'En caso de incumplimiento de cualquiera de las obligaciones contenidas en el presente contrato por parte del ARRENDATARIO, este pagara al ARRENDADOR, a titulo de clausula penal, una suma equivalente a tres (3) meses del canon de arrendamiento vigente. Esta clausula penal se hara efectiva sin perjuicio del pago de los canones adeudados, servicios publicos, cuotas de administracion y demas obligaciones pendientes.',
+    required: true,
+  },
+  {
+    id: 'clause-notificaciones',
+    title: 'CLAUSULA DUODECIMA: Notificaciones',
+    content:
+      'Todas las comunicaciones entre las partes relacionadas con el presente contrato se realizaran por escrito a las direcciones fisicas o correos electronicos indicados. Se consideraran validas las notificaciones enviadas por correo certificado, correo electronico con confirmacion de lectura, o cualquier medio que permita acreditar su recepcion. Cualquier cambio de direccion debera notificarse a la otra parte dentro de los cinco (5) dias siguientes.',
+    required: true,
+  },
+  {
+    id: 'clause-datos-personales',
+    title: 'CLAUSULA DECIMOTERCERA: Proteccion de Datos Personales',
+    content:
+      'En cumplimiento de la Ley 1581 de 2012 sobre proteccion de datos personales, las partes autorizan el tratamiento de sus datos personales para los fines relacionados con la ejecucion del presente contrato, incluyendo verificacion de antecedentes, cobranza de obligaciones y comunicaciones relacionadas. Los datos seran tratados conforme a las politicas de privacidad de ARRIENDA SEGURO.',
     required: true,
   },
   {
     id: 'clause-ley',
-    title: 'CLAUSULA NOVENA: Legislacion Aplicable',
+    title: 'CLAUSULA DECIMOCUARTA: Legislacion Aplicable',
     content:
-      'Este contrato se rige por la Ley 820 de 2003 y demas normas concordantes del Codigo Civil colombiano.',
+      'El presente contrato se rige por la Ley 820 de 2003 sobre arrendamiento de vivienda urbana, el Codigo Civil colombiano, y demas normas concordantes. Para cualquier controversia, las partes acuerdan someterse a la jurisdiccion de los jueces civiles del domicilio del inmueble arrendado, sin perjuicio de acudir a los mecanismos alternativos de solucion de conflictos.',
+    required: true,
+  },
+  {
+    id: 'clause-firmas-electronicas',
+    title: 'CLAUSULA DECIMOQUINTA: Validez de Firmas Electronicas',
+    content:
+      'De conformidad con la Ley 527 de 1999 sobre comercio electronico y el Decreto 2364 de 2012, las partes aceptan expresamente que las firmas electronicas estampadas en el presente contrato tienen la misma validez y efectos juridicos que las firmas manuscritas. Las partes renuncian a impugnar la validez del contrato basandose unicamente en el hecho de haber sido firmado electronicamente.',
     required: true,
   },
 ];
@@ -182,8 +232,9 @@ export const MOCK_CONTRACTS: Contract[] = [
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 3800000,
-    depositAmount: 7600000,
     adminFee: 380000,
+    guaranteeType: 'poliza',
+    guaranteeDetails: 'Poliza Seguros del Estado #POL-2026-001234',
     startDate: '2026-02-01',
     endDate: '2027-01-31',
     paymentDueDay: 5,
@@ -225,8 +276,9 @@ export const MOCK_CONTRACTS: Contract[] = [
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 2800000,
-    depositAmount: 5600000,
     adminFee: 250000,
+    guaranteeType: 'codeudor',
+    guaranteeDetails: 'Juan Carlos Martinez - C.C. 79.456.789',
     startDate: '2026-02-15',
     endDate: '2027-02-14',
     paymentDueDay: 1,
@@ -261,8 +313,9 @@ export const MOCK_CONTRACTS: Contract[] = [
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 1200000,
-    depositAmount: 1200000,
     adminFee: 0,
+    guaranteeType: 'poliza',
+    guaranteeDetails: 'Poliza Liberty Seguros #LIB-2026-005678',
     startDate: '2026-03-01',
     endDate: '2027-02-28',
     paymentDueDay: 10,
@@ -416,8 +469,9 @@ export function createContractFromTemplate(
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: property.monthlyRent,
-    depositAmount: property.deposit,
     adminFee: property.adminFee,
+    guaranteeType: 'poliza', // Default to insurance policy
+    guaranteeDetails: undefined, // To be filled by tenant
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
     paymentDueDay: 5,
@@ -426,4 +480,31 @@ export function createContractFromTemplate(
     createdAt: now,
     updatedAt: now,
   };
+}
+
+/**
+ * Get all contracts for a landlord
+ */
+export function getContractsForLandlord(landlordId: string): Contract[] {
+  return MOCK_CONTRACTS.filter((c) => c.landlordId === landlordId);
+}
+
+/**
+ * Get pending contracts (awaiting signatures)
+ */
+export function getPendingContracts(landlordId: string): Contract[] {
+  return MOCK_CONTRACTS.filter(
+    (c) =>
+      c.landlordId === landlordId &&
+      (c.status === 'pending_landlord' || c.status === 'pending_tenant' || c.status === 'draft')
+  );
+}
+
+/**
+ * Get active contracts
+ */
+export function getActiveContracts(landlordId: string): Contract[] {
+  return MOCK_CONTRACTS.filter(
+    (c) => c.landlordId === landlordId && c.status === 'active'
+  );
 }

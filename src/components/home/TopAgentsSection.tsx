@@ -77,7 +77,7 @@ export function TopAgentsSection() {
           <div className="flex items-center gap-4 w-full max-w-[600px]">
             <div className="flex-1 h-px bg-black/10" />
             <div className="flex items-center gap-2">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#8b5cf6]" />
+              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
               <span className="text-[16px] leading-[21.6px] tracking-[-0.32px] text-black/60">
                 Agentes
               </span>

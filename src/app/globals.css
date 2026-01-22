@@ -21,8 +21,8 @@
     --popover: 0 0% 100%;               /* #FFFFFF */
     --popover-foreground: 240 10% 10%;  /* #17181C */
 
-    /* Primary - Refined purple accent */
-    --primary: 258 90% 58%;             /* Slightly deeper purple */
+    /* Primary - Black (Luxterra style) */
+    --primary: 240 6% 7%;               /* #111112 - Near black */
     --primary-foreground: 0 0% 100%;    /* White on primary */
 
     /* Secondary - Subtle gray */
@@ -34,7 +34,7 @@
     --muted-foreground: 240 5% 40%;     /* #616166 - Gray text, WCAG AA compliant */
 
     /* Accent - Same as primary for consistency */
-    --accent: 258 90% 58%;
+    --accent: 240 6% 7%;                /* #111112 - Near black */
     --accent-foreground: 0 0% 100%;
 
     /* Destructive - Refined red */
@@ -44,10 +44,10 @@
     /* Borders - Subtle, barely visible */
     --border: 240 6% 92%;               /* #EAEAEB - Very light border */
     --input: 240 6% 92%;                /* Same as border */
-    --ring: 258 90% 58%;                /* Primary for focus rings */
+    --ring: 240 6% 7%;                  /* #111112 - Black for focus rings */
 
     /* Chart colors */
-    --chart-1: 258 90% 58%;
+    --chart-1: 240 6% 7%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 50%;
     --chart-4: 43 74% 55%;

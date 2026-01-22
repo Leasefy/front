@@ -14,6 +14,8 @@ import type {
   TenantApplicationStatus,
   ApplicationEvent,
 } from '@/lib/types/tenant-application';
+import { StorageManager } from '@/lib/utils/storage';
+import { contextLogger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Types
@@ -46,6 +48,9 @@ interface TenantApplicationContextValue {
 
 const STORAGE_KEY = 'arriendo-facil-tenant-apps';
 
+// Storage manager instance
+const storage = new StorageManager<TenantApplication[]>(STORAGE_KEY);
+
 // ============================================================================
 // Context
 // ============================================================================
@@ -77,19 +82,19 @@ export function TenantApplicationProvider({ children }: TenantApplicationProvide
   // Hydrate from localStorage on mount
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const savedApps = JSON.parse(stored) as TenantApplication[];
-        // Merge saved state with mock data (saved state takes precedence)
-        const mergedApps = MOCK_TENANT_APPLICATIONS.map((mockApp) => {
-          const savedApp = savedApps.find((app) => app.id === mockApp.id);
-          return savedApp || mockApp;
-        });
-        setApplications(mergedApps);
-      }
-    } catch (error) {
-      console.error('Failed to load tenant applications from localStorage:', error);
+    const stored = storage.get({
+      onError: (error) => {
+        contextLogger.error('Failed to load tenant applications from localStorage', error);
+      },
+    });
+
+    if (stored) {
+      // Merge saved state with mock data (saved state takes precedence)
+      const mergedApps = MOCK_TENANT_APPLICATIONS.map((mockApp) => {
+        const savedApp = stored.find((app) => app.id === mockApp.id);
+        return savedApp || mockApp;
+      });
+      setApplications(mergedApps);
     }
     setIsHydrated(true);
   }, []);
@@ -100,11 +105,11 @@ export function TenantApplicationProvider({ children }: TenantApplicationProvide
   useEffect(() => {
     if (!isHydrated) return;
 
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
-    } catch (error) {
-      console.error('Failed to save tenant applications to localStorage:', error);
-    }
+    storage.set(applications, {
+      onError: (error) => {
+        contextLogger.error('Failed to save tenant applications to localStorage', error);
+      },
+    });
   }, [applications, isHydrated]);
 
   // ---------------------------------------------------------------------------

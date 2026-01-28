@@ -33,9 +33,14 @@
     --muted: 240 5% 94%;                /* #EFEFEF */
     --muted-foreground: 240 5% 40%;     /* #616166 - Gray text, WCAG AA compliant */
 
-    /* Accent - Same as primary for consistency */
-    --accent: 240 6% 7%;                /* #111112 - Near black */
+    /* Accent - Vibrant purple like Luxterra */
+    --accent: 258 100% 66%;             /* #7f51ff - Vibrant purple */
     --accent-foreground: 0 0% 100%;
+
+    /* Brand accent for highlights */
+    --brand: 258 100% 66%;              /* #7f51ff */
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 258 40% 96%;         /* Light purple tint */
 
     /* Destructive - Refined red */
     --destructive: 0 72% 51%;           /* #DC2626 */
@@ -279,13 +284,68 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   }
 
-  /* Card styles - minimal */
+  /* Premium shadow - Luxterra inspired depth */
+  .shadow-premium {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 8px rgba(0, 0, 0, 0.04),
+      0 12px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-premium-lg {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.02),
+      0 8px 16px rgba(0, 0, 0, 0.04),
+      0 24px 48px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Glow effects for accent elements */
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(127, 81, 255, 0.15), 0 0 40px rgba(127, 81, 255, 0.1);
+  }
+
+  .glow-accent-sm {
+    box-shadow: 0 0 10px rgba(127, 81, 255, 0.12);
+  }
+
+  /* Card styles - premium */
   .card-minimal {
     @apply rounded-sm border border-border bg-card overflow-hidden shadow-subtle;
   }
 
   .card-interactive {
-    @apply card-minimal transition-all duration-200 hover:shadow-elevated hover:border-border/80;
+    @apply card-minimal transition-all duration-300 ease-out;
+  }
+
+  .card-interactive:hover {
+    @apply shadow-premium -translate-y-0.5;
+    border-color: hsl(var(--border) / 0.6);
+  }
+
+  /* Premium card with glow on hover */
+  .card-premium {
+    @apply bg-card rounded-lg border border-border/50 overflow-hidden;
+    @apply transition-all duration-500 ease-out;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  .card-premium:hover {
+    @apply -translate-y-1;
+    border-color: hsl(var(--accent) / 0.2);
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.04),
+      0 12px 24px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(127, 81, 255, 0.05);
+  }
+
+  /* Active/selected state with accent */
+  .card-active {
+    border-color: hsl(var(--accent) / 0.4);
+    box-shadow:
+      0 0 0 3px hsl(var(--accent) / 0.08),
+      0 4px 12px rgba(127, 81, 255, 0.1);
   }
 
   /* ==========================================================
@@ -451,6 +511,131 @@
 
   .animate-scale-in {
     animation: scale-in 0.3s ease-out forwards;
+  }
+
+  /* Premium entrance animations - staggered reveal */
+  @keyframes slide-up-fade {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Stagger children animations */
+  .stagger-children > * {
+    opacity: 0;
+    animation: slide-up-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+  .stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+
+  /* Shimmer effect for loading/premium elements */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(127, 81, 255, 0.08) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Subtle pulse for notifications/badges */
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(127, 81, 255, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(127, 81, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(127, 81, 255, 0);
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 2s ease-out infinite;
+  }
+
+  /* Gradient text for premium elements */
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #7f51ff 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Premium border gradient */
+  .border-gradient-accent {
+    position: relative;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                linear-gradient(135deg, rgba(127, 81, 255, 0.3), rgba(127, 81, 255, 0.1)) border-box;
+    border: 1px solid transparent;
+  }
+
+  /* Hover line indicator - Luxterra style */
+  .nav-indicator {
+    position: relative;
+  }
+
+  .nav-indicator::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: hsl(var(--accent));
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-indicator:hover::after,
+  .nav-indicator.active::after {
+    width: 100%;
+  }
+
+  /* Sidebar active indicator - vertical line */
+  .sidebar-indicator {
+    position: relative;
+  }
+
+  .sidebar-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 0;
+    width: 3px;
+    background: hsl(var(--accent));
+    border-radius: 0 2px 2px 0;
+    transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar-indicator.active::before {
+    height: 60%;
   }
 
   /* ==========================================================

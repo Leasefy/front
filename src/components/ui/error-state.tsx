@@ -39,18 +39,26 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <Card className={cn('border-0 shadow-none', className)}>
-      <CardContent className="flex flex-col items-center justify-center py-12 px-4">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{title}</AlertTitle>
-          <AlertDescription>{description}</AlertDescription>
-        </Alert>
+    <Card className={cn('border border-red-100 bg-red-50/30', className)}>
+      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        {/* Icon Container - Soft error styling */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-red-500/10 rounded-2xl blur-xl" />
+          <div className="relative rounded-2xl bg-gradient-to-br from-red-100 to-red-50 p-5 border border-red-200/50">
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
+
+        {/* Description */}
+        <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">{description}</p>
 
         {/* Retry Button */}
         {onRetry && (
-          <Button onClick={onRetry} variant="outline" className="mt-6">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button onClick={onRetry} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
             Intentar de nuevo
           </Button>
         )}

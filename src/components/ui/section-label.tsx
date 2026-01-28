@@ -10,23 +10,27 @@ interface SectionLabelProps {
 }
 
 const dotColors: Record<DotVariant, string> = {
-  default: 'bg-muted-foreground',
+  default: 'bg-[#7f51ff]',
   warning: 'bg-amber-500',
   info: 'bg-blue-500',
   success: 'bg-emerald-500',
 };
 
 /**
- * Section label component - Usa Badge de shadcn
- * 12px text with colored dot indicator
+ * Section label component - Premium styling
+ * 12px uppercase text with colored dot indicator
  */
 export function SectionLabel({ children, className, dotVariant = 'default' }: SectionLabelProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <span className={cn("h-1.5 w-1.5 rounded-full", dotColors[dotVariant])} />
-      <Badge variant="secondary" className="text-xs font-normal px-0 py-0 bg-transparent text-muted-foreground hover:bg-transparent">
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <span className={cn(
+        "h-2 w-2 rounded-full",
+        dotColors[dotVariant],
+        dotVariant === 'default' && "shadow-sm shadow-[#7f51ff]/30"
+      )} />
+      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
         {children}
-      </Badge>
+      </span>
     </div>
   );
 }

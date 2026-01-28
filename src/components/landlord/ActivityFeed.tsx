@@ -47,25 +47,37 @@ interface ActivityItemProps {
 function ActivityItem({ activity }: ActivityItemProps) {
   const Icon = activityIcons[activity.type];
 
+  // Map activity types to accent colors
+  const typeColors: Record<ActivityType, string> = {
+    application: 'bg-[#7f51ff]/10 text-[#7f51ff]',
+    status_change: 'bg-emerald-50 text-emerald-600',
+    message: 'bg-blue-50 text-blue-600',
+    document: 'bg-amber-50 text-amber-600',
+  };
+
   const content = (
-    <div className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-[2px]">
-      {/* Icon */}
-      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon className="w-4 h-4 text-slate-400" />
+    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-xl hover:bg-slate-50/80 transition-all duration-300 cursor-pointer">
+      {/* Icon with colored background */}
+      <div className={cn(
+        'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+        'transition-transform duration-300 group-hover:scale-110',
+        typeColors[activity.type]
+      )}>
+        <Icon className="w-4 h-4" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-700 font-medium">
+        <p className="text-sm text-slate-800 font-medium group-hover:text-slate-900 transition-colors">
           {activity.title}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5 truncate">
+        <p className="text-xs text-slate-500 mt-1 truncate">
           {activity.description}
         </p>
       </div>
 
-      {/* Time */}
-      <span className="text-xs text-slate-300 flex-shrink-0">
+      {/* Time badge */}
+      <span className="text-xs text-slate-400 bg-slate-100/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
         {formatRelativeTime(activity.timestamp)}
       </span>
     </div>

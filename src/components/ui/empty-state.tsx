@@ -47,18 +47,21 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn('border-0 shadow-none', className)}>
-      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        {/* Icon Container */}
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <Icon className="h-8 w-8 text-muted-foreground" />
+    <Card className={cn('border border-dashed border-slate-200 bg-slate-50/50', className)}>
+      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        {/* Icon Container - Premium gradient background */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-[#7f51ff]/10 rounded-2xl blur-xl" />
+          <div className="relative rounded-2xl bg-gradient-to-br from-[#7f51ff]/10 to-[#7f51ff]/5 p-5 border border-[#7f51ff]/10">
+            <Icon className="h-8 w-8 text-[#7f51ff]" />
+          </div>
         </div>
 
         {/* Title */}
-        <h3 className={cn('text-lg font-medium mb-2', 'text-foreground')}>{title}</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
 
         {/* Description */}
-        <p className={cn('text-sm mb-6 max-w-sm', 'text-muted-foreground')}>{description}</p>
+        <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">{description}</p>
 
         {/* Optional CTA */}
         {action && (

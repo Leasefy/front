@@ -19,7 +19,7 @@ interface TabNavigationProps {
 }
 
 /**
- * Tab Navigation - Horizontal tabs with counts
+ * Tab Navigation - Premium horizontal tabs with animated indicator
  * Used in property detail page
  */
 export function TabNavigation({
@@ -30,34 +30,49 @@ export function TabNavigation({
 }: TabNavigationProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className={className}>
-      <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent h-auto p-0">
+      <TabsList className="w-full justify-start border-b border-slate-200/80 rounded-none bg-transparent h-auto p-0 gap-1">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.id}
             value={tab.id}
             disabled={tab.disabled}
             className={cn(
-              'relative py-3 px-0 mr-8 data-[state=active]:shadow-none',
-              'data-[state=active]:bg-transparent data-[state=active]:text-primary',
-              'data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed'
+              'relative py-4 px-4 rounded-none transition-all duration-300',
+              'data-[state=active]:shadow-none data-[state=active]:bg-transparent',
+              'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:text-slate-800',
+              'data-[state=active]:text-[#7f51ff]',
+              'data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed',
+              'group'
             )}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2.5 font-medium">
               {tab.label}
               {tab.count !== undefined && (
                 <Badge
                   variant="secondary"
                   className={cn(
-                    'text-xs',
+                    'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
                     activeTab === tab.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-[#7f51ff] text-white shadow-sm shadow-[#7f51ff]/25'
+                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
                   )}
                 >
                   {tab.count}
                 </Badge>
               )}
             </span>
+
+            {/* Animated bottom indicator */}
+            <span
+              className={cn(
+                'absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full',
+                'bg-gradient-to-r from-[#7f51ff] to-[#a78bfa]',
+                'transition-all duration-300 ease-out',
+                activeTab === tab.id
+                  ? 'opacity-100 scale-x-100'
+                  : 'opacity-0 scale-x-0'
+              )}
+            />
           </TabsTrigger>
         ))}
       </TabsList>

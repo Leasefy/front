@@ -40,23 +40,39 @@ export function PricingTable({
 
   return (
     <div className={cn('', className)}>
-      {/* Billing cycle toggle - Usa Tabs de shadcn */}
-      <div className="flex justify-center mb-8">
-        <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as BillingCycle)}>
-          <TabsList>
-            <TabsTrigger value="monthly">Mensual</TabsTrigger>
-            <TabsTrigger value="yearly">
-              Anual
-              <span className="ml-1.5 text-xs text-emerald-600 font-semibold">
-                -20%
-              </span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Billing cycle toggle - Premium pill design */}
+      <div className="flex justify-center mb-12">
+        <div className="inline-flex items-center bg-slate-100/80 p-1.5 rounded-full">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={cn(
+              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
+              billingCycle === 'monthly'
+                ? 'bg-white text-slate-900 shadow-md'
+                : 'text-slate-500 hover:text-slate-700'
+            )}
+          >
+            Mensual
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className={cn(
+              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
+              billingCycle === 'yearly'
+                ? 'bg-white text-slate-900 shadow-md'
+                : 'text-slate-500 hover:text-slate-700'
+            )}
+          >
+            Anual
+            <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+              -20%
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Plans grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+      {/* Plans grid with stagger animation */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 stagger-children">
         {PLANS.map((plan) => (
           <PricingCard
             key={plan.id}
@@ -70,40 +86,43 @@ export function PricingTable({
 
       {/* Feature comparison table (optional) */}
       {showComparison && (
-        <div className="mt-16">
-          <h3 className="text-xl font-semibold text-slate-900 text-center mb-8">
+        <div className="mt-20">
+          <h3 className="text-2xl font-semibold text-slate-900 text-center mb-10">
             Comparacion detallada
           </h3>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Caracteristica</TableHead>
-                  <TableHead className="text-center">Gratis</TableHead>
-                  <TableHead className="text-center bg-primary/5 text-primary">Pro</TableHead>
-                  <TableHead className="text-center">Business</TableHead>
+                <TableRow className="border-b-slate-200/60">
+                  <TableHead className="text-left font-semibold">Caracteristica</TableHead>
+                  <TableHead className="text-center font-semibold">Gratis</TableHead>
+                  <TableHead className="text-center bg-[#7f51ff]/5 font-semibold text-[#7f51ff]">Pro</TableHead>
+                  <TableHead className="text-center font-semibold">Business</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {PLAN_COMPARISON.map((row, index) => (
                   <TableRow
                     key={row.feature}
-                    className={cn(index % 2 === 0 && 'bg-muted/30')}
+                    className={cn(
+                      'transition-colors hover:bg-slate-50/50',
+                      index % 2 === 0 && 'bg-slate-50/30'
+                    )}
                   >
-                    <TableCell>
-                      <div className="text-sm font-medium">{row.feature}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                    <TableCell className="py-4">
+                      <div className="text-sm font-medium text-slate-800">{row.feature}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">
                         {row.description}
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-4">
                       <ComparisonCell value={row.free} />
                     </TableCell>
-                    <TableCell className="text-center bg-primary/5">
-                      <ComparisonCell value={row.pro} />
+                    <TableCell className="text-center py-4 bg-[#7f51ff]/5">
+                      <ComparisonCell value={row.pro} highlighted />
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-4">
                       <ComparisonCell value={row.business} />
                     </TableCell>
                   </TableRow>
@@ -114,17 +133,18 @@ export function PricingTable({
         </div>
       )}
 
-      {/* Trust indicators */}
-      <div className="mt-12 text-center">
-        <p className="text-sm text-slate-500">
+      {/* Trust indicators - Premium design */}
+      <div className="mt-16 text-center">
+        <p className="text-base text-slate-600 font-medium">
           Sin compromisos. Cancela cuando quieras.
         </p>
-        <div className="flex items-center justify-center gap-6 mt-4 text-xs text-slate-400">
-          <span>Pago seguro</span>
-          <span className="w-1 h-1 rounded-full bg-slate-300" />
-          <span>Facturacion mensual o anual</span>
-          <span className="w-1 h-1 rounded-full bg-slate-300" />
-          <span>Soporte incluido</span>
+        <div className="flex items-center justify-center gap-8 mt-6">
+          {['Pago seguro', 'Facturacion flexible', 'Soporte incluido'].map((item, i) => (
+            <div key={item} className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#7f51ff]" />
+              <span>{item}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -134,17 +154,30 @@ export function PricingTable({
 /**
  * Cell renderer for comparison table values
  */
-function ComparisonCell({ value }: { value: boolean | string | number }) {
+function ComparisonCell({ value, highlighted }: { value: boolean | string | number; highlighted?: boolean }) {
   if (typeof value === 'boolean') {
     return value ? (
-      <Check className="w-5 h-5 text-emerald-500 mx-auto" />
+      <div className={cn(
+        'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
+        highlighted ? 'bg-[#7f51ff]/10' : 'bg-emerald-50'
+      )}>
+        <Check className={cn(
+          'w-4 h-4',
+          highlighted ? 'text-[#7f51ff]' : 'text-emerald-500'
+        )} />
+      </div>
     ) : (
-      <X className="w-5 h-5 text-muted-foreground mx-auto" />
+      <X className="w-5 h-5 text-slate-300 mx-auto" />
     );
   }
 
   return (
-    <span className="text-sm font-medium">{value}</span>
+    <span className={cn(
+      'text-sm font-semibold',
+      highlighted ? 'text-[#7f51ff]' : 'text-slate-700'
+    )}>
+      {value}
+    </span>
   );
 }
 

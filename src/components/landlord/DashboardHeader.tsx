@@ -12,8 +12,8 @@ interface DashboardHeaderProps {
 }
 
 /**
- * Dashboard Header - Luxterra style
- * Large, light typography with subtle details
+ * Dashboard Header - Premium Luxterra style
+ * Large, elegant typography with accent highlights
  */
 export function DashboardHeader({ className, propertyCount, monthlyIncome }: DashboardHeaderProps) {
   const { user } = useAuth();
@@ -22,24 +22,32 @@ export function DashboardHeader({ className, propertyCount, monthlyIncome }: Das
   // Get first name only
   const firstName = user?.name?.split(' ')[0] || 'Usuario';
 
-  // Build subtitle with summary
-  const summaryParts: string[] = [];
-  if (propertyCount !== undefined) {
-    summaryParts.push(`${propertyCount} propiedad${propertyCount !== 1 ? 'es' : ''}`);
-  }
-  if (monthlyIncome !== undefined && monthlyIncome > 0) {
-    summaryParts.push(`${formatCurrency(monthlyIncome)}/mes`);
-  }
-
   return (
-    <header className={cn('py-4', className)}>
-      <h1 className="text-[2rem] md:text-[2.5rem] font-light text-slate-900 tracking-[-0.02em]">
-        {greeting}, {firstName}
+    <header className={cn('py-6', className)}>
+      {/* Main greeting with gradient accent on name */}
+      <h1 className="text-[2rem] md:text-[2.75rem] font-light text-slate-900 tracking-[-0.03em] leading-tight">
+        {greeting},{' '}
+        <span className="font-normal bg-gradient-to-r from-[#7f51ff] to-[#a78bfa] bg-clip-text text-transparent">
+          {firstName}
+        </span>
       </h1>
-      {summaryParts.length > 0 && (
-        <p className="text-slate-400 mt-1 text-sm tracking-[-0.01em]">
-          {summaryParts.join(' · ')}
-        </p>
+
+      {/* Summary stats as pills */}
+      {(propertyCount !== undefined || monthlyIncome !== undefined) && (
+        <div className="flex items-center gap-3 mt-4">
+          {propertyCount !== undefined && (
+            <div className="inline-flex items-center gap-2 bg-slate-100/80 text-slate-700 px-4 py-2 rounded-full text-sm font-medium">
+              <div className="w-2 h-2 rounded-full bg-[#7f51ff]" />
+              {propertyCount} propiedad{propertyCount !== 1 ? 'es' : ''}
+            </div>
+          )}
+          {monthlyIncome !== undefined && monthlyIncome > 0 && (
+            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              {formatCurrency(monthlyIncome)}/mes
+            </div>
+          )}
+        </div>
       )}
     </header>
   );

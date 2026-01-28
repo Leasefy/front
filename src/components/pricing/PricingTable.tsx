@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { PricingCard } from './PricingCard';
 import { PLANS, PLAN_COMPARISON } from '@/lib/data/mock-subscriptions';
 import { Check, X } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { BillingCycle, PlanId } from '@/lib/types/subscription';
 
 export interface PricingTableProps {
@@ -38,35 +40,19 @@ export function PricingTable({
 
   return (
     <div className={cn('', className)}>
-      {/* Billing cycle toggle */}
+      {/* Billing cycle toggle - Usa Tabs de shadcn */}
       <div className="flex justify-center mb-8">
-        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-[2px]">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={cn(
-              'px-4 py-2 text-sm font-medium rounded-[2px] transition-all',
-              billingCycle === 'monthly'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
-          >
-            Mensual
-          </button>
-          <button
-            onClick={() => setBillingCycle('yearly')}
-            className={cn(
-              'px-4 py-2 text-sm font-medium rounded-[2px] transition-all',
-              billingCycle === 'yearly'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
-          >
-            Anual
-            <span className="ml-1.5 text-xs text-emerald-600 font-semibold">
-              -20%
-            </span>
-          </button>
-        </div>
+        <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as BillingCycle)}>
+          <TabsList>
+            <TabsTrigger value="monthly">Mensual</TabsTrigger>
+            <TabsTrigger value="yearly">
+              Anual
+              <span className="ml-1.5 text-xs text-emerald-600 font-semibold">
+                -20%
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Plans grid */}
@@ -90,53 +76,40 @@ export function PricingTable({
           </h3>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-4 px-4 text-sm font-medium text-slate-500">
-                    Caracteristica
-                  </th>
-                  <th className="text-center py-4 px-4 text-sm font-medium text-slate-700">
-                    Gratis
-                  </th>
-                  <th className="text-center py-4 px-4 text-sm font-medium text-primary">
-                    Pro
-                  </th>
-                  <th className="text-center py-4 px-4 text-sm font-medium text-slate-700">
-                    Business
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Caracteristica</TableHead>
+                  <TableHead className="text-center">Gratis</TableHead>
+                  <TableHead className="text-center bg-primary/5 text-primary">Pro</TableHead>
+                  <TableHead className="text-center">Business</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {PLAN_COMPARISON.map((row, index) => (
-                  <tr
+                  <TableRow
                     key={row.feature}
-                    className={cn(
-                      'border-b border-slate-100',
-                      index % 2 === 0 && 'bg-slate-50/50'
-                    )}
+                    className={cn(index % 2 === 0 && 'bg-muted/30')}
                   >
-                    <td className="py-4 px-4">
-                      <div className="text-sm font-medium text-slate-900">
-                        {row.feature}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
+                    <TableCell>
+                      <div className="text-sm font-medium">{row.feature}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         {row.description}
                       </div>
-                    </td>
-                    <td className="text-center py-4 px-4">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <ComparisonCell value={row.free} />
-                    </td>
-                    <td className="text-center py-4 px-4 bg-primary/5">
+                    </TableCell>
+                    <TableCell className="text-center bg-primary/5">
                       <ComparisonCell value={row.pro} />
-                    </td>
-                    <td className="text-center py-4 px-4">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <ComparisonCell value={row.business} />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
@@ -166,12 +139,12 @@ function ComparisonCell({ value }: { value: boolean | string | number }) {
     return value ? (
       <Check className="w-5 h-5 text-emerald-500 mx-auto" />
     ) : (
-      <X className="w-5 h-5 text-slate-300 mx-auto" />
+      <X className="w-5 h-5 text-muted-foreground mx-auto" />
     );
   }
 
   return (
-    <span className="text-sm text-slate-700 font-medium">{value}</span>
+    <span className="text-sm font-medium">{value}</span>
   );
 }
 

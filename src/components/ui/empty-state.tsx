@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -46,29 +47,26 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center py-12 px-4 text-center',
-        className
-      )}
-    >
-      {/* Icon Container */}
-      <div className="rounded-full bg-slate-100 p-4 mb-4">
-        <Icon className="h-8 w-8 text-slate-400" />
-      </div>
+    <Card className={cn('border-0 shadow-none', className)}>
+      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        {/* Icon Container */}
+        <div className="rounded-full bg-muted p-4 mb-4">
+          <Icon className="h-8 w-8 text-muted-foreground" />
+        </div>
 
-      {/* Title */}
-      <h3 className="text-lg font-medium text-slate-900 mb-2">{title}</h3>
+        {/* Title */}
+        <h3 className={cn('text-lg font-medium mb-2', 'text-foreground')}>{title}</h3>
 
-      {/* Description */}
-      <p className="text-sm text-slate-500 mb-6 max-w-sm">{description}</p>
+        {/* Description */}
+        <p className={cn('text-sm mb-6 max-w-sm', 'text-muted-foreground')}>{description}</p>
 
-      {/* Optional CTA */}
-      {action && (
-        <Button asChild>
-          <Link href={action.href}>{action.label}</Link>
-        </Button>
-      )}
-    </div>
+        {/* Optional CTA */}
+        {action && (
+          <Button asChild>
+            <Link href={action.href}>{action.label}</Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

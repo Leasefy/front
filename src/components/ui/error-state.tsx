@@ -1,5 +1,7 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -37,30 +39,22 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center py-12 px-4 text-center',
-        className
-      )}
-    >
-      {/* Icon Container */}
-      <div className="rounded-full bg-red-50 p-4 mb-4">
-        <AlertTriangle className="h-8 w-8 text-red-500" />
-      </div>
+    <Card className={cn('border-0 shadow-none', className)}>
+      <CardContent className="flex flex-col items-center justify-center py-12 px-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{title}</AlertTitle>
+          <AlertDescription>{description}</AlertDescription>
+        </Alert>
 
-      {/* Title */}
-      <h3 className="text-lg font-medium text-slate-900 mb-2">{title}</h3>
-
-      {/* Description */}
-      <p className="text-sm text-slate-500 mb-6 max-w-sm">{description}</p>
-
-      {/* Retry Button */}
-      {onRetry && (
-        <Button onClick={onRetry} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Intentar de nuevo
-        </Button>
-      )}
-    </div>
+        {/* Retry Button */}
+        {onRetry && (
+          <Button onClick={onRetry} variant="outline" className="mt-6">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Intentar de nuevo
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

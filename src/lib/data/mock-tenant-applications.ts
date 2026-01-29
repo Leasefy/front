@@ -155,13 +155,19 @@ function getUpdatedAt(events: ApplicationEvent[]): string {
 // ============================================================================
 
 // Pre-generate tracking codes for consistency
-const TRACKING_CODES = {
+const TRACKING_CODES: Record<string, string> = {
   'app-001': 'AF-K7N3P2',
   'app-002': 'AF-M9R4T6',
   'app-003': 'AF-W2X8J5',
   'app-004': 'AF-H4L9Q1',
   'app-005': 'AF-C6Y3V8',
   'app-006': 'AF-B1Z5F7',
+  'app-007': 'AF-D8E2M4',
+  'app-008': 'AF-G5T9K7',
+  'app-009': 'AF-J1P6R3',
+  'app-010': 'AF-N4S8W2',
+  'app-011': 'AF-Q7V1Y5',
+  'app-012': 'AF-U3A6C9',
 };
 
 // Create events for each application
@@ -171,6 +177,13 @@ const eventsApp003 = createEventsForStatus('pre_approved', '2026-01-14T09:15:00Z
 const eventsApp004 = createEventsForStatus('approved', '2026-01-10T11:00:00Z');
 const eventsApp005 = createEventsForStatus('rejected', '2026-01-12T16:45:00Z');
 const eventsApp006 = createEventsForStatus('withdrawn', '2026-01-17T08:30:00Z');
+// Additional applications for pagination
+const eventsApp007 = createEventsForStatus('submitted', '2026-01-19T09:00:00Z');
+const eventsApp008 = createEventsForStatus('under_review', '2026-01-15T11:30:00Z');
+const eventsApp009 = createEventsForStatus('pre_approved', '2026-01-13T14:00:00Z');
+const eventsApp010 = createEventsForStatus('approved', '2026-01-08T10:00:00Z');
+const eventsApp011 = createEventsForStatus('rejected', '2026-01-09T15:30:00Z');
+const eventsApp012 = createEventsForStatus('withdrawn', '2026-01-11T12:00:00Z');
 
 /**
  * Mock tenant applications - 6 applications in various states
@@ -241,6 +254,73 @@ export const MOCK_TENANT_APPLICATIONS: TenantApplication[] = [
     submittedAt: '2026-01-17T08:30:00Z',
     updatedAt: getUpdatedAt(eventsApp006),
     events: eventsApp006,
+  },
+
+  // Additional applications for pagination demo
+  // 7. Submitted - new application
+  {
+    id: 'app-007',
+    propertyId: 'prop-006',
+    trackingCode: TRACKING_CODES['app-007'],
+    status: 'submitted',
+    submittedAt: '2026-01-19T09:00:00Z',
+    updatedAt: getUpdatedAt(eventsApp007),
+    events: eventsApp007,
+  },
+
+  // 8. Under review
+  {
+    id: 'app-008',
+    propertyId: 'prop-008',
+    trackingCode: TRACKING_CODES['app-008'],
+    status: 'under_review',
+    submittedAt: '2026-01-15T11:30:00Z',
+    updatedAt: getUpdatedAt(eventsApp008),
+    events: eventsApp008,
+  },
+
+  // 9. Pre-approved
+  {
+    id: 'app-009',
+    propertyId: 'prop-009',
+    trackingCode: TRACKING_CODES['app-009'],
+    status: 'pre_approved',
+    submittedAt: '2026-01-13T14:00:00Z',
+    updatedAt: getUpdatedAt(eventsApp009),
+    events: eventsApp009,
+  },
+
+  // 10. Approved - historical
+  {
+    id: 'app-010',
+    propertyId: 'prop-010',
+    trackingCode: TRACKING_CODES['app-010'],
+    status: 'approved',
+    submittedAt: '2026-01-08T10:00:00Z',
+    updatedAt: getUpdatedAt(eventsApp010),
+    events: eventsApp010,
+  },
+
+  // 11. Rejected - historical
+  {
+    id: 'app-011',
+    propertyId: 'prop-001',
+    trackingCode: TRACKING_CODES['app-011'],
+    status: 'rejected',
+    submittedAt: '2026-01-09T15:30:00Z',
+    updatedAt: getUpdatedAt(eventsApp011),
+    events: eventsApp011,
+  },
+
+  // 12. Withdrawn - historical
+  {
+    id: 'app-012',
+    propertyId: 'prop-003',
+    trackingCode: TRACKING_CODES['app-012'],
+    status: 'withdrawn',
+    submittedAt: '2026-01-11T12:00:00Z',
+    updatedAt: getUpdatedAt(eventsApp012),
+    events: eventsApp012,
   },
 ];
 

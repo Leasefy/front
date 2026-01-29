@@ -110,14 +110,14 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
         'relative flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-300',
         'rounded-lg group',
         isActive
-          ? 'bg-[#7f51ff]/8 text-[#7f51ff]'
+          ? 'bg-[black]/8 text-[black]'
           : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
       )}
     >
       {/* Active indicator - vertical accent line */}
       <span
         className={cn(
-          'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-[#7f51ff]',
+          'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-[black]',
           'transition-all duration-300 ease-out',
           isActive ? 'h-5 opacity-100' : 'h-0 opacity-0'
         )}
@@ -126,7 +126,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
       <Icon
         className={cn(
           'w-4 h-4 transition-transform duration-300',
-          isActive && 'text-[#7f51ff]',
+          isActive && 'text-[black]',
           !isActive && 'group-hover:scale-110'
         )}
       />
@@ -136,8 +136,8 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
           className={cn(
             'text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300',
             isActive
-              ? 'bg-[#7f51ff] text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 group-hover:bg-[#7f51ff]/10 group-hover:text-[#7f51ff]'
+              ? 'bg-[black] text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 group-hover:bg-[black]/10 group-hover:text-[black]'
           )}
         >
           {item.badge}
@@ -167,14 +167,14 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Logo - Premium styling */}
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#7f51ff] to-[#6b3fd4] rounded-xl flex items-center justify-center shadow-lg shadow-[#7f51ff]/20 transition-transform duration-300 group-hover:scale-105">
+          <div className="w-10 h-10 bg-gradient-to-br from-[black] to-[black/80] rounded-xl flex items-center justify-center shadow-lg shadow-[black]/20 transition-transform duration-300 group-hover:scale-105">
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
             <span className="text-base font-semibold text-slate-900 tracking-[-0.02em]">
               Arrienda
             </span>
-            <span className="text-xs text-[#7f51ff] font-medium -mt-0.5">
+            <span className="text-xs text-[black] font-medium -mt-0.5">
               Seguro
             </span>
           </div>
@@ -199,7 +199,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Upgrade CTA for free users - Premium design */}
       {MOCK_SUBSCRIPTION.planId === 'free' && (
         <div className="px-4 py-4">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#7f51ff] to-[#6b3fd4] p-4 shadow-lg shadow-[#7f51ff]/25">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[black] to-[black/80] p-4 shadow-lg shadow-[black]/25">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12" />
             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full blur-xl -ml-8 -mb-8" />
@@ -218,7 +218,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="w-full bg-white text-[#7f51ff] hover:bg-white/90 font-semibold shadow-md"
+                  className="w-full bg-white text-[black] hover:bg-white/90 font-semibold shadow-md"
                 >
                   Mejorar plan
                   <ChevronRight className="w-4 h-4 ml-1" />

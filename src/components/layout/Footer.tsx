@@ -14,7 +14,7 @@ const menuLinks = [
 const pageLinks = [
   { href: "/nosotros", label: "Nosotros" },
   { href: "/blog", label: "Blog" },
-  { href: "/preguntas-frecuentes", label: "FAQ" },
+  { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
 ];
 
 const socialLinks = [

@@ -51,9 +51,9 @@ export function EmptyState({
       <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
         {/* Icon Container - Premium gradient background */}
         <div className="relative mb-6">
-          <div className="absolute inset-0 bg-[#7f51ff]/10 rounded-2xl blur-xl" />
-          <div className="relative rounded-2xl bg-gradient-to-br from-[#7f51ff]/10 to-[#7f51ff]/5 p-5 border border-[#7f51ff]/10">
-            <Icon className="h-8 w-8 text-[#7f51ff]" />
+          <div className="absolute inset-0 bg-[black]/10 rounded-2xl blur-xl" />
+          <div className="relative rounded-2xl bg-gradient-to-br from-[black]/10 to-[black]/5 p-5 border border-[black]/10">
+            <Icon className="h-8 w-8 text-[black]" />
           </div>
         </div>
 

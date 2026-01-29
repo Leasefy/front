@@ -108,7 +108,8 @@ export const PROPERTY_CANDIDATES: Record<string, LandlordCandidate[]> = {
 // ============================================================================
 
 function buildLandlordProperties(): LandlordProperty[] {
-  const propertyIds = ['prop-001', 'prop-002', 'prop-006'];
+  // Extended list for scalability testing - 8 properties
+  const propertyIds = ['prop-001', 'prop-002', 'prop-006', 'prop-003', 'prop-004', 'prop-007', 'prop-008', 'prop-010'];
 
   return propertyIds.map((propId) => {
     const baseProperty = mockProperties.find((p) => p.id === propId);

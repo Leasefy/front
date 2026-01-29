@@ -250,7 +250,6 @@ export function CandidateCard({
           <Button
             size="sm"
             variant="default"
-            showArrow={false}
             className={cn(
               'flex-1',
               currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'

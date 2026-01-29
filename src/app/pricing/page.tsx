@@ -218,7 +218,7 @@ export default function PricingPage() {
                 description="Gestiona cientos de propiedades desde un solo panel. Sin limites."
               />
               <BenefitCard
-                title="White-label"
+                title="Marca blanca"
                 description="Tu marca en la plataforma. Tus clientes ven tu identidad, no la nuestra."
               />
             </div>

@@ -1,105 +1,325 @@
 'use client';
 
-import { Building2 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Building2, Users, Clock, AlertCircle, DollarSign, Home, TrendingUp, Calendar, ArrowUpRight } from 'lucide-react';
 
 import { LANDLORD_PROPERTIES } from '@/lib/data/mock-landlord-data';
 import { getRecentActivities } from '@/lib/data/mock-activity';
-import { getDashboardData } from '@/lib/data/mock-dashboard';
-import { PropertyDashboardCard } from '@/components/landlord/PropertyDashboardCard';
-import { DashboardHeader } from '@/components/landlord/DashboardHeader';
-import { FinancialHeroSection } from '@/components/landlord/FinancialHeroSection';
-import { UrgentActionsBanner } from '@/components/landlord/UrgentActionsBanner';
-import { ActivityFeed } from '@/components/landlord/ActivityFeed';
-import { UpcomingEventsCard } from '@/components/landlord/UpcomingEventsCard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { getDashboardData, formatCurrency } from '@/lib/data/mock-dashboard';
+import { useAuth } from '@/lib/auth';
+import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
+import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
+import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
+import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
+import { PlanActivityCard, TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
+import type { LandlordProperty } from '@/lib/types/landlord';
 
 /**
- * Landlord Dashboard Page - Luxterra Style
- * Clean, minimal, elegant design with white background
+ * Landlord Dashboard Page - PLan CRM Style
  */
 export default function PanelPage() {
+  const { user } = useAuth();
+  const { greeting } = useTimeGreeting();
+  const firstName = user?.name?.split(' ')[0] || 'Propietario';
+
   const properties = LANDLORD_PROPERTIES;
   const recentActivities = getRecentActivities(5);
   const dashboardData = getDashboardData();
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Content container - matches Luxterra max-width */}
-      <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-8 md:py-12">
-        {/* Header with greeting */}
-        <DashboardHeader
-          propertyCount={properties.length}
-          monthlyIncome={dashboardData.financial.monthlyIncome}
-        />
+  // Transform activities to timeline format
+  const timelineItems: TimelineItem[] = recentActivities.map(activity => ({
+    id: activity.id,
+    title: activity.title,
+    description: activity.description,
+    timestamp: activity.timestamp,
+    user: { name: activity.title.split(' ')[0] || 'Usuario' },
+  }));
 
-        {/* Subtle notifications - not colorful badges */}
-        {dashboardData.urgentActions.length > 0 && (
-          <UrgentActionsBanner
-            actions={dashboardData.urgentActions}
-            className="mt-2"
+  // Calculate risk distribution for properties
+  const calculateRiskDistribution = (property: LandlordProperty) => {
+    const candidates = property.candidates || [];
+    return {
+      levelA: candidates.filter(c => c.riskLevel === 'A').length,
+      levelB: candidates.filter(c => c.riskLevel === 'B').length,
+      levelC: candidates.filter(c => c.riskLevel === 'C').length,
+      levelD: candidates.filter(c => c.riskLevel === 'D').length,
+    };
+  };
+
+  const totalCandidates = properties.reduce((sum, p) => sum + (p.candidateCount || 0), 0);
+  const pendingReviews = properties.reduce((sum, p) => sum + (p.pendingCount || 0), 0);
+
+  return (
+    <div className="min-h-screen bg-[#F7F8FA]">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-2xl font-semibold text-[#111827]">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1 text-[#6B7280]">
+            Resumen de tu portafolio de propiedades
+          </p>
+        </header>
+
+        {/* Stats Row */}
+        <PlanStatsGrid columns={4} className="mb-8">
+          <PlanStatsCard
+            label="Ingresos mensuales"
+            value={formatCurrency(dashboardData.financial.monthlyIncome)}
+            icon={DollarSign}
+            variant="accent"
           />
+          <PlanStatsCard
+            label="Arriendos activos"
+            value={dashboardData.financial.activeLeases}
+            sublabel={`${properties.length} propiedades`}
+            icon={Home}
+          />
+          <PlanStatsCard
+            label="Total candidatos"
+            value={totalCandidates}
+            sublabel={`${pendingReviews} pendientes`}
+            icon={Users}
+          />
+          <PlanStatsCard
+            label="Tasa de cobranza"
+            value={`${dashboardData.financial.collectionRate}%`}
+            sublabel="Este mes"
+            icon={TrendingUp}
+          />
+        </PlanStatsGrid>
+
+        {/* Urgent Actions Banner */}
+        {dashboardData.urgentActions.length > 0 && (
+          <div className="mb-6 p-4 bg-[#FEF3C7] border border-[#EAB308]/30 ">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-sm bg-[#EAB308]/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-[#92400E]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#92400E]">
+                  {dashboardData.urgentActions.length} accion{dashboardData.urgentActions.length > 1 ? 'es' : ''} pendiente{dashboardData.urgentActions.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-[#92400E]/70">
+                  {dashboardData.urgentActions[0]?.description}
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Financial Hero Section - Luxterra style black box */}
-        <FinancialHeroSection
-          stats={dashboardData.financial}
-          className="mt-10"
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Properties */}
+          <div className="lg:col-span-2 space-y-6">
 
-        {/* Properties Section */}
-        <section className="mt-16">
-          <div className="mb-8">
-            <SectionLabel className="text-slate-400 mb-3">
-              Propiedades
-            </SectionLabel>
-            <h2 className="text-[1.75rem] md:text-[2rem] font-light text-slate-900 tracking-[-0.02em]">
-              Mis Propiedades
-            </h2>
+            {/* Properties Section */}
+            <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+                <h2 className="font-semibold text-[#111827]">Mis Propiedades</h2>
+                <Link
+                  href="/panel/propiedades"
+                  className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors"
+                >
+                  {properties.length} propiedad{properties.length !== 1 ? 'es' : ''}
+                </Link>
+              </div>
+
+              {properties.length > 0 ? (
+                <div className="divide-y divide-[#E5E7EB]">
+                  {properties.slice(0, 5).map((property) => {
+                    const riskDist = calculateRiskDistribution(property);
+                    const totalRisk = riskDist.levelA + riskDist.levelB + riskDist.levelC + riskDist.levelD;
+                    const goodCandidatePercent = totalRisk > 0
+                      ? Math.round(((riskDist.levelA + riskDist.levelB) / totalRisk) * 100)
+                      : 0;
+
+                    return (
+                      <Link key={property.id} href={`/panel/${property.id}`}>
+                        <div className="group flex gap-4 p-5 hover:bg-[#F9FAFB] transition-colors">
+                          {/* Image */}
+                          <div className="relative w-24 h-24 rounded-sm overflow-hidden flex-shrink-0 bg-[#F3F4F6]">
+                            <Image
+                              src={property.thumbnailUrl}
+                              alt={property.title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <h3 className="font-medium text-[#111827] group-hover:text-[#6B7280] transition-colors">
+                                  {property.title}
+                                </h3>
+                                <p className="text-sm text-[#6B7280] mt-0.5">
+                                  {property.neighborhood}, {property.city}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-[#111827]">
+                                  {formatCurrency(property.monthlyRent)}
+                                </p>
+                                <p className="text-xs text-[#9CA3AF]">/mes</p>
+                              </div>
+                            </div>
+
+                            {/* Stats Row */}
+                            <div className="flex items-center gap-4 mt-3">
+                              <div className="flex items-center gap-1.5">
+                                <Users className="w-4 h-4 text-[#6B7280]" />
+                                <span className="text-sm text-[#6B7280]">
+                                  {property.candidateCount} candidato{property.candidateCount !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+
+                              {property.candidateCount > 0 && (
+                                <>
+                                  <div className="w-20">
+                                    <PlanProgressBar
+                                      value={goodCandidatePercent}
+                                      size="sm"
+                                      variant={goodCandidatePercent >= 50 ? 'success' : 'warning'}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-[#9CA3AF]">
+                                    {goodCandidatePercent}% A-B
+                                  </span>
+                                </>
+                              )}
+
+                              {property.pendingCount > 0 && (
+                                <PlanStatusBadge
+                                  status="new"
+                                  label={`${property.pendingCount} pendiente${property.pendingCount > 1 ? 's' : ''}`}
+                                  size="sm"
+                                />
+                              )}
+
+                              {property.pendingCount === 0 && property.candidateCount > 0 && (
+                                <PlanStatusBadge
+                                  status="completed"
+                                  label="Revisado"
+                                  size="sm"
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          <ArrowUpRight className="w-5 h-5 text-[#9CA3AF] opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {/* Show "Ver todas" when there are more than 5 properties */}
+              {properties.length > 5 && (
+                <Link
+                  href="/panel/propiedades"
+                  className="flex items-center justify-center gap-2 px-5 py-3 border-t border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+                >
+                  Ver todas las propiedades
+                  <span className="text-xs bg-[#F3F4F6] px-2 py-0.5 rounded-full">
+                    +{properties.length - 5} más
+                  </span>
+                </Link>
+              )}
+
+              {properties.length === 0 && (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
+                    <Building2 className="w-8 h-8 text-[#9CA3AF]" />
+                  </div>
+                  <h3 className="font-medium text-[#111827] mb-2">
+                    No tienes propiedades publicadas
+                  </h3>
+                  <p className="text-sm text-[#6B7280]">
+                    Publica tu primera propiedad para comenzar
+                  </p>
+                </div>
+              )}
+            </section>
+
           </div>
 
-          {/* Properties Grid - 3 columns on large screens */}
-          {properties.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property) => (
-                <PropertyDashboardCard key={property.id} property={property} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 border border-slate-100 rounded-[2px]">
-              <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-light text-slate-900 mb-2">
-                No tienes propiedades publicadas
-              </h3>
-              <p className="text-slate-500 text-sm">
-                Publica tu primera propiedad para comenzar
+          {/* Sidebar */}
+          <div className="space-y-6">
+
+            {/* Financial Summary */}
+            <div className="bg-[#111827]  p-5 text-white">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-[#D4F934]" />
+                </div>
+                <span className="text-sm text-white/60">Resumen financiero</span>
+              </div>
+
+              <p className="text-3xl font-bold tracking-tight mb-1">
+                {formatCurrency(dashboardData.financial.monthlyIncome)}
               </p>
-            </div>
-          )}
-        </section>
+              <p className="text-white/60 text-sm mb-4">Ingresos mensuales</p>
 
-        {/* Activity & Events Grid */}
-        <section className="mt-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <SectionLabel className="text-slate-400 mb-3">
-                Actividad
-              </SectionLabel>
-              <h3 className="text-xl font-light text-slate-900 tracking-[-0.02em] mb-6">
-                Actividad Reciente
-              </h3>
-              <ActivityFeed activities={recentActivities} showViewAll={false} />
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-white/60">Tasa cobranza</span>
+                  <span className="text-white font-medium">{dashboardData.financial.collectionRate}%</span>
+                </div>
+                <PlanProgressBar
+                  value={dashboardData.financial.collectionRate}
+                  variant="success"
+                  size="sm"
+                />
+                {dashboardData.financial.pendingPayments > 0 && (
+                  <div className="flex items-center justify-between text-sm pt-2">
+                    <span className="text-white/60">Pagos pendientes</span>
+                    <span className="text-[#FEF3C7] font-medium">{dashboardData.financial.pendingPayments}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <SectionLabel className="text-slate-400 mb-3">
-                Calendario
-              </SectionLabel>
-              <h3 className="text-xl font-light text-slate-900 tracking-[-0.02em] mb-6">
-                Proximos Eventos
-              </h3>
-              <UpcomingEventsCard events={dashboardData.upcomingEvents} />
-            </div>
+
+            {/* Activity Feed */}
+            <PlanActivityCard
+              title="Actividad Reciente"
+              items={timelineItems}
+              maxItems={5}
+            />
+
+            {/* Upcoming Events */}
+            {dashboardData.upcomingEvents.length > 0 && (
+              <div className="bg-white  border border-[#E5E7EB] p-5">
+                <h3 className="font-semibold text-[#111827] mb-4 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#6B7280]" />
+                  Proximos Eventos
+                </h3>
+                <div className="space-y-3">
+                  {dashboardData.upcomingEvents.slice(0, 3).map((event, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2 rounded-sm hover:bg-[#F9FAFB] transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-[#D4F934]" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#111827] truncate">{event.title}</p>
+                        <p className="text-xs text-[#9CA3AF]">
+                          {new Date(event.date).toLocaleDateString('es-CL', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
-        </section>
+        </div>
+
       </div>
     </div>
   );

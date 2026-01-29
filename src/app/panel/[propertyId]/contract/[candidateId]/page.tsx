@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, FileText, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ContractTimeline } from '@/components/contract/ContractTimeline';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { InsuranceSelector } from '@/components/contract/InsuranceSelector';
-import { getInsuranceById } from '@/lib/data/mock-insurance';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 import {
   getContractById,
@@ -82,11 +82,30 @@ function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorPr
 }
 
 // ============================================================================
-// Main Component
+// Loading Fallback
 // ============================================================================
 
-export default function ContractPage({ params }: ContractPageProps) {
-  const { propertyId, candidateId } = params;
+function ContractPageLoading() {
+  return (
+    <div className="min-h-screen bg-[#FBFBFB]">
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Inner Component (uses useSearchParams)
+// ============================================================================
+
+function ContractPageContent({ propertyId, candidateId }: { propertyId: string; candidateId: string }) {
+  const searchParams = useSearchParams();
+
+  // Check if we should force starting fresh (new contract flow)
+  const forceNew = searchParams.get('new') === 'true';
 
   // State
   const [contract, setContract] = useState<Contract | null>(null);
@@ -99,13 +118,18 @@ export default function ContractPage({ params }: ContractPageProps) {
     monthlyPremium: 0,
   });
 
-  // Get existing contract or null
+  // Get existing contract or null (skip if forceNew is true)
   useEffect(() => {
+    if (forceNew) {
+      // Start fresh - don't load existing contract
+      setContract(null);
+      return;
+    }
     const existingContract = getContractById(propertyId, candidateId);
     if (existingContract) {
       setContract(existingContract);
     }
-  }, [propertyId, candidateId]);
+  }, [propertyId, candidateId, forceNew]);
 
   // Get property and candidate info
   const property = mockProperties.find((p) => p.id === propertyId);
@@ -382,5 +406,19 @@ export default function ContractPage({ params }: ContractPageProps) {
         )}
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// Main Component (with Suspense boundary)
+// ============================================================================
+
+export default function ContractPage({ params }: ContractPageProps) {
+  const { propertyId, candidateId } = params;
+
+  return (
+    <Suspense fallback={<ContractPageLoading />}>
+      <ContractPageContent propertyId={propertyId} candidateId={candidateId} />
+    </Suspense>
   );
 }

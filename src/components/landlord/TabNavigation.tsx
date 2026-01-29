@@ -40,7 +40,7 @@ export function TabNavigation({
               'relative py-4 px-4 rounded-none transition-all duration-300',
               'data-[state=active]:shadow-none data-[state=active]:bg-transparent',
               'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:text-slate-800',
-              'data-[state=active]:text-[#7f51ff]',
+              'data-[state=active]:text-black',
               'data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed',
               'group'
             )}
@@ -53,7 +53,7 @@ export function TabNavigation({
                   className={cn(
                     'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
                     activeTab === tab.id
-                      ? 'bg-[#7f51ff] text-white shadow-sm shadow-[#7f51ff]/25'
+                      ? 'bg-black text-white'
                       : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
                   )}
                 >
@@ -66,7 +66,7 @@ export function TabNavigation({
             <span
               className={cn(
                 'absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full',
-                'bg-gradient-to-r from-[#7f51ff] to-[#a78bfa]',
+                'bg-black',
                 'transition-all duration-300 ease-out',
                 activeTab === tab.id
                   ? 'opacity-100 scale-x-100'

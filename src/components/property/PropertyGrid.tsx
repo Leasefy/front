@@ -125,15 +125,15 @@ export function PropertyGrid({
         ))}
       </div>
 
-      {/* Load More Section */}
+      {/* Load More Section - Left aligned */}
       {hasMore && (
-        <div className="flex flex-col items-center gap-4 pt-4">
+        <div className="flex flex-col items-start gap-4 pt-4">
           <Button
             variant="outline"
             size="lg"
             onClick={handleLoadMore}
             disabled={isLoadingMore}
-            className="min-w-[200px] text-sm tracking-tight"
+            className="text-sm tracking-tight"
           >
             {isLoadingMore ? (
               <>
@@ -165,9 +165,9 @@ export function PropertyGrid({
         </div>
       )}
 
-      {/* End of results indicator */}
+      {/* End of results indicator - Left aligned */}
       {!hasMore && properties.length > INITIAL_ITEMS && (
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-start pt-4">
           <p className="text-xs text-gray-500 tracking-tight">
             Has visto todas las propiedades disponibles
           </p>

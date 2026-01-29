@@ -49,7 +49,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       if (user.role === 'landlord') {
         router.replace('/panel')
       } else {
-        router.replace('/mis-aplicaciones')
+        router.replace('/inquilino')
       }
     }
   }, [isLoading, isAuthenticated, user, allowedRoles, pathname, router])

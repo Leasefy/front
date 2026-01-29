@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 type DotVariant = 'default' | 'warning' | 'info' | 'success';
 
@@ -10,7 +9,7 @@ interface SectionLabelProps {
 }
 
 const dotColors: Record<DotVariant, string> = {
-  default: 'bg-[#7f51ff]',
+  default: 'bg-black',
   warning: 'bg-amber-500',
   info: 'bg-blue-500',
   success: 'bg-emerald-500',
@@ -25,8 +24,7 @@ export function SectionLabel({ children, className, dotVariant = 'default' }: Se
     <div className={cn("flex items-center gap-2.5", className)}>
       <span className={cn(
         "h-2 w-2 rounded-full",
-        dotColors[dotVariant],
-        dotVariant === 'default' && "shadow-sm shadow-[#7f51ff]/30"
+        dotColors[dotVariant]
       )} />
       <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
         {children}

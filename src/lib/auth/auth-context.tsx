@@ -61,7 +61,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Login with email and password
   const login = useCallback(
-    async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> => {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData)
       persistUser(userData)
 
-      return { success: true }
+      return { success: true, user: userData }
     },
     [persistUser]
   )
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       email: string,
       password: string,
       role: 'tenant' | 'landlord'
-    ): Promise<{ success: boolean; error?: string }> => {
+    ): Promise<{ success: boolean; error?: string; user?: User }> => {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(newUser)
       persistUser(newUser)
 
-      return { success: true }
+      return { success: true, user: newUser }
     },
     [persistUser]
   )

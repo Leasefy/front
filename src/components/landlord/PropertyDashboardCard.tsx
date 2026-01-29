@@ -94,7 +94,7 @@ export function PropertyDashboardCard({
               variant="default"
               className="bg-white/95 backdrop-blur-sm text-slate-900 hover:bg-white shadow-lg shadow-black/10 px-3 py-2 text-sm font-semibold rounded-xl border-0"
             >
-              <Users className="w-4 h-4 mr-2 text-[#7f51ff]" />
+              <Users className="w-4 h-4 mr-2 text-[black]" />
               {candidateCount} {candidateCount === 1 ? 'candidato' : 'candidatos'}
             </Badge>
 
@@ -119,7 +119,7 @@ export function PropertyDashboardCard({
         <div className="p-5">
           {/* Title and location */}
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 group-hover:text-[#7f51ff] transition-colors duration-300 truncate">
+            <h3 className="text-lg font-semibold text-slate-900 group-hover:text-[black] transition-colors duration-300 truncate">
               {title}
             </h3>
             <p className="text-sm text-slate-500 mt-1 truncate">
@@ -165,7 +165,7 @@ export function PropertyDashboardCard({
         </div>
 
         {/* Hover accent line at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#7f51ff] to-[#a78bfa] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[black] to-[#a78bfa] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
       </div>
     </Link>
   );

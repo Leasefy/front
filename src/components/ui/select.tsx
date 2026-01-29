@@ -23,7 +23,7 @@ const SelectTrigger = React.forwardRef<
       "transition-all duration-200",
       "placeholder:text-slate-400",
       "hover:border-slate-300",
-      "focus:outline-none focus:border-[#7f51ff] focus:ring-4 focus:ring-[#7f51ff]/10",
+      "focus:outline-none focus:border-black focus:ring-4 focus:ring-black/5",
       "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50",
       "[&>span]:line-clamp-1",
       className

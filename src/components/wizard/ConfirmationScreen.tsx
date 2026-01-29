@@ -88,7 +88,7 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
 
           {/* Actions */}
           <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-            <Link href="/mis-aplicaciones" className="flex-1">
+            <Link href="/inquilino/aplicaciones" className="flex-1">
               <Button variant="outline" className="w-full">
                 Ver mis aplicaciones
               </Button>

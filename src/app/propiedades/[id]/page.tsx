@@ -2,8 +2,9 @@
 
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { MapPin } from 'lucide-react';
+import { MapPin, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
@@ -11,6 +12,7 @@ import { Footer } from '@/components/layout/Footer';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
+import { SocialProofBanner } from '@/components/property/SocialProof';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { formatCurrency } from '@/lib/format';
@@ -26,6 +28,7 @@ interface PropertyDetailPageProps {
  */
 export default function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params;
+  const router = useRouter();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
@@ -76,8 +79,21 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
     <>
       <Navbar />
       <main id="main-content" className="min-h-screen bg-white">
+        {/* Back Navigation */}
+        <div className="pt-20 md:pt-24">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors py-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver a propiedades
+            </button>
+          </div>
+        </div>
+
         {/* Hero Image Grid - Luxterra style */}
-        <section className="pt-28 md:pt-32">
+        <section className="pt-4 md:pt-6">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 h-[50vh] md:h-[70vh]">
               {/* Main large image */}
@@ -153,6 +169,9 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
             {/* Left Column - Property Info */}
             <div className="lg:col-span-7">
+              {/* Social Proof Banner */}
+              <SocialProofBanner propertyId={property.id} className="mb-6" />
+
               {/* Header */}
               <div className="mb-10">
                 {/* Location */}

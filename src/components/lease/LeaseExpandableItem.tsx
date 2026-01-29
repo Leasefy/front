@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Building2,
   ChevronDown,
@@ -51,6 +53,26 @@ function PaymentStatus({ status }: { status: Payment['status'] }) {
  */
 export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
+
+  const handleMessage = () => {
+    router.push(`/panel/mensajes?to=${lease.tenantId}`);
+  };
+
+  const handleViewContract = () => {
+    if (lease.contractUrl) {
+      window.open(lease.contractUrl, '_blank');
+    } else {
+      // Navigate to contract detail page
+      router.push(`/panel/contratos/${lease.contractId}`);
+    }
+  };
+
+  const handleRenewal = () => {
+    toast.info('Renovación de contrato', {
+      description: 'Proximamente podras renovar contratos desde aqui',
+    });
+  };
 
   const daysRemaining = Math.ceil(
     (new Date(lease.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
@@ -186,18 +208,31 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-8 text-xs gap-1.5"
+                  onClick={handleMessage}
+                >
                   <MessageCircle className="w-3.5 h-3.5" />
                   Mensaje
                 </Button>
-                {lease.contractUrl && (
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    Contrato
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={handleViewContract}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Contrato
+                </Button>
                 {isEndingSoon && (
-                  <Button variant="default" size="sm" className="h-8 text-xs gap-1.5">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={handleRenewal}
+                  >
                     <RefreshCw className="w-3.5 h-3.5" />
                     Renovar
                   </Button>

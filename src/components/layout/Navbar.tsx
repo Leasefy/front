@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, User, LogOut, LayoutDashboard, FileText, ChevronDown, Home } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/use-auth";
+import { cn } from "@/lib/utils";
 
 /**
  * Navbar - SpaceO clean style
@@ -14,6 +16,15 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const pathname = usePathname();
+
+  // Check if a path is active
+  const isActive = (path: string) => {
+    if (path === '/propiedades') {
+      return pathname === '/propiedades' || pathname.startsWith('/propiedades/');
+    }
+    return pathname === path || pathname.startsWith(path + '/');
+  };
 
   const handleLogout = () => {
     logout();
@@ -24,18 +35,18 @@ export function Navbar() {
   // Get dashboard link based on user role
   const getDashboardLink = () => {
     if (!user) return '/';
-    return user.role === 'landlord' ? '/panel' : '/mis-aplicaciones';
+    return user.role === 'landlord' ? '/panel' : '/inquilino';
   };
 
   const getDashboardLabel = () => {
-    if (!user) return 'Dashboard';
-    return user.role === 'landlord' ? 'Panel de propietario' : 'Mis aplicaciones';
+    if (!user) return 'Mi panel';
+    return user.role === 'landlord' ? 'Panel de propietario' : 'Mi panel';
   };
 
   // Get leases link based on user role
   const getLeasesLink = () => {
     if (!user) return '/';
-    return user.role === 'landlord' ? '/panel/leases' : '/mi-arriendo';
+    return user.role === 'landlord' ? '/panel/leases' : '/inquilino/arriendo';
   };
 
   const getLeasesLabel = () => {
@@ -70,14 +81,35 @@ export function Navbar() {
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
               <Link
-                href="/propiedades"
-                className="text-sm text-black/60 hover:text-black transition-colors"
+                href="/publicar"
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-full transition-colors",
+                  isActive('/publicar')
+                    ? "bg-black text-white"
+                    : "text-black bg-black/5 hover:bg-black/10"
+                )}
               >
-                Propiedades
+                Publicar Inmueble
+              </Link>
+              <Link
+                href="/propiedades"
+                className={cn(
+                  "text-sm transition-colors",
+                  isActive('/propiedades')
+                    ? "text-black font-medium"
+                    : "text-black/60 hover:text-black"
+                )}
+              >
+                Buscar Inmueble
               </Link>
               <Link
                 href="/pricing"
-                className="text-sm text-black/60 hover:text-black transition-colors"
+                className={cn(
+                  "text-sm transition-colors",
+                  isActive('/pricing')
+                    ? "text-black font-medium"
+                    : "text-black/60 hover:text-black"
+                )}
               >
                 Precios
               </Link>
@@ -221,18 +253,37 @@ export function Navbar() {
               className="px-6 py-4 space-y-1"
             >
               <Link
-                href="/propiedades"
-                className="block min-h-[44px] py-3 text-sm text-black/70 hover:text-black transition-colors flex items-center"
+                href="/publicar"
+                className={cn(
+                  "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
+                  isActive('/publicar') ? "text-black" : "text-black/70 hover:text-black"
+                )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Propiedades
+                Publicar Inmueble
+                {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
+              </Link>
+              <Link
+                href="/propiedades"
+                className={cn(
+                  "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
+                  isActive('/propiedades') ? "text-black font-medium" : "text-black/70 hover:text-black"
+                )}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Buscar Inmueble
+                {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
               </Link>
               <Link
                 href="/pricing"
-                className="block min-h-[44px] py-3 text-sm text-black/70 hover:text-black transition-colors flex items-center"
+                className={cn(
+                  "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
+                  isActive('/pricing') ? "text-black font-medium" : "text-black/70 hover:text-black"
+                )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Precios
+                {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
               </Link>
 
               {isAuthenticated && user ? (

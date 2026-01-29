@@ -49,7 +49,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
 
   // Map activity types to accent colors
   const typeColors: Record<ActivityType, string> = {
-    application: 'bg-[#7f51ff]/10 text-[#7f51ff]',
+    application: 'bg-[black]/10 text-[black]',
     status_change: 'bg-emerald-50 text-emerald-600',
     message: 'bg-blue-50 text-blue-600',
     document: 'bg-amber-50 text-amber-600',

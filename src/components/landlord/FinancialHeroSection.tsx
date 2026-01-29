@@ -51,8 +51,8 @@ export function FinancialHeroSection({ stats, className }: FinancialHeroSectionP
       {/* Premium dark container with gradient and glow */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#0f0f0f] via-[#161618] to-[#0f0f0f] rounded-3xl py-12 md:py-16 px-8 md:px-12 lg:px-16">
         {/* Decorative gradient orbs */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#7f51ff]/10 rounded-full blur-[100px] -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#7f51ff]/5 rounded-full blur-[80px] -ml-32 -mb-32" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[black]/10 rounded-full blur-[100px] -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[black]/5 rounded-full blur-[80px] -ml-32 -mb-32" />
 
         {/* Subtle grid pattern overlay */}
         <div
@@ -65,7 +65,7 @@ export function FinancialHeroSection({ stats, className }: FinancialHeroSectionP
         <div className="relative">
           {/* Header - Centered */}
           <div className="text-center mb-12 md:mb-14">
-            <SectionLabel className="text-[#7f51ff]/80 mb-4 justify-center">
+            <SectionLabel className="text-[black]/80 mb-4 justify-center">
               Tu portafolio
             </SectionLabel>
             <h2 className="text-[1.5rem] md:text-[2rem] font-light text-white leading-[1.2] tracking-[-0.02em]">

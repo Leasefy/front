@@ -9,6 +9,30 @@
      * Very light grays (almost white) with subtle depth
      * ======================================================== */
 
+    /* ========================================================
+     * PLan CRM Design System Variables
+     * ======================================================== */
+    --plan-page-bg: #F7F8FA;
+    --plan-card-bg: #FFFFFF;
+    --plan-accent: #D4F934;
+    --plan-accent-dark: #a8c929;
+    --plan-border: #E5E7EB;
+    --plan-text-primary: #111827;
+    --plan-text-secondary: #6B7280;
+    --plan-text-muted: #9CA3AF;
+
+    /* PLan Status Colors */
+    --plan-status-green: #22C55E;
+    --plan-status-green-bg: #DCFCE7;
+    --plan-status-yellow: #EAB308;
+    --plan-status-yellow-bg: #FEF3C7;
+    --plan-status-red: #EF4444;
+    --plan-status-red-bg: #FEE2E2;
+    --plan-status-purple: #7C3AED;
+    --plan-status-purple-bg: #EDE9FE;
+    --plan-status-blue: #3B82F6;
+    --plan-status-blue-bg: #DBEAFE;
+
     /* Base colors - Light, airy, Notion-like */
     --background: 0 0% 98.5%;           /* #FBFBFB - Almost white */
     --foreground: 240 10% 10%;          /* #17181C - Near black text */
@@ -581,7 +605,7 @@
 
   /* Gradient text for premium elements */
   .text-gradient-accent {
-    background: linear-gradient(135deg, #7f51ff 0%, #a78bfa 100%);
+    background: linear-gradient(135deg, #111 0%, #444 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -669,5 +693,137 @@
     .focus-ring:focus-visible {
       outline: 3px solid CanvasText;
     }
+  }
+
+  /* ==========================================================
+   * PLan CRM Design System Utilities
+   * ========================================================== */
+
+  /* PLan backgrounds */
+  .plan-bg-page {
+    background-color: var(--plan-page-bg);
+  }
+
+  .plan-bg-card {
+    background-color: var(--plan-card-bg);
+  }
+
+  /* PLan text colors */
+  .plan-text-primary {
+    color: var(--plan-text-primary);
+  }
+
+  .plan-text-secondary {
+    color: var(--plan-text-secondary);
+  }
+
+  .plan-text-muted {
+    color: var(--plan-text-muted);
+  }
+
+  /* PLan accent */
+  .plan-accent {
+    color: var(--plan-accent);
+  }
+
+  .plan-bg-accent {
+    background-color: var(--plan-accent);
+  }
+
+  /* PLan card styles */
+  .plan-card {
+    @apply bg-white rounded-xl border;
+    border-color: var(--plan-border);
+  }
+
+  .plan-card-interactive {
+    @apply plan-card transition-all duration-200;
+  }
+
+  .plan-card-interactive:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  /* PLan sidebar transitions */
+  .plan-sidebar-transition {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* PLan progress bar animation */
+  @keyframes plan-progress-fill {
+    from {
+      width: 0%;
+    }
+  }
+
+  .plan-progress-animated {
+    animation: plan-progress-fill 500ms ease-out;
+  }
+
+  /* PLan tab indicator animation */
+  @keyframes plan-tab-slide {
+    from {
+      opacity: 0;
+      transform: scaleX(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  .plan-tab-indicator {
+    animation: plan-tab-slide 200ms ease-out;
+  }
+
+  /* PLan sheet slide animation */
+  @keyframes plan-sheet-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .plan-sheet-enter {
+    animation: plan-sheet-slide-in 300ms ease-out;
+  }
+
+  /* PLan dot pulse animation */
+  @keyframes plan-dot-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.2);
+    }
+  }
+
+  .plan-dot-pulse {
+    animation: plan-dot-pulse 2s ease-in-out infinite;
+  }
+
+  /* PLan status dot */
+  .plan-status-dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+
+  .plan-status-dot-new {
+    background-color: var(--plan-status-yellow);
+  }
+
+  .plan-status-dot-progress {
+    background-color: var(--plan-status-green);
+  }
+
+  .plan-status-dot-important {
+    background-color: var(--plan-status-red);
+  }
+
+  .plan-status-dot-purple {
+    background-color: var(--plan-status-purple);
   }
 }

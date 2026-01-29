@@ -39,7 +39,7 @@ interface AuthFormProps {
 export function AuthForm({ className, onSuccess }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, register, loginWithGoogle, loginWithApple } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -72,9 +72,13 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     registerForm.reset();
   };
 
-  const handleRedirect = () => {
-    onSuccess?.();
-    router.push(decodeURIComponent(returnUrl));
+  const getRedirectUrl = (role: 'tenant' | 'landlord') => {
+    // If there's a specific returnUrl, use it
+    if (returnUrl && returnUrl !== '/') {
+      return decodeURIComponent(returnUrl);
+    }
+    // Otherwise redirect based on role
+    return role === 'landlord' ? '/panel' : '/inquilino';
   };
 
   const handleLoginSubmit = async (data: LoginFormData) => {
@@ -84,8 +88,9 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     try {
       const result = await login(data.email, data.password);
 
-      if (result.success) {
-        handleRedirect();
+      if (result.success && result.user) {
+        onSuccess?.();
+        router.push(getRedirectUrl(result.user.role));
       } else {
         setError(result.error || 'Error al iniciar sesion');
       }
@@ -103,8 +108,9 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     try {
       const result = await register(data.name, data.email, data.password, data.role);
 
-      if (result.success) {
-        handleRedirect();
+      if (result.success && result.user) {
+        onSuccess?.();
+        router.push(getRedirectUrl(result.user.role));
       } else {
         setError(result.error || 'Error al registrarse');
       }
@@ -115,17 +121,15 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+  const handleSocialLogin = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      if (provider === 'google') {
-        await loginWithGoogle();
-      } else {
-        await loginWithApple();
-      }
-      handleRedirect();
+      await loginWithGoogle();
+      onSuccess?.();
+      // Google login returns a tenant user (mock)
+      router.push('/inquilino');
     } catch {
       setError('Error con el inicio de sesion social');
     } finally {
@@ -183,8 +187,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
 
       {/* Social buttons */}
       <SocialButtons
-        onGoogleClick={() => handleSocialLogin('google')}
-        onAppleClick={() => handleSocialLogin('apple')}
+        onGoogleClick={handleSocialLogin}
         isLoading={isLoading}
         className="mb-6"
       />
@@ -249,7 +252,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="w-full h-11"
+            className="w-full h-11 text-sm"
           >
             {isLoading ? 'Ingresando...' : 'Iniciar Sesion'}
           </Button>
@@ -390,7 +393,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
             type="submit"
             size="lg"
             disabled={isLoading || !registerForm.watch('terms')}
-            className="w-full h-11"
+            className="w-full h-11 text-sm"
           >
             {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
           </Button>

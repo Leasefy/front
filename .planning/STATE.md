@@ -4,16 +4,18 @@
 
 See: .planning/PROJECT.md (updated 2026-01-16)
 See: .planning/FRONTEND-VISION.md (created 2026-01-18)
+See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
+See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
+See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 10 - Post-Approval Flow (COMPLETE + Gap Closures)
+**Current focus:** Phase 11 - UI/UX Improvements (COMPLETE)
 
 ## Current Position
 
-Phase: 10 (Post-Approval Flow) - COMPLETE + Gap Closures
-Plan: 5 of 5 complete (All plans + gap closure done)
-Status: MVP Frontend Complete
-Last activity: 2026-01-20 - Completed 10-05-PLAN (Insurance Selection Gap Closure)
+Phase: 11 (UI/UX Improvements & Publish Flow Enhancement) - COMPLETE
+Status: MVP Frontend Complete + Enhanced
+Last activity: 2026-01-29 - Completed Phase 11 improvements
 
 Progress: ██████████████████████████████ 100%
 
@@ -35,6 +37,7 @@ Progress: ███████████████████████�
 8. Authentication UI (COMPLETE) - Split-layout auth, protected routes, user menu
 9. Interactive Map (COMPLETE) - Airbnb-style map with price markers and clustering
 10. Post-Approval Flow (COMPLETE) - Contract generation, pricing, coupons, leases
+11. UI/UX Improvements (COMPLETE) - Publish flow enhancement, dashboard fixes
 
 ## Performance Metrics
 
@@ -161,6 +164,14 @@ Progress: ███████████████████████�
 - **Payment methods Colombian**: PSE, cards, Nequi, Daviplata with cash as coming soon
 - **Payment history responsive**: Desktop table, mobile cards
 - **Insurance tiers**: none ($0), basic ($45k COP), premium ($89k COP) with recommended badge on basic
+- **Publish wizard 9 steps**: Type → Location → Details → Amenities → Photos → Pricing → Description → Plan → Review
+- **Plan selection required**: Users must choose a plan (free/pro/business) before publishing
+- **Neighborhood free text**: Changed from dropdown to free text input for flexibility
+- **City visual cards**: Major Colombian cities as clickable visual cards
+- **Publish success confetti**: canvas-confetti for celebration effect
+- **Auto-redirect**: 5-second countdown after successful publish to /panel/propiedades
+- **Contract fresh start**: Approving candidate always starts from step 1 (contract type selection)
+- **Navbar styling**: "Publicar Inmueble" with bg-black/5, others as plain text
 
 ### What's Complete (Phase 1)
 
@@ -397,7 +408,38 @@ Backend responsibilities (for other developer):
 - **ContractPreview update** - Shows selected insurance policy details
 - **Gap closed** - "Insurance policy options presented during signing"
 
-## MVP FRONTEND COMPLETE
+### What's Complete (Phase 11) - COMPLETE
+
+**Property Publishing Wizard Improvements:**
+- **StepPlan component** - NEW plan selection step (step 8) (`src/components/publish/steps/StepPlan.tsx`)
+- **Plan options** - Gratis ($0), Propietario ($149,900/mes), Inmobiliaria ($499,900/mes)
+- **StepLocation update** - City visual cards, free text neighborhood input
+- **StepType update** - Emoji illustrations with Framer Motion animations
+- **StepReview update** - Shows selected plan with icon and price
+- **PublishSuccess redesign** - Confetti celebration, property summary, auto-redirect
+- **PublishContext update** - 9 steps total with plan validation
+- **Publish types update** - selectedPlan field added to PropertyDraft
+
+**Dashboard Fixes:**
+- **Property scaling** - Fixed grid layout in /panel/propiedades
+- **Notification actions** - Made interactive and functional
+- **Candidate sidebar** - Fixed scroll issues in CandidateDetail
+- **Candidatos page** - Added pagination, improved layout
+
+**Contract Flow Fix:**
+- **Fresh start on approve** - Approving candidate goes to step 1 (contract type)
+- **Query param support** - Added `?new=true` to force fresh contract state
+- **Suspense wrapper** - Fixed useSearchParams SSR issues
+
+**Navigation Updates:**
+- **Publicar Inmueble** - Gray background by default
+- **Buscar Inmueble** - Plain text link style
+- **Precios link** - Restored to navbar
+
+**Dependencies Added:**
+- **canvas-confetti** - For success screen celebration effects
+
+## MVP FRONTEND COMPLETE + ENHANCED
 
 All 10 phases executed successfully. The frontend is fully functional with:
 - Property catalog with AI-powered search and interactive map
@@ -415,7 +457,26 @@ All 10 phases executed successfully. The frontend is fully functional with:
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed 10-05-PLAN (Insurance Selection Gap Closure)
+Last session: 2026-01-29
+Stopped at: Completed Phase 11 (UI/UX Improvements & Publish Flow Enhancement)
 Resume file: None
-Status: MVP Frontend Complete - All phases done + gap closures
+Status: MVP Frontend Complete + Enhanced - Ready for backend integration
+
+## Backend Integration Status
+
+**Documentation Created:**
+- `docs/BACKEND-INTEGRATION.md` - Complete API contract with all endpoints
+- `docs/FRONTEND-ARCHITECTURE.md` - Frontend structure and components
+- `docs/CHANGELOG.md` - All changes organized by phase
+
+**Backend Must Implement:**
+1. Authentication API (email magic link/OTP)
+2. Properties CRUD + Publishing
+3. Applications CRUD + Risk Scoring Engine
+4. Candidates management + Decision actions
+5. Contract generation + Signing
+6. Leases + Payments
+7. Subscriptions + Coupons
+8. File storage (images, documents)
+
+See `docs/BACKEND-INTEGRATION.md` for complete API specifications.

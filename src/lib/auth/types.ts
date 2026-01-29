@@ -20,8 +20,8 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  register: (name: string, email: string, password: string, role: 'tenant' | 'landlord') => Promise<{ success: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
+  register: (name: string, email: string, password: string, role: 'tenant' | 'landlord') => Promise<{ success: boolean; error?: string; user?: User }>
   loginWithGoogle: () => Promise<void>
   loginWithApple: () => Promise<void>
   logout: () => void

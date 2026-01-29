@@ -1,21 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, Building2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { SectionLabel } from '@/components/ui/section-label';
+import { FileText, Building2, Clock, CheckCircle, AlertCircle, Pen } from 'lucide-react';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import {
   getContractsForLandlord,
   getPendingContracts,
   getActiveContracts,
 } from '@/lib/data/mock-contracts';
+import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
+import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
+import { useState, useMemo } from 'react';
 
 /**
- * Contracts Management Page
- * Luxterra style - clean, minimal, elegant
- * Expandable rows with inline actions
+ * Contracts Management Page - PLan CRM Style
  */
 export default function ContratosPage() {
   const landlordId = 'landlord-001';
@@ -26,138 +24,129 @@ export default function ContratosPage() {
   const needsAction = pendingContracts.filter((c) => c.status === 'pending_landlord');
   const awaitingTenant = pendingContracts.filter((c) => c.status === 'pending_tenant');
 
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Filter contracts by tab
+  const filteredContracts = useMemo(() => {
+    if (activeTab === 'all') return allContracts;
+    if (activeTab === 'needs_action') return needsAction;
+    if (activeTab === 'awaiting') return awaitingTenant;
+    if (activeTab === 'active') return activeContracts;
+    return allContracts;
+  }, [activeTab, allContracts, needsAction, awaitingTenant, activeContracts]);
+
+  // Tabs configuration
+  const tabs: PlanTab[] = [
+    { id: 'all', label: 'Todos', count: allContracts.length },
+    { id: 'needs_action', label: 'Requieren firma', count: needsAction.length },
+    { id: 'awaiting', label: 'Esperando inquilino', count: awaitingTenant.length },
+    { id: 'active', label: 'Activos', count: activeContracts.length },
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-8 py-8 md:py-12">
+    <div className="min-h-screen bg-[#F7F8FA]">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
         {/* Header */}
-        <header className="mb-12">
-          <h1 className="text-[2rem] md:text-[2.5rem] font-light text-slate-900 tracking-[-0.02em]">
+        <header className="mb-8">
+          <h1 className="text-2xl font-semibold text-[#111827]">
             Contratos
           </h1>
-          <p className="text-slate-400 mt-2 text-sm tracking-[-0.01em]">
+          <p className="mt-1 text-[#6B7280]">
             Gestiona los contratos de tus propiedades
           </p>
         </header>
 
-        {/* Stats - Dark hero section */}
-        <div className="bg-[#0f0f0f] rounded-[2px] p-8 md:p-10 mb-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <p className="text-[2rem] md:text-[2.5rem] font-light text-white tracking-[-0.02em]">
-                {allContracts.length}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">Contratos totales</p>
-            </div>
-            <div>
-              <p
-                className={cn(
-                  'text-[2rem] md:text-[2.5rem] font-light tracking-[-0.02em]',
-                  needsAction.length > 0 ? 'text-amber-400' : 'text-white'
-                )}
-              >
-                {needsAction.length}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">Por firmar</p>
-            </div>
-            <div>
-              <p className="text-[2rem] md:text-[2.5rem] font-light text-white tracking-[-0.02em]">
-                {awaitingTenant.length}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">Esperando inquilino</p>
-            </div>
-            <div>
-              <p className="text-[2rem] md:text-[2.5rem] font-light text-white tracking-[-0.02em]">
-                {activeContracts.length}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">Activos</p>
-            </div>
-          </div>
-        </div>
+        {/* Stats Row */}
+        <PlanStatsGrid columns={4} className="mb-8">
+          <PlanStatsCard
+            label="Total contratos"
+            value={allContracts.length}
+            sublabel="En el sistema"
+            icon={FileText}
+          />
+          <PlanStatsCard
+            label="Por firmar"
+            value={needsAction.length}
+            sublabel="Requieren tu firma"
+            icon={Pen}
+            variant={needsAction.length > 0 ? 'accent' : 'default'}
+          />
+          <PlanStatsCard
+            label="Esperando"
+            value={awaitingTenant.length}
+            sublabel="Firma del inquilino"
+            icon={Clock}
+          />
+          <PlanStatsCard
+            label="Activos"
+            value={activeContracts.length}
+            sublabel="Contratos vigentes"
+            icon={CheckCircle}
+          />
+        </PlanStatsGrid>
 
-        {/* Contracts requiring action */}
+        {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <section className="mb-12">
-            <div className="mb-6">
-              <SectionLabel className="text-slate-400 mb-2" dotVariant="warning">
-                Accion requerida
-              </SectionLabel>
-              <h2 className="text-xl font-light text-slate-900 tracking-[-0.02em]">
-                Requieren tu firma
-              </h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Haz clic para ver detalles y firmar
-              </p>
+          <div className="mb-6 p-4 bg-[#FEF3C7] border border-[#EAB308]/30 ">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-sm bg-[#EAB308]/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-[#92400E]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#92400E]">
+                  {needsAction.length} contrato{needsAction.length > 1 ? 's' : ''} requiere{needsAction.length > 1 ? 'n' : ''} tu firma
+                </p>
+                <p className="text-xs text-[#92400E]/70">
+                  Haz clic en un contrato para revisar y firmar
+                </p>
+              </div>
             </div>
-            <div className="border border-slate-100 rounded-[2px]">
-              {needsAction.map((contract) => (
-                <ContractExpandableItem key={contract.id} contract={contract} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Contracts awaiting tenant */}
-        {awaitingTenant.length > 0 && (
-          <section className="mb-12">
-            <div className="mb-6">
-              <SectionLabel className="text-slate-400 mb-2" dotVariant="info">
-                En proceso
-              </SectionLabel>
-              <h2 className="text-xl font-light text-slate-900 tracking-[-0.02em]">
-                Esperando firma del inquilino
-              </h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Ya firmaste, esperando al arrendatario
-              </p>
-            </div>
-            <div className="border border-slate-100 rounded-[2px]">
-              {awaitingTenant.map((contract) => (
-                <ContractExpandableItem key={contract.id} contract={contract} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Active contracts */}
-        {activeContracts.length > 0 && (
-          <section className="mb-12">
-            <div className="mb-6">
-              <SectionLabel className="text-slate-400 mb-2" dotVariant="success">
-                Vigentes
-              </SectionLabel>
-              <h2 className="text-xl font-light text-slate-900 tracking-[-0.02em]">
-                Contratos activos
-              </h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Contratos firmados por ambas partes
-              </p>
-            </div>
-            <div className="border border-slate-100 rounded-[2px]">
-              {activeContracts.map((contract) => (
-                <ContractExpandableItem key={contract.id} contract={contract} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty State */}
-        {allContracts.length === 0 && (
-          <div className="text-center py-20 border border-slate-100 rounded-[2px]">
-            <FileText className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-light text-slate-900 mb-2">
-              No tienes contratos
-            </h3>
-            <p className="text-slate-500 text-sm mb-6">
-              Los contratos apareceran aqui cuando apruebes candidatos
-            </p>
-            <Link href="/panel">
-              <Button variant="outline" className="rounded-[2px]">
-                <Building2 className="mr-2 w-4 h-4" />
-                Ver mis propiedades
-              </Button>
-            </Link>
           </div>
         )}
+
+        {/* Tabs */}
+        <PlanTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          variant="underline"
+          className="mb-6"
+        />
+
+        {/* Contracts List */}
+        <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
+          {filteredContracts.length > 0 ? (
+            <div className="divide-y divide-[#E5E7EB]">
+              {filteredContracts.map((contract) => (
+                <ContractExpandableItem key={contract.id} contract={contract} />
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-[#9CA3AF]" />
+              </div>
+              <h3 className="font-medium text-[#111827] mb-2">
+                {activeTab === 'all'
+                  ? 'No tienes contratos'
+                  : `No hay contratos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
+                }
+              </h3>
+              <p className="text-sm text-[#6B7280] mb-4">
+                Los contratos apareceran aqui cuando apruebes candidatos
+              </p>
+              <Link
+                href="/panel"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-sm text-sm font-medium hover:bg-[#1F2937] transition-colors"
+              >
+                <Building2 className="w-4 h-4" />
+                Ver mis propiedades
+              </Link>
+            </div>
+          )}
+        </section>
+
       </div>
     </div>
   );

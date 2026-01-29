@@ -27,7 +27,7 @@ export function DashboardHeader({ className, propertyCount, monthlyIncome }: Das
       {/* Main greeting with gradient accent on name */}
       <h1 className="text-[2rem] md:text-[2.75rem] font-light text-slate-900 tracking-[-0.03em] leading-tight">
         {greeting},{' '}
-        <span className="font-normal bg-gradient-to-r from-[#7f51ff] to-[#a78bfa] bg-clip-text text-transparent">
+        <span className="font-normal bg-gradient-to-r from-[black] to-[#a78bfa] bg-clip-text text-transparent">
           {firstName}
         </span>
       </h1>
@@ -37,7 +37,7 @@ export function DashboardHeader({ className, propertyCount, monthlyIncome }: Das
         <div className="flex items-center gap-3 mt-4">
           {propertyCount !== undefined && (
             <div className="inline-flex items-center gap-2 bg-slate-100/80 text-slate-700 px-4 py-2 rounded-full text-sm font-medium">
-              <div className="w-2 h-2 rounded-full bg-[#7f51ff]" />
+              <div className="w-2 h-2 rounded-full bg-[black]" />
               {propertyCount} propiedad{propertyCount !== 1 ? 'es' : ''}
             </div>
           )}

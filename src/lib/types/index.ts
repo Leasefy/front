@@ -22,3 +22,6 @@ export * from './lease';
 
 // Coupon types
 export * from './coupon';
+
+// Team types
+export * from './team';

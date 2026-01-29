@@ -97,7 +97,7 @@ export function PricingTable({
                 <TableRow className="border-b-slate-200/60">
                   <TableHead className="text-left font-semibold">Caracteristica</TableHead>
                   <TableHead className="text-center font-semibold">Gratis</TableHead>
-                  <TableHead className="text-center bg-[#7f51ff]/5 font-semibold text-[#7f51ff]">Pro</TableHead>
+                  <TableHead className="text-center bg-[black]/5 font-semibold text-[black]">Pro</TableHead>
                   <TableHead className="text-center font-semibold">Business</TableHead>
                 </TableRow>
               </TableHeader>
@@ -119,7 +119,7 @@ export function PricingTable({
                     <TableCell className="text-center py-4">
                       <ComparisonCell value={row.free} />
                     </TableCell>
-                    <TableCell className="text-center py-4 bg-[#7f51ff]/5">
+                    <TableCell className="text-center py-4 bg-[black]/5">
                       <ComparisonCell value={row.pro} highlighted />
                     </TableCell>
                     <TableCell className="text-center py-4">
@@ -141,7 +141,7 @@ export function PricingTable({
         <div className="flex items-center justify-center gap-8 mt-6">
           {['Pago seguro', 'Facturacion flexible', 'Soporte incluido'].map((item, i) => (
             <div key={item} className="flex items-center gap-2 text-sm text-slate-500">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#7f51ff]" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[black]" />
               <span>{item}</span>
             </div>
           ))}
@@ -159,11 +159,11 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
     return value ? (
       <div className={cn(
         'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
-        highlighted ? 'bg-[#7f51ff]/10' : 'bg-emerald-50'
+        highlighted ? 'bg-[black]/10' : 'bg-emerald-50'
       )}>
         <Check className={cn(
           'w-4 h-4',
-          highlighted ? 'text-[#7f51ff]' : 'text-emerald-500'
+          highlighted ? 'text-[black]' : 'text-emerald-500'
         )} />
       </div>
     ) : (
@@ -174,7 +174,7 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
   return (
     <span className={cn(
       'text-sm font-semibold',
-      highlighted ? 'text-[#7f51ff]' : 'text-slate-700'
+      highlighted ? 'text-[black]' : 'text-slate-700'
     )}>
       {value}
     </span>

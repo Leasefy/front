@@ -94,9 +94,8 @@ export function DecisionButtons({
         {/* Primary: Aprobar (black) */}
         <Button
           size="sm"
-          variant={currentStatus === 'approved' ? 'default' : 'default'}
+          variant="default"
           disabled={isUpdating}
-          showArrow={false}
           className={cn(
             'flex-1',
             currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
@@ -146,8 +145,7 @@ export function DecisionButtons({
         size="lg"
         variant="default"
         disabled={isUpdating}
-        showArrow={false}
-        className={cn(
+                className={cn(
           'w-full',
           currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
         )}

@@ -187,7 +187,7 @@ export function LeaseCard({
               </Button>
             )}
             {view === 'tenant' && lease.status === 'active' && (
-              <Link href={`/mi-arriendo/${lease.id}/pagar`}>
+              <Link href={`/inquilino/pagos`}>
                 <Button size="sm" className="gap-2">
                   <CreditCard className="w-4 h-4" />
                   Pagar renta

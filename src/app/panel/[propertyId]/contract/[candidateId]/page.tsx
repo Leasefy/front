@@ -88,7 +88,7 @@ function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorPr
 function ContractPageLoading() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -183,7 +183,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   if (!property || !candidate) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mx-auto max-w-6xl px-6 py-8">
           <Link
             href={`/panel/${propertyId}`}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -214,7 +214,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-6 py-8">
         {/* Back link */}
         <Link
           href={`/panel/${propertyId}`}

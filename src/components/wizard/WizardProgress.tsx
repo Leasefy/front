@@ -42,7 +42,7 @@ export function WizardProgress({
       <div className="hidden md:block">
         <div className="relative">
           {/* Progress line background */}
-          <div className="absolute top-5 left-0 w-full h-[2px] bg-gray-200" />
+          <div className="absolute top-5 left-0 w-full h-[2px] bg-muted" />
 
           {/* Progress line filled */}
           <div
@@ -79,7 +79,7 @@ export function WizardProgress({
                         ? 'bg-primary border-primary text-white'
                         : isCurrent
                         ? 'bg-white border-primary text-primary'
-                        : 'bg-white border-gray-200 text-gray-400'
+                        : 'bg-white border-border text-muted-foreground'
                     )}
                   >
                     {isCompleted ? (
@@ -96,8 +96,8 @@ export function WizardProgress({
                       isCurrent
                         ? 'text-primary'
                         : isCompleted
-                        ? 'text-gray-700'
-                        : 'text-gray-400'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {step.label}
@@ -112,16 +112,16 @@ export function WizardProgress({
       {/* Mobile progress - compact pill style */}
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm font-medium text-foreground">
             Paso {currentStep} de {WIZARD_STEPS.length}
           </span>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-muted-foreground">
             {WIZARD_STEPS[currentStep - 1]?.label}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 bg-gray-200 rounded-sm overflow-hidden">
+        <div className="h-2 bg-muted rounded-sm overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500"
             style={{
@@ -149,7 +149,7 @@ export function WizardProgress({
                     ? 'bg-primary text-white'
                     : isCurrent
                     ? 'bg-primary/10 text-primary border border-primary'
-                    : 'bg-gray-100 text-gray-400',
+                    : 'bg-muted text-muted-foreground',
                   isClickable ? 'cursor-pointer' : 'cursor-not-allowed'
                 )}
                 aria-label={`Ir al paso ${step.id}: ${step.label}`}

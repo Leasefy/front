@@ -23,10 +23,10 @@ export function PaymentMethodSelector({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">
+        <label className="text-sm font-medium text-foreground">
           Metodo de pago
         </label>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-muted-foreground">
           Selecciona como deseas pagar
         </span>
       </div>
@@ -48,8 +48,8 @@ export function PaymentMethodSelector({
                 isSelected && method.enabled
                   ? 'border-primary bg-primary/5 shadow-sm'
                   : method.enabled
-                  ? 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+                  ? 'border-border hover:border-border hover:bg-muted'
+                  : 'border-border bg-muted opacity-60 cursor-not-allowed'
               )}
             >
               {/* Icon */}
@@ -68,7 +68,7 @@ export function PaymentMethodSelector({
                   <p
                     className={cn(
                       'font-medium',
-                      isDisabled ? 'text-slate-400' : 'text-slate-900'
+                      isDisabled ? 'text-muted-foreground' : 'text-foreground'
                     )}
                   >
                     {method.name}
@@ -82,13 +82,13 @@ export function PaymentMethodSelector({
                 <p
                   className={cn(
                     'text-xs mt-0.5',
-                    isDisabled ? 'text-slate-300' : 'text-slate-500'
+                    isDisabled ? 'text-muted-foreground' : 'text-muted-foreground'
                   )}
                 >
                   {method.description}
                 </p>
                 {method.processingTime && method.enabled && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {method.processingTime}
                   </p>
                 )}
@@ -103,7 +103,7 @@ export function PaymentMethodSelector({
 
               {/* Coming soon badge */}
               {isDisabled && (
-                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-slate-200 text-slate-500 rounded">
+                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
                   Proximamente
                 </span>
               )}

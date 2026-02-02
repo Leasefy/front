@@ -31,7 +31,7 @@ interface LeaseExpandableItemProps {
  */
 function PaymentStatus({ status }: { status: Payment['status'] }) {
   const config = {
-    paid: { icon: CheckCircle2, text: 'Pagado', className: 'text-slate-500' },
+    paid: { icon: CheckCircle2, text: 'Pagado', className: 'text-muted-foreground' },
     pending: { icon: Clock, text: 'Pendiente', className: 'text-amber-600' },
     late: { icon: AlertCircle, text: 'Atrasado', className: 'text-red-500' },
     failed: { icon: AlertCircle, text: 'Fallido', className: 'text-red-500' },
@@ -85,25 +85,25 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
   return (
     <div className={cn(
-      'border-b border-slate-100 last:border-0',
-      isExpanded && 'bg-slate-50/30'
+      'border-b border-border last:border-0',
+      isExpanded && 'bg-muted/30'
     )}>
       {/* Main row - clickable */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left p-5 hover:bg-slate-50/50 transition-colors"
+        className="w-full text-left p-5 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-4">
           {/* Property icon */}
-          <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-5 h-5 text-slate-400" />
+          <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center flex-shrink-0">
+            <Building2 className="w-5 h-5 text-muted-foreground" />
           </div>
 
           {/* Main info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-slate-900 truncate">
+              <h3 className="text-sm font-medium text-foreground truncate">
                 {lease.propertyTitle}
               </h3>
               {isEndingSoon && (
@@ -112,7 +112,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {lease.tenantName} · {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
             </p>
           </div>
@@ -133,15 +133,15 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-sm font-medium text-slate-900">
+            <p className="text-sm font-medium text-foreground">
               {formatCurrency(lease.monthlyRent)}
             </p>
-            <p className="text-[10px] text-slate-400">/mes</p>
+            <p className="text-[10px] text-muted-foreground">/mes</p>
           </div>
 
           {/* Expand indicator */}
           <ChevronDown className={cn(
-            'w-4 h-4 text-slate-300 transition-transform flex-shrink-0',
+            'w-4 h-4 text-muted-foreground transition-transform flex-shrink-0',
             isExpanded && 'rotate-180'
           )} />
         </div>
@@ -152,30 +152,30 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
         <div className="px-5 pb-5">
           <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Detalles del arriendo
               </p>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Canon mensual</span>
-                  <span className="text-xs text-slate-900 font-medium">
+                  <span className="text-xs text-muted-foreground">Canon mensual</span>
+                  <span className="text-xs text-foreground font-medium">
                     {formatCurrency(lease.monthlyRent)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Inicio</span>
-                  <span className="text-xs text-slate-900">{formatDate(lease.startDate)}</span>
+                  <span className="text-xs text-muted-foreground">Inicio</span>
+                  <span className="text-xs text-foreground">{formatDate(lease.startDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Vencimiento</span>
-                  <span className="text-xs text-slate-900">{formatDate(lease.endDate)}</span>
+                  <span className="text-xs text-muted-foreground">Vencimiento</span>
+                  <span className="text-xs text-foreground">{formatDate(lease.endDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Dias restantes</span>
+                  <span className="text-xs text-muted-foreground">Dias restantes</span>
                   <span className={cn(
                     'text-xs font-medium',
-                    daysRemaining <= 60 ? 'text-amber-600' : 'text-slate-900'
+                    daysRemaining <= 60 ? 'text-amber-600' : 'text-foreground'
                   )}>
                     {daysRemaining} dias
                   </span>
@@ -184,30 +184,30 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
             </div>
 
             {/* Card 2: Tenant Contact */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Arrendatario
               </p>
-              <p className="text-sm font-medium text-slate-900 mb-3">{lease.tenantName}</p>
+              <p className="text-sm font-medium text-foreground mb-3">{lease.tenantName}</p>
               <div className="space-y-2 mb-4">
                 <a
                   href={`tel:${lease.tenantPhone}`}
-                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900"
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
                   {lease.tenantPhone}
                 </a>
                 <a
                   href={`mailto:${lease.tenantEmail}`}
-                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900"
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                   {lease.tenantEmail}
                 </a>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
                 <Button
                   variant="outline"
                   size="sm"
@@ -241,35 +241,35 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
             </div>
 
             {/* Card 3: Payment Summary */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Resumen de pagos
               </p>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Total pagos</span>
-                  <span className="text-xs text-slate-900 font-medium">{payments.length}</span>
+                  <span className="text-xs text-muted-foreground">Total pagos</span>
+                  <span className="text-xs text-foreground font-medium">{payments.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Pagados</span>
-                  <span className="text-xs text-slate-900">
+                  <span className="text-xs text-muted-foreground">Pagados</span>
+                  <span className="text-xs text-foreground">
                     {payments.filter(p => p.status === 'paid').length}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Pendientes</span>
+                  <span className="text-xs text-muted-foreground">Pendientes</span>
                   <span className={cn(
                     'text-xs',
-                    pendingCount > 0 ? 'text-amber-600 font-medium' : 'text-slate-900'
+                    pendingCount > 0 ? 'text-amber-600 font-medium' : 'text-foreground'
                   )}>
                     {pendingCount}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Atrasados</span>
+                  <span className="text-xs text-muted-foreground">Atrasados</span>
                   <span className={cn(
                     'text-xs',
-                    lateCount > 0 ? 'text-red-500 font-medium' : 'text-slate-900'
+                    lateCount > 0 ? 'text-red-500 font-medium' : 'text-foreground'
                   )}>
                     {lateCount}
                   </span>
@@ -280,21 +280,21 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
           {/* Payment history table - Full width below cards */}
           <div className="ml-14 mt-4">
-            <div className="border border-slate-100 rounded-sm overflow-hidden bg-white">
-              <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100">
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
+            <div className="border border-border rounded-sm overflow-hidden bg-white">
+              <div className="px-4 py-2.5 bg-muted/80 border-b border-border">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
                   Historial de pagos
                 </span>
               </div>
 
               {payments.length === 0 ? (
-                <p className="text-sm text-slate-400 p-4 text-center">
+                <p className="text-sm text-muted-foreground p-4 text-center">
                   No hay pagos registrados
                 </p>
               ) : (
                 <>
                   {/* Table header */}
-                  <div className="grid grid-cols-5 gap-4 px-4 py-2.5 text-[11px] text-slate-400 font-medium uppercase tracking-wide border-b border-slate-50">
+                  <div className="grid grid-cols-5 gap-4 px-4 py-2.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wide border-b border-border">
                     <div>Vencimiento</div>
                     <div>Concepto</div>
                     <div className="text-right">Monto</div>
@@ -303,25 +303,25 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
                   </div>
 
                   {/* Table body */}
-                  <div className="divide-y divide-slate-50">
+                  <div className="divide-y divide-border">
                     {payments.slice(0, 5).map((payment) => (
                       <div
                         key={payment.id}
                         className="grid grid-cols-5 gap-4 px-4 py-3 items-center"
                       >
-                        <div className="text-sm text-slate-600">
+                        <div className="text-sm text-muted-foreground">
                           {formatDate(payment.dueDate)}
                         </div>
-                        <div className="text-sm text-slate-600 capitalize">
+                        <div className="text-sm text-muted-foreground capitalize">
                           {payment.concept === 'rent' ? 'Arriendo' : payment.concept === 'deposit' ? 'Deposito' : payment.concept}
                         </div>
-                        <div className="text-sm text-slate-900 font-medium text-right">
+                        <div className="text-sm text-foreground font-medium text-right">
                           {formatCurrency(payment.amount)}
                         </div>
                         <div className="text-center">
                           <PaymentStatus status={payment.status} />
                         </div>
-                        <div className="text-sm text-slate-400 text-right">
+                        <div className="text-sm text-muted-foreground text-right">
                           {payment.paidDate ? formatDate(payment.paidDate) : '-'}
                         </div>
                       </div>
@@ -329,8 +329,8 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
                   </div>
 
                   {payments.length > 5 && (
-                    <div className="px-4 py-2.5 bg-slate-50/50 text-center border-t border-slate-50">
-                      <button className="text-xs text-slate-500 hover:text-slate-700">
+                    <div className="px-4 py-2.5 bg-muted/50 text-center border-t border-border">
+                      <button className="text-xs text-muted-foreground hover:text-foreground">
                         Ver {payments.length - 5} pagos más
                       </button>
                     </div>

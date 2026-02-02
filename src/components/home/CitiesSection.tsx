@@ -67,7 +67,7 @@ const cardVariants = {
  */
 export function CitiesSection() {
   return (
-    <section className="bg-gray-100 overflow-hidden">
+    <section className="bg-muted overflow-hidden">
       {/* Container with Luxterra padding: 90px top, 120px bottom */}
       <div className="mx-auto max-w-[1420px] px-8 py-[90px] pb-[120px]">
         {/* Header - Centered like Luxterra */}

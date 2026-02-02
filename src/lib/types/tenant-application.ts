@@ -36,7 +36,7 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
  * Format: "bg-[color]-100 text-[color]-700"
  */
 export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> = {
-  submitted: 'bg-slate-100 text-slate-700',
+  submitted: 'bg-muted text-foreground',
   under_review: 'bg-blue-100 text-blue-700',
   pre_approved: 'bg-sky-100 text-sky-700',
   approved: 'bg-emerald-100 text-emerald-700',

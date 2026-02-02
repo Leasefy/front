@@ -88,13 +88,13 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
       <div
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 text-sm',
-          'text-slate-300 cursor-not-allowed'
+          'text-muted-foreground cursor-not-allowed'
         )}
       >
         <Icon className="w-4 h-4" />
         <span className="flex-1">{item.label}</span>
         {item.badge && (
-          <span className="bg-slate-100 text-slate-400 text-xs px-2 py-0.5 rounded-full">
+          <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
             {item.badge}
           </span>
         )}
@@ -111,7 +111,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
         'rounded-lg group',
         isActive
           ? 'bg-[black]/8 text-[black]'
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       )}
     >
       {/* Active indicator - vertical accent line */}
@@ -137,7 +137,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
             'text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300',
             isActive
               ? 'bg-[black] text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 group-hover:bg-[black]/10 group-hover:text-[black]'
+              : 'bg-muted text-muted-foreground group-hover:bg-[black]/10 group-hover:text-[black]'
           )}
         >
           {item.badge}
@@ -171,7 +171,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-base font-semibold text-slate-900 tracking-[-0.02em]">
+            <span className="text-base font-semibold text-foreground tracking-[-0.02em]">
               Arrienda
             </span>
             <span className="text-xs text-[black] font-medium -mt-0.5">
@@ -230,23 +230,23 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       )}
 
       {/* User section - Premium design */}
-      <div className="p-4 border-t border-slate-100/80">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100/50 transition-colors cursor-pointer mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-700 font-semibold text-sm shadow-inner">
+      <div className="p-4 border-t border-border/80">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer mb-2">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-foreground font-semibold text-sm shadow-inner">
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold text-foreground truncate">
               {user?.name || 'Usuario'}
             </p>
-            <p className="text-xs text-slate-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {user?.email}
             </p>
           </div>
         </div>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-slate-500 hover:text-red-600 hover:bg-red-50/80 rounded-lg transition-all duration-200"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-lg transition-all duration-200"
           onClick={logout}
         >
           <LogOut className="w-4 h-4" />
@@ -275,7 +275,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0',
-          'bg-white/80 backdrop-blur-xl border-r border-slate-200/60',
+          'bg-white/80 backdrop-blur-xl border-r border-border/60',
           'shadow-[1px_0_30px_rgba(0,0,0,0.04)]',
           className
         )}
@@ -287,7 +287,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-40 bg-white shadow-sm border border-slate-100"
+        className="lg:hidden fixed top-4 left-4 z-40 bg-white shadow-sm border border-border"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="w-5 h-5" />

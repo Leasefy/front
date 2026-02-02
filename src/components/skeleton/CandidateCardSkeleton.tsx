@@ -32,7 +32,7 @@ export function CandidateCardSkeleton() {
       </CardHeader>
 
       {/* Metrics Section */}
-      <CardContent className="border-t border-slate-100 py-3">
+      <CardContent className="border-t border-border py-3">
         <div className="grid grid-cols-3 gap-4">
           {/* Income */}
           <div className="space-y-1">
@@ -53,7 +53,7 @@ export function CandidateCardSkeleton() {
       </CardContent>
 
       {/* AI Snippet Section */}
-      <CardContent className="border-t border-slate-100 py-3">
+      <CardContent className="border-t border-border py-3">
         <div className="space-y-2">
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-5/6" />
@@ -62,7 +62,7 @@ export function CandidateCardSkeleton() {
       </CardContent>
 
       {/* Action Buttons */}
-      <CardFooter className="flex gap-2 border-t border-slate-100 pt-3">
+      <CardFooter className="flex gap-2 border-t border-border pt-3">
         <Skeleton className="h-8 flex-1 rounded-sm" />
         <Skeleton className="h-8 flex-1 rounded-sm" />
         <Skeleton className="h-8 flex-1 rounded-sm" />

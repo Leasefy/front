@@ -47,7 +47,7 @@ export function FAQSection() {
   };
 
   return (
-    <section className="bg-gray-100 overflow-hidden">
+    <section className="bg-muted overflow-hidden">
       <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left - Header, Image & CTA */}
@@ -72,7 +72,7 @@ export function FAQSection() {
             </h2>
 
             {/* Small portrait image - Luxterra style (about 140px wide) */}
-            <div className="relative w-[140px] h-[180px] mb-[24px] rounded-sm overflow-hidden bg-gray-100">
+            <div className="relative w-[140px] h-[180px] mb-[24px] rounded-sm overflow-hidden bg-muted">
               <Image
                 src="https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400"
                 alt="Equipo de asesores"
@@ -88,8 +88,8 @@ export function FAQSection() {
             </p>
 
             {/* CTA Button - Luxterra style: 35px height, 2px border-radius */}
-            <Link
-              href="/contacto"
+            <a
+              href="mailto:info@arriendofacil.co"
               className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-black/20 text-[15px] text-primary tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
             >
               <span className="relative overflow-hidden h-[20px]">
@@ -100,7 +100,7 @@ export function FAQSection() {
                   Contactanos
                 </span>
               </span>
-            </Link>
+            </a>
           </motion.div>
 
           {/* Right - FAQ Accordion */}

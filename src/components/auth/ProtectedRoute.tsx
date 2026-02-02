@@ -57,10 +57,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Show loading state while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Verificando acceso...</p>
+          <div className="w-8 h-8 border-2 border-border border-t-slate-600 rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Verificando acceso...</p>
         </div>
       </div>
     )
@@ -69,10 +69,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Not authenticated - will redirect
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Redirigiendo...</p>
+          <div className="w-8 h-8 border-2 border-border border-t-slate-600 rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
         </div>
       </div>
     )
@@ -81,10 +81,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Check role restriction
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Redirigiendo...</p>
+          <div className="w-8 h-8 border-2 border-border border-t-slate-600 rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
         </div>
       </div>
     )

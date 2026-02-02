@@ -71,7 +71,7 @@ export function ForYouCarousel({
     <section className={cn('relative', className)}>
       <div className="mb-4">
         <SectionLabel className="text-muted-foreground mb-2">Para ti</SectionLabel>
-        <h2 className="text-xl font-normal text-gray-900 tracking-tight">
+        <h2 className="text-xl font-normal text-foreground tracking-tight">
           Propiedades que coinciden con tu perfil
         </h2>
       </div>
@@ -86,7 +86,7 @@ export function ForYouCarousel({
               'absolute left-0 top-1/2 -translate-y-1/2 z-10',
               'w-10 h-10 rounded-sm bg-white/95 shadow-md',
               'flex items-center justify-center',
-              'text-gray-700 hover:bg-white transition-all',
+              'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
               '-translate-x-1/2'
             )}
@@ -104,7 +104,7 @@ export function ForYouCarousel({
               'absolute right-0 top-1/2 -translate-y-1/2 z-10',
               'w-10 h-10 rounded-sm bg-white/95 shadow-md',
               'flex items-center justify-center',
-              'text-gray-700 hover:bg-white transition-all',
+              'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
               'translate-x-1/2'
             )}
@@ -145,7 +145,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'bg-green-600';
     if (score >= 70) return 'bg-blue-600';
-    return 'bg-gray-900';
+    return 'bg-foreground';
   };
 
   return (
@@ -176,13 +176,13 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
 
       {/* Property info */}
       <div className="mt-3">
-        <h3 className="text-sm font-normal text-gray-900 truncate group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-normal text-foreground truncate group-hover:text-primary transition-colors">
           {title}
         </h3>
-        <p className="text-xs text-gray-500 mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {neighborhood}, {city}
         </p>
-        <p className="text-sm font-normal text-gray-900 mt-1.5">
+        <p className="text-sm font-normal text-foreground mt-1.5">
           {formatCurrency(monthlyRent)}/mes
         </p>
       </div>

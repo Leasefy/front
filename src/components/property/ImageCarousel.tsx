@@ -149,7 +149,7 @@ export function ImageCarousel({
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-sm hover:bg-gray-100 transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
           >
             Ver todas las imagenes ({totalImages})
           </button>
@@ -170,7 +170,7 @@ export function ImageCarousel({
               )}
               aria-label="Imagen anterior"
             >
-              <ChevronLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-gray-800')} />
+              <ChevronLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
             <button
               onClick={(e) => {
@@ -184,7 +184,7 @@ export function ImageCarousel({
               )}
               aria-label="Siguiente imagen"
             >
-              <ChevronRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-gray-800')} />
+              <ChevronRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
           </>
         )}
@@ -230,7 +230,7 @@ export function ImageCarousel({
                 'h-2 w-2 rounded-full transition-all',
                 index === currentIndex
                   ? 'bg-primary w-4'
-                  : 'bg-gray-300 hover:bg-gray-400'
+                  : 'bg-border hover:bg-muted-foreground'
               )}
               aria-label={`Ir a imagen ${index + 1}`}
             />

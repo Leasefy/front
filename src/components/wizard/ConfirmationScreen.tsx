@@ -24,21 +24,21 @@ interface ConfirmationScreenProps {
  */
 export function ConfirmationScreen({ property, trackingCode }: ConfirmationScreenProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-white rounded-sm border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-sm border border-border shadow-sm overflow-hidden">
           {/* Success header */}
           <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle2 className="h-10 w-10 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               Aplicacion enviada!
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Tu aplicacion para{' '}
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-foreground">
                 {property.title}
               </span>{' '}
               ha sido recibida.
@@ -47,7 +47,7 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
 
           {/* Next steps */}
           <div className="px-6 py-6">
-            <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
               <FileText className="h-4 w-4 text-blue-600" />
               Que sigue:
             </h2>
@@ -76,12 +76,12 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
           </div>
 
           {/* Tracking code */}
-          <div className="mx-6 mb-6 p-4 bg-gray-50 border border-gray-200 rounded-sm">
-            <p className="text-xs text-gray-500 mb-1">Codigo de seguimiento</p>
-            <p className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+          <div className="mx-6 mb-6 p-4 bg-muted border border-border rounded-sm">
+            <p className="text-xs text-muted-foreground mb-1">Codigo de seguimiento</p>
+            <p className="text-lg font-mono font-bold text-foreground tracking-wider">
               {trackingCode}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Guarda este codigo para consultar el estado de tu aplicacion.
             </p>
           </div>
@@ -103,7 +103,7 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
         </div>
 
         {/* Save indicator */}
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-muted-foreground mt-4">
           Los datos de esta aplicacion han sido guardados.
         </p>
       </div>
@@ -134,7 +134,7 @@ function TimelineItem({
     <div className="relative flex gap-4">
       {/* Timeline line */}
       {!isLast && (
-        <div className="absolute left-4 top-10 bottom-0 w-px bg-gray-200" />
+        <div className="absolute left-4 top-10 bottom-0 w-px bg-muted" />
       )}
 
       {/* Number circle */}
@@ -147,10 +147,10 @@ function TimelineItem({
       {/* Content */}
       <div className="flex-1 pb-4">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-gray-400">{icon}</span>
-          <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+          <span className="text-muted-foreground">{icon}</span>
+          <h3 className="text-sm font-medium text-foreground">{title}</h3>
         </div>
-        <p className="text-sm text-gray-600">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   );

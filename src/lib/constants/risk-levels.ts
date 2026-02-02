@@ -183,7 +183,7 @@ export function requiresAttention(level: RiskLevel): boolean {
  */
 export function getSeverityIndicator(severity: 'low' | 'medium' | 'high') {
   const indicators = {
-    low: { label: 'Menor', color: 'text-slate-500' },
+    low: { label: 'Menor', color: 'text-muted-foreground' },
     medium: { label: 'Moderado', color: 'text-amber-600' },
     high: { label: 'Importante', color: 'text-red-600' },
   };

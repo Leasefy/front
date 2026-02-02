@@ -60,17 +60,17 @@ function getSnippetStyles(level: RiskLevel) {
     return {
       border: colors.border,
       bg: colors.bgMuted,
-      text: 'text-slate-700',
+      text: 'text-foreground',
       icon: colors.text,
     };
   }
 
   // C and D are muted for less visual prominence
   return {
-    border: 'border-slate-200',
-    bg: 'bg-slate-50',
-    text: 'text-slate-600',
-    icon: 'text-slate-400',
+    border: 'border-border',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    icon: 'text-muted-foreground',
   };
 }
 

@@ -54,8 +54,8 @@ export function RiskDistributionMini({ distribution, className }: RiskDistributi
     <div className={cn('flex items-center gap-3', className)}>
       {/* Bar visualization */}
       <div className="flex items-center gap-1">
-        <span className="text-xs text-slate-500 mr-1">Riesgo:</span>
-        <div className="flex h-2 w-20 rounded-full overflow-hidden bg-slate-100">
+        <span className="text-xs text-muted-foreground mr-1">Riesgo:</span>
+        <div className="flex h-2 w-20 rounded-full overflow-hidden bg-muted">
           {A > 0 && (
             <div
               className={cn('h-full', riskColors.A.bg)}

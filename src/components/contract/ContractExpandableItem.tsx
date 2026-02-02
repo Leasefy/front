@@ -42,18 +42,18 @@ function SignatureIndicator({
       <div
         className={cn(
           'w-2 h-2 rounded-full',
-          isSigned ? 'bg-slate-900' : 'bg-slate-200'
+          isSigned ? 'bg-foreground' : 'bg-muted'
         )}
       />
       <div>
-        <p className="text-sm text-slate-700">{label}</p>
+        <p className="text-sm text-foreground">{label}</p>
         {isSigned && signedAt && (
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-muted-foreground">
             Firmado {formatDate(signedAt)}
           </p>
         )}
         {!isSigned && (
-          <p className="text-[10px] text-slate-400">Pendiente</p>
+          <p className="text-[10px] text-muted-foreground">Pendiente</p>
         )}
       </div>
     </div>
@@ -74,12 +74,12 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
 
   // Status badge config
   const statusConfig = {
-    draft: { text: 'Borrador', className: 'bg-slate-100 text-slate-500' },
-    pending_landlord: { text: 'Tu firma', className: 'bg-slate-900 text-white' },
-    pending_tenant: { text: 'Esperando', className: 'bg-slate-100 text-slate-600' },
-    active: { text: 'Activo', className: 'bg-slate-100 text-slate-600' },
-    expired: { text: 'Expirado', className: 'bg-slate-50 text-slate-400' },
-    cancelled: { text: 'Cancelado', className: 'bg-slate-50 text-slate-400' },
+    draft: { text: 'Borrador', className: 'bg-muted text-muted-foreground' },
+    pending_landlord: { text: 'Tu firma', className: 'bg-foreground text-white' },
+    pending_tenant: { text: 'Esperando', className: 'bg-muted text-muted-foreground' },
+    active: { text: 'Activo', className: 'bg-muted text-muted-foreground' },
+    expired: { text: 'Expirado', className: 'bg-muted text-muted-foreground' },
+    cancelled: { text: 'Cancelado', className: 'bg-muted text-muted-foreground' },
   };
 
   const status = statusConfig[contract.status];
@@ -87,26 +87,26 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
   return (
     <div
       className={cn(
-        'border-b border-slate-100 last:border-0',
-        isExpanded && 'bg-slate-50/30'
+        'border-b border-border last:border-0',
+        isExpanded && 'bg-muted/30'
       )}
     >
       {/* Main row - clickable */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left p-5 hover:bg-slate-50/50 transition-colors"
+        className="w-full text-left p-5 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-4">
           {/* Document icon */}
-          <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center flex-shrink-0">
-            <FileText className="w-5 h-5 text-slate-400" />
+          <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center flex-shrink-0">
+            <FileText className="w-5 h-5 text-muted-foreground" />
           </div>
 
           {/* Main info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-slate-900 truncate">
+              <h3 className="text-sm font-medium text-foreground truncate">
                 {contract.propertyAddress}
               </h3>
               <span
@@ -118,7 +118,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 {status.text}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {contract.tenantName} · {contract.propertyCity}
             </p>
           </div>
@@ -129,34 +129,34 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               <div
                 className={cn(
                   'w-1.5 h-1.5 rounded-full',
-                  contract.landlordSignature ? 'bg-slate-900' : 'bg-slate-200'
+                  contract.landlordSignature ? 'bg-foreground' : 'bg-muted'
                 )}
               />
-              <span className="text-[10px] text-slate-400">Arr.</span>
+              <span className="text-[10px] text-muted-foreground">Arr.</span>
             </div>
             <div className="flex items-center gap-1">
               <div
                 className={cn(
                   'w-1.5 h-1.5 rounded-full',
-                  contract.tenantSignature ? 'bg-slate-900' : 'bg-slate-200'
+                  contract.tenantSignature ? 'bg-foreground' : 'bg-muted'
                 )}
               />
-              <span className="text-[10px] text-slate-400">Inq.</span>
+              <span className="text-[10px] text-muted-foreground">Inq.</span>
             </div>
           </div>
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-sm font-medium text-slate-900">
+            <p className="text-sm font-medium text-foreground">
               {formatCurrency(contract.monthlyRent)}
             </p>
-            <p className="text-[10px] text-slate-400">/mes</p>
+            <p className="text-[10px] text-muted-foreground">/mes</p>
           </div>
 
           {/* Expand indicator */}
           <ChevronDown
             className={cn(
-              'w-4 h-4 text-slate-300 transition-transform flex-shrink-0',
+              'w-4 h-4 text-muted-foreground transition-transform flex-shrink-0',
               isExpanded && 'rotate-180'
             )}
           />
@@ -168,37 +168,37 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
         <div className="px-5 pb-5">
           <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Contract Details */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Detalles del contrato
               </p>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Tipo</span>
-                  <span className="text-xs text-slate-900 font-medium">
+                  <span className="text-xs text-muted-foreground">Tipo</span>
+                  <span className="text-xs text-foreground font-medium">
                     {CONTRACT_TYPE_LABELS[contract.type]}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Vigencia</span>
-                  <span className="text-xs text-slate-900">
+                  <span className="text-xs text-muted-foreground">Vigencia</span>
+                  <span className="text-xs text-foreground">
                     {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Administracion</span>
-                  <span className="text-xs text-slate-900">{formatCurrency(contract.adminFee)}</span>
+                  <span className="text-xs text-muted-foreground">Administracion</span>
+                  <span className="text-xs text-foreground">{formatCurrency(contract.adminFee)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-slate-500">Garantia</span>
-                  <span className="text-xs text-slate-900 capitalize">{contract.guaranteeType}</span>
+                  <span className="text-xs text-muted-foreground">Garantia</span>
+                  <span className="text-xs text-foreground capitalize">{contract.guaranteeType}</span>
                 </div>
               </div>
             </div>
 
             {/* Card 2: Signatures */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Estado de firmas
               </p>
               <div className="space-y-3">
@@ -216,29 +216,29 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 3: Contact & Actions */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="bg-muted/50 border border-border rounded-sm p-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Contacto arrendatario
               </p>
               <div className="space-y-2 mb-4">
                 <a
                   href={`tel:${contract.tenantPhone}`}
-                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900"
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
                   {contract.tenantPhone}
                 </a>
                 <a
                   href={`mailto:${contract.tenantEmail}`}
-                  className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900"
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                   {contract.tenantEmail}
                 </a>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
                     <Button variant="default" size="sm" className="w-full h-8 text-xs gap-1.5">

@@ -42,14 +42,14 @@ export function PricingTable({
     <div className={cn('', className)}>
       {/* Billing cycle toggle - Premium pill design */}
       <div className="flex justify-center mb-12">
-        <div className="inline-flex items-center bg-slate-100/80 p-1.5 rounded-full">
+        <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
               billingCycle === 'monthly'
-                ? 'bg-white text-slate-900 shadow-md'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Mensual
@@ -59,8 +59,8 @@ export function PricingTable({
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
               billingCycle === 'yearly'
-                ? 'bg-white text-slate-900 shadow-md'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Anual
@@ -87,11 +87,11 @@ export function PricingTable({
       {/* Feature comparison table (optional) */}
       {showComparison && (
         <div className="mt-20">
-          <h3 className="text-2xl font-semibold text-slate-900 text-center mb-10">
+          <h3 className="text-2xl font-semibold text-foreground text-center mb-10">
             Comparacion detallada
           </h3>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="overflow-x-auto rounded-2xl border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
                 <TableRow className="border-b-slate-200/60">
@@ -106,13 +106,13 @@ export function PricingTable({
                   <TableRow
                     key={row.feature}
                     className={cn(
-                      'transition-colors hover:bg-slate-50/50',
-                      index % 2 === 0 && 'bg-slate-50/30'
+                      'transition-colors hover:bg-muted/50',
+                      index % 2 === 0 && 'bg-muted/30'
                     )}
                   >
                     <TableCell className="py-4">
-                      <div className="text-sm font-medium text-slate-800">{row.feature}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">
+                      <div className="text-sm font-medium text-foreground">{row.feature}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         {row.description}
                       </div>
                     </TableCell>
@@ -135,12 +135,12 @@ export function PricingTable({
 
       {/* Trust indicators - Premium design */}
       <div className="mt-16 text-center">
-        <p className="text-base text-slate-600 font-medium">
+        <p className="text-base text-muted-foreground font-medium">
           Sin compromisos. Cancela cuando quieras.
         </p>
         <div className="flex items-center justify-center gap-8 mt-6">
           {['Pago seguro', 'Facturacion flexible', 'Soporte incluido'].map((item, i) => (
-            <div key={item} className="flex items-center gap-2 text-sm text-slate-500">
+            <div key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-1.5 h-1.5 rounded-full bg-[black]" />
               <span>{item}</span>
             </div>
@@ -167,14 +167,14 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
         )} />
       </div>
     ) : (
-      <X className="w-5 h-5 text-slate-300 mx-auto" />
+      <X className="w-5 h-5 text-muted-foreground mx-auto" />
     );
   }
 
   return (
     <span className={cn(
       'text-sm font-semibold',
-      highlighted ? 'text-[black]' : 'text-slate-700'
+      highlighted ? 'text-[black]' : 'text-foreground'
     )}>
       {value}
     </span>

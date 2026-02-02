@@ -155,7 +155,7 @@ export function CandidateList({
     return (
       <div
         className={cn(
-          'rounded-sm border border-dashed border-slate-300 bg-slate-50',
+          'rounded-sm border border-dashed border-border bg-muted',
           className
         )}
       >
@@ -191,7 +191,7 @@ export function CandidateList({
                 >
                   {level}
                 </span>
-                <h3 className="text-sm font-medium text-slate-700">
+                <h3 className="text-sm font-medium text-foreground">
                   {LEVEL_LABELS[level]} ({levelCandidates.length})
                 </h3>
               </div>

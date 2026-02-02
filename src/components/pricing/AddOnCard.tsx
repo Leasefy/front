@@ -38,11 +38,11 @@ export function AddOnCard({
         const monthlyCost = Math.round((exampleRent * addon.price) / 100);
         return (
           <>
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               {addon.price}%
             </span>
-            <span className="text-sm text-slate-500 ml-1">del arriendo</span>
-            <span className="block text-xs text-slate-400 mt-1">
+            <span className="text-sm text-muted-foreground ml-1">del arriendo</span>
+            <span className="block text-xs text-muted-foreground mt-1">
               ~${monthlyCost.toLocaleString('es-CO')}/mes
             </span>
           </>
@@ -50,19 +50,19 @@ export function AddOnCard({
       case 'monthly':
         return (
           <>
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               ${addon.price.toLocaleString('es-CO')}
             </span>
-            <span className="text-sm text-slate-500 ml-1">/mes</span>
+            <span className="text-sm text-muted-foreground ml-1">/mes</span>
           </>
         );
       case 'one-time':
         return (
           <>
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               ${addon.price.toLocaleString('es-CO')}
             </span>
-            <span className="text-sm text-slate-500 ml-1">unico</span>
+            <span className="text-sm text-muted-foreground ml-1">unico</span>
           </>
         );
     }
@@ -75,7 +75,7 @@ export function AddOnCard({
         'flex items-start gap-4 rounded-sm border p-4 text-left transition-all w-full',
         selected
           ? 'border-primary bg-primary/5 ring-1 ring-primary'
-          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+          : 'border-border hover:border-border hover:bg-muted',
         className
       )}
     >
@@ -83,7 +83,7 @@ export function AddOnCard({
       <div
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-sm',
-          selected ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
+          selected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
         )}
       >
         <Icon className="h-5 w-5" />
@@ -91,8 +91,8 @@ export function AddOnCard({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-slate-900">{addon.name}</h4>
-        <p className="mt-1 text-sm text-slate-500">{addon.description}</p>
+        <h4 className="font-medium text-foreground">{addon.name}</h4>
+        <p className="mt-1 text-sm text-muted-foreground">{addon.description}</p>
       </div>
 
       {/* Price */}

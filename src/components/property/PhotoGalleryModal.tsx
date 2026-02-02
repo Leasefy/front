@@ -101,24 +101,24 @@ export function PhotoGalleryModal({
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col" data-lenis-prevent>
       {/* Header - Airbnb style */}
-      <header className="flex-shrink-0 bg-white border-b border-gray-100">
+      <header className="flex-shrink-0 bg-white border-b border-border">
         <div className="flex items-center justify-between h-16 px-6 md:px-8">
           {/* Back button */}
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center w-8 h-8 -ml-2 rounded-full hover:bg-muted transition-colors"
             aria-label="Cerrar galeria"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-800" />
+            <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-sm transition-colors">
+            <button className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-sm transition-colors">
               <Share2 className="w-4 h-4" />
               <span className="hidden sm:inline">Compartir</span>
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100 rounded-sm transition-colors">
+            <button className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-sm transition-colors">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Guardar</span>
             </button>
@@ -134,7 +134,7 @@ export function PhotoGalleryModal({
       >
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-6">
           {/* Title */}
-          <h1 className="text-2xl md:text-[28px] font-semibold text-gray-900 mb-6">
+          <h1 className="text-2xl md:text-[28px] font-semibold text-foreground mb-6">
             Galeria de fotos
           </h1>
 
@@ -146,8 +146,8 @@ export function PhotoGalleryModal({
                 onClick={() => scrollToImage(index)}
                 className={cn(
                   'relative aspect-[4/3] rounded-sm overflow-hidden transition-all duration-200',
-                  'hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2',
-                  activeIndex === index && 'ring-2 ring-gray-900 ring-offset-2'
+                  'hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  activeIndex === index && 'ring-2 ring-ring ring-offset-2'
                 )}
               >
                 <Image
@@ -162,7 +162,7 @@ export function PhotoGalleryModal({
           </div>
 
           {/* Separator */}
-          <div className="border-t border-gray-200 mb-10" />
+          <div className="border-t border-border mb-10" />
 
           {/* Full-size Images - Airbnb style with title on left */}
           <div className="space-y-16">
@@ -176,16 +176,16 @@ export function PhotoGalleryModal({
                 <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-start">
                   {/* Section title - left column */}
                   <div className="md:sticky md:top-6">
-                    <p className="text-lg font-medium text-gray-900">
+                    <p className="text-lg font-medium text-foreground">
                       Foto {index + 1}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {index + 1} de {images.length}
                     </p>
                   </div>
 
                   {/* Image - right column */}
-                  <div className="relative w-full rounded-sm overflow-hidden bg-gray-100">
+                  <div className="relative w-full rounded-sm overflow-hidden bg-muted">
                     <Image
                       src={image}
                       alt={`${propertyTitle} - Foto ${index + 1}`}
@@ -202,13 +202,13 @@ export function PhotoGalleryModal({
           </div>
 
           {/* End indicator */}
-          <div className="mt-16 pt-8 border-t border-gray-200 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="mt-16 pt-8 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground">
               Has visto todas las {images.length} fotos
             </p>
             <button
               onClick={() => scrollToImage(0)}
-              className="mt-4 text-sm font-medium text-gray-900 hover:underline"
+              className="mt-4 text-sm font-medium text-foreground hover:underline"
             >
               Volver al inicio
             </button>

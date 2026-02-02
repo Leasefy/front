@@ -117,7 +117,7 @@ export function PricingCard({
             {feature.included ? (
               <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
             ) : (
-              <X className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />
+              <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
             )}
             <span
               className={cn(
@@ -127,7 +127,7 @@ export function PricingCard({
             >
               {feature.name}
               {feature.included && feature.limit && feature.limit !== 'unlimited' && (
-                <span className="text-slate-400"> ({feature.limit})</span>
+                <span className="text-muted-foreground"> ({feature.limit})</span>
               )}
               {feature.included && feature.limit === 'unlimited' && (
                 <span className="text-emerald-600 text-xs ml-1">(ilimitado)</span>

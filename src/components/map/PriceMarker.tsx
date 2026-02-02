@@ -53,7 +53,7 @@ export function PriceMarker({
         'px-3 py-1.5 rounded-full text-sm font-medium',
         'whitespace-nowrap cursor-pointer',
         // Default colors
-        'bg-slate-800 text-white',
+        'bg-foreground text-white',
         // Shadow and transitions
         'shadow-md hover:shadow-lg',
         'transition-all duration-150 ease-out',
@@ -62,7 +62,7 @@ export function PriceMarker({
         // Selected state
         isSelected && 'ring-2 ring-primary ring-offset-2 scale-110 bg-primary z-30',
         // Hovered state (from list hover)
-        isHovered && !isSelected && 'scale-110 bg-slate-700 z-20'
+        isHovered && !isSelected && 'scale-110 bg-foreground z-20'
       )}
     >
       {formattedPrice}

@@ -190,7 +190,7 @@ export function DecisionButtons({
           variant="outline"
           disabled={isUpdating}
           className={cn(
-            'w-full text-slate-600',
+            'w-full text-muted-foreground',
             currentStatus === 'more-info' && 'bg-amber-50 border-amber-200 text-amber-700'
           )}
           onClick={() => handleDecision('more-info')}

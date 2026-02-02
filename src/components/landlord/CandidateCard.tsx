@@ -186,7 +186,7 @@ export function CandidateCard({
                 style={{ backgroundImage: `url(${candidate.photo})` }}
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-xl font-medium text-slate-400">
+              <div className="flex h-full w-full items-center justify-center text-xl font-medium text-muted-foreground">
                 {candidate.fullName
                   .split(' ')
                   .slice(0, 2)
@@ -199,7 +199,7 @@ export function CandidateCard({
           {/* Name and Occupation */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900 truncate">
+              <h3 className="font-semibold text-foreground truncate">
                 {candidate.fullName.split(' ').slice(0, 2).join(' ')}
               </h3>
               {/* Status Badge */}
@@ -215,10 +215,10 @@ export function CandidateCard({
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-600 truncate">
+            <p className="text-sm text-muted-foreground truncate">
               {candidate.occupation}
             </p>
-            <p className="text-xs text-slate-500">{candidate.age} anos</p>
+            <p className="text-xs text-muted-foreground">{candidate.age} anos</p>
           </div>
 
           {/* Risk Badge */}

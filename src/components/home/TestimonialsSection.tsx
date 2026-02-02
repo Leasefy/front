@@ -52,7 +52,7 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="bg-gray-100 overflow-hidden">
+    <section className="bg-muted overflow-hidden">
       <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           {/* Left - Header & Navigation */}
@@ -128,7 +128,7 @@ export function TestimonialsSection() {
 
                     {/* Author info - Luxterra exact styles */}
                     <div className="flex items-center gap-4">
-                      <div className="w-[52px] h-[52px] rounded-sm overflow-hidden bg-gray-100 flex-shrink-0">
+                      <div className="w-[52px] h-[52px] rounded-sm overflow-hidden bg-muted flex-shrink-0">
                         <Image
                           src={testimonial.image}
                           alt={testimonial.author}

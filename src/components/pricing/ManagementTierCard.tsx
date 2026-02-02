@@ -30,7 +30,7 @@ export function ManagementTierCard({
         'relative flex flex-col rounded-sm border bg-white p-6 transition-all',
         tier.highlighted
           ? 'border-primary shadow-lg ring-1 ring-primary'
-          : 'border-slate-200 hover:border-slate-300',
+          : 'border-border hover:border-border',
         className
       )}
     >
@@ -45,19 +45,19 @@ export function ManagementTierCard({
 
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">{tier.name}</h3>
-        <p className="mt-1 text-sm text-slate-500">{tier.description}</p>
+        <h3 className="text-lg font-semibold text-foreground">{tier.name}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{tier.description}</p>
       </div>
 
       {/* Pricing */}
       <div className="mb-6">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-slate-900">
+          <span className="text-4xl font-bold text-foreground">
             {tier.feePercentage}%
           </span>
-          <span className="text-slate-500">del arriendo</span>
+          <span className="text-muted-foreground">del arriendo</span>
         </div>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           Ejemplo: ${monthlyCost.toLocaleString('es-CO')}/mes para arriendo de $
           {exampleRent.toLocaleString('es-CO')}
         </p>
@@ -68,7 +68,7 @@ export function ManagementTierCard({
         {tier.features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-            <span className="text-sm text-slate-600">{feature}</span>
+            <span className="text-sm text-muted-foreground">{feature}</span>
           </li>
         ))}
       </ul>

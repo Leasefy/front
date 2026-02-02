@@ -38,7 +38,7 @@ export function PropertyCardSkeleton() {
         </div>
 
         {/* Features row - icons with text */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-1.5">
             <Skeleton className="h-4 w-4" />
             <Skeleton className="h-3 w-12" />

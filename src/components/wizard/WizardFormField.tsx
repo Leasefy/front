@@ -69,7 +69,7 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
           ref={ref}
           className={cn(
             'w-full h-12 px-4 rounded-sm',
-            'bg-gray-900 text-white placeholder:text-white/40',
+            'bg-foreground text-white placeholder:text-white/40',
             'border border-transparent',
             'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
             'transition-colors',
@@ -126,7 +126,7 @@ export function DarkSelect({
         onBlur={onBlur}
         className={cn(
           'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
-          'bg-gray-900 text-white',
+          'bg-foreground text-white',
           'border border-transparent',
           'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
           'transition-colors',
@@ -140,7 +140,7 @@ export function DarkSelect({
           {placeholder}
         </option>
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="text-white bg-gray-900">
+          <option key={option.value} value={option.value} className="text-white bg-foreground">
             {option.label}
           </option>
         ))}

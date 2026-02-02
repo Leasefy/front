@@ -97,7 +97,7 @@ export function RecentInsightsSection() {
             <motion.div key={post.title} variants={cardVariants}>
               <Link href={post.href} className="group block">
                 {/* Post Image - aspect ratio 4:3 */}
-                <div className="relative aspect-[4/3] mb-[20px] overflow-hidden rounded-sm bg-gray-100">
+                <div className="relative aspect-[4/3] mb-[20px] overflow-hidden rounded-sm bg-muted">
                   <Image
                     src={post.image}
                     alt={post.title}

@@ -56,7 +56,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
   };
 
   const content = (
-    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-xl hover:bg-slate-50/80 transition-all duration-300 cursor-pointer">
+    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-xl hover:bg-muted/80 transition-all duration-300 cursor-pointer">
       {/* Icon with colored background */}
       <div className={cn(
         'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
@@ -68,16 +68,16 @@ function ActivityItem({ activity }: ActivityItemProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-800 font-medium group-hover:text-slate-900 transition-colors">
+        <p className="text-sm text-foreground font-medium group-hover:text-foreground transition-colors">
           {activity.title}
         </p>
-        <p className="text-xs text-slate-500 mt-1 truncate">
+        <p className="text-xs text-muted-foreground mt-1 truncate">
           {activity.description}
         </p>
       </div>
 
       {/* Time badge */}
-      <span className="text-xs text-slate-400 bg-slate-100/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
+      <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
         {formatRelativeTime(activity.timestamp)}
       </span>
     </div>
@@ -111,7 +111,7 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   if (activities.length === 0) {
     return (
-      <div className={cn('text-sm text-slate-400 text-center py-8', className)}>
+      <div className={cn('text-sm text-muted-foreground text-center py-8', className)}>
         No hay actividad reciente
       </div>
     );

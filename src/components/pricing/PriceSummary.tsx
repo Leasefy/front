@@ -54,8 +54,8 @@ export function PriceSummary({
   const billingLabel = billingCycle === 'monthly' ? 'mes' : 'ano';
 
   return (
-    <div className={cn('bg-slate-50 rounded-sm p-4', className)}>
-      <h4 className="font-medium text-slate-900 mb-4 flex items-center gap-2">
+    <div className={cn('bg-muted rounded-sm p-4', className)}>
+      <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
         Resumen
         {appliedCoupon && (
           <Gift className="w-4 h-4 text-emerald-500" />
@@ -65,10 +65,10 @@ export function PriceSummary({
       <div className="space-y-3 text-sm">
         {/* Plan line */}
         <div className="flex justify-between items-center">
-          <span className="text-slate-600">Plan {plan.name}</span>
+          <span className="text-muted-foreground">Plan {plan.name}</span>
           <span className={cn(
             'font-medium',
-            appliedCoupon && savings > 0 && 'line-through text-slate-400'
+            appliedCoupon && savings > 0 && 'line-through text-muted-foreground'
           )}>
             {formatCurrency(originalPrice)}/{billingLabel}
           </span>
@@ -107,19 +107,19 @@ export function PriceSummary({
         )}
 
         {/* Divider */}
-        <div className="border-t border-slate-200 my-3" />
+        <div className="border-t border-border my-3" />
 
         {/* Total */}
         <div className="flex justify-between items-baseline">
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {isFree ? 'A pagar hoy' : 'Total'}
           </span>
           <div className="text-right">
-            <span className="text-xl font-bold text-slate-900">
+            <span className="text-xl font-bold text-foreground">
               {isFree ? 'Gratis' : formatCurrency(finalPrice)}
             </span>
             {!isFree && (
-              <span className="text-slate-500 text-sm ml-1">
+              <span className="text-muted-foreground text-sm ml-1">
                 /{billingLabel}
               </span>
             )}
@@ -128,7 +128,7 @@ export function PriceSummary({
 
         {/* Billing cycle note */}
         {billingCycle === 'yearly' && !isFree && (
-          <p className="text-xs text-slate-500 text-right">
+          <p className="text-xs text-muted-foreground text-right">
             Facturado anualmente
           </p>
         )}

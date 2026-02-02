@@ -106,7 +106,7 @@ export function TopAgentsSection() {
               className="group"
             >
               {/* Agent Photo - aspect ratio close to Luxterra */}
-              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-sm bg-gray-100">
+              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-sm bg-muted">
                 <Image
                   src={agent.image}
                   alt={agent.name}

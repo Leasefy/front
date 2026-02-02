@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -80,8 +79,8 @@ export function CTASection() {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <Link
-            href="/contacto"
+          <a
+            href="mailto:info@arriendofacil.co"
             className="inline-flex items-center h-[50px] rounded-sm bg-white text-primary text-[15px] tracking-[-0.15px] leading-[20px] hover:bg-white/90 transition-colors group/btn overflow-hidden"
           >
             {/* Arrow icon container - black background */}
@@ -105,7 +104,7 @@ export function CTASection() {
                 Contactanos
               </span>
             </span>
-          </Link>
+          </a>
         </motion.div>
       </div>
     </section>

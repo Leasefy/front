@@ -53,17 +53,17 @@ function EventItem({ event }: EventItemProps) {
 
   const content = (
     <div className={cn(
-      'flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-sm',
+      'flex items-start gap-3 py-3 border-b border-border last:border-0 hover:bg-muted/50 transition-colors -mx-2 px-2 rounded-sm',
       isOverdue && 'bg-red-50/50'
     )}>
       {/* Icon */}
       <div className={cn(
         'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
-        isOverdue ? 'bg-red-100' : 'bg-slate-100'
+        isOverdue ? 'bg-red-100' : 'bg-muted'
       )}>
         <Icon className={cn(
           'w-4 h-4',
-          isOverdue ? 'text-red-400' : 'text-slate-400'
+          isOverdue ? 'text-red-400' : 'text-muted-foreground'
         )} />
       </div>
 
@@ -71,11 +71,11 @@ function EventItem({ event }: EventItemProps) {
       <div className="flex-1 min-w-0">
         <p className={cn(
           'text-sm font-medium',
-          isOverdue ? 'text-red-700' : 'text-slate-700'
+          isOverdue ? 'text-red-700' : 'text-foreground'
         )}>
           {event.title}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {event.description}
         </p>
       </div>
@@ -84,11 +84,11 @@ function EventItem({ event }: EventItemProps) {
       <div className="text-right flex-shrink-0">
         <p className={cn(
           'text-xs font-medium',
-          isOverdue ? 'text-red-500' : 'text-slate-500'
+          isOverdue ? 'text-red-500' : 'text-muted-foreground'
         )}>
           {formatDaysUntil(event.daysUntil)}
         </p>
-        <p className="text-xs text-slate-300 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {formatDate(event.date)}
         </p>
       </div>
@@ -115,7 +115,7 @@ export function UpcomingEventsCard({ events, className, maxEvents = 5 }: Upcomin
 
   if (events.length === 0) {
     return (
-      <div className={cn('text-sm text-slate-400 text-center py-8', className)}>
+      <div className={cn('text-sm text-muted-foreground text-center py-8', className)}>
         No hay eventos proximos
       </div>
     );

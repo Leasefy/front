@@ -104,7 +104,7 @@ export function FilterBar({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 z-40">
+    <div className="bg-white border-b border-border z-40">
       <div className="px-4 lg:px-6 py-3">
         <div className="flex items-center gap-2 flex-wrap">
           {/* City Dropdown */}
@@ -118,8 +118,8 @@ export function FilterBar({
               <button
                 onClick={() => { onCityChange(null); setOpenDropdown(null); }}
                 className={cn(
-                  'w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100',
-                  !filters.city && 'bg-gray-100 font-medium'
+                  'w-full text-left px-3 py-2 text-sm rounded hover:bg-muted',
+                  !filters.city && 'bg-muted font-medium'
                 )}
               >
                 Todas las ciudades
@@ -129,8 +129,8 @@ export function FilterBar({
                   key={city}
                   onClick={() => { onCityChange(city); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100',
-                    filters.city === city && 'bg-gray-100 font-medium'
+                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-muted',
+                    filters.city === city && 'bg-muted font-medium'
                   )}
                 >
                   {city}
@@ -155,8 +155,8 @@ export function FilterBar({
                     setOpenDropdown(null);
                   }}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100',
-                    filters.minPrice === range.min && filters.maxPrice === range.max && 'bg-gray-100 font-medium'
+                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-muted',
+                    filters.minPrice === range.min && filters.maxPrice === range.max && 'bg-muted font-medium'
                   )}
                 >
                   {range.label}
@@ -178,8 +178,8 @@ export function FilterBar({
                   key={opt.label}
                   onClick={() => { onBedroomsChange(opt.value); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100',
-                    filters.bedrooms === opt.value && 'bg-gray-100 font-medium'
+                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-muted',
+                    filters.bedrooms === opt.value && 'bg-muted font-medium'
                   )}
                 >
                   {opt.label}
@@ -201,8 +201,8 @@ export function FilterBar({
                   key={opt.label}
                   onClick={() => { onPropertyTypeChange(opt.value); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100',
-                    filters.propertyType === opt.value && 'bg-gray-100 font-medium'
+                    'w-full text-left px-3 py-2 text-sm rounded hover:bg-muted',
+                    filters.propertyType === opt.value && 'bg-muted font-medium'
                   )}
                 >
                   {opt.label}
@@ -213,7 +213,7 @@ export function FilterBar({
 
           {/* More Filters Button */}
           <button
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-border rounded-sm hover:bg-muted transition-colors"
           >
             <SlidersHorizontal className="w-4 h-4" />
             Filtros
@@ -223,7 +223,7 @@ export function FilterBar({
           {hasActiveFilters && (
             <button
               onClick={onReset}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
               Limpiar
@@ -232,13 +232,13 @@ export function FilterBar({
         </div>
 
         {/* Results count and sort */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-          <p className="text-sm text-gray-900">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+          <p className="text-sm text-foreground">
             <span className="font-semibold">{resultsCount}</span>{' '}
             {resultsCount === 1 ? 'propiedad' : 'propiedades'} en arriendo
           </p>
           <select
-            className="text-sm text-gray-600 bg-transparent border-none cursor-pointer hover:text-gray-900"
+            className="text-sm text-muted-foreground bg-transparent border-none cursor-pointer hover:text-foreground"
             defaultValue="recommended"
           >
             <option value="recommended">Ordenar: Recomendado</option>
@@ -275,8 +275,8 @@ function FilterDropdown({
         className={cn(
           'flex items-center gap-2 px-4 py-2 text-sm border rounded-sm transition-colors',
           hasValue
-            ? 'border-gray-900 bg-gray-900 text-white'
-            : 'border-gray-300 hover:bg-gray-50'
+            ? 'border-foreground bg-foreground text-white'
+            : 'border-border hover:bg-muted'
         )}
       >
         {label}
@@ -289,7 +289,7 @@ function FilterDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute top-full left-0 mt-2 bg-white rounded-sm shadow-lg border border-gray-200 z-50 max-h-64 overflow-auto origin-top-left"
+            className="absolute top-full left-0 mt-2 bg-white rounded-sm shadow-lg border border-border z-50 max-h-64 overflow-auto origin-top-left"
           >
             {children}
           </motion.div>

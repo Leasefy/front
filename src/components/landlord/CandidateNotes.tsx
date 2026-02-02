@@ -108,7 +108,7 @@ export function CandidateNotes({
           className={cn(
             'flex items-start gap-2 text-left text-sm transition-colors',
             hasNote
-              ? 'text-slate-600 hover:text-slate-800'
+              ? 'text-muted-foreground hover:text-foreground'
               : 'text-muted-foreground hover:text-foreground',
             className
           )}

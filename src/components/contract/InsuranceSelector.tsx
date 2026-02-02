@@ -34,10 +34,10 @@ const tierIcons = {
 
 const tierColors = {
   none: {
-    icon: 'text-slate-400',
-    bg: 'bg-slate-100',
-    border: 'border-slate-200',
-    selectedBorder: 'border-slate-400',
+    icon: 'text-muted-foreground',
+    bg: 'bg-muted',
+    border: 'border-border',
+    selectedBorder: 'border-border',
   },
   basic: {
     icon: 'text-blue-600',
@@ -82,8 +82,8 @@ export function InsuranceSelector({
     <div className={cn('space-y-3', className)}>
       {/* Header */}
       <div>
-        <h3 className="font-semibold text-slate-900">Protección del arriendo</h3>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <h3 className="font-semibold text-foreground">Protección del arriendo</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
           Protege tu inversión con una póliza de seguro
         </p>
       </div>
@@ -113,7 +113,7 @@ export function InsuranceSelector({
                 'relative w-full rounded-sm border text-left transition-all',
                 isSelected
                   ? `${colors.selectedBorder} ring-1 ring-current ${colors.bg}`
-                  : `${colors.border} hover:border-slate-300 bg-white`,
+                  : `${colors.border} hover:border-border bg-white`,
                 policy.tier === 'none' && 'opacity-80'
               )}
             >
@@ -123,7 +123,7 @@ export function InsuranceSelector({
                 <div
                   className={cn(
                     'w-10 h-10 rounded-sm flex items-center justify-center shrink-0',
-                    isSelected ? colors.bg : 'bg-slate-50'
+                    isSelected ? colors.bg : 'bg-muted'
                   )}
                 >
                   <Icon className={cn('w-5 h-5', colors.icon)} />
@@ -132,7 +132,7 @@ export function InsuranceSelector({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-sm text-slate-900">
+                    <h4 className="font-medium text-sm text-foreground">
                       {policy.name}
                     </h4>
                     {policy.recommended && (
@@ -141,7 +141,7 @@ export function InsuranceSelector({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {policy.description}
                   </p>
                 </div>
@@ -151,14 +151,14 @@ export function InsuranceSelector({
                   <div className="text-right">
                     <p className={cn(
                       'text-sm font-semibold',
-                      isSelected ? 'text-slate-900' : 'text-slate-700'
+                      isSelected ? 'text-foreground' : 'text-foreground'
                     )}>
                       {calculatedPremium === 0
                         ? 'Gratis'
                         : formatCurrency(calculatedPremium)}
                     </p>
                     {calculatedPremium > 0 && (
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[10px] text-muted-foreground">
                         {policy.percentageRate}% /mes
                       </p>
                     )}
@@ -168,7 +168,7 @@ export function InsuranceSelector({
                       'w-5 h-5 rounded-full flex items-center justify-center transition-all shrink-0',
                       isSelected
                         ? 'bg-primary'
-                        : 'border-2 border-slate-300'
+                        : 'border-2 border-border'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -180,24 +180,24 @@ export function InsuranceSelector({
               {isNotNone && (
                 <div className={cn(
                   'border-t px-3 py-2',
-                  isSelected ? 'border-current/20' : 'border-slate-100'
+                  isSelected ? 'border-current/20' : 'border-border'
                 )}>
                   <div className="flex flex-wrap gap-x-4 gap-y-1">
                     {/* Property Damage */}
                     <div className="flex items-center gap-1.5 text-xs">
-                      <Shield className="w-3 h-3 text-slate-400" />
-                      <span className="text-slate-600">
+                      <Shield className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
                         Daños hasta{' '}
-                        <span className="font-medium text-slate-800">
+                        <span className="font-medium text-foreground">
                           {formatCurrency(policy.coverage.propertyDamage)}
                         </span>
                       </span>
                     </div>
                     {/* Rent Default */}
                     <div className="flex items-center gap-1.5 text-xs">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      <span className="text-slate-600">
-                        <span className="font-medium text-slate-800">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        <span className="font-medium text-foreground">
                           {policy.coverage.rentDefault} meses
                         </span>{' '}
                         de renta
@@ -206,15 +206,15 @@ export function InsuranceSelector({
                     {/* Emergency Repairs */}
                     {policy.coverage.emergencyRepairs && (
                       <div className="flex items-center gap-1.5 text-xs">
-                        <Wrench className="w-3 h-3 text-slate-400" />
-                        <span className="text-slate-600">Urgencias 24/7</span>
+                        <Wrench className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Urgencias 24/7</span>
                       </div>
                     )}
                     {/* Legal Assistance */}
                     {policy.coverage.legalAssistance && (
                       <div className="flex items-center gap-1.5 text-xs">
-                        <Scale className="w-3 h-3 text-slate-400" />
-                        <span className="text-slate-600">Asistencia legal</span>
+                        <Scale className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Asistencia legal</span>
                       </div>
                     )}
                   </div>
@@ -227,8 +227,8 @@ export function InsuranceSelector({
 
       {/* Selected Benefits Detail */}
       {selected.tier !== 'none' && (
-        <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
-          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+        <div className="rounded-sm border border-border bg-muted p-3">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
             Tu póliza incluye
           </p>
           <ul className="space-y-1.5">
@@ -236,7 +236,7 @@ export function InsuranceSelector({
               (feature, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-xs text-slate-700"
+                  className="flex items-start gap-2 text-xs text-foreground"
                 >
                   <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                   <span>{feature}</span>

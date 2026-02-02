@@ -75,8 +75,8 @@ export function KPICard({
   const variantStyles = {
     default: {
       bg: 'bg-white',
-      icon: 'bg-slate-100 text-slate-600',
-      value: 'text-slate-900',
+      icon: 'bg-muted text-muted-foreground',
+      value: 'text-foreground',
     },
     primary: {
       bg: 'bg-white',
@@ -105,9 +105,9 @@ export function KPICard({
   const content = (
     <div
       className={cn(
-        'relative p-5 rounded-sm border border-slate-100 shadow-sm',
+        'relative p-5 rounded-sm border border-border shadow-sm',
         'transition-all duration-200 ease-out',
-        href && 'hover:shadow-md hover:border-slate-200 cursor-pointer',
+        href && 'hover:shadow-md hover:border-border cursor-pointer',
         styles.bg,
         className
       )}
@@ -133,7 +133,7 @@ export function KPICard({
       </p>
 
       {/* Title */}
-      <p className="text-sm text-slate-500 mt-1">{title}</p>
+      <p className="text-sm text-muted-foreground mt-1">{title}</p>
 
       {/* Trend indicator */}
       {trend && (

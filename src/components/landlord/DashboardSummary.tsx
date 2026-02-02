@@ -19,14 +19,14 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   const variantStyles = {
-    default: 'bg-white border-slate-100 text-slate-900',
+    default: 'bg-white border-border text-foreground',
     pending: 'bg-amber-50/50 border-amber-100 text-amber-700',
     'pre-approved': 'bg-blue-50/50 border-blue-100 text-blue-700',
     approved: 'bg-emerald-50/50 border-emerald-100 text-emerald-700',
   };
 
   const iconStyles = {
-    default: 'text-slate-400',
+    default: 'text-muted-foreground',
     pending: 'text-amber-500',
     'pre-approved': 'text-blue-500',
     approved: 'text-emerald-500',
@@ -48,7 +48,7 @@ function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
         </p>
         <p className={cn(
           'text-sm truncate',
-          variant === 'default' ? 'text-slate-500' : 'opacity-80'
+          variant === 'default' ? 'text-muted-foreground' : 'opacity-80'
         )}>
           {label}
         </p>

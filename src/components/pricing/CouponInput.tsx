@@ -110,13 +110,13 @@ export function CouponInput({
     <div className={cn('', className)}>
       <label
         htmlFor="coupon-code"
-        className="text-sm font-medium text-slate-700 mb-2 block"
+        className="text-sm font-medium text-foreground mb-2 block"
       >
         ¿Tienes un cupon?
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             id="coupon-code"
             value={code}
@@ -157,7 +157,7 @@ export function CouponInput({
       )}
 
       {/* Example coupon hint for testing */}
-      <p className="text-xs text-slate-400 mt-2">
+      <p className="text-xs text-muted-foreground mt-2">
         Prueba: LAUNCH100, VERANO20, GRATIS3
       </p>
     </div>

@@ -143,7 +143,7 @@ export function PropertyGrid({
             ) : (
               <>
                 Cargar mas
-                <span className="ml-2 text-gray-500">
+                <span className="ml-2 text-muted-foreground">
                   ({remainingCount} {remainingCount === 1 ? 'propiedad' : 'propiedades'})
                 </span>
               </>
@@ -151,13 +151,13 @@ export function PropertyGrid({
           </Button>
 
           {/* Progress indicator */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 tracking-tight">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground tracking-tight">
             <span>
               Mostrando {displayedProperties.length} de {properties.length}
             </span>
-            <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-gray-400 rounded-full transition-all duration-300"
+                className="h-full bg-muted-foreground rounded-full transition-all duration-300"
                 style={{ width: `${(displayedProperties.length / properties.length) * 100}%` }}
               />
             </div>
@@ -168,7 +168,7 @@ export function PropertyGrid({
       {/* End of results indicator - Left aligned */}
       {!hasMore && properties.length > INITIAL_ITEMS && (
         <div className="flex justify-start pt-4">
-          <p className="text-xs text-gray-500 tracking-tight">
+          <p className="text-xs text-muted-foreground tracking-tight">
             Has visto todas las propiedades disponibles
           </p>
         </div>

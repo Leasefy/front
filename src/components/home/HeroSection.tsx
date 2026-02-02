@@ -36,10 +36,10 @@ export function HeroSection() {
                 </p>
                 <Link
                   href="/propiedades"
-                  className="inline-flex items-center gap-3 bg-white text-gray-900 rounded-full pl-7 pr-3 py-2.5 text-sm tracking-tight hover:bg-white/95 transition-all duration-300 group"
+                  className="inline-flex items-center gap-3 bg-white text-foreground rounded-full pl-7 pr-3 py-2.5 text-sm tracking-tight hover:bg-white/95 transition-all duration-300 group"
                 >
                   <span>Ver propiedades</span>
-                  <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-full bg-muted group-hover:bg-muted transition-colors">
                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
@@ -55,8 +55,8 @@ export function HeroSection() {
 
             {/* Right Column - Agent Card - Luxterra EXACT style */}
             <div className="hidden md:block pb-8">
-              <Link
-                href="/contacto"
+              <a
+                href="mailto:info@arriendofacil.co"
                 className="flex items-stretch bg-white hover:bg-white/95 transition-all duration-300"
               >
                 {/* Photo - square */}
@@ -71,18 +71,18 @@ export function HeroSection() {
                 </div>
                 {/* Text - middle section */}
                 <div className="flex flex-col justify-center px-5">
-                  <p className="text-gray-500 text-xs tracking-tight">Te ayudamos</p>
-                  <p className="text-gray-900 text-sm tracking-tight font-normal whitespace-nowrap">
+                  <p className="text-muted-foreground text-xs tracking-tight">Te ayudamos</p>
+                  <p className="text-foreground text-sm tracking-tight font-normal whitespace-nowrap">
                     Habla con un asesor
                   </p>
                 </div>
                 {/* Arrow button - black square, same height as photo */}
-                <div className="w-[48px] h-[72px] bg-gray-900 flex items-center justify-center flex-shrink-0">
+                <div className="w-[48px] h-[72px] bg-foreground flex items-center justify-center flex-shrink-0">
                   <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </div>
-              </Link>
+              </a>
             </div>
           </div>
         </div>

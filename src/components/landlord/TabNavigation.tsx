@@ -30,7 +30,7 @@ export function TabNavigation({
 }: TabNavigationProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className={className}>
-      <TabsList className="w-full justify-start border-b border-slate-200/80 rounded-none bg-transparent h-auto p-0 gap-1">
+      <TabsList className="w-full justify-start border-b border-border/80 rounded-none bg-transparent h-auto p-0 gap-1">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.id}
@@ -39,7 +39,7 @@ export function TabNavigation({
             className={cn(
               'relative py-4 px-4 rounded-none transition-all duration-300',
               'data-[state=active]:shadow-none data-[state=active]:bg-transparent',
-              'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:text-slate-800',
+              'data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground',
               'data-[state=active]:text-black',
               'data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed',
               'group'
@@ -54,7 +54,7 @@ export function TabNavigation({
                     'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
                     activeTab === tab.id
                       ? 'bg-black text-white'
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
+                      : 'bg-muted text-muted-foreground group-hover:bg-muted'
                   )}
                 >
                   {tab.count}

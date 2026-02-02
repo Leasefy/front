@@ -76,11 +76,11 @@ export function PaymentHistory({
           className
         )}
       >
-        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-          <Receipt className="w-6 h-6 text-slate-400" />
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+          <Receipt className="w-6 h-6 text-muted-foreground" />
         </div>
-        <p className="text-slate-600 font-medium">No hay historial de pagos</p>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-muted-foreground font-medium">No hay historial de pagos</p>
+        <p className="text-sm text-muted-foreground mt-1">
           Los pagos apareceran aqui
         </p>
       </div>
@@ -93,28 +93,28 @@ export function PaymentHistory({
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100">
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+            <tr className="border-b border-border">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Fecha vencimiento
               </th>
               {showConcept && (
-                <th className="text-left py-3 px-4 font-medium text-slate-500">
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                   Concepto
                 </th>
               )}
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Monto
               </th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Estado
               </th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Fecha pago
               </th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Metodo
               </th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Referencia
               </th>
             </tr>
@@ -127,17 +127,17 @@ export function PaymentHistory({
               return (
                 <tr
                   key={payment.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                  className="border-b border-border hover:bg-muted/50 transition-colors"
                 >
-                  <td className="py-3 px-4 text-slate-900">
+                  <td className="py-3 px-4 text-foreground">
                     {formatDate(payment.dueDate)}
                   </td>
                   {showConcept && (
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-muted-foreground">
                       {conceptLabels[payment.concept]}
                     </td>
                   )}
-                  <td className="py-3 px-4 font-medium text-slate-900">
+                  <td className="py-3 px-4 font-medium text-foreground">
                     {formatCurrency(payment.amount)}
                   </td>
                   <td className="py-3 px-4">
@@ -146,13 +146,13 @@ export function PaymentHistory({
                       {status.label}
                     </Badge>
                   </td>
-                  <td className="py-3 px-4 text-slate-500">
+                  <td className="py-3 px-4 text-muted-foreground">
                     {payment.paidDate ? formatDate(payment.paidDate) : '-'}
                   </td>
-                  <td className="py-3 px-4 text-slate-500">
+                  <td className="py-3 px-4 text-muted-foreground">
                     {payment.method ? methodLabels[payment.method] : '-'}
                   </td>
-                  <td className="py-3 px-4 text-slate-400 font-mono text-xs">
+                  <td className="py-3 px-4 text-muted-foreground font-mono text-xs">
                     {payment.reference || '-'}
                   </td>
                 </tr>
@@ -171,18 +171,18 @@ export function PaymentHistory({
           return (
             <div
               key={payment.id}
-              className="bg-slate-50 rounded-sm p-4 space-y-3"
+              className="bg-muted rounded-sm p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     Vence {formatDate(payment.dueDate)}
                   </p>
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold text-foreground">
                     {formatCurrency(payment.amount)}
                   </p>
                   {showConcept && (
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {conceptLabels[payment.concept]}
                     </p>
                   )}
@@ -194,7 +194,7 @@ export function PaymentHistory({
               </div>
 
               {payment.paidDate && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 pt-2 border-t border-slate-200">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border">
                   <span>Pagado: {formatDate(payment.paidDate)}</span>
                   {payment.method && (
                     <span>Via: {methodLabels[payment.method]}</span>

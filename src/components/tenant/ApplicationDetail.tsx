@@ -229,13 +229,13 @@ export function ApplicationDetail({
                   <span>Progreso</span>
                   <span>{progress}%</span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
                       status === 'approved' && 'bg-emerald-500',
                       status === 'rejected' && 'bg-red-500',
-                      status === 'withdrawn' && 'bg-slate-400',
+                      status === 'withdrawn' && 'bg-muted-foreground',
                       ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-blue-500'
                     )}
                     style={{ width: `${progress}%` }}

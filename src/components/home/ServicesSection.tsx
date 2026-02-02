@@ -16,14 +16,14 @@ const services = [
     title: "Evaluacion",
     description: "Evaluamos inquilinos con AI para que tomes decisiones informadas en minutos.",
     image: "https://images.pexels.com/photos/6899260/pexels-photo-6899260.jpeg?auto=compress&cs=tinysrgb&w=800",
-    href: "/como-funciona",
+    href: "/pricing",
     cta: "Como funciona",
   },
   {
     title: "Valoracion",
     description: "Entiende el valor de tu propiedad y las mejores ofertas del mercado.",
     image: "https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=800",
-    href: "/contacto",
+    href: "/pricing",
     cta: "Solicitar valoracion",
   },
 ];
@@ -56,7 +56,7 @@ const cardVariants = {
  */
 export function ServicesSection() {
   return (
-    <section className="bg-gray-100 overflow-hidden py-[40px]">
+    <section className="bg-muted overflow-hidden py-[40px]">
       {/* Outer container for centering */}
       <div className="mx-auto max-w-[1356px] px-8">
         {/* Dark inner container with rounded corners - Luxterra style */}

@@ -258,8 +258,8 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
           </Button>
 
           {/* Demo credentials hint */}
-          <div className="p-3 rounded-sm bg-slate-50 border border-slate-200">
-            <p className="text-xs text-slate-500 text-center">
+          <div className="p-3 rounded-sm bg-muted border border-border">
+            <p className="text-xs text-muted-foreground text-center">
               <strong>Demo:</strong> landlord@example.com / tenant@example.com
               <br />
               Contrasena: password123

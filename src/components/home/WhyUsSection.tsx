@@ -30,12 +30,12 @@ const stats = [
  */
 export function WhyUsSection() {
   return (
-    <section className="light-section bg-gray-50 section-padding">
+    <section className="light-section bg-muted section-padding">
       <div className="container-wide">
         {/* Header */}
         <div className="mb-16">
-          <SectionLabel className="text-gray-500 mb-4">Por que nosotros</SectionLabel>
-          <h2 className="heading-display text-gray-900">
+          <SectionLabel className="text-muted-foreground mb-4">Por que nosotros</SectionLabel>
+          <h2 className="heading-display text-foreground">
             Expertos en arriendos en Colombia
           </h2>
         </div>
@@ -43,7 +43,7 @@ export function WhyUsSection() {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left - Image Card - NO rounded corners */}
-          <div className="relative overflow-hidden bg-gray-950 min-h-[500px]">
+          <div className="relative overflow-hidden bg-foreground min-h-[500px]">
             <Image
               src="https://images.unsplash.com/photo-1600573472550-8090b5e0745e?q=80&w=1200"
               alt="Asesor inmobiliario"
@@ -73,12 +73,12 @@ export function WhyUsSection() {
                 className="bg-white rounded-sm p-6 flex flex-col"
               >
                 <div className="mb-auto">
-                  <p className="text-3xl md:text-4xl font-normal text-gray-900 tracking-tight">
+                  <p className="text-3xl md:text-4xl font-normal text-foreground tracking-tight">
                     {stat.value}
                   </p>
-                  <p className="text-xs text-gray-900 tracking-tight mt-1">{stat.label}</p>
+                  <p className="text-xs text-foreground tracking-tight mt-1">{stat.label}</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-6 leading-relaxed tracking-tight">
+                <p className="text-xs text-muted-foreground mt-6 leading-relaxed tracking-tight">
                   {stat.description}
                 </p>
               </div>

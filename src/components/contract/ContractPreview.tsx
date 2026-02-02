@@ -53,53 +53,53 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
   return (
     <div
       className={cn(
-        'rounded-sm border border-slate-200 bg-white shadow-sm',
+        'rounded-sm border border-border bg-white shadow-sm',
         className
       )}
     >
       {/* Header */}
-      <div className="border-b border-slate-100 p-6 text-center">
+      <div className="border-b border-border p-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <FileText className="h-6 w-6 text-primary" />
         </div>
-        <h2 className="text-xl font-semibold text-slate-900">
+        <h2 className="text-xl font-semibold text-foreground">
           CONTRATO DE ARRENDAMIENTO
         </h2>
-        <p className="mt-1 text-sm text-slate-500">{template.name}</p>
-        <p className="mt-2 text-xs text-slate-400">ID: {contract.id}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{template.name}</p>
+        <p className="mt-2 text-xs text-muted-foreground">ID: {contract.id}</p>
       </div>
 
       {/* Contract Summary */}
-      <div className="border-b border-slate-100 p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <CreditCard className="h-4 w-4 text-slate-400" />
+      <div className="border-b border-border p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
           Resumen del Contrato
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Canon mensual</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">
+          <div className="rounded-sm border border-border bg-muted p-3">
+            <p className="text-xs text-muted-foreground">Canon mensual</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">
               {formatCurrency(contract.monthlyRent)}
             </p>
           </div>
-          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Garantia</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900">
+          <div className="rounded-sm border border-border bg-muted p-3">
+            <p className="text-xs text-muted-foreground">Garantia</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
               {contract.guaranteeType === 'poliza' ? 'Poliza de arrendamiento' : 'Codeudor'}
             </p>
             {contract.guaranteeDetails && (
-              <p className="mt-0.5 text-xs text-slate-500 truncate">{contract.guaranteeDetails}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground truncate">{contract.guaranteeDetails}</p>
             )}
           </div>
-          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Administracion</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">
+          <div className="rounded-sm border border-border bg-muted p-3">
+            <p className="text-xs text-muted-foreground">Administracion</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">
               {contract.adminFee > 0 ? formatCurrency(contract.adminFee) : 'Incluida'}
             </p>
           </div>
-          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Dia de pago</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">
+          <div className="rounded-sm border border-border bg-muted p-3">
+            <p className="text-xs text-muted-foreground">Dia de pago</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">
               Dia {contract.paymentDueDay}
             </p>
           </div>
@@ -108,26 +108,26 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Insurance (if selected) */}
       {insurancePolicy && (
-        <div className="border-b border-slate-100 p-6">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Shield className="h-4 w-4 text-slate-400" />
+        <div className="border-b border-border p-6">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Shield className="h-4 w-4 text-muted-foreground" />
             Poliza de Seguro
           </h3>
           <div className="rounded-sm border border-emerald-100 bg-emerald-50 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-slate-900">{insurancePolicy.name}</p>
-                <p className="text-sm text-slate-600">{insurancePolicy.description}</p>
+                <p className="font-medium text-foreground">{insurancePolicy.name}</p>
+                <p className="text-sm text-muted-foreground">{insurancePolicy.description}</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-lg font-semibold text-foreground">
                   {formatCurrency(insurancePolicy.monthlyPremium)}
                 </p>
-                <p className="text-xs text-slate-500">/mes</p>
+                <p className="text-xs text-muted-foreground">/mes</p>
               </div>
             </div>
             {insurancePolicy.features.length > 0 && (
-              <ul className="mt-3 pt-3 border-t border-emerald-200 grid gap-1 text-sm text-slate-600">
+              <ul className="mt-3 pt-3 border-t border-emerald-200 grid gap-1 text-sm text-muted-foreground">
                 {insurancePolicy.features.slice(0, 4).map((feature, i) => (
                   <li key={i}>• {feature}</li>
                 ))}
@@ -138,56 +138,56 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       )}
 
       {/* Property & Dates */}
-      <div className="border-b border-slate-100 p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <Building2 className="h-4 w-4 text-slate-400" />
+      <div className="border-b border-border p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
           Inmueble y Vigencia
         </h3>
         <div className="space-y-3 text-sm">
           <div>
-            <p className="text-slate-500">Direccion</p>
-            <p className="font-medium text-slate-900">{contract.propertyAddress}</p>
-            <p className="text-slate-600">{contract.propertyCity}</p>
+            <p className="text-muted-foreground">Direccion</p>
+            <p className="font-medium text-foreground">{contract.propertyAddress}</p>
+            <p className="text-muted-foreground">{contract.propertyCity}</p>
           </div>
           <div className="flex gap-6">
             <div>
-              <p className="text-slate-500">Inicio</p>
-              <p className="font-medium text-slate-900">{formatDate(contract.startDate)}</p>
+              <p className="text-muted-foreground">Inicio</p>
+              <p className="font-medium text-foreground">{formatDate(contract.startDate)}</p>
             </div>
             <div>
-              <p className="text-slate-500">Fin</p>
-              <p className="font-medium text-slate-900">{formatDate(contract.endDate)}</p>
+              <p className="text-muted-foreground">Fin</p>
+              <p className="font-medium text-foreground">{formatDate(contract.endDate)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Parties */}
-      <div className="border-b border-slate-100 p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <User className="h-4 w-4 text-slate-400" />
+      <div className="border-b border-border p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <User className="h-4 w-4 text-muted-foreground" />
           Partes del Contrato
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord */}
-          <div className="rounded-sm border border-slate-100 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          <div className="rounded-sm border border-border p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Arrendador
             </p>
-            <p className="mt-2 font-medium text-slate-900">{contract.landlordName}</p>
-            <p className="text-sm text-slate-600">CC: {contract.landlordDocument}</p>
-            <p className="text-sm text-slate-500">{contract.landlordEmail}</p>
+            <p className="mt-2 font-medium text-foreground">{contract.landlordName}</p>
+            <p className="text-sm text-muted-foreground">CC: {contract.landlordDocument}</p>
+            <p className="text-sm text-muted-foreground">{contract.landlordEmail}</p>
           </div>
           {/* Tenant */}
-          <div className="rounded-sm border border-slate-100 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          <div className="rounded-sm border border-border p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Arrendatario
             </p>
-            <p className="mt-2 font-medium text-slate-900">{contract.tenantName}</p>
-            <p className={cn("text-sm", isContractSigned ? "text-slate-600" : "text-slate-400 font-mono")}>
+            <p className="mt-2 font-medium text-foreground">{contract.tenantName}</p>
+            <p className={cn("text-sm", isContractSigned ? "text-muted-foreground" : "text-muted-foreground font-mono")}>
               CC: {tenantDocument}
             </p>
-            <p className={cn("text-sm", isContractSigned ? "text-slate-500" : "text-slate-400 font-mono")}>
+            <p className={cn("text-sm", isContractSigned ? "text-muted-foreground" : "text-muted-foreground font-mono")}>
               {tenantEmail}
             </p>
             {!isContractSigned && (
@@ -201,16 +201,16 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       </div>
 
       {/* Clauses */}
-      <div className="border-b border-slate-100 p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <Calendar className="h-4 w-4 text-slate-400" />
+      <div className="border-b border-border p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
           Clausulas del Contrato
         </h3>
         <div className="space-y-4">
           {template.clauses.map((clause) => (
             <div key={clause.id} className="text-sm">
-              <h4 className="font-medium text-slate-900">{clause.title}</h4>
-              <p className="mt-1 text-slate-600 leading-relaxed">{clause.content}</p>
+              <h4 className="font-medium text-foreground">{clause.title}</h4>
+              <p className="mt-1 text-muted-foreground leading-relaxed">{clause.content}</p>
             </div>
           ))}
         </div>
@@ -218,17 +218,17 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Special Conditions */}
       {contract.specialConditions && (
-        <div className="border-b border-slate-100 p-6">
-          <h3 className="mb-2 text-sm font-semibold text-slate-900">
+        <div className="border-b border-border p-6">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">
             Condiciones Especiales
           </h3>
-          <p className="text-sm text-slate-600">{contract.specialConditions}</p>
+          <p className="text-sm text-muted-foreground">{contract.specialConditions}</p>
         </div>
       )}
 
       {/* Signatures */}
       <div className="p-6">
-        <h3 className="mb-4 text-sm font-semibold text-slate-900">Firmas</h3>
+        <h3 className="mb-4 text-sm font-semibold text-foreground">Firmas</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord Signature */}
           <div
@@ -236,10 +236,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               'rounded-sm border p-4',
               contract.landlordSignature
                 ? 'border-emerald-200 bg-emerald-50'
-                : 'border-dashed border-slate-300 bg-slate-50'
+                : 'border-dashed border-border bg-muted'
             )}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Firma Arrendador
             </p>
             {contract.landlordSignature ? (
@@ -252,7 +252,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">Pendiente</p>
+              <p className="mt-2 text-sm text-muted-foreground">Pendiente</p>
             )}
           </div>
 
@@ -262,10 +262,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               'rounded-sm border p-4',
               contract.tenantSignature
                 ? 'border-emerald-200 bg-emerald-50'
-                : 'border-dashed border-slate-300 bg-slate-50'
+                : 'border-dashed border-border bg-muted'
             )}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Firma Arrendatario
             </p>
             {contract.tenantSignature ? (
@@ -278,15 +278,15 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">Pendiente</p>
+              <p className="mt-2 text-sm text-muted-foreground">Pendiente</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Legal Footer */}
-      <div className="border-t border-slate-100 bg-slate-50 p-4 text-center">
-        <p className="text-xs text-slate-400">
+      <div className="border-t border-border bg-muted p-4 text-center">
+        <p className="text-xs text-muted-foreground">
           Este contrato se rige por la Ley 820 de 2003 y demas normas concordantes.
           <br />
           Las firmas electronicas tienen validez legal segun la Ley 527 de 1999.

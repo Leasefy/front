@@ -70,7 +70,7 @@ export function CandidateDetail({
     return (
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <SheetContent className="w-full sm:max-w-lg p-6">
-          <div className="flex h-full items-center justify-center text-slate-500">
+          <div className="flex h-full items-center justify-center text-muted-foreground">
             No hay candidato seleccionado
           </div>
         </SheetContent>
@@ -115,7 +115,7 @@ export function CandidateDetail({
             className="absolute right-4 top-4 z-50 w-8 h-8 flex items-center justify-center rounded-sm hover:bg-black/5 transition-colors"
             aria-label="Cerrar"
           >
-            <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+            <X className="h-5 w-5 text-muted-foreground hover:text-muted-foreground" />
           </button>
 
           {/* Scrollable Content Area */}
@@ -125,17 +125,17 @@ export function CandidateDetail({
             data-lenis-prevent
           >
             {/* Header */}
-            <div className="p-6 border-b border-slate-100">
+            <div className="p-6 border-b border-border">
               <div className="flex items-start gap-4 pr-10">
                 {/* Photo */}
-                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-sm bg-slate-100">
+                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-sm bg-muted">
                   {candidate.photo ? (
                     <div
                       className="h-full w-full bg-cover bg-center"
                       style={{ backgroundImage: `url(${candidate.photo})` }}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-lg font-medium text-slate-400">
+                    <div className="flex h-full w-full items-center justify-center text-lg font-medium text-muted-foreground">
                       {initials}
                     </div>
                   )}
@@ -143,24 +143,24 @@ export function CandidateDetail({
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-slate-900 leading-tight">
+                  <h2 className="text-lg font-semibold text-foreground leading-tight">
                     {candidate.fullName}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {candidate.occupation}, {candidate.age} anos
                   </p>
 
                   {/* Contact Info */}
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <Mail className="h-3.5 w-3.5" />
-                      <span className={cn(!isDataRevealed && 'font-mono text-slate-400')}>
+                      <span className={cn(!isDataRevealed && 'font-mono text-muted-foreground')}>
                         {getDisplayEmail(candidate.email, currentStatus)}
                       </span>
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5" />
-                      <span className={cn(!isDataRevealed && 'font-mono text-slate-400')}>
+                      <span className={cn(!isDataRevealed && 'font-mono text-muted-foreground')}>
                         {getDisplayPhone(candidate.phone, currentStatus)}
                       </span>
                     </span>
@@ -201,8 +201,8 @@ export function CandidateDetail({
             </div>
 
             {/* Notes Section */}
-            <div className="border-t border-slate-100 p-6">
-              <h3 className="text-sm font-medium text-slate-900 mb-3">
+            <div className="border-t border-border p-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Notas
               </h3>
               <CandidateNotes candidateId={candidate.id} variant="textarea" />
@@ -210,7 +210,7 @@ export function CandidateDetail({
           </div>
 
           {/* Footer: Decision Buttons (sticky) */}
-          <div className="border-t border-slate-100 bg-white p-4 space-y-3">
+          <div className="border-t border-border bg-white p-4 space-y-3">
             {/* Generate Contract Button - shown when approved */}
             {currentStatus === 'approved' && (
               <Link

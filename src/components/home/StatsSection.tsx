@@ -20,10 +20,10 @@ export function StatsSection() {
       {/* Container with padding - matches Luxterra */}
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
         {/* Black container with rounded corners */}
-        <div className="bg-gray-950 rounded-sm py-16 md:py-24 px-8 md:px-16 lg:px-20">
+        <div className="bg-foreground rounded-sm py-16 md:py-24 px-8 md:px-16 lg:px-20">
           {/* Header - Centered */}
           <div className="text-center mb-16 md:mb-20">
-            <SectionLabel className="text-gray-500 mb-4 justify-center">
+            <SectionLabel className="text-muted-foreground mb-4 justify-center">
               De un vistazo
             </SectionLabel>
             <h2 className="text-[1.75rem] md:text-[2.5rem] font-light text-white leading-[1.2] tracking-[-0.02em] italic">
@@ -42,7 +42,7 @@ export function StatsSection() {
                     duration={2000}
                   />
                 </div>
-                <p className="text-gray-500 text-[13px] md:text-sm tracking-[-0.01em]">
+                <p className="text-muted-foreground text-[13px] md:text-sm tracking-[-0.01em]">
                   {stat.label}
                 </p>
               </div>

@@ -36,7 +36,7 @@ export function PublishShell({ children }: PublishShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-10 bg-white border-b border-black/5">
         <div className="px-4 py-3">

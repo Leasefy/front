@@ -127,14 +127,14 @@ export function FilterSidebar({
     <div className="space-y-6">
       {/* Personalization toggle - premium feature */}
       {showPersonalization && onOnlyAffordableChange && (
-        <div className="pb-6 border-b border-gray-100">
+        <div className="pb-6 border-b border-border">
           <button
             onClick={() => onOnlyAffordableChange(!onlyAffordable)}
             className={cn(
               'w-full flex items-center gap-3 p-4 rounded-sm transition-all duration-200',
               onlyAffordable
                 ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
-                : 'bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                : 'bg-muted border border-border hover:bg-muted hover:border-border'
             )}
           >
             <div
@@ -142,16 +142,16 @@ export function FilterSidebar({
                 'w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-all duration-200',
                 onlyAffordable
                   ? 'bg-green-600 border-green-600'
-                  : 'bg-white border-gray-300'
+                  : 'bg-white border-border'
               )}
             >
               {onlyAffordable && <Check className="w-3 h-3 text-white" />}
             </div>
             <div className="text-left flex-1">
-              <p className="text-sm font-medium text-gray-900 tracking-tight">
+              <p className="text-sm font-medium text-foreground tracking-tight">
                 Solo propiedades para mi
               </p>
-              <p className="text-xs text-gray-500 tracking-tight mt-0.5">
+              <p className="text-xs text-muted-foreground tracking-tight mt-0.5">
                 Filtrar por tu presupuesto y preferencias
               </p>
             </div>
@@ -166,14 +166,14 @@ export function FilterSidebar({
 
       {/* Results count and reset */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600 tracking-tight">
-          <span className="font-medium text-gray-900">{resultsCount}</span>{' '}
+        <p className="text-sm text-muted-foreground tracking-tight">
+          <span className="font-medium text-foreground">{resultsCount}</span>{' '}
           {resultsCount === 1 ? 'resultado' : 'resultados'}
         </p>
         {hasActiveFilters && (
           <button
             onClick={handleReset}
-            className="text-xs text-gray-900 hover:text-gray-700 transition-colors tracking-tight hover:underline"
+            className="text-xs text-foreground hover:text-foreground transition-colors tracking-tight hover:underline"
           >
             Limpiar filtros
           </button>
@@ -182,19 +182,19 @@ export function FilterSidebar({
 
       {/* City filter */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700 tracking-tight">Ciudad</Label>
+        <Label className="text-xs font-medium text-foreground tracking-tight">Ciudad</Label>
         <select
           value={filters.city ?? ''}
           onChange={(e) => onCityChange(e.target.value || null)}
           aria-label="Filtrar por ciudad"
           className={cn(
             'flex h-11 w-full rounded-sm border bg-white px-3 py-2',
-            'text-sm text-gray-900 tracking-tight',
+            'text-sm text-foreground tracking-tight',
             'transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900',
+            'focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground',
             filters.city
-              ? 'border-gray-300 bg-gray-50/50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'border-border bg-muted/50'
+              : 'border-border hover:border-border'
           )}
         >
           <option value="">Todas las ciudades</option>
@@ -208,7 +208,7 @@ export function FilterSidebar({
 
       {/* Price range filter */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700 tracking-tight">
+        <Label className="text-xs font-medium text-foreground tracking-tight">
           Precio mensual (COP)
         </Label>
         <div className="flex items-center gap-3">
@@ -221,16 +221,16 @@ export function FilterSidebar({
               onBlur={handleMinPriceBlur}
               aria-label="Precio minimo"
               className={cn(
-                'h-11 rounded-sm border bg-white text-sm placeholder:text-gray-400 tracking-tight',
+                'h-11 rounded-sm border bg-white text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
-                'focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900',
+                'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.minPrice
-                  ? 'border-gray-300 bg-gray-50/50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-border bg-muted/50'
+                  : 'border-border hover:border-border'
               )}
             />
           </div>
-          <span className="text-gray-300">-</span>
+          <span className="text-muted-foreground">-</span>
           <div className="flex-1 relative">
             <Input
               type="number"
@@ -240,12 +240,12 @@ export function FilterSidebar({
               onBlur={handleMaxPriceBlur}
               aria-label="Precio maximo"
               className={cn(
-                'h-11 rounded-sm border bg-white text-sm placeholder:text-gray-400 tracking-tight',
+                'h-11 rounded-sm border bg-white text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
-                'focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900',
+                'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.maxPrice
-                  ? 'border-gray-300 bg-gray-50/50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-border bg-muted/50'
+                  : 'border-border hover:border-border'
               )}
             />
           </div>
@@ -254,7 +254,7 @@ export function FilterSidebar({
 
       {/* Bedrooms filter */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700 tracking-tight">Habitaciones</Label>
+        <Label className="text-xs font-medium text-foreground tracking-tight">Habitaciones</Label>
         <div className="flex flex-wrap gap-2">
           {BEDROOM_OPTIONS.map((num) => (
             <button
@@ -267,8 +267,8 @@ export function FilterSidebar({
               className={cn(
                 'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.bedrooms === num
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                  ? 'bg-foreground text-white shadow-sm'
+                  : 'bg-white text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
               {num === 4 ? '4+' : num}
@@ -279,7 +279,7 @@ export function FilterSidebar({
 
       {/* Property type filter */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700 tracking-tight">Tipo de propiedad</Label>
+        <Label className="text-xs font-medium text-foreground tracking-tight">Tipo de propiedad</Label>
         <div className="flex flex-wrap gap-2">
           {PROPERTY_TYPE_OPTIONS.map(({ value, label }) => (
             <button
@@ -294,8 +294,8 @@ export function FilterSidebar({
               className={cn(
                 'h-10 px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.propertyType === value
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                  ? 'bg-foreground text-white shadow-sm'
+                  : 'bg-white text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
               {label}
@@ -314,15 +314,15 @@ export function FilterSidebar({
           onClick={() => setIsOpen(true)}
           className={cn(
             'mb-4 w-full flex items-center justify-center gap-2 h-11 rounded-sm',
-            'bg-white text-gray-700 border border-gray-200',
+            'bg-white text-foreground border border-border',
             'text-sm tracking-tight transition-all duration-200',
-            'hover:bg-gray-50 hover:border-gray-300 active:scale-[0.99]'
+            'hover:bg-muted hover:border-border active:scale-[0.99]'
           )}
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filtros
           {activeFilterCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-sm bg-gray-900 text-xs text-white font-medium">
+            <span className="ml-2 px-2 py-0.5 rounded-sm bg-foreground text-xs text-white font-medium">
               {activeFilterCount}
             </span>
           )}
@@ -351,17 +351,17 @@ export function FilterSidebar({
             style={{ animationDuration: '200ms' }}
           >
             {/* Handle */}
-            <div className="sticky top-0 bg-white pt-3 pb-2 border-b border-gray-100">
-              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" aria-hidden="true" />
+            <div className="sticky top-0 bg-white pt-3 pb-2 border-b border-border">
+              <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
             </div>
 
             {/* Header */}
-            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
-              <h2 id="filter-drawer-title" className="text-lg font-medium text-gray-900 tracking-tight">Filtros</h2>
+            <div className="px-6 py-4 flex items-center justify-between border-b border-border">
+              <h2 id="filter-drawer-title" className="text-lg font-medium text-foreground tracking-tight">Filtros</h2>
               <button
                 ref={closeButtonRef}
                 onClick={() => setIsOpen(false)}
-                className="w-9 h-9 rounded-sm bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                className="w-9 h-9 rounded-sm bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
                 aria-label="Cerrar filtros"
               >
                 <X className="h-4 w-4" />
@@ -374,12 +374,12 @@ export function FilterSidebar({
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 px-6 py-4 bg-white border-t border-gray-100">
+            <div className="sticky bottom-0 px-6 py-4 bg-white border-t border-border">
               <button
                 onClick={() => setIsOpen(false)}
                 className={cn(
                   'w-full h-12 rounded-sm text-sm font-medium tracking-tight transition-all duration-200',
-                  'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.99]'
+                  'bg-foreground text-white hover:bg-foreground active:scale-[0.99]'
                 )}
               >
                 Ver {resultsCount} {resultsCount === 1 ? 'resultado' : 'resultados'}
@@ -391,11 +391,11 @@ export function FilterSidebar({
 
       {/* Desktop sidebar */}
       <aside className="hidden w-72 shrink-0 lg:block">
-        <div className="sticky top-24 bg-white p-6 rounded-sm shadow-sm border border-gray-100">
+        <div className="sticky top-24 bg-white p-6 rounded-sm shadow-sm border border-border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base font-medium text-gray-900 tracking-tight">Filtros</h2>
+            <h2 className="text-base font-medium text-foreground tracking-tight">Filtros</h2>
             {activeFilterCount > 0 && (
-              <span className="px-2 py-0.5 rounded-sm bg-gray-100 text-xs text-gray-700 font-medium">
+              <span className="px-2 py-0.5 rounded-sm bg-muted text-xs text-foreground font-medium">
                 {activeFilterCount} activo{activeFilterCount > 1 ? 's' : ''}
               </span>
             )}

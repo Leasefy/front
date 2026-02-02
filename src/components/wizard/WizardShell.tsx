@@ -65,7 +65,7 @@ export function WizardShell({
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
 
   return (
-    <div className={cn('min-h-screen bg-gray-50', className)}>
+    <div className={cn('min-h-screen bg-muted', className)}>
       {/* Mobile Header - only visible on mobile */}
       <header className="lg:hidden sticky top-0 z-10 bg-white border-b border-black/5">
         <div className="px-4 py-3">

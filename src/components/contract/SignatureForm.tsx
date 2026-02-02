@@ -58,7 +58,7 @@ export function SignatureForm({
   if (isSigned) {
     return (
       <div className={cn('space-y-3', className)}>
-        <h3 className="font-semibold text-slate-900">Firma electrónica</h3>
+        <h3 className="font-semibold text-foreground">Firma electrónica</h3>
         <div className="rounded-sm border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500">
@@ -80,13 +80,13 @@ export function SignatureForm({
     <div className={cn('space-y-3', className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900">Firma electrónica</h3>
-        <span className="text-xs text-slate-500">Como {role}</span>
+        <h3 className="font-semibold text-foreground">Firma electrónica</h3>
+        <span className="text-xs text-muted-foreground">Como {role}</span>
       </div>
 
       {/* Legal Notice - Compact */}
-      <div className="flex items-start gap-2 rounded-sm bg-slate-50 p-3 text-xs text-slate-600">
-        <Info className="h-4 w-4 shrink-0 text-slate-400 mt-0.5" />
+      <div className="flex items-start gap-2 rounded-sm bg-muted p-3 text-xs text-muted-foreground">
+        <Info className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
         <p>
           Firma válida según Ley 527/1999 sobre comercio electrónico en Colombia.
         </p>
@@ -101,7 +101,7 @@ export function SignatureForm({
             disabled={isLoading}
             className="mt-0.5"
           />
-          <span className="text-xs text-slate-600 group-hover:text-slate-800 transition-colors">
+          <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
             Acepto los términos del contrato incluyendo obligaciones, pagos y terminación.
           </span>
         </label>
@@ -113,7 +113,7 @@ export function SignatureForm({
             disabled={isLoading}
             className="mt-0.5"
           />
-          <span className="text-xs text-slate-600 group-hover:text-slate-800 transition-colors">
+          <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
             Entiendo que esta firma es legalmente vinculante.
           </span>
         </label>
@@ -125,7 +125,7 @@ export function SignatureForm({
             disabled={isLoading}
             className="mt-0.5"
           />
-          <span className="text-xs text-slate-600 group-hover:text-slate-800 transition-colors">
+          <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
             Autorizo el tratamiento de datos personales (Ley 1581/2012).
           </span>
         </label>
@@ -153,7 +153,7 @@ export function SignatureForm({
 
       {/* Help text */}
       {!canSign && !isLoading && (
-        <p className="text-center text-[11px] text-slate-400">
+        <p className="text-center text-[11px] text-muted-foreground">
           Acepta todos los términos para continuar
         </p>
       )}

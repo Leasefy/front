@@ -66,11 +66,11 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
  * Status badge colors for contract status
  */
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
-  draft: 'bg-slate-100 text-slate-700',
+  draft: 'bg-muted text-foreground',
   pending_landlord: 'bg-amber-100 text-amber-700',
   pending_tenant: 'bg-blue-100 text-blue-700',
   active: 'bg-emerald-100 text-emerald-700',
-  expired: 'bg-gray-100 text-gray-500',
+  expired: 'bg-muted text-muted-foreground',
   cancelled: 'bg-red-100 text-red-700',
 };
 

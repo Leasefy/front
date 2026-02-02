@@ -72,8 +72,8 @@ function getHistoryConfig(rating: 'positive' | 'mixed' | 'limited') {
     limited: {
       icon: '?',
       label: 'Sin historial',
-      color: 'text-slate-500',
-      bgColor: 'bg-slate-100',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
     },
   };
   return configs[rating];
@@ -111,26 +111,26 @@ export function CandidateMetrics({
           <span className="text-base" role="img" aria-label="Ingresos">
             {'\u{1F4B0}'}
           </span>
-          <span className="font-medium text-slate-700">
+          <span className="font-medium text-foreground">
             {formatCompactIncome(income)}
           </span>
         </div>
 
         {/* Divider */}
-        <span className="text-slate-300">|</span>
+        <span className="text-muted-foreground">|</span>
 
         {/* Employment Stability */}
         <div className="flex items-center gap-1.5">
           <span className="text-base" role="img" aria-label="Estabilidad">
             {'\u{1F4C5}'}
           </span>
-          <span className="text-slate-600">
+          <span className="text-muted-foreground">
             {formatEmploymentTenure(employmentMonths)}
           </span>
         </div>
 
         {/* Divider */}
-        <span className="text-slate-300">|</span>
+        <span className="text-muted-foreground">|</span>
 
         {/* History Rating */}
         <div className="flex items-center gap-1.5">
@@ -160,8 +160,8 @@ export function CandidateMetrics({
           {'\u{1F4B0}'}
         </span>
         <div>
-          <p className="text-xs text-slate-500">Ingresos mensuales</p>
-          <p className="font-semibold text-slate-900">
+          <p className="text-xs text-muted-foreground">Ingresos mensuales</p>
+          <p className="font-semibold text-foreground">
             {formatCurrency(income)}
           </p>
         </div>
@@ -173,8 +173,8 @@ export function CandidateMetrics({
           {'\u{1F4C5}'}
         </span>
         <div>
-          <p className="text-xs text-slate-500">Estabilidad laboral</p>
-          <p className="font-medium text-slate-700">
+          <p className="text-xs text-muted-foreground">Estabilidad laboral</p>
+          <p className="font-medium text-foreground">
             {employmentMonths >= 12
               ? `${Math.floor(employmentMonths / 12)} ${Math.floor(employmentMonths / 12) === 1 ? 'ano' : 'anos'} en empleo actual`
               : `${employmentMonths} meses en empleo actual`}
@@ -194,7 +194,7 @@ export function CandidateMetrics({
           {historyConfig.icon}
         </span>
         <div>
-          <p className="text-xs text-slate-500">Historial de arriendo</p>
+          <p className="text-xs text-muted-foreground">Historial de arriendo</p>
           <p className={cn('font-medium', historyConfig.color)}>
             {historyRating === 'positive'
               ? 'Referencias positivas'

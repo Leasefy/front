@@ -89,7 +89,7 @@ export function FinancialHeroSection({ stats, className }: FinancialHeroSectionP
                     duration={2000}
                   />
                 </div>
-                <p className="text-slate-400 text-[13px] md:text-sm tracking-[-0.01em] group-hover:text-slate-300 transition-colors">
+                <p className="text-muted-foreground text-[13px] md:text-sm tracking-[-0.01em] group-hover:text-muted-foreground transition-colors">
                   {stat.label}
                 </p>
               </div>

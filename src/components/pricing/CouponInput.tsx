@@ -95,7 +95,7 @@ export function CouponInput({
           </div>
           <button
             onClick={handleRemove}
-            className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
             aria-label="Quitar cupon"
           >
             <X className="w-4 h-4" />

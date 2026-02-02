@@ -281,6 +281,7 @@ export default function DocumentosPage() {
                 placeholder="Buscar documento..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                aria-label="Buscar documento"
                 className="w-full pl-10 pr-4 py-2 rounded-sm border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
               />
             </div>
@@ -567,7 +568,8 @@ export default function DocumentosPage() {
                       <p className="text-plan-secondary text-center mb-4">
                         Fecha: {formatDate(viewingDocument.date)}
                       </p>
-                      <table className="w-full border-collapse">
+                      <div className="overflow-x-auto">
+                      <table className="w-full border-collapse min-w-[320px]">
                         <thead>
                           <tr className="bg-muted">
                             <th className="border border-plan-border px-3 py-2 text-left">Item</th>
@@ -598,6 +600,7 @@ export default function DocumentosPage() {
                           </tr>
                         </tbody>
                       </table>
+                      </div>
                     </div>
                   )}
                 </div>

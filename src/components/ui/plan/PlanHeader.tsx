@@ -291,7 +291,7 @@ export function PlanHeader({
       <div className="flex items-center justify-between h-14 px-6">
         {/* Left: Search */}
         {showSearch && (
-          <div ref={searchRef} className="relative w-[400px]">
+          <div ref={searchRef} className="relative w-full max-w-[400px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted z-10" />
             <input
               type="text"
@@ -419,7 +419,7 @@ export function PlanHeader({
               {/* Subscription Popover */}
               <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
+                  <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
                     <Zap className="w-5 h-5 stroke-[1.5px]" />
                     {MOCK_SUBSCRIPTION.planId === 'free' && (
                       <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-plan-accent rounded-full" />
@@ -427,7 +427,7 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[320px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[320px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
@@ -524,7 +524,7 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
+                  <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-plan-primary text-white text-[9px] font-medium flex items-center justify-center rounded-full">
@@ -534,7 +534,7 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[360px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[360px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
@@ -590,6 +590,7 @@ export function PlanHeader({
                               value={inviteEmail}
                               onChange={(e) => setInviteEmail(e.target.value)}
                               placeholder="correo@ejemplo.com"
+                              aria-label="Correo electrónico para invitación"
                               className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
                             />
                           </div>
@@ -682,7 +683,7 @@ export function PlanHeader({
           {/* Notifications */}
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
-              <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
+              <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-plan-status-blue rounded-full" />
@@ -690,7 +691,7 @@ export function PlanHeader({
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[400px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+              className="w-[calc(100vw-2rem)] sm:w-[400px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
               align="end"
               sideOffset={8}
             >

@@ -123,7 +123,7 @@ export function StepPhotos() {
               <button
                 type="button"
                 onClick={() => removePhoto(index)}
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                className="absolute top-1 right-1 w-8 h-8 md:w-6 md:h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black touch-manipulation"
               >
                 <X className="w-4 h-4" />
               </button>

@@ -108,18 +108,18 @@ Explicitly excluded. Documented to prevent scope creep.
 | COMP-05 | Phase 13 | Complete |
 | COMP-06 | Phase 13 | Complete |
 | COMP-07 | Phase 13 | Complete |
-| QAFN-01 | Phase 14 | Pending |
-| QAFN-02 | Phase 14 | Pending |
-| QAFN-03 | Phase 14 | Pending |
-| QAFN-04 | Phase 14 | Pending |
-| QAFN-05 | Phase 14 | Pending |
-| QAFN-06 | Phase 14 | Pending |
-| QAFN-07 | Phase 14 | Pending |
-| QAVS-01 | Phase 14 | Pending |
-| QAVS-02 | Phase 14 | Pending |
-| QAVS-03 | Phase 14 | Pending |
-| QAVS-04 | Phase 14 | Pending |
-| QAVS-05 | Phase 14 | Pending |
+| QAFN-01 | Phase 14 | Complete |
+| QAFN-02 | Phase 14 | Complete |
+| QAFN-03 | Phase 14 | Complete |
+| QAFN-04 | Phase 14 | Complete |
+| QAFN-05 | Phase 14 | Complete |
+| QAFN-06 | Phase 14 | Complete |
+| QAFN-07 | Phase 14 | Complete |
+| QAVS-01 | Phase 14 | Complete |
+| QAVS-02 | Phase 14 | Complete |
+| QAVS-03 | Phase 14 | Complete |
+| QAVS-04 | Phase 14 | Complete |
+| QAVS-05 | Phase 14 | Complete |
 | QARS-01 | Phase 15 | Pending |
 | QARS-02 | Phase 15 | Pending |
 | QARS-03 | Phase 15 | Pending |
@@ -139,4 +139,4 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 — Phase 13 complete*
+*Last updated: 2026-02-02 — Phase 14 complete*

@@ -155,7 +155,7 @@ export function CandidateList({
     return (
       <div
         className={cn(
-          'rounded-[2px] border border-dashed border-slate-300 bg-slate-50',
+          'rounded-sm border border-dashed border-slate-300 bg-slate-50',
           className
         )}
       >

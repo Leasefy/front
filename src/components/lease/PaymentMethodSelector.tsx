@@ -43,7 +43,7 @@ export function PaymentMethodSelector({
               disabled={isDisabled}
               type="button"
               className={cn(
-                'relative flex items-start gap-3 p-4 rounded-[2px] border text-left transition-all',
+                'relative flex items-start gap-3 p-4 rounded-sm border text-left transition-all',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected && method.enabled
                   ? 'border-primary bg-primary/5 shadow-sm'
@@ -113,7 +113,7 @@ export function PaymentMethodSelector({
       </div>
 
       {/* Info note */}
-      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-[2px] text-xs text-blue-700">
+      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-sm text-xs text-blue-700">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
           Tu pago sera procesado de forma segura. Recibiras confirmacion por

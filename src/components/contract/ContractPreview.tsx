@@ -53,7 +53,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
   return (
     <div
       className={cn(
-        'rounded-[2px] border border-slate-200 bg-white shadow-sm',
+        'rounded-sm border border-slate-200 bg-white shadow-sm',
         className
       )}
     >
@@ -76,13 +76,13 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           Resumen del Contrato
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[2px] border border-slate-100 bg-slate-50 p-3">
+          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
             <p className="text-xs text-slate-500">Canon mensual</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {formatCurrency(contract.monthlyRent)}
             </p>
           </div>
-          <div className="rounded-[2px] border border-slate-100 bg-slate-50 p-3">
+          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
             <p className="text-xs text-slate-500">Garantia</p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
               {contract.guaranteeType === 'poliza' ? 'Poliza de arrendamiento' : 'Codeudor'}
@@ -91,13 +91,13 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               <p className="mt-0.5 text-xs text-slate-500 truncate">{contract.guaranteeDetails}</p>
             )}
           </div>
-          <div className="rounded-[2px] border border-slate-100 bg-slate-50 p-3">
+          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
             <p className="text-xs text-slate-500">Administracion</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {contract.adminFee > 0 ? formatCurrency(contract.adminFee) : 'Incluida'}
             </p>
           </div>
-          <div className="rounded-[2px] border border-slate-100 bg-slate-50 p-3">
+          <div className="rounded-sm border border-slate-100 bg-slate-50 p-3">
             <p className="text-xs text-slate-500">Dia de pago</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               Dia {contract.paymentDueDay}
@@ -113,7 +113,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             <Shield className="h-4 w-4 text-slate-400" />
             Poliza de Seguro
           </h3>
-          <div className="rounded-[2px] border border-emerald-100 bg-emerald-50 p-4">
+          <div className="rounded-sm border border-emerald-100 bg-emerald-50 p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-slate-900">{insurancePolicy.name}</p>
@@ -170,7 +170,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord */}
-          <div className="rounded-[2px] border border-slate-100 p-4">
+          <div className="rounded-sm border border-slate-100 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Arrendador
             </p>
@@ -179,7 +179,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             <p className="text-sm text-slate-500">{contract.landlordEmail}</p>
           </div>
           {/* Tenant */}
-          <div className="rounded-[2px] border border-slate-100 p-4">
+          <div className="rounded-sm border border-slate-100 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Arrendatario
             </p>
@@ -233,7 +233,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           {/* Landlord Signature */}
           <div
             className={cn(
-              'rounded-[2px] border p-4',
+              'rounded-sm border p-4',
               contract.landlordSignature
                 ? 'border-emerald-200 bg-emerald-50'
                 : 'border-dashed border-slate-300 bg-slate-50'
@@ -259,7 +259,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           {/* Tenant Signature */}
           <div
             className={cn(
-              'rounded-[2px] border p-4',
+              'rounded-sm border p-4',
               contract.tenantSignature
                 ? 'border-emerald-200 bg-emerald-50'
                 : 'border-dashed border-slate-300 bg-slate-50'

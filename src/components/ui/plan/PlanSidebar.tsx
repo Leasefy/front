@@ -66,7 +66,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
       <div
         className={cn(
           'flex items-center gap-3 px-4 py-2 text-[13px]',
-          'text-[#D1D5DB] cursor-not-allowed',
+          'text-gray-300 cursor-not-allowed',
           isCollapsed && 'justify-center px-2'
         )}
         title={isCollapsed ? item.label : undefined}
@@ -86,21 +86,21 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
             (isActive || isChildActive)
-              ? 'text-[#111827] font-medium'
-              : 'text-[#6B7280] hover:text-[#111827]',
+              ? 'text-plan-primary font-medium'
+              : 'text-plan-secondary hover:text-plan-primary',
             isCollapsed && 'justify-center px-2'
           )}
         >
           <Icon className={cn(
             'w-[18px] h-[18px] stroke-[1.5px]',
-            (isActive || isChildActive) ? 'text-[#111827]' : 'text-[#9CA3AF]'
+            (isActive || isChildActive) ? 'text-plan-primary' : 'text-plan-muted'
           )} />
           {!isCollapsed && (
             <>
               <span className="flex-1 text-left">{item.label}</span>
               <ChevronDown
                 className={cn(
-                  'w-4 h-4 text-[#9CA3AF] transition-transform duration-150',
+                  'w-4 h-4 text-plan-muted transition-transform duration-150',
                   isExpanded && 'rotate-180'
                 )}
               />
@@ -108,7 +108,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
           )}
         </button>
         {!isCollapsed && isExpanded && (
-          <div className="ml-6 border-l border-[#E5E7EB]">
+          <div className="ml-6 border-l border-plan-border">
             {item.children!.map((child) => (
               <NavItemComponent
                 key={child.href}
@@ -133,8 +133,8 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         'flex items-center gap-3 px-4 py-2 text-[13px] relative',
         'transition-colors duration-100',
         isActive
-          ? 'text-[#111827] font-medium bg-[#F9FAFB]'
-          : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#FAFAFA]',
+          ? 'text-plan-primary font-medium bg-gray-50'
+          : 'text-plan-secondary hover:text-plan-primary hover:bg-gray-50',
         isCollapsed && 'justify-center px-2',
         depth > 0 && 'pl-4'
       )}
@@ -142,17 +142,17 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     >
       {/* Active indicator - vertical line on left */}
       {isActive && depth === 0 && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#111827]" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-plan-primary" />
       )}
       <Icon className={cn(
         'w-[18px] h-[18px] stroke-[1.5px]',
-        isActive ? 'text-[#111827]' : 'text-[#9CA3AF]'
+        isActive ? 'text-plan-primary' : 'text-plan-muted'
       )} />
       {!isCollapsed && (
         <>
           <span className="flex-1">{item.label}</span>
           {item.badge !== undefined && item.badge > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 bg-[#111827] text-white text-[10px] font-medium flex items-center justify-center rounded-sm">
+            <span className="min-w-[18px] h-[18px] px-1 bg-plan-primary text-white text-[10px] font-medium flex items-center justify-center rounded-sm">
               {item.badge}
             </span>
           )}
@@ -198,9 +198,9 @@ function SidebarContent({
           onClick={onCollapse}
           className={cn(
             'absolute top-5 -right-3 z-50',
-            'w-6 h-6 rounded-full bg-white border border-[#E5E7EB]',
+            'w-6 h-6 rounded-full bg-white border border-plan-border',
             'flex items-center justify-center',
-            'text-[#9CA3AF] hover:text-[#6B7280]',
+            'text-plan-muted hover:text-plan-secondary',
             'shadow-sm transition-colors'
           )}
         >
@@ -214,13 +214,13 @@ function SidebarContent({
 
       {/* Logo - PLan style with star */}
       <div className={cn(
-        'h-14 flex items-center border-b border-[#F3F4F6]',
+        'h-14 flex items-center border-b border-gray-100',
         isCollapsed ? 'justify-center px-2' : 'px-5'
       )}>
         <Link href={logo?.href || '/'} className="flex items-center gap-2" onClick={onItemClick}>
           <span className="text-xl">✦</span>
           {!isCollapsed && (
-            <span className="text-[15px] font-semibold text-[#111827] tracking-tight">
+            <span className="text-[15px] font-semibold text-plan-primary tracking-tight">
               {logo?.title || 'PLan'}
             </span>
           )}
@@ -246,14 +246,14 @@ function SidebarContent({
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-[#F3F4F6] py-2">
+      <div className="border-t border-gray-100 py-2">
         <div
           className={cn(
-            'flex items-center gap-3 px-4 py-2 text-[13px] text-[#6B7280] hover:text-[#111827] hover:bg-[#FAFAFA] cursor-pointer',
+            'flex items-center gap-3 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-gray-50 cursor-pointer',
             isCollapsed && 'justify-center px-2'
           )}
         >
-          <HelpCircle className="w-[18px] h-[18px] stroke-[1.5px] text-[#9CA3AF]" />
+          <HelpCircle className="w-[18px] h-[18px] stroke-[1.5px] text-plan-muted" />
           {!isCollapsed && <span>Ayuda</span>}
         </div>
       </div>
@@ -279,7 +279,7 @@ export function PlanSidebar({
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-white border-r border-[#F3F4F6]',
+          'bg-white border-r border-gray-100',
           'transition-all duration-200',
           isCollapsed ? 'lg:w-16' : 'lg:w-[240px]',
           className
@@ -300,7 +300,7 @@ export function PlanSidebar({
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-3 left-3 z-40 bg-white shadow-sm border border-[#E5E7EB] rounded-sm"
+        className="lg:hidden fixed top-3 left-3 z-40 bg-white shadow-sm border border-plan-border rounded-sm"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="w-5 h-5" />

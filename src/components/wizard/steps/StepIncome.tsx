@@ -196,7 +196,7 @@ export function StepIncome() {
       {/* Capacity Summary Card */}
       {totalIncome > 0 && (
         <div className={cn(
-          'mt-8 p-5 border rounded-[2px]',
+          'mt-8 p-5 border rounded-sm',
           capacityStyles[capacityLevel]
         )}>
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
@@ -314,7 +314,7 @@ function CurrencyInput({
         onChange={onChange}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 rounded-[2px]',
+          'w-full h-12 rounded-sm',
           'bg-black/5 text-black placeholder:text-black/40',
           'border border-black/10',
           'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',

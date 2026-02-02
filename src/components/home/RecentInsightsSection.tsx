@@ -68,14 +68,14 @@ export function RecentInsightsSection() {
         >
           {/* Label with purple dot */}
           <div className="flex items-center gap-2">
-            <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
+            <span className="w-[6px] h-[6px] rounded-full bg-primary" />
             <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
               Blog
             </span>
           </div>
 
           {/* Main heading - 58px, -4.176px letter-spacing */}
-          <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05]">
+          <h2 className="text-[40px] md:text-[58px] font-normal text-primary tracking-[-4.176px] leading-[1.05]">
             Articulos recientes
           </h2>
 
@@ -97,7 +97,7 @@ export function RecentInsightsSection() {
             <motion.div key={post.title} variants={cardVariants}>
               <Link href={post.href} className="group block">
                 {/* Post Image - aspect ratio 4:3 */}
-                <div className="relative aspect-[4/3] mb-[20px] overflow-hidden rounded-[2px] bg-gray-100">
+                <div className="relative aspect-[4/3] mb-[20px] overflow-hidden rounded-sm bg-gray-100">
                   <Image
                     src={post.image}
                     alt={post.title}
@@ -110,7 +110,7 @@ export function RecentInsightsSection() {
                 {/* Post Meta - category pill + dot + date */}
                 <div className="flex items-center gap-[8px] mb-[12px]">
                   {/* Category - 15px, -0.15px letter-spacing */}
-                  <span className="inline-flex items-center px-[12px] py-[4px] rounded-[2px] bg-black/5 text-[15px] tracking-[-0.15px] leading-[20px] text-[#111112]">
+                  <span className="inline-flex items-center px-[12px] py-[4px] rounded-sm bg-black/5 text-[15px] tracking-[-0.15px] leading-[20px] text-primary">
                     {post.category}
                   </span>
                   {/* Dot separator */}
@@ -122,7 +122,7 @@ export function RecentInsightsSection() {
                 </div>
 
                 {/* Post Title - 26px, -1.352px letter-spacing */}
-                <h3 className="text-[26px] font-normal text-[#111112] tracking-[-1.352px] leading-[29.9px] group-hover:text-black/70 transition-colors">
+                <h3 className="text-[26px] font-normal text-primary tracking-[-1.352px] leading-[29.9px] group-hover:text-black/70 transition-colors">
                   {post.title}
                 </h3>
               </Link>

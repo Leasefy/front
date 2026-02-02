@@ -153,13 +153,13 @@ export function Navbar() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.96 }}
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white border border-black/5 rounded-[2px] shadow-lg z-50 origin-top-right"
+                        className="absolute right-0 top-full mt-2 w-56 bg-white border border-black/5 rounded-sm shadow-lg z-50 origin-top-right"
                       >
                         {/* User info */}
                         <div className="px-4 py-3 border-b border-black/5">
                           <p className="text-sm font-medium text-black">{user.name}</p>
                           <p className="text-xs text-black/50 truncate">{user.email}</p>
-                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-black/5 rounded-[2px] text-black/60">
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-black/5 rounded-sm text-black/60">
                             {user.role === 'landlord' ? 'Propietario' : 'Inquilino'}
                           </span>
                         </div>
@@ -209,7 +209,7 @@ export function Navbar() {
                 </Link>
                 <Link
                   href="/auth"
-                  className="px-5 py-2.5 bg-black text-white text-sm font-medium tracking-tight hover:bg-black/90 transition-colors rounded-[2px]"
+                  className="px-5 py-2.5 bg-black text-white text-sm font-medium tracking-tight hover:bg-black/90 transition-colors rounded-sm"
                 >
                   Registrarme
                 </Link>

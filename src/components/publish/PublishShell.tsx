@@ -36,7 +36,7 @@ export function PublishShell({ children }: PublishShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-10 bg-white border-b border-black/5">
         <div className="px-4 py-3">
@@ -175,7 +175,7 @@ export function PublishShell({ children }: PublishShellProps) {
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-white rounded-[2px] border border-black/5 shadow-sm">
+            <div className="bg-white rounded-sm border border-black/5 shadow-sm">
               {/* Desktop step header */}
               <div className="hidden lg:block px-6 py-5 border-b border-black/5">
                 <div className="flex items-center gap-3">
@@ -215,7 +215,7 @@ export function PublishShell({ children }: PublishShellProps) {
                     disabled={isFirstStep || isSubmitting}
                     className={cn(
                       'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-                      'rounded-[2px] border border-black/10 bg-white',
+                      'rounded-sm border border-black/10 bg-white',
                       'text-black/70 hover:text-black hover:border-black/20',
                       'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                       isFirstStep && 'invisible'
@@ -237,7 +237,7 @@ export function PublishShell({ children }: PublishShellProps) {
                     disabled={!canProceed || isSubmitting}
                     className={cn(
                       'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium',
-                      'rounded-[2px] bg-black text-white',
+                      'rounded-sm bg-black text-white',
                       'hover:bg-black/90 transition-colors',
                       'disabled:opacity-50 disabled:cursor-not-allowed'
                     )}

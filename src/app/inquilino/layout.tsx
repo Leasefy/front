@@ -35,7 +35,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <PlanSidebar
         navItems={TENANT_NAV_ITEMS}
         logo={{

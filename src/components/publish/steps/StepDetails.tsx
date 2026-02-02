@@ -28,7 +28,7 @@ function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix }
           type="button"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-10 h-10 rounded-[2px] border border-black/10 flex items-center justify-center text-black/60 hover:border-black/20 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-sm border border-black/10 flex items-center justify-center text-black/60 hover:border-black/20 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
         >
           -
         </button>
@@ -54,7 +54,7 @@ function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix }
           type="button"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-10 h-10 rounded-[2px] border border-black/10 flex items-center justify-center text-black/60 hover:border-black/20 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-sm border border-black/10 flex items-center justify-center text-black/60 hover:border-black/20 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
         >
           +
         </button>

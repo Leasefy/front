@@ -62,7 +62,7 @@ export function PlanActivityTimeline({
   if (items.length === 0) {
     return (
       <div className={cn('text-center py-8', className)}>
-        <p className="text-sm text-[#6B7280]">{emptyMessage}</p>
+        <p className="text-sm text-plan-secondary">{emptyMessage}</p>
       </div>
     );
   }
@@ -70,7 +70,7 @@ export function PlanActivityTimeline({
   return (
     <div className={cn('relative', className)}>
       {/* Timeline line */}
-      <div className="absolute left-4 top-0 bottom-0 w-px bg-[#E5E7EB]" />
+      <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
 
       <div className="space-y-0">
         {displayItems.map((item, index) => {
@@ -98,14 +98,14 @@ export function PlanActivityTimeline({
                   <div
                     className={cn(
                       'w-8 h-8 rounded-full flex items-center justify-center border-2 border-white',
-                      item.iconBg || 'bg-[#F3F4F6]'
+                      item.iconBg || 'bg-gray-100'
                     )}
                   >
-                    <Icon className={cn('w-4 h-4', item.iconColor || 'text-[#6B7280]')} />
+                    <Icon className={cn('w-4 h-4', item.iconColor || 'text-plan-secondary')} />
                   </div>
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center border-2 border-white">
-                    <span className="text-xs font-semibold text-[#6B7280]">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-white">
+                    <span className="text-xs font-semibold text-plan-secondary">
                       {item.user?.name?.charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>
@@ -117,13 +117,13 @@ export function PlanActivityTimeline({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className={cn(
-                      'text-[#111827]',
+                      'text-plan-primary',
                       compact ? 'text-sm' : 'text-sm font-medium'
                     )}>
                       {item.title}
                     </p>
                     {item.description && (
-                      <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-2">
+                      <p className="text-xs text-plan-secondary mt-0.5 line-clamp-2">
                         {item.description}
                       </p>
                     )}
@@ -132,15 +132,15 @@ export function PlanActivityTimeline({
                         {Object.entries(item.metadata).map(([key, value]) => (
                           <span
                             key={key}
-                            className="inline-flex items-center px-2 py-0.5 rounded bg-[#F3F4F6] text-xs text-[#6B7280]"
+                            className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-xs text-plan-secondary"
                           >
-                            {key}: <span className="font-medium text-[#111827] ml-1">{value}</span>
+                            {key}: <span className="font-medium text-plan-primary ml-1">{value}</span>
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-[#9CA3AF] whitespace-nowrap flex-shrink-0">
+                  <span className="text-xs text-plan-muted whitespace-nowrap flex-shrink-0">
                     {formatTimestamp(item.timestamp)}
                   </span>
                 </div>
@@ -154,7 +154,7 @@ export function PlanActivityTimeline({
       {(showViewAll || hasMore) && onViewAll && (
         <button
           onClick={onViewAll}
-          className="mt-4 w-full py-2 text-sm font-medium text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] rounded-sm transition-colors"
+          className="mt-4 w-full py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary hover:bg-gray-100 rounded-sm transition-colors"
         >
           Ver toda la actividad
         </button>
@@ -180,8 +180,8 @@ export function PlanActivityCard({
   className,
 }: PlanActivityCardProps) {
   return (
-    <div className={cn('bg-white  border border-[#E5E7EB] p-5', className)}>
-      <h3 className="text-sm font-semibold text-[#111827] mb-4">{title}</h3>
+    <div className={cn('bg-white  border border-plan-border p-5', className)}>
+      <h3 className="text-sm font-semibold text-plan-primary mb-4">{title}</h3>
       <PlanActivityTimeline
         items={items}
         maxItems={maxItems}

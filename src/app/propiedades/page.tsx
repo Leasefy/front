@@ -172,7 +172,7 @@ export default function PropiedadesPage() {
       <Navbar />
 
       {/* Main Layout - Split View */}
-      <div className="pt-[65px] md:pt-[81px] flex">
+      <div className="pt-[var(--navbar-height-mobile)] md:pt-[var(--navbar-height-desktop)] flex">
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
@@ -198,7 +198,7 @@ export default function PropiedadesPage() {
           </div>
 
           {/* Filter & Results Bar */}
-          <div className="sticky top-[65px] md:top-[81px] z-40 bg-white border-y border-black/5">
+          <div className="sticky top-[var(--navbar-height-mobile)] md:top-[var(--navbar-height-desktop)] z-40 bg-white border-y border-black/5">
             <div className="px-4 md:px-6 py-3">
               {/* Filter Pills Row */}
               <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
@@ -208,7 +208,7 @@ export default function PropiedadesPage() {
                     type="button"
                     onClick={() => setActiveFilter(activeFilter === 'city' ? null : 'city')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[2px] border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedCity
                         ? 'bg-black text-white border-black'
                         : 'border-black/20 text-black/70 hover:border-black/40'
@@ -220,7 +220,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'city' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-[2px] shadow-lg z-50 min-w-[140px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[140px]">
                         {CITIES.map((city) => (
                           <button
                             key={city}
@@ -242,7 +242,7 @@ export default function PropiedadesPage() {
                     type="button"
                     onClick={() => setActiveFilter(activeFilter === 'bedrooms' ? null : 'bedrooms')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[2px] border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedBedrooms
                         ? 'bg-black text-white border-black'
                         : 'border-black/20 text-black/70 hover:border-black/40'
@@ -254,7 +254,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'bedrooms' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-[2px] shadow-lg z-50 min-w-[120px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[120px]">
                         {BEDROOMS.map((bed) => (
                           <button
                             key={bed}
@@ -276,7 +276,7 @@ export default function PropiedadesPage() {
                     type="button"
                     onClick={() => setActiveFilter(activeFilter === 'type' ? null : 'type')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[2px] border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedType
                         ? 'bg-black text-white border-black'
                         : 'border-black/20 text-black/70 hover:border-black/40'
@@ -288,7 +288,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'type' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-[2px] shadow-lg z-50 min-w-[140px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[140px]">
                         {PROPERTY_TYPES.map((type) => (
                           <button
                             key={type.value}
@@ -310,7 +310,7 @@ export default function PropiedadesPage() {
                     type="button"
                     onClick={() => setActiveFilter(activeFilter === 'price' ? null : 'price')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[2px] border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedPrice
                         ? 'bg-black text-white border-black'
                         : 'border-black/20 text-black/70 hover:border-black/40'
@@ -322,7 +322,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'price' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-[2px] shadow-lg z-50 min-w-[160px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[160px]">
                         {PRICE_RANGES.map((range) => (
                           <button
                             key={range.value}
@@ -371,7 +371,7 @@ export default function PropiedadesPage() {
                   {showSortMenu && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-white border border-black/10 rounded-[2px] shadow-lg z-50 min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
                           <button
                             key={option.value}
@@ -407,7 +407,7 @@ export default function PropiedadesPage() {
         {/* Right Panel - Fixed Map (Full Height) */}
         <div
           className={cn(
-            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[65px] md:lg:top-[81px]',
+            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[var(--navbar-height-mobile)] md:lg:top-[var(--navbar-height-desktop)]',
             'h-[calc(100vh-65px)] md:h-[calc(100vh-81px)]',
             !showMap && 'hidden lg:block'
           )}

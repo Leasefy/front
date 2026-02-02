@@ -72,7 +72,7 @@ export function ImageCarousel({
       <div
         className={cn(
           'relative bg-muted flex items-center justify-center',
-          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-[2px]',
+          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-sm',
           className
         )}
       >
@@ -96,7 +96,7 @@ export function ImageCarousel({
           'relative overflow-hidden bg-muted',
           isHero
             ? 'h-[50vh] md:h-[70vh] cursor-pointer group'
-            : 'aspect-[4/3] rounded-[2px]'
+            : 'aspect-[4/3] rounded-sm'
         )}
         onClick={isHero ? handleImageClick : undefined}
         role={isHero && onImageClick ? 'button' : undefined}
@@ -149,7 +149,7 @@ export function ImageCarousel({
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-[2px] hover:bg-gray-100 transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-sm hover:bg-gray-100 transition-colors shadow-sm"
           >
             Ver todas las imagenes ({totalImages})
           </button>
@@ -198,7 +198,7 @@ export function ImageCarousel({
               key={index}
               onClick={() => goToIndex(index)}
               className={cn(
-                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-[2px] transition-all',
+                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-sm transition-all',
                 'hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary',
                 index === currentIndex
                   ? 'ring-2 ring-primary'

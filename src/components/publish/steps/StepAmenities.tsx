@@ -37,14 +37,14 @@ export function StepAmenities() {
               type="button"
               onClick={() => toggleAmenity(amenity.value)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-[2px] border-2 text-left transition-all',
+                'flex items-center gap-3 px-4 py-3 rounded-sm border-2 text-left transition-all',
                 isSelected
                   ? 'border-black bg-black/[0.02]'
                   : 'border-black/10 hover:border-black/20'
               )}
             >
               <div className={cn(
-                'w-5 h-5 rounded-[2px] flex items-center justify-center flex-shrink-0 border-2',
+                'w-5 h-5 rounded-sm flex items-center justify-center flex-shrink-0 border-2',
                 isSelected
                   ? 'bg-black border-black'
                   : 'border-black/20'

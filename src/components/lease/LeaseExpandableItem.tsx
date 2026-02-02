@@ -96,7 +96,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
       >
         <div className="flex items-center gap-4">
           {/* Property icon */}
-          <div className="w-10 h-10 rounded-[2px] bg-slate-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center flex-shrink-0">
             <Building2 className="w-5 h-5 text-slate-400" />
           </div>
 
@@ -107,7 +107,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
                 {lease.propertyTitle}
               </h3>
               {isEndingSoon && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-[2px] flex-shrink-0">
+                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-sm flex-shrink-0">
                   Vence pronto
                 </span>
               )}
@@ -152,7 +152,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
         <div className="px-5 pb-5">
           <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Detalles del arriendo
               </p>
@@ -184,7 +184,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
             </div>
 
             {/* Card 2: Tenant Contact */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Arrendatario
               </p>
@@ -241,7 +241,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
             </div>
 
             {/* Card 3: Payment Summary */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Resumen de pagos
               </p>
@@ -280,7 +280,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
           {/* Payment history table - Full width below cards */}
           <div className="ml-14 mt-4">
-            <div className="border border-slate-100 rounded-[2px] overflow-hidden bg-white">
+            <div className="border border-slate-100 rounded-sm overflow-hidden bg-white">
               <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100">
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
                   Historial de pagos

@@ -61,7 +61,7 @@ export default function UpgradePage() {
       MOCK_SUBSCRIPTION.planId === 'pro');
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back link */}
         <Link

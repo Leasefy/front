@@ -98,7 +98,7 @@ export function StepPricing() {
 
       {/* Summary */}
       {draft.monthlyRent > 0 && (
-        <div className="p-5 bg-black/[0.02] rounded-[2px] space-y-3">
+        <div className="p-5 bg-black/[0.02] rounded-sm space-y-3">
           <h4 className="text-sm font-medium text-black">Resumen de costos</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">

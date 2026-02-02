@@ -42,15 +42,15 @@ export default function ApplicationDetailPage() {
 
   if (!application || !property) {
     return (
-      <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
+      <div className="min-h-screen bg-plan-page flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-[#9CA3AF]" />
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-8 h-8 text-plan-muted" />
           </div>
-          <h2 className="text-lg font-semibold text-[#111827] mb-2">
+          <h2 className="text-lg font-semibold text-plan-primary mb-2">
             Aplicacion no encontrada
           </h2>
-          <p className="text-[#6B7280] mb-4">
+          <p className="text-plan-secondary mb-4">
             No pudimos encontrar esta aplicacion
           </p>
           <Button onClick={() => router.push('/inquilino/aplicaciones')}>
@@ -128,29 +128,29 @@ export default function ApplicationDetailPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-sm text-[#6B7280] hover:text-[#111827] transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a aplicaciones
         </button>
 
         {/* Header */}
-        <div className="bg-white border border-[#E5E7EB] overflow-hidden mb-6">
+        <div className="bg-white border border-plan-border overflow-hidden mb-6">
           <div className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-xl font-semibold text-[#111827]">
+                  <h1 className="text-xl font-semibold text-plan-primary">
                     Aplicacion {application.trackingCode}
                   </h1>
                   <button
                     onClick={copyTrackingCode}
-                    className="p-1.5 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"
+                    className="p-1.5 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors"
                     title="Copiar codigo"
                   >
                     {copied ? (
@@ -160,7 +160,7 @@ export default function ApplicationDetailPage() {
                     )}
                   </button>
                 </div>
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-sm text-plan-secondary">
                   Enviada el {formatDate(application.submittedAt)}
                 </p>
               </div>
@@ -172,7 +172,7 @@ export default function ApplicationDetailPage() {
 
             {/* Progress Bar */}
             <div className="mt-6">
-              <div className="flex items-center justify-between text-xs text-[#6B7280] mb-2">
+              <div className="flex items-center justify-between text-xs text-plan-secondary mb-2">
                 <span>Progreso de la aplicacion</span>
                 <span>{progressMap[application.status]}%</span>
               </div>
@@ -195,14 +195,14 @@ export default function ApplicationDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Property Info */}
-            <div className="bg-white border border-[#E5E7EB] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                <h2 className="font-semibold text-[#111827]">Propiedad</h2>
+            <div className="bg-white border border-plan-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-plan-border">
+                <h2 className="font-semibold text-plan-primary">Propiedad</h2>
               </div>
               <Link href={`/propiedades/${property.id}`}>
-                <div className="p-5 hover:bg-[#F9FAFB] transition-colors">
+                <div className="p-5 hover:bg-gray-50 transition-colors">
                   <div className="flex gap-4">
-                    <div className="relative w-24 h-24 overflow-hidden flex-shrink-0 bg-[#F3F4F6]">
+                    <div className="relative w-24 h-24 overflow-hidden flex-shrink-0 bg-gray-100">
                       <Image
                         src={property.images[0]}
                         alt={property.title}
@@ -211,16 +211,16 @@ export default function ApplicationDetailPage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#111827]">
+                      <h3 className="font-medium text-plan-primary">
                         {property.title}
                       </h3>
-                      <p className="text-sm text-[#6B7280] mt-1 flex items-center gap-1.5">
+                      <p className="text-sm text-plan-secondary mt-1 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5" />
                         {property.address}, {property.neighborhood}
                       </p>
-                      <p className="text-lg font-semibold text-[#111827] mt-2">
+                      <p className="text-lg font-semibold text-plan-primary mt-2">
                         ${property.monthlyRent.toLocaleString('es-CL')}
-                        <span className="text-sm text-[#9CA3AF] font-normal">
+                        <span className="text-sm text-plan-muted font-normal">
                           /mes
                         </span>
                       </p>
@@ -231,16 +231,16 @@ export default function ApplicationDetailPage() {
             </div>
 
             {/* Timeline */}
-            <div className="bg-white border border-[#E5E7EB] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                <h2 className="font-semibold text-[#111827]">
+            <div className="bg-white border border-plan-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-plan-border">
+                <h2 className="font-semibold text-plan-primary">
                   Historial de la aplicacion
                 </h2>
               </div>
               <div className="p-5">
                 <div className="relative">
                   {/* Timeline line */}
-                  <div className="absolute left-4 top-2 bottom-2 w-px bg-[#E5E7EB]" />
+                  <div className="absolute left-4 top-2 bottom-2 w-px bg-gray-200" />
 
                   {/* Events */}
                   <div className="space-y-6">
@@ -250,8 +250,8 @@ export default function ApplicationDetailPage() {
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
                             index === 0
-                              ? 'bg-[#111827] text-white'
-                              : 'bg-[#F3F4F6] text-[#6B7280]'
+                              ? 'bg-plan-primary text-white'
+                              : 'bg-gray-100 text-plan-secondary'
                           }`}
                         >
                           {getEventIcon(event.type)}
@@ -262,13 +262,13 @@ export default function ApplicationDetailPage() {
                           <p
                             className={`text-sm ${
                               index === 0
-                                ? 'font-medium text-[#111827]'
-                                : 'text-[#6B7280]'
+                                ? 'font-medium text-plan-primary'
+                                : 'text-plan-secondary'
                             }`}
                           >
                             {event.description}
                           </p>
-                          <p className="text-xs text-[#9CA3AF] mt-1 flex items-center gap-1">
+                          <p className="text-xs text-plan-muted mt-1 flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDate(event.timestamp)} a las{' '}
                             {formatTime(event.timestamp)}
@@ -285,9 +285,9 @@ export default function ApplicationDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <div className="bg-white border border-[#E5E7EB] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                <h2 className="font-semibold text-[#111827]">Acciones</h2>
+            <div className="bg-white border border-plan-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-plan-border">
+                <h2 className="font-semibold text-plan-primary">Acciones</h2>
               </div>
               <div className="p-4 space-y-3">
                 <Button
@@ -318,34 +318,34 @@ export default function ApplicationDetailPage() {
             </div>
 
             {/* Property Quick Info */}
-            <div className="bg-white border border-[#E5E7EB] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                <h2 className="font-semibold text-[#111827]">
+            <div className="bg-white border border-plan-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-plan-border">
+                <h2 className="font-semibold text-plan-primary">
                   Detalles de la propiedad
                 </h2>
               </div>
               <div className="p-4 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Tipo</span>
-                  <span className="text-[#111827] capitalize">
+                  <span className="text-plan-secondary">Tipo</span>
+                  <span className="text-plan-primary capitalize">
                     {property.type}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Habitaciones</span>
-                  <span className="text-[#111827]">{property.bedrooms}</span>
+                  <span className="text-plan-secondary">Habitaciones</span>
+                  <span className="text-plan-primary">{property.bedrooms}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Banos</span>
-                  <span className="text-[#111827]">{property.bathrooms}</span>
+                  <span className="text-plan-secondary">Banos</span>
+                  <span className="text-plan-primary">{property.bathrooms}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Area</span>
-                  <span className="text-[#111827]">{property.area} m2</span>
+                  <span className="text-plan-secondary">Area</span>
+                  <span className="text-plan-primary">{property.area} m2</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Ciudad</span>
-                  <span className="text-[#111827]">{property.city}</span>
+                  <span className="text-plan-secondary">Ciudad</span>
+                  <span className="text-plan-primary">{property.city}</span>
                 </div>
               </div>
             </div>

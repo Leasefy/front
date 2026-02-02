@@ -27,7 +27,7 @@ export function DashboardHeader({ className, propertyCount, monthlyIncome }: Das
       {/* Main greeting with gradient accent on name */}
       <h1 className="text-[2rem] md:text-[2.75rem] font-light text-slate-900 tracking-[-0.03em] leading-tight">
         {greeting},{' '}
-        <span className="font-normal bg-gradient-to-r from-[black] to-[#a78bfa] bg-clip-text text-transparent">
+        <span className="font-normal bg-gradient-to-r from-black to-purple-400 bg-clip-text text-transparent">
           {firstName}
         </span>
       </h1>

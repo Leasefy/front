@@ -138,14 +138,14 @@ export function PlanTable<T extends object>({
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] font-medium text-xs">
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-plan-secondary font-medium text-xs">
                 {name.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-[#111827] truncate">{name}</p>
+              <p className="text-[13px] font-medium text-plan-primary truncate">{name}</p>
               {subtitle && (
-                <p className="text-[11px] text-[#9CA3AF] truncate">{subtitle}</p>
+                <p className="text-[11px] text-plan-muted truncate">{subtitle}</p>
               )}
             </div>
           </div>
@@ -167,7 +167,7 @@ export function PlanTable<T extends object>({
             <div className="w-20">
               <PlanProgressBar value={progressValue} size="sm" />
             </div>
-            <span className="text-[11px] font-medium text-[#6B7280] w-8">
+            <span className="text-[11px] font-medium text-plan-secondary w-8">
               {Math.round(progressValue)}%
             </span>
           </div>
@@ -176,7 +176,7 @@ export function PlanTable<T extends object>({
       case 'date':
         const date = value instanceof Date ? value : new Date(String(value));
         return (
-          <span className="text-sm text-[#6B7280]">
+          <span className="text-sm text-plan-secondary">
             {date.toLocaleDateString('es-CL', {
               day: '2-digit',
               month: 'short',
@@ -187,42 +187,42 @@ export function PlanTable<T extends object>({
 
       case 'currency':
         return (
-          <span className="text-sm font-medium text-[#111827]">
+          <span className="text-sm font-medium text-plan-primary">
             ${Number(value).toLocaleString('es-CL')}
           </span>
         );
 
       case 'badge':
         return (
-          <span className="px-2 py-0.5 bg-[#F3F4F6] text-[11px] font-medium text-[#6B7280]">
+          <span className="px-2 py-0.5 bg-gray-100 text-[11px] font-medium text-plan-secondary">
             {String(value)}
           </span>
         );
 
       default:
         return (
-          <span className="text-sm text-[#111827]">{String(value || '-')}</span>
+          <span className="text-sm text-plan-primary">{String(value || '-')}</span>
         );
     }
   };
 
   if (loading) {
     return (
-      <div className={cn('bg-white border border-[#E5E7EB] overflow-hidden', className)}>
+      <div className={cn('bg-white border border-plan-border overflow-hidden', className)}>
         <div className="p-8 text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-[#E5E7EB] border-t-[#22C55E] rounded-full mx-auto" />
-          <p className="text-[13px] text-[#9CA3AF] mt-3">Cargando...</p>
+          <div className="animate-spin w-8 h-8 border-2 border-plan-border border-t-plan-status-green rounded-full mx-auto" />
+          <p className="text-[13px] text-plan-muted mt-3">Cargando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-white border border-[#E5E7EB] overflow-hidden', className)}>
+    <div className={cn('bg-white border border-plan-border overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className={cn(
-            'border-b border-[#E5E7EB]',
+            'border-b border-plan-border',
             stickyHeader && 'sticky top-0 z-10 bg-white'
           )}>
             <tr>
@@ -233,10 +233,10 @@ export function PlanTable<T extends object>({
                     className={cn(
                       'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                       allSelected
-                        ? 'bg-[#111827] border-[#111827] text-white'
+                        ? 'bg-plan-primary border-plan-primary text-white'
                         : someSelected
-                          ? 'bg-[#111827]/10 border-[#111827]'
-                          : 'border-[#D1D5DB] hover:border-[#9CA3AF]'
+                          ? 'bg-plan-primary/10 border-plan-primary'
+                          : 'border-gray-300 hover:border-plan-muted'
                     )}
                   >
                     {(allSelected || someSelected) && <Check className="w-2.5 h-2.5" />}
@@ -247,8 +247,8 @@ export function PlanTable<T extends object>({
                 <th
                   key={column.key}
                   className={cn(
-                    'px-3 py-2.5 text-left text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider',
-                    column.sortable && 'cursor-pointer hover:text-[#6B7280] select-none'
+                    'px-3 py-2.5 text-left text-[11px] font-medium text-plan-muted uppercase tracking-wider',
+                    column.sortable && 'cursor-pointer hover:text-plan-secondary select-none'
                   )}
                   style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -256,7 +256,7 @@ export function PlanTable<T extends object>({
                   <div className="flex items-center gap-1">
                     {column.header}
                     {column.sortable && (
-                      <span className="text-[#D1D5DB]">
+                      <span className="text-gray-300">
                         {sortConfig?.key === column.key ? (
                           sortConfig.direction === 'asc' ? (
                             <ChevronUp className="w-3 h-3" />
@@ -273,12 +273,12 @@ export function PlanTable<T extends object>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F3F4F6]">
+          <tbody className="divide-y divide-gray-100">
             {paginatedData.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + (selectable ? 1 : 0)}
-                  className="px-3 py-10 text-center text-[13px] text-[#9CA3AF]"
+                  className="px-3 py-10 text-center text-[13px] text-plan-muted"
                 >
                   {emptyMessage}
                 </td>
@@ -293,9 +293,9 @@ export function PlanTable<T extends object>({
                     key={key}
                     className={cn(
                       'transition-colors duration-100',
-                      isSelected && 'bg-[#FEFCE8]',
-                      onRowClick && 'cursor-pointer hover:bg-[#F9FAFB]',
-                      !isSelected && !onRowClick && 'hover:bg-[#FAFAFA]'
+                      isSelected && 'bg-yellow-50',
+                      onRowClick && 'cursor-pointer hover:bg-gray-50',
+                      !isSelected && !onRowClick && 'hover:bg-gray-50'
                     )}
                     onClick={() => onRowClick?.(row)}
                   >
@@ -306,8 +306,8 @@ export function PlanTable<T extends object>({
                           className={cn(
                             'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                             isSelected
-                              ? 'bg-[#111827] border-[#111827] text-white'
-                              : 'border-[#D1D5DB] hover:border-[#9CA3AF]'
+                              ? 'bg-plan-primary border-plan-primary text-white'
+                              : 'border-gray-300 hover:border-plan-muted'
                           )}
                         >
                           {isSelected && <Check className="w-2.5 h-2.5" />}
@@ -329,8 +329,8 @@ export function PlanTable<T extends object>({
 
       {/* Pagination */}
       {pagination && sortedData.length > pageSize && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E7EB]">
-          <p className="text-sm text-[#6B7280]">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-plan-border">
+          <p className="text-sm text-plan-secondary">
             Mostrando {startIndex + 1}-{Math.min(endIndex, sortedData.length)} de {sortedData.length}
           </p>
           <div className="flex items-center gap-2">
@@ -340,8 +340,8 @@ export function PlanTable<T extends object>({
               className={cn(
                 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                 currentPage === 1
-                  ? 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
-                  : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                  ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                  : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
               )}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -355,8 +355,8 @@ export function PlanTable<T extends object>({
                   className={cn(
                     'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                     currentPage === page
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                      ? 'bg-plan-primary text-white'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
                   )}
                 >
                   {page}
@@ -369,8 +369,8 @@ export function PlanTable<T extends object>({
               className={cn(
                 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                 currentPage === totalPages
-                  ? 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
-                  : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                  ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                  : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
               )}
             >
               Siguiente

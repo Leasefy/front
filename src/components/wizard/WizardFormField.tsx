@@ -68,8 +68,8 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full h-12 px-4 rounded-[2px]',
-            'bg-[#1C1C1E] text-white placeholder:text-white/40',
+            'w-full h-12 px-4 rounded-sm',
+            'bg-gray-900 text-white placeholder:text-white/40',
             'border border-transparent',
             'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
             'transition-colors',
@@ -125,8 +125,8 @@ export function DarkSelect({
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 px-4 rounded-[2px] appearance-none cursor-pointer',
-          'bg-[#1C1C1E] text-white',
+          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
+          'bg-gray-900 text-white',
           'border border-transparent',
           'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
           'transition-colors',
@@ -140,7 +140,7 @@ export function DarkSelect({
           {placeholder}
         </option>
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="text-white bg-[#1C1C1E]">
+          <option key={option.value} value={option.value} className="text-white bg-gray-900">
             {option.label}
           </option>
         ))}
@@ -166,7 +166,7 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full h-12 px-4 rounded-[2px]',
+            'w-full h-12 px-4 rounded-sm',
             'bg-black/5 text-black placeholder:text-black/40',
             'border border-black/10',
             'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
@@ -213,7 +213,7 @@ export function LightSelect({
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 px-4 rounded-[2px] appearance-none cursor-pointer',
+          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
           'bg-black/5 text-black',
           'border border-black/10',
           'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',

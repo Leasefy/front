@@ -57,7 +57,7 @@ const socialLinks = [
  */
 export function Footer() {
   return (
-    <footer className="bg-[#111112] text-white overflow-hidden">
+    <footer className="bg-primary text-white overflow-hidden">
       {/* Main Content - 80px padding top */}
       <div className="mx-auto max-w-[1356px] px-8 pt-[80px]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">
@@ -129,7 +129,7 @@ export function Footer() {
                 placeholder="Tu correo electronico"
                 className="flex-1 h-[44px] px-4 bg-white/5 border border-white/10 rounded-l-[2px] text-[16px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/20 tracking-[-0.32px]"
               />
-              <button className="h-[44px] px-[20px] bg-white text-[#111112] rounded-r-[2px] text-[15px] tracking-[-0.15px] hover:bg-white/90 transition-colors">
+              <button className="h-[44px] px-[20px] bg-white text-primary rounded-r-[2px] text-[15px] tracking-[-0.15px] hover:bg-white/90 transition-colors">
                 Suscribir
               </button>
             </div>

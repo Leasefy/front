@@ -11,7 +11,7 @@
 
 export const borderRadius = {
   /** 2px - Bordes mínimos, estilo Luxterra */
-  sm: 'rounded-[2px]',
+  sm: 'rounded-sm',
   /** 4px - Inputs y elementos pequeños */
   md: 'rounded-md',
   /** 8px - Cards y contenedores medianos */
@@ -64,13 +64,13 @@ export const borders = {
 
 export const cardStyles = {
   /** Card básico - estilo minimalista */
-  base: 'bg-card text-card-foreground border border-border rounded-[2px] shadow-subtle',
+  base: 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle',
   /** Card interactivo con hover */
-  interactive: 'bg-card text-card-foreground border border-border rounded-[2px] shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
+  interactive: 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
   /** Card destacado */
-  highlighted: 'bg-card text-card-foreground border border-primary rounded-[2px] shadow-md ring-1 ring-primary',
+  highlighted: 'bg-card text-card-foreground border border-primary rounded-sm shadow-md ring-1 ring-primary',
   /** Card con estado activo/seleccionado */
-  selected: 'bg-card text-card-foreground border border-primary rounded-[2px] shadow-elevated ring-2 ring-primary/20',
+  selected: 'bg-card text-card-foreground border border-primary rounded-sm shadow-elevated ring-2 ring-primary/20',
 } as const;
 
 // ============================================================================
@@ -179,11 +179,11 @@ export const focusStates = {
 
 export const badgeStyles = {
   /** Badge estándar */
-  base: 'inline-flex items-center rounded-[2px] px-2 py-0.5 text-xs font-medium',
+  base: 'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium',
   /** Badge pill */
   pill: 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
   /** Badge pequeño */
-  sm: 'inline-flex items-center rounded-[2px] px-1.5 py-0.5 text-[10px] font-medium',
+  sm: 'inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium',
 } as const;
 
 // ============================================================================
@@ -192,7 +192,7 @@ export const badgeStyles = {
 
 export const imageStyles = {
   /** Contenedor de imagen estándar */
-  container: 'relative overflow-hidden rounded-[2px]',
+  container: 'relative overflow-hidden rounded-sm',
   /** Imagen con aspect ratio 4:3 */
   aspect43: 'aspect-[4/3]',
   /** Imagen con aspect ratio cuadrado */

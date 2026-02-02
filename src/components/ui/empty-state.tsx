@@ -52,7 +52,7 @@ export function EmptyState({
         {/* Icon Container - Premium gradient background */}
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-[black]/10 rounded-2xl blur-xl" />
-          <div className="relative rounded-2xl bg-gradient-to-br from-[black]/10 to-[black]/5 p-5 border border-[black]/10">
+          <div className="relative rounded-2xl bg-gradient-to-br from-black/10 to-[black]/5 p-5 border border-[black]/10">
             <Icon className="h-8 w-8 text-[black]" />
           </div>
         </div>

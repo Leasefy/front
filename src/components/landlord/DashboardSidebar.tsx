@@ -167,7 +167,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Logo - Premium styling */}
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-[black] to-[black/80] rounded-xl flex items-center justify-center shadow-lg shadow-[black]/20 transition-transform duration-300 group-hover:scale-105">
+          <div className="w-10 h-10 bg-gradient-to-br from-black to-[black/80] rounded-xl flex items-center justify-center shadow-lg shadow-[black]/20 transition-transform duration-300 group-hover:scale-105">
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
@@ -199,7 +199,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Upgrade CTA for free users - Premium design */}
       {MOCK_SUBSCRIPTION.planId === 'free' && (
         <div className="px-4 py-4">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[black] to-[black/80] p-4 shadow-lg shadow-[black]/25">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-[black/80] p-4 shadow-lg shadow-[black]/25">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12" />
             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full blur-xl -ml-8 -mb-8" />

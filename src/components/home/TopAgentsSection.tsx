@@ -77,7 +77,7 @@ export function TopAgentsSection() {
           <div className="flex items-center gap-4 w-full max-w-[600px]">
             <div className="flex-1 h-px bg-black/10" />
             <div className="flex items-center gap-2">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
+              <span className="w-[6px] h-[6px] rounded-full bg-primary" />
               <span className="text-[16px] leading-[21.6px] tracking-[-0.32px] text-black/60">
                 Agentes
               </span>
@@ -86,7 +86,7 @@ export function TopAgentsSection() {
           </div>
 
           {/* Main heading - 58px, letter-spacing -4.176px */}
-          <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05]">
+          <h2 className="text-[40px] md:text-[58px] font-normal text-primary tracking-[-4.176px] leading-[1.05]">
             Nuestros mejores agentes
           </h2>
         </motion.div>
@@ -106,7 +106,7 @@ export function TopAgentsSection() {
               className="group"
             >
               {/* Agent Photo - aspect ratio close to Luxterra */}
-              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-[2px] bg-gray-100">
+              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-sm bg-gray-100">
                 <Image
                   src={agent.image}
                   alt={agent.name}
@@ -121,7 +121,7 @@ export function TopAgentsSection() {
                 {/* Name and Social Links */}
                 <div className="flex items-center justify-between mb-[2px]">
                   {/* Name - 19px, -0.76px letter-spacing */}
-                  <h3 className="text-[19px] font-normal text-[#111112] tracking-[-0.76px] leading-[25.27px]">
+                  <h3 className="text-[19px] font-normal text-primary tracking-[-0.76px] leading-[25.27px]">
                     {agent.name}
                   </h3>
                   <div className="flex gap-[12px]">
@@ -159,7 +159,7 @@ export function TopAgentsSection() {
                 {/* More Info Button - Luxterra style with border */}
                 <Link
                   href={agent.href}
-                  className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-[2px] border border-black/20 text-[15px] text-[#111112] tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors w-fit group/btn overflow-hidden"
+                  className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-black/20 text-[15px] text-primary tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors w-fit group/btn overflow-hidden"
                 >
                   <span className="relative overflow-hidden h-[20px]">
                     <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">

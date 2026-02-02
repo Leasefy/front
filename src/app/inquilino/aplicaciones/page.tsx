@@ -87,12 +87,12 @@ export default function AplicacionesPage() {
       header: 'Propiedad',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#F3F4F6] flex items-center justify-center flex-shrink-0">
-            <FileText className="w-5 h-5 text-[#6B7280]" />
+          <div className="w-10 h-10 bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-5 h-5 text-plan-secondary" />
           </div>
           <div>
-            <p className="font-medium text-[#111827]">{row.propertyTitle}</p>
-            <p className="text-xs text-[#9CA3AF] flex items-center gap-1 mt-0.5">
+            <p className="font-medium text-plan-primary">{row.propertyTitle}</p>
+            <p className="text-xs text-plan-muted flex items-center gap-1 mt-0.5">
               <MapPin className="w-3 h-3" />
               {row.propertyAddress}
             </p>
@@ -104,7 +104,7 @@ export default function AplicacionesPage() {
       key: 'trackingCode',
       header: 'Codigo',
       render: (row) => (
-        <span className="text-sm font-mono text-[#6B7280]">{row.trackingCode}</span>
+        <span className="text-sm font-mono text-plan-secondary">{row.trackingCode}</span>
       ),
     },
     {
@@ -130,7 +130,7 @@ export default function AplicacionesPage() {
       key: 'updatedAt',
       header: 'Actualizado',
       render: (row) => (
-        <span className="text-sm text-[#6B7280] flex items-center gap-1">
+        <span className="text-sm text-plan-secondary flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           {formatDate(row.updatedAt)}
         </span>
@@ -144,15 +144,15 @@ export default function AplicacionesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">
+          <h1 className="text-2xl font-semibold text-plan-primary">
             Mis aplicaciones
           </h1>
-          <p className="mt-1 text-[#6B7280]">
+          <p className="mt-1 text-plan-secondary">
             Seguimiento de tus aplicaciones de arriendo
           </p>
         </header>
@@ -178,8 +178,8 @@ export default function AplicacionesPage() {
         </PlanStatsGrid>
 
         {/* Tabs */}
-        <div className="bg-white  border border-[#E5E7EB] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E5E7EB]">
+        <div className="bg-white  border border-plan-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-plan-border">
             <PlanTabs
               tabs={tabs}
               activeTab={activeTab}
@@ -204,11 +204,11 @@ export default function AplicacionesPage() {
               />
             ) : (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-[#9CA3AF]" />
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-plan-muted" />
                 </div>
-                <p className="text-[#6B7280] mb-2">Sin aplicaciones activas</p>
-                <Link href="/propiedades" className="text-sm text-[#111827] font-medium hover:underline">
+                <p className="text-plan-secondary mb-2">Sin aplicaciones activas</p>
+                <Link href="/propiedades" className="text-sm text-plan-primary font-medium hover:underline">
                   Explorar propiedades
                 </Link>
               </div>
@@ -228,7 +228,7 @@ export default function AplicacionesPage() {
               />
             ) : (
               <div className="p-12 text-center">
-                <p className="text-[#6B7280]">Sin historial de aplicaciones</p>
+                <p className="text-plan-secondary">Sin historial de aplicaciones</p>
               </div>
             )}
           </PlanTabPanel>

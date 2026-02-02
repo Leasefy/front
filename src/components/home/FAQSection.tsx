@@ -47,7 +47,7 @@ export function FAQSection() {
   };
 
   return (
-    <section className="bg-[#f5f5f5] overflow-hidden">
+    <section className="bg-gray-100 overflow-hidden">
       <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left - Header, Image & CTA */}
@@ -60,19 +60,19 @@ export function FAQSection() {
           >
             {/* Label with purple dot - 16px, -0.32px letter-spacing */}
             <div className="flex items-center gap-2 mb-[10px]">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
+              <span className="w-[6px] h-[6px] rounded-full bg-primary" />
               <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/[0.62]">
                 FAQ
               </span>
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05] mb-[40px]">
+            <h2 className="text-[40px] md:text-[58px] font-normal text-primary tracking-[-4.176px] leading-[1.05] mb-[40px]">
               Preguntas frecuentes
             </h2>
 
             {/* Small portrait image - Luxterra style (about 140px wide) */}
-            <div className="relative w-[140px] h-[180px] mb-[24px] rounded-[2px] overflow-hidden bg-gray-100">
+            <div className="relative w-[140px] h-[180px] mb-[24px] rounded-sm overflow-hidden bg-gray-100">
               <Image
                 src="https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400"
                 alt="Equipo de asesores"
@@ -90,7 +90,7 @@ export function FAQSection() {
             {/* CTA Button - Luxterra style: 35px height, 2px border-radius */}
             <Link
               href="/contacto"
-              className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-[2px] border border-black/20 text-[15px] text-[#111112] tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
+              className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-black/20 text-[15px] text-primary tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
             >
               <span className="relative overflow-hidden h-[20px]">
                 <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
@@ -120,10 +120,10 @@ export function FAQSection() {
                   className="w-full flex items-center justify-between py-[24px] text-left group"
                 >
                   {/* Question text - 24px, -0.96px letter-spacing */}
-                  <span className="text-[24px] font-normal text-[#111112] tracking-[-0.96px] leading-[29.28px] pr-6">
+                  <span className="text-[24px] font-normal text-primary tracking-[-0.96px] leading-[29.28px] pr-6">
                     {faq.question}
                   </span>
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[#111112] group-hover:bg-black/5 transition-colors">
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-primary group-hover:bg-black/5 transition-colors">
                     {openIndex === index ? (
                       <X className="w-4 h-4" />
                     ) : (

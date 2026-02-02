@@ -105,7 +105,7 @@ export function KPICard({
   const content = (
     <div
       className={cn(
-        'relative p-5 rounded-[2px] border border-slate-100 shadow-sm',
+        'relative p-5 rounded-sm border border-slate-100 shadow-sm',
         'transition-all duration-200 ease-out',
         href && 'hover:shadow-md hover:border-slate-200 cursor-pointer',
         styles.bg,
@@ -115,7 +115,7 @@ export function KPICard({
       {/* Icon */}
       <div
         className={cn(
-          'w-10 h-10 rounded-[2px] flex items-center justify-center mb-4',
+          'w-10 h-10 rounded-sm flex items-center justify-center mb-4',
           styles.icon
         )}
       >

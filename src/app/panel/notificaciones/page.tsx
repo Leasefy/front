@@ -172,8 +172,8 @@ export default function NotificacionesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-semibold text-[#111827]">Notificaciones</h1>
-          <p className="text-[13px] text-[#6B7280] mt-1">
+          <h1 className="text-[22px] font-semibold text-plan-primary">Notificaciones</h1>
+          <p className="text-[13px] text-plan-secondary mt-1">
             {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todas leídas'}
           </p>
         </div>
@@ -181,20 +181,20 @@ export default function NotificacionesPage() {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
             >
               <Check className="w-4 h-4" />
               Marcar todo como leído
             </button>
           )}
-          <button className="p-2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors">
+          <button className="p-2 text-plan-muted hover:text-plan-secondary transition-colors">
             <Settings className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-[#F3F4F6]">
+      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
         {[
           { id: 'all', label: 'Todas' },
           { id: 'unread', label: 'Sin leer' },
@@ -209,8 +209,8 @@ export default function NotificacionesPage() {
             className={cn(
               'px-4 py-2 text-[13px] font-medium transition-colors',
               filter === f.id
-                ? 'bg-[#111827] text-white'
-                : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                ? 'bg-plan-primary text-white'
+                : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
             )}
           >
             {f.label}
@@ -219,12 +219,12 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-[#E5E7EB]">
+      <div className="bg-white border border-plan-border">
         {filteredNotifications.length === 0 ? (
           <div className="py-16 text-center">
-            <Bell className="w-12 h-12 text-[#D1D5DB] mx-auto mb-4" />
-            <p className="text-[15px] font-medium text-[#374151]">No hay notificaciones</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">
+            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-[15px] font-medium text-gray-700">No hay notificaciones</p>
+            <p className="text-[13px] text-plan-muted mt-1">
               {filter === 'all'
                 ? 'Cuando tengas nuevas notificaciones aparecerán aquí'
                 : 'No hay notificaciones en esta categoría'}
@@ -240,15 +240,15 @@ export default function NotificacionesPage() {
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 className={cn(
-                  'flex items-start gap-4 px-5 py-4 hover:bg-[#FAFAFA] transition-colors cursor-pointer group',
-                  index !== filteredNotifications.length - 1 && 'border-b border-[#F3F4F6]',
-                  notification.unread && 'bg-[#F9FAFB]'
+                  'flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer group',
+                  index !== filteredNotifications.length - 1 && 'border-b border-gray-100',
+                  notification.unread && 'bg-gray-50'
                 )}
               >
                 {/* Icon */}
                 <div className={cn(
                   'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg',
-                  notification.unread ? 'bg-[#111827]' : 'bg-[#F3F4F6]'
+                  notification.unread ? 'bg-plan-primary' : 'bg-gray-100'
                 )}>
                   <IconComponent className={cn(
                     'w-5 h-5',
@@ -258,7 +258,7 @@ export default function NotificacionesPage() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-[#111827]">
+                  <p className="text-[13px] text-plan-primary">
                     <span className="font-medium">{notification.user}</span>
                     {' '}{notification.action}{' '}
                     {notification.target && (
@@ -266,8 +266,8 @@ export default function NotificacionesPage() {
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[12px] text-[#9CA3AF]">{notification.time}</span>
-                    <span className="text-[12px] text-[#9CA3AF]">•</span>
+                    <span className="text-[12px] text-plan-muted">{notification.time}</span>
+                    <span className="text-[12px] text-plan-muted">•</span>
                     <span className={cn(
                       'text-[12px] font-medium',
                       config.color
@@ -282,7 +282,7 @@ export default function NotificacionesPage() {
                   {notification.unread && (
                     <button
                       onClick={() => markAsRead(notification.id)}
-                      className="p-2 text-[#9CA3AF] hover:text-[#22C55E] hover:bg-[#F0FDF4] rounded-lg transition-colors"
+                      className="p-2 text-plan-muted hover:text-plan-status-green hover:bg-green-50 rounded-lg transition-colors"
                       title="Marcar como leído"
                     >
                       <Check className="w-4 h-4" />
@@ -290,7 +290,7 @@ export default function NotificacionesPage() {
                   )}
                   <button
                     onClick={() => deleteNotification(notification.id)}
-                    className="p-2 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded-lg transition-colors"
+                    className="p-2 text-plan-muted hover:text-plan-status-red hover:bg-red-50 rounded-lg transition-colors"
                     title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -300,9 +300,9 @@ export default function NotificacionesPage() {
                 {/* Arrow indicator and unread dot */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {notification.unread && (
-                    <div className="w-2 h-2 bg-[#3B82F6] rounded-full" />
+                    <div className="w-2 h-2 bg-plan-status-blue rounded-full" />
                   )}
-                  <ChevronRight className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#9CA3AF] transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-plan-muted transition-colors" />
                 </div>
               </div>
             );

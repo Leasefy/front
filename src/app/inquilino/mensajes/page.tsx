@@ -138,21 +138,21 @@ export default function MensajesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-56px)] bg-[#F7F8FA]">
+    <div className="h-[calc(100vh-56px)] bg-plan-page">
       <div className="h-full flex">
         {/* Conversations List */}
-        <div className="w-80 bg-white border-r border-[#E5E7EB] flex flex-col">
+        <div className="w-80 bg-white border-r border-plan-border flex flex-col">
           {/* Header */}
-          <div className="px-4 py-4 border-b border-[#E5E7EB]">
-            <h2 className="text-lg font-semibold text-[#111827] mb-3">Mensajes</h2>
+          <div className="px-4 py-4 border-b border-plan-border">
+            <h2 className="text-lg font-semibold text-plan-primary mb-3">Mensajes</h2>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar conversación..."
-                className="w-full h-9 pl-10 pr-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                className="w-full h-9 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
           </div>
@@ -164,48 +164,48 @@ export default function MensajesPage() {
                 key={conversation.id}
                 onClick={() => setSelectedConversation(conversation)}
                 className={cn(
-                  'w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[#F9FAFB] transition-colors border-b border-[#F3F4F6]',
-                  selectedConversation.id === conversation.id && 'bg-[#F9FAFB]'
+                  'w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100',
+                  selectedConversation.id === conversation.id && 'bg-gray-50'
                 )}
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] font-medium">
+                  <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
                     {conversation.avatar}
                   </div>
                   {conversation.online && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22C55E] border-2 border-white rounded-full" />
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-plan-status-green border-2 border-white rounded-full" />
                   )}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-[#111827] truncate">
+                    <p className="font-medium text-plan-primary truncate">
                       {conversation.name}
                     </p>
-                    <span className="text-xs text-[#9CA3AF] flex-shrink-0">
+                    <span className="text-xs text-plan-muted flex-shrink-0">
                       {conversation.timestamp}
                     </span>
                   </div>
                   {conversation.property && (
-                    <p className="text-xs text-[#6B7280] truncate">
+                    <p className="text-xs text-plan-secondary truncate">
                       {conversation.role} • {conversation.property}
                     </p>
                   )}
                   {!conversation.property && (
-                    <p className="text-xs text-[#6B7280] truncate">
+                    <p className="text-xs text-plan-secondary truncate">
                       {conversation.role}
                     </p>
                   )}
-                  <p className="text-sm text-[#6B7280] truncate mt-0.5">
+                  <p className="text-sm text-plan-secondary truncate mt-0.5">
                     {conversation.lastMessage}
                   </p>
                 </div>
 
                 {/* Unread Badge */}
                 {conversation.unread > 0 && (
-                  <span className="w-5 h-5 bg-[#111827] text-white text-xs font-medium flex items-center justify-center flex-shrink-0">
+                  <span className="w-5 h-5 bg-plan-primary text-white text-xs font-medium flex items-center justify-center flex-shrink-0">
                     {conversation.unread}
                   </span>
                 )}
@@ -217,45 +217,45 @@ export default function MensajesPage() {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col bg-white">
           {/* Chat Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-10 h-10 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] font-medium">
+                <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
                   {selectedConversation.avatar}
                 </div>
                 {selectedConversation.online && (
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22C55E] border-2 border-white rounded-full" />
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-plan-status-green border-2 border-white rounded-full" />
                 )}
               </div>
               <div>
-                <p className="font-medium text-[#111827]">{selectedConversation.name}</p>
-                <p className="text-xs text-[#6B7280]">
+                <p className="font-medium text-plan-primary">{selectedConversation.name}</p>
+                <p className="text-xs text-plan-secondary">
                   {selectedConversation.online ? 'En línea' : 'Desconectado'}
                   {selectedConversation.property && ` • ${selectedConversation.property}`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="p-2 text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
                 <Video className="w-5 h-5" />
               </button>
-              <button className="p-2 text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
                 <Info className="w-5 h-5" />
               </button>
-              <button className="p-2 text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#F9FAFB]">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
             {/* Date Separator */}
             <div className="flex items-center justify-center">
-              <span className="px-3 py-1 bg-white text-xs text-[#6B7280] border border-[#E5E7EB]">
+              <span className="px-3 py-1 bg-white text-xs text-plan-secondary border border-plan-border">
                 Hoy
               </span>
             </div>
@@ -272,19 +272,19 @@ export default function MensajesPage() {
                   className={cn(
                     'max-w-[70%] px-4 py-2',
                     message.senderId === 'me'
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-white text-[#111827] border border-[#E5E7EB]'
+                      ? 'bg-plan-primary text-white'
+                      : 'bg-white text-plan-primary border border-plan-border'
                   )}
                 >
                   <p className="text-sm">{message.content}</p>
                   <div className={cn(
                     'flex items-center justify-end gap-1 mt-1',
-                    message.senderId === 'me' ? 'text-[#9CA3AF]' : 'text-[#9CA3AF]'
+                    message.senderId === 'me' ? 'text-plan-muted' : 'text-plan-muted'
                   )}>
                     <span className="text-[10px]">{message.timestamp}</span>
                     {message.senderId === 'me' && (
                       message.read ? (
-                        <CheckCheck className="w-3 h-3 text-[#D4F934]" />
+                        <CheckCheck className="w-3 h-3 text-plan-accent" />
                       ) : (
                         <Check className="w-3 h-3" />
                       )
@@ -296,9 +296,9 @@ export default function MensajesPage() {
           </div>
 
           {/* Message Input */}
-          <div className="px-6 py-4 border-t border-[#E5E7EB]">
+          <div className="px-6 py-4 border-t border-plan-border">
             <div className="flex items-center gap-3">
-              <button className="p-2 text-[#6B7280] hover:text-[#111827] transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary transition-colors">
                 <Paperclip className="w-5 h-5" />
               </button>
               <input
@@ -307,7 +307,7 @@ export default function MensajesPage() {
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Escribe un mensaje..."
-                className="flex-1 h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                className="flex-1 h-10 px-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
               <button
                 onClick={handleSendMessage}
@@ -315,8 +315,8 @@ export default function MensajesPage() {
                 className={cn(
                   'p-2 transition-colors',
                   messageText.trim()
-                    ? 'bg-[#111827] text-white hover:bg-[#1F2937]'
-                    : 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
+                    ? 'bg-plan-primary text-white hover:bg-gray-800'
+                    : 'bg-gray-100 text-plan-muted cursor-not-allowed'
                 )}
               >
                 <Send className="w-5 h-5" />

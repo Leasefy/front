@@ -32,43 +32,43 @@ const statusConfig: Record<Exclude<PlanStatusType, 'custom'>, {
 }> = {
   new: {
     label: 'Nuevo',
-    bg: 'bg-[#FEF9C3]',
-    text: 'text-[#713F12]',
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-900',
   },
   in_progress: {
     label: 'En progreso',
-    bg: 'bg-[#22C55E]',
+    bg: 'bg-plan-status-green',
     text: 'text-white',
   },
   accepted: {
     label: 'Aceptado',
-    bg: 'bg-[#DCFCE7]',
-    text: 'text-[#166534]',
+    bg: 'bg-plan-status-green-bg',
+    text: 'text-green-800',
   },
   rejected: {
     label: 'Rechazado',
-    bg: 'bg-[#FEE2E2]',
-    text: 'text-[#991B1B]',
+    bg: 'bg-plan-status-red-bg',
+    text: 'text-red-800',
   },
   important: {
     label: 'Importante',
-    bg: 'bg-[#FECDD3]',
-    text: 'text-[#9F1239]',
+    bg: 'bg-rose-200',
+    text: 'text-rose-800',
   },
   pending: {
     label: 'Pendiente',
-    bg: 'bg-[#F3F4F6]',
-    text: 'text-[#4B5563]',
+    bg: 'bg-gray-100',
+    text: 'text-gray-600',
   },
   completed: {
     label: 'Completado',
-    bg: 'bg-[#DCFCE7]',
-    text: 'text-[#166534]',
+    bg: 'bg-plan-status-green-bg',
+    text: 'text-green-800',
   },
   loan_granted: {
     label: 'Prestamo otorgado',
-    bg: 'bg-[#FECDD3]',
-    text: 'text-[#9F1239]',
+    bg: 'bg-rose-200',
+    text: 'text-rose-800',
   },
 };
 
@@ -123,7 +123,7 @@ export function PlanStatusTransition({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <PlanStatusBadge status={from} label={fromLabel} size="sm" />
-      <span className="text-[#9CA3AF] text-[11px]">→</span>
+      <span className="text-plan-muted text-[11px]">→</span>
       <PlanStatusBadge status={to} label={toLabel} size="sm" />
     </div>
   );
@@ -166,23 +166,23 @@ const riskConfig: Record<RiskLevel, {
 }> = {
   A: {
     label: 'Bajo Riesgo',
-    bg: 'bg-[#DCFCE7]',
-    text: 'text-[#166534]',
+    bg: 'bg-plan-status-green-bg',
+    text: 'text-green-800',
   },
   B: {
     label: 'Riesgo Moderado',
-    bg: 'bg-[#DBEAFE]',
-    text: 'text-[#1E40AF]',
+    bg: 'bg-plan-status-blue-bg',
+    text: 'text-blue-800',
   },
   C: {
     label: 'Riesgo Medio',
-    bg: 'bg-[#FEF9C3]',
-    text: 'text-[#854D0E]',
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-800',
   },
   D: {
     label: 'Alto Riesgo',
-    bg: 'bg-[#FEE2E2]',
-    text: 'text-[#991B1B]',
+    bg: 'bg-plan-status-red-bg',
+    text: 'text-red-800',
   },
 };
 

@@ -99,7 +99,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
       >
         <div className="flex items-center gap-4">
           {/* Document icon */}
-          <div className="w-10 h-10 rounded-[2px] bg-slate-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center flex-shrink-0">
             <FileText className="w-5 h-5 text-slate-400" />
           </div>
 
@@ -111,7 +111,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               </h3>
               <span
                 className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-[2px] flex-shrink-0',
+                  'text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0',
                   status.className
                 )}
               >
@@ -168,7 +168,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
         <div className="px-5 pb-5">
           <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Contract Details */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Detalles del contrato
               </p>
@@ -197,7 +197,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 2: Signatures */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Estado de firmas
               </p>
@@ -216,7 +216,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 3: Contact & Actions */}
-            <div className="bg-slate-50/50 border border-slate-100 rounded-[2px] p-4">
+            <div className="bg-slate-50/50 border border-slate-100 rounded-sm p-4">
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">
                 Contacto arrendatario
               </p>

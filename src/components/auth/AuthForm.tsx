@@ -243,7 +243,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
 
           {/* Error message */}
           {error && (
-            <div className="p-3 rounded-[2px] bg-red-50 border border-red-200">
+            <div className="p-3 rounded-sm bg-red-50 border border-red-200">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
@@ -258,7 +258,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
           </Button>
 
           {/* Demo credentials hint */}
-          <div className="p-3 rounded-[2px] bg-slate-50 border border-slate-200">
+          <div className="p-3 rounded-sm bg-slate-50 border border-slate-200">
             <p className="text-xs text-slate-500 text-center">
               <strong>Demo:</strong> landlord@example.com / tenant@example.com
               <br />
@@ -328,7 +328,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
                 type="button"
                 onClick={() => registerForm.setValue('role', 'tenant')}
                 className={cn(
-                  'p-3 rounded-[2px] border text-sm font-medium transition-colors',
+                  'p-3 rounded-sm border text-sm font-medium transition-colors',
                   registerForm.watch('role') === 'tenant'
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:border-foreground/20'
@@ -340,7 +340,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
                 type="button"
                 onClick={() => registerForm.setValue('role', 'landlord')}
                 className={cn(
-                  'p-3 rounded-[2px] border text-sm font-medium transition-colors',
+                  'p-3 rounded-sm border text-sm font-medium transition-colors',
                   registerForm.watch('role') === 'landlord'
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:border-foreground/20'
@@ -384,7 +384,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
 
           {/* Error message */}
           {error && (
-            <div className="p-3 rounded-[2px] bg-red-50 border border-red-200">
+            <div className="p-3 rounded-sm bg-red-50 border border-red-200">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}

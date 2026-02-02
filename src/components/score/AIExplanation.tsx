@@ -94,7 +94,7 @@ export function AIExplanation({
     <Card className={cn('p-6', className)}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 rounded-[2px] bg-primary/10">
+        <div className="p-2 rounded-sm bg-primary/10">
           <Bot className="h-5 w-5 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground">Analisis del Asesor</h3>

@@ -60,7 +60,7 @@ export default function TenantLeasePage() {
   // No active lease - show empty state
   if (!activeLease) {
     return (
-      <div className="min-h-screen bg-[#FBFBFB] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <Home className="w-8 h-8 text-slate-400" />
@@ -86,7 +86,7 @@ export default function TenantLeasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">

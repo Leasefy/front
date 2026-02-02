@@ -65,7 +65,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const showUpgrade = MOCK_SUBSCRIPTION.planId === 'free';
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       {/* PLan CRM Sidebar */}
       <PlanSidebar
         navItems={LANDLORD_NAV_ITEMS}

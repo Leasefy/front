@@ -95,7 +95,7 @@ export function StepPlan() {
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ selectedPlan: plan.id })}
               className={cn(
-                'relative w-full text-left p-5 rounded-[2px] border-2 transition-all',
+                'relative w-full text-left p-5 rounded-sm border-2 transition-all',
                 isSelected
                   ? 'border-black bg-black/[0.02] shadow-sm'
                   : plan.highlighted
@@ -109,7 +109,7 @@ export function StepPlan() {
                   'absolute -top-3 right-4 px-3 py-1 text-xs font-semibold rounded-full',
                   isSelected
                     ? 'bg-black text-white'
-                    : 'bg-[#D4F934] text-black'
+                    : 'bg-plan-accent text-black'
                 )}>
                   {plan.badge}
                 </span>
@@ -118,11 +118,11 @@ export function StepPlan() {
               <div className="flex items-start gap-4">
                 {/* Icon */}
                 <div className={cn(
-                  'w-12 h-12 rounded-[2px] flex items-center justify-center flex-shrink-0',
+                  'w-12 h-12 rounded-sm flex items-center justify-center flex-shrink-0',
                   isSelected
                     ? 'bg-black text-white'
                     : plan.highlighted
-                    ? 'bg-[#D4F934] text-black'
+                    ? 'bg-plan-accent text-black'
                     : 'bg-black/5 text-black/40'
                 )}>
                   {plan.icon}

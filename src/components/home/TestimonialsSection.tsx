@@ -52,7 +52,7 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="bg-[#f5f5f5] overflow-hidden">
+    <section className="bg-gray-100 overflow-hidden">
       <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           {/* Left - Header & Navigation */}
@@ -65,14 +65,14 @@ export function TestimonialsSection() {
           >
             {/* Label with purple dot */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
+              <span className="w-[6px] h-[6px] rounded-full bg-primary" />
               <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
                 Testimonios
               </span>
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05] mb-10">
+            <h2 className="text-[40px] md:text-[58px] font-normal text-primary tracking-[-4.176px] leading-[1.05] mb-10">
               Lo que dicen nuestros clientes
             </h2>
 
@@ -80,14 +80,14 @@ export function TestimonialsSection() {
             <div className="flex gap-3">
               <button
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-[#111112] hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-primary hover:bg-black/5 transition-colors"
                 aria-label="Anterior testimonio"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-[#111112] hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-primary hover:bg-black/5 transition-colors"
                 aria-label="Siguiente testimonio"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -108,7 +108,7 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, delay: offset * 0.1 }}
-                    className="bg-white rounded-[2px] p-8 flex flex-col"
+                    className="bg-white rounded-sm p-8 flex flex-col"
                   >
                     {/* Quote icon */}
                     <div className="mb-6">
@@ -122,13 +122,13 @@ export function TestimonialsSection() {
                     </div>
 
                     {/* Quote text - 24px, -0.96px letter-spacing */}
-                    <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-[#111112] mb-8 flex-grow">
+                    <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-primary mb-8 flex-grow">
                       {testimonial.quote}
                     </p>
 
                     {/* Author info - Luxterra exact styles */}
                     <div className="flex items-center gap-4">
-                      <div className="w-[52px] h-[52px] rounded-[2px] overflow-hidden bg-gray-100 flex-shrink-0">
+                      <div className="w-[52px] h-[52px] rounded-sm overflow-hidden bg-gray-100 flex-shrink-0">
                         <Image
                           src={testimonial.image}
                           alt={testimonial.author}
@@ -139,7 +139,7 @@ export function TestimonialsSection() {
                       </div>
                       <div>
                         {/* Author name - 16px, -0.32px letter-spacing */}
-                        <p className="text-[16px] font-normal text-[#111112] tracking-[-0.32px] leading-[21.6px]">
+                        <p className="text-[16px] font-normal text-primary tracking-[-0.32px] leading-[21.6px]">
                           {testimonial.author}
                         </p>
                         {/* Author role - 16px, -0.32px letter-spacing, black/62% */}

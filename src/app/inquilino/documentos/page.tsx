@@ -220,68 +220,68 @@ export default function DocumentosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">Mis Documentos</h1>
-          <p className="text-[#6B7280] mt-1">
+          <h1 className="text-2xl font-semibold text-plan-primary">Mis Documentos</h1>
+          <p className="text-plan-secondary mt-1">
             Accede a tus contratos, comprobantes y otros documentos
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white  border border-[#E5E7EB] p-5">
+          <div className="bg-white  border border-plan-border p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-[#DBEAFE] flex items-center justify-center">
-                <FileText className="w-5 h-5 text-[#1E40AF]" />
+              <div className="w-10 h-10 rounded-sm bg-plan-status-blue-bg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-blue-800" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-[#111827]">{mockDocuments.length}</p>
-                <p className="text-sm text-[#6B7280]">Total documentos</p>
+                <p className="text-2xl font-bold text-plan-primary">{mockDocuments.length}</p>
+                <p className="text-sm text-plan-secondary">Total documentos</p>
               </div>
             </div>
           </div>
-          <div className="bg-white  border border-[#E5E7EB] p-5">
+          <div className="bg-white  border border-plan-border p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-[#DCFCE7] flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-[#166534]" />
+              <div className="w-10 h-10 rounded-sm bg-plan-status-green-bg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-800" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-[#111827]">
+                <p className="text-2xl font-bold text-plan-primary">
                   {mockDocuments.filter(d => d.status === 'signed').length}
                 </p>
-                <p className="text-sm text-[#6B7280]">Firmados</p>
+                <p className="text-sm text-plan-secondary">Firmados</p>
               </div>
             </div>
           </div>
-          <div className="bg-white  border border-[#E5E7EB] p-5">
+          <div className="bg-white  border border-plan-border p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-[#FEF9C3] flex items-center justify-center">
-                <Clock className="w-5 h-5 text-[#854D0E]" />
+              <div className="w-10 h-10 rounded-sm bg-yellow-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-800" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-[#111827]">
+                <p className="text-2xl font-bold text-plan-primary">
                   {mockDocuments.filter(d => d.status === 'pending').length}
                 </p>
-                <p className="text-sm text-[#6B7280]">Pendientes</p>
+                <p className="text-sm text-plan-secondary">Pendientes</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white  border border-[#E5E7EB] p-4 mb-6">
+        <div className="bg-white  border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
               <input
                 type="text"
                 placeholder="Buscar documento..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-sm border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#D4F934]/50 focus:border-[#D4F934]"
+                className="w-full pl-10 pr-4 py-2 rounded-sm border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
               />
             </div>
             <div className="flex gap-2">
@@ -292,8 +292,8 @@ export default function DocumentosPage() {
                   className={cn(
                     'px-4 py-2 rounded-sm text-sm font-medium transition-colors',
                     selectedType === type.value
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                      ? 'bg-plan-primary text-white'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
                   )}
                 >
                   {type.label}
@@ -304,9 +304,9 @@ export default function DocumentosPage() {
         </div>
 
         {/* Documents List */}
-        <div className="bg-white  border border-[#E5E7EB] overflow-hidden">
+        <div className="bg-white  border border-plan-border overflow-hidden">
           {filteredDocuments.length > 0 ? (
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-gray-100">
               {paginatedDocuments.map((doc) => {
                 const Icon = doc.icon;
                 const statusConfig = getStatusConfig(doc.status);
@@ -314,26 +314,26 @@ export default function DocumentosPage() {
                 return (
                   <div
                     key={doc.id}
-                    className="flex items-center justify-between p-5 hover:bg-[#F9FAFB] transition-colors"
+                    className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-sm bg-[#F3F4F6] flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-[#6B7280]" />
+                      <div className="w-12 h-12 rounded-sm bg-gray-100 flex items-center justify-center">
+                        <Icon className="w-6 h-6 text-plan-secondary" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#111827]">{doc.name}</p>
+                        <p className="text-sm font-medium text-plan-primary">{doc.name}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                          <span className="text-xs text-plan-secondary flex items-center gap-1">
                             <Home className="w-3 h-3" />
                             {doc.property}
                           </span>
-                          <span className="text-xs text-[#9CA3AF]">•</span>
-                          <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                          <span className="text-xs text-plan-muted">•</span>
+                          <span className="text-xs text-plan-secondary flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDate(doc.date)}
                           </span>
-                          <span className="text-xs text-[#9CA3AF]">•</span>
-                          <span className="text-xs text-[#9CA3AF]">{doc.size}</span>
+                          <span className="text-xs text-plan-muted">•</span>
+                          <span className="text-xs text-plan-muted">{doc.size}</span>
                         </div>
                       </div>
                     </div>
@@ -346,12 +346,12 @@ export default function DocumentosPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setViewingDocument(doc)}
-                          className="p-2 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] hover:text-[#111827] transition-colors"
+                          className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors"
                           title="Ver documento"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] hover:text-[#111827] transition-colors">
+                        <button className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors">
                           <Download className="w-4 h-4" />
                         </button>
                       </div>
@@ -362,15 +362,15 @@ export default function DocumentosPage() {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <FileText className="w-12 h-12 text-[#D1D5DB] mx-auto mb-3" />
-              <p className="text-[#6B7280]">No se encontraron documentos</p>
+              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-plan-secondary">No se encontraron documentos</p>
             </div>
           )}
 
           {/* Pagination */}
           {filteredDocuments.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between px-5 py-4 border-t border-[#E5E7EB]">
-              <p className="text-sm text-[#6B7280]">
+            <div className="flex items-center justify-between px-5 py-4 border-t border-plan-border">
+              <p className="text-sm text-plan-secondary">
                 Mostrando {startIndex + 1}-{Math.min(endIndex, filteredDocuments.length)} de {filteredDocuments.length} documentos
               </p>
               <div className="flex items-center gap-2">
@@ -380,8 +380,8 @@ export default function DocumentosPage() {
                   className={cn(
                     'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                     currentPage === 1
-                      ? 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                      ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
                   )}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -395,8 +395,8 @@ export default function DocumentosPage() {
                       className={cn(
                         'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                         currentPage === page
-                          ? 'bg-[#111827] text-white'
-                          : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                          ? 'bg-plan-primary text-white'
+                          : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
                       )}
                     >
                       {page}
@@ -409,8 +409,8 @@ export default function DocumentosPage() {
                   className={cn(
                     'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                     currentPage === totalPages
-                      ? 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                      ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
                   )}
                 >
                   Siguiente
@@ -434,14 +434,14 @@ export default function DocumentosPage() {
           {/* Modal */}
           <div className="relative bg-white w-full max-w-4xl h-[90vh] mx-4 rounded-sm shadow-xl flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-sm bg-[#F3F4F6] flex items-center justify-center">
-                  <viewingDocument.icon className="w-5 h-5 text-[#6B7280]" />
+                <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+                  <viewingDocument.icon className="w-5 h-5 text-plan-secondary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#111827]">{viewingDocument.name}</h3>
-                  <p className="text-xs text-[#6B7280]">
+                  <h3 className="font-semibold text-plan-primary">{viewingDocument.name}</h3>
+                  <p className="text-xs text-plan-secondary">
                     {viewingDocument.property} • {formatDate(viewingDocument.date)} • {viewingDocument.size}
                   </p>
                 </div>
@@ -461,7 +461,7 @@ export default function DocumentosPage() {
                 </Button>
                 <button
                   onClick={() => setViewingDocument(null)}
-                  className="p-2 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] hover:text-[#111827] transition-colors"
+                  className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -469,23 +469,23 @@ export default function DocumentosPage() {
             </div>
 
             {/* Document Preview Area */}
-            <div className="flex-1 bg-[#F3F4F6] p-6 overflow-auto">
+            <div className="flex-1 bg-gray-100 p-6 overflow-auto">
               <div className="bg-white h-full rounded-sm shadow-sm flex flex-col items-center justify-center p-8">
                 {/* Mock document preview - in production, use a PDF viewer like react-pdf */}
                 <div className="w-full max-w-2xl mx-auto">
                   {/* Document Header */}
-                  <div className="text-center mb-8 pb-6 border-b border-[#E5E7EB]">
-                    <h2 className="text-xl font-bold text-[#111827] mb-2">
+                  <div className="text-center mb-8 pb-6 border-b border-plan-border">
+                    <h2 className="text-xl font-bold text-plan-primary mb-2">
                       {viewingDocument.name}
                     </h2>
-                    <p className="text-sm text-[#6B7280]">
+                    <p className="text-sm text-plan-secondary">
                       Propiedad: {viewingDocument.property}
                     </p>
                   </div>
 
                   {/* Mock Document Content */}
                   {viewingDocument.type === 'contract' && (
-                    <div className="space-y-4 text-sm text-[#374151]">
+                    <div className="space-y-4 text-sm text-gray-700">
                       <p className="font-semibold text-center mb-6">CONTRATO DE ARRENDAMIENTO</p>
                       <p>
                         En Santiago de Chile, a {formatDate(viewingDocument.date)}, entre el ARRENDADOR
@@ -503,15 +503,15 @@ export default function DocumentosPage() {
                         <strong>TERCERO:</strong> El presente contrato tendrá una duración de 12 meses,
                         renovable de forma automática por períodos iguales.
                       </p>
-                      <div className="pt-8 mt-8 border-t border-[#E5E7EB]">
+                      <div className="pt-8 mt-8 border-t border-plan-border">
                         <div className="grid grid-cols-2 gap-8 text-center">
                           <div>
-                            <div className="border-t border-[#111827] pt-2 mx-8">
+                            <div className="border-t border-plan-primary pt-2 mx-8">
                               <p className="font-medium">Arrendador</p>
                             </div>
                           </div>
                           <div>
-                            <div className="border-t border-[#111827] pt-2 mx-8">
+                            <div className="border-t border-plan-primary pt-2 mx-8">
                               <p className="font-medium">Arrendatario</p>
                             </div>
                           </div>
@@ -524,22 +524,22 @@ export default function DocumentosPage() {
                     <div className="space-y-4">
                       <div className="text-center">
                         <p className="font-semibold text-lg mb-1">COMPROBANTE DE PAGO</p>
-                        <p className="text-xs text-[#6B7280]">N° {viewingDocument.id.padStart(6, '0')}</p>
+                        <p className="text-xs text-plan-secondary">N° {viewingDocument.id.padStart(6, '0')}</p>
                       </div>
-                      <div className="bg-[#F9FAFB] rounded-sm p-4 space-y-3">
+                      <div className="bg-gray-50 rounded-sm p-4 space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-[#6B7280]">Propiedad:</span>
+                          <span className="text-plan-secondary">Propiedad:</span>
                           <span className="font-medium">{viewingDocument.property}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[#6B7280]">Fecha de pago:</span>
+                          <span className="text-plan-secondary">Fecha de pago:</span>
                           <span className="font-medium">{formatDate(viewingDocument.date)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[#6B7280]">Concepto:</span>
+                          <span className="text-plan-secondary">Concepto:</span>
                           <span className="font-medium">Arriendo mensual</span>
                         </div>
-                        <div className="flex justify-between pt-3 border-t border-[#E5E7EB]">
+                        <div className="flex justify-between pt-3 border-t border-plan-border">
                           <span className="font-semibold">Total pagado:</span>
                           <span className="font-bold text-lg">$850.000</span>
                         </div>
@@ -554,37 +554,37 @@ export default function DocumentosPage() {
                   {viewingDocument.type === 'inventory' && (
                     <div className="space-y-4 text-sm">
                       <p className="font-semibold text-center mb-6">INVENTARIO DE ENTREGA</p>
-                      <p className="text-[#6B7280] text-center mb-4">
+                      <p className="text-plan-secondary text-center mb-4">
                         Fecha: {formatDate(viewingDocument.date)}
                       </p>
                       <table className="w-full border-collapse">
                         <thead>
-                          <tr className="bg-[#F3F4F6]">
-                            <th className="border border-[#E5E7EB] px-3 py-2 text-left">Item</th>
-                            <th className="border border-[#E5E7EB] px-3 py-2 text-center">Cantidad</th>
-                            <th className="border border-[#E5E7EB] px-3 py-2 text-left">Estado</th>
+                          <tr className="bg-gray-100">
+                            <th className="border border-plan-border px-3 py-2 text-left">Item</th>
+                            <th className="border border-plan-border px-3 py-2 text-center">Cantidad</th>
+                            <th className="border border-plan-border px-3 py-2 text-left">Estado</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Llaves</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2 text-center">3</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Buen estado</td>
+                            <td className="border border-plan-border px-3 py-2">Llaves</td>
+                            <td className="border border-plan-border px-3 py-2 text-center">3</td>
+                            <td className="border border-plan-border px-3 py-2">Buen estado</td>
                           </tr>
                           <tr>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Control remoto portón</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2 text-center">1</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Buen estado</td>
+                            <td className="border border-plan-border px-3 py-2">Control remoto portón</td>
+                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
+                            <td className="border border-plan-border px-3 py-2">Buen estado</td>
                           </tr>
                           <tr>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Refrigerador</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2 text-center">1</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Funcionando</td>
+                            <td className="border border-plan-border px-3 py-2">Refrigerador</td>
+                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
+                            <td className="border border-plan-border px-3 py-2">Funcionando</td>
                           </tr>
                           <tr>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Cocina</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2 text-center">1</td>
-                            <td className="border border-[#E5E7EB] px-3 py-2">Funcionando</td>
+                            <td className="border border-plan-border px-3 py-2">Cocina</td>
+                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
+                            <td className="border border-plan-border px-3 py-2">Funcionando</td>
                           </tr>
                         </tbody>
                       </table>

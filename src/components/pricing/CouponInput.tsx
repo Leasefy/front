@@ -79,7 +79,7 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className={cn('', className)}>
-        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-[2px] p-3">
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-sm p-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
               <Check className="w-3.5 h-3.5 text-emerald-600" />

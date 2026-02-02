@@ -43,9 +43,9 @@ function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full max-w-md mx-4 shadow-xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
-          <h3 className="text-lg font-semibold text-[#111827]">{title}</h3>
-          <button onClick={onClose} className="text-[#6B7280] hover:text-[#111827]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
+          <h3 className="text-lg font-semibold text-plan-primary">{title}</h3>
+          <button onClick={onClose} className="text-plan-secondary hover:text-plan-primary">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -151,32 +151,32 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-sm hover:bg-white text-[#6B7280] hover:text-[#111827] transition-colors"
+            className="p-2 rounded-sm hover:bg-white text-plan-secondary hover:text-plan-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-semibold text-[#111827]">Configuración</h1>
-            <p className="text-[#6B7280] mt-1">Gestiona las preferencias de tu cuenta</p>
+            <h1 className="text-2xl font-semibold text-plan-primary">Configuración</h1>
+            <p className="text-plan-secondary mt-1">Gestiona las preferencias de tu cuenta</p>
           </div>
         </div>
 
         <div className="space-y-6">
           {/* Notifications */}
-          <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <h2 className="font-semibold text-[#111827] flex items-center gap-2">
-                <Bell className="w-5 h-5 text-[#6B7280]" />
+          <section className="bg-white  border border-plan-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <h2 className="font-semibold text-plan-primary flex items-center gap-2">
+                <Bell className="w-5 h-5 text-plan-secondary" />
                 Notificaciones
               </h2>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-gray-100">
               <SettingToggle
                 icon={Mail}
                 title="Notificaciones por email"
@@ -216,14 +216,14 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Security */}
-          <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <h2 className="font-semibold text-[#111827] flex items-center gap-2">
-                <Shield className="w-5 h-5 text-[#6B7280]" />
+          <section className="bg-white  border border-plan-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <h2 className="font-semibold text-plan-primary flex items-center gap-2">
+                <Shield className="w-5 h-5 text-plan-secondary" />
                 Seguridad
               </h2>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-gray-100">
               <SettingToggle
                 icon={Key}
                 title="Autenticación de dos factores"
@@ -247,14 +247,14 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Preferences */}
-          <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <h2 className="font-semibold text-[#111827] flex items-center gap-2">
-                <Globe className="w-5 h-5 text-[#6B7280]" />
+          <section className="bg-white  border border-plan-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <h2 className="font-semibold text-plan-primary flex items-center gap-2">
+                <Globe className="w-5 h-5 text-plan-secondary" />
                 Preferencias
               </h2>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-gray-100">
               <SettingToggle
                 icon={Moon}
                 title="Modo oscuro"
@@ -264,18 +264,18 @@ export default function ConfiguracionPage() {
               />
               <div className="flex items-center justify-between px-6 py-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-sm bg-[#F3F4F6] flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-[#6B7280]" />
+                  <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-plan-secondary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#111827]">Idioma</p>
-                    <p className="text-xs text-[#6B7280]">Selecciona el idioma de la interfaz</p>
+                    <p className="text-sm font-medium text-plan-primary">Idioma</p>
+                    <p className="text-xs text-plan-secondary">Selecciona el idioma de la interfaz</p>
                   </div>
                 </div>
                 <select
                   value={settings.language}
                   onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
-                  className="px-3 py-2 text-sm border border-[#E5E7EB] rounded-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F934]/50"
+                  className="px-3 py-2 text-sm border border-plan-border rounded-sm bg-white focus:outline-none focus:ring-2 focus:ring-plan-accent/50"
                 >
                   <option value="es">Español</option>
                   <option value="en">English</option>
@@ -285,14 +285,14 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Data & Privacy */}
-          <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <h2 className="font-semibold text-[#111827] flex items-center gap-2">
-                <Download className="w-5 h-5 text-[#6B7280]" />
+          <section className="bg-white  border border-plan-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <h2 className="font-semibold text-plan-primary flex items-center gap-2">
+                <Download className="w-5 h-5 text-plan-secondary" />
                 Datos y Privacidad
               </h2>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-gray-100">
               <SettingLink
                 icon={Download}
                 title="Descargar mis datos"
@@ -315,20 +315,20 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Danger Zone */}
-          <section className="bg-white  border border-[#FEE2E2] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#FEE2E2]">
-              <h2 className="font-semibold text-[#991B1B] flex items-center gap-2">
+          <section className="bg-white  border border-red-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-red-200">
+              <h2 className="font-semibold text-red-800 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
                 Zona de Peligro
               </h2>
             </div>
             <div className="p-6">
-              <p className="text-sm text-[#6B7280] mb-4">
+              <p className="text-sm text-plan-secondary mb-4">
                 Eliminar tu cuenta es una acción permanente y no se puede deshacer. Todos tus datos serán eliminados.
               </p>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="px-4 py-2 border border-[#FCA5A5] text-[#991B1B] rounded-sm text-sm font-medium hover:bg-[#FEF2F2] transition-colors"
+                className="px-4 py-2 border border-red-300 text-red-800 rounded-sm text-sm font-medium hover:bg-red-50 transition-colors"
               >
                 Eliminar mi cuenta
               </button>
@@ -341,46 +341,46 @@ export default function ConfiguracionPage() {
       <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Contraseña actual</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña actual</label>
             <input
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="••••••••"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Nueva contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nueva contraseña</label>
             <input
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="Mínimo 8 caracteres"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Confirmar contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmar contraseña</label>
             <input
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="Repetir contraseña"
             />
           </div>
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
@@ -393,20 +393,20 @@ export default function ConfiguracionPage() {
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
           {sessions.map((session) => (
-            <div key={session.id} className="flex items-center justify-between p-3 border border-[#E5E7EB] rounded-sm">
+            <div key={session.id} className="flex items-center justify-between p-3 border border-plan-border rounded-sm">
               <div className="flex items-center gap-3">
-                <Monitor className="w-5 h-5 text-[#6B7280]" />
+                <Monitor className="w-5 h-5 text-plan-secondary" />
                 <div>
-                  <p className="text-sm font-medium text-[#111827]">{session.device}</p>
-                  <p className="text-xs text-[#6B7280]">{session.location} • {session.lastActive}</p>
+                  <p className="text-sm font-medium text-plan-primary">{session.device}</p>
+                  <p className="text-xs text-plan-secondary">{session.location} • {session.lastActive}</p>
                 </div>
               </div>
               {session.current ? (
-                <span className="px-2 py-1 bg-[#DCFCE7] text-[#166534] text-xs font-medium">Actual</span>
+                <span className="px-2 py-1 bg-plan-status-green-bg text-green-800 text-xs font-medium">Actual</span>
               ) : (
                 <button
                   onClick={() => handleCloseSession(session.id)}
-                  className="text-xs text-[#DC2626] hover:underline"
+                  className="text-xs text-destructive hover:underline"
                 >
                   Cerrar
                 </button>
@@ -419,7 +419,7 @@ export default function ConfiguracionPage() {
                 setSessions(prev => prev.filter(s => s.current));
                 toast.success('Todas las otras sesiones han sido cerradas');
               }}
-              className="w-full py-2 border border-[#FCA5A5] text-[#991B1B] text-sm font-medium hover:bg-[#FEF2F2]"
+              className="w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50"
             >
               Cerrar todas las otras sesiones
             </button>
@@ -430,41 +430,41 @@ export default function ConfiguracionPage() {
       {/* Download Data Modal */}
       <Modal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title="Descargar mis datos">
         <div className="space-y-4">
-          <p className="text-sm text-[#6B7280]">
+          <p className="text-sm text-plan-secondary">
             Prepararemos un archivo con toda tu información personal, incluyendo:
           </p>
-          <ul className="text-sm text-[#374151] space-y-2">
+          <ul className="text-sm text-gray-700 space-y-2">
             <li className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-[#22C55E]" />
+              <Check className="w-4 h-4 text-plan-status-green" />
               Información de perfil
             </li>
             <li className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-[#22C55E]" />
+              <Check className="w-4 h-4 text-plan-status-green" />
               Historial de pagos
             </li>
             <li className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-[#22C55E]" />
+              <Check className="w-4 h-4 text-plan-status-green" />
               Documentos subidos
             </li>
             <li className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-[#22C55E]" />
+              <Check className="w-4 h-4 text-plan-status-green" />
               Historial de aplicaciones
             </li>
           </ul>
-          <p className="text-xs text-[#9CA3AF]">
+          <p className="text-xs text-plan-muted">
             El archivo se enviará a tu correo electrónico registrado en las próximas 24 horas.
           </p>
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowDownloadModal(false)}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleDownloadData}
               disabled={isLoading}
-              className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {isLoading ? 'Procesando...' : 'Solicitar datos'}
@@ -478,25 +478,25 @@ export default function ConfiguracionPage() {
         <div className="space-y-4">
           {!settings.twoFactorAuth ? (
             <>
-              <div className="p-4 bg-[#F0FDF4] border border-[#86EFAC] rounded-sm">
-                <p className="text-sm text-[#166534]">
+              <div className="p-4 bg-green-50 border border-green-300 rounded-sm">
+                <p className="text-sm text-green-800">
                   La autenticación de dos factores añade una capa extra de seguridad a tu cuenta. Necesitarás tu teléfono para iniciar sesión.
                 </p>
               </div>
-              <p className="text-sm text-[#6B7280]">
+              <p className="text-sm text-plan-secondary">
                 Te enviaremos un código de verificación por SMS cada vez que inicies sesión desde un nuevo dispositivo.
               </p>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleEnable2FA}
                   disabled={isLoading}
-                  className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                   {isLoading ? 'Activando...' : 'Activar 2FA'}
@@ -505,13 +505,13 @@ export default function ConfiguracionPage() {
             </>
           ) : (
             <>
-              <div className="p-4 bg-[#DCFCE7] border border-[#86EFAC] rounded-sm flex items-center gap-3">
-                <Check className="w-5 h-5 text-[#166534]" />
-                <p className="text-sm text-[#166534] font-medium">
+              <div className="p-4 bg-plan-status-green-bg border border-green-300 rounded-sm flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-800" />
+                <p className="text-sm text-green-800 font-medium">
                   La autenticación de dos factores está activada
                 </p>
               </div>
-              <p className="text-sm text-[#6B7280]">
+              <p className="text-sm text-plan-secondary">
                 Tu cuenta está protegida con verificación en dos pasos.
               </p>
               <button
@@ -520,7 +520,7 @@ export default function ConfiguracionPage() {
                   setShow2FAModal(false);
                   toast.success('Autenticación de dos factores desactivada');
                 }}
-                className="w-full py-2 border border-[#FCA5A5] text-[#991B1B] text-sm font-medium hover:bg-[#FEF2F2]"
+                className="w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50"
               >
                 Desactivar 2FA
               </button>
@@ -532,24 +532,24 @@ export default function ConfiguracionPage() {
       {/* Delete Account Modal */}
       <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
         <div className="space-y-4">
-          <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-sm flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#DC2626] flex-shrink-0" />
+          <div className="p-4 bg-red-50 border border-red-200 rounded-sm flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-[#991B1B]">Esta acción no se puede deshacer</p>
-              <p className="text-xs text-[#DC2626] mt-1">
+              <p className="text-sm font-medium text-red-800">Esta acción no se puede deshacer</p>
+              <p className="text-xs text-destructive mt-1">
                 Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.
               </p>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Escribe <span className="font-bold">ELIMINAR</span> para confirmar
             </label>
             <input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#DC2626]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-destructive/20"
               placeholder="ELIMINAR"
             />
           </div>
@@ -559,14 +559,14 @@ export default function ConfiguracionPage() {
                 setShowDeleteModal(false);
                 setDeleteConfirmText('');
               }}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-2 bg-[#DC2626] text-white text-sm font-medium hover:bg-[#B91C1C] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-destructive text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
@@ -595,12 +595,12 @@ function SettingToggle({
   return (
     <div className="flex items-center justify-between px-6 py-4">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-sm bg-[#F3F4F6] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#6B7280]" />
+        <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-plan-secondary" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[#111827]">{title}</p>
-          <p className="text-xs text-[#6B7280]">{description}</p>
+          <p className="text-sm font-medium text-plan-primary">{title}</p>
+          <p className="text-xs text-plan-secondary">{description}</p>
         </div>
       </div>
       <button
@@ -608,8 +608,8 @@ function SettingToggle({
         role="switch"
         aria-checked={enabled}
         className={cn(
-          'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#111827] focus-visible:ring-offset-2',
-          enabled ? 'bg-[#111827]' : 'bg-[#D1D5DB]'
+          'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-plan-primary focus-visible:ring-offset-2',
+          enabled ? 'bg-plan-primary' : 'bg-gray-300'
         )}
       >
         <span
@@ -638,18 +638,18 @@ function SettingLink({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-[#F9FAFB] transition-colors"
+      className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-sm bg-[#F3F4F6] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#6B7280]" />
+        <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-plan-secondary" />
         </div>
         <div className="text-left">
-          <p className="text-sm font-medium text-[#111827]">{title}</p>
-          <p className="text-xs text-[#6B7280]">{description}</p>
+          <p className="text-sm font-medium text-plan-primary">{title}</p>
+          <p className="text-xs text-plan-secondary">{description}</p>
         </div>
       </div>
-      <ChevronRight className="w-5 h-5 text-[#9CA3AF]" />
+      <ChevronRight className="w-5 h-5 text-plan-muted" />
     </button>
   );
 }

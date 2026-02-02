@@ -48,7 +48,7 @@ export function CTASection() {
             />
           </div>
           {/* Green online indicator */}
-          <span className="absolute top-1 right-1 w-[14px] h-[14px] bg-[#22c55e] rounded-full border-2 border-white" />
+          <span className="absolute top-1 right-1 w-[14px] h-[14px] bg-plan-status-green rounded-full border-2 border-white" />
         </motion.div>
 
         {/* Main Heading - 58px, -4.176px letter-spacing */}
@@ -82,10 +82,10 @@ export function CTASection() {
         >
           <Link
             href="/contacto"
-            className="inline-flex items-center h-[50px] rounded-[2px] bg-white text-[#111112] text-[15px] tracking-[-0.15px] leading-[20px] hover:bg-white/90 transition-colors group/btn overflow-hidden"
+            className="inline-flex items-center h-[50px] rounded-sm bg-white text-primary text-[15px] tracking-[-0.15px] leading-[20px] hover:bg-white/90 transition-colors group/btn overflow-hidden"
           >
             {/* Arrow icon container - black background */}
-            <span className="flex items-center justify-center w-[50px] h-full bg-[#111112] rounded-l-[2px]">
+            <span className="flex items-center justify-center w-[50px] h-full bg-primary rounded-l-[2px]">
               <svg
                 className="w-4 h-4 text-white transition-transform duration-300 group-hover/btn:translate-x-0.5"
                 fill="none"

@@ -49,15 +49,15 @@ export default function ArriendoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">
+          <h1 className="text-2xl font-semibold text-plan-primary">
             Mis Arriendos
           </h1>
-          <p className="mt-1 text-[#6B7280]">
+          <p className="mt-1 text-plan-secondary">
             Gestiona tus contratos de arriendo activos
           </p>
         </header>
@@ -86,16 +86,16 @@ export default function ArriendoPage() {
         </PlanStatsGrid>
 
         {/* Leases List */}
-        <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-            <h2 className="font-semibold text-[#111827]">Arriendos Activos</h2>
-            <span className="text-sm text-[#6B7280]">
+        <section className="bg-white  border border-plan-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
+            <h2 className="font-semibold text-plan-primary">Arriendos Activos</h2>
+            <span className="text-sm text-plan-secondary">
               {activeLeases.length} contrato{activeLeases.length !== 1 ? 's' : ''}
             </span>
           </div>
 
           {activeLeases.length > 0 ? (
-            <div className="divide-y divide-[#E5E7EB]">
+            <div className="divide-y divide-plan-border">
               {activeLeases.map((lease) => {
                 const nextPayment = getNextPayment(lease.id);
                 const daysRemaining = getDaysRemaining(lease.endDate);
@@ -105,11 +105,11 @@ export default function ArriendoPage() {
                   <Link
                     key={lease.id}
                     href={`/inquilino/arriendo/${lease.id}`}
-                    className="block group p-5 hover:bg-[#F9FAFB] transition-colors cursor-pointer"
+                    className="block group p-5 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <div className="flex flex-col lg:flex-row gap-5">
                       {/* Image */}
-                      <div className="relative w-full lg:w-40 h-32 rounded-sm overflow-hidden flex-shrink-0 bg-[#F3F4F6]">
+                      <div className="relative w-full lg:w-40 h-32 rounded-sm overflow-hidden flex-shrink-0 bg-gray-100">
                         <Image
                           src={lease.propertyThumbnail}
                           alt={lease.propertyTitle}
@@ -122,44 +122,44 @@ export default function ArriendoPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                           <div>
-                            <h3 className="font-medium text-[#111827] text-lg">
+                            <h3 className="font-medium text-plan-primary text-lg">
                               {lease.propertyTitle}
                             </h3>
-                            <p className="text-sm text-[#6B7280] mt-0.5 flex items-center gap-1.5">
+                            <p className="text-sm text-plan-secondary mt-0.5 flex items-center gap-1.5">
                               <MapPin className="w-3.5 h-3.5" />
                               {lease.propertyAddress}
                             </p>
                           </div>
                           <div className="sm:text-right">
-                            <p className="text-2xl font-semibold text-[#111827]">
+                            <p className="text-2xl font-semibold text-plan-primary">
                               {formatCurrency(lease.monthlyRent + lease.adminFee)}
                             </p>
-                            <p className="text-xs text-[#9CA3AF]">/mes</p>
+                            <p className="text-xs text-plan-muted">/mes</p>
                           </div>
                         </div>
 
                         {/* Contract Info */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-[#E5E7EB]">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-plan-border">
                           <div>
-                            <p className="text-xs text-[#9CA3AF] mb-1">Arriendo</p>
-                            <p className="text-sm font-medium text-[#111827]">
+                            <p className="text-xs text-plan-muted mb-1">Arriendo</p>
+                            <p className="text-sm font-medium text-plan-primary">
                               {formatCurrency(lease.monthlyRent)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-[#9CA3AF] mb-1">Administracion</p>
-                            <p className="text-sm font-medium text-[#111827]">
+                            <p className="text-xs text-plan-muted mb-1">Administracion</p>
+                            <p className="text-sm font-medium text-plan-primary">
                               {formatCurrency(lease.adminFee)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-[#9CA3AF] mb-1">Dia de pago</p>
-                            <p className="text-sm font-medium text-[#111827]">
+                            <p className="text-xs text-plan-muted mb-1">Dia de pago</p>
+                            <p className="text-sm font-medium text-plan-primary">
                               Dia {lease.paymentDueDay}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-[#9CA3AF] mb-1">Estado</p>
+                            <p className="text-xs text-plan-muted mb-1">Estado</p>
                             <PlanStatusBadge
                               status={lease.status === 'ending_soon' ? 'important' : 'in_progress'}
                               label={lease.status === 'ending_soon' ? 'Termina pronto' : 'Activo'}
@@ -169,13 +169,13 @@ export default function ArriendoPage() {
                         </div>
 
                         {/* Contract Progress */}
-                        <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+                        <div className="mt-4 pt-4 border-t border-plan-border">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                            <span className="text-xs text-plan-secondary flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               Inicio: {formatDate(lease.startDate)}
                             </span>
-                            <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                            <span className="text-xs text-plan-secondary flex items-center gap-1">
                               Fin: {formatDate(lease.endDate)}
                             </span>
                           </div>
@@ -187,7 +187,7 @@ export default function ArriendoPage() {
                                 variant={daysRemaining < 30 ? 'warning' : 'default'}
                               />
                             </div>
-                            <span className="text-xs text-[#6B7280] whitespace-nowrap">
+                            <span className="text-xs text-plan-secondary whitespace-nowrap">
                               {daysRemaining} dias restantes
                             </span>
                           </div>
@@ -195,14 +195,14 @@ export default function ArriendoPage() {
 
                         {/* Next Payment */}
                         {nextPayment && (
-                          <div className="flex items-center justify-between mt-4 p-3 bg-[#F9FAFB] rounded-sm">
+                          <div className="flex items-center justify-between mt-4 p-3 bg-gray-50 rounded-sm">
                             <div>
-                              <p className="text-xs text-[#6B7280]">Proximo pago</p>
-                              <p className="text-sm font-medium text-[#111827]">
+                              <p className="text-xs text-plan-secondary">Proximo pago</p>
+                              <p className="text-sm font-medium text-plan-primary">
                                 {formatCurrency(nextPayment.amount)} - {formatDate(nextPayment.dueDate)}
                               </p>
                             </div>
-                            <span className="flex items-center gap-1 text-sm font-medium text-[#111827] group-hover:text-[#6B7280] transition-colors">
+                            <span className="flex items-center gap-1 text-sm font-medium text-plan-primary group-hover:text-plan-secondary transition-colors">
                               Ver detalle
                               <ArrowUpRight className="w-4 h-4" />
                             </span>
@@ -216,18 +216,18 @@ export default function ArriendoPage() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-                <Home className="w-8 h-8 text-[#9CA3AF]" />
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Home className="w-8 h-8 text-plan-muted" />
               </div>
-              <h3 className="font-medium text-[#111827] mb-2">
+              <h3 className="font-medium text-plan-primary mb-2">
                 No tienes arriendos activos
               </h3>
-              <p className="text-sm text-[#6B7280] mb-4">
+              <p className="text-sm text-plan-secondary mb-4">
                 Explora propiedades disponibles y encuentra tu proximo hogar
               </p>
               <Link
                 href="/propiedades"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-sm text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 Explorar propiedades
                 <ArrowUpRight className="w-4 h-4" />

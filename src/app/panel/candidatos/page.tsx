@@ -125,8 +125,8 @@ export default function CandidatosPage() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-[#9CA3AF]" />
-          <span className="text-sm text-[#6B7280] truncate max-w-[200px]">
+          <Building2 className="w-4 h-4 text-plan-muted" />
+          <span className="text-sm text-plan-secondary truncate max-w-[200px]">
             {row.propertyTitle}
           </span>
         </div>
@@ -153,7 +153,7 @@ export default function CandidatosPage() {
               variant={row.numericScore >= 70 ? 'success' : row.numericScore >= 50 ? 'warning' : 'danger'}
             />
           </div>
-          <span className="text-xs text-[#6B7280]">{row.numericScore}</span>
+          <span className="text-xs text-plan-secondary">{row.numericScore}</span>
         </div>
       ),
     },
@@ -162,7 +162,7 @@ export default function CandidatosPage() {
       header: 'Ingresos',
       sortable: true,
       render: (row) => (
-        <span className="text-sm font-medium text-[#111827]">
+        <span className="text-sm font-medium text-plan-primary">
           {formatCurrency(row.totalIncome)}
         </span>
       ),
@@ -249,8 +249,8 @@ export default function CandidatosPage() {
           <div className="flex items-center justify-between">
             <PlanRiskBadge level={candidate.riskLevel} />
             <div className="text-right">
-              <span className="text-2xl font-bold text-[#111827]">{candidate.numericScore}</span>
-              <span className="text-sm text-[#6B7280]">/100</span>
+              <span className="text-2xl font-bold text-plan-primary">{candidate.numericScore}</span>
+              <span className="text-sm text-plan-secondary">/100</span>
             </div>
           </div>
           <PlanProgressBar
@@ -263,7 +263,7 @@ export default function CandidatosPage() {
               {candidate.riskScore.categories.map(cat => (
                 <div key={cat.name}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#6B7280]">{cat.label}</span>
+                    <span className="text-plan-secondary">{cat.label}</span>
                     <span className="font-medium">{cat.score}%</span>
                   </div>
                   <PlanProgressBar value={cat.score} size="sm" />
@@ -279,13 +279,13 @@ export default function CandidatosPage() {
       title: 'Información Financiera',
       content: (
         <div className="space-y-2">
-          <div className="flex justify-between py-2 border-b border-[#E5E7EB]">
-            <span className="text-sm text-[#6B7280]">Ingresos mensuales</span>
-            <span className="text-sm font-medium text-[#111827]">{formatCurrency(candidate.totalIncome)}</span>
+          <div className="flex justify-between py-2 border-b border-plan-border">
+            <span className="text-sm text-plan-secondary">Ingresos mensuales</span>
+            <span className="text-sm font-medium text-plan-primary">{formatCurrency(candidate.totalIncome)}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-[#E5E7EB]">
-            <span className="text-sm text-[#6B7280]">Obligaciones</span>
-            <span className="text-sm font-medium text-[#111827]">{formatCurrency(candidate.monthlyObligations)}</span>
+          <div className="flex justify-between py-2 border-b border-plan-border">
+            <span className="text-sm text-plan-secondary">Obligaciones</span>
+            <span className="text-sm font-medium text-plan-primary">{formatCurrency(candidate.monthlyObligations)}</span>
           </div>
           <div className="flex justify-between py-2 bg-emerald-50 px-2 -mx-2">
             <span className="text-sm text-emerald-700">Disponible para arriendo</span>
@@ -300,19 +300,19 @@ export default function CandidatosPage() {
       content: (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-sm text-[#6B7280]">Ocupación</span>
-            <span className="text-sm text-[#111827]">{candidate.occupation}</span>
+            <span className="text-sm text-plan-secondary">Ocupación</span>
+            <span className="text-sm text-plan-primary">{candidate.occupation}</span>
           </div>
           {candidate.companyName && (
             <div className="flex justify-between">
-              <span className="text-sm text-[#6B7280]">Empresa</span>
-              <span className="text-sm text-[#111827]">{candidate.companyName}</span>
+              <span className="text-sm text-plan-secondary">Empresa</span>
+              <span className="text-sm text-plan-primary">{candidate.companyName}</span>
             </div>
           )}
           {candidate.timeAtJob && (
             <div className="flex justify-between">
-              <span className="text-sm text-[#6B7280]">Tiempo en cargo</span>
-              <span className="text-sm text-[#111827]">{Math.floor(candidate.timeAtJob / 12)} años {candidate.timeAtJob % 12} meses</span>
+              <span className="text-sm text-plan-secondary">Tiempo en cargo</span>
+              <span className="text-sm text-plan-primary">{Math.floor(candidate.timeAtJob / 12)} años {candidate.timeAtJob % 12} meses</span>
             </div>
           )}
         </div>
@@ -357,12 +357,12 @@ export default function CandidatosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">Candidatos</h1>
-          <p className="mt-1 text-[#6B7280]">
+          <h1 className="text-2xl font-semibold text-plan-primary">Candidatos</h1>
+          <p className="mt-1 text-plan-secondary">
             Evalúa y gestiona las aplicaciones de tus candidatos
           </p>
         </header>
@@ -400,23 +400,23 @@ export default function CandidatosPage() {
         />
 
         {/* Filters Row */}
-        <div className="bg-white border border-[#E5E7EB] p-4 mb-6">
+        <div className="bg-white border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar candidato, propiedad u ocupación..."
-                className="w-full h-10 pl-10 pr-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
 
             {/* Risk Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#6B7280]">Riesgo:</span>
+              <span className="text-sm text-plan-secondary">Riesgo:</span>
               {(['all', 'A', 'B', 'C', 'D'] as const).map(level => (
                 <button
                   key={level}
@@ -424,8 +424,8 @@ export default function CandidatosPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     riskFilter === level
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                      ? 'bg-plan-primary text-white'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
                   )}
                 >
                   {level === 'all' ? 'Todos' : level}

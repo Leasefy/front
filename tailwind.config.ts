@@ -79,6 +79,40 @@ const config: Config = {
   				b: 'hsl(var(--risk-b))',
   				c: 'hsl(var(--risk-c))',
   				d: 'hsl(var(--risk-d))'
+  			},
+  			plan: {
+  				page: 'var(--plan-page-bg)',
+  				card: 'var(--plan-card-bg)',
+  				accent: {
+  					DEFAULT: 'var(--plan-accent)',
+  					dark: 'var(--plan-accent-dark)'
+  				},
+  				border: 'var(--plan-border)',
+  				primary: 'var(--plan-text-primary)',
+  				secondary: 'var(--plan-text-secondary)',
+  				muted: 'var(--plan-text-muted)',
+  				status: {
+  					green: {
+  						DEFAULT: 'var(--plan-status-green)',
+  						bg: 'var(--plan-status-green-bg)'
+  					},
+  					yellow: {
+  						DEFAULT: 'var(--plan-status-yellow)',
+  						bg: 'var(--plan-status-yellow-bg)'
+  					},
+  					red: {
+  						DEFAULT: 'var(--plan-status-red)',
+  						bg: 'var(--plan-status-red-bg)'
+  					},
+  					purple: {
+  						DEFAULT: 'var(--plan-status-purple)',
+  						bg: 'var(--plan-status-purple-bg)'
+  					},
+  					blue: {
+  						DEFAULT: 'var(--plan-status-blue)',
+  						bg: 'var(--plan-status-blue-bg)'
+  					}
+  				}
   			}
   		}
   	}

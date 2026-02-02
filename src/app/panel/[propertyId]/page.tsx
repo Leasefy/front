@@ -135,7 +135,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       header: 'Edad',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-[#6B7280]">{row.age} años</span>
+        <span className="text-sm text-plan-secondary">{row.age} años</span>
       ),
     },
     {
@@ -159,7 +159,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               variant={row.score >= 70 ? 'success' : row.score >= 50 ? 'warning' : 'danger'}
             />
           </div>
-          <span className="text-xs text-[#6B7280]">{row.score}</span>
+          <span className="text-xs text-plan-secondary">{row.score}</span>
         </div>
       ),
     },
@@ -283,17 +283,17 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       content: (
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-[#6B7280]">Ocupacion</span>
-            <span className="text-[#111827]">{selectedCandidate.occupation}</span>
+            <span className="text-plan-secondary">Ocupacion</span>
+            <span className="text-plan-primary">{selectedCandidate.occupation}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#6B7280]">Edad</span>
-            <span className="text-[#111827]">{selectedCandidate.age} años</span>
+            <span className="text-plan-secondary">Edad</span>
+            <span className="text-plan-primary">{selectedCandidate.age} años</span>
           </div>
           {selectedCandidate.maritalStatus && (
             <div className="flex justify-between">
-              <span className="text-[#6B7280]">Estado civil</span>
-              <span className="text-[#111827]">{selectedCandidate.maritalStatus}</span>
+              <span className="text-plan-secondary">Estado civil</span>
+              <span className="text-plan-primary">{selectedCandidate.maritalStatus}</span>
             </div>
           )}
         </div>
@@ -307,51 +307,51 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <div className="space-y-4">
           {/* Employment */}
           <div>
-            <p className="text-xs font-medium text-[#6B7280] uppercase mb-2">Información Laboral</p>
+            <p className="text-xs font-medium text-plan-secondary uppercase mb-2">Información Laboral</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Empresa</span>
-                <span className="text-[#111827]">{selectedCandidate.companyName || 'No especificada'}</span>
+                <span className="text-plan-secondary">Empresa</span>
+                <span className="text-plan-primary">{selectedCandidate.companyName || 'No especificada'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Cargo</span>
-                <span className="text-[#111827]">{selectedCandidate.position || selectedCandidate.occupation}</span>
+                <span className="text-plan-secondary">Cargo</span>
+                <span className="text-plan-primary">{selectedCandidate.position || selectedCandidate.occupation}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Tipo de contrato</span>
-                <span className="text-[#111827]">{selectedCandidate.contractType === 'indefinite' ? 'Indefinido' : selectedCandidate.contractType || 'No especificado'}</span>
+                <span className="text-plan-secondary">Tipo de contrato</span>
+                <span className="text-plan-primary">{selectedCandidate.contractType === 'indefinite' ? 'Indefinido' : selectedCandidate.contractType || 'No especificado'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Antigüedad</span>
-                <span className="text-[#111827]">{selectedCandidate.timeAtJob ? `${Math.floor(selectedCandidate.timeAtJob / 12)} años ${selectedCandidate.timeAtJob % 12} meses` : 'No especificada'}</span>
+                <span className="text-plan-secondary">Antigüedad</span>
+                <span className="text-plan-primary">{selectedCandidate.timeAtJob ? `${Math.floor(selectedCandidate.timeAtJob / 12)} años ${selectedCandidate.timeAtJob % 12} meses` : 'No especificada'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Industria</span>
-                <span className="text-[#111827]">{selectedCandidate.industry || 'No especificada'}</span>
+                <span className="text-plan-secondary">Industria</span>
+                <span className="text-plan-primary">{selectedCandidate.industry || 'No especificada'}</span>
               </div>
             </div>
           </div>
           {/* Income */}
           <div>
-            <p className="text-xs font-medium text-[#6B7280] uppercase mb-2">Información Financiera</p>
+            <p className="text-xs font-medium text-plan-secondary uppercase mb-2">Información Financiera</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Salario mensual</span>
-                <span className="text-[#111827] font-medium">${selectedCandidate.monthlySalary?.toLocaleString('es-CO')}</span>
+                <span className="text-plan-secondary">Salario mensual</span>
+                <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString('es-CO')}</span>
               </div>
               {selectedCandidate.additionalIncome > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-[#6B7280]">Ingresos adicionales</span>
-                  <span className="text-[#111827]">${selectedCandidate.additionalIncome?.toLocaleString('es-CO')}</span>
+                  <span className="text-plan-secondary">Ingresos adicionales</span>
+                  <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString('es-CO')}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Ingreso total</span>
-                <span className="text-[#111827] font-semibold">${selectedCandidate.totalIncome?.toLocaleString('es-CO')}</span>
+                <span className="text-plan-secondary">Ingreso total</span>
+                <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString('es-CO')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Obligaciones mensuales</span>
-                <span className="text-[#111827]">${selectedCandidate.monthlyObligations?.toLocaleString('es-CO')}</span>
+                <span className="text-plan-secondary">Obligaciones mensuales</span>
+                <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString('es-CO')}</span>
               </div>
               <div className="flex justify-between bg-emerald-50 p-2 rounded">
                 <span className="text-emerald-700">Disponible para arriendo</span>
@@ -361,37 +361,37 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           </div>
           {/* Housing */}
           <div>
-            <p className="text-xs font-medium text-[#6B7280] uppercase mb-2">Vivienda Actual</p>
+            <p className="text-xs font-medium text-plan-secondary uppercase mb-2">Vivienda Actual</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Dirección</span>
-                <span className="text-[#111827] text-right max-w-[60%]">{selectedCandidate.currentAddress}</span>
+                <span className="text-plan-secondary">Dirección</span>
+                <span className="text-plan-primary text-right max-w-[60%]">{selectedCandidate.currentAddress}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Tiempo en dirección</span>
-                <span className="text-[#111827]">{selectedCandidate.timeAtCurrentAddress ? `${Math.floor(selectedCandidate.timeAtCurrentAddress / 12)} años ${selectedCandidate.timeAtCurrentAddress % 12} meses` : 'No especificado'}</span>
+                <span className="text-plan-secondary">Tiempo en dirección</span>
+                <span className="text-plan-primary">{selectedCandidate.timeAtCurrentAddress ? `${Math.floor(selectedCandidate.timeAtCurrentAddress / 12)} años ${selectedCandidate.timeAtCurrentAddress % 12} meses` : 'No especificado'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Dependientes</span>
-                <span className="text-[#111827]">{selectedCandidate.dependents || 0}</span>
+                <span className="text-plan-secondary">Dependientes</span>
+                <span className="text-plan-primary">{selectedCandidate.dependents || 0}</span>
               </div>
             </div>
           </div>
           {/* References */}
           <div>
-            <p className="text-xs font-medium text-[#6B7280] uppercase mb-2">Referencias</p>
+            <p className="text-xs font-medium text-plan-secondary uppercase mb-2">Referencias</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Arrendadores anteriores</span>
-                <span className="text-[#111827]">{selectedCandidate.previousLandlordsCount || 0}</span>
+                <span className="text-plan-secondary">Arrendadores anteriores</span>
+                <span className="text-plan-primary">{selectedCandidate.previousLandlordsCount || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Referencias laborales</span>
-                <span className="text-[#111827]">{selectedCandidate.employmentReferencesCount || 0}</span>
+                <span className="text-plan-secondary">Referencias laborales</span>
+                <span className="text-plan-primary">{selectedCandidate.employmentReferencesCount || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B7280]">Referencias personales</span>
-                <span className="text-[#111827]">{selectedCandidate.personalReferencesCount || 0}</span>
+                <span className="text-plan-secondary">Referencias personales</span>
+                <span className="text-plan-primary">{selectedCandidate.personalReferencesCount || 0}</span>
               </div>
             </div>
           </div>
@@ -408,8 +408,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="flex items-center gap-3">
               <FileText className={`w-5 h-5 ${selectedCandidate.hasIdDocument ? 'text-emerald-600' : 'text-gray-400'}`} />
               <div>
-                <p className="text-sm font-medium text-[#111827]">Documento de identidad</p>
-                <p className="text-xs text-[#6B7280]">Cédula de ciudadanía</p>
+                <p className="text-sm font-medium text-plan-primary">Documento de identidad</p>
+                <p className="text-xs text-plan-secondary">Cédula de ciudadanía</p>
               </div>
             </div>
             {selectedCandidate.hasIdDocument ? (
@@ -422,8 +422,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="flex items-center gap-3">
               <FileText className={`w-5 h-5 ${selectedCandidate.hasIncomeProof ? 'text-emerald-600' : 'text-gray-400'}`} />
               <div>
-                <p className="text-sm font-medium text-[#111827]">Comprobante de ingresos</p>
-                <p className="text-xs text-[#6B7280]">Últimos 3 meses</p>
+                <p className="text-sm font-medium text-plan-primary">Comprobante de ingresos</p>
+                <p className="text-xs text-plan-secondary">Últimos 3 meses</p>
               </div>
             </div>
             {selectedCandidate.hasIncomeProof ? (
@@ -436,8 +436,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="flex items-center gap-3">
               <FileText className={`w-5 h-5 ${selectedCandidate.hasEmploymentLetter ? 'text-emerald-600' : 'text-gray-400'}`} />
               <div>
-                <p className="text-sm font-medium text-[#111827]">Carta laboral</p>
-                <p className="text-xs text-[#6B7280]">Certificación de empleo</p>
+                <p className="text-sm font-medium text-plan-primary">Carta laboral</p>
+                <p className="text-xs text-plan-secondary">Certificación de empleo</p>
               </div>
             </div>
             {selectedCandidate.hasEmploymentLetter ? (
@@ -450,8 +450,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="flex items-center gap-3">
               <FileText className={`w-5 h-5 ${selectedCandidate.hasBankStatements ? 'text-emerald-600' : 'text-gray-400'}`} />
               <div>
-                <p className="text-sm font-medium text-[#111827]">Extractos bancarios</p>
-                <p className="text-xs text-[#6B7280]">Últimos 3 meses</p>
+                <p className="text-sm font-medium text-plan-primary">Extractos bancarios</p>
+                <p className="text-xs text-plan-secondary">Últimos 3 meses</p>
               </div>
             </div>
             {selectedCandidate.hasBankStatements ? (
@@ -461,9 +461,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             )}
           </div>
           {/* Summary */}
-          <div className="mt-4 p-3 bg-[#F3F4F6] rounded">
-            <p className="text-sm text-[#6B7280]">
-              <span className="font-medium text-[#111827]">
+          <div className="mt-4 p-3 bg-gray-100 rounded">
+            <p className="text-sm text-plan-secondary">
+              <span className="font-medium text-plan-primary">
                 {[selectedCandidate.hasIdDocument, selectedCandidate.hasIncomeProof, selectedCandidate.hasEmploymentLetter, selectedCandidate.hasBankStatements].filter(Boolean).length}
               </span> de 4 documentos verificados
             </p>
@@ -477,22 +477,22 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       content: (
         <div className="space-y-5">
           {/* Score Summary */}
-          <div className="bg-[#F9FAFB] p-4 rounded-lg">
+          <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <PlanRiskBadge level={selectedCandidate.riskLevel} />
                 <div>
-                  <p className="text-sm font-medium text-[#111827]">
+                  <p className="text-sm font-medium text-plan-primary">
                     {RISK_LEVELS[selectedCandidate.riskLevel].label}
                   </p>
-                  <p className="text-xs text-[#6B7280]">
+                  <p className="text-xs text-plan-secondary">
                     {RISK_LEVELS[selectedCandidate.riskLevel].description}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-[#111827]">{selectedCandidate.numericScore}</p>
-                <p className="text-xs text-[#6B7280]">de 100</p>
+                <p className="text-2xl font-bold text-plan-primary">{selectedCandidate.numericScore}</p>
+                <p className="text-xs text-plan-secondary">de 100</p>
               </div>
             </div>
             <PlanProgressBar
@@ -505,20 +505,20 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Category Breakdown */}
           {selectedCandidate.riskScore?.categories && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280] uppercase mb-3">Desglose por categoría</p>
+              <p className="text-xs font-medium text-plan-secondary uppercase mb-3">Desglose por categoría</p>
               <div className="space-y-3">
                 {selectedCandidate.riskScore.categories.map((cat) => (
                   <div key={cat.name}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-[#374151]">{cat.label}</span>
-                      <span className="text-sm font-medium text-[#111827]">{cat.score}%</span>
+                      <span className="text-sm text-gray-700">{cat.label}</span>
+                      <span className="text-sm font-medium text-plan-primary">{cat.score}%</span>
                     </div>
                     <PlanProgressBar
                       value={cat.score}
                       size="sm"
                       variant={cat.score >= 80 ? 'success' : cat.score >= 60 ? 'default' : 'warning'}
                     />
-                    <p className="text-xs text-[#9CA3AF] mt-1">
+                    <p className="text-xs text-plan-muted mt-1">
                       {cat.factors.join(' · ')}
                     </p>
                   </div>
@@ -530,13 +530,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Key Drivers (Positive Factors) */}
           {selectedCandidate.riskScore?.drivers && selectedCandidate.riskScore.drivers.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280] uppercase mb-2 flex items-center gap-1">
+              <p className="text-xs font-medium text-plan-secondary uppercase mb-2 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
                 Factores positivos
               </p>
               <ul className="space-y-1.5">
                 {selectedCandidate.riskScore.drivers.slice(0, 4).map((driver, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-[#374151]">
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {driver}
                   </li>
@@ -548,7 +548,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Risk Flags (if any) */}
           {selectedCandidate.riskScore?.flags && selectedCandidate.riskScore.flags.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280] uppercase mb-2 flex items-center gap-1">
+              <p className="text-xs font-medium text-plan-secondary uppercase mb-2 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 Puntos a considerar
               </p>
@@ -575,15 +575,15 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Suggested Conditions */}
           {selectedCandidate.riskScore?.suggestedConditions && selectedCandidate.riskScore.suggestedConditions.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280] uppercase mb-2 flex items-center gap-1">
+              <p className="text-xs font-medium text-plan-secondary uppercase mb-2 flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 Recomendaciones
               </p>
               <ul className="space-y-2">
                 {selectedCandidate.riskScore.suggestedConditions.map((cond) => (
-                  <li key={cond.id} className="text-sm bg-[#F3F4F6] p-2 rounded">
-                    <p className="font-medium text-[#111827]">{cond.condition}</p>
-                    <p className="text-xs text-[#6B7280] mt-0.5">{cond.reason}</p>
+                  <li key={cond.id} className="text-sm bg-gray-100 p-2 rounded">
+                    <p className="font-medium text-plan-primary">{cond.condition}</p>
+                    <p className="text-xs text-plan-secondary mt-0.5">{cond.reason}</p>
                   </li>
                 ))}
               </ul>
@@ -599,21 +599,21 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <div className="space-y-2">
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'pre-approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#DBEAFE] text-[#1D4ED8] rounded-sm text-sm font-medium hover:bg-[#BFDBFE] transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-blue-bg text-blue-700 rounded-sm text-sm font-medium hover:bg-blue-200 transition-colors"
           >
             <Clock className="w-4 h-4" />
             Pre-aprobar
           </button>
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#DCFCE7] text-[#166534] rounded-sm text-sm font-medium hover:bg-[#BBF7D0] transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-green-bg text-green-800 rounded-sm text-sm font-medium hover:bg-green-200 transition-colors"
           >
             <CheckCircle className="w-4 h-4" />
             Aprobar
           </button>
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'rejected')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FEE2E2] text-[#991B1B] rounded-sm text-sm font-medium hover:bg-[#FECACA] transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-red-bg text-red-800 rounded-sm text-sm font-medium hover:bg-red-200 transition-colors"
           >
             <XCircle className="w-4 h-4" />
             Rechazar
@@ -626,21 +626,21 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // Property not found
   if (!property) {
     return (
-      <div className="min-h-screen bg-[#F7F8FA]">
+      <div className="min-h-screen bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-[#9CA3AF]" />
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-plan-muted" />
             </div>
-            <h1 className="text-xl font-semibold text-[#111827] mb-2">
+            <h1 className="text-xl font-semibold text-plan-primary mb-2">
               Propiedad no encontrada
             </h1>
-            <p className="text-[#6B7280] mb-4">
+            <p className="text-plan-secondary mb-4">
               La propiedad que buscas no existe o no tienes acceso.
             </p>
             <Link
               href="/panel"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-sm text-sm font-medium hover:bg-[#1F2937] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver al panel
@@ -652,13 +652,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Back Link */}
         <Link
           href="/panel/propiedades"
-          className="inline-flex items-center gap-2 text-sm text-[#6B7280] hover:text-[#111827] transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a mis propiedades
@@ -668,7 +668,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <header className="mb-8">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Property Image */}
-            <div className="relative w-full lg:w-64 h-40 rounded-sm overflow-hidden flex-shrink-0 bg-[#F3F4F6]">
+            <div className="relative w-full lg:w-64 h-40 rounded-sm overflow-hidden flex-shrink-0 bg-gray-100">
               <Image
                 src={property.thumbnailUrl}
                 alt={property.title}
@@ -679,16 +679,16 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
             {/* Property Info */}
             <div className="flex-1">
-              <h1 className="text-2xl font-semibold text-[#111827]">
+              <h1 className="text-2xl font-semibold text-plan-primary">
                 {property.title}
               </h1>
-              <p className="text-[#6B7280] mt-1 flex items-center gap-1.5">
+              <p className="text-plan-secondary mt-1 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" />
                 {property.neighborhood}, {property.city}
               </p>
-              <p className="text-2xl font-semibold text-[#111827] mt-4">
+              <p className="text-2xl font-semibold text-plan-primary mt-4">
                 {formatCurrency(property.monthlyRent)}
-                <span className="text-base font-normal text-[#6B7280]">/mes</span>
+                <span className="text-base font-normal text-plan-secondary">/mes</span>
               </p>
             </div>
           </div>

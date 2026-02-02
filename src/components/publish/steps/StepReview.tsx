@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 const PLAN_INFO = {
   free: { name: 'Plan Gratis', icon: Zap, price: '$0', color: 'bg-black/5 text-black' },
-  pro: { name: 'Plan Propietario', icon: Sparkles, price: '$149.900/mes', color: 'bg-[#D4F934] text-black' },
+  pro: { name: 'Plan Propietario', icon: Sparkles, price: '$149.900/mes', color: 'bg-plan-accent text-black' },
   business: { name: 'Plan Inmobiliaria', icon: Building2, price: '$499.900/mes', color: 'bg-black text-white' },
 };
 
@@ -56,7 +56,7 @@ export function StepReview() {
 
       {/* Preview Image */}
       {draft.photos.length > 0 && (
-        <div className="aspect-video rounded-[2px] overflow-hidden mb-6">
+        <div className="aspect-video rounded-sm overflow-hidden mb-6">
           <img
             src={draft.photos[0]}
             alt="Vista previa"
@@ -74,7 +74,7 @@ export function StepReview() {
       {/* Property Type and Location */}
       <Section title="Tipo y ubicacion" onEdit={() => goToStep(1)}>
         <div className="flex items-center gap-4 text-sm">
-          <span className="px-3 py-1 bg-black/5 rounded-[2px] text-black/70">{typeLabel}</span>
+          <span className="px-3 py-1 bg-black/5 rounded-sm text-black/70">{typeLabel}</span>
           <span className="flex items-center gap-1.5 text-black/60">
             <MapPin className="w-4 h-4" />
             {draft.neighborhood}, {draft.city}
@@ -115,7 +115,7 @@ export function StepReview() {
             {selectedAmenities.map((amenity) => (
               <span
                 key={amenity.value}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/5 rounded-[2px] text-sm text-black/70"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/5 rounded-sm text-sm text-black/70"
               >
                 <Check className="w-3 h-3" />
                 {amenity.label}
@@ -133,7 +133,7 @@ export function StepReview() {
           {draft.photos.map((photo, index) => (
             <div
               key={photo}
-              className="relative w-20 h-20 flex-shrink-0 rounded-[2px] overflow-hidden"
+              className="relative w-20 h-20 flex-shrink-0 rounded-sm overflow-hidden"
             >
               <img
                 src={photo}
@@ -141,7 +141,7 @@ export function StepReview() {
                 className="w-full h-full object-cover"
               />
               {index === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black text-white text-[10px] rounded-[2px]">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black text-white text-[10px] rounded-sm">
                   Principal
                 </span>
               )}
@@ -185,7 +185,7 @@ export function StepReview() {
             const Icon = plan.icon;
             return (
               <div className={cn(
-                'inline-flex items-center gap-3 px-4 py-3 rounded-[2px]',
+                'inline-flex items-center gap-3 px-4 py-3 rounded-sm',
                 plan.color
               )}>
                 <Icon className="w-5 h-5" />
@@ -200,7 +200,7 @@ export function StepReview() {
       )}
 
       {/* Confirmation notice */}
-      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-[2px]">
+      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-sm">
         <div className="flex items-start gap-3">
           <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <div>

@@ -67,21 +67,21 @@ const cardVariants = {
  */
 export function CitiesSection() {
   return (
-    <section className="bg-[#f5f5f5] overflow-hidden">
+    <section className="bg-gray-100 overflow-hidden">
       {/* Container with Luxterra padding: 90px top, 120px bottom */}
       <div className="mx-auto max-w-[1420px] px-8 py-[90px] pb-[120px]">
         {/* Header - Centered like Luxterra */}
         <div className="flex flex-col items-center text-center mb-[60px]">
           {/* Label with purple dot */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#111112]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             <span className="text-[16px] tracking-[-0.02em] text-black/60">
               Ubicaciones
             </span>
           </div>
 
           {/* Main heading - 58px, letter-spacing -4.176px */}
-          <h2 className="text-[2.5rem] md:text-[3.625rem] font-normal text-[#111112] tracking-[-0.072em] leading-[1.05] mb-4">
+          <h2 className="text-[2.5rem] md:text-[3.625rem] font-normal text-primary tracking-[-0.072em] leading-[1.05] mb-4">
             Ciudades destacadas
           </h2>
 
@@ -106,7 +106,7 @@ export function CitiesSection() {
             >
               <Link
                 href={city.href}
-                className="group relative block w-full sm:w-[324px] h-[480px] rounded-[2px] overflow-hidden"
+                className="group relative block w-full sm:w-[324px] h-[480px] rounded-sm overflow-hidden"
               >
                 {/* Background Image with hover scale */}
                 <Image

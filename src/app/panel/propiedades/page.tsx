@@ -76,17 +76,17 @@ export default function PropiedadesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-[#111827]">Mis Propiedades</h1>
-            <p className="mt-1 text-[#6B7280]">
+            <h1 className="text-2xl font-semibold text-plan-primary">Mis Propiedades</h1>
+            <p className="mt-1 text-plan-secondary">
               Gestiona tus propiedades publicadas
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors">
             <Plus className="w-4 h-4" />
             Nueva Propiedad
           </button>
@@ -121,17 +121,17 @@ export default function PropiedadesPage() {
         </PlanStatsGrid>
 
         {/* Filters */}
-        <div className="bg-white border border-[#E5E7EB] p-4 mb-6">
+        <div className="bg-white border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar propiedad..."
-                className="w-full h-10 pl-10 pr-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
 
@@ -149,8 +149,8 @@ export default function PropiedadesPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     filterStatus === filter.id
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                      ? 'bg-plan-primary text-white'
+                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
                   )}
                 >
                   {filter.label}
@@ -159,12 +159,12 @@ export default function PropiedadesPage() {
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center border border-[#E5E7EB]">
+            <div className="flex items-center border border-plan-border">
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'grid' ? 'bg-[#111827] text-white' : 'text-[#6B7280] hover:bg-[#F3F4F6]'
+                  viewMode === 'grid' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-gray-100'
                 )}
               >
                 <Grid className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function PropiedadesPage() {
                 onClick={() => setViewMode('list')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'list' ? 'bg-[#111827] text-white' : 'text-[#6B7280] hover:bg-[#F3F4F6]'
+                  viewMode === 'list' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-gray-100'
                 )}
               >
                 <List className="w-4 h-4" />
@@ -192,10 +192,10 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-white border border-[#E5E7EB] overflow-hidden group hover:shadow-lg transition-shadow block"
+                    className="bg-white border border-plan-border overflow-hidden group hover:shadow-lg transition-shadow block"
                   >
                     {/* Image */}
-                    <div className="relative h-48 bg-[#F3F4F6]">
+                    <div className="relative h-48 bg-gray-100">
                       <Image
                         src={property.thumbnailUrl}
                         alt={property.title}
@@ -208,7 +208,7 @@ export default function PropiedadesPage() {
                       <div onClick={(e) => e.preventDefault()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white text-[#6B7280] transition-colors">
+                            <button className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white text-plan-secondary transition-colors">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
@@ -236,16 +236,16 @@ export default function PropiedadesPage() {
 
                     {/* Content */}
                     <div className="p-4">
-                      <h3 className="font-medium text-[#111827] mb-1 line-clamp-1">
+                      <h3 className="font-medium text-plan-primary mb-1 line-clamp-1">
                         {property.title}
                       </h3>
-                      <p className="text-sm text-[#6B7280] flex items-center gap-1 mb-3">
+                      <p className="text-sm text-plan-secondary flex items-center gap-1 mb-3">
                         <MapPin className="w-3.5 h-3.5" />
                         {property.neighborhood}, {property.city}
                       </p>
 
                       {/* Features */}
-                      <div className="flex items-center gap-4 text-sm text-[#6B7280] mb-4">
+                      <div className="flex items-center gap-4 text-sm text-plan-secondary mb-4">
                         <span className="flex items-center gap-1">
                           <Bed className="w-4 h-4" />
                           {property.bedrooms}
@@ -261,15 +261,15 @@ export default function PropiedadesPage() {
                       </div>
 
                       {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
+                      <div className="flex items-center justify-between pt-3 border-t border-plan-border">
                         <div>
-                          <p className="text-lg font-semibold text-[#111827]">
+                          <p className="text-lg font-semibold text-plan-primary">
                             {formatCurrency(property.monthlyRent)}
                           </p>
-                          <p className="text-xs text-[#9CA3AF]">/mes</p>
+                          <p className="text-xs text-plan-muted">/mes</p>
                         </div>
                         {candidates.length > 0 && (
-                          <span className="flex items-center gap-1 text-sm text-[#111827]">
+                          <span className="flex items-center gap-1 text-sm text-plan-primary">
                             <Users className="w-4 h-4" />
                             {candidates.length} candidato{candidates.length !== 1 ? 's' : ''}
                           </span>
@@ -282,7 +282,7 @@ export default function PropiedadesPage() {
             </div>
           ) : (
             /* List View */
-            <div className="bg-white border border-[#E5E7EB]">
+            <div className="bg-white border border-plan-border">
               {filteredProperties.map((property, index) => {
                 const candidates = getCandidatesByProperty(property.id);
                 return (
@@ -290,12 +290,12 @@ export default function PropiedadesPage() {
                     key={property.id}
                     href={`/panel/${property.id}`}
                     className={cn(
-                      'flex items-center gap-4 p-4 hover:bg-[#F9FAFB] transition-colors',
-                      index !== filteredProperties.length - 1 && 'border-b border-[#E5E7EB]'
+                      'flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors',
+                      index !== filteredProperties.length - 1 && 'border-b border-plan-border'
                     )}
                   >
                     {/* Image */}
-                    <div className="relative w-24 h-24 bg-[#F3F4F6] flex-shrink-0">
+                    <div className="relative w-24 h-24 bg-gray-100 flex-shrink-0">
                       <Image
                         src={property.thumbnailUrl}
                         alt={property.title}
@@ -307,16 +307,16 @@ export default function PropiedadesPage() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-[#111827] truncate">
+                        <h3 className="font-medium text-plan-primary truncate">
                           {property.title}
                         </h3>
                         {getStatusBadge(property.status)}
                       </div>
-                      <p className="text-sm text-[#6B7280] flex items-center gap-1 mb-2">
+                      <p className="text-sm text-plan-secondary flex items-center gap-1 mb-2">
                         <MapPin className="w-3.5 h-3.5" />
                         {property.address}, {property.city}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-[#6B7280]">
+                      <div className="flex items-center gap-4 text-sm text-plan-secondary">
                         <span className="flex items-center gap-1">
                           <Bed className="w-4 h-4" />
                           {property.bedrooms} hab
@@ -334,15 +334,15 @@ export default function PropiedadesPage() {
 
                     {/* Price */}
                     <div className="text-right">
-                      <p className="text-lg font-semibold text-[#111827]">
+                      <p className="text-lg font-semibold text-plan-primary">
                         {formatCurrency(property.monthlyRent)}
                       </p>
-                      <p className="text-xs text-[#9CA3AF]">/mes</p>
+                      <p className="text-xs text-plan-muted">/mes</p>
                     </div>
 
                     {/* Candidates */}
                     {candidates.length > 0 && (
-                      <span className="flex items-center gap-1 px-3 py-1.5 bg-[#F3F4F6] text-sm text-[#111827]">
+                      <span className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-sm text-plan-primary">
                         <Users className="w-4 h-4" />
                         {candidates.length}
                       </span>
@@ -352,7 +352,7 @@ export default function PropiedadesPage() {
                     <div onClick={(e) => e.preventDefault()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors">
+                          <button className="p-2 text-plan-muted hover:text-plan-secondary transition-colors">
                             <MoreVertical className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
@@ -376,15 +376,15 @@ export default function PropiedadesPage() {
             </div>
           )
         ) : (
-          <div className="bg-white border border-[#E5E7EB] py-16 text-center">
-            <Building2 className="w-12 h-12 text-[#D1D5DB] mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-[#111827] mb-2">
+          <div className="bg-white border border-plan-border py-16 text-center">
+            <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-plan-primary mb-2">
               No tienes propiedades
             </h3>
-            <p className="text-[#6B7280] mb-4">
+            <p className="text-plan-secondary mb-4">
               Publica tu primera propiedad para empezar a recibir candidatos
             </p>
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors">
+            <button className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors">
               <Plus className="w-4 h-4" />
               Publicar propiedad
             </button>

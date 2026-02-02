@@ -87,7 +87,7 @@ function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorPr
 
 function ContractPageLoading() {
   return (
-    <div className="min-h-screen bg-[#FBFBFB]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -182,7 +182,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   // Not found state
   if (!property || !candidate) {
     return (
-      <div className="min-h-screen bg-[#FBFBFB]">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-6xl px-4 py-8">
           <Link
             href={`/panel/${propertyId}`}
@@ -213,7 +213,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   const isActive = contract?.status === 'active';
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB]">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 py-6">
         {/* Back link */}
         <Link

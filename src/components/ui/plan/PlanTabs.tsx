@@ -62,7 +62,7 @@ export function PlanTabs({
   if (variant === 'pills') {
     return (
       <div className={cn(
-        'inline-flex items-center gap-1 p-1 rounded-sm bg-[#F3F4F6]',
+        'inline-flex items-center gap-1 p-1 rounded-sm bg-gray-100',
         fullWidth && 'w-full',
         className
       )}>
@@ -76,8 +76,8 @@ export function PlanTabs({
               sizeClasses[size],
               fullWidth && 'flex-1',
               activeTab === tab.id
-                ? 'bg-white text-[#111827] shadow-sm'
-                : 'text-[#6B7280] hover:text-[#111827]',
+                ? 'bg-white text-plan-primary shadow-sm'
+                : 'text-plan-secondary hover:text-plan-primary',
               tab.disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -87,8 +87,8 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                   activeTab === tab.id
-                    ? 'bg-[#111827] text-white'
-                    : 'bg-[#E5E7EB] text-[#6B7280]'
+                    ? 'bg-plan-primary text-white'
+                    : 'bg-gray-200 text-plan-secondary'
                 )}>
                   {tab.count}
                 </span>
@@ -105,7 +105,7 @@ export function PlanTabs({
       <div
         ref={containerRef}
         className={cn(
-          'relative inline-flex items-center border-b border-[#E5E7EB]',
+          'relative inline-flex items-center border-b border-plan-border',
           fullWidth && 'w-full',
           className
         )}
@@ -121,8 +121,8 @@ export function PlanTabs({
               sizeClasses[size],
               fullWidth && 'flex-1',
               activeTab === tab.id
-                ? 'text-[#111827]'
-                : 'text-[#6B7280] hover:text-[#111827]',
+                ? 'text-plan-primary'
+                : 'text-plan-secondary hover:text-plan-primary',
               tab.disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -132,8 +132,8 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-sm text-[10px] font-semibold',
                   activeTab === tab.id
-                    ? 'bg-[#111827] text-white'
-                    : 'bg-[#F3F4F6] text-[#6B7280]'
+                    ? 'bg-plan-primary text-white'
+                    : 'bg-gray-100 text-plan-secondary'
                 )}>
                   {tab.count}
                 </span>
@@ -143,7 +143,7 @@ export function PlanTabs({
         ))}
         {/* Animated underline indicator */}
         <div
-          className="absolute bottom-0 h-0.5 bg-[#111827] transition-all duration-200 ease-out"
+          className="absolute bottom-0 h-0.5 bg-plan-primary transition-all duration-200 ease-out"
           style={{
             left: indicatorStyle.left,
             width: indicatorStyle.width,
@@ -170,8 +170,8 @@ export function PlanTabs({
             sizeClasses[size],
             fullWidth && 'flex-1',
             activeTab === tab.id
-              ? 'bg-[#111827] text-white'
-              : 'text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]',
+              ? 'bg-plan-primary text-white'
+              : 'text-plan-secondary hover:bg-gray-100 hover:text-plan-primary',
             tab.disabled && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -182,7 +182,7 @@ export function PlanTabs({
                 'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                 activeTab === tab.id
                   ? 'bg-white/20 text-white'
-                  : 'bg-[#E5E7EB] text-[#6B7280]'
+                  : 'bg-gray-200 text-plan-secondary'
               )}>
                 {tab.count}
               </span>

@@ -19,9 +19,9 @@ export interface PlanStatsCardProps {
 }
 
 const variantClasses = {
-  default: 'bg-white border-[#E5E7EB]',
-  accent: 'bg-[#D4F934]/10 border-[#D4F934]/30',
-  muted: 'bg-[#F9FAFB] border-[#E5E7EB]',
+  default: 'bg-white border-plan-border',
+  accent: 'bg-plan-accent/10 border-plan-accent/30',
+  muted: 'bg-gray-50 border-plan-border',
 };
 
 const sizeClasses = {
@@ -53,36 +53,36 @@ export function PlanStatsCard({
         'border transition-colors duration-100',
         variantClasses[variant],
         sizeClasses[size],
-        onClick && 'cursor-pointer hover:bg-[#FAFAFA]',
+        onClick && 'cursor-pointer hover:bg-gray-50',
         className
       )}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-[12px] font-medium text-[#9CA3AF] uppercase tracking-wide mb-1">{label}</p>
+          <p className="text-[12px] font-medium text-plan-muted uppercase tracking-wide mb-1">{label}</p>
           <p className={cn(
-            'font-semibold text-[#111827] tracking-tight',
+            'font-semibold text-plan-primary tracking-tight',
             valueSizeClasses[size]
           )}>
             {value}
           </p>
           {sublabel && (
-            <p className="text-[11px] text-[#9CA3AF] mt-1">{sublabel}</p>
+            <p className="text-[11px] text-plan-muted mt-1">{sublabel}</p>
           )}
           {trend && (
             <div className={cn(
               'flex items-center gap-1 mt-2 text-[11px] font-medium',
-              trend.isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+              trend.isPositive ? 'text-plan-status-green' : 'text-plan-status-red'
             )}>
               <span>{trend.isPositive ? '+' : ''}{trend.value}%</span>
-              <span className="text-[#9CA3AF]">vs last month</span>
+              <span className="text-plan-muted">vs last month</span>
             </div>
           )}
         </div>
         {Icon && (
-          <div className="p-2 bg-[#F3F4F6]">
-            <Icon className="w-5 h-5 text-[#9CA3AF] stroke-[1.5px]" />
+          <div className="p-2 bg-gray-100">
+            <Icon className="w-5 h-5 text-plan-muted stroke-[1.5px]" />
           </div>
         )}
       </div>
@@ -133,8 +133,8 @@ export function PlanStatsInline({ stats, className }: PlanStatsInlineProps) {
     <div className={cn('flex items-center gap-6', className)}>
       {stats.map((stat, index) => (
         <div key={index} className="flex items-center gap-2">
-          <span className="text-sm text-[#6B7280]">{stat.label}:</span>
-          <span className="text-sm font-semibold text-[#111827]">{stat.value}</span>
+          <span className="text-sm text-plan-secondary">{stat.label}:</span>
+          <span className="text-sm font-semibold text-plan-primary">{stat.value}</span>
         </div>
       ))}
     </div>

@@ -126,17 +126,17 @@ export function PlanDetailSheet({
         aria-modal="true"
       >
         {/* Header - Fixed */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
-          <h2 className="text-lg font-semibold text-[#111827]">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-plan-border">
+          <h2 className="text-lg font-semibold text-plan-primary">
             Detalles
           </h2>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] transition-colors">
+            <button className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors">
               <MoreHorizontal className="w-5 h-5" />
             </button>
             <button
               onClick={() => onOpenChange(false)}
-              className="p-2 rounded-sm hover:bg-[#F3F4F6] text-[#6B7280] transition-colors"
+              className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -155,7 +155,7 @@ export function PlanDetailSheet({
         >
           {/* Profile Section */}
           {profile && (
-            <div className="px-6 py-5 border-b border-[#E5E7EB]">
+            <div className="px-6 py-5 border-b border-plan-border">
               <div className="flex items-start gap-4">
                 {profile.avatar ? (
                   <img
@@ -164,18 +164,18 @@ export function PlanDetailSheet({
                     className="w-16 h-16 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center">
-                    <span className="text-2xl font-bold text-[#6B7280]">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-plan-secondary">
                       {profile.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-[#111827] truncate">
+                  <h3 className="text-lg font-semibold text-plan-primary truncate">
                     {profile.name}
                   </h3>
                   {profile.subtitle && (
-                    <p className="text-sm text-[#6B7280] mt-0.5">{profile.subtitle}</p>
+                    <p className="text-sm text-plan-secondary mt-0.5">{profile.subtitle}</p>
                   )}
                   {profile.status && (
                     <div className="mt-2">
@@ -192,11 +192,11 @@ export function PlanDetailSheet({
 
           {/* Contact Info */}
           {contact && (contact.email || contact.phone || contact.location) && (
-            <div className="px-6 py-4 border-b border-[#E5E7EB] space-y-3">
+            <div className="px-6 py-4 border-b border-plan-border space-y-3">
               {contact.email && (
                 <a
                   href={`mailto:${contact.email}`}
-                  className="flex items-center gap-3 text-sm text-[#6B7280] hover:text-[#111827] transition-colors"
+                  className="flex items-center gap-3 text-sm text-plan-secondary hover:text-plan-primary transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   <span>{contact.email}</span>
@@ -205,14 +205,14 @@ export function PlanDetailSheet({
               {contact.phone && (
                 <a
                   href={`tel:${contact.phone}`}
-                  className="flex items-center gap-3 text-sm text-[#6B7280] hover:text-[#111827] transition-colors"
+                  className="flex items-center gap-3 text-sm text-plan-secondary hover:text-plan-primary transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   <span>{contact.phone}</span>
                 </a>
               )}
               {contact.location && (
-                <div className="flex items-center gap-3 text-sm text-[#6B7280]">
+                <div className="flex items-center gap-3 text-sm text-plan-secondary">
                   <MapPin className="w-4 h-4" />
                   <span>{contact.location}</span>
                 </div>
@@ -222,8 +222,8 @@ export function PlanDetailSheet({
 
           {/* Progress Section */}
           {progress && (
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <p className="text-xs font-medium text-[#6B7280] mb-2">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <p className="text-xs font-medium text-plan-secondary mb-2">
                 {progress.label || 'Progreso'}
               </p>
               <PlanProgressBar value={progress.value} showValue size="md" />
@@ -232,8 +232,8 @@ export function PlanDetailSheet({
 
           {/* Quick Actions */}
           {quickActions && quickActions.length > 0 && (
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
                 Acciones Rapidas
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -244,10 +244,10 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-[#111827] text-white hover:bg-[#1f2937]'
+                        ? 'bg-plan-primary text-white hover:bg-gray-800'
                         : action.variant === 'danger'
-                          ? 'bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA]'
-                          : 'bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB]'
+                          ? 'bg-plan-status-red-bg text-red-800 hover:bg-red-200'
+                          : 'bg-gray-100 text-plan-primary hover:bg-gray-200'
                     )}
                   >
                     {action.icon}
@@ -260,8 +260,8 @@ export function PlanDetailSheet({
 
           {/* Custom Sections */}
           {sections?.map(section => (
-            <div key={section.id} className="px-6 py-4 border-b border-[#E5E7EB]">
-              <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+            <div key={section.id} className="px-6 py-4 border-b border-plan-border">
+              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
                 {section.title}
               </p>
               {section.content}
@@ -270,8 +270,8 @@ export function PlanDetailSheet({
 
           {/* Activity Timeline */}
           {activity && activity.length > 0 && (
-            <div className="px-6 py-4 border-b border-[#E5E7EB]">
-              <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+            <div className="px-6 py-4 border-b border-plan-border">
+              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
                 Actividad
               </p>
               <PlanActivityTimeline items={activity} maxItems={5} compact />
@@ -281,7 +281,7 @@ export function PlanDetailSheet({
           {/* Notes Section */}
           {(notes !== undefined || onNotesChange) && (
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
                 Notas
               </p>
               {onNotesChange ? (
@@ -291,14 +291,14 @@ export function PlanDetailSheet({
                   placeholder="Agregar notas..."
                   className={cn(
                     'w-full min-h-[100px] p-3 rounded-sm resize-none',
-                    'bg-[#F9FAFB] border border-[#E5E7EB]',
-                    'text-sm text-[#111827] placeholder:text-[#9CA3AF]',
-                    'focus:outline-none focus:ring-2 focus:ring-[#D4F934]/50 focus:border-[#D4F934]',
+                    'bg-gray-50 border border-plan-border',
+                    'text-sm text-plan-primary placeholder:text-plan-muted',
+                    'focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent',
                     'transition-colors'
                   )}
                 />
               ) : (
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-sm text-plan-secondary">
                   {notes || 'Sin notas'}
                 </p>
               )}
@@ -308,7 +308,7 @@ export function PlanDetailSheet({
 
         {/* Footer Actions - Fixed */}
         {footerActions && (
-          <div className="flex-none px-6 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
+          <div className="flex-none px-6 py-4 border-t border-plan-border bg-gray-50">
             {footerActions}
           </div>
         )}

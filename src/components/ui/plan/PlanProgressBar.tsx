@@ -31,23 +31,23 @@ export function PlanProgressBar({
   const getBarColor = () => {
     switch (variant) {
       case 'success':
-        return 'bg-[#22C55E]';
+        return 'bg-plan-status-green';
       case 'warning':
-        return 'bg-[#EAB308]';
+        return 'bg-plan-status-yellow';
       case 'danger':
-        return 'bg-[#EF4444]';
+        return 'bg-plan-status-red';
       case 'muted':
-        return 'bg-[#9CA3AF]';
+        return 'bg-plan-muted';
       default:
         // PLan CRM lime/green gradient
-        return 'bg-gradient-to-r from-[#BEF264] to-[#22C55E]';
+        return 'bg-gradient-to-r from-lime-300 to-plan-status-green';
     }
   };
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <div className={cn(
-        'relative flex-1 bg-[#E5E7EB] rounded-full overflow-visible',
+        'relative flex-1 bg-gray-200 rounded-full overflow-visible',
         sizeClasses[size]
       )}>
         {/* Progress fill with diagonal stripes */}
@@ -80,7 +80,7 @@ export function PlanProgressBar({
         {percentage > 0 && (
           <div
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 rounded-full bg-[#111827]',
+              'absolute top-1/2 -translate-y-1/2 rounded-full bg-plan-primary',
               size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-2.5 h-2.5' : 'w-3 h-3'
             )}
             style={{
@@ -92,7 +92,7 @@ export function PlanProgressBar({
 
       {/* Percentage value */}
       {showValue && (
-        <span className="text-[11px] font-medium text-[#6B7280] min-w-[32px] text-right">
+        <span className="text-[11px] font-medium text-plan-secondary min-w-[32px] text-right">
           {Math.round(percentage)}%
         </span>
       )}
@@ -160,7 +160,7 @@ export function PlanCircularProgress({
         />
       </svg>
       {showValue && (
-        <span className="absolute text-[11px] font-semibold text-[#111827]">
+        <span className="absolute text-[11px] font-semibold text-plan-primary">
           {Math.round(percentage)}%
         </span>
       )}

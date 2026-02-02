@@ -25,7 +25,7 @@ export function Testimonial({
   return (
     <div
       className={cn(
-        'bg-white rounded-[2px] shadow-elevated p-6 max-w-md',
+        'bg-white rounded-sm shadow-elevated p-6 max-w-md',
         className
       )}
     >

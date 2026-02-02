@@ -39,16 +39,16 @@ export default function LeaseDetailPage() {
 
   if (!lease) {
     return (
-      <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
+      <div className="min-h-screen bg-plan-page flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-            <Home className="w-8 h-8 text-[#9CA3AF]" />
+          <div className="w-16 h-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Home className="w-8 h-8 text-plan-muted" />
           </div>
-          <h2 className="text-lg font-semibold text-[#111827] mb-2">Arriendo no encontrado</h2>
-          <p className="text-[#6B7280] mb-4">El arriendo que buscas no existe o no tienes acceso.</p>
+          <h2 className="text-lg font-semibold text-plan-primary mb-2">Arriendo no encontrado</h2>
+          <p className="text-plan-secondary mb-4">El arriendo que buscas no existe o no tienes acceso.</p>
           <Link
             href="/inquilino/arriendo"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver a mis arriendos
@@ -92,15 +92,15 @@ export default function LeaseDetailPage() {
   const getPaymentStatusInfo = (status: string) => {
     switch (status) {
       case 'paid':
-        return { label: 'Pagado', color: 'bg-[#DCFCE7] text-[#166534]', icon: CheckCircle2 };
+        return { label: 'Pagado', color: 'bg-plan-status-green-bg text-green-800', icon: CheckCircle2 };
       case 'pending':
-        return { label: 'Pendiente', color: 'bg-[#FEF3C7] text-[#92400E]', icon: Clock };
+        return { label: 'Pendiente', color: 'bg-plan-status-yellow-bg text-yellow-800', icon: Clock };
       case 'late':
-        return { label: 'Atrasado', color: 'bg-[#FEE2E2] text-[#DC2626]', icon: AlertCircle };
+        return { label: 'Atrasado', color: 'bg-plan-status-red-bg text-destructive', icon: AlertCircle };
       case 'overdue':
-        return { label: 'Vencido', color: 'bg-[#FEE2E2] text-[#DC2626]', icon: AlertCircle };
+        return { label: 'Vencido', color: 'bg-plan-status-red-bg text-destructive', icon: AlertCircle };
       default:
-        return { label: status, color: 'bg-[#F3F4F6] text-[#6B7280]', icon: Clock };
+        return { label: status, color: 'bg-gray-100 text-plan-secondary', icon: Clock };
     }
   };
 
@@ -120,22 +120,22 @@ export default function LeaseDetailPage() {
   const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[#6B7280] hover:text-[#111827] transition-colors mb-6"
+          className="flex items-center gap-2 text-plan-secondary hover:text-plan-primary transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Volver</span>
         </button>
 
         {/* Header Section */}
-        <div className="bg-white border border-[#E5E7EB] mb-6">
+        <div className="bg-white border border-plan-border mb-6">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-[#F3F4F6] flex-shrink-0">
+            <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-gray-100 flex-shrink-0">
               <Image
                 src={lease.propertyThumbnail}
                 alt={lease.propertyTitle}
@@ -148,36 +148,36 @@ export default function LeaseDetailPage() {
             <div className="flex-1 p-6">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-[#111827]">{lease.propertyTitle}</h1>
-                  <p className="text-[#6B7280] mt-1 flex items-center gap-1.5">
+                  <h1 className="text-2xl font-semibold text-plan-primary">{lease.propertyTitle}</h1>
+                  <p className="text-plan-secondary mt-1 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
                     {lease.propertyAddress}, {lease.propertyCity}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-semibold text-[#111827]">
+                  <p className="text-3xl font-semibold text-plan-primary">
                     {formatCurrency(lease.monthlyRent + lease.adminFee)}
                   </p>
-                  <p className="text-sm text-[#9CA3AF]">/mes</p>
+                  <p className="text-sm text-plan-muted">/mes</p>
                 </div>
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-[#E5E7EB]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-plan-border">
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Arriendo</p>
-                  <p className="text-sm font-medium text-[#111827]">{formatCurrency(lease.monthlyRent)}</p>
+                  <p className="text-xs text-plan-muted mb-1">Arriendo</p>
+                  <p className="text-sm font-medium text-plan-primary">{formatCurrency(lease.monthlyRent)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Administracion</p>
-                  <p className="text-sm font-medium text-[#111827]">{formatCurrency(lease.adminFee)}</p>
+                  <p className="text-xs text-plan-muted mb-1">Administracion</p>
+                  <p className="text-sm font-medium text-plan-primary">{formatCurrency(lease.adminFee)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Dia de pago</p>
-                  <p className="text-sm font-medium text-[#111827]">Dia {lease.paymentDueDay}</p>
+                  <p className="text-xs text-plan-muted mb-1">Dia de pago</p>
+                  <p className="text-sm font-medium text-plan-primary">Dia {lease.paymentDueDay}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Estado</p>
+                  <p className="text-xs text-plan-muted mb-1">Estado</p>
                   <PlanStatusBadge
                     status={lease.status === 'ending_soon' ? 'important' : 'in_progress'}
                     label={lease.status === 'ending_soon' ? 'Termina pronto' : 'Activo'}
@@ -189,11 +189,11 @@ export default function LeaseDetailPage() {
               {/* Contract Progress */}
               <div className="pt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-[#6B7280] flex items-center gap-1">
+                  <span className="text-xs text-plan-secondary flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Inicio: {formatDate(lease.startDate)}
                   </span>
-                  <span className="text-xs text-[#6B7280]">
+                  <span className="text-xs text-plan-secondary">
                     Fin: {formatDate(lease.endDate)}
                   </span>
                 </div>
@@ -205,7 +205,7 @@ export default function LeaseDetailPage() {
                       variant={daysRemaining < 30 ? 'warning' : 'default'}
                     />
                   </div>
-                  <span className="text-xs text-[#6B7280] whitespace-nowrap">
+                  <span className="text-xs text-plan-secondary whitespace-nowrap">
                     {daysRemaining} dias restantes
                   </span>
                 </div>
@@ -219,18 +219,18 @@ export default function LeaseDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Next Payment CTA */}
             {nextPayment && (
-              <div className="bg-[#111827] text-white p-6">
+              <div className="bg-plan-primary text-white p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <p className="text-sm text-[#9CA3AF] mb-1">Proximo pago</p>
+                    <p className="text-sm text-plan-muted mb-1">Proximo pago</p>
                     <p className="text-2xl font-semibold">{formatCurrency(nextPayment.amount)}</p>
-                    <p className="text-sm text-[#9CA3AF] mt-1">
+                    <p className="text-sm text-plan-muted mt-1">
                       Vence el {formatFullDate(nextPayment.dueDate)}
                     </p>
                   </div>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-[#D4F934] text-[#111827] font-medium hover:bg-[#c5ea2d] transition-colors"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-plan-accent text-plan-primary font-medium hover:bg-plan-accent-dark transition-colors"
                   >
                     <CreditCard className="w-5 h-5" />
                     Pagar ahora
@@ -241,19 +241,19 @@ export default function LeaseDetailPage() {
             )}
 
             {/* Payment History */}
-            <div className="bg-white border border-[#E5E7EB]">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+            <div className="bg-white border border-plan-border">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
                 <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-[#6B7280]" />
-                  <h2 className="font-semibold text-[#111827]">Historial de Pagos</h2>
+                  <Receipt className="w-5 h-5 text-plan-secondary" />
+                  <h2 className="font-semibold text-plan-primary">Historial de Pagos</h2>
                 </div>
-                <span className="text-sm text-[#6B7280]">
+                <span className="text-sm text-plan-secondary">
                   Total pagado: {formatCurrency(totalPaid)}
                 </span>
               </div>
 
               {payments.length > 0 ? (
-                <div className="divide-y divide-[#E5E7EB]">
+                <div className="divide-y divide-plan-border">
                   {payments.map((payment) => {
                     const statusInfo = getPaymentStatusInfo(payment.status);
                     const StatusIcon = statusInfo.icon;
@@ -262,27 +262,27 @@ export default function LeaseDetailPage() {
                     return (
                       <div
                         key={payment.id}
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-[#F9FAFB] transition-colors"
+                        className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
                       >
                         {/* Icon */}
                         <div className={cn(
                           'w-10 h-10 flex items-center justify-center flex-shrink-0',
-                          payment.status === 'paid' ? 'bg-[#DCFCE7]' :
-                          payment.status === 'pending' ? 'bg-[#FEF3C7]' :
-                          'bg-[#FEE2E2]'
+                          payment.status === 'paid' ? 'bg-plan-status-green-bg' :
+                          payment.status === 'pending' ? 'bg-plan-status-yellow-bg' :
+                          'bg-plan-status-red-bg'
                         )}>
                           <StatusIcon className={cn(
                             'w-5 h-5',
-                            payment.status === 'paid' ? 'text-[#166534]' :
-                            payment.status === 'pending' ? 'text-[#92400E]' :
-                            'text-[#DC2626]'
+                            payment.status === 'paid' ? 'text-green-800' :
+                            payment.status === 'pending' ? 'text-yellow-800' :
+                            'text-destructive'
                           )} />
                         </div>
 
                         {/* Details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-[#111827]">
+                            <p className="text-sm font-medium text-plan-primary">
                               {payment.concept === 'rent' ? 'Arriendo mensual' :
                                payment.concept === 'deposit' ? 'Deposito de garantia' :
                                payment.concept === 'admin_fee' ? 'Administracion' :
@@ -294,7 +294,7 @@ export default function LeaseDetailPage() {
                               {statusInfo.label}
                             </span>
                           </div>
-                          <p className="text-xs text-[#9CA3AF] mt-0.5">
+                          <p className="text-xs text-plan-muted mt-0.5">
                             {payment.paidDate ? (
                               <>Pagado el {formatDate(payment.paidDate)}</>
                             ) : (
@@ -308,13 +308,13 @@ export default function LeaseDetailPage() {
                             )}
                           </p>
                           {payment.notes && (
-                            <p className="text-xs text-[#6B7280] mt-1">{payment.notes}</p>
+                            <p className="text-xs text-plan-secondary mt-1">{payment.notes}</p>
                           )}
                         </div>
 
                         {/* Amount */}
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold text-[#111827]">
+                          <p className="text-sm font-semibold text-plan-primary">
                             {formatCurrency(payment.amount)}
                           </p>
                         </div>
@@ -324,8 +324,8 @@ export default function LeaseDetailPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Receipt className="w-12 h-12 text-[#D1D5DB] mx-auto mb-4" />
-                  <p className="text-[#6B7280]">No hay historial de pagos</p>
+                  <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-plan-secondary">No hay historial de pagos</p>
                 </div>
               )}
             </div>
@@ -334,43 +334,43 @@ export default function LeaseDetailPage() {
           {/* Sidebar - 1 column */}
           <div className="space-y-6">
             {/* Contract Info */}
-            <div className="bg-white border border-[#E5E7EB]">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-[#E5E7EB]">
-                <FileText className="w-5 h-5 text-[#6B7280]" />
-                <h2 className="font-semibold text-[#111827]">Contrato</h2>
+            <div className="bg-white border border-plan-border">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
+                <FileText className="w-5 h-5 text-plan-secondary" />
+                <h2 className="font-semibold text-plan-primary">Contrato</h2>
               </div>
               <div className="p-5 space-y-4">
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Vigencia</p>
-                  <p className="text-sm text-[#111827]">
+                  <p className="text-xs text-plan-muted mb-1">Vigencia</p>
+                  <p className="text-sm text-plan-primary">
                     {formatFullDate(lease.startDate)} - {formatFullDate(lease.endDate)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">Garantia</p>
-                  <p className="text-sm text-[#111827] flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-[#22C55E]" />
+                  <p className="text-xs text-plan-muted mb-1">Garantia</p>
+                  <p className="text-sm text-plan-primary flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-plan-status-green" />
                     {lease.guaranteeType === 'poliza' ? 'Poliza de arriendo' :
                      lease.guaranteeType === 'codeudor' ? 'Codeudor' :
                      lease.guaranteeType}
                   </p>
-                  <p className="text-xs text-[#6B7280] mt-0.5">{lease.guaranteeDetails}</p>
+                  <p className="text-xs text-plan-secondary mt-0.5">{lease.guaranteeDetails}</p>
                 </div>
 
                 {/* Documents */}
-                <div className="pt-4 border-t border-[#E5E7EB] space-y-2">
-                  <p className="text-xs text-[#9CA3AF] mb-2">Documentos</p>
+                <div className="pt-4 border-t border-plan-border space-y-2">
+                  <p className="text-xs text-plan-muted mb-2">Documentos</p>
 
                   {lease.contractUrl && (
                     <a
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <FileText className="w-4 h-4 text-[#6B7280]" />
-                      <span className="text-sm text-[#111827] flex-1">Contrato de arriendo</span>
-                      <Download className="w-4 h-4 text-[#9CA3AF]" />
+                      <FileText className="w-4 h-4 text-plan-secondary" />
+                      <span className="text-sm text-plan-primary flex-1">Contrato de arriendo</span>
+                      <Download className="w-4 h-4 text-plan-muted" />
                     </a>
                   )}
 
@@ -379,11 +379,11 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <Shield className="w-4 h-4 text-[#6B7280]" />
-                      <span className="text-sm text-[#111827] flex-1">Poliza de seguro</span>
-                      <Download className="w-4 h-4 text-[#9CA3AF]" />
+                      <Shield className="w-4 h-4 text-plan-secondary" />
+                      <span className="text-sm text-plan-primary flex-1">Poliza de seguro</span>
+                      <Download className="w-4 h-4 text-plan-muted" />
                     </a>
                   )}
 
@@ -392,11 +392,11 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <Building2 className="w-4 h-4 text-[#6B7280]" />
-                      <span className="text-sm text-[#111827] flex-1">Inventario</span>
-                      <Download className="w-4 h-4 text-[#9CA3AF]" />
+                      <Building2 className="w-4 h-4 text-plan-secondary" />
+                      <span className="text-sm text-plan-primary flex-1">Inventario</span>
+                      <Download className="w-4 h-4 text-plan-muted" />
                     </a>
                   )}
                 </div>
@@ -404,33 +404,33 @@ export default function LeaseDetailPage() {
             </div>
 
             {/* Landlord Contact */}
-            <div className="bg-white border border-[#E5E7EB]">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-[#E5E7EB]">
-                <User className="w-5 h-5 text-[#6B7280]" />
-                <h2 className="font-semibold text-[#111827]">Propietario</h2>
+            <div className="bg-white border border-plan-border">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
+                <User className="w-5 h-5 text-plan-secondary" />
+                <h2 className="font-semibold text-plan-primary">Propietario</h2>
               </div>
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] font-medium">
+                  <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
                     {lease.landlordName.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-[#111827]">{lease.landlordName}</p>
-                    <p className="text-xs text-[#6B7280]">Propietario</p>
+                    <p className="font-medium text-plan-primary">{lease.landlordName}</p>
+                    <p className="text-xs text-plan-secondary">Propietario</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <a
                     href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
                   >
                     <Mail className="w-4 h-4" />
                     {lease.landlordEmail}
                   </a>
                   <a
                     href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
                   >
                     <Phone className="w-4 h-4" />
                     {lease.landlordPhone}
@@ -439,7 +439,7 @@ export default function LeaseDetailPage() {
 
                 <Link
                   href="/inquilino/mensajes"
-                  className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-[#E5E7EB] text-sm font-medium text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+                  className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-gray-50 transition-colors"
                 >
                   Enviar mensaje
                   <ArrowUpRight className="w-4 h-4" />
@@ -448,24 +448,24 @@ export default function LeaseDetailPage() {
             </div>
 
             {/* Payment Methods Info */}
-            <div className="bg-white border border-[#E5E7EB]">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-[#E5E7EB]">
-                <CreditCard className="w-5 h-5 text-[#6B7280]" />
-                <h2 className="font-semibold text-[#111827]">Metodos de pago</h2>
+            <div className="bg-white border border-plan-border">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
+                <CreditCard className="w-5 h-5 text-plan-secondary" />
+                <h2 className="font-semibold text-plan-primary">Metodos de pago</h2>
               </div>
               <div className="p-5 space-y-2">
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-3 py-2 bg-[#F9FAFB]"
+                    className="flex items-center gap-3 px-3 py-2 bg-gray-50"
                   >
                     <span className="text-lg">{method.icon}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-[#111827]">{method.name}</p>
-                      <p className="text-xs text-[#9CA3AF]">{method.processingTime}</p>
+                      <p className="text-sm font-medium text-plan-primary">{method.name}</p>
+                      <p className="text-xs text-plan-muted">{method.processingTime}</p>
                     </div>
                     {method.fee && method.fee > 0 && (
-                      <span className="text-xs text-[#6B7280]">+{method.fee}%</span>
+                      <span className="text-xs text-plan-secondary">+{method.fee}%</span>
                     )}
                   </div>
                 ))}

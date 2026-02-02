@@ -61,7 +61,7 @@ export function AboutSection() {
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className="bg-[#f7f7f7] p-6 lg:p-7"
+                  className="bg-gray-50 p-6 lg:p-7"
                 >
                   <div className="flex gap-5">
                     {/* Icon - LARGER */}

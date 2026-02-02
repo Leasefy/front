@@ -131,7 +131,7 @@ export function AISearchInput({
       <div
         className={cn(
           'relative bg-white border transition-all duration-200 overflow-visible',
-          'rounded-[2px]',
+          'rounded-sm',
           isFocused || activeFilter
             ? 'border-black/15 shadow-lg'
             : 'border-black/10 shadow-md hover:shadow-lg'
@@ -212,7 +212,7 @@ export function AISearchInput({
 
                   {/* Dropdown */}
                   {isActive && (
-                    <div className="absolute top-full left-0 mt-2 py-1 bg-white border border-black/10 rounded-[2px] shadow-xl z-[100] min-w-[180px]">
+                    <div className="absolute top-full left-0 mt-2 py-1 bg-white border border-black/10 rounded-sm shadow-xl z-[100] min-w-[180px]">
                       {filter.options.map((option) => (
                         <button
                           key={option}
@@ -306,7 +306,7 @@ export function AISearchInput({
               <div className="p-4">
                 {/* AI Response Header */}
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-[2px] bg-black flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-sm bg-black flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
@@ -325,10 +325,10 @@ export function AISearchInput({
                     <Link
                       key={property.id}
                       href={`/propiedades/${property.id}`}
-                      className="group flex gap-3 p-3 bg-black/[0.02] hover:bg-black/[0.05] rounded-[2px] border border-transparent hover:border-black/10 transition-all"
+                      className="group flex gap-3 p-3 bg-black/[0.02] hover:bg-black/[0.05] rounded-sm border border-transparent hover:border-black/10 transition-all"
                     >
                       {/* Property Image */}
-                      <div className="w-16 h-16 rounded-[2px] bg-black/10 flex-shrink-0 overflow-hidden">
+                      <div className="w-16 h-16 rounded-sm bg-black/10 flex-shrink-0 overflow-hidden">
                         {property.images?.[0] ? (
                           <img
                             src={property.images[0]}

@@ -16,7 +16,7 @@ export function CandidateCardSkeleton() {
       {/* Header: Photo + Info + Badge */}
       <CardHeader className="flex-row items-start gap-4 pb-3">
         {/* Avatar placeholder */}
-        <Skeleton className="h-14 w-14 flex-shrink-0 rounded-[2px]" />
+        <Skeleton className="h-14 w-14 flex-shrink-0 rounded-sm" />
 
         {/* Name and occupation */}
         <div className="flex-1 min-w-0 space-y-2">
@@ -63,9 +63,9 @@ export function CandidateCardSkeleton() {
 
       {/* Action Buttons */}
       <CardFooter className="flex gap-2 border-t border-slate-100 pt-3">
-        <Skeleton className="h-8 flex-1 rounded-[2px]" />
-        <Skeleton className="h-8 flex-1 rounded-[2px]" />
-        <Skeleton className="h-8 flex-1 rounded-[2px]" />
+        <Skeleton className="h-8 flex-1 rounded-sm" />
+        <Skeleton className="h-8 flex-1 rounded-sm" />
+        <Skeleton className="h-8 flex-1 rounded-sm" />
       </CardFooter>
     </Card>
   );

@@ -62,7 +62,7 @@ export function WizardNavigation({
         disabled={isFirstStep || isSubmitting}
         className={cn(
           'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-          'rounded-[2px] border border-black/10 bg-white',
+          'rounded-sm border border-black/10 bg-white',
           'text-black/70 hover:text-black hover:border-black/20',
           'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
           isFirstStep && 'invisible'
@@ -84,7 +84,7 @@ export function WizardNavigation({
         disabled={!isValid || isSubmitting}
         className={cn(
           'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium',
-          'rounded-[2px] bg-black text-white',
+          'rounded-sm bg-black text-white',
           'hover:bg-black/90 transition-colors',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}

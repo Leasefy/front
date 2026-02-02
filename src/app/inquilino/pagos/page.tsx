@@ -121,15 +121,15 @@ export default function PagosPage() {
       header: 'Concepto',
       render: (row) => {
         const iconBg = row.status === 'paid'
-          ? 'bg-[#DCFCE7]'
+          ? 'bg-plan-status-green-bg'
           : row.status === 'pending'
-            ? 'bg-[#FEF3C7]'
-            : 'bg-[#FEE2E2]';
+            ? 'bg-plan-status-yellow-bg'
+            : 'bg-plan-status-red-bg';
         const iconColor = row.status === 'paid'
-          ? 'text-[#22C55E]'
+          ? 'text-plan-status-green'
           : row.status === 'pending'
-            ? 'text-[#EAB308]'
-            : 'text-[#EF4444]';
+            ? 'text-plan-status-yellow'
+            : 'text-plan-status-red';
         const Icon = row.status === 'paid'
           ? Check
           : row.status === 'pending'
@@ -142,10 +142,10 @@ export default function PagosPage() {
               <Icon className={`w-5 h-5 ${iconColor}`} />
             </div>
             <div>
-              <p className="font-medium text-[#111827]">
+              <p className="font-medium text-plan-primary">
                 {row.concept === 'rent' ? 'Arriendo' : row.concept === 'deposit' ? 'Deposito' : 'Pago'}
               </p>
-              <p className="text-xs text-[#9CA3AF]">{row.propertyTitle}</p>
+              <p className="text-xs text-plan-muted">{row.propertyTitle}</p>
             </div>
           </div>
         );
@@ -155,14 +155,14 @@ export default function PagosPage() {
       key: 'amount',
       header: 'Monto',
       render: (row) => (
-        <span className="font-semibold text-[#111827]">{formatCurrency(row.amount)}</span>
+        <span className="font-semibold text-plan-primary">{formatCurrency(row.amount)}</span>
       ),
     },
     {
       key: 'dueDate',
       header: 'Fecha',
       render: (row) => (
-        <span className="text-sm text-[#6B7280]">
+        <span className="text-sm text-plan-secondary">
           {row.status === 'paid' && row.paidDate
             ? `Pagado ${formatShortDate(row.paidDate)}`
             : `Vence ${formatShortDate(row.dueDate)}`}
@@ -183,15 +183,15 @@ export default function PagosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">
+          <h1 className="text-2xl font-semibold text-plan-primary">
             Pagos
           </h1>
-          <p className="mt-1 text-[#6B7280]">
+          <p className="mt-1 text-plan-secondary">
             Gestiona tus pagos de arriendo
           </p>
         </header>
@@ -222,9 +222,9 @@ export default function PagosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Payment History */}
           <div className="lg:col-span-2">
-            <div className="bg-white  border border-[#E5E7EB] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                <h2 className="font-semibold text-[#111827]">Historial de pagos</h2>
+            <div className="bg-white  border border-plan-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-plan-border">
+                <h2 className="font-semibold text-plan-primary">Historial de pagos</h2>
               </div>
 
               {allPayments.length > 0 ? (
@@ -238,10 +238,10 @@ export default function PagosPage() {
                 />
               ) : (
                 <div className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-8 h-8 text-[#9CA3AF]" />
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                    <CreditCard className="w-8 h-8 text-plan-muted" />
                   </div>
-                  <p className="text-[#6B7280]">Sin historial de pagos</p>
+                  <p className="text-plan-secondary">Sin historial de pagos</p>
                 </div>
               )}
             </div>
@@ -250,10 +250,10 @@ export default function PagosPage() {
           {/* Sidebar - Next Payment */}
           <div className="space-y-6">
             {nextPayment && primaryLease && (
-              <div className="bg-[#111827]  p-6 text-white">
+              <div className="bg-plan-primary  p-6 text-white">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-[#D4F934]" />
+                    <CreditCard className="w-5 h-5 text-plan-accent" />
                   </div>
                   <span className="text-sm text-white/60">Proximo pago</span>
                 </div>
@@ -283,14 +283,14 @@ export default function PagosPage() {
                 </div>
 
                 <div className="flex items-center justify-between text-sm mb-6">
-                  <span className={daysUntil !== null && daysUntil <= 3 ? 'text-[#FEF3C7]' : 'text-white/60'}>
+                  <span className={daysUntil !== null && daysUntil <= 3 ? 'text-yellow-100' : 'text-white/60'}>
                     {daysUntil === 0 ? 'Vence hoy' : daysUntil !== null ? `Vence en ${daysUntil} dias` : ''}
                   </span>
                 </div>
 
                 <Button
                   onClick={handlePayNow}
-                  className="w-full bg-[#D4F934] text-[#111827] hover:bg-[#c4e82f] font-semibold"
+                  className="w-full bg-plan-accent text-plan-primary hover:bg-plan-accent-dark font-semibold"
                 >
                   Pagar ahora
                 </Button>
@@ -298,20 +298,20 @@ export default function PagosPage() {
             )}
 
             {/* Payment Methods */}
-            <div className="bg-white  border border-[#E5E7EB] p-5">
-              <h3 className="font-semibold text-[#111827] mb-4">Metodos de pago</h3>
+            <div className="bg-white  border border-plan-border p-5">
+              <h3 className="font-semibold text-plan-primary mb-4">Metodos de pago</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-sm bg-[#F9FAFB]">
-                  <div className="w-10 h-6 rounded bg-gradient-to-r from-[#1A1F71] to-[#2E4A62] flex items-center justify-center">
+                <div className="flex items-center gap-3 p-3 rounded-sm bg-gray-50">
+                  <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-slate-700 flex items-center justify-center">
                     <span className="text-white text-[8px] font-bold">VISA</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#111827]">**** 4242</p>
-                    <p className="text-xs text-[#9CA3AF]">Vence 12/25</p>
+                    <p className="text-sm font-medium text-plan-primary">**** 4242</p>
+                    <p className="text-xs text-plan-muted">Vence 12/25</p>
                   </div>
-                  <span className="text-xs text-[#22C55E] font-medium">Principal</span>
+                  <span className="text-xs text-plan-status-green font-medium">Principal</span>
                 </div>
-                <button className="w-full text-sm text-[#6B7280] hover:text-[#111827] py-2 transition-colors">
+                <button className="w-full text-sm text-plan-secondary hover:text-plan-primary py-2 transition-colors">
                   + Agregar metodo de pago
                 </button>
               </div>
@@ -335,55 +335,55 @@ export default function PagosPage() {
             {/* Confirm Step */}
             {paymentStep === 'confirm' && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
-                  <h3 className="font-semibold text-[#111827]">Confirmar pago</h3>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
+                  <h3 className="font-semibold text-plan-primary">Confirmar pago</h3>
                   <button
                     onClick={handleCloseModal}
-                    className="p-1 hover:bg-[#F3F4F6] rounded-sm transition-colors"
+                    className="p-1 hover:bg-gray-100 rounded-sm transition-colors"
                   >
-                    <X className="w-5 h-5 text-[#6B7280]" />
+                    <X className="w-5 h-5 text-plan-secondary" />
                   </button>
                 </div>
 
                 <div className="p-6">
                   {/* Property Info */}
-                  <div className="flex items-center gap-3 p-4 bg-[#F9FAFB] rounded-sm mb-6">
-                    <div className="w-10 h-10 bg-[#E5E7EB] rounded-sm flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-[#6B7280]" />
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-sm mb-6">
+                    <div className="w-10 h-10 bg-gray-200 rounded-sm flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-plan-secondary" />
                     </div>
                     <div>
-                      <p className="font-medium text-[#111827]">{primaryLease.propertyTitle}</p>
-                      <p className="text-xs text-[#6B7280]">Arriendo mensual</p>
+                      <p className="font-medium text-plan-primary">{primaryLease.propertyTitle}</p>
+                      <p className="text-xs text-plan-secondary">Arriendo mensual</p>
                     </div>
                   </div>
 
                   {/* Amount */}
                   <div className="text-center mb-6">
-                    <p className="text-sm text-[#6B7280] mb-1">Monto a pagar</p>
-                    <p className="text-4xl font-bold text-[#111827]">
+                    <p className="text-sm text-plan-secondary mb-1">Monto a pagar</p>
+                    <p className="text-4xl font-bold text-plan-primary">
                       {formatCurrency(nextPayment.amount)}
                     </p>
-                    <p className="text-sm text-[#9CA3AF] mt-1">
+                    <p className="text-sm text-plan-muted mt-1">
                       Vence el {formatDate(nextPayment.dueDate)}
                     </p>
                   </div>
 
                   {/* Payment Method */}
                   <div className="mb-6">
-                    <p className="text-sm text-[#6B7280] mb-2">Metodo de pago</p>
-                    <div className="flex items-center gap-3 p-3 border border-[#E5E7EB] rounded-sm">
-                      <div className="w-10 h-6 rounded bg-gradient-to-r from-[#1A1F71] to-[#2E4A62] flex items-center justify-center">
+                    <p className="text-sm text-plan-secondary mb-2">Metodo de pago</p>
+                    <div className="flex items-center gap-3 p-3 border border-plan-border rounded-sm">
+                      <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-slate-700 flex items-center justify-center">
                         <span className="text-white text-[8px] font-bold">VISA</span>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-[#111827]">**** 4242</p>
+                        <p className="text-sm font-medium text-plan-primary">**** 4242</p>
                       </div>
-                      <CheckCircle className="w-5 h-5 text-[#22C55E]" />
+                      <CheckCircle className="w-5 h-5 text-plan-status-green" />
                     </div>
                   </div>
 
                   {/* Security Note */}
-                  <div className="flex items-center gap-2 text-xs text-[#6B7280] mb-6">
+                  <div className="flex items-center gap-2 text-xs text-plan-secondary mb-6">
                     <Shield className="w-4 h-4" />
                     <span>Pago seguro con encriptacion SSL</span>
                   </div>
@@ -398,7 +398,7 @@ export default function PagosPage() {
                       Cancelar
                     </Button>
                     <Button
-                      className="flex-1 bg-[#111827] hover:bg-[#1F2937]"
+                      className="flex-1 bg-plan-primary hover:bg-gray-800"
                       onClick={handleConfirmPayment}
                     >
                       Confirmar pago
@@ -411,13 +411,13 @@ export default function PagosPage() {
             {/* Processing Step */}
             {paymentStep === 'processing' && (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-[#F3F4F6] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Loader2 className="w-8 h-8 text-[#111827] animate-spin" />
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Loader2 className="w-8 h-8 text-plan-primary animate-spin" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#111827] mb-2">
+                <h3 className="text-lg font-semibold text-plan-primary mb-2">
                   Procesando pago
                 </h3>
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-sm text-plan-secondary">
                   Por favor espera mientras procesamos tu pago...
                 </p>
               </div>
@@ -426,41 +426,41 @@ export default function PagosPage() {
             {/* Success Step */}
             {paymentStep === 'success' && (
               <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-[#22C55E]" />
+                <div className="w-16 h-16 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-plan-status-green" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#111827] mb-2">
+                <h3 className="text-lg font-semibold text-plan-primary mb-2">
                   Pago exitoso
                 </h3>
-                <p className="text-sm text-[#6B7280] mb-2">
+                <p className="text-sm text-plan-secondary mb-2">
                   Tu pago de {formatCurrency(nextPayment.amount)} ha sido procesado correctamente.
                 </p>
-                <p className="text-xs text-[#9CA3AF] mb-6">
+                <p className="text-xs text-plan-muted mb-6">
                   Recibirás un comprobante en tu correo electrónico.
                 </p>
 
                 {/* Receipt Summary */}
-                <div className="bg-[#F9FAFB] rounded-sm p-4 mb-6 text-left">
+                <div className="bg-gray-50 rounded-sm p-4 mb-6 text-left">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-[#6B7280]">Propiedad</span>
-                    <span className="text-[#111827] font-medium">{primaryLease.propertyTitle}</span>
+                    <span className="text-plan-secondary">Propiedad</span>
+                    <span className="text-plan-primary font-medium">{primaryLease.propertyTitle}</span>
                   </div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-[#6B7280]">Monto</span>
-                    <span className="text-[#111827] font-medium">{formatCurrency(nextPayment.amount)}</span>
+                    <span className="text-plan-secondary">Monto</span>
+                    <span className="text-plan-primary font-medium">{formatCurrency(nextPayment.amount)}</span>
                   </div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-[#6B7280]">Fecha</span>
-                    <span className="text-[#111827] font-medium">{formatDate(new Date().toISOString())}</span>
+                    <span className="text-plan-secondary">Fecha</span>
+                    <span className="text-plan-primary font-medium">{formatDate(new Date().toISOString())}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Referencia</span>
-                    <span className="text-[#111827] font-mono text-xs">PAY-{Date.now().toString().slice(-8)}</span>
+                    <span className="text-plan-secondary">Referencia</span>
+                    <span className="text-plan-primary font-mono text-xs">PAY-{Date.now().toString().slice(-8)}</span>
                   </div>
                 </div>
 
                 <Button
-                  className="w-full bg-[#111827] hover:bg-[#1F2937]"
+                  className="w-full bg-plan-primary hover:bg-gray-800"
                   onClick={handleCloseModal}
                 >
                   Cerrar

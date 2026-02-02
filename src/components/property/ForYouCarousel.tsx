@@ -84,7 +84,7 @@ export function ForYouCarousel({
             onClick={() => scroll('left')}
             className={cn(
               'absolute left-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-[2px] bg-white/95 shadow-md',
+              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
               'flex items-center justify-center',
               'text-gray-700 hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
@@ -102,7 +102,7 @@ export function ForYouCarousel({
             onClick={() => scroll('right')}
             className={cn(
               'absolute right-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-[2px] bg-white/95 shadow-md',
+              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
               'flex items-center justify-center',
               'text-gray-700 hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
@@ -154,7 +154,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
       className="group block shrink-0 w-[260px]"
     >
       {/* Image container */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[2px]">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
         <Image
           src={thumbnailUrl}
           alt={title}
@@ -166,7 +166,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
         {/* Match score badge - top left */}
         <div
           className={cn(
-            'absolute top-3 left-3 z-10 text-white text-xs px-2 py-1 rounded-[2px]',
+            'absolute top-3 left-3 z-10 text-white text-xs px-2 py-1 rounded-sm',
             getScoreColor(matchScore)
           )}
         >

@@ -30,7 +30,7 @@ const stats = [
  */
 export function WhyUsSection() {
   return (
-    <section className="light-section bg-[#f7f7f7] section-padding">
+    <section className="light-section bg-gray-50 section-padding">
       <div className="container-wide">
         {/* Header */}
         <div className="mb-16">
@@ -43,7 +43,7 @@ export function WhyUsSection() {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left - Image Card - NO rounded corners */}
-          <div className="relative overflow-hidden bg-[#1a1a1a] min-h-[500px]">
+          <div className="relative overflow-hidden bg-gray-950 min-h-[500px]">
             <Image
               src="https://images.unsplash.com/photo-1600573472550-8090b5e0745e?q=80&w=1200"
               alt="Asesor inmobiliario"
@@ -65,12 +65,12 @@ export function WhyUsSection() {
             </div>
           </div>
 
-          {/* Right - Stats Grid - rounded-[2px] (2px) */}
+          {/* Right - Stats Grid - rounded-sm (2px) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white rounded-[2px] p-6 flex flex-col"
+                className="bg-white rounded-sm p-6 flex flex-col"
               >
                 <div className="mb-auto">
                   <p className="text-3xl md:text-4xl font-normal text-gray-900 tracking-tight">

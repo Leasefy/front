@@ -35,7 +35,7 @@ export function LeaseListItem({ lease, onSelect, isSelected }: LeaseListItemProp
       <div className="flex items-center gap-4">
         {/* Property icon */}
         <div className={cn(
-          'w-10 h-10 rounded-[2px] flex items-center justify-center flex-shrink-0',
+          'w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0',
           isSelected ? 'bg-slate-900' : 'bg-slate-100'
         )}>
           <Building2 className={cn(
@@ -54,7 +54,7 @@ export function LeaseListItem({ lease, onSelect, isSelected }: LeaseListItemProp
               {lease.propertyTitle}
             </h3>
             {isEndingSoon && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-[2px] flex-shrink-0">
+              <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-sm flex-shrink-0">
                 Vence pronto
               </span>
             )}

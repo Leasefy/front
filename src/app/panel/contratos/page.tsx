@@ -44,15 +44,15 @@ export default function ContratosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">
+          <h1 className="text-2xl font-semibold text-plan-primary">
             Contratos
           </h1>
-          <p className="mt-1 text-[#6B7280]">
+          <p className="mt-1 text-plan-secondary">
             Gestiona los contratos de tus propiedades
           </p>
         </header>
@@ -88,16 +88,16 @@ export default function ContratosPage() {
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <div className="mb-6 p-4 bg-[#FEF3C7] border border-[#EAB308]/30 ">
+          <div className="mb-6 p-4 bg-plan-status-yellow-bg border border-plan-status-yellow/30 ">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-sm bg-[#EAB308]/20 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-[#92400E]" />
+              <div className="w-8 h-8 rounded-sm bg-plan-status-yellow/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-yellow-800" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-[#92400E]">
+                <p className="text-sm font-medium text-yellow-800">
                   {needsAction.length} contrato{needsAction.length > 1 ? 's' : ''} requiere{needsAction.length > 1 ? 'n' : ''} tu firma
                 </p>
-                <p className="text-xs text-[#92400E]/70">
+                <p className="text-xs text-yellow-800/70">
                   Haz clic en un contrato para revisar y firmar
                 </p>
               </div>
@@ -115,30 +115,30 @@ export default function ContratosPage() {
         />
 
         {/* Contracts List */}
-        <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
+        <section className="bg-white  border border-plan-border overflow-hidden">
           {filteredContracts.length > 0 ? (
-            <div className="divide-y divide-[#E5E7EB]">
+            <div className="divide-y divide-plan-border">
               {filteredContracts.map((contract) => (
                 <ContractExpandableItem key={contract.id} contract={contract} />
               ))}
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-[#9CA3AF]" />
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-plan-muted" />
               </div>
-              <h3 className="font-medium text-[#111827] mb-2">
+              <h3 className="font-medium text-plan-primary mb-2">
                 {activeTab === 'all'
                   ? 'No tienes contratos'
                   : `No hay contratos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
                 }
               </h3>
-              <p className="text-sm text-[#6B7280] mb-4">
+              <p className="text-sm text-plan-secondary mb-4">
                 Los contratos apareceran aqui cuando apruebes candidatos
               </p>
               <Link
                 href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-sm text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 <Building2 className="w-4 h-4" />
                 Ver mis propiedades

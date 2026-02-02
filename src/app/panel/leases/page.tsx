@@ -26,15 +26,15 @@ export default function LandlordLeasesPage() {
     : 100;
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">
+          <h1 className="text-2xl font-semibold text-plan-primary">
             Arriendos Activos
           </h1>
-          <p className="mt-1 text-[#6B7280]">
+          <p className="mt-1 text-plan-secondary">
             Gestiona tus propiedades arrendadas y seguimiento de pagos
           </p>
         </header>
@@ -69,12 +69,12 @@ export default function LandlordLeasesPage() {
         </PlanStatsGrid>
 
         {/* Financial Summary Card */}
-        <div className="bg-[#111827]  p-6 mb-8">
+        <div className="bg-plan-primary  p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-[#D4F934]" />
+                  <TrendingUp className="w-5 h-5 text-plan-accent" />
                 </div>
                 <span className="text-white/60 text-sm">Resumen financiero</span>
               </div>
@@ -101,16 +101,16 @@ export default function LandlordLeasesPage() {
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-[#FEF3C7] border border-[#EAB308]/30 ">
+          <div className="mb-6 p-4 bg-plan-status-yellow-bg border border-plan-status-yellow/30 ">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-sm bg-[#EAB308]/20 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-[#92400E]" />
+              <div className="w-8 h-8 rounded-sm bg-plan-status-yellow/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-yellow-800" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-[#92400E]">
+                <p className="text-sm font-medium text-yellow-800">
                   {stats.endingSoon} contrato{stats.endingSoon > 1 ? 's' : ''} proximo{stats.endingSoon > 1 ? 's' : ''} a vencer
                 </p>
-                <p className="text-xs text-[#92400E]/70">
+                <p className="text-xs text-yellow-800/70">
                   Revisa los contratos que terminan pronto para renovar o buscar nuevos inquilinos
                 </p>
               </div>
@@ -119,16 +119,16 @@ export default function LandlordLeasesPage() {
         )}
 
         {/* Leases List */}
-        <section className="bg-white  border border-[#E5E7EB] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-            <h2 className="font-semibold text-[#111827]">Propiedades Arrendadas</h2>
-            <span className="text-sm text-[#6B7280]">
+        <section className="bg-white  border border-plan-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
+            <h2 className="font-semibold text-plan-primary">Propiedades Arrendadas</h2>
+            <span className="text-sm text-plan-secondary">
               {leases.length} propiedad{leases.length !== 1 ? 'es' : ''}
             </span>
           </div>
 
           {leases.length > 0 ? (
-            <div className="divide-y divide-[#E5E7EB]">
+            <div className="divide-y divide-plan-border">
               {leases.map((lease) => (
                 <LeaseExpandableItem
                   key={lease.id}
@@ -139,18 +139,18 @@ export default function LandlordLeasesPage() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-4">
-                <Home className="w-8 h-8 text-[#9CA3AF]" />
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Home className="w-8 h-8 text-plan-muted" />
               </div>
-              <h3 className="font-medium text-[#111827] mb-2">
+              <h3 className="font-medium text-plan-primary mb-2">
                 No tienes arriendos activos
               </h3>
-              <p className="text-sm text-[#6B7280] mb-4">
+              <p className="text-sm text-plan-secondary mb-4">
                 Cuando tengas contratos firmados apareceran aqui
               </p>
               <Link
                 href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#111827] text-white rounded-sm text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 Ir al panel
               </Link>

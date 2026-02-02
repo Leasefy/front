@@ -49,7 +49,7 @@ export interface ScoreCardProps {
  * └─────────────────────────────────┘
  *
  * Design specs:
- * - Card with subtle border, rounded-[2px] (Luxterra)
+ * - Card with subtle border, rounded-sm (Luxterra)
  * - Badge centered or left-aligned depending on variant
  * - Quick drivers as checkmarks
  * - Subtle background matching level color

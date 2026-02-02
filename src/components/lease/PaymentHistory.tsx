@@ -171,7 +171,7 @@ export function PaymentHistory({
           return (
             <div
               key={payment.id}
-              className="bg-slate-50 rounded-[2px] p-4 space-y-3"
+              className="bg-slate-50 rounded-sm p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

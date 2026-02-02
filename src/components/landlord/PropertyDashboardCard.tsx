@@ -165,7 +165,7 @@ export function PropertyDashboardCard({
         </div>
 
         {/* Hover accent line at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[black] to-[#a78bfa] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-black to-purple-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
       </div>
     </Link>
   );

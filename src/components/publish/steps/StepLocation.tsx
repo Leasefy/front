@@ -29,7 +29,7 @@ export function StepLocation() {
                 type="button"
                 onClick={() => updateDraft({ city })}
                 className={cn(
-                  'relative p-4 rounded-[2px] border-2 text-left transition-all',
+                  'relative p-4 rounded-sm border-2 text-left transition-all',
                   isSelected
                     ? 'border-black bg-black text-white'
                     : 'border-black/10 hover:border-black/30 bg-white'

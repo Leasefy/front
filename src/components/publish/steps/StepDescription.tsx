@@ -104,7 +104,7 @@ export function StepDescription() {
       </div>
 
       {/* Tips */}
-      <div className="p-4 bg-black/[0.02] rounded-[2px]">
+      <div className="p-4 bg-black/[0.02] rounded-sm">
         <p className="text-sm font-medium text-black/70 mb-2">Tips para una mejor descripcion:</p>
         <ul className="text-sm text-black/50 space-y-1 list-disc list-inside">
           <li>Menciona caracteristicas unicas del inmueble</li>

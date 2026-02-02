@@ -70,7 +70,7 @@ export function PublishSuccess() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fafafa] to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -78,11 +78,11 @@ export function PublishSuccess() {
         className="max-w-lg w-full"
       >
         {/* Success card */}
-        <div className="bg-white rounded-[2px] border border-black/5 shadow-xl overflow-hidden">
+        <div className="bg-white rounded-sm border border-black/5 shadow-xl overflow-hidden">
           {/* Header with gradient */}
           <div className="bg-black p-8 text-center relative overflow-hidden">
             {/* Animated background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-[#D4F934]/20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-plan-accent/20" />
 
             <motion.div
               initial={{ scale: 0 }}
@@ -90,7 +90,7 @@ export function PublishSuccess() {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className="relative z-10"
             >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4F934] flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-plan-accent flex items-center justify-center">
                 <CheckCircle2 className="w-10 h-10 text-black" />
               </div>
 
@@ -111,7 +111,7 @@ export function PublishSuccess() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="aspect-video rounded-[2px] overflow-hidden relative"
+                className="aspect-video rounded-sm overflow-hidden relative"
               >
                 <img
                   src={draft.photos[0]}
@@ -136,21 +136,21 @@ export function PublishSuccess() {
               transition={{ delay: 0.4 }}
               className="grid grid-cols-3 gap-3"
             >
-              <div className="bg-black/5 p-3 rounded-[2px] text-center">
+              <div className="bg-black/5 p-3 rounded-sm text-center">
                 <DollarSign className="w-4 h-4 mx-auto text-black/40 mb-1" />
                 <p className="text-sm font-semibold text-black">
                   {formatCurrency(draft.monthlyRent)}
                 </p>
                 <p className="text-xs text-black/50">/mes</p>
               </div>
-              <div className="bg-black/5 p-3 rounded-[2px] text-center">
+              <div className="bg-black/5 p-3 rounded-sm text-center">
                 <Building2 className="w-4 h-4 mx-auto text-black/40 mb-1" />
                 <p className="text-sm font-semibold text-black">
                   {draft.bedrooms} hab
                 </p>
                 <p className="text-xs text-black/50">{draft.bathrooms} banos</p>
               </div>
-              <div className="bg-[#D4F934]/20 p-3 rounded-[2px] text-center">
+              <div className="bg-plan-accent/20 p-3 rounded-sm text-center">
                 <Sparkles className="w-4 h-4 mx-auto text-black/60 mb-1" />
                 <p className="text-xs font-semibold text-black">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan as keyof typeof planLabels] : 'Plan'}
@@ -168,7 +168,7 @@ export function PublishSuccess() {
             >
               <Link
                 href="/panel/propiedades"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-black text-white text-sm font-medium rounded-[2px] hover:bg-black/90 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-black text-white text-sm font-medium rounded-sm hover:bg-black/90 transition-colors"
               >
                 <Eye className="w-4 h-4" />
                 Ver mi propiedad en el panel
@@ -176,7 +176,7 @@ export function PublishSuccess() {
 
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-black/10 text-black/70 text-sm font-medium rounded-[2px] hover:border-black/20 hover:text-black transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-black/10 text-black/70 text-sm font-medium rounded-sm hover:border-black/20 hover:text-black transition-colors"
               >
                 <Share2 className="w-4 h-4" />
                 Compartir anuncio

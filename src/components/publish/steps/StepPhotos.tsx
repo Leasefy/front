@@ -67,7 +67,7 @@ export function StepPhotos() {
         onClick={addSamplePhoto}
         disabled={draft.photos.length >= 10}
         className={cn(
-          'w-full border-2 border-dashed rounded-[2px] p-8 text-center transition-colors',
+          'w-full border-2 border-dashed rounded-sm p-8 text-center transition-colors',
           draft.photos.length >= 10
             ? 'border-black/10 bg-black/[0.02] cursor-not-allowed'
             : 'border-black/20 hover:border-black/40 hover:bg-black/[0.02]'
@@ -93,7 +93,7 @@ export function StepPhotos() {
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
               className={cn(
-                'relative aspect-[4/3] rounded-[2px] overflow-hidden group cursor-move',
+                'relative aspect-[4/3] rounded-sm overflow-hidden group cursor-move',
                 'border-2 border-transparent',
                 draggedIndex === index && 'border-black opacity-50'
               )}
@@ -109,7 +109,7 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-black text-white text-xs font-medium rounded-[2px]">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-black text-white text-xs font-medium rounded-sm">
                   Principal
                 </span>
               )}
@@ -133,7 +133,7 @@ export function StepPhotos() {
       )}
 
       {/* Tips */}
-      <div className="flex items-start gap-3 p-4 bg-black/[0.02] rounded-[2px]">
+      <div className="flex items-start gap-3 p-4 bg-black/[0.02] rounded-sm">
         <AlertCircle className="w-5 h-5 text-black/40 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-black/60">
           <p className="font-medium text-black/70 mb-1">Tips para mejores fotos:</p>

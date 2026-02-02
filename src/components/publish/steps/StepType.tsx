@@ -50,7 +50,7 @@ export function StepType() {
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ type: type.value as PropertyDraft['type'] })}
               className={cn(
-                'relative group p-6 rounded-[2px] border-2 text-center transition-all',
+                'relative group p-6 rounded-sm border-2 text-center transition-all',
                 isSelected
                   ? 'border-black bg-black text-white'
                   : 'border-black/10 hover:border-black/30 bg-white'

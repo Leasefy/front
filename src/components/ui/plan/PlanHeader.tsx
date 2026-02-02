@@ -102,7 +102,7 @@ const initialNotifications = [
     time: 'hace 12 min',
     type: 'Contrato',
     hasReply: true,
-    replyColor: 'bg-[#D1FAE5]',
+    replyColor: 'bg-green-100',
     unread: false,
   },
   {
@@ -140,7 +140,7 @@ const initialNotifications = [
     message: 'Pago pendiente en 3 propiedades.',
     time: 'hace 3 horas',
     type: 'Pago',
-    replyColor: 'bg-[#FEF3C7]',
+    replyColor: 'bg-plan-status-yellow-bg',
     unread: false,
   },
   {
@@ -287,12 +287,12 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white border-b border-[#F3F4F6]', className)}>
+    <header className={cn('sticky top-0 z-30 bg-white border-b border-gray-100', className)}>
       <div className="flex items-center justify-between h-14 px-6">
         {/* Left: Search */}
         {showSearch && (
           <div ref={searchRef} className="relative w-[400px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] z-10" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted z-10" />
             <input
               type="text"
               value={searchQuery}
@@ -301,24 +301,24 @@ export function PlanHeader({
               placeholder={isLandlord ? "Buscar propiedades, candidatos..." : "Buscar pagos, documentos..."}
               className={cn(
                 'w-full h-9 pl-9 pr-4',
-                'bg-[#F9FAFB] border-none rounded-sm',
-                'text-[13px] text-[#111827] placeholder:text-[#9CA3AF]',
-                'focus:outline-none focus:ring-1 focus:ring-[#111827] focus:bg-white',
+                'bg-gray-50 border-none rounded-sm',
+                'text-[13px] text-plan-primary placeholder:text-plan-muted',
+                'focus:outline-none focus:ring-1 focus:ring-plan-primary focus:bg-white',
                 'transition-all duration-100'
               )}
             />
 
             {/* Search Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] shadow-lg max-h-[400px] overflow-y-auto z-50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-plan-border shadow-lg max-h-[400px] overflow-y-auto z-50">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
                     <div>
                       {Object.entries(groupedResults).map(([category, items]) => (
                         <div key={category}>
-                          <div className="px-4 py-2 bg-[#F9FAFB] border-b border-[#F3F4F6]">
-                            <p className="text-[11px] font-medium text-[#6B7280] uppercase tracking-wide">
+                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                            <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
                           </div>
@@ -326,16 +326,16 @@ export function PlanHeader({
                             <button
                               key={result.id}
                               onClick={() => handleSearchSelect(result)}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F9FAFB] transition-colors text-left"
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                             >
-                              <div className="w-8 h-8 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280]">
+                              <div className="w-8 h-8 bg-gray-100 flex items-center justify-center text-plan-secondary">
                                 {getCategoryIcon(result.category)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium text-[#111827] truncate">
+                                <p className="text-[13px] font-medium text-plan-primary truncate">
                                   {result.title}
                                 </p>
-                                <p className="text-[11px] text-[#9CA3AF] truncate">
+                                <p className="text-[11px] text-plan-muted truncate">
                                   {result.subtitle}
                                 </p>
                               </div>
@@ -347,8 +347,8 @@ export function PlanHeader({
                   ) : (
                     // No results
                     <div className="px-4 py-8 text-center">
-                      <Search className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
-                      <p className="text-[13px] text-[#6B7280]">
+                      <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-[13px] text-plan-secondary">
                         No se encontraron resultados para &quot;{searchQuery}&quot;
                       </p>
                     </div>
@@ -357,8 +357,8 @@ export function PlanHeader({
                   // Show quick links and recent searches
                   <div>
                     {/* Quick Links */}
-                    <div className="px-4 py-2 bg-[#F9FAFB] border-b border-[#F3F4F6]">
-                      <p className="text-[11px] font-medium text-[#6B7280] uppercase tracking-wide">
+                    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                      <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                         Accesos rapidos
                       </p>
                     </div>
@@ -366,16 +366,16 @@ export function PlanHeader({
                       <button
                         key={link.id}
                         onClick={() => handleSearchSelect(link)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F9FAFB] transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                       >
-                        <div className="w-8 h-8 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280]">
+                        <div className="w-8 h-8 bg-gray-100 flex items-center justify-center text-plan-secondary">
                           {getCategoryIcon(link.category)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-[#111827]">
+                          <p className="text-[13px] font-medium text-plan-primary">
                             {link.title}
                           </p>
-                          <p className="text-[11px] text-[#9CA3AF]">
+                          <p className="text-[11px] text-plan-muted">
                             {link.subtitle}
                           </p>
                         </div>
@@ -385,8 +385,8 @@ export function PlanHeader({
                     {/* Recent Searches */}
                     {recentSearches.length > 0 && (
                       <>
-                        <div className="px-4 py-2 bg-[#F9FAFB] border-t border-b border-[#F3F4F6]">
-                          <p className="text-[11px] font-medium text-[#6B7280] uppercase tracking-wide">
+                        <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-100">
+                          <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                             Busquedas recientes
                           </p>
                         </div>
@@ -394,10 +394,10 @@ export function PlanHeader({
                           <button
                             key={index}
                             onClick={() => setSearchQuery(search)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB] transition-colors text-left"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
                           >
-                            <Clock className="w-4 h-4 text-[#9CA3AF]" />
-                            <span className="text-[13px] text-[#6B7280]">{search}</span>
+                            <Clock className="w-4 h-4 text-plan-muted" />
+                            <span className="text-[13px] text-plan-secondary">{search}</span>
                           </button>
                         ))}
                       </>
@@ -419,25 +419,25 @@ export function PlanHeader({
               {/* Subscription Popover */}
               <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors">
+                  <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
                     <Zap className="w-5 h-5 stroke-[1.5px]" />
                     {MOCK_SUBSCRIPTION.planId === 'free' && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#D4F934] rounded-full" />
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-plan-accent rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[320px] p-0 bg-white border border-[#E5E7EB] shadow-lg rounded-none"
+                  className="w-[320px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-[#F3F4F6]">
+                  <div className="px-5 py-4 border-b border-gray-100">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-[#111827]">Tu Suscripcion</h3>
+                      <h3 className="text-[15px] font-semibold text-plan-primary">Tu Suscripcion</h3>
                       <button
                         onClick={() => setSubscriptionOpen(false)}
-                        className="text-[#9CA3AF] hover:text-[#6B7280]"
+                        className="text-plan-muted hover:text-plan-secondary"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -449,19 +449,19 @@ export function PlanHeader({
                     <div className="flex items-center gap-3 mb-4">
                       <div className={cn(
                         'w-10 h-10 flex items-center justify-center rounded-sm',
-                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-[#F3F4F6]' : 'bg-[#111827]'
+                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-gray-100' : 'bg-plan-primary'
                       )}>
                         {MOCK_SUBSCRIPTION.planId === 'free' ? (
-                          <Zap className="w-5 h-5 text-[#6B7280]" />
+                          <Zap className="w-5 h-5 text-plan-secondary" />
                         ) : (
-                          <Crown className="w-5 h-5 text-[#D4F934]" />
+                          <Crown className="w-5 h-5 text-plan-accent" />
                         )}
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-[#111827]">
+                        <p className="text-[14px] font-semibold text-plan-primary">
                           Plan {currentPlan.name}
                         </p>
-                        <p className="text-[12px] text-[#6B7280]">
+                        <p className="text-[12px] text-plan-secondary">
                           {MOCK_SUBSCRIPTION.planId === 'free'
                             ? 'Funciones limitadas'
                             : `Facturacion ${MOCK_SUBSCRIPTION.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
@@ -476,13 +476,13 @@ export function PlanHeader({
                         <div key={feature.id} className="flex items-center gap-2">
                           <div className={cn(
                             'w-4 h-4 flex items-center justify-center rounded-sm',
-                            feature.included ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#9CA3AF]'
+                            feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-gray-100 text-plan-muted'
                           )}>
                             <Check className="w-3 h-3" />
                           </div>
                           <span className={cn(
                             'text-[12px]',
-                            feature.included ? 'text-[#374151]' : 'text-[#9CA3AF]'
+                            feature.included ? 'text-gray-700' : 'text-plan-muted'
                           )}>
                             {feature.name}
                             {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
@@ -496,7 +496,7 @@ export function PlanHeader({
                       <Link
                         href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-[#111827] text-white text-[13px] font-medium text-center hover:bg-[#1F2937] transition-colors"
+                        className="block w-full py-2.5 bg-plan-primary text-white text-[13px] font-medium text-center hover:bg-gray-800 transition-colors"
                       >
                         {MOCK_SUBSCRIPTION.planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -506,7 +506,7 @@ export function PlanHeader({
                     <Link
                       href="/panel/configuracion"
                       onClick={() => setSubscriptionOpen(false)}
-                      className="block mt-2 text-center text-[12px] text-[#6B7280] hover:text-[#111827]"
+                      className="block mt-2 text-center text-[12px] text-plan-secondary hover:text-plan-primary"
                     >
                       Gestionar suscripcion
                     </Link>
@@ -524,32 +524,32 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors">
+                  <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#111827] text-white text-[9px] font-medium flex items-center justify-center rounded-full">
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-plan-primary text-white text-[9px] font-medium flex items-center justify-center rounded-full">
                         {pendingInvites.length}
                       </span>
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[360px] p-0 bg-white border border-[#E5E7EB] shadow-lg rounded-none"
+                  className="w-[360px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-[#F3F4F6]">
+                  <div className="px-5 py-4 border-b border-gray-100">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-[#111827]">Invitar al Equipo</h3>
+                      <h3 className="text-[15px] font-semibold text-plan-primary">Invitar al Equipo</h3>
                       <button
                         onClick={() => setTeamInviteOpen(false)}
-                        className="text-[#9CA3AF] hover:text-[#6B7280]"
+                        className="text-plan-muted hover:text-plan-secondary"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-[12px] text-[#6B7280] mt-1">
+                    <p className="text-[12px] text-plan-secondary mt-1">
                       Colabora con tu equipo en la gestion de propiedades
                     </p>
                   </div>
@@ -558,11 +558,11 @@ export function PlanHeader({
                     {inviteSent ? (
                       /* Success state */
                       <div className="text-center py-4">
-                        <div className="w-12 h-12 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Check className="w-6 h-6 text-[#166534]" />
+                        <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Check className="w-6 h-6 text-green-800" />
                         </div>
-                        <p className="text-[14px] font-medium text-[#111827]">Invitacion enviada</p>
-                        <p className="text-[12px] text-[#6B7280] mt-1">
+                        <p className="text-[14px] font-medium text-plan-primary">Invitacion enviada</p>
+                        <p className="text-[12px] text-plan-secondary mt-1">
                           Se envio un correo a {inviteEmail}
                         </p>
                         <button
@@ -570,7 +570,7 @@ export function PlanHeader({
                             setInviteSent(false);
                             setInviteEmail('');
                           }}
-                          className="mt-4 text-[13px] text-[#6B7280] hover:text-[#111827]"
+                          className="mt-4 text-[13px] text-plan-secondary hover:text-plan-primary"
                         >
                           Invitar a otra persona
                         </button>
@@ -580,24 +580,24 @@ export function PlanHeader({
                       <>
                         {/* Email input */}
                         <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-[#374151] mb-1.5">
+                          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">
                             Correo electronico
                           </label>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
                             <input
                               type="email"
                               value={inviteEmail}
                               onChange={(e) => setInviteEmail(e.target.value)}
                               placeholder="correo@ejemplo.com"
-                              className="w-full h-10 pl-9 pr-4 bg-[#F9FAFB] border border-[#E5E7EB] text-[13px] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                              className="w-full h-10 pl-9 pr-4 bg-gray-50 border border-plan-border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
                             />
                           </div>
                         </div>
 
                         {/* Role selector */}
                         <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-[#374151] mb-1.5">
+                          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">
                             Rol
                           </label>
                           <div className="space-y-2">
@@ -608,21 +608,21 @@ export function PlanHeader({
                                 className={cn(
                                   'w-full flex items-start gap-3 p-3 text-left border transition-colors',
                                   inviteRole === role.id
-                                    ? 'border-[#111827] bg-[#F9FAFB]'
-                                    : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+                                    ? 'border-plan-primary bg-gray-50'
+                                    : 'border-plan-border hover:border-gray-300'
                                 )}
                               >
                                 <div className={cn(
                                   'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5',
-                                  inviteRole === role.id ? 'border-[#111827]' : 'border-[#D1D5DB]'
+                                  inviteRole === role.id ? 'border-plan-primary' : 'border-gray-300'
                                 )}>
                                   {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-[#111827]" />
+                                    <div className="w-2 h-2 rounded-full bg-plan-primary" />
                                   )}
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-[13px] font-medium text-[#111827]">{role.name}</p>
-                                  <p className="text-[11px] text-[#6B7280]">{role.description}</p>
+                                  <p className="text-[13px] font-medium text-plan-primary">{role.name}</p>
+                                  <p className="text-[11px] text-plan-secondary">{role.description}</p>
                                 </div>
                               </button>
                             ))}
@@ -640,8 +640,8 @@ export function PlanHeader({
                           className={cn(
                             'w-full py-2.5 text-[13px] font-medium text-center transition-colors',
                             inviteEmail
-                              ? 'bg-[#111827] text-white hover:bg-[#1F2937]'
-                              : 'bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed'
+                              ? 'bg-plan-primary text-white hover:bg-gray-800'
+                              : 'bg-gray-100 text-plan-muted cursor-not-allowed'
                           )}
                         >
                           Enviar Invitacion
@@ -651,22 +651,22 @@ export function PlanHeader({
 
                     {/* Current team preview */}
                     {teamMembers.length > 1 && !inviteSent && (
-                      <div className="mt-4 pt-4 border-t border-[#F3F4F6]">
-                        <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide mb-2">
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-[11px] font-medium text-plan-muted uppercase tracking-wide mb-2">
                           Equipo actual ({teamMembers.length})
                         </p>
                         <div className="flex -space-x-2">
                           {teamMembers.slice(0, 5).map((member) => (
                             <div
                               key={member.id}
-                              className="w-8 h-8 rounded-full bg-[#F3F4F6] border-2 border-white flex items-center justify-center text-[11px] font-medium text-[#6B7280]"
+                              className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[11px] font-medium text-plan-secondary"
                               title={member.name || member.email}
                             >
                               {(member.name || member.email).charAt(0).toUpperCase()}
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-[#111827] border-2 border-white flex items-center justify-center text-[10px] font-medium text-white">
+                            <div className="w-8 h-8 rounded-full bg-plan-primary border-2 border-white flex items-center justify-center text-[10px] font-medium text-white">
                               +{teamMembers.length - 5}
                             </div>
                           )}
@@ -682,28 +682,28 @@ export function PlanHeader({
           {/* Notifications */}
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
-              <button className="relative p-2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors">
+              <button className="relative p-2 text-plan-muted hover:text-plan-secondary transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#3B82F6] rounded-full" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-plan-status-blue rounded-full" />
                 )}
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[400px] p-0 bg-white border border-[#E5E7EB] shadow-lg rounded-none"
+              className="w-[400px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
               align="end"
               sideOffset={8}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#F3F4F6]">
-                <h3 className="text-[15px] font-semibold text-[#111827]">Notificaciones</h3>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 className="text-[15px] font-semibold text-plan-primary">Notificaciones</h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
                       setNotificationsOpen(false);
                       router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
                     }}
-                    className="text-[#9CA3AF] hover:text-[#6B7280]"
+                    className="text-plan-muted hover:text-plan-secondary"
                     title="Ver todas las notificaciones"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -712,7 +712,7 @@ export function PlanHeader({
                   </button>
                   <button
                     onClick={() => setNotificationsOpen(false)}
-                    className="text-[#9CA3AF] hover:text-[#6B7280]"
+                    className="text-plan-muted hover:text-plan-secondary"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -722,7 +722,7 @@ export function PlanHeader({
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-[#F3F4F6]">
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100">
                 {(['all', 'unread', 'mentions'] as const).map((tab) => (
                   <button
                     key={tab}
@@ -730,21 +730,21 @@ export function PlanHeader({
                     className={cn(
                       'px-3 py-1.5 text-[12px] font-medium rounded-sm transition-colors',
                       activeTab === tab
-                        ? 'bg-[#F3F4F6] text-[#111827]'
-                        : 'text-[#6B7280] hover:text-[#111827]'
+                        ? 'bg-gray-100 text-plan-primary'
+                        : 'text-plan-secondary hover:text-plan-primary'
                     )}
                   >
                     {tab === 'all' && 'Todas'}
                     {tab === 'unread' && 'Sin leer'}
                     {tab === 'mentions' && 'Menciones'}
                     {tab === 'all' && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-[#111827] text-white text-[10px] rounded-sm">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-plan-primary text-white text-[10px] rounded-sm">
                         7
                       </span>
                     )}
                   </button>
                 ))}
-                <button className="ml-auto text-[#9CA3AF] hover:text-[#6B7280]">
+                <button className="ml-auto text-plan-muted hover:text-plan-secondary">
                   <Settings className="w-4 h-4" />
                 </button>
               </div>
@@ -756,28 +756,28 @@ export function PlanHeader({
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={cn(
-                      'flex gap-3 px-5 py-4 hover:bg-[#FAFAFA] transition-colors border-b border-[#F3F4F6] last:border-0 cursor-pointer',
-                      notification.unread && 'bg-[#F9FAFB]'
+                      'flex gap-3 px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 cursor-pointer',
+                      notification.unread && 'bg-gray-50'
                     )}
                   >
                     {/* Avatar */}
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      notification.unread ? 'bg-[#111827] text-white' : 'bg-[#F3F4F6] text-[#6B7280]'
+                      notification.unread ? 'bg-plan-primary text-white' : 'bg-gray-100 text-plan-secondary'
                     )}>
                       {notification.user.charAt(0)}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-[#111827]">
+                      <p className="text-[13px] text-plan-primary">
                         <span className="font-medium">{notification.user}</span>
                         {' '}{notification.action}{' '}
                         {notification.target && (
                           <span className="font-medium">{notification.target}</span>
                         )}
                       </p>
-                      <p className="text-[12px] text-[#9CA3AF] mt-0.5">
+                      <p className="text-[12px] text-plan-muted mt-0.5">
                         {notification.time}
                         {notification.type && (
                           <>
@@ -791,9 +791,9 @@ export function PlanHeader({
                       {notification.message && (
                         <div className={cn(
                           'mt-2 px-3 py-2 rounded-sm flex items-center justify-between',
-                          notification.replyColor || 'bg-[#F3F4F6]'
+                          notification.replyColor || 'bg-gray-100'
                         )}>
-                          <p className="text-[12px] text-[#374151]">{notification.message}</p>
+                          <p className="text-[12px] text-gray-700">{notification.message}</p>
                           {notification.hasReply && (
                             <button
                               onClick={(e) => {
@@ -801,7 +801,7 @@ export function PlanHeader({
                                 setNotificationsOpen(false);
                                 router.push(isLandlord ? '/panel/mensajes' : '/inquilino/mensajes');
                               }}
-                              className="px-3 py-1 bg-white text-[11px] font-medium text-[#111827] rounded-sm border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors"
+                              className="px-3 py-1 bg-white text-[11px] font-medium text-plan-primary rounded-sm border border-plan-border hover:bg-gray-50 transition-colors"
                             >
                               Responder
                             </button>
@@ -817,35 +817,35 @@ export function PlanHeader({
                             setNotificationsOpen(false);
                             router.push(isLandlord ? '/panel/contratos' : '/inquilino/documentos');
                           }}
-                          className="mt-2 px-3 py-2 bg-[#F3F4F6] rounded-sm flex items-center justify-between hover:bg-[#E5E7EB] transition-colors"
+                          className="mt-2 px-3 py-2 bg-gray-100 rounded-sm flex items-center justify-between hover:bg-gray-200 transition-colors"
                         >
                           <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 text-plan-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
-                            <span className="text-[12px] text-[#374151]">{notification.file}</span>
+                            <span className="text-[12px] text-gray-700">{notification.file}</span>
                           </div>
-                          <span className="text-[11px] text-[#9CA3AF]">{notification.fileSize}</span>
+                          <span className="text-[11px] text-plan-muted">{notification.fileSize}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Unread indicator */}
                     {notification.unread && (
-                      <div className="w-2 h-2 rounded-full bg-[#3B82F6] flex-shrink-0 mt-2" />
+                      <div className="w-2 h-2 rounded-full bg-plan-status-blue flex-shrink-0 mt-2" />
                     )}
                   </div>
                 ))}
               </div>
 
               {/* View all link */}
-              <div className="px-5 py-3 border-t border-[#F3F4F6]">
+              <div className="px-5 py-3 border-t border-gray-100">
                 <button
                   onClick={() => {
                     setNotificationsOpen(false);
                     router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
                   }}
-                  className="w-full text-center text-[13px] font-medium text-[#111827] hover:text-[#6B7280] transition-colors"
+                  className="w-full text-center text-[13px] font-medium text-plan-primary hover:text-plan-secondary transition-colors"
                 >
                   Ver todas las notificaciones
                 </button>
@@ -854,34 +854,34 @@ export function PlanHeader({
           </Popover>
 
           {/* Separator */}
-          <div className="w-px h-6 bg-[#E5E7EB] mx-2" />
+          <div className="w-px h-6 bg-gray-200 mx-2" />
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 p-1 outline-none">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#F3F4F6] flex items-center justify-center">
-                  <span className="text-[#6B7280] font-medium text-sm">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  <span className="text-plan-secondary font-medium text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-[#9CA3AF]" />
+                <ChevronDown className="w-4 h-4 text-plan-muted" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-56 bg-white border border-[#E5E7EB] shadow-lg rounded-none p-1"
+              className="w-56 bg-white border border-plan-border shadow-lg rounded-none p-1"
               align="end"
               sideOffset={8}
             >
               <DropdownMenuLabel className="px-3 py-2">
-                <p className="text-[13px] font-medium text-[#111827]">{user?.name || 'Usuario'}</p>
-                <p className="text-[12px] text-[#6B7280]">{user?.email}</p>
+                <p className="text-[13px] font-medium text-plan-primary">{user?.name || 'Usuario'}</p>
+                <p className="text-[12px] text-plan-secondary">{user?.email}</p>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#F3F4F6]" />
+              <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem asChild>
                 <Link
                   href={isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#374151] hover:bg-[#F9FAFB] cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px]" />
                   Mi Perfil
@@ -890,7 +890,7 @@ export function PlanHeader({
               <DropdownMenuItem asChild>
                 <Link
                   href={isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#374151] hover:bg-[#F9FAFB] cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <Settings className="w-4 h-4 stroke-[1.5px]" />
                   Configuración
@@ -900,7 +900,7 @@ export function PlanHeader({
                 <DropdownMenuItem asChild>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#374151] hover:bg-[#F9FAFB] cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     <CreditCard className="w-4 h-4 stroke-[1.5px]" />
                     Mis Pagos
@@ -911,27 +911,27 @@ export function PlanHeader({
                 <DropdownMenuItem asChild>
                   <Link
                     href="/panel/upgrade"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#374151] hover:bg-[#F9FAFB] cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px]" />
                     Mi Plan
                   </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-[#F3F4F6]" />
+              <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem asChild>
                 <Link
                   href="/ayuda"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#374151] hover:bg-[#F9FAFB] cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <HelpCircle className="w-4 h-4 stroke-[1.5px]" />
                   Ayuda
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#F3F4F6]" />
+              <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#EF4444] hover:bg-[#FEF2F2] cursor-pointer"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] text-plan-status-red hover:bg-red-50 cursor-pointer"
               >
                 <LogOut className="w-4 h-4 stroke-[1.5px]" />
                 Cerrar Sesión
@@ -961,13 +961,13 @@ export function PlanPageHeader({
   return (
     <div className={cn('px-6 py-4', className)}>
       {breadcrumb && (
-        <p className="text-[12px] text-[#9CA3AF] mb-1">{breadcrumb}</p>
+        <p className="text-[12px] text-plan-muted mb-1">{breadcrumb}</p>
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-[22px] font-semibold text-[#111827]">{title}</h1>
+          <h1 className="text-[22px] font-semibold text-plan-primary">{title}</h1>
           {count !== undefined && (
-            <span className="text-[13px] text-[#9CA3AF]">{count} items</span>
+            <span className="text-[13px] text-plan-muted">{count} items</span>
           )}
         </div>
         {actions && (

@@ -62,9 +62,9 @@ function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className={cn('relative bg-white w-full mx-4 shadow-xl', sizeClasses[size])}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
-          <h3 className="text-lg font-semibold text-[#111827]">{title}</h3>
-          <button onClick={onClose} className="text-[#6B7280] hover:text-[#111827]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
+          <h3 className="text-lg font-semibold text-plan-primary">{title}</h3>
+          <button onClick={onClose} className="text-plan-secondary hover:text-plan-primary">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -237,7 +237,7 @@ export default function ConfiguracionPage() {
       aria-checked={enabled}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 cursor-pointer border-2 border-transparent transition-colors duration-200 ease-in-out',
-        enabled ? 'bg-[#111827]' : 'bg-[#D1D5DB]'
+        enabled ? 'bg-plan-primary' : 'bg-gray-300'
       )}
     >
       <span
@@ -250,12 +250,12 @@ export default function ConfiguracionPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
+    <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#111827]">Configuración</h1>
-          <p className="mt-1 text-[#6B7280]">
+          <h1 className="text-2xl font-semibold text-plan-primary">Configuración</h1>
+          <p className="mt-1 text-plan-secondary">
             Administra tu cuenta y preferencias
           </p>
         </div>
@@ -263,7 +263,7 @@ export default function ConfiguracionPage() {
         <div className="flex gap-6">
           {/* Sidebar Menu */}
           <div className="w-64 flex-shrink-0">
-            <nav className="bg-white border border-[#E5E7EB]">
+            <nav className="bg-white border border-plan-border">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -271,10 +271,10 @@ export default function ConfiguracionPage() {
                     key={item.id}
                     onClick={() => setActiveSection(item.id as SettingsSection)}
                     className={cn(
-                      'w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-[#F3F4F6] last:border-0',
+                      'w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-gray-100 last:border-0',
                       activeSection === item.id
-                        ? 'bg-[#F9FAFB] text-[#111827] font-medium'
-                        : 'text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#111827]'
+                        ? 'bg-gray-50 text-plan-primary font-medium'
+                        : 'text-plan-secondary hover:bg-gray-50 hover:text-plan-primary'
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -289,22 +289,22 @@ export default function ConfiguracionPage() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 bg-white border border-[#E5E7EB]">
+          <div className="flex-1 bg-white border border-plan-border">
             {/* Profile Section */}
             {activeSection === 'profile' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-[#111827] mb-6">Información del Perfil</h2>
+                <h2 className="text-lg font-semibold text-plan-primary mb-6">Información del Perfil</h2>
 
                 <div className="space-y-6">
                   {/* Avatar */}
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-20 h-20 bg-[#F3F4F6] flex items-center justify-center text-2xl font-semibold text-[#6B7280]">
+                      <div className="w-20 h-20 bg-gray-100 flex items-center justify-center text-2xl font-semibold text-plan-secondary">
                         {user?.name?.charAt(0) || 'U'}
                       </div>
                       <button
                         onClick={() => setShowPhotoModal(true)}
-                        className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#111827] text-white rounded-full flex items-center justify-center hover:bg-[#1F2937]"
+                        className="absolute -bottom-1 -right-1 w-8 h-8 bg-plan-primary text-white rounded-full flex items-center justify-center hover:bg-gray-800"
                       >
                         <Camera className="w-4 h-4" />
                       </button>
@@ -312,78 +312,78 @@ export default function ConfiguracionPage() {
                     <div>
                       <button
                         onClick={() => setShowPhotoModal(true)}
-                        className="px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                        className="px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
                       >
                         Cambiar foto
                       </button>
-                      <p className="text-xs text-[#6B7280] mt-1">JPG, PNG. Max 2MB</p>
+                      <p className="text-xs text-plan-secondary mt-1">JPG, PNG. Max 2MB</p>
                     </div>
                   </div>
 
                   {/* Form Fields */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Nombre completo
                       </label>
                       <input
                         type="text"
                         value={profileForm.name}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                        className="w-full h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Correo electrónico
                       </label>
                       <input
                         type="email"
                         value={profileForm.email}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                        className="w-full h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Teléfono
                       </label>
                       <input
                         type="tel"
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                        className="w-full h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Ciudad
                       </label>
                       <input
                         type="text"
                         value={profileForm.city}
                         onChange={(e) => setProfileForm(prev => ({ ...prev, city: e.target.value }))}
-                        className="w-full h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                        className="w-full h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Biografía
                     </label>
                     <textarea
                       rows={3}
                       value={profileForm.bio}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                      className="w-full px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827] resize-none"
+                      className="w-full px-4 py-3 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary resize-none"
                     />
                   </div>
 
                   <button
                     onClick={handleSaveProfile}
                     disabled={isLoading}
-                    className="px-6 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-6 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isLoading ? 'Guardando...' : 'Guardar cambios'}
@@ -395,12 +395,12 @@ export default function ConfiguracionPage() {
             {/* Notifications Section */}
             {activeSection === 'notifications' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-[#111827] mb-6">Preferencias de Notificaciones</h2>
+                <h2 className="text-lg font-semibold text-plan-primary mb-6">Preferencias de Notificaciones</h2>
 
                 <div className="space-y-6">
                   {/* Email Notifications */}
                   <div>
-                    <h3 className="text-sm font-medium text-[#111827] mb-4 flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
                       <Mail className="w-4 h-4" />
                       Notificaciones por correo
                     </h3>
@@ -410,10 +410,10 @@ export default function ConfiguracionPage() {
                         { key: 'email_payment_received', label: 'Pago recibido', desc: 'Cuando recibes un pago de arriendo' },
                         { key: 'email_contract_reminder', label: 'Recordatorios de contratos', desc: 'Alertas sobre vencimientos de contratos' },
                       ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
+                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                           <div>
-                            <p className="text-sm font-medium text-[#111827]">{item.label}</p>
-                            <p className="text-xs text-[#6B7280]">{item.desc}</p>
+                            <p className="text-sm font-medium text-plan-primary">{item.label}</p>
+                            <p className="text-xs text-plan-secondary">{item.desc}</p>
                           </div>
                           <ToggleSwitch
                             enabled={notifications[item.key as keyof typeof notifications]}
@@ -429,7 +429,7 @@ export default function ConfiguracionPage() {
 
                   {/* Push Notifications */}
                   <div>
-                    <h3 className="text-sm font-medium text-[#111827] mb-4 flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
                       <Bell className="w-4 h-4" />
                       Notificaciones push
                     </h3>
@@ -438,10 +438,10 @@ export default function ConfiguracionPage() {
                         { key: 'push_new_message', label: 'Nuevos mensajes', desc: 'Cuando recibes un mensaje de un inquilino o candidato' },
                         { key: 'push_application_status', label: 'Estado de aplicaciones', desc: 'Actualizaciones sobre el proceso de aplicación' },
                       ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
+                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                           <div>
-                            <p className="text-sm font-medium text-[#111827]">{item.label}</p>
-                            <p className="text-xs text-[#6B7280]">{item.desc}</p>
+                            <p className="text-sm font-medium text-plan-primary">{item.label}</p>
+                            <p className="text-xs text-plan-secondary">{item.desc}</p>
                           </div>
                           <ToggleSwitch
                             enabled={notifications[item.key as keyof typeof notifications]}
@@ -457,14 +457,14 @@ export default function ConfiguracionPage() {
 
                   {/* SMS Notifications */}
                   <div>
-                    <h3 className="text-sm font-medium text-[#111827] mb-4 flex items-center gap-2">
+                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
                       <Phone className="w-4 h-4" />
                       Notificaciones SMS
                     </h3>
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-medium text-[#111827]">Alertas urgentes</p>
-                        <p className="text-xs text-[#6B7280]">Solo para situaciones críticas (pagos vencidos, emergencias)</p>
+                        <p className="text-sm font-medium text-plan-primary">Alertas urgentes</p>
+                        <p className="text-xs text-plan-secondary">Solo para situaciones críticas (pagos vencidos, emergencias)</p>
                       </div>
                       <ToggleSwitch
                         enabled={notifications.sms_urgent}
@@ -479,25 +479,25 @@ export default function ConfiguracionPage() {
             {/* Subscription Section */}
             {activeSection === 'subscription' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-[#111827] mb-6">Tu Suscripción</h2>
+                <h2 className="text-lg font-semibold text-plan-primary mb-6">Tu Suscripción</h2>
 
                 {/* Current Plan */}
-                <div className="p-4 border border-[#E5E7EB] mb-6">
+                <div className="p-4 border border-plan-border mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         'w-12 h-12 flex items-center justify-center',
-                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-[#F3F4F6]' : 'bg-[#111827]'
+                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-gray-100' : 'bg-plan-primary'
                       )}>
                         {MOCK_SUBSCRIPTION.planId === 'free' ? (
-                          <Zap className="w-6 h-6 text-[#6B7280]" />
+                          <Zap className="w-6 h-6 text-plan-secondary" />
                         ) : (
-                          <Crown className="w-6 h-6 text-[#D4F934]" />
+                          <Crown className="w-6 h-6 text-plan-accent" />
                         )}
                       </div>
                       <div>
-                        <p className="font-semibold text-[#111827]">Plan {currentPlan.name}</p>
-                        <p className="text-sm text-[#6B7280]">
+                        <p className="font-semibold text-plan-primary">Plan {currentPlan.name}</p>
+                        <p className="text-sm text-plan-secondary">
                           {MOCK_SUBSCRIPTION.planId === 'free'
                             ? 'Plan gratuito'
                             : `${formatCurrency(currentPlan.price.monthly)}/mes`}
@@ -507,7 +507,7 @@ export default function ConfiguracionPage() {
                     {MOCK_SUBSCRIPTION.planId !== 'business' && (
                       <Link
                         href="/panel/upgrade"
-                        className="px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                        className="px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
                       >
                         Mejorar Plan
                       </Link>
@@ -520,13 +520,13 @@ export default function ConfiguracionPage() {
                       <div key={feature.id} className="flex items-center gap-2">
                         <div className={cn(
                           'w-4 h-4 flex items-center justify-center',
-                          feature.included ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#9CA3AF]'
+                          feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-gray-100 text-plan-muted'
                         )}>
                           <Check className="w-3 h-3" />
                         </div>
                         <span className={cn(
                           'text-sm',
-                          feature.included ? 'text-[#374151]' : 'text-[#9CA3AF] line-through'
+                          feature.included ? 'text-gray-700' : 'text-plan-muted line-through'
                         )}>
                           {feature.name}
                         </span>
@@ -537,27 +537,27 @@ export default function ConfiguracionPage() {
 
                 {/* Billing Info */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-[#111827]">Información de facturación</h3>
+                  <h3 className="text-sm font-medium text-plan-primary">Información de facturación</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-[#6B7280]">Próximo cobro</p>
-                      <p className="font-medium text-[#111827]">1 de febrero, 2026</p>
+                      <p className="text-plan-secondary">Próximo cobro</p>
+                      <p className="font-medium text-plan-primary">1 de febrero, 2026</p>
                     </div>
                     <div>
-                      <p className="text-[#6B7280]">Método de pago</p>
-                      <p className="font-medium text-[#111827]">•••• 4242</p>
+                      <p className="text-plan-secondary">Método de pago</p>
+                      <p className="font-medium text-plan-primary">•••• 4242</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
                     <button
                       onClick={() => setShowPaymentModal(true)}
-                      className="text-sm text-[#111827] font-medium hover:underline"
+                      className="text-sm text-plan-primary font-medium hover:underline"
                     >
                       Gestionar método de pago
                     </button>
                     <button
                       onClick={handleCancelSubscription}
-                      className="text-sm text-[#6B7280] hover:text-[#DC2626]"
+                      className="text-sm text-plan-secondary hover:text-destructive"
                     >
                       Cancelar suscripción
                     </button>
@@ -565,8 +565,8 @@ export default function ConfiguracionPage() {
                 </div>
 
                 {/* Invoices */}
-                <div className="mt-6 pt-6 border-t border-[#E5E7EB]">
-                  <h3 className="text-sm font-medium text-[#111827] mb-4">Historial de facturación</h3>
+                <div className="mt-6 pt-6 border-t border-plan-border">
+                  <h3 className="text-sm font-medium text-plan-primary mb-4">Historial de facturación</h3>
                   <div className="space-y-2">
                     {[
                       { date: 'Ene 1, 2026', amount: '$99.900', status: 'Pagado' },
@@ -575,12 +575,12 @@ export default function ConfiguracionPage() {
                     ].map((invoice, i) => (
                       <div key={i} className="flex items-center justify-between py-2 text-sm">
                         <div className="flex items-center gap-4">
-                          <span className="text-[#6B7280]">{invoice.date}</span>
-                          <span className="font-medium text-[#111827]">{invoice.amount}</span>
+                          <span className="text-plan-secondary">{invoice.date}</span>
+                          <span className="font-medium text-plan-primary">{invoice.amount}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] text-xs">{invoice.status}</span>
-                          <button className="text-[#6B7280] hover:text-[#111827]">
+                          <span className="px-2 py-0.5 bg-plan-status-green-bg text-green-800 text-xs">{invoice.status}</span>
+                          <button className="text-plan-secondary hover:text-plan-primary">
                             <Download className="w-4 h-4" />
                           </button>
                         </div>
@@ -595,10 +595,10 @@ export default function ConfiguracionPage() {
             {activeSection === 'team' && (
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-[#111827]">Miembros del Equipo</h2>
+                  <h2 className="text-lg font-semibold text-plan-primary">Miembros del Equipo</h2>
                   <button
                     onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                    className="px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
                   >
                     Invitar miembro
                   </button>
@@ -606,22 +606,22 @@ export default function ConfiguracionPage() {
 
                 <div className="space-y-3">
                   {teamMembersList.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 border border-[#E5E7EB] group">
+                    <div key={member.id} className="flex items-center justify-between p-4 border border-plan-border group">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] font-medium">
+                        <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
                           {(member.name || member.email).charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-[#111827]">{member.name || member.email}</p>
-                          <p className="text-xs text-[#6B7280]">{member.email}</p>
+                          <p className="font-medium text-plan-primary">{member.name || member.email}</p>
+                          <p className="text-xs text-plan-secondary">{member.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className={cn(
                           'px-2 py-1 text-xs font-medium',
-                          member.role === 'admin' ? 'bg-[#111827] text-white' :
-                          member.role === 'manager' ? 'bg-[#DBEAFE] text-[#1E40AF]' :
-                          'bg-[#F3F4F6] text-[#6B7280]'
+                          member.role === 'admin' ? 'bg-plan-primary text-white' :
+                          member.role === 'manager' ? 'bg-plan-status-blue-bg text-blue-800' :
+                          'bg-gray-100 text-plan-secondary'
                         )}>
                           {member.role === 'admin' ? 'Administrador' :
                            member.role === 'manager' ? 'Gerente' :
@@ -629,14 +629,14 @@ export default function ConfiguracionPage() {
                         </span>
                         <span className={cn(
                           'px-2 py-1 text-xs',
-                          member.status === 'accepted' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF3C7] text-[#92400E]'
+                          member.status === 'accepted' ? 'bg-plan-status-green-bg text-green-800' : 'bg-plan-status-yellow-bg text-yellow-800'
                         )}>
                           {member.status === 'accepted' ? 'Activo' : 'Pendiente'}
                         </span>
                         {member.role !== 'admin' && (
                           <button
                             onClick={() => handleRemoveMember(member.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-[#9CA3AF] hover:text-[#DC2626] transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 text-plan-muted hover:text-destructive transition-all"
                             title="Eliminar miembro"
                           >
                             <X className="w-4 h-4" />
@@ -649,11 +649,11 @@ export default function ConfiguracionPage() {
 
                 {teamMembersList.length === 0 && (
                   <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-[#D1D5DB] mx-auto mb-4" />
-                    <p className="text-[#6B7280]">No hay miembros en tu equipo</p>
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-plan-secondary">No hay miembros en tu equipo</p>
                     <button
                       onClick={() => setShowInviteModal(true)}
-                      className="mt-4 text-sm text-[#111827] font-medium hover:underline"
+                      className="mt-4 text-sm text-plan-primary font-medium hover:underline"
                     >
                       Invitar al primer miembro
                     </button>
@@ -665,19 +665,19 @@ export default function ConfiguracionPage() {
             {/* Security Section */}
             {activeSection === 'security' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-[#111827] mb-6">Seguridad de la Cuenta</h2>
+                <h2 className="text-lg font-semibold text-plan-primary mb-6">Seguridad de la Cuenta</h2>
 
                 <div className="space-y-6">
                   {/* Password */}
-                  <div className="p-4 border border-[#E5E7EB]">
+                  <div className="p-4 border border-plan-border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-[#111827]">Contraseña</p>
-                        <p className="text-sm text-[#6B7280]">Última actualización hace 30 días</p>
+                        <p className="font-medium text-plan-primary">Contraseña</p>
+                        <p className="text-sm text-plan-secondary">Última actualización hace 30 días</p>
                       </div>
                       <button
                         onClick={() => setShowPasswordModal(true)}
-                        className="px-4 py-2 border border-[#E5E7EB] text-sm font-medium text-[#111827] hover:bg-[#F9FAFB] transition-colors"
+                        className="px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-gray-50 transition-colors"
                       >
                         Cambiar contraseña
                       </button>
@@ -685,20 +685,20 @@ export default function ConfiguracionPage() {
                   </div>
 
                   {/* 2FA */}
-                  <div className="p-4 border border-[#E5E7EB]">
+                  <div className="p-4 border border-plan-border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-[#111827]">Autenticación de dos factores</p>
-                        <p className="text-sm text-[#6B7280]">
+                        <p className="font-medium text-plan-primary">Autenticación de dos factores</p>
+                        <p className="text-sm text-plan-secondary">
                           {twoFactorEnabled ? 'Protección activada' : 'Añade una capa extra de seguridad'}
                         </p>
                       </div>
                       {twoFactorEnabled ? (
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-1 bg-[#DCFCE7] text-[#166534] text-xs font-medium">Activado</span>
+                          <span className="px-2 py-1 bg-plan-status-green-bg text-green-800 text-xs font-medium">Activado</span>
                           <button
                             onClick={() => setShow2FAModal(true)}
-                            className="px-4 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB] transition-colors"
+                            className="px-4 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50 transition-colors"
                           >
                             Gestionar
                           </button>
@@ -706,7 +706,7 @@ export default function ConfiguracionPage() {
                       ) : (
                         <button
                           onClick={() => setShow2FAModal(true)}
-                          className="px-4 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors"
+                          className="px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
                           Activar
                         </button>
@@ -715,29 +715,29 @@ export default function ConfiguracionPage() {
                   </div>
 
                   {/* Sessions */}
-                  <div className="p-4 border border-[#E5E7EB]">
+                  <div className="p-4 border border-plan-border">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="font-medium text-[#111827]">Sesiones activas</p>
-                        <p className="text-sm text-[#6B7280]">{sessions.length} dispositivos conectados</p>
+                        <p className="font-medium text-plan-primary">Sesiones activas</p>
+                        <p className="text-sm text-plan-secondary">{sessions.length} dispositivos conectados</p>
                       </div>
                     </div>
                     <div className="space-y-3">
                       {sessions.map((session) => (
-                        <div key={session.id} className="flex items-center justify-between py-2 border-b border-[#F3F4F6] last:border-0">
+                        <div key={session.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                           <div className="flex items-center gap-3">
-                            <Monitor className="w-5 h-5 text-[#6B7280]" />
+                            <Monitor className="w-5 h-5 text-plan-secondary" />
                             <div>
-                              <p className="text-sm font-medium text-[#111827]">{session.device}</p>
-                              <p className="text-xs text-[#6B7280]">{session.location} • {session.lastActive}</p>
+                              <p className="text-sm font-medium text-plan-primary">{session.device}</p>
+                              <p className="text-xs text-plan-secondary">{session.location} • {session.lastActive}</p>
                             </div>
                           </div>
                           {session.current ? (
-                            <span className="px-2 py-1 bg-[#DCFCE7] text-[#166534] text-xs">Actual</span>
+                            <span className="px-2 py-1 bg-plan-status-green-bg text-green-800 text-xs">Actual</span>
                           ) : (
                             <button
                               onClick={() => handleCloseSession(session.id)}
-                              className="text-xs text-[#DC2626] hover:underline"
+                              className="text-xs text-destructive hover:underline"
                             >
                               Cerrar sesión
                             </button>
@@ -751,7 +751,7 @@ export default function ConfiguracionPage() {
                           setSessions(prev => prev.filter(s => s.current));
                           toast.success('Todas las otras sesiones han sido cerradas');
                         }}
-                        className="mt-4 w-full py-2 border border-[#FCA5A5] text-[#991B1B] text-sm font-medium hover:bg-[#FEF2F2]"
+                        className="mt-4 w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50"
                       >
                         Cerrar todas las otras sesiones
                       </button>
@@ -759,15 +759,15 @@ export default function ConfiguracionPage() {
                   </div>
 
                   {/* Danger Zone */}
-                  <div className="p-4 border border-[#FEE2E2] bg-[#FEF2F2]/50">
+                  <div className="p-4 border border-red-200 bg-red-50/50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-[#991B1B]">Eliminar cuenta</p>
-                        <p className="text-sm text-[#DC2626]">Esta acción es permanente y no se puede deshacer</p>
+                        <p className="font-medium text-red-800">Eliminar cuenta</p>
+                        <p className="text-sm text-destructive">Esta acción es permanente y no se puede deshacer</p>
                       </div>
                       <button
                         onClick={() => setShowDeleteModal(true)}
-                        className="px-4 py-2 border border-[#FCA5A5] text-[#991B1B] text-sm font-medium hover:bg-[#FEE2E2] transition-colors"
+                        className="px-4 py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-plan-status-red-bg transition-colors"
                       >
                         Eliminar cuenta
                       </button>
@@ -780,18 +780,18 @@ export default function ConfiguracionPage() {
             {/* Preferences Section */}
             {activeSection === 'preferences' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-[#111827] mb-6">Preferencias</h2>
+                <h2 className="text-lg font-semibold text-plan-primary mb-6">Preferencias</h2>
 
                 <div className="space-y-6">
                   {/* Language */}
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Idioma
                     </label>
                     <select
                       value={preferences.language}
                       onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
-                      className="w-full max-w-xs h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                      className="w-full max-w-xs h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                     >
                       <option value="es-co">Español (Colombia)</option>
                       <option value="es-es">Español (España)</option>
@@ -801,13 +801,13 @@ export default function ConfiguracionPage() {
 
                   {/* Timezone */}
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Zona horaria
                     </label>
                     <select
                       value={preferences.timezone}
                       onChange={(e) => setPreferences(prev => ({ ...prev, timezone: e.target.value }))}
-                      className="w-full max-w-xs h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                      className="w-full max-w-xs h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                     >
                       <option value="America/Bogota">América/Bogotá (GMT-5)</option>
                       <option value="America/Lima">América/Lima (GMT-5)</option>
@@ -817,13 +817,13 @@ export default function ConfiguracionPage() {
 
                   {/* Currency */}
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Moneda
                     </label>
                     <select
                       value={preferences.currency}
                       onChange={(e) => setPreferences(prev => ({ ...prev, currency: e.target.value }))}
-                      className="w-full max-w-xs h-10 px-4 bg-[#F9FAFB] border border-[#E5E7EB] text-sm focus:outline-none focus:ring-1 focus:ring-[#111827]"
+                      className="w-full max-w-xs h-10 px-4 bg-gray-50 border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
                     >
                       <option value="COP">COP - Peso Colombiano</option>
                       <option value="USD">USD - Dólar Estadounidense</option>
@@ -832,7 +832,7 @@ export default function ConfiguracionPage() {
 
                   {/* Theme */}
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
                       Tema de la aplicación
                     </label>
                     <div className="flex items-center gap-3">
@@ -841,8 +841,8 @@ export default function ConfiguracionPage() {
                         className={cn(
                           'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
                           preferences.theme === 'light'
-                            ? 'bg-[#111827] text-white'
-                            : 'border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                            ? 'bg-plan-primary text-white'
+                            : 'border border-plan-border text-plan-secondary hover:bg-gray-50'
                         )}
                       >
                         <Sun className="w-4 h-4" />
@@ -853,8 +853,8 @@ export default function ConfiguracionPage() {
                         className={cn(
                           'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
                           preferences.theme === 'dark'
-                            ? 'bg-[#111827] text-white'
-                            : 'border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                            ? 'bg-plan-primary text-white'
+                            : 'border border-plan-border text-plan-secondary hover:bg-gray-50'
                         )}
                       >
                         <Moon className="w-4 h-4" />
@@ -866,7 +866,7 @@ export default function ConfiguracionPage() {
                   <button
                     onClick={handleSavePreferences}
                     disabled={isLoading}
-                    className="px-6 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-6 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isLoading ? 'Guardando...' : 'Guardar preferencias'}
@@ -881,29 +881,29 @@ export default function ConfiguracionPage() {
       {/* Photo Upload Modal */}
       <Modal open={showPhotoModal} onClose={() => setShowPhotoModal(false)} title="Cambiar foto de perfil">
         <div className="space-y-4">
-          <div className="border-2 border-dashed border-[#E5E7EB] rounded-sm p-8 text-center">
-            <Camera className="w-12 h-12 text-[#9CA3AF] mx-auto mb-4" />
-            <p className="text-sm text-[#6B7280] mb-2">Arrastra una imagen o haz clic para seleccionar</p>
+          <div className="border-2 border-dashed border-plan-border rounded-sm p-8 text-center">
+            <Camera className="w-12 h-12 text-plan-muted mx-auto mb-4" />
+            <p className="text-sm text-plan-secondary mb-2">Arrastra una imagen o haz clic para seleccionar</p>
             <input type="file" accept="image/*" className="hidden" id="photo-upload" />
             <label
               htmlFor="photo-upload"
-              className="inline-block px-4 py-2 bg-[#F3F4F6] text-sm font-medium text-[#374151] cursor-pointer hover:bg-[#E5E7EB]"
+              className="inline-block px-4 py-2 bg-gray-100 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
             >
               Seleccionar archivo
             </label>
-            <p className="text-xs text-[#9CA3AF] mt-2">JPG, PNG. Máximo 2MB</p>
+            <p className="text-xs text-plan-muted mt-2">JPG, PNG. Máximo 2MB</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => setShowPhotoModal(false)}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handlePhotoUpload}
               disabled={isLoading}
-              className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Subiendo...' : 'Guardar foto'}
@@ -916,46 +916,46 @@ export default function ConfiguracionPage() {
       <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Contraseña actual</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña actual</label>
             <input
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="••••••••"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Nueva contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nueva contraseña</label>
             <input
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="Mínimo 8 caracteres"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Confirmar contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmar contraseña</label>
             <input
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="Repetir contraseña"
             />
           </div>
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
@@ -969,25 +969,25 @@ export default function ConfiguracionPage() {
         <div className="space-y-4">
           {!twoFactorEnabled ? (
             <>
-              <div className="p-4 bg-[#F0FDF4] border border-[#86EFAC] rounded-sm">
-                <p className="text-sm text-[#166534]">
+              <div className="p-4 bg-green-50 border border-green-300 rounded-sm">
+                <p className="text-sm text-green-800">
                   La autenticación de dos factores añade una capa extra de seguridad a tu cuenta.
                 </p>
               </div>
-              <p className="text-sm text-[#6B7280]">
+              <p className="text-sm text-plan-secondary">
                 Te enviaremos un código de verificación por SMS cada vez que inicies sesión desde un nuevo dispositivo.
               </p>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleEnable2FA}
                   disabled={isLoading}
-                  className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                   {isLoading ? 'Activando...' : 'Activar 2FA'}
@@ -996,9 +996,9 @@ export default function ConfiguracionPage() {
             </>
           ) : (
             <>
-              <div className="p-4 bg-[#DCFCE7] border border-[#86EFAC] rounded-sm flex items-center gap-3">
-                <Check className="w-5 h-5 text-[#166534]" />
-                <p className="text-sm text-[#166534] font-medium">
+              <div className="p-4 bg-plan-status-green-bg border border-green-300 rounded-sm flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-800" />
+                <p className="text-sm text-green-800 font-medium">
                   La autenticación de dos factores está activada
                 </p>
               </div>
@@ -1008,7 +1008,7 @@ export default function ConfiguracionPage() {
                   setShow2FAModal(false);
                   toast.success('Autenticación de dos factores desactivada');
                 }}
-                className="w-full py-2 border border-[#FCA5A5] text-[#991B1B] text-sm font-medium hover:bg-[#FEF2F2]"
+                className="w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50"
               >
                 Desactivar 2FA
               </button>
@@ -1021,21 +1021,21 @@ export default function ConfiguracionPage() {
       <Modal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar miembro">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Correo electrónico</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Correo electrónico</label>
             <input
               type="email"
               value={inviteForm.email}
               onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
               placeholder="correo@ejemplo.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">Rol</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Rol</label>
             <select
               value={inviteForm.role}
               onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#111827]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
             >
               <option value="viewer">Visualizador - Solo puede ver información</option>
               <option value="accountant">Contador - Acceso a finanzas</option>
@@ -1046,14 +1046,14 @@ export default function ConfiguracionPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowInviteModal(false)}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleInviteMember}
               disabled={isLoading || !inviteForm.email}
-              className="flex-1 py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
               {isLoading ? 'Enviando...' : 'Enviar invitación'}
@@ -1065,27 +1065,27 @@ export default function ConfiguracionPage() {
       {/* Payment Method Modal */}
       <Modal open={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Método de pago">
         <div className="space-y-4">
-          <div className="p-4 border border-[#E5E7EB] rounded-sm">
+          <div className="p-4 border border-plan-border rounded-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-6 bg-[#1A1F71] rounded flex items-center justify-center">
+                <div className="w-10 h-6 bg-indigo-900 rounded flex items-center justify-center">
                   <span className="text-white text-xs font-bold">VISA</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[#111827]">•••• •••• •••• 4242</p>
-                  <p className="text-xs text-[#6B7280]">Vence 12/26</p>
+                  <p className="text-sm font-medium text-plan-primary">•••• •••• •••• 4242</p>
+                  <p className="text-xs text-plan-secondary">Vence 12/26</p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] text-xs">Principal</span>
+              <span className="px-2 py-0.5 bg-plan-status-green-bg text-green-800 text-xs">Principal</span>
             </div>
           </div>
 
-          <button className="w-full py-3 border border-dashed border-[#D1D5DB] text-sm text-[#6B7280] hover:border-[#9CA3AF] hover:text-[#374151] transition-colors">
+          <button className="w-full py-3 border border-dashed border-gray-300 text-sm text-plan-secondary hover:border-plan-muted hover:text-gray-700 transition-colors">
             + Agregar nuevo método de pago
           </button>
 
-          <div className="pt-2 border-t border-[#E5E7EB]">
-            <p className="text-xs text-[#9CA3AF]">
+          <div className="pt-2 border-t border-plan-border">
+            <p className="text-xs text-plan-muted">
               Los pagos son procesados de forma segura. No almacenamos tu información de tarjeta.
             </p>
           </div>
@@ -1095,7 +1095,7 @@ export default function ConfiguracionPage() {
               setShowPaymentModal(false);
               toast.success('Configuración de pago actualizada');
             }}
-            className="w-full py-2 bg-[#111827] text-white text-sm font-medium hover:bg-[#1F2937]"
+            className="w-full py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800"
           >
             Guardar cambios
           </button>
@@ -1105,24 +1105,24 @@ export default function ConfiguracionPage() {
       {/* Delete Account Modal */}
       <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
         <div className="space-y-4">
-          <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-sm flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#DC2626] flex-shrink-0" />
+          <div className="p-4 bg-red-50 border border-red-200 rounded-sm flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-[#991B1B]">Esta acción no se puede deshacer</p>
-              <p className="text-xs text-[#DC2626] mt-1">
+              <p className="text-sm font-medium text-red-800">Esta acción no se puede deshacer</p>
+              <p className="text-xs text-destructive mt-1">
                 Todos tus datos, propiedades, contratos y configuraciones serán eliminados permanentemente.
               </p>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Escribe <span className="font-bold">ELIMINAR</span> para confirmar
             </label>
             <input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full h-10 px-4 border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#DC2626]/20"
+              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-destructive/20"
               placeholder="ELIMINAR"
             />
           </div>
@@ -1132,14 +1132,14 @@ export default function ConfiguracionPage() {
                 setShowDeleteModal(false);
                 setDeleteConfirmText('');
               }}
-              className="flex-1 py-2 border border-[#E5E7EB] text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB]"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-2 bg-[#DC2626] text-white text-sm font-medium hover:bg-[#B91C1C] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-destructive text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}

@@ -53,7 +53,7 @@ function EventItem({ event }: EventItemProps) {
 
   const content = (
     <div className={cn(
-      'flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-[2px]',
+      'flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-sm',
       isOverdue && 'bg-red-50/50'
     )}>
       {/* Icon */}

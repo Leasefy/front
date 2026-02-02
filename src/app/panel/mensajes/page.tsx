@@ -191,6 +191,17 @@ export default function MensajesPage() {
 
           {/* Conversations */}
           <div className="flex-1 overflow-y-auto">
+            {filteredConversations.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <MessageSquare className="w-10 h-10 text-gray-300 mb-3" />
+                <p className="text-sm font-medium text-plan-primary mb-1">Sin conversaciones</p>
+                <p className="text-xs text-plan-muted">
+                  {searchQuery
+                    ? 'No se encontraron conversaciones con ese término'
+                    : 'Cuando tengas mensajes aparecerán aquí'}
+                </p>
+              </div>
+            )}
             {filteredConversations.map((conversation) => (
               <button
                 key={conversation.id}

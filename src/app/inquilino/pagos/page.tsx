@@ -237,11 +237,17 @@ export default function PagosPage() {
                   pageSize={5}
                 />
               ) : (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-8 h-8 text-plan-muted" />
+                <div className="p-16 text-center">
+                  <div className="relative mb-6 inline-block">
+                    <div className="absolute inset-0 bg-black/10 rounded-2xl blur-xl" />
+                    <div className="relative rounded-2xl bg-gradient-to-br from-black/10 to-black/5 p-5 border border-black/10">
+                      <CreditCard className="h-8 w-8 text-black" />
+                    </div>
                   </div>
-                  <p className="text-plan-secondary">Sin historial de pagos</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Sin historial de pagos</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                    Cuando realices pagos de arriendo aparecerán aquí con su comprobante
+                  </p>
                 </div>
               )}
             </div>
@@ -301,7 +307,7 @@ export default function PagosPage() {
             <div className="bg-white  border border-plan-border p-5">
               <h3 className="font-semibold text-plan-primary mb-4">Metodos de pago</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-sm bg-gray-50">
+                <div className="flex items-center gap-3 p-3 rounded-sm bg-muted">
                   <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-slate-700 flex items-center justify-center">
                     <span className="text-white text-[8px] font-bold">VISA</span>
                   </div>
@@ -339,7 +345,7 @@ export default function PagosPage() {
                   <h3 className="font-semibold text-plan-primary">Confirmar pago</h3>
                   <button
                     onClick={handleCloseModal}
-                    className="p-1 hover:bg-gray-100 rounded-sm transition-colors"
+                    className="p-1 hover:bg-muted rounded-sm transition-colors"
                   >
                     <X className="w-5 h-5 text-plan-secondary" />
                   </button>
@@ -347,8 +353,8 @@ export default function PagosPage() {
 
                 <div className="p-6">
                   {/* Property Info */}
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-sm mb-6">
-                    <div className="w-10 h-10 bg-gray-200 rounded-sm flex items-center justify-center">
+                  <div className="flex items-center gap-3 p-4 bg-muted rounded-sm mb-6">
+                    <div className="w-10 h-10 bg-muted rounded-sm flex items-center justify-center">
                       <Building2 className="w-5 h-5 text-plan-secondary" />
                     </div>
                     <div>
@@ -398,7 +404,7 @@ export default function PagosPage() {
                       Cancelar
                     </Button>
                     <Button
-                      className="flex-1 bg-plan-primary hover:bg-gray-800"
+                      className="flex-1 bg-plan-primary hover:bg-foreground"
                       onClick={handleConfirmPayment}
                     >
                       Confirmar pago
@@ -411,7 +417,7 @@ export default function PagosPage() {
             {/* Processing Step */}
             {paymentStep === 'processing' && (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Loader2 className="w-8 h-8 text-plan-primary animate-spin" />
                 </div>
                 <h3 className="text-lg font-semibold text-plan-primary mb-2">
@@ -440,7 +446,7 @@ export default function PagosPage() {
                 </p>
 
                 {/* Receipt Summary */}
-                <div className="bg-gray-50 rounded-sm p-4 mb-6 text-left">
+                <div className="bg-muted rounded-sm p-4 mb-6 text-left">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-plan-secondary">Propiedad</span>
                     <span className="text-plan-primary font-medium">{primaryLease.propertyTitle}</span>
@@ -460,7 +466,7 @@ export default function PagosPage() {
                 </div>
 
                 <Button
-                  className="w-full bg-plan-primary hover:bg-gray-800"
+                  className="w-full bg-plan-primary hover:bg-foreground"
                   onClick={handleCloseModal}
                 >
                   Cerrar

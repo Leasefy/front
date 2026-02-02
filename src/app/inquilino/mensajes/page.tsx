@@ -152,25 +152,36 @@ export default function MensajesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar conversación..."
-                className="w-full h-9 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                className="w-full h-9 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
           </div>
 
           {/* Conversations */}
           <div className="flex-1 overflow-y-auto">
+            {filteredConversations.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <MessageSquare className="w-10 h-10 text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-plan-primary mb-1">Sin conversaciones</p>
+                <p className="text-xs text-plan-muted">
+                  {searchQuery
+                    ? 'No se encontraron conversaciones con ese término'
+                    : 'Cuando tengas mensajes aparecerán aquí'}
+                </p>
+              </div>
+            )}
             {filteredConversations.map((conversation) => (
               <button
                 key={conversation.id}
                 onClick={() => setSelectedConversation(conversation)}
                 className={cn(
-                  'w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100',
-                  selectedConversation.id === conversation.id && 'bg-gray-50'
+                  'w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border',
+                  selectedConversation.id === conversation.id && 'bg-muted'
                 )}
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
+                  <div className="w-12 h-12 bg-muted flex items-center justify-center text-plan-secondary font-medium">
                     {conversation.avatar}
                   </div>
                   {conversation.online && (
@@ -220,7 +231,7 @@ export default function MensajesPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
+                <div className="w-10 h-10 bg-muted flex items-center justify-center text-plan-secondary font-medium">
                   {selectedConversation.avatar}
                 </div>
                 {selectedConversation.online && (
@@ -236,23 +247,23 @@ export default function MensajesPage() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
                 <Video className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
                 <Info className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted">
             {/* Date Separator */}
             <div className="flex items-center justify-center">
               <span className="px-3 py-1 bg-white text-xs text-plan-secondary border border-plan-border">
@@ -307,7 +318,7 @@ export default function MensajesPage() {
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Escribe un mensaje..."
-                className="flex-1 h-10 px-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                className="flex-1 h-10 px-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
               <button
                 onClick={handleSendMessage}
@@ -315,8 +326,8 @@ export default function MensajesPage() {
                 className={cn(
                   'p-2 transition-colors',
                   messageText.trim()
-                    ? 'bg-plan-primary text-white hover:bg-gray-800'
-                    : 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                    ? 'bg-plan-primary text-white hover:bg-foreground'
+                    : 'bg-muted text-plan-muted cursor-not-allowed'
                 )}
               >
                 <Send className="w-5 h-5" />

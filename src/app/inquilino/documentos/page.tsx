@@ -293,7 +293,7 @@ export default function DocumentosPage() {
                     'px-4 py-2 rounded-sm text-sm font-medium transition-colors',
                     selectedType === type.value
                       ? 'bg-plan-primary text-white'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
+                      : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >
                   {type.label}
@@ -306,7 +306,7 @@ export default function DocumentosPage() {
         {/* Documents List */}
         <div className="bg-white  border border-plan-border overflow-hidden">
           {filteredDocuments.length > 0 ? (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               {paginatedDocuments.map((doc) => {
                 const Icon = doc.icon;
                 const statusConfig = getStatusConfig(doc.status);
@@ -314,10 +314,10 @@ export default function DocumentosPage() {
                 return (
                   <div
                     key={doc.id}
-                    className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-5 hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-sm bg-gray-100 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-sm bg-muted flex items-center justify-center">
                         <Icon className="w-6 h-6 text-plan-secondary" />
                       </div>
                       <div>
@@ -346,12 +346,12 @@ export default function DocumentosPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setViewingDocument(doc)}
-                          className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors"
+                          className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors"
                           title="Ver documento"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors">
+                        <button className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors">
                           <Download className="w-4 h-4" />
                         </button>
                       </div>
@@ -361,9 +361,19 @@ export default function DocumentosPage() {
               })}
             </div>
           ) : (
-            <div className="py-12 text-center">
-              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-plan-secondary">No se encontraron documentos</p>
+            <div className="py-16 text-center px-6">
+              <div className="relative mb-6 inline-block">
+                <div className="absolute inset-0 bg-black/10 rounded-2xl blur-xl" />
+                <div className="relative rounded-2xl bg-gradient-to-br from-black/10 to-black/5 p-5 border border-black/10">
+                  <FileText className="h-8 w-8 text-black" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron documentos</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                {searchQuery || selectedType !== 'all'
+                  ? 'Intenta ajustar los filtros o el término de búsqueda'
+                  : 'Cuando tengas documentos asociados a tu arriendo aparecerán aquí'}
+              </p>
             </div>
           )}
 
@@ -380,8 +390,8 @@ export default function DocumentosPage() {
                   className={cn(
                     'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                     currentPage === 1
-                      ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                      ? 'bg-muted text-plan-muted cursor-not-allowed'
+                      : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -396,7 +406,7 @@ export default function DocumentosPage() {
                         'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                         currentPage === page
                           ? 'bg-plan-primary text-white'
-                          : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                          : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                       )}
                     >
                       {page}
@@ -409,8 +419,8 @@ export default function DocumentosPage() {
                   className={cn(
                     'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                     currentPage === totalPages
-                      ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                      ? 'bg-muted text-plan-muted cursor-not-allowed'
+                      : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >
                   Siguiente
@@ -436,7 +446,7 @@ export default function DocumentosPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center">
                   <viewingDocument.icon className="w-5 h-5 text-plan-secondary" />
                 </div>
                 <div>
@@ -461,7 +471,7 @@ export default function DocumentosPage() {
                 </Button>
                 <button
                   onClick={() => setViewingDocument(null)}
-                  className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary hover:text-plan-primary transition-colors"
+                  className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -469,7 +479,7 @@ export default function DocumentosPage() {
             </div>
 
             {/* Document Preview Area */}
-            <div className="flex-1 bg-gray-100 p-6 overflow-auto">
+            <div className="flex-1 bg-muted p-6 overflow-auto">
               <div className="bg-white h-full rounded-sm shadow-sm flex flex-col items-center justify-center p-8">
                 {/* Mock document preview - in production, use a PDF viewer like react-pdf */}
                 <div className="w-full max-w-2xl mx-auto">
@@ -485,7 +495,7 @@ export default function DocumentosPage() {
 
                   {/* Mock Document Content */}
                   {viewingDocument.type === 'contract' && (
-                    <div className="space-y-4 text-sm text-gray-700">
+                    <div className="space-y-4 text-sm text-foreground">
                       <p className="font-semibold text-center mb-6">CONTRATO DE ARRENDAMIENTO</p>
                       <p>
                         En Santiago de Chile, a {formatDate(viewingDocument.date)}, entre el ARRENDADOR
@@ -526,7 +536,7 @@ export default function DocumentosPage() {
                         <p className="font-semibold text-lg mb-1">COMPROBANTE DE PAGO</p>
                         <p className="text-xs text-plan-secondary">N° {viewingDocument.id.padStart(6, '0')}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-sm p-4 space-y-3">
+                      <div className="bg-muted rounded-sm p-4 space-y-3">
                         <div className="flex justify-between">
                           <span className="text-plan-secondary">Propiedad:</span>
                           <span className="font-medium">{viewingDocument.property}</span>
@@ -559,7 +569,7 @@ export default function DocumentosPage() {
                       </p>
                       <table className="w-full border-collapse">
                         <thead>
-                          <tr className="bg-gray-100">
+                          <tr className="bg-muted">
                             <th className="border border-plan-border px-3 py-2 text-left">Item</th>
                             <th className="border border-plan-border px-3 py-2 text-center">Cantidad</th>
                             <th className="border border-plan-border px-3 py-2 text-left">Estado</th>

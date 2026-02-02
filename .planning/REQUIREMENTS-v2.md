@@ -92,17 +92,51 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated by create-roadmap.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Updated by /gsd:create-roadmap) | | |
+| DTKN-01 | Phase 12 | Pending |
+| DTKN-02 | Phase 12 | Pending |
+| DTKN-03 | Phase 12 | Pending |
+| DTKN-04 | Phase 12 | Pending |
+| DTKN-05 | Phase 12 | Pending |
+| DTKN-06 | Phase 12 | Pending |
+| DTKN-07 | Phase 12 | Pending |
+| COMP-01 | Phase 13 | Pending |
+| COMP-02 | Phase 13 | Pending |
+| COMP-03 | Phase 13 | Pending |
+| COMP-04 | Phase 13 | Pending |
+| COMP-05 | Phase 13 | Pending |
+| COMP-06 | Phase 13 | Pending |
+| COMP-07 | Phase 13 | Pending |
+| QAFN-01 | Phase 14 | Pending |
+| QAFN-02 | Phase 14 | Pending |
+| QAFN-03 | Phase 14 | Pending |
+| QAFN-04 | Phase 14 | Pending |
+| QAFN-05 | Phase 14 | Pending |
+| QAFN-06 | Phase 14 | Pending |
+| QAFN-07 | Phase 14 | Pending |
+| QAVS-01 | Phase 14 | Pending |
+| QAVS-02 | Phase 14 | Pending |
+| QAVS-03 | Phase 14 | Pending |
+| QAVS-04 | Phase 14 | Pending |
+| QAVS-05 | Phase 14 | Pending |
+| QARS-01 | Phase 15 | Pending |
+| QARS-02 | Phase 15 | Pending |
+| QARS-03 | Phase 15 | Pending |
+| QARS-04 | Phase 15 | Pending |
+| QARS-05 | Phase 15 | Pending |
+| QAAC-01 | Phase 15 | Pending |
+| QAAC-02 | Phase 15 | Pending |
+| QAAC-03 | Phase 15 | Pending |
+| QAAC-04 | Phase 15 | Pending |
+| QAAC-05 | Phase 15 | Pending |
+| QAAC-06 | Phase 15 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 37 total
-- Mapped to phases: 0
-- Unmapped: 37 ⚠️
+- Mapped to phases: 37
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after initial definition*
+*Last updated: 2026-02-02 after roadmap creation*

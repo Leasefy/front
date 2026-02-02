@@ -7,7 +7,8 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 ## Milestones
 
 - ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
-- ✅ **v1.1 Post-Approval Flow** - Phase 10 (complete)
+- ✅ **v1.1 Post-Approval Flow** - Phases 10-11 (complete)
+- 🚧 **v2.0 Design System & QA Audit** - Phases 12-15 (in progress)
 
 ## Phases
 
@@ -178,6 +179,70 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
   - PLAN-03: Coupon System
   - PLAN-04: Post-Contract Dashboards
 
+### 🚧 v2.0 Design System & QA Audit
+
+**Milestone Goal:** Establecer sistema de diseño formal con tokens y componentes rediseñados, y auditoría QA exhaustiva del frontend.
+
+- [ ] **Phase 12: Design Tokens** - Formal CSS custom properties for colors, typography, spacing, radii, shadows, animations
+- [ ] **Phase 13: Component Redesign** - Base components redesigned using design tokens
+- [ ] **Phase 14: QA Audit - Functionality & Visual** - Page-by-page audit of CTAs, flows, states, visual consistency
+- [ ] **Phase 15: QA Responsive & Accessibility** - Responsividad and accesibilidad verification and fixes
+
+### Phase 12: Design Tokens
+**Goal**: Formal design token system established as CSS custom properties
+**Depends on**: Nothing (builds on existing globals.css)
+**Requirements**: DTKN-01, DTKN-02, DTKN-03, DTKN-04, DTKN-05, DTKN-06, DTKN-07
+**Success Criteria** (what must be TRUE):
+  1. All colors defined as CSS custom properties with semantic naming
+  2. Typography, spacing, radius, shadow scales defined as variables
+  3. Animation/transition tokens defined
+  4. No hardcoded color/spacing/size values remain in codebase
+**Research**: Unlikely (CSS custom properties, established patterns)
+**Plans**: TBD
+
+### Phase 13: Component Redesign
+**Goal**: Base UI components redesigned using design tokens exclusively
+**Depends on**: Phase 12
+**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04, COMP-05, COMP-06, COMP-07
+**Success Criteria** (what must be TRUE):
+  1. Button variants (primary, secondary, outline, ghost, destructive) with sm/md/lg sizes consistent
+  2. Input/Select/Textarea have unified focus, error, disabled states
+  3. Card variants (property, candidate, application, lease) share base styling
+  4. Badge system (risk, status, verification) uses tokens for colors and sizing
+  5. Dialog/Sheet overlays have consistent backdrop, padding, animations
+  6. All components applied across existing pages without visual regressions
+**Research**: Unlikely (internal component patterns)
+**Plans**: TBD
+
+### Phase 14: QA Audit - Functionality & Visual
+**Goal**: Every page audited for broken CTAs, dead flows, missing states, visual inconsistencies
+**Depends on**: Phase 13
+**Requirements**: QAFN-01, QAFN-02, QAFN-03, QAFN-04, QAFN-05, QAFN-06, QAFN-07, QAVS-01, QAVS-02, QAVS-03, QAVS-04, QAVS-05
+**Success Criteria** (what must be TRUE):
+  1. Every CTA button leads to a valid destination or performs an action
+  2. Every navigation link resolves to an existing route
+  3. Every list/grid has a proper empty state
+  4. Every flow has clear entry and exit paths
+  5. All spacing, colors, typography use design tokens
+  6. Component variants used consistently (same action = same button variant)
+**Research**: Unlikely (manual audit)
+**Plans**: TBD
+
+### Phase 15: QA Responsive & Accessibility
+**Goal**: Every page verified for responsive behavior and accessibility compliance
+**Depends on**: Phase 14
+**Requirements**: QARS-01, QARS-02, QARS-03, QARS-04, QARS-05, QAAC-01, QAAC-02, QAAC-03, QAAC-04, QAAC-05, QAAC-06
+**Success Criteria** (what must be TRUE):
+  1. All pages render correctly on mobile (375px), tablet (768px), desktop (1280px+)
+  2. No horizontal overflow on any viewport
+  3. Touch targets meet 44px minimum on mobile
+  4. All interactive elements have visible focus indicators
+  5. Color contrast meets WCAG AA (4.5:1 text, 3:1 large)
+  6. All forms have associated labels
+  7. Pages navigable with keyboard only
+**Research**: Unlikely (standard responsive/a11y patterns)
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
@@ -195,6 +260,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Authentication UI | 2/2 | Complete | 2026-01-19 |
 | 9. Interactive Map | 2/2 | Complete | 2026-01-20 |
 | 10. Post-Approval Flow | 5/5 | Complete | 2026-01-20 |
+| 11. UI/UX Improvements | — | Complete | 2026-01-29 |
+| 12. Design Tokens | 0/TBD | Not started | - |
+| 13. Component Redesign | 0/TBD | Not started | - |
+| 14. QA Functionality & Visual | 0/TBD | Not started | - |
+| 15. QA Responsive & A11y | 0/TBD | Not started | - |
 
 ## Notes
 
@@ -224,6 +294,6 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-01-20 (Phase 10 Post-Approval Flow complete)*
+*Last updated: 2026-02-02 (v2.0 Design System & QA Audit roadmap created)*
 *Vision: FRONTEND-VISION.md*
 

@@ -166,7 +166,7 @@ export function FilterSidebar({
 
       {/* Results count and reset */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground tracking-tight">
+        <p className="text-sm text-muted-foreground tracking-tight" aria-live="polite" aria-atomic="true">
           <span className="font-medium text-foreground">{resultsCount}</span>{' '}
           {resultsCount === 1 ? 'resultado' : 'resultados'}
         </p>

@@ -137,8 +137,8 @@ export function RiskScoreDisplay({
 
   const Wrapper = isEmbedded ? 'div' : Card;
   const wrapperProps = isEmbedded
-    ? { className: cn('space-y-6', className) }
-    : { className: cn('p-6 space-y-6', className) };
+    ? { className: cn('space-y-6', className), 'aria-live': 'polite' as const }
+    : { className: cn('p-6 space-y-6', className), 'aria-live': 'polite' as const };
 
   return (
     <Wrapper {...wrapperProps}>
@@ -192,6 +192,7 @@ export function RiskScoreDisplay({
           <button
             type="button"
             onClick={() => setShowBreakdown(!showBreakdown)}
+            aria-expanded={showBreakdown}
             className={cn(
               'flex items-center gap-2 text-sm text-muted-foreground',
               'hover:text-foreground transition-colors w-full'

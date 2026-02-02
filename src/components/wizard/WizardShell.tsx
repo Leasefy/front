@@ -108,7 +108,7 @@ export function WizardShell({
         {/* Mobile progress indicator */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-black">
+            <span className="text-xs font-medium text-black" aria-live="polite" aria-atomic="true">
               Paso {currentStep} de {totalSteps}
             </span>
             <span className="text-xs text-black/50">
@@ -286,7 +286,7 @@ export function WizardShell({
 
               {/* Validation Errors */}
               {attemptedAdvance && !currentStepValidation.isValid && (
-                <div className="px-4 lg:px-6 mb-4">
+                <div className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
                   <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm">
                     <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">

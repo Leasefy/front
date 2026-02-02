@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,6 +30,7 @@ export default function RootLayout({
           Saltar al contenido principal
         </a>
         <AuthProvider>
+          <RouteAnnouncer />
           <SmoothScroll>{children}</SmoothScroll>
         </AuthProvider>
       </body>

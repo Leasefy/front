@@ -81,7 +81,8 @@ export function PropertyGrid({
   // Show skeleton grid when loading
   if (externalLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8" role="status" aria-label="Cargando propiedades">
+        <span className="sr-only">Cargando propiedades...</span>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
             <PropertyCardSkeleton key={index} />

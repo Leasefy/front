@@ -15,9 +15,9 @@ See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 Milestone: v2.0 Design System & QA Audit
 Phase: 12 of 15 (Design Tokens)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-02 — Roadmap created (4 phases, 37 requirements)
+Plan: 2 plans created (PLAN-01: Formalize tokens, PLAN-02: Migrate hardcoded values)
+Status: Ready to execute
+Last activity: 2026-02-02 — Phase 12 planned (2 plans)
 
 Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
 

@@ -209,7 +209,7 @@ export default function PropiedadesPage() {
                       <div onClick={(e) => e.preventDefault()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white text-plan-secondary transition-colors">
+                            <button className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white text-plan-secondary transition-colors" aria-label="Más opciones">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>

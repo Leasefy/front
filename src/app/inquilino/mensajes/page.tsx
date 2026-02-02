@@ -248,16 +248,16 @@ export default function MensajesPage() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors" aria-label="Llamar">
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors" aria-label="Videollamada">
                 <Video className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors" aria-label="Información">
                 <Info className="w-5 h-5" />
               </button>
-              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors" aria-label="Más opciones">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </div>
@@ -325,6 +325,7 @@ export default function MensajesPage() {
               <button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim()}
+                aria-label="Enviar mensaje"
                 className={cn(
                   'p-2 transition-colors',
                   messageText.trim()

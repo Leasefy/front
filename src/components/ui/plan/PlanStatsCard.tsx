@@ -21,7 +21,7 @@ export interface PlanStatsCardProps {
 const variantClasses = {
   default: 'bg-white border-plan-border',
   accent: 'bg-plan-accent/10 border-plan-accent/30',
-  muted: 'bg-gray-50 border-plan-border',
+  muted: 'bg-muted border-plan-border',
 };
 
 const sizeClasses = {
@@ -53,7 +53,7 @@ export function PlanStatsCard({
         'border transition-colors duration-100',
         variantClasses[variant],
         sizeClasses[size],
-        onClick && 'cursor-pointer hover:bg-gray-50',
+        onClick && 'cursor-pointer hover:bg-muted',
         className
       )}
       onClick={onClick}
@@ -81,7 +81,7 @@ export function PlanStatsCard({
           )}
         </div>
         {Icon && (
-          <div className="p-2 bg-gray-100">
+          <div className="p-2 bg-muted">
             <Icon className="w-5 h-5 text-plan-muted stroke-[1.5px]" />
           </div>
         )}

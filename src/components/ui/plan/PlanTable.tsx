@@ -138,7 +138,7 @@ export function PlanTable<T extends object>({
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-plan-secondary font-medium text-xs">
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-plan-secondary font-medium text-xs">
                 {name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -194,7 +194,7 @@ export function PlanTable<T extends object>({
 
       case 'badge':
         return (
-          <span className="px-2 py-0.5 bg-gray-100 text-[11px] font-medium text-plan-secondary">
+          <span className="px-2 py-0.5 bg-muted text-[11px] font-medium text-plan-secondary">
             {String(value)}
           </span>
         );
@@ -236,7 +236,7 @@ export function PlanTable<T extends object>({
                         ? 'bg-plan-primary border-plan-primary text-white'
                         : someSelected
                           ? 'bg-plan-primary/10 border-plan-primary'
-                          : 'border-gray-300 hover:border-plan-muted'
+                          : 'border-border hover:border-plan-muted'
                     )}
                   >
                     {(allSelected || someSelected) && <Check className="w-2.5 h-2.5" />}
@@ -256,7 +256,7 @@ export function PlanTable<T extends object>({
                   <div className="flex items-center gap-1">
                     {column.header}
                     {column.sortable && (
-                      <span className="text-gray-300">
+                      <span className="text-muted-foreground">
                         {sortConfig?.key === column.key ? (
                           sortConfig.direction === 'asc' ? (
                             <ChevronUp className="w-3 h-3" />
@@ -273,7 +273,7 @@ export function PlanTable<T extends object>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {paginatedData.length === 0 ? (
               <tr>
                 <td
@@ -294,8 +294,8 @@ export function PlanTable<T extends object>({
                     className={cn(
                       'transition-colors duration-100',
                       isSelected && 'bg-yellow-50',
-                      onRowClick && 'cursor-pointer hover:bg-gray-50',
-                      !isSelected && !onRowClick && 'hover:bg-gray-50'
+                      onRowClick && 'cursor-pointer hover:bg-muted',
+                      !isSelected && !onRowClick && 'hover:bg-muted'
                     )}
                     onClick={() => onRowClick?.(row)}
                   >
@@ -307,7 +307,7 @@ export function PlanTable<T extends object>({
                             'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                             isSelected
                               ? 'bg-plan-primary border-plan-primary text-white'
-                              : 'border-gray-300 hover:border-plan-muted'
+                              : 'border-border hover:border-plan-muted'
                           )}
                         >
                           {isSelected && <Check className="w-2.5 h-2.5" />}
@@ -340,8 +340,8 @@ export function PlanTable<T extends object>({
               className={cn(
                 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                 currentPage === 1
-                  ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
-                  : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                  ? 'bg-muted text-plan-muted cursor-not-allowed'
+                  : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
               )}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -356,7 +356,7 @@ export function PlanTable<T extends object>({
                     'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                     currentPage === page
                       ? 'bg-plan-primary text-white'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                      : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >
                   {page}
@@ -369,8 +369,8 @@ export function PlanTable<T extends object>({
               className={cn(
                 'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
                 currentPage === totalPages
-                  ? 'bg-gray-100 text-plan-muted cursor-not-allowed'
-                  : 'bg-gray-100 text-plan-secondary hover:bg-gray-200 hover:text-plan-primary'
+                  ? 'bg-muted text-plan-muted cursor-not-allowed'
+                  : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
               )}
             >
               Siguiente

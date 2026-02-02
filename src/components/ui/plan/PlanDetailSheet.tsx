@@ -131,12 +131,12 @@ export function PlanDetailSheet({
             Detalles
           </h2>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors">
+            <button className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors">
               <MoreHorizontal className="w-5 h-5" />
             </button>
             <button
               onClick={() => onOpenChange(false)}
-              className="p-2 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors"
+              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -164,7 +164,7 @@ export function PlanDetailSheet({
                     className="w-16 h-16 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                     <span className="text-2xl font-bold text-plan-secondary">
                       {profile.name.charAt(0).toUpperCase()}
                     </span>
@@ -244,10 +244,10 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-plan-primary text-white hover:bg-gray-800'
+                        ? 'bg-plan-primary text-white hover:bg-foreground'
                         : action.variant === 'danger'
                           ? 'bg-plan-status-red-bg text-red-800 hover:bg-red-200'
-                          : 'bg-gray-100 text-plan-primary hover:bg-gray-200'
+                          : 'bg-muted text-plan-primary hover:bg-muted'
                     )}
                   >
                     {action.icon}
@@ -291,7 +291,7 @@ export function PlanDetailSheet({
                   placeholder="Agregar notas..."
                   className={cn(
                     'w-full min-h-[100px] p-3 rounded-sm resize-none',
-                    'bg-gray-50 border border-plan-border',
+                    'bg-muted border border-plan-border',
                     'text-sm text-plan-primary placeholder:text-plan-muted',
                     'focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent',
                     'transition-colors'
@@ -308,7 +308,7 @@ export function PlanDetailSheet({
 
         {/* Footer Actions - Fixed */}
         {footerActions && (
-          <div className="flex-none px-6 py-4 border-t border-plan-border bg-gray-50">
+          <div className="flex-none px-6 py-4 border-t border-plan-border bg-muted">
             {footerActions}
           </div>
         )}

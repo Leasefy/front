@@ -47,7 +47,7 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn('border border-dashed border-slate-200 bg-slate-50/50', className)}>
+    <Card className={cn('border border-dashed border-border bg-muted/50', className)}>
       <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
         {/* Icon Container - Premium gradient background */}
         <div className="relative mb-6">
@@ -58,10 +58,10 @@ export function EmptyState({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">{description}</p>
+        <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">{description}</p>
 
         {/* Optional CTA */}
         {action && (

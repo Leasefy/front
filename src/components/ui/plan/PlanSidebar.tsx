@@ -66,7 +66,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
       <div
         className={cn(
           'flex items-center gap-3 px-4 py-2 text-[13px]',
-          'text-gray-300 cursor-not-allowed',
+          'text-muted-foreground cursor-not-allowed',
           isCollapsed && 'justify-center px-2'
         )}
         title={isCollapsed ? item.label : undefined}
@@ -133,8 +133,8 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         'flex items-center gap-3 px-4 py-2 text-[13px] relative',
         'transition-colors duration-100',
         isActive
-          ? 'text-plan-primary font-medium bg-gray-50'
-          : 'text-plan-secondary hover:text-plan-primary hover:bg-gray-50',
+          ? 'text-plan-primary font-medium bg-muted'
+          : 'text-plan-secondary hover:text-plan-primary hover:bg-muted',
         isCollapsed && 'justify-center px-2',
         depth > 0 && 'pl-4'
       )}
@@ -214,7 +214,7 @@ function SidebarContent({
 
       {/* Logo - PLan style with star */}
       <div className={cn(
-        'h-14 flex items-center border-b border-gray-100',
+        'h-14 flex items-center border-b border-border',
         isCollapsed ? 'justify-center px-2' : 'px-5'
       )}>
         <Link href={logo?.href || '/'} className="flex items-center gap-2" onClick={onItemClick}>
@@ -246,10 +246,10 @@ function SidebarContent({
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-gray-100 py-2">
+      <div className="border-t border-border py-2">
         <div
           className={cn(
-            'flex items-center gap-3 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-gray-50 cursor-pointer',
+            'flex items-center gap-3 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-muted cursor-pointer',
             isCollapsed && 'justify-center px-2'
           )}
         >
@@ -279,7 +279,7 @@ export function PlanSidebar({
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-white border-r border-gray-100',
+          'bg-white border-r border-border',
           'transition-all duration-200',
           isCollapsed ? 'lg:w-16' : 'lg:w-[240px]',
           className

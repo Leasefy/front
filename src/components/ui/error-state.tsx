@@ -50,10 +50,10 @@ export function ErrorState({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">{description}</p>
+        <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">{description}</p>
 
         {/* Retry Button */}
         {onRetry && (

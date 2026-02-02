@@ -287,7 +287,7 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white border-b border-gray-100', className)}>
+    <header className={cn('sticky top-0 z-30 bg-white border-b border-border', className)}>
       <div className="flex items-center justify-between h-14 px-6">
         {/* Left: Search */}
         {showSearch && (
@@ -301,7 +301,7 @@ export function PlanHeader({
               placeholder={isLandlord ? "Buscar propiedades, candidatos..." : "Buscar pagos, documentos..."}
               className={cn(
                 'w-full h-9 pl-9 pr-4',
-                'bg-gray-50 border-none rounded-sm',
+                'bg-muted border-none rounded-sm',
                 'text-[13px] text-plan-primary placeholder:text-plan-muted',
                 'focus:outline-none focus:ring-1 focus:ring-plan-primary focus:bg-white',
                 'transition-all duration-100'
@@ -317,7 +317,7 @@ export function PlanHeader({
                     <div>
                       {Object.entries(groupedResults).map(([category, items]) => (
                         <div key={category}>
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                          <div className="px-4 py-2 bg-muted border-b border-border">
                             <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
@@ -326,9 +326,9 @@ export function PlanHeader({
                             <button
                               key={result.id}
                               onClick={() => handleSearchSelect(result)}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
                             >
-                              <div className="w-8 h-8 bg-gray-100 flex items-center justify-center text-plan-secondary">
+                              <div className="w-8 h-8 bg-muted flex items-center justify-center text-plan-secondary">
                                 {getCategoryIcon(result.category)}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -347,7 +347,7 @@ export function PlanHeader({
                   ) : (
                     // No results
                     <div className="px-4 py-8 text-center">
-                      <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-[13px] text-plan-secondary">
                         No se encontraron resultados para &quot;{searchQuery}&quot;
                       </p>
@@ -357,7 +357,7 @@ export function PlanHeader({
                   // Show quick links and recent searches
                   <div>
                     {/* Quick Links */}
-                    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                    <div className="px-4 py-2 bg-muted border-b border-border">
                       <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                         Accesos rapidos
                       </p>
@@ -366,9 +366,9 @@ export function PlanHeader({
                       <button
                         key={link.id}
                         onClick={() => handleSearchSelect(link)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
                       >
-                        <div className="w-8 h-8 bg-gray-100 flex items-center justify-center text-plan-secondary">
+                        <div className="w-8 h-8 bg-muted flex items-center justify-center text-plan-secondary">
                           {getCategoryIcon(link.category)}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -385,7 +385,7 @@ export function PlanHeader({
                     {/* Recent Searches */}
                     {recentSearches.length > 0 && (
                       <>
-                        <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-100">
+                        <div className="px-4 py-2 bg-muted border-t border-b border-border">
                           <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
                             Busquedas recientes
                           </p>
@@ -394,7 +394,7 @@ export function PlanHeader({
                           <button
                             key={index}
                             onClick={() => setSearchQuery(search)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors text-left"
                           >
                             <Clock className="w-4 h-4 text-plan-muted" />
                             <span className="text-[13px] text-plan-secondary">{search}</span>
@@ -432,7 +432,7 @@ export function PlanHeader({
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-gray-100">
+                  <div className="px-5 py-4 border-b border-border">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[15px] font-semibold text-plan-primary">Tu Suscripcion</h3>
                       <button
@@ -449,7 +449,7 @@ export function PlanHeader({
                     <div className="flex items-center gap-3 mb-4">
                       <div className={cn(
                         'w-10 h-10 flex items-center justify-center rounded-sm',
-                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-gray-100' : 'bg-plan-primary'
+                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
                       )}>
                         {MOCK_SUBSCRIPTION.planId === 'free' ? (
                           <Zap className="w-5 h-5 text-plan-secondary" />
@@ -476,13 +476,13 @@ export function PlanHeader({
                         <div key={feature.id} className="flex items-center gap-2">
                           <div className={cn(
                             'w-4 h-4 flex items-center justify-center rounded-sm',
-                            feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-gray-100 text-plan-muted'
+                            feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-muted text-plan-muted'
                           )}>
                             <Check className="w-3 h-3" />
                           </div>
                           <span className={cn(
                             'text-[12px]',
-                            feature.included ? 'text-gray-700' : 'text-plan-muted'
+                            feature.included ? 'text-foreground' : 'text-plan-muted'
                           )}>
                             {feature.name}
                             {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
@@ -496,7 +496,7 @@ export function PlanHeader({
                       <Link
                         href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-plan-primary text-white text-[13px] font-medium text-center hover:bg-gray-800 transition-colors"
+                        className="block w-full py-2.5 bg-plan-primary text-white text-[13px] font-medium text-center hover:bg-foreground transition-colors"
                       >
                         {MOCK_SUBSCRIPTION.planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -539,7 +539,7 @@ export function PlanHeader({
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-gray-100">
+                  <div className="px-5 py-4 border-b border-border">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[15px] font-semibold text-plan-primary">Invitar al Equipo</h3>
                       <button
@@ -580,7 +580,7 @@ export function PlanHeader({
                       <>
                         {/* Email input */}
                         <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">
+                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
                             Correo electronico
                           </label>
                           <div className="relative">
@@ -590,14 +590,14 @@ export function PlanHeader({
                               value={inviteEmail}
                               onChange={(e) => setInviteEmail(e.target.value)}
                               placeholder="correo@ejemplo.com"
-                              className="w-full h-10 pl-9 pr-4 bg-gray-50 border border-plan-border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
                             />
                           </div>
                         </div>
 
                         {/* Role selector */}
                         <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">
+                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
                             Rol
                           </label>
                           <div className="space-y-2">
@@ -608,13 +608,13 @@ export function PlanHeader({
                                 className={cn(
                                   'w-full flex items-start gap-3 p-3 text-left border transition-colors',
                                   inviteRole === role.id
-                                    ? 'border-plan-primary bg-gray-50'
-                                    : 'border-plan-border hover:border-gray-300'
+                                    ? 'border-plan-primary bg-muted'
+                                    : 'border-plan-border hover:border-border'
                                 )}
                               >
                                 <div className={cn(
                                   'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5',
-                                  inviteRole === role.id ? 'border-plan-primary' : 'border-gray-300'
+                                  inviteRole === role.id ? 'border-plan-primary' : 'border-border'
                                 )}>
                                   {inviteRole === role.id && (
                                     <div className="w-2 h-2 rounded-full bg-plan-primary" />
@@ -640,8 +640,8 @@ export function PlanHeader({
                           className={cn(
                             'w-full py-2.5 text-[13px] font-medium text-center transition-colors',
                             inviteEmail
-                              ? 'bg-plan-primary text-white hover:bg-gray-800'
-                              : 'bg-gray-100 text-plan-muted cursor-not-allowed'
+                              ? 'bg-plan-primary text-white hover:bg-foreground'
+                              : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
                           Enviar Invitacion
@@ -651,7 +651,7 @@ export function PlanHeader({
 
                     {/* Current team preview */}
                     {teamMembers.length > 1 && !inviteSent && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="mt-4 pt-4 border-t border-border">
                         <p className="text-[11px] font-medium text-plan-muted uppercase tracking-wide mb-2">
                           Equipo actual ({teamMembers.length})
                         </p>
@@ -659,7 +659,7 @@ export function PlanHeader({
                           {teamMembers.slice(0, 5).map((member) => (
                             <div
                               key={member.id}
-                              className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[11px] font-medium text-plan-secondary"
+                              className="w-8 h-8 rounded-full bg-muted border-2 border-white flex items-center justify-center text-[11px] font-medium text-plan-secondary"
                               title={member.name || member.email}
                             >
                               {(member.name || member.email).charAt(0).toUpperCase()}
@@ -695,7 +695,7 @@ export function PlanHeader({
               sideOffset={8}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <h3 className="text-[15px] font-semibold text-plan-primary">Notificaciones</h3>
                 <div className="flex items-center gap-3">
                   <button
@@ -722,7 +722,7 @@ export function PlanHeader({
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-border">
                 {(['all', 'unread', 'mentions'] as const).map((tab) => (
                   <button
                     key={tab}
@@ -730,7 +730,7 @@ export function PlanHeader({
                     className={cn(
                       'px-3 py-1.5 text-[12px] font-medium rounded-sm transition-colors',
                       activeTab === tab
-                        ? 'bg-gray-100 text-plan-primary'
+                        ? 'bg-muted text-plan-primary'
                         : 'text-plan-secondary hover:text-plan-primary'
                     )}
                   >
@@ -756,14 +756,14 @@ export function PlanHeader({
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={cn(
-                      'flex gap-3 px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 cursor-pointer',
-                      notification.unread && 'bg-gray-50'
+                      'flex gap-3 px-5 py-4 hover:bg-muted transition-colors border-b border-border last:border-0 cursor-pointer',
+                      notification.unread && 'bg-muted'
                     )}
                   >
                     {/* Avatar */}
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      notification.unread ? 'bg-plan-primary text-white' : 'bg-gray-100 text-plan-secondary'
+                      notification.unread ? 'bg-plan-primary text-white' : 'bg-muted text-plan-secondary'
                     )}>
                       {notification.user.charAt(0)}
                     </div>
@@ -791,9 +791,9 @@ export function PlanHeader({
                       {notification.message && (
                         <div className={cn(
                           'mt-2 px-3 py-2 rounded-sm flex items-center justify-between',
-                          notification.replyColor || 'bg-gray-100'
+                          notification.replyColor || 'bg-muted'
                         )}>
-                          <p className="text-[12px] text-gray-700">{notification.message}</p>
+                          <p className="text-[12px] text-foreground">{notification.message}</p>
                           {notification.hasReply && (
                             <button
                               onClick={(e) => {
@@ -801,7 +801,7 @@ export function PlanHeader({
                                 setNotificationsOpen(false);
                                 router.push(isLandlord ? '/panel/mensajes' : '/inquilino/mensajes');
                               }}
-                              className="px-3 py-1 bg-white text-[11px] font-medium text-plan-primary rounded-sm border border-plan-border hover:bg-gray-50 transition-colors"
+                              className="px-3 py-1 bg-white text-[11px] font-medium text-plan-primary rounded-sm border border-plan-border hover:bg-muted transition-colors"
                             >
                               Responder
                             </button>
@@ -817,13 +817,13 @@ export function PlanHeader({
                             setNotificationsOpen(false);
                             router.push(isLandlord ? '/panel/contratos' : '/inquilino/documentos');
                           }}
-                          className="mt-2 px-3 py-2 bg-gray-100 rounded-sm flex items-center justify-between hover:bg-gray-200 transition-colors"
+                          className="mt-2 px-3 py-2 bg-muted rounded-sm flex items-center justify-between hover:bg-muted transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-plan-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
-                            <span className="text-[12px] text-gray-700">{notification.file}</span>
+                            <span className="text-[12px] text-foreground">{notification.file}</span>
                           </div>
                           <span className="text-[11px] text-plan-muted">{notification.fileSize}</span>
                         </div>
@@ -839,7 +839,7 @@ export function PlanHeader({
               </div>
 
               {/* View all link */}
-              <div className="px-5 py-3 border-t border-gray-100">
+              <div className="px-5 py-3 border-t border-border">
                 <button
                   onClick={() => {
                     setNotificationsOpen(false);
@@ -854,13 +854,13 @@ export function PlanHeader({
           </Popover>
 
           {/* Separator */}
-          <div className="w-px h-6 bg-gray-200 mx-2" />
+          <div className="w-px h-6 bg-muted mx-2" />
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 p-1 outline-none">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                   <span className="text-plan-secondary font-medium text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
@@ -877,11 +877,11 @@ export function PlanHeader({
                 <p className="text-[13px] font-medium text-plan-primary">{user?.name || 'Usuario'}</p>
                 <p className="text-[12px] text-plan-secondary">{user?.email}</p>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-100" />
+              <DropdownMenuSeparator className="bg-muted" />
               <DropdownMenuItem asChild>
                 <Link
                   href={isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px]" />
                   Mi Perfil
@@ -890,7 +890,7 @@ export function PlanHeader({
               <DropdownMenuItem asChild>
                 <Link
                   href={isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                 >
                   <Settings className="w-4 h-4 stroke-[1.5px]" />
                   Configuración
@@ -900,7 +900,7 @@ export function PlanHeader({
                 <DropdownMenuItem asChild>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                   >
                     <CreditCard className="w-4 h-4 stroke-[1.5px]" />
                     Mis Pagos
@@ -911,24 +911,24 @@ export function PlanHeader({
                 <DropdownMenuItem asChild>
                   <Link
                     href="/panel/upgrade"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px]" />
                     Mi Plan
                   </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-gray-100" />
+              <DropdownMenuSeparator className="bg-muted" />
               <DropdownMenuItem asChild>
                 <Link
                   href="/ayuda"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                 >
                   <HelpCircle className="w-4 h-4 stroke-[1.5px]" />
                   Ayuda
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-100" />
+              <DropdownMenuSeparator className="bg-muted" />
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2 text-[13px] text-plan-status-red hover:bg-red-50 cursor-pointer"

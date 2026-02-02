@@ -70,7 +70,7 @@ export function PlanActivityTimeline({
   return (
     <div className={cn('relative', className)}>
       {/* Timeline line */}
-      <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
+      <div className="absolute left-4 top-0 bottom-0 w-px bg-muted" />
 
       <div className="space-y-0">
         {displayItems.map((item, index) => {
@@ -98,13 +98,13 @@ export function PlanActivityTimeline({
                   <div
                     className={cn(
                       'w-8 h-8 rounded-full flex items-center justify-center border-2 border-white',
-                      item.iconBg || 'bg-gray-100'
+                      item.iconBg || 'bg-muted'
                     )}
                   >
                     <Icon className={cn('w-4 h-4', item.iconColor || 'text-plan-secondary')} />
                   </div>
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-white">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-white">
                     <span className="text-xs font-semibold text-plan-secondary">
                       {item.user?.name?.charAt(0).toUpperCase() || '?'}
                     </span>
@@ -132,7 +132,7 @@ export function PlanActivityTimeline({
                         {Object.entries(item.metadata).map(([key, value]) => (
                           <span
                             key={key}
-                            className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-xs text-plan-secondary"
+                            className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-xs text-plan-secondary"
                           >
                             {key}: <span className="font-medium text-plan-primary ml-1">{value}</span>
                           </span>
@@ -154,7 +154,7 @@ export function PlanActivityTimeline({
       {(showViewAll || hasMore) && onViewAll && (
         <button
           onClick={onViewAll}
-          className="mt-4 w-full py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary hover:bg-gray-100 rounded-sm transition-colors"
+          className="mt-4 w-full py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary hover:bg-muted rounded-sm transition-colors"
         >
           Ver toda la actividad
         </button>

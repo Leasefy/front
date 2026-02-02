@@ -57,8 +57,8 @@ const statusConfig: Record<Exclude<PlanStatusType, 'custom'>, {
   },
   pending: {
     label: 'Pendiente',
-    bg: 'bg-gray-100',
-    text: 'text-gray-600',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
   },
   completed: {
     label: 'Completado',

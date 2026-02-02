@@ -26,7 +26,7 @@ export function SectionLabel({ children, className, dotVariant = 'default' }: Se
         "h-2 w-2 rounded-full",
         dotColors[dotVariant]
       )} />
-      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         {children}
       </span>
     </div>

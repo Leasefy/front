@@ -62,7 +62,7 @@ export function PlanTabs({
   if (variant === 'pills') {
     return (
       <div className={cn(
-        'inline-flex items-center gap-1 p-1 rounded-sm bg-gray-100',
+        'inline-flex items-center gap-1 p-1 rounded-sm bg-muted',
         fullWidth && 'w-full',
         className
       )}>
@@ -88,7 +88,7 @@ export function PlanTabs({
                   'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                   activeTab === tab.id
                     ? 'bg-plan-primary text-white'
-                    : 'bg-gray-200 text-plan-secondary'
+                    : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
                 </span>
@@ -133,7 +133,7 @@ export function PlanTabs({
                   'px-1.5 py-0.5 rounded-sm text-[10px] font-semibold',
                   activeTab === tab.id
                     ? 'bg-plan-primary text-white'
-                    : 'bg-gray-100 text-plan-secondary'
+                    : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
                 </span>
@@ -171,7 +171,7 @@ export function PlanTabs({
             fullWidth && 'flex-1',
             activeTab === tab.id
               ? 'bg-plan-primary text-white'
-              : 'text-plan-secondary hover:bg-gray-100 hover:text-plan-primary',
+              : 'text-plan-secondary hover:bg-muted hover:text-plan-primary',
             tab.disabled && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -182,7 +182,7 @@ export function PlanTabs({
                 'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                 activeTab === tab.id
                   ? 'bg-white/20 text-white'
-                  : 'bg-gray-200 text-plan-secondary'
+                  : 'bg-muted text-plan-secondary'
               )}>
                 {tab.count}
               </span>

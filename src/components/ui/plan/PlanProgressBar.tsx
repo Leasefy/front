@@ -47,7 +47,7 @@ export function PlanProgressBar({
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <div className={cn(
-        'relative flex-1 bg-gray-200 rounded-full overflow-visible',
+        'relative flex-1 bg-muted rounded-full overflow-visible',
         sizeClasses[size]
       )}>
         {/* Progress fill with diagonal stripes */}

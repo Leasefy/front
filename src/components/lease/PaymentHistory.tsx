@@ -16,28 +16,28 @@ const statusConfig: Record<
   Payment['status'],
   {
     label: string;
-    className: string;
+    variant: 'success' | 'warning' | 'destructive';
     icon: typeof Check;
   }
 > = {
   paid: {
     label: 'Pagado',
-    className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    variant: 'success',
     icon: Check,
   },
   pending: {
     label: 'Pendiente',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
+    variant: 'warning',
     icon: Clock,
   },
   late: {
     label: 'Atrasado',
-    className: 'bg-red-100 text-red-700 border-red-200',
+    variant: 'destructive',
     icon: AlertCircle,
   },
   failed: {
     label: 'Fallido',
-    className: 'bg-red-100 text-red-700 border-red-200',
+    variant: 'destructive',
     icon: X,
   },
 };
@@ -141,7 +141,7 @@ export function PaymentHistory({
                     {formatCurrency(payment.amount)}
                   </td>
                   <td className="py-3 px-4">
-                    <Badge className={cn('gap-1 border', status.className)}>
+                    <Badge variant={status.variant} className="gap-1">
                       <StatusIcon className="w-3 h-3" />
                       {status.label}
                     </Badge>
@@ -187,7 +187,7 @@ export function PaymentHistory({
                     </p>
                   )}
                 </div>
-                <Badge className={cn('gap-1 border shrink-0', status.className)}>
+                <Badge variant={status.variant} className="gap-1 shrink-0">
                   <StatusIcon className="w-3 h-3" />
                   {status.label}
                 </Badge>

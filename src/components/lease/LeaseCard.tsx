@@ -29,23 +29,23 @@ interface LeaseCardProps {
 
 const statusConfig: Record<
   Lease['status'],
-  { label: string; className: string }
+  { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' }
 > = {
   active: {
     label: 'Activo',
-    className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    variant: 'success',
   },
   ending_soon: {
     label: 'Proximo a vencer',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
+    variant: 'warning',
   },
   ended: {
     label: 'Finalizado',
-    className: 'bg-slate-100 text-slate-600 border-slate-200',
+    variant: 'secondary',
   },
   terminated: {
     label: 'Terminado',
-    className: 'bg-red-100 text-red-700 border-red-200',
+    variant: 'destructive',
   },
 };
 
@@ -97,10 +97,8 @@ export function LeaseCard({
             className="object-cover"
           />
           <Badge
-            className={cn(
-              'absolute top-3 left-3 border',
-              status.className
-            )}
+            variant={status.variant}
+            className="absolute top-3 left-3"
           >
             {status.label}
           </Badge>

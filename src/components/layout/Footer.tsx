@@ -6,15 +6,15 @@ import { motion } from "framer-motion";
 const menuLinks = [
   { href: "/", label: "Inicio" },
   { href: "/propiedades", label: "Propiedades" },
-  { href: "/nosotros", label: "Nosotros" },
-  { href: "/como-funciona", label: "Como funciona" },
-  { href: "/contacto", label: "Contacto" },
+  { href: "/pricing", label: "Precios" },
+  { href: "/publicar", label: "Publicar Inmueble" },
+  { href: "/auth", label: "Mi cuenta" },
 ];
 
 const pageLinks = [
-  { href: "/nosotros", label: "Nosotros" },
-  { href: "/blog", label: "Blog" },
-  { href: "/preguntas-frecuentes", label: "Preguntas frecuentes" },
+  { href: "/pricing", label: "Precios" },
+  { href: "/propiedades", label: "Propiedades" },
+  { href: "/pricing#faq", label: "Preguntas frecuentes" },
 ];
 
 const socialLinks = [
@@ -210,18 +210,12 @@ export function Footer() {
             © 2024 Arriendo Facil. Todos los derechos reservados.
           </p>
           <div className="flex gap-6">
-            <Link
-              href="/privacidad"
-              className="text-[14px] tracking-[-0.28px] text-white/40 hover:text-white/70 transition-colors"
-            >
+            <span className="text-[14px] tracking-[-0.28px] text-white/40">
               Privacidad
-            </Link>
-            <Link
-              href="/terminos"
-              className="text-[14px] tracking-[-0.28px] text-white/40 hover:text-white/70 transition-colors"
-            >
+            </span>
+            <span className="text-[14px] tracking-[-0.28px] text-white/40">
               Terminos
-            </Link>
+            </span>
           </div>
         </div>
       </div>

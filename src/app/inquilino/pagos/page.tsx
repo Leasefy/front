@@ -308,7 +308,7 @@ export default function PagosPage() {
               <h3 className="font-semibold text-plan-primary mb-4">Metodos de pago</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 rounded-sm bg-muted">
-                  <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-slate-700 flex items-center justify-center">
+                  <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-foreground flex items-center justify-center">
                     <span className="text-white text-[8px] font-bold">VISA</span>
                   </div>
                   <div className="flex-1">
@@ -378,7 +378,7 @@ export default function PagosPage() {
                   <div className="mb-6">
                     <p className="text-sm text-plan-secondary mb-2">Metodo de pago</p>
                     <div className="flex items-center gap-3 p-3 border border-plan-border rounded-sm">
-                      <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-slate-700 flex items-center justify-center">
+                      <div className="w-10 h-6 rounded bg-gradient-to-r from-indigo-900 to-foreground flex items-center justify-center">
                         <span className="text-white text-[8px] font-bold">VISA</span>
                       </div>
                       <div className="flex-1">

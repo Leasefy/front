@@ -163,7 +163,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-white to-slate-50/50">
+    <div className="flex flex-col h-full bg-gradient-to-b from-white to-muted/50">
       {/* Logo - Premium styling */}
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
@@ -182,7 +182,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       </div>
 
       {/* Subtle divider */}
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Navigation - with stagger animation */}
       <nav className="flex-1 p-4 space-y-1">
@@ -232,7 +232,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* User section - Premium design */}
       <div className="p-4 border-t border-border/80">
         <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-foreground font-semibold text-sm shadow-inner">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-foreground font-semibold text-sm shadow-inner">
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1 min-w-0">

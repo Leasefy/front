@@ -94,7 +94,7 @@ export function PricingTable({
           <div className="overflow-x-auto rounded-2xl border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
-                <TableRow className="border-b-slate-200/60">
+                <TableRow className="border-b-border">
                   <TableHead className="text-left font-semibold">Caracteristica</TableHead>
                   <TableHead className="text-center font-semibold">Gratis</TableHead>
                   <TableHead className="text-center bg-[black]/5 font-semibold text-[black]">Pro</TableHead>

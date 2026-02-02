@@ -14,9 +14,43 @@ Si todo lo demás falla, el flujo completo Catálogo → Postulación → Risk S
 
 ### Validated
 
-(None yet — ship to validate)
+<!-- v1.0 MVP Frontend — shipped and functional -->
+- ✓ Catálogo de inmuebles con cards y filtros — v1.0
+- ✓ Detalle inmueble con galería y CTA — v1.0
+- ✓ Wizard de postulación 6 pasos con autosave — v1.0
+- ✓ Risk Score AI display con explicación conversacional — v1.0
+- ✓ Dashboard propietario con gestión de candidatos — v1.0
+- ✓ Tracking de solicitudes para arrendatario — v1.0
+- ✓ Generación y firma de contratos — v1.0
+- ✓ Pricing, suscripciones y cupones — v1.0
+- ✓ Dashboards post-contrato con pagos — v1.0
+- ✓ Auth UI con rutas protegidas — v1.0
+- ✓ Mapa interactivo estilo Airbnb — v1.0
+- ✓ Wizard de publicación 9 pasos — v1.0
 
 ### Active
+
+## Current Milestone: v2.0 Design System & QA Audit
+
+**Goal:** Establecer un sistema de diseño formal con tokens y componentes base rediseñados, y ejecutar una auditoría QA exhaustiva del frontend para encontrar y corregir todos los problemas de UX.
+
+**Target features:**
+
+#### Design System
+- [ ] Design tokens formales: colores, tipografía, spacing, radios, sombras como variables CSS documentadas
+- [ ] Guía de estilos documentada con ejemplos de uso
+- [ ] Componentes base rediseñados: Button, Input, Card, Badge, Select, Dialog, Sheet, Skeleton
+- [ ] Consistencia visual aplicada en todas las páginas existentes
+
+#### QA Audit Frontend
+- [ ] Auditoría página por página: CTAs desconectados, secciones sin acciones, links rotos
+- [ ] Flujos incompletos: botones que no llevan a ningún lado, estados sin salida
+- [ ] Inconsistencias visuales: spacing, colores, tipografía fuera del sistema
+- [ ] Empty states y error states verificados en cada vista
+- [ ] Responsividad verificada en cada página (mobile/tablet/desktop)
+- [ ] Accesibilidad verificada (contraste, touch targets, keyboard nav)
+
+### Previously Active (v1.0)
 
 #### Flujo End-to-End
 - [ ] Catálogo de inmuebles con cards premium (Airbnb-level)
@@ -226,4 +260,4 @@ applicationId, hostId, note, createdAt
 | shadcn/ui + Tailwind | Componentes accesibles, fácil customización, consistencia | — Pending |
 
 ---
-*Last updated: 2026-01-16 after initialization*
+*Last updated: 2026-02-02 after milestone v2.0 initialization*

@@ -261,8 +261,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Interactive Map | 2/2 | Complete | 2026-01-20 |
 | 10. Post-Approval Flow | 5/5 | Complete | 2026-01-20 |
 | 11. UI/UX Improvements | — | Complete | 2026-01-29 |
-| 12. Design Tokens | 0/TBD | Not started | - |
-| 13. Component Redesign | 0/TBD | Not started | - |
+| 12. Design Tokens | 2/2 | Complete | 2026-02-02 |
+| 13. Component Redesign | 3/3 | Complete | 2026-02-02 |
 | 14. QA Functionality & Visual | 0/TBD | Not started | - |
 | 15. QA Responsive & A11y | 0/TBD | Not started | - |
 

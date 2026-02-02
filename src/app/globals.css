@@ -146,7 +146,9 @@
     /* ========================================================
      * Typography Scale
      * ======================================================== */
-    --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+    --font-sans: var(--font-sans), system-ui, sans-serif;
+    --font-heading: var(--font-heading), system-ui, sans-serif;
+    --font-mono: var(--font-mono), ui-monospace, monospace;
 
     /* Font Sizes */
     --text-xs: 0.75rem;       /* 12px */
@@ -303,27 +305,44 @@
 
   /* Display - Hero headings, massive impact */
   .text-display {
-    @apply text-4xl md:text-5xl lg:text-[58px] font-normal tracking-[-0.072em] leading-[1.05];
+    font-family: var(--font-heading);
+    @apply text-4xl md:text-5xl lg:text-[58px] font-extrabold tracking-[-0.04em] leading-[1.05];
   }
 
   /* Heading 1 - Page titles */
   .text-h1 {
-    @apply text-3xl md:text-4xl font-semibold tracking-[-0.02em] leading-tight;
+    font-family: var(--font-heading);
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold tracking-[-0.03em] leading-tight;
   }
 
   /* Heading 2 - Section titles */
   .text-h2 {
-    @apply text-2xl md:text-3xl font-semibold tracking-[-0.02em] leading-tight;
+    font-family: var(--font-heading);
+    @apply text-2xl md:text-3xl lg:text-4xl font-bold tracking-[-0.02em] leading-tight;
   }
 
   /* Heading 3 - Subsection titles */
   .text-h3 {
-    @apply text-xl md:text-2xl font-medium tracking-[-0.01em] leading-snug;
+    font-family: var(--font-heading);
+    @apply text-xl md:text-2xl lg:text-[30px] font-semibold tracking-[-0.02em] leading-snug;
   }
 
   /* Heading 4 - Card titles, smaller sections */
   .text-h4 {
-    @apply text-lg font-medium tracking-tight leading-snug;
+    font-family: var(--font-heading);
+    @apply text-lg md:text-2xl font-semibold tracking-[-0.01em] leading-snug;
+  }
+
+  /* Heading 5 */
+  .text-h5 {
+    font-family: var(--font-heading);
+    @apply text-xl font-semibold tracking-[-0.01em] leading-snug;
+  }
+
+  /* Heading 6 */
+  .text-h6 {
+    font-family: var(--font-heading);
+    @apply text-lg font-semibold tracking-[-0.01em] leading-snug;
   }
 
   /* Body Large - Intro paragraphs, emphasis */
@@ -358,7 +377,14 @@
 
   /* Stat numbers - large with tight tracking */
   .stat-number {
+    font-family: var(--font-mono);
     @apply text-5xl md:text-6xl lg:text-7xl font-normal tracking-[-0.05em];
+  }
+
+  /* Numeric utility - mono font for tabular data */
+  .text-numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
   /* ==========================================================

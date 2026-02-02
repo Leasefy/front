@@ -1,13 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-heading",
   subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const dmMono = DM_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="lenis">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
         {/* Skip link for keyboard/screen reader users */}
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal

@@ -10,9 +10,9 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: [
-  				'var(--font-inter)'
-  			]
+  			sans: ['var(--font-sans)'],
+  			heading: ['var(--font-heading)'],
+  			mono: ['var(--font-mono)'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

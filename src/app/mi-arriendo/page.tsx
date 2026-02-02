@@ -262,13 +262,13 @@ export default function TenantLeasePage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-slate-900">Proximo pago</h3>
                 {daysUntilDue <= 5 && daysUntilDue > 0 && (
-                  <Badge className="bg-amber-100 text-amber-700 border border-amber-200 gap-1">
+                  <Badge variant="warning" className="gap-1">
                     <Clock className="w-3 h-3" />
                     {daysUntilDue} dias
                   </Badge>
                 )}
                 {daysUntilDue <= 0 && (
-                  <Badge className="bg-red-100 text-red-700 border border-red-200 gap-1">
+                  <Badge variant="destructive" className="gap-1">
                     <AlertCircle className="w-3 h-3" />
                     Vencido
                   </Badge>

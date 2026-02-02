@@ -70,7 +70,7 @@ export function PricingCard({
       {/* Popular badge - positioned absolutely */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-white hover:bg-primary shadow-sm">
+          <Badge variant="default">
             <Sparkles className="w-3 h-3 mr-1" />
             {plan.badge}
           </Badge>

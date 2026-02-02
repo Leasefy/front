@@ -136,7 +136,7 @@ export function InsuranceSelector({
                       {policy.name}
                     </h4>
                     {policy.recommended && (
-                      <Badge className="bg-emerald-500 hover:bg-emerald-500 text-[10px] px-1.5 py-0">
+                      <Badge variant="success" className="text-[10px] px-1.5 py-0">
                         Popular
                       </Badge>
                     )}

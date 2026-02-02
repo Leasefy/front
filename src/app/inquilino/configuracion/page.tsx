@@ -275,6 +275,7 @@ export default function ConfiguracionPage() {
                 <select
                   value={settings.language}
                   onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
+                  aria-label="Idioma de la interfaz"
                   className="px-3 py-2 text-sm border border-plan-border rounded-sm bg-white focus:outline-none focus:ring-2 focus:ring-plan-accent/50"
                 >
                   <option value="es">Español</option>

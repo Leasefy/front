@@ -240,6 +240,7 @@ export function FilterBar({
           <select
             className="text-sm text-muted-foreground bg-transparent border-none cursor-pointer hover:text-foreground"
             defaultValue="recommended"
+            aria-label="Ordenar propiedades"
           >
             <option value="recommended">Ordenar: Recomendado</option>
             <option value="price-asc">Precio: menor a mayor</option>

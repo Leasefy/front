@@ -410,6 +410,7 @@ export default function CandidatosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar candidato, propiedad u ocupación..."
+                aria-label="Buscar candidato"
                 className="w-full h-10 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>

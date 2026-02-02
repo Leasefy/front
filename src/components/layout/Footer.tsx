@@ -127,6 +127,7 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="Tu correo electronico"
+                aria-label="Correo electrónico para suscripción"
                 className="flex-1 h-[44px] px-4 bg-white/5 border border-white/10 rounded-l-[2px] text-[16px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/20 tracking-[-0.32px]"
               />
               <button className="h-[44px] px-[20px] bg-white text-primary rounded-r-[2px] text-[15px] tracking-[-0.15px] hover:bg-white/90 transition-colors">

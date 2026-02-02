@@ -163,6 +163,7 @@ export function AISearchInput({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={placeholder}
+              aria-label="Búsqueda inteligente de propiedades"
               disabled={isSearching}
               rows={2}
               className={cn(

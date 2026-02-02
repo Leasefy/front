@@ -116,6 +116,7 @@ export default function PricingPage() {
                   onChange={(e) =>
                     setExampleRent(Math.max(0, parseInt(e.target.value) || 0))
                   }
+                  aria-label="Valor del arriendo mensual"
                   className="flex-1 h-10 px-3 border border-border rounded-sm text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   step={100000}
                   min={0}

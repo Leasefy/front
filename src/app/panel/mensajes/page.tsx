@@ -184,6 +184,7 @@ export default function MensajesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar conversación..."
+                aria-label="Buscar conversación"
                 className="w-full h-9 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
@@ -336,7 +337,7 @@ export default function MensajesPage() {
           {/* Message Input */}
           <div className="px-6 py-4 border-t border-plan-border">
             <div className="flex items-center gap-3">
-              <button className="p-2 text-plan-secondary hover:text-plan-primary transition-colors">
+              <button className="p-2 text-plan-secondary hover:text-plan-primary transition-colors" aria-label="Adjuntar archivo">
                 <Paperclip className="w-5 h-5" />
               </button>
               <input
@@ -345,6 +346,7 @@ export default function MensajesPage() {
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Escribe un mensaje..."
+                aria-label="Escribe un mensaje"
                 className="flex-1 h-10 px-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
               <button

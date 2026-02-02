@@ -8,7 +8,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 
 - ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
 - ✅ **v1.1 Post-Approval Flow** - Phases 10-11 (complete)
-- 🚧 **v2.0 Design System & QA Audit** - Phases 12-15 (in progress)
+- ✅ **v2.0 Design System & QA Audit** - Phases 12-15 (complete)
 
 ## Phases
 
@@ -183,10 +183,10 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 
 **Milestone Goal:** Establecer sistema de diseño formal con tokens y componentes rediseñados, y auditoría QA exhaustiva del frontend.
 
-- [ ] **Phase 12: Design Tokens** - Formal CSS custom properties for colors, typography, spacing, radii, shadows, animations
-- [ ] **Phase 13: Component Redesign** - Base components redesigned using design tokens
-- [ ] **Phase 14: QA Audit - Functionality & Visual** - Page-by-page audit of CTAs, flows, states, visual consistency
-- [ ] **Phase 15: QA Responsive & Accessibility** - Responsividad and accesibilidad verification and fixes
+- [x] **Phase 12: Design Tokens** - Formal CSS custom properties for colors, typography, spacing, radii, shadows, animations
+- [x] **Phase 13: Component Redesign** - Base components redesigned using design tokens
+- [x] **Phase 14: QA Audit - Functionality & Visual** - Page-by-page audit of CTAs, flows, states, visual consistency
+- [x] **Phase 15: QA Responsive & Accessibility** - Responsividad and accesibilidad verification and fixes
 
 ### Phase 12: Design Tokens
 **Goal**: Formal design token system established as CSS custom properties
@@ -264,7 +264,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Design Tokens | 2/2 | Complete | 2026-02-02 |
 | 13. Component Redesign | 3/3 | Complete | 2026-02-02 |
 | 14. QA Functionality & Visual | 4/4 | Complete | 2026-02-02 |
-| 15. QA Responsive & A11y | 0/TBD | Not started | - |
+| 15. QA Responsive & A11y | 3/3 | Complete | 2026-02-02 |
 
 ## Notes
 

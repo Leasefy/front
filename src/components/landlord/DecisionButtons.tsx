@@ -173,12 +173,9 @@ export function DecisionButtons({
 
         <Button
           size="sm"
-          variant="outline"
+          variant={currentStatus === 'rejected' ? 'destructive' : 'outline'}
           disabled={isUpdating}
-          className={cn(
-            'w-full',
-            currentStatus === 'rejected' && 'bg-red-50 border-red-200 text-red-700'
-          )}
+          className="w-full"
           onClick={() => handleDecision('rejected')}
         >
           <X className="mr-1.5 h-3.5 w-3.5" />

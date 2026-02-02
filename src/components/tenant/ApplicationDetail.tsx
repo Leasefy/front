@@ -267,8 +267,8 @@ export function ApplicationDetail({
           {showWithdrawButton && (
             <div className="border-t border-border bg-background p-4">
               <Button
-                variant="outline"
-                className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                variant="destructive"
+                className="w-full"
                 onClick={handleWithdrawClick}
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />

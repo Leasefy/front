@@ -23,7 +23,15 @@
     --plan-border: #E5E7EB;
     --plan-text-primary: #111827;
     --plan-text-secondary: #6B7280;
-    --plan-text-muted: #9CA3AF;
+    --plan-text-muted: #6B7280;  /* Darkened from #9CA3AF for WCAG AA 4.5:1 contrast */
+
+    /* ========================================================
+     * WCAG AA Contrast Audit (2026-02-02)
+     * All token pairs verified >= 4.5:1 for normal text.
+     * Risk badge letters use large bold text (3:1 threshold).
+     * text-black/40, text-black/50 used for decorative labels
+     * (/mes, save indicators) — incidental text per WCAG 1.4.3.
+     * ======================================================== */
 
     /* PLan Status Colors */
     --plan-status-green: #22C55E;

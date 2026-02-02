@@ -15,7 +15,7 @@ const notificationConfig: Record<string, { route: string; color: string }> = {
   'Verificación': { route: '/panel/candidatos', color: 'text-indigo-600' },
   'Propiedad': { route: '/panel/propiedades', color: 'text-teal-600' },
   'Reseña': { route: '/panel', color: 'text-yellow-600' },
-  'Informe': { route: '/panel', color: 'text-gray-600' },
+  'Informe': { route: '/panel', color: 'text-muted-foreground' },
 };
 
 // Mock notifications data for landlords
@@ -181,7 +181,7 @@ export default function NotificacionesPage() {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
             >
               <Check className="w-4 h-4" />
               Marcar todo como leído
@@ -194,7 +194,7 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
+      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border">
         {[
           { id: 'all', label: 'Todas' },
           { id: 'unread', label: 'Sin leer' },
@@ -210,7 +210,7 @@ export default function NotificacionesPage() {
               'px-4 py-2 text-[13px] font-medium transition-colors',
               filter === f.id
                 ? 'bg-plan-primary text-white'
-                : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
+                : 'bg-muted text-plan-secondary hover:bg-muted'
             )}
           >
             {f.label}
@@ -222,8 +222,8 @@ export default function NotificacionesPage() {
       <div className="bg-white border border-plan-border">
         {filteredNotifications.length === 0 ? (
           <div className="py-16 text-center">
-            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-[15px] font-medium text-gray-700">No hay notificaciones</p>
+            <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-[15px] font-medium text-foreground">No hay notificaciones</p>
             <p className="text-[13px] text-plan-muted mt-1">
               {filter === 'all'
                 ? 'Cuando tengas nuevas notificaciones aparecerán aquí'
@@ -233,22 +233,22 @@ export default function NotificacionesPage() {
         ) : (
           filteredNotifications.map((notification, index) => {
             const IconComponent = notification.icon;
-            const config = notificationConfig[notification.type] || { route: '/panel', color: 'text-gray-600' };
+            const config = notificationConfig[notification.type] || { route: '/panel', color: 'text-muted-foreground' };
 
             return (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 className={cn(
-                  'flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer group',
-                  index !== filteredNotifications.length - 1 && 'border-b border-gray-100',
-                  notification.unread && 'bg-gray-50'
+                  'flex items-start gap-4 px-5 py-4 hover:bg-muted transition-colors cursor-pointer group',
+                  index !== filteredNotifications.length - 1 && 'border-b border-border',
+                  notification.unread && 'bg-muted'
                 )}
               >
                 {/* Icon */}
                 <div className={cn(
                   'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg',
-                  notification.unread ? 'bg-plan-primary' : 'bg-gray-100'
+                  notification.unread ? 'bg-plan-primary' : 'bg-muted'
                 )}>
                   <IconComponent className={cn(
                     'w-5 h-5',
@@ -302,7 +302,7 @@ export default function NotificacionesPage() {
                   {notification.unread && (
                     <div className="w-2 h-2 bg-plan-status-blue rounded-full" />
                   )}
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-plan-muted transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-plan-muted transition-colors" />
                 </div>
               </div>
             );

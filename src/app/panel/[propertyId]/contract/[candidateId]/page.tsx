@@ -46,7 +46,7 @@ interface ContractTypeSelectorProps {
 function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorProps) {
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-slate-900">
+      <h3 className="text-sm font-semibold text-foreground">
         Seleccione el tipo de contrato
       </h3>
       <div className="space-y-3">
@@ -58,15 +58,15 @@ function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorPr
               'w-full rounded-sm border p-4 text-left transition-all',
               selectedType === template.type
                 ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                : 'border-border hover:border-border hover:bg-muted'
             )}
           >
             <div className="flex items-start justify-between">
               <div>
-                <h4 className="font-medium text-slate-900">
+                <h4 className="font-medium text-foreground">
                   {CONTRACT_TYPE_LABELS[template.type]}
                 </h4>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {CONTRACT_TYPE_DESCRIPTIONS[template.type]}
                 </p>
               </div>
@@ -90,7 +90,7 @@ function ContractPageLoading() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     </div>
@@ -186,17 +186,17 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
         <div className="mx-auto max-w-6xl px-4 py-8">
           <Link
             href={`/panel/${propertyId}`}
-            className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver a candidatos
           </Link>
-          <div className="mt-8 rounded-sm border border-slate-200 bg-white p-8 text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-slate-300" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900">
+          <div className="mt-8 rounded-sm border border-border bg-white p-8 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h2 className="mt-4 text-lg font-semibold text-foreground">
               Informacion no encontrada
             </h2>
-            <p className="mt-2 text-slate-500">
+            <p className="mt-2 text-muted-foreground">
               No se pudo encontrar la propiedad o el candidato especificado.
             </p>
           </div>
@@ -218,7 +218,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
         {/* Back link */}
         <Link
           href={`/panel/${propertyId}`}
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver a candidatos
@@ -226,10 +226,10 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
         {/* Page Header */}
         <div className="mt-6 mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-foreground">
             {contract ? 'Contrato de Arrendamiento' : 'Generar Contrato'}
           </h1>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-muted-foreground">
             {property.address}, {property.city} &mdash; {candidate.fullName}
           </p>
         </div>
@@ -238,7 +238,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
         {!contract && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Left: Template Selector */}
-            <div className="rounded-sm border border-slate-200 bg-white p-6">
+            <div className="rounded-sm border border-border bg-white p-6">
               <ContractTypeSelector
                 selectedType={selectedType}
                 onSelect={setSelectedType}
@@ -265,11 +265,11 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             </div>
 
             {/* Right: Info */}
-            <div className="rounded-sm border border-slate-200 bg-white p-6">
-              <h3 className="text-sm font-semibold text-slate-900">
+            <div className="rounded-sm border border-border bg-white p-6">
+              <h3 className="text-sm font-semibold text-foreground">
                 Informacion del Proceso
               </h3>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
+              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <div className="flex gap-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-white">
                     1
@@ -277,19 +277,19 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                   <p>Seleccione el tipo de contrato adecuado</p>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                     2
                   </div>
                   <p>Revise los terminos y firme el contrato</p>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                     3
                   </div>
                   <p>El arrendatario recibira notificacion para firmar</p>
                 </div>
                 <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                     4
                   </div>
                   <p>Una vez firmado por ambos, el contrato quedara activo</p>
@@ -304,15 +304,15 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
           <div className="grid gap-6 lg:grid-cols-12">
             {/* Left: Timeline */}
             <div className="lg:col-span-3">
-              <div className="sticky top-6 rounded-sm border border-slate-200 bg-white p-4">
-                <h3 className="mb-4 text-sm font-semibold text-slate-900">
+              <div className="sticky top-6 rounded-sm border border-border bg-white p-4">
+                <h3 className="mb-4 text-sm font-semibold text-foreground">
                   Estado del contrato
                 </h3>
 
                 {/* Status Badge */}
-                <div className="mb-4 rounded-sm border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Estado actual</p>
-                  <p className="mt-1 font-medium text-slate-900">
+                <div className="mb-4 rounded-sm border border-border bg-muted p-3">
+                  <p className="text-xs text-muted-foreground">Estado actual</p>
+                  <p className="mt-1 font-medium text-foreground">
                     {CONTRACT_STATUS_LABELS[contract.status]}
                   </p>
                 </div>
@@ -335,7 +335,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
               <div className="sticky top-6 space-y-4">
                 {/* Insurance Selection (before signing) */}
                 {isLandlordTurn && (
-                  <div className="rounded-sm border border-slate-200 bg-white p-4">
+                  <div className="rounded-sm border border-border bg-white p-4">
                     <InsuranceSelector
                       selected={selectedInsurance}
                       onSelect={setSelectedInsurance}
@@ -389,14 +389,14 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                 )}
 
                 {/* Contract Info Card */}
-                <div className="rounded-sm border border-slate-200 bg-white p-4">
-                  <h4 className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                <div className="rounded-sm border border-border bg-white p-4">
+                  <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Tipo de contrato
                   </h4>
-                  <p className="mt-1 font-medium text-slate-900">
+                  <p className="mt-1 font-medium text-foreground">
                     {CONTRACT_TYPE_LABELS[contract.type]}
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {template.clauses.length} clausulas
                   </p>
                 </div>

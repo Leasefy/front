@@ -25,14 +25,14 @@ interface SummaryCardProps {
 
 function SummaryCard({ icon: Icon, label, value, color }: SummaryCardProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-sm p-4">
+    <div className="bg-white border border-border rounded-sm p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-sm ${color}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-2xl font-semibold text-slate-900">{value}</p>
-          <p className="text-sm text-slate-500">{label}</p>
+          <p className="text-2xl font-semibold text-foreground">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
         </div>
       </div>
     </div>
@@ -82,23 +82,23 @@ function MisAplicacionesContent() {
   // Show loading skeleton during hydration
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-muted">
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Header skeleton */}
-          <div className="h-8 w-48 bg-slate-200 rounded-sm animate-pulse mb-2" />
-          <div className="h-5 w-64 bg-slate-200 rounded-sm animate-pulse mb-8" />
+          <div className="h-8 w-48 bg-muted rounded-sm animate-pulse mb-2" />
+          <div className="h-5 w-64 bg-muted rounded-sm animate-pulse mb-8" />
 
           {/* Summary cards skeleton */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 bg-slate-200 rounded-sm animate-pulse" />
+              <div key={i} className="h-20 bg-muted rounded-sm animate-pulse" />
             ))}
           </div>
 
           {/* Application cards skeleton */}
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded-sm animate-pulse" />
+              <div key={i} className="h-32 bg-muted rounded-sm animate-pulse" />
             ))}
           </div>
         </div>
@@ -107,14 +107,14 @@ function MisAplicacionesContent() {
   }
 
   return (
-    <main id="main-content" className="min-h-screen bg-slate-50">
+    <main id="main-content" className="min-h-screen bg-muted">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             Mis Aplicaciones
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Sigue el estado de tus aplicaciones de arrendamiento
           </p>
         </div>
@@ -134,7 +134,7 @@ function MisAplicacionesContent() {
                 icon={FileText}
                 label="Total"
                 value={summary.total}
-                color="bg-slate-100 text-slate-600"
+                color="bg-muted text-muted-foreground"
               />
               <SummaryCard
                 icon={Clock}

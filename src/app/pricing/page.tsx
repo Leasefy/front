@@ -50,10 +50,10 @@ export default function PricingPage() {
         {/* Hero section */}
         <section className="py-16 px-4 sm:py-20">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
             Arrienda sin complicaciones
           </h1>
-          <p className="text-lg text-slate-600 mt-4 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
             Tu decides cuanto control quieres. Nosotros nos adaptamos.
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function PricingPage() {
       {/* User Type Selector */}
       <section className="pb-8 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="flex flex-col sm:flex-row gap-3 p-1.5 bg-slate-100 rounded-sm">
+          <div className="flex flex-col sm:flex-row gap-3 p-1.5 bg-muted rounded-sm">
             <UserTypeButton
               icon={<Home className="h-4 w-4" />}
               label="Quiero que administren mi propiedad"
@@ -94,33 +94,33 @@ export default function PricingPage() {
           <div className="max-w-5xl mx-auto">
             {/* Section Header */}
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-slate-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 Administracion de propiedades
               </h2>
-              <p className="text-slate-600 mt-2">
+              <p className="text-muted-foreground mt-2">
                 Cobramos un porcentaje del arriendo. Mucho menos que el mercado
                 (10-12%).
               </p>
             </div>
 
             {/* Rent Calculator */}
-            <div className="mb-8 p-4 bg-white rounded-sm border border-slate-200">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="mb-8 p-4 bg-white rounded-sm border border-border">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Calcula con tu arriendo mensual
               </label>
               <div className="flex items-center gap-4">
-                <span className="text-slate-500">$</span>
+                <span className="text-muted-foreground">$</span>
                 <input
                   type="number"
                   value={exampleRent}
                   onChange={(e) =>
                     setExampleRent(Math.max(0, parseInt(e.target.value) || 0))
                   }
-                  className="flex-1 h-10 px-3 border border-slate-200 rounded-sm text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="flex-1 h-10 px-3 border border-border rounded-sm text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   step={100000}
                   min={0}
                 />
-                <span className="text-slate-500">COP/mes</span>
+                <span className="text-muted-foreground">COP/mes</span>
               </div>
             </div>
 
@@ -137,7 +137,7 @@ export default function PricingPage() {
 
             {/* Add-ons */}
             <div className="mt-12">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
                 Servicios adicionales
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -181,10 +181,10 @@ export default function PricingPage() {
         <section className="pb-16 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-slate-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 Planes para propietarios
               </h2>
-              <p className="text-slate-600 mt-2">
+              <p className="text-muted-foreground mt-2">
                 Tu administras, nosotros te damos las herramientas
               </p>
             </div>
@@ -199,10 +199,10 @@ export default function PricingPage() {
         <section className="pb-16 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-slate-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 Soluciones para inmobiliarias
               </h2>
-              <p className="text-slate-600 mt-2">
+              <p className="text-muted-foreground mt-2">
                 Herramientas profesionales para agencias y administradores
               </p>
             </div>
@@ -225,17 +225,17 @@ export default function PricingPage() {
 
             {/* Agency Pricing Card */}
             <div className="max-w-lg mx-auto">
-              <div className="rounded-sm border border-slate-200 bg-white p-8 text-center">
-                <h3 className="text-xl font-semibold text-slate-900">
+              <div className="rounded-sm border border-border bg-white p-8 text-center">
+                <h3 className="text-xl font-semibold text-foreground">
                   Plan Inmobiliaria
                 </h3>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-slate-900">
+                  <span className="text-4xl font-bold text-foreground">
                     $499.900
                   </span>
-                  <span className="text-slate-500">/mes</span>
+                  <span className="text-muted-foreground">/mes</span>
                 </div>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   o $4.799.000/año (ahorra 20%)
                 </p>
 
@@ -251,7 +251,7 @@ export default function PricingPage() {
                   ].map((feature, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm text-slate-600">{feature}</span>
+                      <span className="text-sm text-muted-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -262,11 +262,11 @@ export default function PricingPage() {
                       Comenzar prueba gratis
                     </Button>
                   </Link>
-                  <Link href="/contacto" className="block">
+                  <a href="mailto:ventas@arriendofacil.co" className="block">
                     <Button variant="outline" className="w-full">
                       Contactar ventas
                     </Button>
-                  </Link>
+                  </a>
                 </div>
               </div>
             </div>
@@ -275,9 +275,9 @@ export default function PricingPage() {
       )}
 
       {/* Value props */}
-      <section className="py-16 px-4 bg-white border-t border-slate-100">
+      <section className="py-16 px-4 bg-white border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-semibold text-slate-900 text-center mb-12">
+          <h2 className="text-2xl font-semibold text-foreground text-center mb-12">
             Por que elegir Arriendo Facil
           </h2>
 
@@ -302,9 +302,9 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ section */}
-      <section className="py-16 px-4 border-t border-slate-100">
+      <section className="py-16 px-4 border-t border-border">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-semibold text-slate-900 text-center mb-8">
+          <h2 className="text-2xl font-semibold text-foreground text-center mb-8">
             Preguntas frecuentes
           </h2>
 
@@ -330,12 +330,12 @@ export default function PricingPage() {
       </section>
 
       {/* CTA section */}
-      <section className="py-16 px-4 bg-slate-900">
+      <section className="py-16 px-4 bg-foreground">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl font-semibold text-white mb-4">
             Listo para empezar?
           </h2>
-          <p className="text-slate-400 mb-8">
+          <p className="text-muted-foreground mb-8">
             Crea tu cuenta gratis y comienza a encontrar los mejores inquilinos
             hoy.
           </p>
@@ -345,15 +345,15 @@ export default function PricingPage() {
                 Comenzar gratis
               </Button>
             </Link>
-            <Link href="/contacto">
+            <a href="mailto:ventas@arriendofacil.co">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-slate-700 text-white hover:bg-slate-800"
+                className="w-full sm:w-auto border-foreground text-white hover:bg-foreground"
               >
                 Contactar ventas
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -385,15 +385,15 @@ function UserTypeButton({
       className={cn(
         'flex-1 flex flex-col items-center gap-1 px-4 py-3 rounded-sm transition-all text-center',
         selected
-          ? 'bg-white shadow-sm text-slate-900'
-          : 'text-slate-600 hover:text-slate-900'
+          ? 'bg-white shadow-sm text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
       )}
     >
       <div className="flex items-center gap-2">
         {icon}
         <span className="font-medium text-sm">{label}</span>
       </div>
-      <span className="text-xs text-slate-500">{description}</span>
+      <span className="text-xs text-muted-foreground">{description}</span>
     </button>
   );
 }
@@ -409,9 +409,9 @@ function BenefitCard({
   description: string;
 }) {
   return (
-    <div className="rounded-sm border border-slate-200 bg-white p-6">
-      <h4 className="font-semibold text-slate-900">{title}</h4>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+    <div className="rounded-sm border border-border bg-white p-6">
+      <h4 className="font-semibold text-foreground">{title}</h4>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -433,8 +433,8 @@ function ValueProp({
       <div className="w-12 h-12 rounded-sm bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
-      <p className="text-slate-600 text-sm">{description}</p>
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm">{description}</p>
     </div>
   );
 }
@@ -450,12 +450,12 @@ function FAQItem({
   answer: string;
 }) {
   return (
-    <div className="bg-white rounded-sm border border-slate-100 p-6">
+    <div className="bg-white rounded-sm border border-border p-6">
       <div className="flex gap-3">
         <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <div>
-          <h3 className="font-medium text-slate-900 mb-2">{question}</h3>
-          <p className="text-sm text-slate-600">{answer}</p>
+          <h3 className="font-medium text-foreground mb-2">{question}</h3>
+          <p className="text-sm text-muted-foreground">{answer}</p>
         </div>
       </div>
     </div>

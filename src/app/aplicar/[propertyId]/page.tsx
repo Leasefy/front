@@ -49,12 +49,12 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // 404 handling
   if (!property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Propiedad no encontrada
           </h1>
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-muted-foreground">
             La propiedad que buscas no existe o ha sido removida.
           </p>
           <Link href="/propiedades">
@@ -71,12 +71,12 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Property not available for applications
   if (property.status !== 'available') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Propiedad no disponible
           </h1>
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-muted-foreground">
             Esta propiedad ya no esta disponible para aplicaciones.
           </p>
           <Link href="/propiedades">

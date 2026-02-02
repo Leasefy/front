@@ -66,7 +66,7 @@ export default function UpgradePage() {
         {/* Back link */}
         <Link
           href="/panel"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al panel
@@ -74,8 +74,8 @@ export default function UpgradePage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Mejora tu plan</h1>
-          <p className="text-slate-600 mt-2">
+          <h1 className="text-2xl font-bold text-foreground">Mejora tu plan</h1>
+          <p className="text-muted-foreground mt-2">
             Plan actual:{' '}
             <Badge variant="secondary" className="ml-1">
               {currentPlan.name}
@@ -84,16 +84,16 @@ export default function UpgradePage() {
         </div>
 
         {/* Current plan summary */}
-        <div className="bg-white rounded-sm border border-slate-200 p-6 mb-8">
+        <div className="bg-white rounded-sm border border-border p-6 mb-8">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-slate-600" />
+            <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold text-slate-900">
+              <h2 className="font-semibold text-foreground">
                 Tu suscripcion actual
               </h2>
-              <p className="text-sm text-slate-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Estas en el plan{' '}
                 <span className="font-medium">{currentPlan.name}</span>.
                 {currentPlan.price.monthly > 0 && (
@@ -136,10 +136,10 @@ export default function UpgradePage() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-foreground">
                     Seleccionaste el plan {newPlan.name}
                   </p>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {billingCycle === 'yearly'
                       ? `${formatCurrency(newPlan.price.yearly)}/ano (ahorras ${getYearlySavings(newPlan)}%)`
                       : `${formatCurrency(newPlan.price.monthly)}/mes`}
@@ -187,7 +187,7 @@ export default function UpgradePage() {
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Pago seguro. Puedes cancelar en cualquier momento.
           </p>
           <div className="flex items-center justify-center gap-4 mt-4">
@@ -207,7 +207,7 @@ export default function UpgradePage() {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <span className="text-xs text-slate-400">PSE</span>
+            <span className="text-xs text-muted-foreground">PSE</span>
           </div>
         </div>
       </div>

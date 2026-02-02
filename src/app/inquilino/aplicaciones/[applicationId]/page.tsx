@@ -44,7 +44,7 @@ export default function ApplicationDetailPage() {
     return (
       <div className="min-h-screen bg-plan-page flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-plan-muted" />
           </div>
           <h2 className="text-lg font-semibold text-plan-primary mb-2">
@@ -111,7 +111,7 @@ export default function ApplicationDetailPage() {
       case 'rejected':
         return <XCircle className="w-4 h-4 text-red-500" />;
       case 'withdrawn':
-        return <XCircle className="w-4 h-4 text-slate-500" />;
+        return <XCircle className="w-4 h-4 text-muted-foreground" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -150,7 +150,7 @@ export default function ApplicationDetailPage() {
                   </h1>
                   <button
                     onClick={copyTrackingCode}
-                    className="p-1.5 rounded-sm hover:bg-gray-100 text-plan-secondary transition-colors"
+                    className="p-1.5 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
                     title="Copiar codigo"
                   >
                     {copied ? (
@@ -200,9 +200,9 @@ export default function ApplicationDetailPage() {
                 <h2 className="font-semibold text-plan-primary">Propiedad</h2>
               </div>
               <Link href={`/propiedades/${property.id}`}>
-                <div className="p-5 hover:bg-gray-50 transition-colors">
+                <div className="p-5 hover:bg-muted transition-colors">
                   <div className="flex gap-4">
-                    <div className="relative w-24 h-24 overflow-hidden flex-shrink-0 bg-gray-100">
+                    <div className="relative w-24 h-24 overflow-hidden flex-shrink-0 bg-muted">
                       <Image
                         src={property.images[0]}
                         alt={property.title}
@@ -240,7 +240,7 @@ export default function ApplicationDetailPage() {
               <div className="p-5">
                 <div className="relative">
                   {/* Timeline line */}
-                  <div className="absolute left-4 top-2 bottom-2 w-px bg-gray-200" />
+                  <div className="absolute left-4 top-2 bottom-2 w-px bg-muted" />
 
                   {/* Events */}
                   <div className="space-y-6">
@@ -251,7 +251,7 @@ export default function ApplicationDetailPage() {
                           className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
                             index === 0
                               ? 'bg-plan-primary text-white'
-                              : 'bg-gray-100 text-plan-secondary'
+                              : 'bg-muted text-plan-secondary'
                           }`}
                         >
                           {getEventIcon(event.type)}

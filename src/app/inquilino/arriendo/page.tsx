@@ -105,11 +105,11 @@ export default function ArriendoPage() {
                   <Link
                     key={lease.id}
                     href={`/inquilino/arriendo/${lease.id}`}
-                    className="block group p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="block group p-5 hover:bg-muted transition-colors cursor-pointer"
                   >
                     <div className="flex flex-col lg:flex-row gap-5">
                       {/* Image */}
-                      <div className="relative w-full lg:w-40 h-32 rounded-sm overflow-hidden flex-shrink-0 bg-gray-100">
+                      <div className="relative w-full lg:w-40 h-32 rounded-sm overflow-hidden flex-shrink-0 bg-muted">
                         <Image
                           src={lease.propertyThumbnail}
                           alt={lease.propertyTitle}
@@ -195,7 +195,7 @@ export default function ArriendoPage() {
 
                         {/* Next Payment */}
                         {nextPayment && (
-                          <div className="flex items-center justify-between mt-4 p-3 bg-gray-50 rounded-sm">
+                          <div className="flex items-center justify-between mt-4 p-3 bg-muted rounded-sm">
                             <div>
                               <p className="text-xs text-plan-secondary">Proximo pago</p>
                               <p className="text-sm font-medium text-plan-primary">
@@ -216,7 +216,7 @@ export default function ArriendoPage() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <Home className="w-8 h-8 text-plan-muted" />
               </div>
               <h3 className="font-medium text-plan-primary mb-2">
@@ -227,7 +227,7 @@ export default function ArriendoPage() {
               </p>
               <Link
                 href="/propiedades"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
               >
                 Explorar propiedades
                 <ArrowUpRight className="w-4 h-4" />

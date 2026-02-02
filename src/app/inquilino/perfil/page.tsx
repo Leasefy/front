@@ -86,7 +86,7 @@ export default function PerfilPage() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-foreground/80 transition-colors disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 {isSaving ? 'Guardando...' : 'Guardar cambios'}
@@ -95,7 +95,7 @@ export default function PerfilPage() {
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-foreground/80 transition-colors"
             >
               Editar perfil
             </button>
@@ -114,7 +114,7 @@ export default function PerfilPage() {
                     {formData.name.charAt(0).toUpperCase()}
                   </div>
                   {isEditing && (
-                    <button className="absolute bottom-0 right-0 p-2 bg-plan-primary rounded-full text-white hover:bg-gray-700 transition-colors">
+                    <button className="absolute bottom-0 right-0 p-2 bg-plan-primary rounded-full text-white hover:bg-foreground/80 transition-colors">
                       <Camera className="w-4 h-4" />
                     </button>
                   )}
@@ -160,7 +160,7 @@ export default function PerfilPage() {
                   { key: 'employment', label: 'Empleo verificado', verified: verificationStatus.employment },
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between py-2">
-                    <span className="text-sm text-gray-700">{item.label}</span>
+                    <span className="text-sm text-foreground">{item.label}</span>
                     {item.verified ? (
                       <span className="flex items-center gap-1 text-xs font-medium text-green-800">
                         <CheckCircle className="w-4 h-4" />
@@ -184,7 +184,7 @@ export default function PerfilPage() {
               <h3 className="font-semibold text-plan-primary mb-6">Información Personal</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Nombre completo
                   </label>
                   {isEditing ? (
@@ -195,7 +195,7 @@ export default function PerfilPage() {
                       className="w-full px-4 py-2.5  border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                       <User className="w-4 h-4 text-plan-muted" />
                       <span className="text-sm text-plan-primary">{formData.name}</span>
                     </div>
@@ -203,17 +203,17 @@ export default function PerfilPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     RUT
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                     <Shield className="w-4 h-4 text-plan-muted" />
                     <span className="text-sm text-plan-primary">{formData.rut}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Email
                   </label>
                   {isEditing ? (
@@ -224,7 +224,7 @@ export default function PerfilPage() {
                       className="w-full px-4 py-2.5  border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                       <Mail className="w-4 h-4 text-plan-muted" />
                       <span className="text-sm text-plan-primary">{formData.email}</span>
                     </div>
@@ -232,7 +232,7 @@ export default function PerfilPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Teléfono
                   </label>
                   {isEditing ? (
@@ -243,7 +243,7 @@ export default function PerfilPage() {
                       className="w-full px-4 py-2.5  border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                       <Phone className="w-4 h-4 text-plan-muted" />
                       <span className="text-sm text-plan-primary">{formData.phone}</span>
                     </div>
@@ -251,7 +251,7 @@ export default function PerfilPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Fecha de nacimiento
                   </label>
                   {isEditing ? (
@@ -262,7 +262,7 @@ export default function PerfilPage() {
                       className="w-full px-4 py-2.5  border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                       <Calendar className="w-4 h-4 text-plan-muted" />
                       <span className="text-sm text-plan-primary">
                         {new Date(formData.birthDate).toLocaleDateString('es-CL', {
@@ -276,7 +276,7 @@ export default function PerfilPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Dirección
                   </label>
                   {isEditing ? (
@@ -287,7 +287,7 @@ export default function PerfilPage() {
                       className="w-full px-4 py-2.5  border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                       <MapPin className="w-4 h-4 text-plan-muted" />
                       <span className="text-sm text-plan-primary">{formData.address}</span>
                     </div>
@@ -300,7 +300,7 @@ export default function PerfilPage() {
             <div className="bg-white  border border-plan-border p-6">
               <h3 className="font-semibold text-plan-primary mb-6">Contacto de Emergencia</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Nombre y teléfono
                 </label>
                 {isEditing ? (
@@ -312,7 +312,7 @@ export default function PerfilPage() {
                     placeholder="Nombre - Teléfono"
                   />
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 ">
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-muted ">
                     <Phone className="w-4 h-4 text-plan-muted" />
                     <span className="text-sm text-plan-primary">{formData.emergencyContact}</span>
                   </div>

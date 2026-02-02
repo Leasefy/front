@@ -176,7 +176,7 @@ export default function ConfiguracionPage() {
                 Notificaciones
               </h2>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               <SettingToggle
                 icon={Mail}
                 title="Notificaciones por email"
@@ -223,7 +223,7 @@ export default function ConfiguracionPage() {
                 Seguridad
               </h2>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               <SettingToggle
                 icon={Key}
                 title="Autenticación de dos factores"
@@ -254,7 +254,7 @@ export default function ConfiguracionPage() {
                 Preferencias
               </h2>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               <SettingToggle
                 icon={Moon}
                 title="Modo oscuro"
@@ -264,7 +264,7 @@ export default function ConfiguracionPage() {
               />
               <div className="flex items-center justify-between px-6 py-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center">
                     <Globe className="w-5 h-5 text-plan-secondary" />
                   </div>
                   <div>
@@ -292,7 +292,7 @@ export default function ConfiguracionPage() {
                 Datos y Privacidad
               </h2>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               <SettingLink
                 icon={Download}
                 title="Descargar mis datos"
@@ -341,7 +341,7 @@ export default function ConfiguracionPage() {
       <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña actual</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Contraseña actual</label>
             <input
               type="password"
               value={passwordForm.current}
@@ -351,7 +351,7 @@ export default function ConfiguracionPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nueva contraseña</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Nueva contraseña</label>
             <input
               type="password"
               value={passwordForm.new}
@@ -361,7 +361,7 @@ export default function ConfiguracionPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmar contraseña</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Confirmar contraseña</label>
             <input
               type="password"
               value={passwordForm.confirm}
@@ -373,14 +373,14 @@ export default function ConfiguracionPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
             >
               Cancelar
             </button>
             <button
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
@@ -433,7 +433,7 @@ export default function ConfiguracionPage() {
           <p className="text-sm text-plan-secondary">
             Prepararemos un archivo con toda tu información personal, incluyendo:
           </p>
-          <ul className="text-sm text-gray-700 space-y-2">
+          <ul className="text-sm text-foreground space-y-2">
             <li className="flex items-center gap-2">
               <Check className="w-4 h-4 text-plan-status-green" />
               Información de perfil
@@ -457,14 +457,14 @@ export default function ConfiguracionPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowDownloadModal(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
             >
               Cancelar
             </button>
             <button
               onClick={handleDownloadData}
               disabled={isLoading}
-              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {isLoading ? 'Procesando...' : 'Solicitar datos'}
@@ -489,14 +489,14 @@ export default function ConfiguracionPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
+                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleEnable2FA}
                   disabled={isLoading}
-                  className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                   {isLoading ? 'Activando...' : 'Activar 2FA'}
@@ -542,7 +542,7 @@ export default function ConfiguracionPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-1.5">
               Escribe <span className="font-bold">ELIMINAR</span> para confirmar
             </label>
             <input
@@ -559,7 +559,7 @@ export default function ConfiguracionPage() {
                 setShowDeleteModal(false);
                 setDeleteConfirmText('');
               }}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-gray-50"
+              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
             >
               Cancelar
             </button>
@@ -595,7 +595,7 @@ function SettingToggle({
   return (
     <div className="flex items-center justify-between px-6 py-4">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center">
           <Icon className="w-5 h-5 text-plan-secondary" />
         </div>
         <div>
@@ -609,7 +609,7 @@ function SettingToggle({
         aria-checked={enabled}
         className={cn(
           'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-plan-primary focus-visible:ring-offset-2',
-          enabled ? 'bg-plan-primary' : 'bg-gray-300'
+          enabled ? 'bg-plan-primary' : 'bg-border'
         )}
       >
         <span
@@ -638,10 +638,10 @@ function SettingLink({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+      className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted transition-colors"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center">
           <Icon className="w-5 h-5 text-plan-secondary" />
         </div>
         <div className="text-left">

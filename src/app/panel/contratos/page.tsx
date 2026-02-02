@@ -124,7 +124,7 @@ export default function ContratosPage() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-plan-muted" />
               </div>
               <h3 className="font-medium text-plan-primary mb-2">
@@ -138,7 +138,7 @@ export default function ContratosPage() {
               </p>
               <Link
                 href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
               >
                 <Building2 className="w-4 h-4" />
                 Ver mis propiedades

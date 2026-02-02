@@ -59,30 +59,30 @@ export default function ScoreDemoPage() {
 
   if (!selectedCandidate) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-600">Candidato no encontrado</p>
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <p className="text-muted-foreground">Candidato no encontrado</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-border sticky top-0 z-10">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/" className="text-slate-500 hover:text-slate-700">
+              <Link href="/" className="text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">
+                <h1 className="text-lg font-semibold text-foreground">
                   Risk Score Display
                 </h1>
-                <p className="text-sm text-slate-500">Demo interactivo</p>
+                <p className="text-sm text-muted-foreground">Demo interactivo</p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3" />
               <span>Pagina de desarrollo</span>
             </div>
@@ -96,7 +96,7 @@ export default function ScoreDemoPage() {
         <section className="space-y-4">
           {/* Candidate Selector */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-foreground">
               Seleccionar candidato
             </label>
             <CandidateSelector
@@ -119,11 +119,11 @@ export default function ScoreDemoPage() {
 
         {/* Risk Score Display */}
         <section className="space-y-2">
-          <h2 className="text-sm font-medium text-slate-700">
+          <h2 className="text-sm font-medium text-foreground">
             Vista previa
           </h2>
 
-          <div className="bg-white rounded-sm border border-slate-200 p-4 md:p-6">
+          <div className="bg-white rounded-sm border border-border p-4 md:p-6">
             <RiskScoreDisplay
               key={animationKey}
               candidate={selectedCandidate}
@@ -135,7 +135,7 @@ export default function ScoreDemoPage() {
 
         {/* Quick Level Navigation */}
         <section className="space-y-2">
-          <h2 className="text-sm font-medium text-slate-700">
+          <h2 className="text-sm font-medium text-foreground">
             Saltar a nivel
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -174,11 +174,11 @@ export default function ScoreDemoPage() {
         </section>
 
         {/* Integration Notes */}
-        <section className="mt-8 pt-6 border-t border-slate-200">
-          <h2 className="text-sm font-medium text-slate-700 mb-3">
+        <section className="mt-8 pt-6 border-t border-border">
+          <h2 className="text-sm font-medium text-foreground mb-3">
             Notas de integracion (Fase 5)
           </h2>
-          <div className="bg-slate-100 rounded-sm p-4 text-sm text-slate-600 space-y-2">
+          <div className="bg-muted rounded-sm p-4 text-sm text-muted-foreground space-y-2">
             <p>
               <strong>Import patterns:</strong>
             </p>
@@ -200,7 +200,7 @@ import {
         </section>
 
         {/* Footer */}
-        <footer className="text-center text-xs text-slate-500 py-6 border-t border-slate-200">
+        <footer className="text-center text-xs text-muted-foreground py-6 border-t border-border">
           <p>
             Esta pagina de demo valida que la Fase 4 esta completa.
             <br />

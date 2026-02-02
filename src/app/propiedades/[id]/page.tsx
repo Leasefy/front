@@ -150,14 +150,14 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                           e.stopPropagation();
                           openGallery(0);
                         }}
-                        className="absolute bottom-4 right-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-md hover:bg-gray-100 transition-colors shadow-sm"
+                        className="absolute bottom-4 right-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-md hover:bg-muted transition-colors shadow-sm"
                       >
                         Ver todas las imagenes ({property.images.length})
                       </span>
                     )}
                   </button>
                 ) : (
-                  <div className="relative overflow-hidden rounded-lg bg-gray-100" />
+                  <div className="relative overflow-hidden rounded-lg bg-muted" />
                 )}
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               {/* Map Placeholder */}
               <div className="mt-12">
                 <h2 className="text-sm font-medium text-black mb-4">Mapa de ubicacion</h2>
-                <div className="aspect-[16/9] bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="aspect-[16/9] bg-muted rounded-lg flex items-center justify-center">
                   <span className="text-sm text-black/40">Mapa proximamente</span>
                 </div>
               </div>

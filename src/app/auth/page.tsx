@@ -22,13 +22,13 @@ const PROPERTY_IMAGE =
 function AuthFormFallback() {
   return (
     <div className="w-full max-w-md animate-pulse">
-      <div className="h-8 bg-gray-200 rounded mb-4 mx-auto w-48" />
-      <div className="h-4 bg-gray-200 rounded mb-8 mx-auto w-32" />
+      <div className="h-8 bg-muted rounded mb-4 mx-auto w-48" />
+      <div className="h-4 bg-muted rounded mb-8 mx-auto w-32" />
       <div className="space-y-4">
-        <div className="h-10 bg-gray-200 rounded" />
-        <div className="h-10 bg-gray-200 rounded" />
-        <div className="h-10 bg-gray-200 rounded" />
-        <div className="h-10 bg-gray-200 rounded" />
+        <div className="h-10 bg-muted rounded" />
+        <div className="h-10 bg-muted rounded" />
+        <div className="h-10 bg-muted rounded" />
+        <div className="h-10 bg-muted rounded" />
       </div>
     </div>
   );

@@ -404,9 +404,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       title: 'Documentos del Candidato',
       content: (
         <div className="space-y-3">
-          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasIdDocument ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasIdDocument ? 'bg-emerald-50' : 'bg-muted'}`}>
             <div className="flex items-center gap-3">
-              <FileText className={`w-5 h-5 ${selectedCandidate.hasIdDocument ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <FileText className={`w-5 h-5 ${selectedCandidate.hasIdDocument ? 'text-emerald-600' : 'text-muted-foreground'}`} />
               <div>
                 <p className="text-sm font-medium text-plan-primary">Documento de identidad</p>
                 <p className="text-xs text-plan-secondary">Cédula de ciudadanía</p>
@@ -415,12 +415,12 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             {selectedCandidate.hasIdDocument ? (
               <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
             ) : (
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">Pendiente</span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
             )}
           </div>
-          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasIncomeProof ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasIncomeProof ? 'bg-emerald-50' : 'bg-muted'}`}>
             <div className="flex items-center gap-3">
-              <FileText className={`w-5 h-5 ${selectedCandidate.hasIncomeProof ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <FileText className={`w-5 h-5 ${selectedCandidate.hasIncomeProof ? 'text-emerald-600' : 'text-muted-foreground'}`} />
               <div>
                 <p className="text-sm font-medium text-plan-primary">Comprobante de ingresos</p>
                 <p className="text-xs text-plan-secondary">Últimos 3 meses</p>
@@ -429,12 +429,12 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             {selectedCandidate.hasIncomeProof ? (
               <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
             ) : (
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">Pendiente</span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
             )}
           </div>
-          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasEmploymentLetter ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasEmploymentLetter ? 'bg-emerald-50' : 'bg-muted'}`}>
             <div className="flex items-center gap-3">
-              <FileText className={`w-5 h-5 ${selectedCandidate.hasEmploymentLetter ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <FileText className={`w-5 h-5 ${selectedCandidate.hasEmploymentLetter ? 'text-emerald-600' : 'text-muted-foreground'}`} />
               <div>
                 <p className="text-sm font-medium text-plan-primary">Carta laboral</p>
                 <p className="text-xs text-plan-secondary">Certificación de empleo</p>
@@ -443,12 +443,12 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             {selectedCandidate.hasEmploymentLetter ? (
               <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
             ) : (
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">Pendiente</span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
             )}
           </div>
-          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasBankStatements ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+          <div className={`flex items-center justify-between p-3 rounded ${selectedCandidate.hasBankStatements ? 'bg-emerald-50' : 'bg-muted'}`}>
             <div className="flex items-center gap-3">
-              <FileText className={`w-5 h-5 ${selectedCandidate.hasBankStatements ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <FileText className={`w-5 h-5 ${selectedCandidate.hasBankStatements ? 'text-emerald-600' : 'text-muted-foreground'}`} />
               <div>
                 <p className="text-sm font-medium text-plan-primary">Extractos bancarios</p>
                 <p className="text-xs text-plan-secondary">Últimos 3 meses</p>
@@ -457,11 +457,11 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             {selectedCandidate.hasBankStatements ? (
               <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
             ) : (
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">Pendiente</span>
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
             )}
           </div>
           {/* Summary */}
-          <div className="mt-4 p-3 bg-gray-100 rounded">
+          <div className="mt-4 p-3 bg-muted rounded">
             <p className="text-sm text-plan-secondary">
               <span className="font-medium text-plan-primary">
                 {[selectedCandidate.hasIdDocument, selectedCandidate.hasIncomeProof, selectedCandidate.hasEmploymentLetter, selectedCandidate.hasBankStatements].filter(Boolean).length}
@@ -477,7 +477,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       content: (
         <div className="space-y-5">
           {/* Score Summary */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <PlanRiskBadge level={selectedCandidate.riskLevel} />
@@ -510,7 +510,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 {selectedCandidate.riskScore.categories.map((cat) => (
                   <div key={cat.name}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700">{cat.label}</span>
+                      <span className="text-sm text-foreground">{cat.label}</span>
                       <span className="text-sm font-medium text-plan-primary">{cat.score}%</span>
                     </div>
                     <PlanProgressBar
@@ -536,7 +536,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               </p>
               <ul className="space-y-1.5">
                 {selectedCandidate.riskScore.drivers.slice(0, 4).map((driver, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {driver}
                   </li>
@@ -581,7 +581,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               </p>
               <ul className="space-y-2">
                 {selectedCandidate.riskScore.suggestedConditions.map((cond) => (
-                  <li key={cond.id} className="text-sm bg-gray-100 p-2 rounded">
+                  <li key={cond.id} className="text-sm bg-muted p-2 rounded">
                     <p className="font-medium text-plan-primary">{cond.condition}</p>
                     <p className="text-xs text-plan-secondary mt-0.5">{cond.reason}</p>
                   </li>
@@ -629,7 +629,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       <div className="min-h-screen bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-plan-muted" />
             </div>
             <h1 className="text-xl font-semibold text-plan-primary mb-2">
@@ -640,7 +640,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             </p>
             <Link
               href="/panel"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver al panel
@@ -668,7 +668,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <header className="mb-8">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Property Image */}
-            <div className="relative w-full lg:w-64 h-40 rounded-sm overflow-hidden flex-shrink-0 bg-gray-100">
+            <div className="relative w-full lg:w-64 h-40 rounded-sm overflow-hidden flex-shrink-0 bg-muted">
               <Image
                 src={property.thumbnailUrl}
                 alt={property.title}

@@ -56,7 +56,7 @@ function CheckoutContent() {
         {/* Back link */}
         <Link
           href="/panel/upgrade"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a planes
@@ -64,12 +64,12 @@ function CheckoutContent() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
             Checkout
           </h1>
-          <p className="text-slate-600">
+          <p className="text-muted-foreground">
             Estas por suscribirte al plan{' '}
-            <span className="font-medium text-slate-900">{plan.name}</span>
+            <span className="font-medium text-foreground">{plan.name}</span>
           </p>
         </div>
 
@@ -77,28 +77,28 @@ function CheckoutContent() {
           {/* Main form column */}
           <div className="lg:col-span-3 space-y-6">
             {/* Plan summary card */}
-            <div className="bg-white rounded-sm border border-slate-200 p-5">
+            <div className="bg-white rounded-sm border border-border p-5">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
                   <Building2 className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-slate-900">
+                  <h2 className="font-semibold text-foreground">
                     Plan {plan.name}
                   </h2>
-                  <p className="text-sm text-slate-600 mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {plan.description}
                   </p>
                   <ul className="mt-3 space-y-1.5">
                     {includedFeatures.map((feature) => (
                       <li
                         key={feature.id}
-                        className="flex items-center gap-2 text-sm text-slate-600"
+                        className="flex items-center gap-2 text-sm text-muted-foreground"
                       >
                         <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{feature.name}</span>
                         {feature.limit && feature.limit !== 'unlimited' && (
-                          <span className="text-slate-400">
+                          <span className="text-muted-foreground">
                             (hasta {feature.limit})
                           </span>
                         )}
@@ -110,8 +110,8 @@ function CheckoutContent() {
             </div>
 
             {/* Billing cycle selector */}
-            <div className="bg-white rounded-sm border border-slate-200 p-5">
-              <label className="text-sm font-medium text-slate-700 mb-3 block">
+            <div className="bg-white rounded-sm border border-border p-5">
+              <label className="text-sm font-medium text-foreground mb-3 block">
                 Ciclo de facturacion
               </label>
               <div className="flex gap-3">
@@ -121,16 +121,16 @@ function CheckoutContent() {
                     'flex-1 p-4 rounded-sm border text-sm font-medium transition-colors text-left',
                     billingCycle === 'monthly'
                       ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                      : 'border-border text-muted-foreground hover:border-border'
                   )}
                 >
                   <span className="block">Mensual</span>
                   <span className={cn(
                     'block mt-1 text-lg font-bold',
-                    billingCycle === 'monthly' ? 'text-primary' : 'text-slate-900'
+                    billingCycle === 'monthly' ? 'text-primary' : 'text-foreground'
                   )}>
                     {formatCurrency(plan.price.monthly)}
-                    <span className="text-sm font-normal text-slate-500">/mes</span>
+                    <span className="text-sm font-normal text-muted-foreground">/mes</span>
                   </span>
                 </button>
                 <button
@@ -139,7 +139,7 @@ function CheckoutContent() {
                     'flex-1 p-4 rounded-sm border text-sm font-medium transition-colors text-left relative',
                     billingCycle === 'yearly'
                       ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                      : 'border-border text-muted-foreground hover:border-border'
                   )}
                 >
                   <span className="absolute -top-2.5 right-3 px-2 py-0.5 text-xs font-medium bg-emerald-500 text-white rounded-sm">
@@ -148,17 +148,17 @@ function CheckoutContent() {
                   <span className="block">Anual</span>
                   <span className={cn(
                     'block mt-1 text-lg font-bold',
-                    billingCycle === 'yearly' ? 'text-primary' : 'text-slate-900'
+                    billingCycle === 'yearly' ? 'text-primary' : 'text-foreground'
                   )}>
                     {formatCurrency(plan.price.yearly)}
-                    <span className="text-sm font-normal text-slate-500">/ano</span>
+                    <span className="text-sm font-normal text-muted-foreground">/ano</span>
                   </span>
                 </button>
               </div>
             </div>
 
             {/* Coupon input */}
-            <div className="bg-white rounded-sm border border-slate-200 p-5">
+            <div className="bg-white rounded-sm border border-border p-5">
               <CouponInput
                 planId={planId}
                 price={price}
@@ -199,16 +199,16 @@ function CheckoutContent() {
               </Button>
 
               {/* Security note */}
-              <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Lock className="w-3 h-3" />
                 <span>Pago seguro procesado por Stripe</span>
               </div>
 
               {/* Trust badges */}
-              <div className="flex items-center justify-center gap-4 pt-4 border-t border-slate-100">
-                <span className="text-xs text-slate-400">Visa</span>
-                <span className="text-xs text-slate-400">Mastercard</span>
-                <span className="text-xs text-slate-400">PSE</span>
+              <div className="flex items-center justify-center gap-4 pt-4 border-t border-border">
+                <span className="text-xs text-muted-foreground">Visa</span>
+                <span className="text-xs text-muted-foreground">Mastercard</span>
+                <span className="text-xs text-muted-foreground">PSE</span>
               </div>
             </div>
           </div>
@@ -216,7 +216,7 @@ function CheckoutContent() {
 
         {/* Bottom trust message */}
         <div className="mt-12 text-center">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Puedes cancelar en cualquier momento. Sin compromisos.
           </p>
         </div>

@@ -410,7 +410,7 @@ export default function CandidatosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar candidato, propiedad u ocupación..."
-                className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                className="w-full h-10 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
 
@@ -425,7 +425,7 @@ export default function CandidatosPage() {
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     riskFilter === level
                       ? 'bg-plan-primary text-white'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
+                      : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >
                   {level === 'all' ? 'Todos' : level}

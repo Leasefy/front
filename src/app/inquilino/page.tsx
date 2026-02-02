@@ -109,7 +109,7 @@ export default function InquilinoPage() {
 
             {/* Active Leases */}
             <section className="bg-white border border-plan-border overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Mis arriendos</h2>
                 {activeLeases.length > 0 && (
                   <Link
@@ -126,9 +126,9 @@ export default function InquilinoPage() {
                 <div className="divide-y divide-plan-border">
                   {activeLeases.slice(0, 2).map((lease) => (
                     <Link key={lease.id} href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group flex gap-4 p-5 hover:bg-gray-50 transition-colors">
+                      <div className="group flex gap-4 p-5 hover:bg-muted transition-colors">
                         {/* Image */}
-                        <div className="relative w-20 h-20 overflow-hidden flex-shrink-0 bg-gray-100">
+                        <div className="relative w-20 h-20 overflow-hidden flex-shrink-0 bg-muted">
                           <Image
                             src={lease.propertyThumbnail}
                             alt={lease.propertyTitle}
@@ -174,7 +174,7 @@ export default function InquilinoPage() {
                 </div>
               ) : (
                 <div className="p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                     <Home className="w-6 h-6 text-plan-muted" />
                   </div>
                   <p className="text-plan-secondary mb-2">No tienes arriendos activos</p>
@@ -187,7 +187,7 @@ export default function InquilinoPage() {
 
             {/* Applications */}
             <section className="bg-white border border-plan-border overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Aplicaciones en proceso</h2>
                 <Link
                   href="/inquilino/aplicaciones"
@@ -217,9 +217,9 @@ export default function InquilinoPage() {
 
                     return (
                       <Link key={application.id} href={`/inquilino/aplicaciones/${application.id}`}>
-                        <div className="group flex items-center justify-between p-5 hover:bg-gray-50 transition-colors">
+                        <div className="group flex items-center justify-between p-5 hover:bg-muted transition-colors">
                           <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-muted flex items-center justify-center flex-shrink-0">
                               <FileText className="w-5 h-5 text-plan-secondary" />
                             </div>
                             <div className="min-w-0">
@@ -291,13 +291,13 @@ export default function InquilinoPage() {
 
             {/* Quick Actions */}
             <div className="bg-white border border-plan-border overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Acciones rapidas</h2>
               </div>
               <div className="p-3">
                 {primaryLease && (
                   <Link href="/inquilino/pagos">
-                    <div className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3 p-3 hover:bg-muted transition-colors">
                       <div className="w-9 h-9 bg-plan-status-green-bg flex items-center justify-center">
                         <CreditCard className="w-5 h-5 text-plan-status-green" />
                       </div>
@@ -309,7 +309,7 @@ export default function InquilinoPage() {
                   </Link>
                 )}
                 <Link href="/inquilino/documentos">
-                  <div className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3 p-3 hover:bg-muted transition-colors">
                     <div className="w-9 h-9 bg-plan-status-purple-bg flex items-center justify-center">
                       <FileText className="w-5 h-5 text-plan-status-purple" />
                     </div>

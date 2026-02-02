@@ -62,13 +62,13 @@ export default function TenantLeasePage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <Home className="w-8 h-8 text-slate-400" />
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            <Home className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">
+          <h1 className="text-xl font-semibold text-foreground mb-2">
             No tienes arriendos activos
           </h1>
-          <p className="text-slate-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             Cuando tengas un contrato de arriendo firmado, podras ver los
             detalles y gestionar tus pagos desde aqui.
           </p>
@@ -90,8 +90,8 @@ export default function TenantLeasePage() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Mi Arriendo</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Mi Arriendo</h1>
+          <p className="text-muted-foreground mt-1">
             Gestiona tu arriendo y pagos mensuales
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function TenantLeasePage() {
         {/* Multiple leases selector */}
         {leases.length > 1 && (
           <div className="mb-6">
-            <label className="text-sm font-medium text-slate-700 mb-2 block">
+            <label className="text-sm font-medium text-foreground mb-2 block">
               Selecciona un arriendo
             </label>
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -111,7 +111,7 @@ export default function TenantLeasePage() {
                     'px-4 py-2 rounded-sm border text-sm whitespace-nowrap transition-colors',
                     activeLease?.id === lease.id
                       ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                      : 'border-border text-muted-foreground hover:border-border'
                   )}
                 >
                   {lease.propertyTitle}
@@ -122,7 +122,7 @@ export default function TenantLeasePage() {
         )}
 
         {/* Lease hero card */}
-        <div className="bg-white rounded-sm border border-slate-100 overflow-hidden mb-6">
+        <div className="bg-white rounded-sm border border-border overflow-hidden mb-6">
           {/* Property image with overlay */}
           <div className="relative h-48 sm:h-56">
             <Image
@@ -159,42 +159,42 @@ export default function TenantLeasePage() {
             {/* Key metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   Renta mensual
                 </p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
+                <p className="text-lg font-bold text-foreground mt-1">
                   {formatCurrency(activeLease.monthlyRent)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   Administracion
                 </p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
+                <p className="text-lg font-bold text-foreground mt-1">
                   {formatCurrency(activeLease.adminFee)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   Dia de pago
                 </p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
+                <p className="text-lg font-bold text-foreground mt-1">
                   Dia {activeLease.paymentDueDay}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   Vence
                 </p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
+                <p className="text-lg font-bold text-foreground mt-1">
                   {formatDate(activeLease.endDate)}
                 </p>
               </div>
             </div>
 
             {/* Contract period */}
-            <div className="flex items-center gap-2 text-sm text-slate-600 mb-6 p-3 bg-slate-50 rounded-sm">
-              <Calendar className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6 p-3 bg-muted rounded-sm">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
               <span>
                 Periodo: {formatDate(activeLease.startDate)} -{' '}
                 {formatDate(activeLease.endDate)}
@@ -202,19 +202,19 @@ export default function TenantLeasePage() {
             </div>
 
             {/* Landlord contact */}
-            <div className="border border-slate-100 rounded-sm p-4 mb-6">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-3">
+            <div className="border border-border rounded-sm p-4 mb-6">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Tu propietario
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                  <User className="w-6 h-6 text-slate-500" />
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <User className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-foreground">
                     {activeLease.landlordName}
                   </p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mt-1">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                     <span className="flex items-center gap-1">
                       <Phone className="w-3 h-3" />
                       {activeLease.landlordPhone}
@@ -257,10 +257,10 @@ export default function TenantLeasePage() {
 
         {/* Next payment card */}
         {nextPayment && (
-          <div className="bg-white rounded-sm border border-slate-100 overflow-hidden mb-6">
+          <div className="bg-white rounded-sm border border-border overflow-hidden mb-6">
             <div className="p-5 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900">Proximo pago</h3>
+                <h3 className="font-semibold text-foreground">Proximo pago</h3>
                 {daysUntilDue <= 5 && daysUntilDue > 0 && (
                   <Badge variant="warning" className="gap-1">
                     <Clock className="w-3 h-3" />
@@ -277,10 +277,10 @@ export default function TenantLeasePage() {
 
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-3xl font-bold text-foreground">
                     {formatCurrency(nextPayment.amount)}
                   </p>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Vence el {formatDate(nextPayment.dueDate)}
                   </p>
                 </div>
@@ -296,7 +296,7 @@ export default function TenantLeasePage() {
 
               {/* Payment method selector - expandable */}
               {showPaymentSection && (
-                <div className="pt-6 border-t border-slate-100">
+                <div className="pt-6 border-t border-border">
                   <PaymentMethodSelector
                     selectedMethod={selectedPaymentMethod}
                     onSelect={setSelectedPaymentMethod}
@@ -316,10 +316,10 @@ export default function TenantLeasePage() {
         )}
 
         {/* Payment history */}
-        <div className="bg-white rounded-sm border border-slate-100 overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-slate-100">
-            <h3 className="font-semibold text-slate-900">Historial de pagos</h3>
-            <p className="text-sm text-slate-500 mt-1">
+        <div className="bg-white rounded-sm border border-border overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-border">
+            <h3 className="font-semibold text-foreground">Historial de pagos</h3>
+            <p className="text-sm text-muted-foreground mt-1">
               Tus pagos de arriendo y depositos
             </p>
           </div>

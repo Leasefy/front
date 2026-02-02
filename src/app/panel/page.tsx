@@ -138,9 +138,9 @@ export default function PanelPage() {
 
                     return (
                       <Link key={property.id} href={`/panel/${property.id}`}>
-                        <div className="group flex gap-4 p-5 hover:bg-gray-50 transition-colors">
+                        <div className="group flex gap-4 p-5 hover:bg-muted transition-colors">
                           {/* Image */}
-                          <div className="relative w-24 h-24 rounded-sm overflow-hidden flex-shrink-0 bg-gray-100">
+                          <div className="relative w-24 h-24 rounded-sm overflow-hidden flex-shrink-0 bg-muted">
                             <Image
                               src={property.thumbnailUrl}
                               alt={property.title}
@@ -222,10 +222,10 @@ export default function PanelPage() {
               {properties.length > 5 && (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 px-5 py-3 border-t border-plan-border text-sm font-medium text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-center gap-2 px-5 py-3 border-t border-plan-border text-sm font-medium text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
                 >
                   Ver todas las propiedades
-                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                     +{properties.length - 5} más
                   </span>
                 </Link>
@@ -233,7 +233,7 @@ export default function PanelPage() {
 
               {properties.length === 0 && (
                 <div className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Building2 className="w-8 h-8 text-plan-muted" />
                   </div>
                   <h3 className="font-medium text-plan-primary mb-2">
@@ -300,7 +300,7 @@ export default function PanelPage() {
                 </h3>
                 <div className="space-y-3">
                   {dashboardData.upcomingEvents.slice(0, 3).map((event, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 rounded-sm hover:bg-gray-50 transition-colors">
+                    <div key={index} className="flex items-center gap-3 p-2 rounded-sm hover:bg-muted transition-colors">
                       <div className="w-2 h-2 rounded-full bg-plan-accent" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-plan-primary truncate">{event.title}</p>

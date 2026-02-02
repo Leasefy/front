@@ -86,10 +86,10 @@ export default function PropiedadesPage() {
               Gestiona tus propiedades publicadas
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors">
+          <Link href="/publicar" className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors">
             <Plus className="w-4 h-4" />
             Nueva Propiedad
-          </button>
+          </Link>
         </div>
 
         {/* Stats */}
@@ -131,7 +131,7 @@ export default function PropiedadesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar propiedad..."
-                className="w-full h-10 pl-10 pr-4 bg-gray-50 border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                className="w-full h-10 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
               />
             </div>
 
@@ -150,7 +150,7 @@ export default function PropiedadesPage() {
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     filterStatus === filter.id
                       ? 'bg-plan-primary text-white'
-                      : 'bg-gray-100 text-plan-secondary hover:bg-gray-200'
+                      : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >
                   {filter.label}
@@ -164,7 +164,7 @@ export default function PropiedadesPage() {
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'grid' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-gray-100'
+                  viewMode === 'grid' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-muted'
                 )}
               >
                 <Grid className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function PropiedadesPage() {
                 onClick={() => setViewMode('list')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'list' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-gray-100'
+                  viewMode === 'list' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-muted'
                 )}
               >
                 <List className="w-4 h-4" />
@@ -195,7 +195,7 @@ export default function PropiedadesPage() {
                     className="bg-white border border-plan-border overflow-hidden group hover:shadow-lg transition-shadow block"
                   >
                     {/* Image */}
-                    <div className="relative h-48 bg-gray-100">
+                    <div className="relative h-48 bg-muted">
                       <Image
                         src={property.thumbnailUrl}
                         alt={property.title}
@@ -290,12 +290,12 @@ export default function PropiedadesPage() {
                     key={property.id}
                     href={`/panel/${property.id}`}
                     className={cn(
-                      'flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors',
+                      'flex items-center gap-4 p-4 hover:bg-muted transition-colors',
                       index !== filteredProperties.length - 1 && 'border-b border-plan-border'
                     )}
                   >
                     {/* Image */}
-                    <div className="relative w-24 h-24 bg-gray-100 flex-shrink-0">
+                    <div className="relative w-24 h-24 bg-muted flex-shrink-0">
                       <Image
                         src={property.thumbnailUrl}
                         alt={property.title}
@@ -342,7 +342,7 @@ export default function PropiedadesPage() {
 
                     {/* Candidates */}
                     {candidates.length > 0 && (
-                      <span className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-sm text-plan-primary">
+                      <span className="flex items-center gap-1 px-3 py-1.5 bg-muted text-sm text-plan-primary">
                         <Users className="w-4 h-4" />
                         {candidates.length}
                       </span>
@@ -377,17 +377,17 @@ export default function PropiedadesPage() {
           )
         ) : (
           <div className="bg-white border border-plan-border py-16 text-center">
-            <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-plan-primary mb-2">
               No tienes propiedades
             </h3>
             <p className="text-plan-secondary mb-4">
               Publica tu primera propiedad para empezar a recibir candidatos
             </p>
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors">
+            <Link href="/publicar" className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors">
               <Plus className="w-4 h-4" />
               Publicar propiedad
-            </button>
+            </Link>
           </div>
         )}
       </div>

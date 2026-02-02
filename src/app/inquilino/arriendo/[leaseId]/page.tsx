@@ -41,14 +41,14 @@ export default function LeaseDetailPage() {
     return (
       <div className="min-h-screen bg-plan-page flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-muted flex items-center justify-center mx-auto mb-4">
             <Home className="w-8 h-8 text-plan-muted" />
           </div>
           <h2 className="text-lg font-semibold text-plan-primary mb-2">Arriendo no encontrado</h2>
           <p className="text-plan-secondary mb-4">El arriendo que buscas no existe o no tienes acceso.</p>
           <Link
             href="/inquilino/arriendo"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver a mis arriendos
@@ -100,7 +100,7 @@ export default function LeaseDetailPage() {
       case 'overdue':
         return { label: 'Vencido', color: 'bg-plan-status-red-bg text-destructive', icon: AlertCircle };
       default:
-        return { label: status, color: 'bg-gray-100 text-plan-secondary', icon: Clock };
+        return { label: status, color: 'bg-muted text-plan-secondary', icon: Clock };
     }
   };
 
@@ -135,7 +135,7 @@ export default function LeaseDetailPage() {
         <div className="bg-white border border-plan-border mb-6">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-gray-100 flex-shrink-0">
+            <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-muted flex-shrink-0">
               <Image
                 src={lease.propertyThumbnail}
                 alt={lease.propertyTitle}
@@ -262,7 +262,7 @@ export default function LeaseDetailPage() {
                     return (
                       <div
                         key={payment.id}
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors"
                       >
                         {/* Icon */}
                         <div className={cn(
@@ -324,7 +324,7 @@ export default function LeaseDetailPage() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-plan-secondary">No hay historial de pagos</p>
                 </div>
               )}
@@ -366,7 +366,7 @@ export default function LeaseDetailPage() {
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
                     >
                       <FileText className="w-4 h-4 text-plan-secondary" />
                       <span className="text-sm text-plan-primary flex-1">Contrato de arriendo</span>
@@ -379,7 +379,7 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
                     >
                       <Shield className="w-4 h-4 text-plan-secondary" />
                       <span className="text-sm text-plan-primary flex-1">Poliza de seguro</span>
@@ -392,7 +392,7 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
                     >
                       <Building2 className="w-4 h-4 text-plan-secondary" />
                       <span className="text-sm text-plan-primary flex-1">Inventario</span>
@@ -411,7 +411,7 @@ export default function LeaseDetailPage() {
               </div>
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-plan-secondary font-medium">
+                  <div className="w-12 h-12 bg-muted flex items-center justify-center text-plan-secondary font-medium">
                     {lease.landlordName.charAt(0)}
                   </div>
                   <div>
@@ -423,14 +423,14 @@ export default function LeaseDetailPage() {
                 <div className="space-y-2">
                   <a
                     href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
                   >
                     <Mail className="w-4 h-4" />
                     {lease.landlordEmail}
                   </a>
                   <a
                     href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
                   >
                     <Phone className="w-4 h-4" />
                     {lease.landlordPhone}
@@ -439,7 +439,7 @@ export default function LeaseDetailPage() {
 
                 <Link
                   href="/inquilino/mensajes"
-                  className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-muted transition-colors"
                 >
                   Enviar mensaje
                   <ArrowUpRight className="w-4 h-4" />
@@ -457,7 +457,7 @@ export default function LeaseDetailPage() {
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-3 py-2 bg-gray-50"
+                    className="flex items-center gap-3 px-3 py-2 bg-muted"
                   >
                     <span className="text-lg">{method.icon}</span>
                     <div className="flex-1">

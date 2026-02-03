@@ -76,11 +76,16 @@ export function PlanProgressBar({
           )}
         </div>
 
-        {/* Black dot at the end - PLan CRM signature */}
+        {/* Dot at the end - matches bar color */}
         {percentage > 0 && (
           <div
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 rounded-full bg-plan-primary',
+              'absolute top-1/2 -translate-y-1/2 rounded-full',
+              variant === 'success' ? 'bg-plan-status-green' :
+              variant === 'warning' ? 'bg-plan-status-yellow' :
+              variant === 'danger' ? 'bg-plan-status-red' :
+              variant === 'muted' ? 'bg-plan-muted' :
+              'bg-emerald-600',
               size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-2.5 h-2.5' : 'w-3 h-3'
             )}
             style={{

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 /**
  * CTASection - Luxterra pixel-perfect clone
@@ -17,8 +18,8 @@ export function CTASection() {
     <section className="relative overflow-hidden">
       {/* Background Image */}
       <Image
-        src="https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1600"
-        alt="Interior moderno de lujo"
+        src="/cta-house.jpg"
+        alt="Casa moderna con arquitectura contemporánea"
         fill
         className="object-cover"
         priority
@@ -79,32 +80,9 @@ export function CTASection() {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <a
-            href="mailto:info@arriendofacil.co"
-            className="inline-flex items-center h-[50px] rounded-sm bg-white text-primary text-[15px] tracking-[-0.15px] leading-[20px] hover:bg-white/90 transition-colors group/btn overflow-hidden"
-          >
-            {/* Arrow icon container - black background */}
-            <span className="flex items-center justify-center w-[50px] h-full bg-primary rounded-l-[2px]">
-              <svg
-                className="w-4 h-4 text-white transition-transform duration-300 group-hover/btn:translate-x-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </span>
-            {/* Button text */}
-            <span className="px-[20px] relative overflow-hidden h-[20px]">
-              <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
-                Contactanos
-              </span>
-              <span className="block absolute top-full transition-transform duration-300 group-hover/btn:-translate-y-full">
-                Contactanos
-              </span>
-            </span>
-          </a>
+          <Button variant="white" size="lg" asChild>
+            <a href="mailto:info@arriendofacil.co">Contactanos</a>
+          </Button>
         </motion.div>
       </div>
     </section>

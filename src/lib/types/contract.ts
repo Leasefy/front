@@ -10,7 +10,7 @@
 /**
  * Types of rental contracts
  */
-export type ContractType = 'basico' | 'amoblado' | 'compartido';
+export type ContractType = 'basico' | 'amoblado' | 'compartido' | 'custom';
 
 /**
  * Contract status throughout the signing flow
@@ -39,6 +39,7 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   basico: 'Contrato Basico',
   amoblado: 'Contrato Amoblado',
   compartido: 'Contrato Compartido',
+  custom: 'Contrato Propio',
 };
 
 /**
@@ -48,6 +49,7 @@ export const CONTRACT_TYPE_DESCRIPTIONS: Record<ContractType, string> = {
   basico: 'Arriendo estandar sin muebles. Ideal para inquilinos que tienen sus propios muebles.',
   amoblado: 'Arriendo con muebles incluidos. Incluye inventario detallado de bienes.',
   compartido: 'Arriendo de habitacion con areas comunes compartidas.',
+  custom: 'Sube tu propio contrato en formato PDF. Se usara como base para el proceso de firma.',
 };
 
 /**
@@ -67,11 +69,11 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
  */
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   draft: 'bg-muted text-foreground',
-  pending_landlord: 'bg-amber-100 text-amber-700',
-  pending_tenant: 'bg-blue-100 text-blue-700',
-  active: 'bg-emerald-100 text-emerald-700',
+  pending_landlord: 'bg-plan-status-yellow-bg text-plan-status-yellow',
+  pending_tenant: 'bg-plan-status-blue-bg text-plan-status-blue',
+  active: 'bg-plan-status-green-bg text-plan-status-green',
   expired: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-red-100 text-red-700',
+  cancelled: 'bg-plan-status-red-bg text-plan-status-red',
 };
 
 // ============================================================================

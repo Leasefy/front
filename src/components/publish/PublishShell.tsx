@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check, Loader2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
@@ -11,6 +11,7 @@ interface PublishShellProps {
 }
 
 export function PublishShell({ children }: PublishShellProps) {
+  const router = useRouter();
   const {
     currentStep,
     totalSteps,
@@ -38,30 +39,31 @@ export function PublishShell({ children }: PublishShellProps) {
   return (
     <div className="min-h-screen bg-muted">
       {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-10 bg-white border-b border-black/5">
+      <header className="lg:hidden sticky top-0 z-10 bg-card border-b border-border">
         <div className="px-4 py-3">
-          <Link
-            href="/"
-            className="inline-flex items-center text-sm text-black/60 hover:text-black transition-colors"
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Cancelar
-          </Link>
+          </button>
         </div>
 
         {/* Mobile progress */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-black">
+            <span className="text-xs font-medium text-foreground">
               Paso {currentStep} de {totalSteps}
             </span>
-            <span className="text-xs text-black/50">
+            <span className="text-xs text-muted-foreground">
               {currentStepConfig?.label}
             </span>
           </div>
           <div className="h-1 bg-black/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-black transition-all duration-500"
+              className="h-full bg-primary transition-all duration-500"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             />
           </div>
@@ -71,31 +73,32 @@ export function PublishShell({ children }: PublishShellProps) {
       {/* Main Layout */}
       <div className="lg:flex lg:min-h-screen">
         {/* Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-[320px] xl:w-[360px] bg-white border-r border-black/5 lg:sticky lg:top-0 lg:h-screen">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[320px] xl:w-[360px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Header */}
-          <div className="p-6 xl:p-8 border-b border-black/5">
-            <Link
-              href="/"
-              className="inline-flex items-center text-sm text-black/60 hover:text-black transition-colors mb-6"
+          <div className="p-6 xl:p-8 border-b border-border">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancelar
-            </Link>
+            </button>
 
-            <h1 className="text-2xl font-semibold text-black tracking-tight">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">
               Publicar Inmueble
             </h1>
-            <p className="text-sm text-black/50 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Completa la informacion de tu propiedad para publicarla
             </p>
           </div>
 
           {/* Current step info */}
-          <div className="p-6 xl:p-8 border-b border-black/5">
-            <h2 className="text-xl font-semibold text-black tracking-tight">
+          <div className="p-6 xl:p-8 border-b border-border">
+            <h2 className="text-xl font-semibold text-foreground tracking-tight">
               {currentStepConfig?.description}
             </h2>
-            <p className="text-sm text-black/50 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Paso {currentStep} de {totalSteps}
             </p>
           </div>
@@ -116,7 +119,7 @@ export function PublishShell({ children }: PublishShellProps) {
                       <div
                         className={cn(
                           'absolute left-[11px] top-[28px] w-[2px] h-[32px]',
-                          completedSteps.includes(step.id) ? 'bg-black' : 'bg-black/10'
+                          completedSteps.includes(step.id) ? 'bg-primary' : 'bg-black/10'
                         )}
                       />
                     )}
@@ -137,10 +140,10 @@ export function PublishShell({ children }: PublishShellProps) {
                           'relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all',
                           'border-2',
                           isCompleted
-                            ? 'bg-black border-black'
+                            ? 'bg-primary border-primary'
                             : isCurrent
-                            ? 'bg-black border-black'
-                            : 'bg-white border-black/20'
+                            ? 'bg-primary border-primary'
+                            : 'bg-card border-border'
                         )}
                       >
                         {isCompleted && !isCurrent ? (
@@ -155,10 +158,10 @@ export function PublishShell({ children }: PublishShellProps) {
                         className={cn(
                           'text-sm font-medium transition-colors',
                           isCurrent
-                            ? 'text-black'
+                            ? 'text-foreground'
                             : isCompleted
-                            ? 'text-black/70'
-                            : 'text-black/40'
+                            ? 'text-foreground/70'
+                            : 'text-muted-foreground'
                         )}
                       >
                         {step.label}
@@ -175,18 +178,18 @@ export function PublishShell({ children }: PublishShellProps) {
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-white rounded-sm border border-black/5 shadow-sm">
+            <div className="bg-card rounded-sm border border-border shadow-sm">
               {/* Desktop step header */}
-              <div className="hidden lg:block px-6 py-5 border-b border-black/5">
+              <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-white text-sm font-medium">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white text-sm font-medium">
                     {currentStep}
                   </span>
                   <div>
-                    <h3 className="text-base font-medium text-black">
+                    <h3 className="text-base font-medium text-foreground">
                       {currentStepConfig?.description}
                     </h3>
-                    <p className="text-sm text-black/50">
+                    <p className="text-sm text-muted-foreground">
                       Paso {currentStep} de {totalSteps}
                     </p>
                   </div>
@@ -194,8 +197,8 @@ export function PublishShell({ children }: PublishShellProps) {
               </div>
 
               {/* Mobile step header */}
-              <div className="lg:hidden px-4 py-4 border-b border-black/5">
-                <h3 className="text-base font-medium text-black">
+              <div className="lg:hidden px-4 py-4 border-b border-border">
+                <h3 className="text-base font-medium text-foreground">
                   {currentStepConfig?.description}
                 </h3>
               </div>
@@ -207,7 +210,7 @@ export function PublishShell({ children }: PublishShellProps) {
 
               {/* Navigation */}
               <div className="px-4 pb-6 lg:px-6 lg:pb-8">
-                <div className="flex items-center justify-between pt-6 border-t border-black/5">
+                <div className="flex items-center justify-between pt-6 border-t border-border">
                   {/* Back button */}
                   <button
                     type="button"
@@ -215,8 +218,8 @@ export function PublishShell({ children }: PublishShellProps) {
                     disabled={isFirstStep || isSubmitting}
                     className={cn(
                       'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-                      'rounded-sm border border-black/10 bg-white',
-                      'text-black/70 hover:text-black hover:border-black/20',
+                      'rounded-sm border border-border bg-card',
+                      'text-foreground/70 hover:text-foreground hover:border-border',
                       'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                       isFirstStep && 'invisible'
                     )}
@@ -226,7 +229,7 @@ export function PublishShell({ children }: PublishShellProps) {
                   </button>
 
                   {/* Step indicator (mobile) */}
-                  <span className="text-sm text-black/40 sm:hidden">
+                  <span className="text-sm text-muted-foreground sm:hidden">
                     {currentStep}/{totalSteps}
                   </span>
 
@@ -237,8 +240,8 @@ export function PublishShell({ children }: PublishShellProps) {
                     disabled={!canProceed || isSubmitting}
                     className={cn(
                       'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium',
-                      'rounded-sm bg-black text-white',
-                      'hover:bg-black/90 transition-colors',
+                      'rounded-sm bg-primary text-white',
+                      'hover:bg-primary/85 transition-colors',
                       'disabled:opacity-50 disabled:cursor-not-allowed'
                     )}
                   >
@@ -264,7 +267,7 @@ export function PublishShell({ children }: PublishShellProps) {
             </div>
 
             {/* Save indicator */}
-            <p className="text-center text-xs text-black/40 mt-4">
+            <p className="text-center text-xs text-muted-foreground mt-4">
               Tu progreso se guarda automaticamente
             </p>
           </div>

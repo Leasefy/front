@@ -1,13 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { DollarSign, Receipt, Shield } from 'lucide-react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { formatCurrency } from '@/lib/format';
 
 export function StepPricing() {
   const { draft, updateDraft } = usePublish();
+  const [hasAdminFee, setHasAdminFee] = useState(draft.adminFee > 0);
+  const [hasDeposit, setHasDeposit] = useState(draft.deposit > 0);
 
   const formatInputValue = (value: number) => {
     if (value === 0) return '';
@@ -23,10 +27,10 @@ export function StepPricing() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-black mb-1">
+        <h3 className="text-sm font-medium text-foreground mb-1">
           Define el precio de tu inmueble
         </h3>
-        <p className="text-sm text-black/50">
+        <p className="text-sm text-muted-foreground">
           Establece el canon de arrendamiento y costos adicionales
         </p>
       </div>
@@ -35,11 +39,11 @@ export function StepPricing() {
         {/* Monthly Rent */}
         <div className="space-y-2">
           <Label htmlFor="monthlyRent" className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-black/40" />
+            <DollarSign className="w-4 h-4 text-muted-foreground" />
             Canon de arrendamiento mensual *
           </Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
             <Input
               id="monthlyRent"
               type="text"
@@ -52,72 +56,95 @@ export function StepPricing() {
         </div>
 
         {/* Admin Fee */}
-        <div className="space-y-2">
-          <Label htmlFor="adminFee" className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-black/40" />
-            Cuota de administracion
-          </Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40">$</span>
-            <Input
-              id="adminFee"
-              type="text"
-              placeholder="350,000"
-              value={formatInputValue(draft.adminFee)}
-              onChange={(e) => updateDraft({ adminFee: parseInputValue(e.target.value) })}
-              className="pl-8"
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="adminFeeToggle" className="flex items-center gap-2 cursor-pointer">
+              <Receipt className="w-4 h-4 text-muted-foreground" />
+              Cuota de administración
+            </Label>
+            <Switch
+              id="adminFeeToggle"
+              checked={hasAdminFee}
+              onCheckedChange={(checked) => {
+                setHasAdminFee(checked);
+                if (!checked) updateDraft({ adminFee: 0 });
+              }}
             />
           </div>
-          <p className="text-xs text-black/40">
-            Deja en blanco si no aplica
-          </p>
+          {hasAdminFee && (
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="adminFee"
+                type="text"
+                placeholder="350,000"
+                value={formatInputValue(draft.adminFee)}
+                onChange={(e) => updateDraft({ adminFee: parseInputValue(e.target.value) })}
+                className="pl-8"
+              />
+            </div>
+          )}
         </div>
 
         {/* Deposit */}
-        <div className="space-y-2">
-          <Label htmlFor="deposit" className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-black/40" />
-            Deposito de garantia
-          </Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40">$</span>
-            <Input
-              id="deposit"
-              type="text"
-              placeholder="2,500,000"
-              value={formatInputValue(draft.deposit)}
-              onChange={(e) => updateDraft({ deposit: parseInputValue(e.target.value) })}
-              className="pl-8"
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="depositToggle" className="flex items-center gap-2 cursor-pointer">
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              Depósito de garantía
+            </Label>
+            <Switch
+              id="depositToggle"
+              checked={hasDeposit}
+              onCheckedChange={(checked) => {
+                setHasDeposit(checked);
+                if (!checked) updateDraft({ deposit: 0 });
+              }}
             />
           </div>
-          <p className="text-xs text-black/40">
-            Generalmente equivale a 1-2 meses de arriendo
-          </p>
+          {hasDeposit && (
+            <>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="deposit"
+                  type="text"
+                  placeholder="2,500,000"
+                  value={formatInputValue(draft.deposit)}
+                  onChange={(e) => updateDraft({ deposit: parseInputValue(e.target.value) })}
+                  className="pl-8"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Generalmente equivale a 1–2 meses de arriendo
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       {/* Summary */}
       {draft.monthlyRent > 0 && (
         <div className="p-5 bg-black/[0.02] rounded-sm space-y-3">
-          <h4 className="text-sm font-medium text-black">Resumen de costos</h4>
+          <h4 className="text-sm font-medium text-foreground">Resumen de costos</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-black/60">Canon mensual</span>
-              <span className="text-black">{formatCurrency(draft.monthlyRent)}</span>
+              <span className="text-muted-foreground">Canon mensual</span>
+              <span className="text-foreground">{formatCurrency(draft.monthlyRent)}</span>
             </div>
             {draft.adminFee > 0 && (
               <div className="flex justify-between">
-                <span className="text-black/60">Administracion</span>
-                <span className="text-black">{formatCurrency(draft.adminFee)}</span>
+                <span className="text-muted-foreground">Administracion</span>
+                <span className="text-foreground">{formatCurrency(draft.adminFee)}</span>
               </div>
             )}
-            <div className="flex justify-between pt-2 border-t border-black/10">
-              <span className="font-medium text-black">Total mensual</span>
-              <span className="font-medium text-black">{formatCurrency(totalMonthly)}</span>
+            <div className="flex justify-between pt-2 border-t border-border">
+              <span className="font-medium text-foreground">Total mensual</span>
+              <span className="font-medium text-foreground">{formatCurrency(totalMonthly)}</span>
             </div>
           </div>
           {draft.deposit > 0 && (
-            <div className="text-xs text-black/50 pt-2">
+            <div className="text-xs text-muted-foreground pt-2">
               + Deposito inicial de {formatCurrency(draft.deposit)}
             </div>
           )}

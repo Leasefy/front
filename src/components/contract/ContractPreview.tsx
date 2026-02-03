@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { FileText, Building2, User, Calendar, CreditCard, Shield, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Building2, User, Calendar, CreditCard, Shield, Lock, ChevronDown } from 'lucide-react';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 import { getInsuranceById } from '@/lib/data/mock-insurance';
@@ -38,6 +39,10 @@ export interface ContractPreviewProps {
  * - Signature section showing signing status
  */
 export function ContractPreview({ contract, template, selectedInsurance, className }: ContractPreviewProps) {
+  const [showAllClauses, setShowAllClauses] = useState(false);
+  const INITIAL_CLAUSES = 2;
+  const hasMoreClauses = template.clauses.length > INITIAL_CLAUSES;
+  const visibleClauses = showAllClauses ? template.clauses : template.clauses.slice(0, INITIAL_CLAUSES);
   // Get insurance policy details if selected
   const insurancePolicy =
     selectedInsurance?.policyId && selectedInsurance.tier !== 'none'
@@ -53,20 +58,22 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
   return (
     <div
       className={cn(
-        'rounded-sm border border-border bg-white shadow-sm',
+        'rounded-sm border border-border bg-card shadow-sm',
         className
       )}
     >
+      {/* Accent bar */}
+      <div className="h-[3px] bg-primary rounded-t-sm" />
+
       {/* Header */}
-      <div className="border-b border-border p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <FileText className="h-6 w-6 text-primary" />
-        </div>
-        <h2 className="text-xl font-semibold text-foreground">
-          CONTRATO DE ARRENDAMIENTO
+      <div className="border-b border-border px-6 py-5">
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          Contrato de Arrendamiento
+        </p>
+        <h2 className="mt-1 text-lg font-semibold text-foreground">
+          {template.name}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{template.name}</p>
-        <p className="mt-2 text-xs text-muted-foreground">ID: {contract.id}</p>
+        <p className="mt-1 text-xs text-muted-foreground">ID: {contract.id}</p>
       </div>
 
       {/* Contract Summary */}
@@ -171,7 +178,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord */}
           <div className="rounded-sm border border-border p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
               Arrendador
             </p>
             <p className="mt-2 font-medium text-foreground">{contract.landlordName}</p>
@@ -180,7 +187,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           </div>
           {/* Tenant */}
           <div className="rounded-sm border border-border p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
               Arrendatario
             </p>
             <p className="mt-2 font-medium text-foreground">{contract.tenantName}</p>
@@ -207,12 +214,21 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           Clausulas del Contrato
         </h3>
         <div className="space-y-4">
-          {template.clauses.map((clause) => (
+          {visibleClauses.map((clause) => (
             <div key={clause.id} className="text-sm">
               <h4 className="font-medium text-foreground">{clause.title}</h4>
               <p className="mt-1 text-muted-foreground leading-relaxed">{clause.content}</p>
             </div>
           ))}
+          {hasMoreClauses && !showAllClauses && (
+            <button
+              onClick={() => setShowAllClauses(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              <ChevronDown className="h-4 w-4" />
+              Ver {template.clauses.length - INITIAL_CLAUSES} cláusulas más
+            </button>
+          )}
         </div>
       </div>
 
@@ -239,7 +255,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 : 'border-dashed border-border bg-muted'
             )}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
               Firma Arrendador
             </p>
             {contract.landlordSignature ? (
@@ -265,7 +281,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 : 'border-dashed border-border bg-muted'
             )}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
               Firma Arrendatario
             </p>
             {contract.tenantSignature ? (

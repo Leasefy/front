@@ -43,8 +43,8 @@ export function ErrorState({
       <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
         {/* Icon Container - Soft error styling */}
         <div className="relative mb-6">
-          <div className="absolute inset-0 bg-red-500/10 rounded-2xl blur-xl" />
-          <div className="relative rounded-2xl bg-gradient-to-br from-red-100 to-red-50 p-5 border border-red-200/50">
+          <div className="absolute inset-0 bg-red-500/10 rounded-sm blur-xl" />
+          <div className="relative rounded-sm bg-gradient-to-br from-red-100 to-red-50 p-5 border border-red-200/50">
             <AlertTriangle className="h-8 w-8 text-red-500" />
           </div>
         </div>

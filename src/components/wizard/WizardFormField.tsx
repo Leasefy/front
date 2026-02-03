@@ -31,14 +31,14 @@ export function FormField({
     <div className={cn('space-y-2', className)}>
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-medium text-black/70"
+        className="block text-sm font-medium text-foreground/70"
       >
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
       {hint && !error && (
-        <p className="text-xs text-black/40">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && (
         <p className="text-xs text-red-500">{error}</p>
@@ -71,7 +71,7 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
             'w-full h-12 px-4 rounded-sm',
             'bg-foreground text-white placeholder:text-white/40',
             'border border-transparent',
-            'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
+            'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
             'transition-colors',
             icon && 'pl-12',
             hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
@@ -128,7 +128,7 @@ export function DarkSelect({
           'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
           'bg-foreground text-white',
           'border border-transparent',
-          'focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30',
+          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
           'transition-colors',
           icon && 'pl-12',
           !value && 'text-white/40',
@@ -159,7 +159,7 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
     return (
       <div className="relative">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
             {icon}
           </div>
         )}
@@ -167,9 +167,9 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
           ref={ref}
           className={cn(
             'w-full h-12 px-4 rounded-sm',
-            'bg-black/5 text-black placeholder:text-black/40',
-            'border border-black/10',
-            'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
+            'bg-black/5 text-foreground placeholder:text-muted-foreground',
+            'border border-border',
+            'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
             'transition-colors',
             icon && 'pl-12',
             hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
@@ -203,7 +203,7 @@ export function LightSelect({
   return (
     <div className="relative">
       {icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 pointer-events-none z-10">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10">
           {icon}
         </div>
       )}
@@ -214,17 +214,17 @@ export function LightSelect({
         onBlur={onBlur}
         className={cn(
           'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
-          'bg-black/5 text-black',
-          'border border-black/10',
-          'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
+          'bg-black/5 text-foreground',
+          'border border-border',
+          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
           'transition-colors',
           icon && 'pl-12',
-          !value && 'text-black/40',
+          !value && 'text-muted-foreground',
           hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
           className
         )}
       >
-        <option value="" disabled className="text-black/40">
+        <option value="" disabled className="text-muted-foreground">
           {placeholder}
         </option>
         {options.map((option) => (
@@ -233,7 +233,7 @@ export function LightSelect({
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40 pointer-events-none" />
+      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
     </div>
   );
 }

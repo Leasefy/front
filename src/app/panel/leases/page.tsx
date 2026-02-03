@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Home, DollarSign, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
@@ -11,6 +12,7 @@ import {
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
+import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 
 /**
  * Landlord Active Leases Page - PLan CRM Style
@@ -19,6 +21,48 @@ export default function LandlordLeasesPage() {
   const landlordId = 'landlord-001';
   const leases = getLeasesForLandlord(landlordId);
   const stats = getLandlordStats(landlordId);
+
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Pre-compute per-lease payment status for filtering
+  const leasePaymentStatus = useMemo(() => {
+    const map: Record<string, { pending: number; late: number }> = {};
+    for (const lease of leases) {
+      const payments = getPaymentsForLease(lease.id);
+      map[lease.id] = {
+        pending: payments.filter(p => p.status === 'pending').length,
+        late: payments.filter(p => p.status === 'late').length,
+      };
+    }
+    return map;
+  }, [leases]);
+
+  // Filter by tab
+  const filteredLeases = useMemo(() => {
+    if (activeTab === 'all') return leases;
+    if (activeTab === 'active') return leases.filter(l => l.status === 'active');
+    if (activeTab === 'ending_soon') return leases.filter(l => l.status === 'ending_soon');
+    if (activeTab === 'late') return leases.filter(l => leasePaymentStatus[l.id]?.late > 0);
+    if (activeTab === 'pending') return leases.filter(l => leasePaymentStatus[l.id]?.pending > 0);
+    return leases;
+  }, [activeTab, leases, leasePaymentStatus]);
+
+  // Counts
+  const counts = useMemo(() => ({
+    all: leases.length,
+    active: leases.filter(l => l.status === 'active').length,
+    endingSoon: leases.filter(l => l.status === 'ending_soon').length,
+    late: leases.filter(l => leasePaymentStatus[l.id]?.late > 0).length,
+    pending: leases.filter(l => leasePaymentStatus[l.id]?.pending > 0).length,
+  }), [leases, leasePaymentStatus]);
+
+  const tabs: PlanTab[] = [
+    { id: 'all', label: 'Todos', count: counts.all },
+    { id: 'active', label: 'Activos', count: counts.active },
+    { id: 'ending_soon', label: 'Vencen pronto', count: counts.endingSoon },
+    { id: 'pending', label: 'Pagos pendientes', count: counts.pending },
+    { id: 'late', label: 'Pagos atrasados', count: counts.late },
+  ];
 
   // Calculate collection rate
   const collectionRate = stats.totalMonthlyIncome > 0
@@ -69,7 +113,7 @@ export default function LandlordLeasesPage() {
         </PlanStatsGrid>
 
         {/* Financial Summary Card */}
-        <div className="bg-plan-primary  p-6 mb-8">
+        <div className="bg-indigo-950  p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -118,18 +162,20 @@ export default function LandlordLeasesPage() {
           </div>
         )}
 
-        {/* Leases List */}
-        <section className="bg-white  border border-plan-border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-            <h2 className="font-semibold text-plan-primary">Propiedades Arrendadas</h2>
-            <span className="text-sm text-plan-secondary">
-              {leases.length} propiedad{leases.length !== 1 ? 'es' : ''}
-            </span>
-          </div>
+        {/* Tabs */}
+        <PlanTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          variant="underline"
+          className="mb-6"
+        />
 
-          {leases.length > 0 ? (
+        {/* Leases List */}
+        <section className="bg-card  border border-plan-border overflow-hidden">
+          {filteredLeases.length > 0 ? (
             <div className="divide-y divide-plan-border">
-              {leases.map((lease) => (
+              {filteredLeases.map((lease) => (
                 <LeaseExpandableItem
                   key={lease.id}
                   lease={lease}
@@ -143,14 +189,17 @@ export default function LandlordLeasesPage() {
                 <Home className="w-8 h-8 text-plan-muted" />
               </div>
               <h3 className="font-medium text-plan-primary mb-2">
-                No tienes arriendos activos
+                {activeTab === 'all'
+                  ? 'No tienes arriendos activos'
+                  : `No hay arriendos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
+                }
               </h3>
               <p className="text-sm text-plan-secondary mb-4">
                 Cuando tengas contratos firmados apareceran aqui
               </p>
               <Link
                 href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 Ir al panel
               </Link>

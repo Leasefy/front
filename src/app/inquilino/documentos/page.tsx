@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
+  ArrowLeft,
   FileText,
   Download,
   Eye,
@@ -222,6 +224,11 @@ export default function DocumentosPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-plan-primary">Mis Documentos</h1>
@@ -232,7 +239,7 @@ export default function DocumentosPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white  border border-plan-border p-5">
+          <div className="bg-card  border border-plan-border p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-sm bg-plan-status-blue-bg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-blue-800" />
@@ -243,7 +250,7 @@ export default function DocumentosPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white  border border-plan-border p-5">
+          <div className="bg-card  border border-plan-border p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-sm bg-plan-status-green-bg flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-green-800" />
@@ -256,7 +263,7 @@ export default function DocumentosPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white  border border-plan-border p-5">
+          <div className="bg-card  border border-plan-border p-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-sm bg-yellow-100 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-yellow-800" />
@@ -272,7 +279,7 @@ export default function DocumentosPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white  border border-plan-border p-4 mb-6">
+        <div className="bg-card  border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
@@ -293,7 +300,7 @@ export default function DocumentosPage() {
                   className={cn(
                     'px-4 py-2 rounded-sm text-sm font-medium transition-colors',
                     selectedType === type.value
-                      ? 'bg-plan-primary text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >
@@ -305,7 +312,7 @@ export default function DocumentosPage() {
         </div>
 
         {/* Documents List */}
-        <div className="bg-white  border border-plan-border overflow-hidden">
+        <div className="bg-card  border border-plan-border overflow-hidden">
           {filteredDocuments.length > 0 ? (
             <div className="divide-y divide-border">
               {paginatedDocuments.map((doc) => {
@@ -364,9 +371,9 @@ export default function DocumentosPage() {
           ) : (
             <div className="py-16 text-center px-6">
               <div className="relative mb-6 inline-block">
-                <div className="absolute inset-0 bg-black/10 rounded-2xl blur-xl" />
-                <div className="relative rounded-2xl bg-gradient-to-br from-black/10 to-black/5 p-5 border border-black/10">
-                  <FileText className="h-8 w-8 text-black" />
+                <div className="absolute inset-0 bg-black/10 rounded-sm blur-xl" />
+                <div className="relative rounded-sm bg-gradient-to-br from-black/10 to-black/5 p-5 border border-border">
+                  <FileText className="h-8 w-8 text-foreground" />
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron documentos</h3>
@@ -406,7 +413,7 @@ export default function DocumentosPage() {
                       className={cn(
                         'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                         currentPage === page
-                          ? 'bg-plan-primary text-white'
+                          ? 'bg-primary text-white'
                           : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                       )}
                     >
@@ -443,7 +450,7 @@ export default function DocumentosPage() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white w-full max-w-4xl h-[90vh] mx-4 rounded-sm shadow-xl flex flex-col overflow-hidden">
+          <div className="relative bg-card w-full max-w-4xl h-[90vh] mx-4 rounded-sm shadow-xl flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
               <div className="flex items-center gap-3">
@@ -481,7 +488,7 @@ export default function DocumentosPage() {
 
             {/* Document Preview Area */}
             <div className="flex-1 bg-muted p-6 overflow-auto">
-              <div className="bg-white h-full rounded-sm shadow-sm flex flex-col items-center justify-center p-8">
+              <div className="bg-card h-full rounded-sm shadow-sm flex flex-col items-center justify-center p-8">
                 {/* Mock document preview - in production, use a PDF viewer like react-pdf */}
                 <div className="w-full max-w-2xl mx-auto">
                   {/* Document Header */}

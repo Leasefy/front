@@ -84,7 +84,7 @@ export default function UpgradePage() {
         </div>
 
         {/* Current plan summary */}
-        <div className="bg-white rounded-sm border border-border p-6 mb-8">
+        <div className="bg-card rounded-sm border border-border p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-muted-foreground" />

@@ -328,7 +328,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
                 type="button"
                 onClick={() => registerForm.setValue('role', 'tenant')}
                 className={cn(
-                  'p-3 rounded-sm border text-sm font-medium transition-colors',
+                  'p-3 rounded-full border text-sm font-medium transition-colors',
                   registerForm.watch('role') === 'tenant'
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:border-foreground/20'
@@ -340,7 +340,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
                 type="button"
                 onClick={() => registerForm.setValue('role', 'landlord')}
                 className={cn(
-                  'p-3 rounded-sm border text-sm font-medium transition-colors',
+                  'p-3 rounded-full border text-sm font-medium transition-colors',
                   registerForm.watch('role') === 'landlord'
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:border-foreground/20'

@@ -19,8 +19,8 @@ export interface PlanStatsCardProps {
 }
 
 const variantClasses = {
-  default: 'bg-white border-plan-border',
-  accent: 'bg-plan-accent/10 border-plan-accent/30',
+  default: 'bg-white dark:bg-card border-plan-border',
+  accent: 'bg-indigo-100 border-indigo-200',
   muted: 'bg-muted border-plan-border',
 };
 
@@ -60,7 +60,7 @@ export function PlanStatsCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-[12px] font-medium text-plan-muted uppercase tracking-wide mb-1">{label}</p>
+          <p className="text-[12px] font-normal text-plan-muted font-mono uppercase tracking-wide mb-1">{label}</p>
           <p className={cn(
             'font-semibold text-plan-primary tracking-tight',
             valueSizeClasses[size]

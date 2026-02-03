@@ -36,10 +36,10 @@ export const CANDIDATE_STATUS_LABELS: Record<LandlordCandidateStatus, string> = 
  */
 export const CANDIDATE_STATUS_COLORS: Record<LandlordCandidateStatus, string> = {
   pending: 'bg-muted text-foreground',
-  'pre-approved': 'bg-blue-100 text-blue-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-  'more-info': 'bg-amber-100 text-amber-700',
+  'pre-approved': 'bg-plan-status-blue-bg text-plan-status-blue',
+  approved: 'bg-plan-status-green-bg text-plan-status-green',
+  rejected: 'bg-plan-status-red-bg text-plan-status-red',
+  'more-info': 'bg-plan-status-yellow-bg text-plan-status-yellow',
 };
 
 // ============================================================================

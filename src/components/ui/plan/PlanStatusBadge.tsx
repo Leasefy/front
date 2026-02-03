@@ -32,43 +32,43 @@ const statusConfig: Record<Exclude<PlanStatusType, 'custom'>, {
 }> = {
   new: {
     label: 'Nuevo',
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-900',
+    bg: 'bg-indigo-100',
+    text: 'text-indigo-800',
   },
   in_progress: {
     label: 'En progreso',
-    bg: 'bg-plan-status-green',
-    text: 'text-white',
+    bg: 'bg-amber-100',
+    text: 'text-amber-800',
   },
   accepted: {
     label: 'Aceptado',
-    bg: 'bg-plan-status-green-bg',
-    text: 'text-green-800',
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-800',
   },
   rejected: {
     label: 'Rechazado',
-    bg: 'bg-plan-status-red-bg',
+    bg: 'bg-red-100',
     text: 'text-red-800',
   },
   important: {
     label: 'Importante',
-    bg: 'bg-rose-200',
+    bg: 'bg-rose-100',
     text: 'text-rose-800',
   },
   pending: {
     label: 'Pendiente',
-    bg: 'bg-muted',
-    text: 'text-muted-foreground',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-600',
   },
   completed: {
     label: 'Completado',
-    bg: 'bg-plan-status-green-bg',
-    text: 'text-green-800',
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-800',
   },
   loan_granted: {
     label: 'Prestamo otorgado',
-    bg: 'bg-rose-200',
-    text: 'text-rose-800',
+    bg: 'bg-blue-100',
+    text: 'text-blue-800',
   },
 };
 

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
+  ArrowLeft,
   Check,
   Clock,
   AlertCircle,
@@ -185,6 +187,10 @@ export default function PagosPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
 
         {/* Header */}
         <header className="mb-8">
@@ -222,7 +228,7 @@ export default function PagosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Payment History */}
           <div className="lg:col-span-2">
-            <div className="bg-white  border border-plan-border overflow-hidden">
+            <div className="bg-card  border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Historial de pagos</h2>
               </div>
@@ -239,9 +245,9 @@ export default function PagosPage() {
               ) : (
                 <div className="p-16 text-center">
                   <div className="relative mb-6 inline-block">
-                    <div className="absolute inset-0 bg-black/10 rounded-2xl blur-xl" />
-                    <div className="relative rounded-2xl bg-gradient-to-br from-black/10 to-black/5 p-5 border border-black/10">
-                      <CreditCard className="h-8 w-8 text-black" />
+                    <div className="absolute inset-0 bg-black/10 rounded-sm blur-xl" />
+                    <div className="relative rounded-sm bg-gradient-to-br from-black/10 to-black/5 p-5 border border-border">
+                      <CreditCard className="h-8 w-8 text-foreground" />
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Sin historial de pagos</h3>
@@ -256,7 +262,7 @@ export default function PagosPage() {
           {/* Sidebar - Next Payment */}
           <div className="space-y-6">
             {nextPayment && primaryLease && (
-              <div className="bg-plan-primary  p-6 text-white">
+              <div className="bg-indigo-950  p-6 text-white">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
                     <CreditCard className="w-5 h-5 text-plan-accent" />
@@ -296,7 +302,7 @@ export default function PagosPage() {
 
                 <Button
                   onClick={handlePayNow}
-                  className="w-full bg-plan-accent text-plan-primary hover:bg-plan-accent-dark font-semibold"
+                  className="w-full bg-primary text-white hover:bg-primary/90 font-semibold"
                 >
                   Pagar ahora
                 </Button>
@@ -304,7 +310,7 @@ export default function PagosPage() {
             )}
 
             {/* Payment Methods */}
-            <div className="bg-white  border border-plan-border p-5">
+            <div className="bg-card  border border-plan-border p-5">
               <h3 className="font-semibold text-plan-primary mb-4">Metodos de pago</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 rounded-sm bg-muted">
@@ -337,7 +343,7 @@ export default function PagosPage() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white w-full max-w-md mx-4 rounded-sm shadow-xl overflow-hidden">
+          <div className="relative bg-card w-full max-w-md mx-4 rounded-sm shadow-xl overflow-hidden">
             {/* Confirm Step */}
             {paymentStep === 'confirm' && (
               <>
@@ -404,7 +410,7 @@ export default function PagosPage() {
                       Cancelar
                     </Button>
                     <Button
-                      className="flex-1 bg-plan-primary hover:bg-foreground"
+                      className="flex-1 bg-primary hover:bg-primary/90"
                       onClick={handleConfirmPayment}
                     >
                       Confirmar pago
@@ -466,7 +472,7 @@ export default function PagosPage() {
                 </div>
 
                 <Button
-                  className="w-full bg-plan-primary hover:bg-foreground"
+                  className="w-full bg-primary hover:bg-primary/90"
                   onClick={handleCloseModal}
                 >
                   Cerrar

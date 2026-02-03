@@ -48,7 +48,7 @@ export function PricingTable({
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
               billingCycle === 'monthly'
-                ? 'bg-white text-foreground shadow-md'
+                ? 'bg-card text-foreground shadow-md'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -59,7 +59,7 @@ export function PricingTable({
             className={cn(
               'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
               billingCycle === 'yearly'
-                ? 'bg-white text-foreground shadow-md'
+                ? 'bg-card text-foreground shadow-md'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -91,7 +91,7 @@ export function PricingTable({
             Comparacion detallada
           </h3>
 
-          <div className="overflow-x-auto rounded-2xl border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="overflow-x-auto rounded-sm border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
                 <TableRow className="border-b-border">

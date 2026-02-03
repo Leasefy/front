@@ -130,11 +130,11 @@ export function AISearchInput({
       {/* Main Search Container */}
       <div
         className={cn(
-          'relative bg-white border transition-all duration-200 overflow-visible',
+          'relative bg-white dark:bg-card border transition-all duration-200 overflow-visible',
           'rounded-sm',
           isFocused || activeFilter
-            ? 'border-black/15 shadow-lg'
-            : 'border-black/10 shadow-md hover:shadow-lg'
+            ? 'border-border shadow-lg'
+            : 'border-border shadow-md hover:shadow-lg'
         )}
       >
         {/* Top Row - Textarea */}
@@ -147,10 +147,10 @@ export function AISearchInput({
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Sparkles className="w-5 h-5 text-black/50" />
+                  <Sparkles className="w-5 h-5 text-muted-foreground" />
                 </motion.div>
               ) : (
-                <Sparkles className="w-5 h-5 text-black/30" />
+                <Sparkles className="w-5 h-5 text-muted-foreground" />
               )}
             </div>
 
@@ -168,7 +168,7 @@ export function AISearchInput({
               rows={2}
               className={cn(
                 'flex-1 bg-transparent border-0 outline-none resize-none',
-                'text-[15px] text-black placeholder:text-black/40',
+                'text-[15px] text-foreground placeholder:text-muted-foreground',
                 'leading-relaxed',
                 'disabled:cursor-not-allowed min-h-[52px]'
               )}
@@ -199,8 +199,8 @@ export function AISearchInput({
                       'text-xs rounded-full transition-all',
                       'whitespace-nowrap',
                       isActive || hasSelection
-                        ? 'bg-black text-white'
-                        : 'text-black/60 bg-black/[0.04] hover:bg-black/[0.08] hover:text-black/80'
+                        ? 'bg-primary text-white'
+                        : 'text-muted-foreground bg-black/[0.04] hover:bg-black/[0.08] hover:text-foreground/80'
                     )}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -213,7 +213,7 @@ export function AISearchInput({
 
                   {/* Dropdown */}
                   {isActive && (
-                    <div className="absolute top-full left-0 mt-2 py-1 bg-white border border-black/10 rounded-sm shadow-xl z-[100] min-w-[180px]">
+                    <div className="absolute top-full left-0 mt-2 py-1 bg-white dark:bg-card border border-border dark:border-border rounded-sm shadow-xl z-[100] min-w-[180px]">
                       {filter.options.map((option) => (
                         <button
                           key={option}
@@ -226,8 +226,8 @@ export function AISearchInput({
                             'w-full px-3 py-2.5 text-left text-sm flex items-center justify-between',
                             'hover:bg-black/5 transition-colors',
                             selectedFilters[filterKey] === option
-                              ? 'text-black font-medium bg-black/5'
-                              : 'text-black/70'
+                              ? 'text-foreground font-medium bg-black/5'
+                              : 'text-foreground/70'
                           )}
                         >
                           {option}
@@ -252,7 +252,7 @@ export function AISearchInput({
               'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all',
               value.trim() && !isSearching
                 ? 'bg-black text-white hover:bg-black/90 hover:scale-105'
-                : 'bg-black/10 text-black/30 cursor-not-allowed'
+                : 'bg-black/10 text-muted-foreground cursor-not-allowed'
             )}
           >
             <ArrowUp className="w-5 h-5" />
@@ -266,7 +266,7 @@ export function AISearchInput({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="border-t border-black/5 overflow-hidden"
+              className="border-t border-border overflow-hidden"
             >
               <div className="px-5 py-4 flex items-center gap-3">
                 <motion.div className="flex items-center gap-1">
@@ -286,7 +286,7 @@ export function AISearchInput({
                     />
                   ))}
                 </motion.div>
-                <span className="text-sm text-black/60">
+                <span className="text-sm text-muted-foreground">
                   AI esta buscando propiedades para ti...
                 </span>
               </div>
@@ -302,7 +302,7 @@ export function AISearchInput({
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="border-t border-black/5 overflow-hidden"
+              className="border-t border-border overflow-hidden"
             >
               <div className="p-4">
                 {/* AI Response Header */}
@@ -311,10 +311,10 @@ export function AISearchInput({
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-black">
+                    <p className="text-sm text-foreground">
                       Encontre <span className="font-medium">{results.length} propiedades</span> que coinciden con tu busqueda.
                     </p>
-                    <p className="text-xs text-black/50 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Basado en: {value}
                     </p>
                   </div>
@@ -326,7 +326,7 @@ export function AISearchInput({
                     <Link
                       key={property.id}
                       href={`/propiedades/${property.id}`}
-                      className="group flex gap-3 p-3 bg-black/[0.02] hover:bg-black/[0.05] rounded-sm border border-transparent hover:border-black/10 transition-all"
+                      className="group flex gap-3 p-3 bg-black/[0.02] hover:bg-black/[0.05] rounded-sm border border-transparent hover:border-border transition-all"
                     >
                       {/* Property Image */}
                       <div className="w-16 h-16 rounded-sm bg-black/10 flex-shrink-0 overflow-hidden">
@@ -338,38 +338,38 @@ export function AISearchInput({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Home className="w-6 h-6 text-black/20" />
+                            <Home className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
                       </div>
 
                       {/* Property Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-black truncate group-hover:underline">
+                        <h4 className="text-sm font-medium text-foreground truncate group-hover:underline">
                           {property.title}
                         </h4>
-                        <p className="text-xs text-black/50 truncate mt-0.5">
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {property.neighborhood || property.city || 'Sin ubicación'}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm font-medium text-black">
+                          <span className="text-sm font-medium text-foreground">
                             {formatPrice(property.monthlyRent)}
                           </span>
-                          <span className="text-xs text-black/40">
+                          <span className="text-xs text-muted-foreground">
                             {property.bedrooms || '-'} hab · {property.area || '-'}m²
                           </span>
                         </div>
                       </div>
 
-                      <ExternalLink className="w-4 h-4 text-black/20 group-hover:text-black/40 flex-shrink-0 mt-1" />
+                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-muted-foreground flex-shrink-0 mt-1" />
                     </Link>
                   ))}
                 </div>
 
                 {/* View All Link */}
                 {results.length > 4 && (
-                  <div className="mt-3 pt-3 border-t border-black/5">
-                    <button className="text-sm text-black hover:underline font-medium">
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <button className="text-sm text-foreground hover:underline font-medium">
                       Ver las {results.length} propiedades encontradas
                     </button>
                   </div>

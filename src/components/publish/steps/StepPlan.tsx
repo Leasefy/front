@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Sparkles, Building2, Zap } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { motion } from 'framer-motion';
@@ -11,7 +11,7 @@ interface PlanOption {
   price: string;
   priceNote: string;
   description: string;
-  icon: React.ReactNode;
+  icon: string;
   features: string[];
   highlighted?: boolean;
   badge?: string;
@@ -24,7 +24,7 @@ const PLAN_OPTIONS: PlanOption[] = [
     price: '$0',
     priceNote: 'Para siempre',
     description: 'Perfecto para probar la plataforma',
-    icon: <Zap className="w-6 h-6" />,
+    icon: '⚡',
     features: [
       '1 propiedad activa',
       'Publicacion basica',
@@ -38,7 +38,7 @@ const PLAN_OPTIONS: PlanOption[] = [
     price: '$149.900',
     priceNote: '/mes',
     description: 'Todo lo que necesitas para administrar',
-    icon: <Sparkles className="w-6 h-6" />,
+    icon: '✨',
     features: [
       'Hasta 10 propiedades',
       'Analisis AI de candidatos',
@@ -56,7 +56,7 @@ const PLAN_OPTIONS: PlanOption[] = [
     price: '$499.900',
     priceNote: '/mes',
     description: 'Para agencias y administradores',
-    icon: <Building2 className="w-6 h-6" />,
+    icon: '🏢',
     features: [
       'Propiedades ilimitadas',
       'Todo lo de Propietario',
@@ -74,10 +74,10 @@ export function StepPlan() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
-        <h3 className="text-lg font-semibold text-black">
+        <h3 className="text-lg font-semibold text-foreground">
           Elige el plan ideal para ti
         </h3>
-        <p className="text-sm text-black/50 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Puedes cambiar o cancelar tu plan en cualquier momento
         </p>
       </div>
@@ -95,22 +95,16 @@ export function StepPlan() {
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ selectedPlan: plan.id })}
               className={cn(
-                'relative w-full text-left p-5 rounded-sm border-2 transition-all',
-                isSelected
-                  ? 'border-black bg-black/[0.02] shadow-sm'
-                  : plan.highlighted
-                  ? 'border-black/20 hover:border-black/40 bg-white'
-                  : 'border-black/10 hover:border-black/20 bg-white'
+                'relative w-full text-left p-5 rounded-[1px] border transition-all duration-200',
+                plan.highlighted && !isSelected && 'border-primary/25 bg-primary/[0.03] hover:border-primary/40 scale-[1.01]',
+                plan.highlighted && isSelected && 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15),0_0_24px_rgba(91,95,239,0.08)] scale-[1.01]',
+                !plan.highlighted && isSelected && 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)]',
+                !plan.highlighted && !isSelected && 'border-border hover:border-border bg-card hover:shadow-sm'
               )}
             >
               {/* Badge */}
               {plan.badge && (
-                <span className={cn(
-                  'absolute -top-3 right-4 px-3 py-1 text-xs font-semibold rounded-full',
-                  isSelected
-                    ? 'bg-black text-white'
-                    : 'bg-plan-accent text-black'
-                )}>
+                <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-primary text-white shadow-sm">
                   {plan.badge}
                 </span>
               )}
@@ -118,14 +112,14 @@ export function StepPlan() {
               <div className="flex items-start gap-4">
                 {/* Icon */}
                 <div className={cn(
-                  'w-12 h-12 rounded-sm flex items-center justify-center flex-shrink-0',
-                  isSelected
-                    ? 'bg-black text-white'
-                    : plan.highlighted
-                    ? 'bg-plan-accent text-black'
-                    : 'bg-black/5 text-black/40'
+                  'w-12 h-12 rounded-[1px] flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                  plan.highlighted
+                    ? 'bg-primary text-white'
+                    : isSelected
+                    ? 'bg-primary/10'
+                    : 'bg-black/[0.03]'
                 )}>
-                  {plan.icon}
+                  <span className="text-2xl">{plan.icon}</span>
                 </div>
 
                 {/* Content */}
@@ -133,38 +127,38 @@ export function StepPlan() {
                   <div className="flex items-baseline gap-2">
                     <h4 className={cn(
                       'text-base font-semibold',
-                      isSelected ? 'text-black' : 'text-black/80'
+                      isSelected ? 'text-foreground' : 'text-foreground/80'
                     )}>
                       {plan.name}
                     </h4>
                     <div className="flex items-baseline gap-1">
                       <span className={cn(
                         'text-lg font-bold',
-                        isSelected ? 'text-black' : 'text-black/70'
+                        isSelected ? 'text-foreground' : 'text-foreground/70'
                       )}>
                         {plan.price}
                       </span>
-                      <span className="text-xs text-black/40">
+                      <span className="text-xs text-muted-foreground">
                         {plan.priceNote}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-black/50 mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {plan.description}
                   </p>
 
-                  {/* Features - Show when selected or on hover */}
+                  {/* Features */}
                   <div className={cn(
-                    'mt-3 pt-3 border-t border-black/5 grid grid-cols-2 gap-x-4 gap-y-1.5',
-                    !isSelected && 'opacity-60'
+                    'mt-3 pt-3 border-t border-border grid grid-cols-2 gap-x-4 gap-y-1.5 transition-opacity',
+                    !isSelected && 'opacity-50'
                   )}>
                     {plan.features.map((feature, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <Check className={cn(
                           'w-3.5 h-3.5 flex-shrink-0',
-                          isSelected ? 'text-black' : 'text-black/30'
+                          isSelected || plan.highlighted ? 'text-primary' : 'text-muted-foreground'
                         )} />
-                        <span className="text-xs text-black/60 truncate">
+                        <span className="text-xs text-muted-foreground truncate">
                           {feature}
                         </span>
                       </div>
@@ -174,13 +168,15 @@ export function StepPlan() {
 
                 {/* Selection indicator */}
                 <div className={cn(
-                  'w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                  'w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0 transition-all duration-200',
                   isSelected
-                    ? 'border-black bg-black'
-                    : 'border-black/20'
+                    ? 'border-primary bg-primary'
+                    : plan.highlighted
+                    ? 'border-primary/40'
+                    : 'border-border'
                 )}>
                   {isSelected && (
-                    <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
                   )}
                 </div>
               </div>
@@ -190,7 +186,7 @@ export function StepPlan() {
       </div>
 
       {/* Trust indicator */}
-      <div className="flex items-center justify-center gap-6 pt-4 text-xs text-black/40">
+      <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           Sin compromisos

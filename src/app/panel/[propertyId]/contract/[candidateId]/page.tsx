@@ -3,17 +3,15 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, Clock, CheckCircle2, AlertCircle, Loader2, Upload, Shield, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ContractTimeline } from '@/components/contract/ContractTimeline';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { InsuranceSelector } from '@/components/contract/InsuranceSelector';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 import {
   getContractById,
-  getContractSteps,
   getTemplateById,
   createContractFromTemplate,
   CONTRACT_TEMPLATES,
@@ -41,41 +39,136 @@ interface ContractPageProps {
 interface ContractTypeSelectorProps {
   selectedType: ContractType | null;
   onSelect: (type: ContractType) => void;
+  uploadedFile: File | null;
+  onFileChange: (file: File | null) => void;
 }
 
-function ContractTypeSelector({ selectedType, onSelect }: ContractTypeSelectorProps) {
+function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChange }: ContractTypeSelectorProps) {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFileChange(file);
+      onSelect('custom');
+    }
+  };
+
+  const handleRemoveFile = () => {
+    onFileChange(null);
+    // Reset to no selection
+    onSelect(null as unknown as ContractType);
+  };
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">
-        Seleccione el tipo de contrato
-      </h3>
-      <div className="space-y-3">
-        {CONTRACT_TEMPLATES.map((template) => (
-          <button
-            key={template.id}
-            onClick={() => onSelect(template.type)}
+    <div className="space-y-5">
+      {/* Platform templates */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">
+            Contratos PLan
+          </h3>
+          <span className="text-[10px] font-medium uppercase tracking-wider bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
+            Recomendado
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Plantillas verificadas por nuestro equipo legal, optimizadas para proteger a ambas partes.
+        </p>
+        <div className="space-y-3">
+          {CONTRACT_TEMPLATES.map((template) => (
+            <button
+              key={template.id}
+              onClick={() => { onSelect(template.type); onFileChange(null); }}
+              className={cn(
+                'w-full rounded-sm border p-4 text-left transition-all',
+                selectedType === template.type
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                  : 'border-border hover:border-border hover:bg-muted'
+              )}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="font-medium text-foreground">
+                    {CONTRACT_TYPE_LABELS[template.type]}
+                  </h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {CONTRACT_TYPE_DESCRIPTIONS[template.type]}
+                  </p>
+                </div>
+                {selectedType === template.type && (
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs text-muted-foreground">o</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+
+      {/* Custom upload */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">
+          Subir contrato propio
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Si ya tienes un contrato, puedes subirlo en PDF. Se usará como base para el proceso de firma digital.
+        </p>
+
+        {!uploadedFile ? (
+          <label
             className={cn(
-              'w-full rounded-sm border p-4 text-left transition-all',
-              selectedType === template.type
-                ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                : 'border-border hover:border-border hover:bg-muted'
+              'flex flex-col items-center justify-center gap-2 w-full rounded-sm border-2 border-dashed p-6 cursor-pointer transition-all',
+              selectedType === 'custom'
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-muted-foreground hover:bg-muted'
             )}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <h4 className="font-medium text-foreground">
-                  {CONTRACT_TYPE_LABELS[template.type]}
-                </h4>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {CONTRACT_TYPE_DESCRIPTIONS[template.type]}
-                </p>
-              </div>
-              {selectedType === template.type && (
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-              )}
+            <Upload className="w-6 h-6 text-muted-foreground" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">
+                Arrastra tu contrato o haz clic para seleccionar
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                PDF, máximo 10MB
+              </p>
             </div>
-          </button>
-        ))}
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
+        ) : (
+          <div className={cn(
+            'flex items-center gap-3 w-full rounded-sm border p-4 transition-all',
+            'border-primary bg-primary/5 ring-2 ring-primary'
+          )}>
+            <div className="w-10 h-10 rounded-sm bg-red-50 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 text-red-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {uploadedFile.name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {(uploadedFile.size / 1024 / 1024).toFixed(1)} MB · PDF
+              </p>
+            </div>
+            <button
+              onClick={handleRemoveFile}
+              className="p-1.5 rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -110,6 +203,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   // State
   const [contract, setContract] = useState<Contract | null>(null);
   const [selectedType, setSelectedType] = useState<ContractType | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [selectedInsurance, setSelectedInsurance] = useState<SelectedInsurance>({
@@ -191,7 +285,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             <ArrowLeft className="h-4 w-4" />
             Volver a candidatos
           </Link>
-          <div className="mt-8 rounded-sm border border-border bg-white p-8 text-center">
+          <div className="mt-8 rounded-sm border border-border bg-card p-8 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
             <h2 className="mt-4 text-lg font-semibold text-foreground">
               Informacion no encontrada
@@ -207,10 +301,19 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Get template and steps if contract exists
   const template = contract ? getTemplateById(contract.templateId) : null;
-  const steps = contract ? getContractSteps(contract) : [];
   const isLandlordTurn = contract?.status === 'pending_landlord';
   const isTenantTurn = contract?.status === 'pending_tenant';
   const isActive = contract?.status === 'active';
+
+  // Determine active step index (0-based)
+  const activeStep = !contract ? 0 : isLandlordTurn ? 1 : isTenantTurn ? 2 : 3;
+
+  const processSteps = [
+    { label: 'Plantilla' },
+    { label: 'Revisar y firmar' },
+    { label: 'Firma inquilino' },
+    { label: 'Activo' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -225,7 +328,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
         </Link>
 
         {/* Page Header */}
-        <div className="mt-6 mb-8">
+        <div className="mt-6 mb-6">
           <h1 className="text-2xl font-bold text-foreground">
             {contract ? 'Contrato de Arrendamiento' : 'Generar Contrato'}
           </h1>
@@ -234,175 +337,181 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
           </p>
         </div>
 
-        {/* No contract yet - show template selector */}
-        {!contract && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Left: Template Selector */}
-            <div className="rounded-sm border border-border bg-white p-6">
-              <ContractTypeSelector
-                selectedType={selectedType}
-                onSelect={setSelectedType}
-              />
-
-              <Button
-                onClick={handleCreateContract}
-                disabled={!selectedType || isLoading}
-                className="mt-6 w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Generando contrato...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generar contrato
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Right: Info */}
-            <div className="rounded-sm border border-border bg-white p-6">
-              <h3 className="text-sm font-semibold text-foreground">
-                Informacion del Proceso
-              </h3>
-              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-white">
-                    1
-                  </div>
-                  <p>Seleccione el tipo de contrato adecuado</p>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                    2
-                  </div>
-                  <p>Revise los terminos y firme el contrato</p>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                    3
-                  </div>
-                  <p>El arrendatario recibira notificacion para firmar</p>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                    4
-                  </div>
-                  <p>Una vez firmado por ambos, el contrato quedara activo</p>
-                </div>
-              </div>
-            </div>
+        {/* Active contract — read-only view, no stepper */}
+        {isActive && contract && template && (
+          <div className="max-w-3xl">
+            <ContractPreview
+              contract={contract}
+              template={template}
+              selectedInsurance={selectedInsurance}
+            />
           </div>
         )}
 
-        {/* Contract exists - show signing flow */}
-        {contract && template && (
-          <div className="grid gap-6 lg:grid-cols-12">
-            {/* Left: Timeline */}
-            <div className="lg:col-span-3">
-              <div className="sticky top-6 rounded-sm border border-border bg-white p-4">
-                <h3 className="mb-4 text-sm font-semibold text-foreground">
-                  Estado del contrato
-                </h3>
-
-                {/* Status Badge */}
-                <div className="mb-4 rounded-sm border border-border bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Estado actual</p>
-                  <p className="mt-1 font-medium text-foreground">
-                    {CONTRACT_STATUS_LABELS[contract.status]}
-                  </p>
-                </div>
-
-                <ContractTimeline steps={steps} />
+        {/* Signing flow — stepper + sidebar */}
+        {!isActive && (
+          <>
+            {/* Shared Process Steps */}
+            <div className="mb-8">
+              <div className="flex items-center">
+                {processSteps.map((step, i) => {
+                  const isCompleted = i < activeStep;
+                  const isCurrent = i === activeStep;
+                  return (
+                    <div key={i} className="flex items-center flex-1 last:flex-none">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div className={cn(
+                          'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors',
+                          isCompleted && 'bg-primary text-white',
+                          isCurrent && 'bg-primary text-white ring-4 ring-primary/15',
+                          !isCompleted && !isCurrent && 'bg-muted text-muted-foreground',
+                        )}>
+                          {isCompleted ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                        </div>
+                        <p className={cn(
+                          'text-[11px] leading-tight whitespace-nowrap',
+                          isCurrent ? 'text-foreground font-semibold' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                        )}>
+                          {step.label}
+                        </p>
+                      </div>
+                      {i < processSteps.length - 1 && (
+                        <div className={cn(
+                          'h-px flex-1 mx-3 -mt-5',
+                          i < activeStep ? 'bg-primary' : 'bg-border',
+                        )} />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Center: Contract Preview */}
-            <div className="lg:col-span-6">
-              <ContractPreview
-                contract={contract}
-                template={template}
-                selectedInsurance={selectedInsurance}
-              />
-            </div>
+            {/* No contract yet - show template selector */}
+            {!contract && (
+              <div className="max-w-2xl">
+                <div className="rounded-sm border border-border bg-card p-6">
+                  <ContractTypeSelector
+                    selectedType={selectedType}
+                    onSelect={setSelectedType}
+                    uploadedFile={uploadedFile}
+                    onFileChange={setUploadedFile}
+                  />
 
-            {/* Right: Actions */}
-            <div className="lg:col-span-3">
-              <div className="sticky top-6 space-y-4">
-                {/* Insurance Selection (before signing) */}
-                {isLandlordTurn && (
-                  <div className="rounded-sm border border-border bg-white p-4">
-                    <InsuranceSelector
-                      selected={selectedInsurance}
-                      onSelect={setSelectedInsurance}
-                      monthlyRent={contract.monthlyRent}
+                  <Button
+                    onClick={handleCreateContract}
+                    disabled={!selectedType || (selectedType === 'custom' && !uploadedFile) || isLoading}
+                    className="mt-6 w-full"
+                    size="lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Clock className="mr-2 h-4 w-4 animate-spin" />
+                        {selectedType === 'custom' ? 'Procesando contrato...' : 'Generando contrato...'}
+                      </>
+                    ) : (
+                      <>
+                        {selectedType === 'custom' ? (
+                          <Upload className="mr-2 h-4 w-4" />
+                        ) : (
+                          <FileText className="mr-2 h-4 w-4" />
+                        )}
+                        {selectedType === 'custom' ? 'Usar mi contrato' : 'Generar contrato'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Contract exists but not yet active - signing flow */}
+            {contract && template && (
+              <>
+                {/* Status Banner */}
+                <div className={cn(
+                  'mb-6 rounded-sm px-5 py-3.5 flex items-center gap-3',
+                  isLandlordTurn && 'bg-indigo-50 border border-indigo-200 text-indigo-800',
+                  isTenantTurn && 'bg-indigo-50 border border-indigo-200 text-indigo-800',
+                )}>
+                  {isLandlordTurn && <FileText className="h-4 w-4 shrink-0" />}
+                  {isTenantTurn && <Clock className="h-4 w-4 shrink-0" />}
+                  <p className="text-sm font-medium">
+                    {isLandlordTurn && 'Revisa el contrato y firma para continuar el proceso'}
+                    {isTenantTurn && 'Esperando firma del arrendatario — se le ha enviado una notificación'}
+                  </p>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-3">
+                  {/* Main Content */}
+                  <div className="lg:col-span-2">
+                    <ContractPreview
+                      contract={contract}
+                      template={template}
+                      selectedInsurance={selectedInsurance}
                     />
                   </div>
-                )}
 
-                {/* Signing Form or Status */}
-                {isLandlordTurn && (
-                  <SignatureForm
-                    onSign={handleSign}
-                    isLandlord={true}
-                    isLoading={isSigning}
-                    signerName={contract.landlordName}
-                  />
-                )}
+                  {/* Sidebar */}
+                  <div className="lg:col-span-1">
+                    <div className="sticky top-6 space-y-4">
+                      {/* Insurance Selection (before signing) */}
+                      {isLandlordTurn && (
+                        <div className="rounded-sm border border-border bg-card p-4">
+                          <InsuranceSelector
+                            selected={selectedInsurance}
+                            onSelect={setSelectedInsurance}
+                            monthlyRent={contract.monthlyRent}
+                          />
+                        </div>
+                      )}
 
-                {isTenantTurn && (
-                  <div className="rounded-sm border border-blue-200 bg-blue-50 p-6">
-                    <div className="flex items-center gap-3 text-blue-700">
-                      <Clock className="h-5 w-5" />
-                      <div>
-                        <h3 className="font-semibold">Esperando firma</h3>
-                        <p className="text-sm text-blue-600">
-                          El arrendatario debe firmar el contrato. Se le ha enviado una
-                          notificacion.
+                      {/* Signing Form or Status */}
+                      {isLandlordTurn && (
+                        <SignatureForm
+                          onSign={handleSign}
+                          isLandlord={true}
+                          isLoading={isSigning}
+                          signerName={contract.landlordName}
+                        />
+                      )}
+
+                      {isTenantTurn && (
+                        <div className="rounded-sm border border-indigo-200 bg-indigo-50 p-5">
+                          <div className="flex items-center gap-3 text-indigo-700">
+                            <Clock className="h-5 w-5 shrink-0" />
+                            <div>
+                              <h3 className="font-semibold text-sm">Esperando firma</h3>
+                              <p className="text-xs text-indigo-600 mt-0.5">
+                                El arrendatario debe firmar el contrato.
+                              </p>
+                            </div>
+                          </div>
+                          <Button className="mt-4 w-full" size="sm" asChild>
+                            <Link href={`/panel/${propertyId}`}>
+                              Entendido, volver a la propiedad
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Contract Info Card */}
+                      <div className="rounded-sm border border-border bg-card p-4">
+                        <h4 className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
+                          Tipo de contrato
+                        </h4>
+                        <p className="mt-1 font-medium text-foreground">
+                          {CONTRACT_TYPE_LABELS[contract.type]}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {template.clauses.length} cláusulas
                         </p>
                       </div>
                     </div>
                   </div>
-                )}
-
-                {isActive && (
-                  <div className="rounded-sm border border-emerald-200 bg-emerald-50 p-6">
-                    <div className="flex items-center gap-3 text-emerald-700">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <div>
-                        <h3 className="font-semibold">Contrato activo</h3>
-                        <p className="text-sm text-emerald-600">
-                          Ambas partes han firmado. El contrato esta vigente.
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="mt-4 w-full" asChild>
-                      <Link href={`/panel/${propertyId}`}>
-                        Volver al panel
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-
-                {/* Contract Info Card */}
-                <div className="rounded-sm border border-border bg-white p-4">
-                  <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Tipo de contrato
-                  </h4>
-                  <p className="mt-1 font-medium text-foreground">
-                    {CONTRACT_TYPE_LABELS[contract.type]}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {template.clauses.length} clausulas
-                  </p>
                 </div>
-              </div>
-            </div>
-          </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -15,11 +16,11 @@ import {
   Send,
   Phone,
   Mail,
-  Calendar,
-  Shield,
 } from 'lucide-react';
 import type { Contract } from '@/lib/types/contract';
 import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import { getTemplateById } from '@/lib/data/mock-contracts';
+import { generateContractPdf } from '@/lib/utils/generate-contract-pdf';
 
 interface ContractExpandableItemProps {
   contract: Contract;
@@ -41,19 +42,27 @@ function SignatureIndicator({
     <div className="flex items-center gap-3">
       <div
         className={cn(
-          'w-2 h-2 rounded-full',
-          isSigned ? 'bg-foreground' : 'bg-muted'
+          'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
+          isSigned
+            ? 'bg-emerald-100 text-emerald-600'
+            : 'bg-muted text-muted-foreground'
         )}
-      />
+      >
+        {isSigned ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : (
+          <Clock className="w-3.5 h-3.5" />
+        )}
+      </div>
       <div>
-        <p className="text-sm text-foreground">{label}</p>
+        <p className="text-sm font-medium text-foreground">{label}</p>
         {isSigned && signedAt && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Firmado {formatDate(signedAt)}
           </p>
         )}
         {!isSigned && (
-          <p className="text-[10px] text-muted-foreground">Pendiente</p>
+          <p className="text-xs text-muted-foreground">Pendiente</p>
         )}
       </div>
     </div>
@@ -62,10 +71,31 @@ function SignatureIndicator({
 
 /**
  * ContractExpandableItem - Expandable contract row with actions
- * Click to expand and see full details, signature status, and actions
  */
 export function ContractExpandableItem({ contract }: ContractExpandableItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [reminderCooldown, setReminderCooldown] = useState(false);
+
+  const handleSendReminder = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isSendingReminder || reminderCooldown) return;
+
+    setIsSendingReminder(true);
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    setIsSendingReminder(false);
+    setReminderCooldown(true);
+
+    toast.success('Recordatorio enviado', {
+      description: `Se envió un recordatorio a ${contract.tenantName} (${contract.tenantEmail}) para firmar el contrato.`,
+    });
+
+    // 60s cooldown
+    setTimeout(() => setReminderCooldown(false), 60_000);
+  }, [isSendingReminder, reminderCooldown, contract.tenantName, contract.tenantEmail]);
 
   const needsLandlordAction = contract.status === 'pending_landlord';
   const needsTenantAction = contract.status === 'pending_tenant';
@@ -75,11 +105,11 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
   // Status badge config
   const statusConfig = {
     draft: { text: 'Borrador', className: 'bg-muted text-muted-foreground' },
-    pending_landlord: { text: 'Tu firma', className: 'bg-foreground text-white' },
-    pending_tenant: { text: 'Esperando', className: 'bg-muted text-muted-foreground' },
-    active: { text: 'Activo', className: 'bg-muted text-muted-foreground' },
+    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-950 text-white' },
+    pending_tenant: { text: 'Esperando', className: 'bg-amber-100 text-amber-800' },
+    active: { text: 'Activo', className: 'bg-emerald-100 text-emerald-800' },
     expired: { text: 'Expirado', className: 'bg-muted text-muted-foreground' },
-    cancelled: { text: 'Cancelado', className: 'bg-muted text-muted-foreground' },
+    cancelled: { text: 'Cancelado', className: 'bg-red-100 text-red-800' },
   };
 
   const status = statusConfig[contract.status];
@@ -95,68 +125,68 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left p-5 hover:bg-muted/50 transition-colors"
+        className="w-full text-left px-6 py-5 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-4">
           {/* Document icon */}
-          <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 rounded-sm bg-muted flex items-center justify-center flex-shrink-0">
             <FileText className="w-5 h-5 text-muted-foreground" />
           </div>
 
           {/* Main info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-foreground truncate">
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-medium text-foreground truncate">
                 {contract.propertyAddress}
               </h3>
               <span
                 className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0',
+                  'text-xs px-2 py-0.5 rounded-sm flex-shrink-0 font-medium',
                   status.className
                 )}
               >
                 {status.text}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {contract.tenantName} · {contract.propertyCity}
             </p>
           </div>
 
-          {/* Signature status mini indicators */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-1">
+          {/* Signature status indicators */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5">
               <div
                 className={cn(
-                  'w-1.5 h-1.5 rounded-full',
-                  contract.landlordSignature ? 'bg-foreground' : 'bg-muted'
+                  'w-2 h-2 rounded-full',
+                  contract.landlordSignature ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                 )}
               />
-              <span className="text-[10px] text-muted-foreground">Arr.</span>
+              <span className="text-xs text-muted-foreground">Arr.</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <div
                 className={cn(
-                  'w-1.5 h-1.5 rounded-full',
-                  contract.tenantSignature ? 'bg-foreground' : 'bg-muted'
+                  'w-2 h-2 rounded-full',
+                  contract.tenantSignature ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                 )}
               />
-              <span className="text-[10px] text-muted-foreground">Inq.</span>
+              <span className="text-xs text-muted-foreground">Inq.</span>
             </div>
           </div>
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-lg font-semibold text-foreground">
               {formatCurrency(contract.monthlyRent)}
             </p>
-            <p className="text-[10px] text-muted-foreground">/mes</p>
+            <p className="text-xs text-muted-foreground">/mes</p>
           </div>
 
           {/* Expand indicator */}
           <ChevronDown
             className={cn(
-              'w-4 h-4 text-muted-foreground transition-transform flex-shrink-0',
+              'w-5 h-5 text-muted-foreground transition-transform flex-shrink-0',
               isExpanded && 'rotate-180'
             )}
           />
@@ -165,43 +195,45 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="px-5 pb-5">
-          <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="px-6 pb-6">
+          <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Contract Details */}
-            <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            <div className="bg-card border border-border rounded-sm p-5">
+              <p className="text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider mb-4">
                 Detalles del contrato
               </p>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Tipo</span>
-                  <span className="text-xs text-foreground font-medium">
+              <div className="space-y-3.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">Tipo</span>
+                  <span className="text-sm text-foreground font-medium">
                     {CONTRACT_TYPE_LABELS[contract.type]}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Vigencia</span>
-                  <span className="text-xs text-foreground">
-                    {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">Vigencia</span>
+                  <span className="text-sm text-foreground">
+                    {formatDate(contract.startDate)} – {formatDate(contract.endDate)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Administracion</span>
-                  <span className="text-xs text-foreground">{formatCurrency(contract.adminFee)}</span>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">Administración</span>
+                  <span className="text-sm text-foreground font-medium">
+                    {formatCurrency(contract.adminFee)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Garantia</span>
-                  <span className="text-xs text-foreground capitalize">{contract.guaranteeType}</span>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">Garantía</span>
+                  <span className="text-sm text-foreground capitalize">{contract.guaranteeType}</span>
                 </div>
               </div>
             </div>
 
             {/* Card 2: Signatures */}
-            <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            <div className="bg-card border border-border rounded-sm p-5">
+              <p className="text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider mb-4">
                 Estado de firmas
               </p>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <SignatureIndicator
                   label="Arrendador"
                   isSigned={!!contract.landlordSignature}
@@ -216,52 +248,67 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 3: Contact & Actions */}
-            <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            <div className="bg-card border border-border rounded-sm p-5">
+              <p className="text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider mb-4">
                 Contacto arrendatario
               </p>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2.5 mb-5">
                 <a
                   href={`tel:${contract.tenantPhone}`}
-                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Phone className="w-4 h-4" />
                   {contract.tenantPhone}
                 </a>
                 <a
                   href={`mailto:${contract.tenantEmail}`}
-                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Mail className="w-4 h-4" />
                   {contract.tenantEmail}
                 </a>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
-                    <Button variant="default" size="sm" className="w-full h-8 text-xs gap-1.5">
-                      <PenLine className="w-3.5 h-3.5" />
+                    <Button variant="default" size="sm" className="w-full gap-2">
+                      <PenLine className="w-4 h-4" />
                       Firmar
                     </Button>
                   </Link>
                 )}
                 {needsTenantAction && (
-                  <Button variant="outline" size="sm" className="flex-1 h-8 text-xs gap-1.5">
-                    <Send className="w-3.5 h-3.5" />
-                    Recordar
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    disabled={isSendingReminder || reminderCooldown}
+                    onClick={handleSendReminder}
+                  >
+                    <Send className={cn('w-4 h-4', isSendingReminder && 'animate-pulse')} />
+                    {isSendingReminder ? 'Enviando…' : reminderCooldown ? 'Enviado' : 'Recordar'}
                   </Button>
                 )}
                 <Link href={contractUrl} className={needsLandlordAction || needsTenantAction ? '' : 'flex-1'}>
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 w-full">
-                    <FileText className="w-3.5 h-3.5" />
-                    Ver
+                  <Button variant="outline" size="sm" className="w-full gap-2">
+                    <FileText className="w-4 h-4" />
+                    Ver contrato
                   </Button>
                 </Link>
                 {isActive && (
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                    <Download className="w-3.5 h-3.5" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const tpl = getTemplateById(contract.templateId);
+                      if (tpl) generateContractPdf(contract, tpl);
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
                     PDF
                   </Button>
                 )}

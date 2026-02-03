@@ -1,36 +1,84 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ImagePlus, X, GripVertical, AlertCircle } from 'lucide-react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { cn } from '@/lib/utils';
 
-// Sample placeholder images for demo
-const SAMPLE_IMAGES = [
-  'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-  'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800',
-  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-  'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800',
-];
+const MAX_PHOTOS = 10;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function StepPhotos() {
   const { draft, updateDraft } = usePublish();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const addSamplePhoto = () => {
-    const availableImages = SAMPLE_IMAGES.filter(img => !draft.photos.includes(img));
-    if (availableImages.length > 0) {
-      const randomImage = availableImages[Math.floor(Math.random() * availableImages.length)];
-      updateDraft({ photos: [...draft.photos, randomImage] });
+  const processFiles = useCallback((files: FileList | File[]) => {
+    setError(null);
+    const fileArray = Array.from(files);
+    const remaining = MAX_PHOTOS - draft.photos.length;
+
+    if (remaining <= 0) {
+      setError('Máximo de fotos alcanzado.');
+      return;
+    }
+
+    const validFiles: File[] = [];
+    for (const file of fileArray.slice(0, remaining)) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        setError('Solo se aceptan imágenes JPG, PNG o WebP.');
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setError('Cada imagen debe pesar menos de 10MB.');
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > 0) {
+      const urls = validFiles.map((f) => URL.createObjectURL(f));
+      updateDraft({ photos: [...draft.photos, ...urls] });
+    }
+  }, [draft.photos, updateDraft]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
+    }
+    // Reset so same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
     }
   };
 
+  const handleDragOverZone = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeaveZone = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
   const removePhoto = (index: number) => {
+    const url = draft.photos[index];
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url);
     const updated = draft.photos.filter((_, i) => i !== index);
     updateDraft({ photos: updated });
   };
 
+  // Drag-to-reorder
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -38,7 +86,6 @@ export function StepPhotos() {
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
-
     const updated = [...draft.photos];
     const [removed] = updated.splice(draggedIndex, 1);
     updated.splice(index, 0, removed);
@@ -50,44 +97,69 @@ export function StepPhotos() {
     setDraggedIndex(null);
   };
 
+  const isFull = draft.photos.length >= MAX_PHOTOS;
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-black mb-1">
+        <h3 className="text-sm font-medium text-foreground mb-1">
           Fotos del inmueble
         </h3>
-        <p className="text-sm text-black/50">
-          Agrega al menos 1 foto. La primera sera la imagen principal.
+        <p className="text-sm text-muted-foreground">
+          Agrega al menos 1 foto. La primera será la imagen principal.
         </p>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
+      />
 
       {/* Upload area */}
       <button
         type="button"
-        onClick={addSamplePhoto}
-        disabled={draft.photos.length >= 10}
+        onClick={() => !isFull && fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={handleDragOverZone}
+        onDragLeave={handleDragLeaveZone}
+        disabled={isFull}
         className={cn(
           'w-full border-2 border-dashed rounded-sm p-8 text-center transition-colors',
-          draft.photos.length >= 10
-            ? 'border-black/10 bg-black/[0.02] cursor-not-allowed'
-            : 'border-black/20 hover:border-black/40 hover:bg-black/[0.02]'
+          isFull
+            ? 'border-border bg-black/[0.02] cursor-not-allowed'
+            : isDragOver
+              ? 'border-black bg-black/[0.04]'
+              : 'border-border hover:border-border hover:bg-black/[0.02]'
         )}
       >
-        <ImagePlus className="w-10 h-10 mx-auto text-black/30 mb-3" />
-        <p className="text-sm font-medium text-black/70">
-          {draft.photos.length >= 10 ? 'Maximo de fotos alcanzado' : 'Haz clic para agregar fotos'}
+        <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+        <p className="text-sm font-medium text-foreground/70">
+          {isFull
+            ? 'Máximo de fotos alcanzado'
+            : isDragOver
+              ? 'Suelta las fotos aquí'
+              : 'Haz clic o arrastra fotos aquí'}
         </p>
-        <p className="text-xs text-black/40 mt-1">
-          {draft.photos.length}/10 fotos
+        <p className="text-xs text-muted-foreground mt-1">
+          {draft.photos.length}/{MAX_PHOTOS} fotos · JPG, PNG o WebP · Máx 10MB
         </p>
       </button>
+
+      {error && (
+        <p className="text-sm text-red-600">{error}</p>
+      )}
 
       {/* Photo grid */}
       {draft.photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {draft.photos.map((photo, index) => (
             <div
-              key={photo}
+              key={`${photo}-${index}`}
               draggable
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
@@ -129,18 +201,30 @@ export function StepPhotos() {
               </button>
             </div>
           ))}
+
+          {/* Add more button inside grid */}
+          {!isFull && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-[4/3] rounded-sm border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-border transition-colors"
+            >
+              <ImagePlus className="w-6 h-6 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Agregar</span>
+            </button>
+          )}
         </div>
       )}
 
       {/* Tips */}
       <div className="flex items-start gap-3 p-4 bg-black/[0.02] rounded-sm">
-        <AlertCircle className="w-5 h-5 text-black/40 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-black/60">
-          <p className="font-medium text-black/70 mb-1">Tips para mejores fotos:</p>
+        <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-muted-foreground">
+          <p className="font-medium text-foreground/70 mb-1">Tips para mejores fotos:</p>
           <ul className="list-disc list-inside space-y-0.5">
             <li>Usa luz natural cuando sea posible</li>
             <li>Muestra todas las habitaciones principales</li>
-            <li>Asegurate de que el espacio este ordenado</li>
+            <li>Asegúrate de que el espacio esté ordenado</li>
             <li>Arrastra las fotos para reordenarlas</li>
           </ul>
         </div>

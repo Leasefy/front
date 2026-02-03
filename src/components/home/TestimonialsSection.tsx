@@ -66,13 +66,13 @@ export function TestimonialsSection() {
             {/* Label with purple dot */}
             <div className="flex items-center gap-2 mb-4">
               <span className="w-[6px] h-[6px] rounded-full bg-primary" />
-              <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
+              <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
                 Testimonios
               </span>
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-normal text-primary tracking-[-4.176px] leading-[1.05] mb-10">
+            <h2 className="text-[40px] md:text-[58px] font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
               Lo que dicen nuestros clientes
             </h2>
 
@@ -80,14 +80,14 @@ export function TestimonialsSection() {
             <div className="flex gap-3">
               <button
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-primary hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
                 aria-label="Anterior testimonio"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-primary hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
                 aria-label="Siguiente testimonio"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -113,7 +113,7 @@ export function TestimonialsSection() {
                     {/* Quote icon */}
                     <div className="mb-6">
                       <svg
-                        className="w-10 h-10 text-black/15"
+                        className="w-10 h-10 text-muted-foreground"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -122,7 +122,7 @@ export function TestimonialsSection() {
                     </div>
 
                     {/* Quote text - 24px, -0.96px letter-spacing */}
-                    <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-primary mb-8 flex-grow">
+                    <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-foreground mb-8 flex-grow">
                       {testimonial.quote}
                     </p>
 
@@ -139,11 +139,11 @@ export function TestimonialsSection() {
                       </div>
                       <div>
                         {/* Author name - 16px, -0.32px letter-spacing */}
-                        <p className="text-[16px] font-normal text-primary tracking-[-0.32px] leading-[21.6px]">
+                        <p className="text-[16px] font-normal text-foreground tracking-[-0.32px] leading-[21.6px]">
                           {testimonial.author}
                         </p>
                         {/* Author role - 16px, -0.32px letter-spacing, black/62% */}
-                        <p className="text-[16px] text-black/[0.62] tracking-[-0.32px] leading-[21.6px]">
+                        <p className="text-[16px] text-muted-foreground tracking-[-0.32px] leading-[21.6px]">
                           {testimonial.role}
                         </p>
                       </div>

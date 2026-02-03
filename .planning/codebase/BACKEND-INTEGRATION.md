@@ -518,4 +518,80 @@ export async function getProperties(): Promise<Property[]> {
 
 ---
 
-*Backend integration analysis: 2026-01-28*
+## 7. Phase 16 Updates (2026-02-02)
+
+### New Pages Created
+
+| Route | Purpose | Backend Needs |
+|-------|---------|---------------|
+| `/privacidad` | Privacy policy (Ley 1581/2012) | Static content, no API needed |
+| `/terminos` | Terms of service (Ley 820/2003) | Static content, no API needed |
+| `/ayuda` | Help center with FAQ | Consider CMS/API for dynamic FAQ |
+
+### New Features Requiring Backend
+
+**Contract PDF Generation:**
+- Frontend generates PDF client-side using jsPDF (`src/lib/utils/generate-contract-pdf.ts`)
+- Backend should eventually provide server-side PDF generation for legal validity
+- Current PDF includes: parties, property details, all clauses, signature status, legal footer
+
+**Reminder System (Contracts):**
+- Frontend simulates sending reminders to tenants pending signature
+- Backend needs: `POST /contracts/:id/remind` — send email/notification to tenant
+- Cooldown: 60 seconds on frontend (backend should enforce rate limiting)
+
+**Visit Scheduling:**
+- Frontend has a modal form with date, time, property, notes
+- Backend needs: `POST /visits` — create visit with scheduling data
+- Backend needs: `GET /properties/:id/visits` — list visits for property
+
+**Document Preview:**
+- Frontend shows mock document details in a preview modal
+- Backend needs: `GET /documents/:id` — returns document metadata
+- Backend needs: `GET /documents/:id/url` — returns signed download URL (already planned)
+
+### Updated Contract Types
+
+The contract templates now include 18 clauses with specific Colombian law article references:
+- Ley 820/2003 (Arrendamiento de vivienda urbana)
+- Ley 675/2001 (Propiedad horizontal)
+- Ley 527/1999 (Firma electrónica)
+- Ley 1581/2012 (Protección de datos personales)
+- Decreto 2364/2012 (Firma electrónica)
+
+Backend should validate contract clauses against these laws when generating contracts.
+
+### New Mock Data Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/utils/generate-contract-pdf.ts` | Client-side PDF generation |
+| `src/lib/data/mock-visits.ts` | Visit scheduling data |
+
+### Navigation Changes
+
+- Landlord sidebar now includes: Visitas, Notificaciones (were missing)
+- Tenant sidebar now includes: Notificaciones, Perfil (were missing)
+- `/mi-arriendo` redirects to `/inquilino/arriendo`
+- `/mis-aplicaciones` redirects to `/inquilino/aplicaciones`
+- "Registrarme" button sends `?mode=register` query param
+
+### Dark Mode Readiness
+
+Frontend is now dark-mode compatible:
+- All `bg-white` replaced with `bg-card`/`bg-background`
+- All `text-black` replaced with `text-foreground`/`text-muted-foreground`
+- All `border-black/*` replaced with `border-border`
+- ThemeProvider is configured and functional
+- Backend should respect user theme preference if stored
+
+### Design Token Adoption
+
+All status colors now use semantic tokens:
+- `plan-status-green`, `plan-status-blue`, `plan-status-yellow`, `plan-status-red`, `plan-status-purple`
+- Risk levels use `risk-a`, `risk-b`, `risk-c`, `risk-d` tokens
+- Backend API responses don't need to include color info — frontend maps status to colors
+
+---
+
+*Backend integration analysis: 2026-01-28, updated 2026-02-02*

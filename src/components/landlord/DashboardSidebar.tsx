@@ -16,6 +16,8 @@ import {
   Sparkles,
   FileText,
   Home,
+  Bell,
+  Calendar,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -41,13 +43,11 @@ const NAV_ITEMS = [
     label: 'Mis Propiedades',
     href: '/panel/propiedades',
     icon: Building2,
-    disabled: true,
   },
   {
     label: 'Candidatos',
     href: '/panel/candidatos',
     icon: Users,
-    disabled: true,
   },
   {
     label: 'Contratos',
@@ -60,17 +60,25 @@ const NAV_ITEMS = [
     icon: Home,
   },
   {
+    label: 'Visitas',
+    href: '/panel/visitas',
+    icon: Calendar,
+  },
+  {
     label: 'Mensajes',
     href: '/panel/mensajes',
     icon: MessageSquare,
     badge: 3,
-    disabled: true,
+  },
+  {
+    label: 'Notificaciones',
+    href: '/panel/notificaciones',
+    icon: Bell,
   },
   {
     label: 'Configuracion',
     href: '/panel/configuracion',
     icon: Settings,
-    disabled: true,
   },
 ];
 
@@ -83,41 +91,22 @@ interface NavItemProps {
 function NavItem({ item, isActive, onClick }: NavItemProps) {
   const Icon = item.icon;
 
-  if (item.disabled) {
-    return (
-      <div
-        className={cn(
-          'flex items-center gap-3 px-3 py-2.5 text-sm',
-          'text-muted-foreground cursor-not-allowed'
-        )}
-      >
-        <Icon className="w-4 h-4" />
-        <span className="flex-1">{item.label}</span>
-        {item.badge && (
-          <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
-            {item.badge}
-          </span>
-        )}
-      </div>
-    );
-  }
-
   return (
     <Link
       href={item.href}
       onClick={onClick}
       className={cn(
         'relative flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-300',
-        'rounded-lg group',
+        'rounded-sm group',
         isActive
-          ? 'bg-[black]/8 text-[black]'
+          ? 'bg-foreground/8 text-foreground'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       )}
     >
       {/* Active indicator - vertical accent line */}
       <span
         className={cn(
-          'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-[black]',
+          'absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-foreground',
           'transition-all duration-300 ease-out',
           isActive ? 'h-5 opacity-100' : 'h-0 opacity-0'
         )}
@@ -126,7 +115,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
       <Icon
         className={cn(
           'w-4 h-4 transition-transform duration-300',
-          isActive && 'text-[black]',
+          isActive && 'text-foreground',
           !isActive && 'group-hover:scale-110'
         )}
       />
@@ -136,8 +125,8 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
           className={cn(
             'text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300',
             isActive
-              ? 'bg-[black] text-white shadow-sm'
-              : 'bg-muted text-muted-foreground group-hover:bg-[black]/10 group-hover:text-[black]'
+              ? 'bg-foreground text-white shadow-sm'
+              : 'bg-muted text-muted-foreground group-hover:bg-foreground/10 group-hover:text-foreground'
           )}
         >
           {item.badge}
@@ -167,14 +156,14 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Logo - Premium styling */}
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-black to-[black/80] rounded-xl flex items-center justify-center shadow-lg shadow-[black]/20 transition-transform duration-300 group-hover:scale-105">
+          <div className="w-10 h-10 bg-gradient-to-br from-foreground to-foreground/80 rounded-sm flex items-center justify-center shadow-lg shadow-foreground/20 transition-transform duration-300 group-hover:scale-105">
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
             <span className="text-base font-semibold text-foreground tracking-[-0.02em]">
               Arrienda
             </span>
-            <span className="text-xs text-[black] font-medium -mt-0.5">
+            <span className="text-xs text-foreground font-medium -mt-0.5">
               Seguro
             </span>
           </div>
@@ -199,7 +188,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Upgrade CTA for free users - Premium design */}
       {MOCK_SUBSCRIPTION.planId === 'free' && (
         <div className="px-4 py-4">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-[black/80] p-4 shadow-lg shadow-[black]/25">
+          <div className="relative overflow-hidden rounded-sm bg-gradient-to-br from-foreground to-foreground/80 p-4 shadow-lg shadow-foreground/25">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12" />
             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full blur-xl -ml-8 -mb-8" />
@@ -207,7 +196,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-white/90" />
-                <span className="text-xs font-semibold text-white/90 uppercase tracking-wider">
+                <span className="text-xs font-normal text-white/90 font-mono uppercase tracking-wider">
                   Pro
                 </span>
               </div>
@@ -218,7 +207,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="w-full bg-white text-[black] hover:bg-white/90 font-semibold shadow-md"
+                  className="w-full bg-white text-foreground hover:bg-white/90 font-semibold shadow-md"
                 >
                   Mejorar plan
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -231,8 +220,8 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
 
       {/* User section - Premium design */}
       <div className="p-4 border-t border-border/80">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-foreground font-semibold text-sm shadow-inner">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-sm hover:bg-muted/50 transition-colors cursor-pointer mb-2">
+          <div className="w-10 h-10 rounded-sm bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center text-foreground font-semibold text-sm shadow-inner">
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1 min-w-0">
@@ -246,7 +235,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
         </div>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-lg transition-all duration-200"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-sm transition-all duration-200"
           onClick={logout}
         >
           <LogOut className="w-4 h-4" />
@@ -275,7 +264,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0',
-          'bg-white/80 backdrop-blur-xl border-r border-border/60',
+          'bg-white/80 dark:bg-card/80 backdrop-blur-xl border-r border-border/60',
           'shadow-[1px_0_30px_rgba(0,0,0,0.04)]',
           className
         )}
@@ -287,7 +276,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-40 bg-white shadow-sm border border-border"
+        className="lg:hidden fixed top-4 left-4 z-40 bg-white dark:bg-card shadow-sm border border-border"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="w-5 h-5" />

@@ -76,7 +76,7 @@ export function PlanTabs({
               sizeClasses[size],
               fullWidth && 'flex-1',
               activeTab === tab.id
-                ? 'bg-white text-plan-primary shadow-sm'
+                ? 'bg-white dark:bg-card text-plan-primary shadow-sm'
                 : 'text-plan-secondary hover:text-plan-primary',
               tab.disabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -87,7 +87,7 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                   activeTab === tab.id
-                    ? 'bg-plan-primary text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
@@ -132,7 +132,7 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-sm text-[10px] font-semibold',
                   activeTab === tab.id
-                    ? 'bg-plan-primary text-white'
+                    ? 'bg-primary text-white'
                     : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
@@ -143,7 +143,7 @@ export function PlanTabs({
         ))}
         {/* Animated underline indicator */}
         <div
-          className="absolute bottom-0 h-0.5 bg-plan-primary transition-all duration-200 ease-out"
+          className="absolute bottom-0 h-0.5 bg-primary transition-all duration-200 ease-out"
           style={{
             left: indicatorStyle.left,
             width: indicatorStyle.width,
@@ -170,7 +170,7 @@ export function PlanTabs({
             sizeClasses[size],
             fullWidth && 'flex-1',
             activeTab === tab.id
-              ? 'bg-plan-primary text-white'
+              ? 'bg-primary text-white'
               : 'text-plan-secondary hover:bg-muted hover:text-plan-primary',
             tab.disabled && 'opacity-50 cursor-not-allowed'
           )}

@@ -26,7 +26,7 @@ const badgeVariants = cva(
         "risk-b":
           "border-transparent bg-[hsl(var(--risk-b))] text-white shadow-sm shadow-[hsl(var(--risk-b))]/25",
         "risk-c":
-          "border-transparent bg-[hsl(var(--risk-c))] text-black shadow-sm shadow-[hsl(var(--risk-c))]/25",
+          "border-transparent bg-[hsl(var(--risk-c))] text-foreground shadow-sm shadow-[hsl(var(--risk-c))]/25",
         "risk-d":
           "border-transparent bg-[hsl(var(--risk-d))] text-white shadow-sm shadow-[hsl(var(--risk-d))]/25",
       },

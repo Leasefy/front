@@ -27,7 +27,7 @@ export function ManagementTierCard({
   return (
     <div
       className={cn(
-        'relative flex flex-col rounded-sm border bg-white p-6 transition-all',
+        'relative flex flex-col rounded-sm border bg-card p-6 transition-all',
         tier.highlighted
           ? 'border-primary shadow-lg ring-1 ring-primary'
           : 'border-border hover:border-border',

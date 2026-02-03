@@ -36,35 +36,35 @@ export function PropertyAccordion({
     <Accordion
       type="multiple"
       defaultValue={defaultOpen}
-      className={cn('border-t border-black/10', className)}
+      className={cn('border-t border-border', className)}
     >
       {/* Property Details */}
-      <AccordionItem value="details" className="border-b border-black/10">
-        <AccordionTrigger className="py-5 text-sm font-medium text-black hover:no-underline hover:bg-black/[0.02] transition-colors">
+      <AccordionItem value="details" className="border-b border-border">
+        <AccordionTrigger className="py-5 text-sm font-medium text-foreground hover:no-underline hover:bg-black/[0.02] transition-colors">
           Detalles de la propiedad
         </AccordionTrigger>
         <AccordionContent className="pb-5">
           <ul className="space-y-2">
-            <li className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <li className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               {property.bedrooms} {property.bedrooms === 1 ? 'habitacion' : 'habitaciones'}
             </li>
-            <li className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <li className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               {property.bathrooms} {property.bathrooms === 1 ? 'bano' : 'banos'}
             </li>
-            <li className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <li className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               {formatArea(property.area)} de area
             </li>
             {property.floor !== undefined && (
-              <li className="flex items-center gap-2 text-sm text-black/70">
-                <span className="text-black/40">-</span>
+              <li className="flex items-center gap-2 text-sm text-foreground/70">
+                <span className="text-muted-foreground">-</span>
                 Piso {property.floor}
               </li>
             )}
-            <li className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <li className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               {typeLabels[property.type]}
             </li>
           </ul>
@@ -72,19 +72,19 @@ export function PropertyAccordion({
       </AccordionItem>
 
       {/* Location */}
-      <AccordionItem value="location" className="border-b border-black/10">
-        <AccordionTrigger className="py-5 text-sm font-medium text-black hover:no-underline hover:bg-black/[0.02] transition-colors">
+      <AccordionItem value="location" className="border-b border-border">
+        <AccordionTrigger className="py-5 text-sm font-medium text-foreground hover:no-underline hover:bg-black/[0.02] transition-colors">
           Ubicacion
         </AccordionTrigger>
         <AccordionContent className="pb-5">
           <div className="space-y-3">
-            <p className="text-sm text-black/70 leading-relaxed">
+            <p className="text-sm text-foreground/70 leading-relaxed">
               Ubicado en {property.neighborhood}, {property.city}.
             </p>
-            <p className="text-sm text-black/70">
+            <p className="text-sm text-foreground/70">
               Direccion: {property.address}
             </p>
-            <p className="text-sm text-black/50 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Excelente ubicacion con acceso a transporte publico, comercio y servicios.
             </p>
           </div>
@@ -93,8 +93,8 @@ export function PropertyAccordion({
 
       {/* Features & Amenities */}
       {property.amenities.length > 0 && (
-        <AccordionItem value="amenities" className="border-b border-black/10">
-          <AccordionTrigger className="py-5 text-sm font-medium text-black hover:no-underline hover:bg-black/[0.02] transition-colors">
+        <AccordionItem value="amenities" className="border-b border-border">
+          <AccordionTrigger className="py-5 text-sm font-medium text-foreground hover:no-underline hover:bg-black/[0.02] transition-colors">
             Caracteristicas y comodidades
           </AccordionTrigger>
           <AccordionContent className="pb-5">
@@ -102,7 +102,7 @@ export function PropertyAccordion({
               {property.amenities.map((amenity) => (
                 <div
                   key={amenity.id}
-                  className="flex items-center gap-2 text-sm text-black/70"
+                  className="flex items-center gap-2 text-sm text-foreground/70"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-black/30" />
                   {amenity.name}
@@ -114,36 +114,36 @@ export function PropertyAccordion({
       )}
 
       {/* Costs */}
-      <AccordionItem value="costs" className="border-b border-black/10">
-        <AccordionTrigger className="py-5 text-sm font-medium text-black hover:no-underline hover:bg-black/[0.02] transition-colors">
+      <AccordionItem value="costs" className="border-b border-border">
+        <AccordionTrigger className="py-5 text-sm font-medium text-foreground hover:no-underline hover:bg-black/[0.02] transition-colors">
           Costos mensuales
         </AccordionTrigger>
         <AccordionContent className="pb-5">
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-black/50">Arriendo</span>
-              <span className="text-black font-medium">
+              <span className="text-muted-foreground">Arriendo</span>
+              <span className="text-foreground font-medium">
                 {formatCurrency(property.monthlyRent)}
               </span>
             </div>
             {property.adminFee > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-black/50">Administracion</span>
-                <span className="text-black font-medium">
+                <span className="text-muted-foreground">Administracion</span>
+                <span className="text-foreground font-medium">
                   {formatCurrency(property.adminFee)}
                 </span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-black/50">Deposito (unico)</span>
-              <span className="text-black font-medium">
+              <span className="text-muted-foreground">Deposito (unico)</span>
+              <span className="text-foreground font-medium">
                 {formatCurrency(property.deposit)}
               </span>
             </div>
-            <div className="pt-3 border-t border-black/10">
+            <div className="pt-3 border-t border-border">
               <div className="flex justify-between text-sm">
-                <span className="text-black font-medium">Total mensual</span>
-                <span className="text-black font-medium">
+                <span className="text-foreground font-medium">Total mensual</span>
+                <span className="text-foreground font-medium">
                   {formatCurrency(property.monthlyRent + property.adminFee)}
                 </span>
               </div>
@@ -153,28 +153,28 @@ export function PropertyAccordion({
       </AccordionItem>
 
       {/* Policies */}
-      <AccordionItem value="policies" className="border-b border-black/10">
-        <AccordionTrigger className="py-5 text-sm font-medium text-black hover:no-underline hover:bg-black/[0.02] transition-colors">
+      <AccordionItem value="policies" className="border-b border-border">
+        <AccordionTrigger className="py-5 text-sm font-medium text-foreground hover:no-underline hover:bg-black/[0.02] transition-colors">
           Politicas
         </AccordionTrigger>
         <AccordionContent className="pb-5">
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <div className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               {property.amenities.some((a) => a.id === 'pets')
                 ? 'Se aceptan mascotas'
                 : 'No se aceptan mascotas'}
             </div>
-            <div className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <div className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               Contrato minimo de 12 meses
             </div>
-            <div className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <div className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               Deposito equivalente a 1 mes de arriendo
             </div>
-            <div className="flex items-center gap-2 text-sm text-black/70">
-              <span className="text-black/40">-</span>
+            <div className="flex items-center gap-2 text-sm text-foreground/70">
+              <span className="text-muted-foreground">-</span>
               Sin codeudor requerido
             </div>
           </div>

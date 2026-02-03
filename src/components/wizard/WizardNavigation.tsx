@@ -1,8 +1,9 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WIZARD_STEPS } from '@/lib/types/application';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // Props
@@ -24,8 +25,8 @@ interface WizardNavigationProps {
 // ============================================================================
 
 /**
- * WizardNavigation - Luxterra-style navigation buttons
- * Clean black primary button, subtle outline secondary
+ * WizardNavigation - Pill-style navigation buttons
+ * Black primary button, subtle outline secondary
  */
 export function WizardNavigation({
   currentStep,
@@ -51,49 +52,35 @@ export function WizardNavigation({
   return (
     <div
       className={cn(
-        'flex items-center justify-between pt-6 border-t border-black/5',
+        'flex items-center justify-between pt-6 border-t border-border',
         className
       )}
     >
       {/* Back button */}
-      <button
-        type="button"
+      <Button
+        variant="outline"
         onClick={onBack}
         disabled={isFirstStep || isSubmitting}
-        className={cn(
-          'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-          'rounded-sm border border-black/10 bg-white',
-          'text-black/70 hover:text-black hover:border-black/20',
-          'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-          isFirstStep && 'invisible'
-        )}
+        className={cn(isFirstStep && 'invisible')}
       >
         <ArrowLeft className="h-4 w-4" />
         <span className="hidden sm:inline">Atras</span>
-      </button>
+      </Button>
 
       {/* Step indicator - center (mobile only) */}
-      <span className="text-sm text-black/40 sm:hidden">
+      <span className="text-sm text-muted-foreground sm:hidden">
         {currentStep}/{totalSteps}
       </span>
 
       {/* Next/Submit button */}
-      <button
-        type="button"
+      <Button
         onClick={handleNextClick}
         disabled={!isValid || isSubmitting}
-        className={cn(
-          'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium',
-          'rounded-sm bg-black text-white',
-          'hover:bg-black/90 transition-colors',
-          'disabled:opacity-50 disabled:cursor-not-allowed'
-        )}
+        isLoading={isSubmitting}
+        hideArrow
       >
         {isSubmitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Enviando...</span>
-          </>
+          <span>Enviando...</span>
         ) : isReviewStep ? (
           <>
             <span>Enviar solicitud</span>
@@ -105,7 +92,7 @@ export function WizardNavigation({
             <ArrowRight className="h-4 w-4" />
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -85,14 +85,13 @@ export function StickyCTA({
 
   const handleScheduleVisit = () => {
     if (selectedDay && selectedTime) {
-      console.log('Scheduling visit:', { visitType, selectedDay, selectedTime });
     }
   };
 
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
       {/* CTA Card */}
-      <div className="bg-white border border-black/10">
+      <div className="bg-white dark:bg-card border border-border dark:border-border">
         {/* Urgency Banner */}
         {stats && stats.demandLevel !== 'media' && (
           <div className={cn(
@@ -110,21 +109,21 @@ export function StickyCTA({
 
         <div className="p-6">
           {/* Live viewers indicator */}
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-black/10">
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>
-            <span className="text-sm text-black/70">
-              <span className="font-medium text-black">{currentViewers} personas</span> viendo ahora
+            <span className="text-sm text-foreground/70">
+              <span className="font-medium text-foreground">{currentViewers} personas</span> viendo ahora
             </span>
           </div>
 
           {/* Header with actions */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-sm font-medium text-black">Arriendo Facil</p>
-              <p className="text-xs text-black/50 mt-0.5">Respuesta en menos de 24h</p>
+              <p className="text-sm font-medium text-foreground">Arriendo Facil</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Respuesta en menos de 24h</p>
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
@@ -134,7 +133,7 @@ export function StickyCTA({
                     'min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border transition-colors',
                     isWishlisted
                       ? 'border-red-200 bg-red-50 text-red-500'
-                      : 'border-black/10 hover:bg-black/5 text-black/60'
+                      : 'border-border hover:bg-black/5 text-muted-foreground'
                   )}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                 >
@@ -142,7 +141,7 @@ export function StickyCTA({
                 </button>
               )}
               <button
-                className="min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border border-black/10 hover:bg-black/5 text-black/60 transition-colors"
+                className="min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border border-border hover:bg-black/5 text-muted-foreground transition-colors"
                 aria-label="Compartir"
               >
                 <Share2 className="w-5 h-5" />
@@ -151,15 +150,15 @@ export function StickyCTA({
           </div>
 
           {/* Price */}
-          <div className="mb-6 pb-6 border-b border-black/10">
+          <div className="mb-6 pb-6 border-b border-border">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-semibold text-black">
+              <span className="text-2xl font-semibold text-foreground">
                 {formatCurrency(price)}
               </span>
-              <span className="text-sm text-black/50">/mes</span>
+              <span className="text-sm text-muted-foreground">/mes</span>
             </div>
             {adminFee > 0 && (
-              <p className="text-sm text-black/50 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 + {formatCurrency(adminFee)} administración
               </p>
             )}
@@ -172,8 +171,8 @@ export function StickyCTA({
               className={cn(
                 'flex-1 py-3 text-sm font-medium border-b-2 transition-colors',
                 activeTab === 'apply'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-black/40 hover:text-black/60'
+                  ? 'border-black text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground'
               )}
             >
               Postularme
@@ -183,8 +182,8 @@ export function StickyCTA({
               className={cn(
                 'flex-1 py-3 text-sm font-medium border-b-2 transition-colors',
                 activeTab === 'visit'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-black/40 hover:text-black/60'
+                  ? 'border-black text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground'
               )}
             >
               Agendar visita
@@ -196,28 +195,28 @@ export function StickyCTA({
             /* Apply Tab */
             <div>
               {/* Social proof stats */}
-              <div className="bg-black/[0.02] border border-black/5 p-4 mb-5 space-y-2.5">
+              <div className="bg-black/[0.02] border border-border p-4 mb-5 space-y-2.5">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-black flex items-center justify-center flex-shrink-0">
                     <span className="text-white text-xs">✓</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-black">Sin codeudor requerido</p>
+                    <p className="text-sm font-medium text-foreground">Sin codeudor requerido</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-black/5">
+                <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-black/40" />
-                    <span className="text-xs text-black/60">Postulaciones esta semana</span>
+                    <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Postulaciones esta semana</span>
                   </div>
-                  <span className="text-xs font-semibold text-black">{stats?.applicationsThisWeek || 0}</span>
+                  <span className="text-xs font-semibold text-foreground">{stats?.applicationsThisWeek || 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-black/40" />
-                    <span className="text-xs text-black/60">Respuesta promedio</span>
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Respuesta promedio</span>
                   </div>
-                  <span className="text-xs font-semibold text-black">&lt; 24 horas</span>
+                  <span className="text-xs font-semibold text-foreground">&lt; 24 horas</span>
                 </div>
               </div>
 
@@ -227,7 +226,7 @@ export function StickyCTA({
                 </button>
               </Link>
 
-              <p className="text-xs text-black/40 text-center mt-3">
+              <p className="text-xs text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
             </div>
@@ -242,7 +241,7 @@ export function StickyCTA({
                     'py-3 px-4 border text-sm font-medium transition-all flex items-center justify-center gap-2',
                     visitType === 'presencial'
                       ? 'border-black bg-black text-white'
-                      : 'border-black/10 text-black/70 hover:border-black/20'
+                      : 'border-border text-foreground/70 hover:border-border'
                   )}
                 >
                   <MapPin className="w-4 h-4" />
@@ -254,7 +253,7 @@ export function StickyCTA({
                     'py-3 px-4 border text-sm font-medium transition-all flex items-center justify-center gap-2',
                     visitType === 'virtual'
                       ? 'border-black bg-black text-white'
-                      : 'border-black/10 text-black/70 hover:border-black/20'
+                      : 'border-border text-foreground/70 hover:border-border'
                   )}
                 >
                   <Video className="w-4 h-4" />
@@ -264,7 +263,7 @@ export function StickyCTA({
 
               {/* Date Selection */}
               <div>
-                <p className="text-xs text-black/50 mb-2.5 uppercase tracking-wide">Fecha</p>
+                <p className="text-xs text-muted-foreground mb-2.5 font-mono uppercase tracking-wide">Fecha</p>
                 <div className="grid grid-cols-5 gap-1.5">
                   {days.map((day) => (
                     <button
@@ -274,12 +273,12 @@ export function StickyCTA({
                         'py-2 border text-center transition-all',
                         selectedDay === day.full
                           ? 'border-black bg-black text-white'
-                          : 'border-black/10 hover:border-black/20'
+                          : 'border-border hover:border-border'
                       )}
                     >
                       <span className={cn(
-                        'block text-[10px] uppercase',
-                        selectedDay === day.full ? 'text-white/60' : 'text-black/40'
+                        'block text-[10px] font-mono uppercase',
+                        selectedDay === day.full ? 'text-white/60' : 'text-muted-foreground'
                       )}>
                         {day.dayName}
                       </span>
@@ -293,7 +292,7 @@ export function StickyCTA({
 
               {/* Time Selection */}
               <div>
-                <p className="text-xs text-black/50 mb-2.5 uppercase tracking-wide">Hora</p>
+                <p className="text-xs text-muted-foreground mb-2.5 font-mono uppercase tracking-wide">Hora</p>
                 <div className="grid grid-cols-3 gap-1.5">
                   {timeSlots.map((time) => (
                     <button
@@ -303,7 +302,7 @@ export function StickyCTA({
                         'py-2.5 text-sm border transition-all',
                         selectedTime === time
                           ? 'border-black bg-black text-white'
-                          : 'border-black/10 text-black/70 hover:border-black/20'
+                          : 'border-border text-foreground/70 hover:border-border'
                       )}
                     >
                       {time}
@@ -320,7 +319,7 @@ export function StickyCTA({
                   'w-full py-4 text-sm font-medium transition-all',
                   selectedDay && selectedTime
                     ? 'bg-black text-white hover:bg-black/90'
-                    : 'bg-black/5 text-black/30 cursor-not-allowed'
+                    : 'bg-black/5 text-muted-foreground cursor-not-allowed'
                 )}
               >
                 {selectedDay && selectedTime
@@ -328,7 +327,7 @@ export function StickyCTA({
                   : 'Selecciona fecha y hora'}
               </button>
 
-              <p className="text-xs text-black/40 text-center">
+              <p className="text-xs text-muted-foreground text-center">
                 Visita gratuita · Cancelación flexible
               </p>
             </div>
@@ -336,8 +335,8 @@ export function StickyCTA({
         </div>
 
         {/* Recent activity footer */}
-        <div className="px-6 py-4 bg-black/[0.02] border-t border-black/10">
-          <div className="flex items-center gap-2 text-xs text-black/60">
+        <div className="px-6 py-4 bg-black/[0.02] border-t border-border">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
             <span>Última postulación hace 12 minutos</span>
           </div>
@@ -364,7 +363,7 @@ export function MobileStickyCTA({
   }, [propertyId]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-black/10 lg:hidden z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border lg:hidden z-30">
       {/* Urgency banner for mobile */}
       {stats && stats.demandLevel !== 'media' && (
         <div className="px-4 py-1.5 bg-red-500 text-white text-xs font-medium text-center flex items-center justify-center gap-1.5">
@@ -375,11 +374,11 @@ export function MobileStickyCTA({
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-medium text-black">
+            <p className="text-lg font-medium text-foreground">
               {formatCurrency(price)}
-              <span className="text-sm font-normal text-black/50">/mes</span>
+              <span className="text-sm font-normal text-muted-foreground">/mes</span>
             </p>
-            <p className="text-xs text-black/50 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
@@ -393,7 +392,7 @@ export function MobileStickyCTA({
                 Postularme
               </button>
             </Link>
-            <button className="min-h-[44px] px-4 py-3 border border-black/20 text-sm font-medium text-black hover:bg-black/5 transition-colors">
+            <button className="min-h-[44px] px-4 py-3 border border-border text-sm font-medium text-foreground hover:bg-black/5 transition-colors">
               Visita
             </button>
           </div>

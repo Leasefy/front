@@ -63,7 +63,7 @@ export const borders = {
 // ============================================================================
 
 export const cardStyles = {
-  /** Card básico - estilo minimalista */
+  /** Card básico */
   base: 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle',
   /** Card interactivo con hover */
   interactive: 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',

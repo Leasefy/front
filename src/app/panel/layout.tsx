@@ -9,6 +9,7 @@ import {
   Settings,
   FileText,
   Home,
+  CalendarDays,
 } from 'lucide-react';
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -34,6 +35,11 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Candidatos',
     href: '/panel/candidatos',
     icon: Users,
+  },
+  {
+    label: 'Visitas',
+    href: '/panel/visitas',
+    icon: CalendarDays,
   },
   {
     label: 'Contratos',

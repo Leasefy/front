@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -61,12 +62,17 @@ export default function PerfilPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-4xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2  hover:bg-white text-plan-secondary hover:text-plan-primary transition-colors"
+              className="p-2  hover:bg-card text-plan-secondary hover:text-plan-primary transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -86,7 +92,7 @@ export default function PerfilPage() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-foreground/80 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white  text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 {isSaving ? 'Guardando...' : 'Guardar cambios'}
@@ -95,7 +101,7 @@ export default function PerfilPage() {
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-plan-primary text-white  text-sm font-medium hover:bg-foreground/80 transition-colors"
+              className="px-4 py-2 bg-primary text-white  text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               Editar perfil
             </button>
@@ -105,16 +111,16 @@ export default function PerfilPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white  border border-plan-border overflow-hidden">
+            <div className="bg-card  border border-plan-border overflow-hidden">
               {/* Avatar Section */}
-              <div className="relative bg-plan-primary h-24" />
+              <div className="relative bg-indigo-950 h-24" />
               <div className="px-6 pb-6">
                 <div className="relative -mt-12 mb-4">
                   <div className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-sm flex items-center justify-center text-plan-primary font-bold text-3xl">
                     {formData.name.charAt(0).toUpperCase()}
                   </div>
                   {isEditing && (
-                    <button className="absolute bottom-0 right-0 p-2 bg-plan-primary rounded-full text-white hover:bg-foreground/80 transition-colors">
+                    <button className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-white hover:bg-primary/90 transition-colors">
                       <Camera className="w-4 h-4" />
                     </button>
                   )}
@@ -147,7 +153,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Verification Status */}
-            <div className="mt-6 bg-white  border border-plan-border p-5">
+            <div className="mt-6 bg-card  border border-plan-border p-5">
               <h3 className="font-semibold text-plan-primary mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-plan-secondary" />
                 Verificaciones
@@ -180,7 +186,7 @@ export default function PerfilPage() {
           {/* Profile Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="bg-white  border border-plan-border p-6">
+            <div className="bg-card  border border-plan-border p-6">
               <h3 className="font-semibold text-plan-primary mb-6">Información Personal</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -297,7 +303,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="bg-white  border border-plan-border p-6">
+            <div className="bg-card  border border-plan-border p-6">
               <h3 className="font-semibold text-plan-primary mb-6">Contacto de Emergencia</h3>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -321,7 +327,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-white  border border-red-200 p-6">
+            <div className="bg-card  border border-red-200 p-6">
               <h3 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
                 Zona de peligro

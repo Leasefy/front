@@ -146,8 +146,8 @@ export function StepEmployment() {
       {/* Job Details Section - Only shown for employed/self-employed */}
       {showJobDetails && (
         <>
-          <div className="border-t border-black/5 pt-6">
-            <h3 className="text-sm font-medium text-black mb-4">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-medium text-foreground mb-4">
               Informacion del empleo
             </h3>
           </div>
@@ -256,11 +256,11 @@ export function StepEmployment() {
           </div>
 
           {/* Employer Contact - Optional */}
-          <div className="border-t border-black/5 pt-6">
-            <h3 className="text-sm font-medium text-black mb-1">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-medium text-foreground mb-1">
               Contacto del empleador
             </h3>
-            <p className="text-xs text-black/40 mb-4">
+            <p className="text-xs text-muted-foreground mb-4">
               Opcional - para verificacion de empleo
             </p>
           </div>

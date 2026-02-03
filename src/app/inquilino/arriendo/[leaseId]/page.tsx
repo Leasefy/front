@@ -48,7 +48,7 @@ export default function LeaseDetailPage() {
           <p className="text-plan-secondary mb-4">El arriendo que buscas no existe o no tienes acceso.</p>
           <Link
             href="/inquilino/arriendo"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver a mis arriendos
@@ -132,7 +132,7 @@ export default function LeaseDetailPage() {
         </button>
 
         {/* Header Section */}
-        <div className="bg-white border border-plan-border mb-6">
+        <div className="bg-card border border-plan-border mb-6">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-muted flex-shrink-0">
@@ -219,7 +219,7 @@ export default function LeaseDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Next Payment CTA */}
             {nextPayment && (
-              <div className="bg-plan-primary text-white p-6">
+              <div className="bg-indigo-950 text-white p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <p className="text-sm text-plan-muted mb-1">Proximo pago</p>
@@ -230,7 +230,7 @@ export default function LeaseDetailPage() {
                   </div>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-plan-accent text-plan-primary font-medium hover:bg-plan-accent-dark transition-colors"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
                   >
                     <CreditCard className="w-5 h-5" />
                     Pagar ahora
@@ -241,7 +241,7 @@ export default function LeaseDetailPage() {
             )}
 
             {/* Payment History */}
-            <div className="bg-white border border-plan-border">
+            <div className="bg-card border border-plan-border">
               <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
                 <div className="flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-plan-secondary" />
@@ -334,7 +334,7 @@ export default function LeaseDetailPage() {
           {/* Sidebar - 1 column */}
           <div className="space-y-6">
             {/* Contract Info */}
-            <div className="bg-white border border-plan-border">
+            <div className="bg-card border border-plan-border">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
                 <FileText className="w-5 h-5 text-plan-secondary" />
                 <h2 className="font-semibold text-plan-primary">Contrato</h2>
@@ -404,7 +404,7 @@ export default function LeaseDetailPage() {
             </div>
 
             {/* Landlord Contact */}
-            <div className="bg-white border border-plan-border">
+            <div className="bg-card border border-plan-border">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
                 <User className="w-5 h-5 text-plan-secondary" />
                 <h2 className="font-semibold text-plan-primary">Propietario</h2>
@@ -448,7 +448,7 @@ export default function LeaseDetailPage() {
             </div>
 
             {/* Payment Methods Info */}
-            <div className="bg-white border border-plan-border">
+            <div className="bg-card border border-plan-border">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
                 <CreditCard className="w-5 h-5 text-plan-secondary" />
                 <h2 className="font-semibold text-plan-primary">Metodos de pago</h2>

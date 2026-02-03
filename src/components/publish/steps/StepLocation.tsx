@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Building2, Navigation } from 'lucide-react';
+import { MapPin, Building2, Navigation, Check } from 'lucide-react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { CITIES } from '@/lib/types/publish';
 import { Label } from '@/components/ui/label';
@@ -15,8 +15,8 @@ export function StepLocation() {
       {/* City Selection - Visual Cards */}
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-medium text-black">Ciudad</Label>
-          <p className="text-sm text-black/50 mt-1">
+          <Label className="text-base font-medium text-foreground">Ciudad</Label>
+          <p className="text-sm text-muted-foreground mt-1">
             Selecciona la ciudad donde esta ubicado tu inmueble
           </p>
         </div>
@@ -29,19 +29,27 @@ export function StepLocation() {
                 type="button"
                 onClick={() => updateDraft({ city })}
                 className={cn(
-                  'relative p-4 rounded-sm border-2 text-left transition-all',
+                  'relative p-4 rounded-[1px] border text-left transition-all duration-200',
                   isSelected
-                    ? 'border-black bg-black text-white'
-                    : 'border-black/10 hover:border-black/30 bg-white'
+                    ? 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)]'
+                    : 'border-border hover:border-border bg-card hover:shadow-sm'
                 )}
               >
+                <div className={cn(
+                  'absolute top-2.5 right-2.5 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-200',
+                  isSelected
+                    ? 'border-primary bg-primary'
+                    : 'border-border'
+                )}>
+                  {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </div>
                 <Building2 className={cn(
-                  'w-5 h-5 mb-2',
-                  isSelected ? 'text-white' : 'text-black/30'
+                  'w-5 h-5 mb-2 transition-colors',
+                  isSelected ? 'text-primary' : 'text-muted-foreground'
                 )} />
                 <span className={cn(
                   'text-sm font-medium',
-                  isSelected ? 'text-white' : 'text-black'
+                  isSelected ? 'text-foreground' : 'text-foreground/80'
                 )}>
                   {city}
                 </span>
@@ -49,15 +57,18 @@ export function StepLocation() {
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground italic">
+          Pronto estaremos en más ciudades de Colombia.
+        </p>
       </div>
 
       {/* Neighborhood - Free text input */}
       <div className="space-y-2">
-        <Label htmlFor="neighborhood" className="text-base font-medium text-black">
+        <Label htmlFor="neighborhood" className="text-base font-medium text-foreground">
           Barrio
         </Label>
         <div className="relative">
-          <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+          <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="neighborhood"
             type="text"
@@ -77,11 +88,11 @@ export function StepLocation() {
 
       {/* Address */}
       <div className="space-y-2">
-        <Label htmlFor="address" className="text-base font-medium text-black">
+        <Label htmlFor="address" className="text-base font-medium text-foreground">
           Direccion completa
         </Label>
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="address"
             type="text"
@@ -91,7 +102,7 @@ export function StepLocation() {
             className="pl-10 h-12 text-base"
           />
         </div>
-        <p className="text-xs text-black/40 flex items-center gap-1.5">
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           La direccion exacta solo sera visible para inquilinos confirmados
         </p>

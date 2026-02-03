@@ -113,20 +113,20 @@ export function InsuranceSelector({
                 'relative w-full rounded-sm border text-left transition-all',
                 isSelected
                   ? `${colors.selectedBorder} ring-1 ring-current ${colors.bg}`
-                  : `${colors.border} hover:border-border bg-white`,
+                  : `${colors.border} hover:border-border bg-card`,
                 policy.tier === 'none' && 'opacity-80'
               )}
             >
               {/* Main Row */}
-              <div className="flex items-center gap-3 p-3">
+              <div className="flex items-center gap-2.5 p-2.5">
                 {/* Icon */}
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-sm flex items-center justify-center shrink-0',
+                    'w-8 h-8 rounded-sm flex items-center justify-center shrink-0',
                     isSelected ? colors.bg : 'bg-muted'
                   )}
                 >
-                  <Icon className={cn('w-5 h-5', colors.icon)} />
+                  <Icon className={cn('w-4 h-4', colors.icon)} />
                 </div>
 
                 {/* Content */}
@@ -179,10 +179,10 @@ export function InsuranceSelector({
               {/* Benefits Preview - Show for non-none tiers */}
               {isNotNone && (
                 <div className={cn(
-                  'border-t px-3 py-2',
+                  'border-t px-2.5 py-2',
                   isSelected ? 'border-current/20' : 'border-border'
                 )}>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
                     {/* Property Damage */}
                     <div className="flex items-center gap-1.5 text-xs">
                       <Shield className="w-3 h-3 text-muted-foreground" />
@@ -228,7 +228,7 @@ export function InsuranceSelector({
       {/* Selected Benefits Detail */}
       {selected.tier !== 'none' && (
         <div className="rounded-sm border border-border bg-muted p-3">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
+          <p className="text-[10px] font-normal text-muted-foreground font-mono uppercase tracking-wide mb-2">
             Tu póliza incluye
           </p>
           <ul className="space-y-1.5">

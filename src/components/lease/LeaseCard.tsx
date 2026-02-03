@@ -127,7 +127,7 @@ export function LeaseCard({
 
           {/* Contact info */}
           <div className={cn('p-3 mb-4', borderRadius.sm, 'bg-muted/50')}>
-            <p className={cn('text-xs font-medium uppercase tracking-wide mb-2', 'text-muted-foreground')}>
+            <p className={cn('text-xs font-medium font-mono uppercase tracking-wider mb-2', 'text-muted-foreground')}>
               {contactLabel}
             </p>
             <div className="flex items-center gap-3">

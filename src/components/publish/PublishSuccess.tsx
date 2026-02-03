@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Eye, Share2, ArrowRight, Sparkles, Building2, MapPin, DollarSign } from 'lucide-react';
+import { Check, Eye, Share2, ArrowRight, Sparkles, Building2, MapPin, DollarSign } from 'lucide-react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import confetti from 'canvas-confetti';
@@ -33,14 +33,14 @@ export function PublishSuccess() {
         angle: 60,
         spread: 55,
         origin: { x: 0 },
-        colors: ['#D4F934', '#000000', '#ffffff'],
+        colors: ['#5B5FEF', '#A6AAFF', '#ffffff'],
       });
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1 },
-        colors: ['#D4F934', '#000000', '#ffffff'],
+        colors: ['#5B5FEF', '#A6AAFF', '#ffffff'],
       });
     }, 50);
 
@@ -78,29 +78,58 @@ export function PublishSuccess() {
         className="max-w-lg w-full"
       >
         {/* Success card */}
-        <div className="bg-white rounded-sm border border-black/5 shadow-xl overflow-hidden">
-          {/* Header with gradient */}
-          <div className="bg-black p-8 text-center relative overflow-hidden">
-            {/* Animated background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-plan-accent/20" />
+        <div className="bg-card rounded-sm border border-border shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-500 to-indigo-400" />
+            {/* Subtle mesh overlay */}
+            <div className="absolute inset-0 opacity-30" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)',
+            }} />
+            {/* Bottom fade into white card */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
 
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="relative z-10"
-            >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-plan-accent flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-black" />
+            <div className="relative z-10">
+              {/* Animated rings */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.6 }}
+                  className="absolute inset-0 rounded-full border-2 border-white/10"
+                  style={{ transform: 'scale(1.6)' }}
+                />
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="absolute inset-0 rounded-full border border-white/15"
+                  style={{ transform: 'scale(1.3)' }}
+                />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 12 }}
+                  className="relative w-24 h-24 rounded-full bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] flex items-center justify-center"
+                >
+                  <Check className="w-10 h-10 text-indigo-600" strokeWidth={2.5} />
+                </motion.div>
               </div>
 
-              <h1 className="text-2xl font-bold text-white mb-2">
-                Publicacion exitosa!
-              </h1>
-              <p className="text-white/70">
-                Tu inmueble ya esta activo y visible
-              </p>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                <h1 className="text-2xl font-bold text-white mb-1.5 tracking-tight">
+                  ¡Publicación exitosa!
+                </h1>
+                <p className="text-white/70 text-[15px]">
+                  Tu inmueble ya está activo y visible
+                </p>
+              </motion.div>
+            </div>
           </div>
 
           {/* Property summary */}
@@ -137,25 +166,25 @@ export function PublishSuccess() {
               className="grid grid-cols-3 gap-3"
             >
               <div className="bg-black/5 p-3 rounded-sm text-center">
-                <DollarSign className="w-4 h-4 mx-auto text-black/40 mb-1" />
-                <p className="text-sm font-semibold text-black">
+                <DollarSign className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                <p className="text-sm font-semibold text-foreground">
                   {formatCurrency(draft.monthlyRent)}
                 </p>
-                <p className="text-xs text-black/50">/mes</p>
+                <p className="text-xs text-muted-foreground">/mes</p>
               </div>
               <div className="bg-black/5 p-3 rounded-sm text-center">
-                <Building2 className="w-4 h-4 mx-auto text-black/40 mb-1" />
-                <p className="text-sm font-semibold text-black">
+                <Building2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                <p className="text-sm font-semibold text-foreground">
                   {draft.bedrooms} hab
                 </p>
-                <p className="text-xs text-black/50">{draft.bathrooms} banos</p>
+                <p className="text-xs text-muted-foreground">{draft.bathrooms} banos</p>
               </div>
-              <div className="bg-plan-accent/20 p-3 rounded-sm text-center">
-                <Sparkles className="w-4 h-4 mx-auto text-black/60 mb-1" />
-                <p className="text-xs font-semibold text-black">
+              <div className="bg-indigo-500/20 p-3 rounded-sm text-center">
+                <Sparkles className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                <p className="text-xs font-semibold text-foreground">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan as keyof typeof planLabels] : 'Plan'}
                 </p>
-                <p className="text-xs text-black/50">Activo</p>
+                <p className="text-xs text-muted-foreground">Activo</p>
               </div>
             </motion.div>
 
@@ -168,7 +197,7 @@ export function PublishSuccess() {
             >
               <Link
                 href="/panel/propiedades"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-black text-white text-sm font-medium rounded-sm hover:bg-black/90 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-primary text-white text-sm font-medium rounded-sm hover:bg-primary/85 transition-colors"
               >
                 <Eye className="w-4 h-4" />
                 Ver mi propiedad en el panel
@@ -176,7 +205,7 @@ export function PublishSuccess() {
 
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-black/10 text-black/70 text-sm font-medium rounded-sm hover:border-black/20 hover:text-black transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-border text-foreground/70 text-sm font-medium rounded-sm hover:border-border hover:text-foreground transition-colors"
               >
                 <Share2 className="w-4 h-4" />
                 Compartir anuncio
@@ -185,16 +214,16 @@ export function PublishSuccess() {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-black/[0.02] border-t border-black/5">
+          <div className="px-6 py-4 bg-black/[0.02] border-t border-border">
             <div className="flex items-center justify-between">
               <Link
                 href="/publicar"
-                className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Publicar otro inmueble
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-black/40">
+              <span className="text-xs text-muted-foreground">
                 Redirigiendo en {countdown}s...
               </span>
             </div>

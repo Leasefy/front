@@ -108,7 +108,7 @@ export default function InquilinoPage() {
           <div className="lg:col-span-2 space-y-6">
 
             {/* Active Leases */}
-            <section className="bg-white border border-plan-border overflow-hidden">
+            <section className="bg-card border border-plan-border overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Mis arriendos</h2>
                 {activeLeases.length > 0 && (
@@ -186,7 +186,7 @@ export default function InquilinoPage() {
             </section>
 
             {/* Applications */}
-            <section className="bg-white border border-plan-border overflow-hidden">
+            <section className="bg-card border border-plan-border overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Aplicaciones en proceso</h2>
                 <Link
@@ -262,7 +262,7 @@ export default function InquilinoPage() {
 
             {/* Next Payment Card */}
             {nextPayment && primaryLease && (
-              <div className="bg-plan-primary p-5 text-white">
+              <div className="bg-indigo-950 p-5 text-white">
                 <p className="text-white/60 text-sm mb-1">Proximo pago</p>
                 <p className="text-3xl font-bold tracking-tight">
                   {formatCurrency(nextPayment.amount)}
@@ -290,7 +290,7 @@ export default function InquilinoPage() {
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white border border-plan-border overflow-hidden">
+            <div className="bg-card border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-plan-primary">Acciones rapidas</h2>
               </div>

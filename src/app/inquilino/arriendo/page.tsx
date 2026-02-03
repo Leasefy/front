@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Calendar, Home, CreditCard, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Home, CreditCard, ArrowUpRight } from 'lucide-react';
 
 import { getActiveLeasesForTenant, getNextPayment } from '@/lib/data/mock-leases';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
@@ -51,6 +51,10 @@ export default function ArriendoPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
 
         {/* Header */}
         <header className="mb-8">
@@ -86,7 +90,7 @@ export default function ArriendoPage() {
         </PlanStatsGrid>
 
         {/* Leases List */}
-        <section className="bg-white  border border-plan-border overflow-hidden">
+        <section className="bg-card  border border-plan-border overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
             <h2 className="font-semibold text-plan-primary">Arriendos Activos</h2>
             <span className="text-sm text-plan-secondary">
@@ -227,7 +231,7 @@ export default function ArriendoPage() {
               </p>
               <Link
                 href="/propiedades"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 Explorar propiedades
                 <ArrowUpRight className="w-4 h-4" />

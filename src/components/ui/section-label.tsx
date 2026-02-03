@@ -9,10 +9,10 @@ interface SectionLabelProps {
 }
 
 const dotColors: Record<DotVariant, string> = {
-  default: 'bg-black',
-  warning: 'bg-amber-500',
-  info: 'bg-blue-500',
-  success: 'bg-emerald-500',
+  default: 'bg-primary',
+  warning: 'bg-plan-status-yellow',
+  info: 'bg-plan-status-blue',
+  success: 'bg-plan-status-green',
 };
 
 /**
@@ -26,7 +26,7 @@ export function SectionLabel({ children, className, dotVariant = 'default' }: Se
         "h-2 w-2 rounded-full",
         dotColors[dotVariant]
       )} />
-      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+      <span className="text-xs font-medium font-mono uppercase tracking-wider text-muted-foreground">
         {children}
       </span>
     </div>

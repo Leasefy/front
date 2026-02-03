@@ -3,6 +3,7 @@ import { Manrope, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 
 const manrope = Manrope({
@@ -34,16 +35,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="lenis">
+    <html lang="es" className="lenis" suppressHydrationWarning>
       <body className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
         {/* Skip link for keyboard/screen reader users */}
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
-        <AuthProvider>
-          <RouteAnnouncer />
-          <SmoothScroll>{children}</SmoothScroll>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <RouteAnnouncer />
+            <SmoothScroll>{children}</SmoothScroll>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

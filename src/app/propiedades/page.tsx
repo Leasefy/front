@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
 
 import { Navbar } from '@/components/layout/Navbar';
@@ -38,11 +39,21 @@ const PRICE_RANGES = [
 ];
 
 export default function PropiedadesPage() {
+  return (
+    <Suspense>
+      <PropiedadesContent />
+    </Suspense>
+  );
+}
+
+function PropiedadesContent() {
+  const searchParams = useSearchParams();
+  const heroQuery = searchParams.get('q');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
-  const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [showAiResults, setShowAiResults] = useState(false);
   const [aiResults, setAiResults] = useState<typeof mockProperties>([]);
@@ -50,6 +61,7 @@ export default function PropiedadesPage() {
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const heroSearchTriggered = useRef(false);
 
   // Filter state
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -94,6 +106,14 @@ export default function PropiedadesPage() {
       setShowAiResults(true);
     }, 1800);
   }, []);
+
+  // Auto-trigger AI search from hero query param
+  useEffect(() => {
+    if (heroQuery && !heroSearchTriggered.current) {
+      heroSearchTriggered.current = true;
+      handleAiSearch(heroQuery);
+    }
+  }, [heroQuery, handleAiSearch]);
 
   // Filter and sort properties
   const filteredProperties = useMemo(() => {
@@ -168,22 +188,31 @@ export default function PropiedadesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Main Layout - Split View */}
-      <div className="pt-[var(--navbar-height-mobile)] md:pt-[var(--navbar-height-desktop)] flex">
+      <div className="flex">
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
-            'w-full lg:w-1/2 min-h-[calc(100vh-65px)] md:min-h-[calc(100vh-81px)]',
+            'w-full lg:w-1/2 min-h-screen',
             showMap && 'hidden lg:block'
           )}
         >
+          {/* Hero query banner */}
+          {heroQuery && (
+            <div className="bg-black/5 border-b border-border px-4 md:px-6 py-3">
+              <p className="text-sm text-muted-foreground">
+                Resultados basados en: <span className="font-medium text-foreground">&laquo;{heroQuery}&raquo;</span>
+              </p>
+            </div>
+          )}
+
           {/* AI Search Section */}
-          <div className="bg-white py-4 md:py-5">
+          <div className="bg-background py-4 md:py-5">
             <div className="px-4 md:px-6">
-              <h1 className="text-lg font-medium text-black tracking-tight mb-4">
+              <h1 className="text-lg font-medium text-foreground tracking-tight mb-4">
                 Busqueda inteligente
               </h1>
               <AISearchInput
@@ -198,7 +227,7 @@ export default function PropiedadesPage() {
           </div>
 
           {/* Filter & Results Bar */}
-          <div className="sticky top-[var(--navbar-height-mobile)] md:top-[var(--navbar-height-desktop)] z-40 bg-white border-y border-black/5">
+          <div className="sticky top-0 z-40 bg-background border-y border-border">
             <div className="px-4 md:px-6 py-3">
               {/* Filter Pills Row */}
               <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
@@ -211,7 +240,7 @@ export default function PropiedadesPage() {
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedCity
                         ? 'bg-black text-white border-black'
-                        : 'border-black/20 text-black/70 hover:border-black/40'
+                        : 'border-border text-foreground/70 hover:border-border'
                     )}
                   >
                     {selectedCity || 'Ciudad'}
@@ -220,7 +249,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'city' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[140px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[140px]">
                         {CITIES.map((city) => (
                           <button
                             key={city}
@@ -245,7 +274,7 @@ export default function PropiedadesPage() {
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedBedrooms
                         ? 'bg-black text-white border-black'
-                        : 'border-black/20 text-black/70 hover:border-black/40'
+                        : 'border-border text-foreground/70 hover:border-border'
                     )}
                   >
                     {selectedBedrooms ? `${selectedBedrooms} hab` : 'Habitaciones'}
@@ -254,7 +283,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'bedrooms' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[120px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[120px]">
                         {BEDROOMS.map((bed) => (
                           <button
                             key={bed}
@@ -279,7 +308,7 @@ export default function PropiedadesPage() {
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedType
                         ? 'bg-black text-white border-black'
-                        : 'border-black/20 text-black/70 hover:border-black/40'
+                        : 'border-border text-foreground/70 hover:border-border'
                     )}
                   >
                     {PROPERTY_TYPES.find(t => t.value === selectedType)?.label || 'Tipo'}
@@ -288,7 +317,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'type' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[140px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[140px]">
                         {PROPERTY_TYPES.map((type) => (
                           <button
                             key={type.value}
@@ -313,7 +342,7 @@ export default function PropiedadesPage() {
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
                       selectedPrice
                         ? 'bg-black text-white border-black'
-                        : 'border-black/20 text-black/70 hover:border-black/40'
+                        : 'border-border text-foreground/70 hover:border-border'
                     )}
                   >
                     {PRICE_RANGES.find(p => p.value === selectedPrice)?.label || 'Precio'}
@@ -322,7 +351,7 @@ export default function PropiedadesPage() {
                   {activeFilter === 'price' && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[160px]">
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[160px]">
                         {PRICE_RANGES.map((range) => (
                           <button
                             key={range.value}
@@ -343,7 +372,7 @@ export default function PropiedadesPage() {
                   <button
                     type="button"
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-black/50 hover:text-black transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                     Limpiar
@@ -353,8 +382,8 @@ export default function PropiedadesPage() {
 
               {/* Results Count + Sort */}
               <div className="flex items-center justify-between">
-                <p className="text-sm text-black/70">
-                  <span className="font-medium text-black">{filteredProperties.length}</span> propiedades
+                <p className="text-sm text-foreground/70">
+                  <span className="font-medium text-foreground">{filteredProperties.length}</span> propiedades
                 </p>
 
                 {/* Sort Dropdown */}
@@ -362,7 +391,7 @@ export default function PropiedadesPage() {
                   <button
                     type="button"
                     onClick={() => setShowSortMenu(!showSortMenu)}
-                    className="flex items-center gap-2 text-sm text-black/70 hover:text-black transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
                   >
                     <span>{currentSortLabel}</span>
                     <ChevronDown className={cn('w-4 h-4 transition-transform', showSortMenu && 'rotate-180')} />
@@ -371,13 +400,13 @@ export default function PropiedadesPage() {
                   {showSortMenu && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-white border border-black/10 rounded-sm shadow-lg z-50 min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
                           <button
                             key={option.value}
                             type="button"
                             onClick={() => { setSortBy(option.value); setShowSortMenu(false); }}
-                            className={cn('w-full px-4 py-2 text-left text-sm transition-colors', sortBy === option.value ? 'bg-black/5 text-black font-medium' : 'text-black/70 hover:bg-black/5')}
+                            className={cn('w-full px-4 py-2 text-left text-sm transition-colors', sortBy === option.value ? 'bg-black/5 text-foreground font-medium' : 'text-foreground/70 hover:bg-black/5')}
                           >
                             {option.label}
                           </button>
@@ -407,8 +436,8 @@ export default function PropiedadesPage() {
         {/* Right Panel - Fixed Map (Full Height) */}
         <div
           className={cn(
-            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[var(--navbar-height-mobile)] md:lg:top-[var(--navbar-height-desktop)]',
-            'h-[calc(100vh-65px)] md:h-[calc(100vh-81px)]',
+            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-0',
+            'h-screen',
             !showMap && 'hidden lg:block'
           )}
         >

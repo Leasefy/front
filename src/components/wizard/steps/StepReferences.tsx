@@ -233,28 +233,28 @@ export function StepReferences() {
       {/* Previous Landlords Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <Building2 className="h-5 w-5 text-black/60" />
-          <h3 className="text-sm font-medium text-black">
+          <Building2 className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">
             Arrendadores Anteriores
           </h3>
-          <span className="text-xs text-black/40">(min. 1)</span>
+          <span className="text-xs text-muted-foreground">(min. 1)</span>
         </div>
 
         <div className="space-y-4">
           {landlords.map((landlord, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-border rounded-sm space-y-4"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black/70">
+                <span className="text-sm font-medium text-foreground/70">
                   Referencia {index + 1}
                 </span>
                 {landlords.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeLandlord(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -359,28 +359,28 @@ export function StepReferences() {
       {/* Employment References Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <Briefcase className="h-5 w-5 text-black/60" />
-          <h3 className="text-sm font-medium text-black">
+          <Briefcase className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">
             Referencias Laborales
           </h3>
-          <span className="text-xs text-black/40">(min. 1)</span>
+          <span className="text-xs text-muted-foreground">(min. 1)</span>
         </div>
 
         <div className="space-y-4">
           {employmentRefs.map((ref, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-border rounded-sm space-y-4"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black/70">
+                <span className="text-sm font-medium text-foreground/70">
                   Referencia {index + 1}
                 </span>
                 {employmentRefs.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeEmploymentRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -478,28 +478,28 @@ export function StepReferences() {
       {/* Personal References Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <User className="h-5 w-5 text-black/60" />
-          <h3 className="text-sm font-medium text-black">
+          <User className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">
             Referencias Personales
           </h3>
-          <span className="text-xs text-black/40">(min. 1)</span>
+          <span className="text-xs text-muted-foreground">(min. 1)</span>
         </div>
 
         <div className="space-y-4">
           {personalRefs.map((ref, index) => (
             <div
               key={index}
-              className="p-4 bg-black/[0.02] border border-black/5 rounded-sm space-y-4"
+              className="p-4 bg-black/[0.02] border border-border rounded-sm space-y-4"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black/70">
+                <span className="text-sm font-medium text-foreground/70">
                   Referencia {index + 1}
                 </span>
                 {personalRefs.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removePersonalRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -596,8 +596,8 @@ function AddButton({ onClick, label }: AddButtonProps) {
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-        'rounded-sm border border-black/10 bg-white',
-        'text-black/70 hover:text-black hover:border-black/20',
+        'rounded-sm border border-border bg-card',
+        'text-foreground/70 hover:text-foreground hover:border-border',
         'transition-colors'
       )}
     >

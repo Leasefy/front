@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function PropertyDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Hero Image Grid Skeleton */}
       <section className="pt-28 md:pt-32">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -54,7 +54,7 @@ export function PropertyDetailSkeleton() {
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-black/10">
+            <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-border">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i}>
                   <Skeleton className="h-3 w-12 mb-2" />
@@ -74,9 +74,9 @@ export function PropertyDetailSkeleton() {
             </div>
 
             {/* Accordion Sections */}
-            <div className="border-t border-black/10">
+            <div className="border-t border-border">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="border-b border-black/10 py-5">
+                <div key={i} className="border-b border-border py-5">
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-4 w-40" />
                     <Skeleton className="h-5 w-5" />
@@ -105,9 +105,9 @@ export function PropertyDetailSkeleton() {
           {/* Right Column - Sticky CTA */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
-              <div className="border border-black/10 p-6">
+              <div className="border border-border p-6">
                 {/* Agent Header */}
-                <div className="flex items-center justify-between mb-6 pb-6 border-b border-black/10">
+                <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
                   <div className="space-y-1">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-3 w-32" />

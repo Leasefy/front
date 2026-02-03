@@ -7,14 +7,14 @@ import { cn } from '@/lib/utils';
 
 // Notification types with their routes and colors
 const notificationConfig: Record<string, { route: string; color: string }> = {
-  'Pago': { route: '/panel', color: 'text-emerald-600' },
-  'Aplicación': { route: '/panel/candidatos', color: 'text-blue-600' },
-  'Contrato': { route: '/panel/contratos', color: 'text-purple-600' },
-  'Mantenimiento': { route: '/panel', color: 'text-amber-600' },
-  'Alerta': { route: '/panel', color: 'text-red-600' },
-  'Verificación': { route: '/panel/candidatos', color: 'text-indigo-600' },
-  'Propiedad': { route: '/panel/propiedades', color: 'text-teal-600' },
-  'Reseña': { route: '/panel', color: 'text-yellow-600' },
+  'Pago': { route: '/panel', color: 'text-plan-status-green' },
+  'Aplicación': { route: '/panel/candidatos', color: 'text-plan-status-blue' },
+  'Contrato': { route: '/panel/contratos', color: 'text-plan-status-purple' },
+  'Mantenimiento': { route: '/panel', color: 'text-plan-status-yellow' },
+  'Alerta': { route: '/panel', color: 'text-plan-status-red' },
+  'Verificación': { route: '/panel/candidatos', color: 'text-plan-status-blue' },
+  'Propiedad': { route: '/panel/propiedades', color: 'text-plan-status-green' },
+  'Reseña': { route: '/panel', color: 'text-plan-status-yellow' },
   'Informe': { route: '/panel', color: 'text-muted-foreground' },
 };
 
@@ -209,7 +209,7 @@ export default function NotificacionesPage() {
             className={cn(
               'px-4 py-2 text-[13px] font-medium transition-colors',
               filter === f.id
-                ? 'bg-plan-primary text-white'
+                ? 'bg-primary text-white'
                 : 'bg-muted text-plan-secondary hover:bg-muted'
             )}
           >
@@ -219,7 +219,7 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-plan-border">
+      <div className="bg-card border border-plan-border">
         {filteredNotifications.length === 0 ? (
           <div className="py-16 text-center">
             <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -247,8 +247,8 @@ export default function NotificacionesPage() {
               >
                 {/* Icon */}
                 <div className={cn(
-                  'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg',
-                  notification.unread ? 'bg-plan-primary' : 'bg-muted'
+                  'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-sm',
+                  notification.unread ? 'bg-primary' : 'bg-muted'
                 )}>
                   <IconComponent className={cn(
                     'w-5 h-5',
@@ -282,7 +282,7 @@ export default function NotificacionesPage() {
                   {notification.unread && (
                     <button
                       onClick={() => markAsRead(notification.id)}
-                      className="p-2 text-plan-muted hover:text-plan-status-green hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-2 text-plan-muted hover:text-plan-status-green hover:bg-green-50 rounded-sm transition-colors"
                       title="Marcar como leído"
                     >
                       <Check className="w-4 h-4" />
@@ -290,7 +290,7 @@ export default function NotificacionesPage() {
                   )}
                   <button
                     onClick={() => deleteNotification(notification.id)}
-                    className="p-2 text-plan-muted hover:text-plan-status-red hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-plan-muted hover:text-plan-status-red hover:bg-red-50 rounded-sm transition-colors"
                     title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />

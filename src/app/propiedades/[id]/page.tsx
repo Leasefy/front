@@ -50,12 +50,12 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
     return (
       <>
         <Navbar />
-        <main id="main-content" className="min-h-screen bg-white flex items-center justify-center">
+        <main id="main-content" className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-normal text-black tracking-tight">
+            <h1 className="text-2xl font-normal text-foreground tracking-tight">
               Propiedad no encontrada
             </h1>
-            <p className="mt-2 text-sm text-black/60">
+            <p className="mt-2 text-sm text-muted-foreground">
               La propiedad que buscas no existe o ha sido removida.
             </p>
             <Link href="/propiedades">
@@ -78,13 +78,13 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
   return (
     <>
       <Navbar />
-      <main id="main-content" className="min-h-screen bg-white">
+      <main id="main-content" className="min-h-screen bg-background">
         {/* Back Navigation */}
         <div className="pt-20 md:pt-24">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors py-2"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver a propiedades
@@ -100,7 +100,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               <button
                 onClick={() => openGallery(0)}
                 aria-label={`Ver galeria de imagenes de ${property.title}`}
-                className="md:col-span-2 relative overflow-hidden rounded-lg cursor-pointer group"
+                className="md:col-span-2 relative overflow-hidden rounded-sm cursor-pointer group"
               >
                 <Image
                   src={property.images[0]}
@@ -118,7 +118,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   <button
                     onClick={() => openGallery(1)}
                     aria-label="Ver imagen 2 en galeria"
-                    className="relative overflow-hidden rounded-lg cursor-pointer group"
+                    className="relative overflow-hidden rounded-sm cursor-pointer group"
                   >
                     <Image
                       src={property.images[1]}
@@ -134,7 +134,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   <button
                     onClick={() => openGallery(2)}
                     aria-label="Ver imagen 3 en galeria"
-                    className="relative overflow-hidden rounded-lg cursor-pointer group"
+                    className="relative overflow-hidden rounded-sm cursor-pointer group"
                   >
                     <Image
                       src={property.images[2]}
@@ -150,14 +150,14 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                           e.stopPropagation();
                           openGallery(0);
                         }}
-                        className="absolute bottom-4 right-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-md hover:bg-muted transition-colors shadow-sm"
+                        className="absolute bottom-4 right-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-md hover:bg-muted transition-colors shadow-sm"
                       >
                         Ver todas las imagenes ({property.images.length})
                       </span>
                     )}
                   </button>
                 ) : (
-                  <div className="relative overflow-hidden rounded-lg bg-muted" />
+                  <div className="relative overflow-hidden rounded-sm bg-muted" />
                 )}
               </div>
             </div>
@@ -175,49 +175,49 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               {/* Header */}
               <div className="mb-10">
                 {/* Location */}
-                <div className="flex items-center gap-2 text-sm text-black/50 mb-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <MapPin className="w-4 h-4" />
                   <span>{property.neighborhood}, {property.city}</span>
                 </div>
 
                 {/* Title */}
-                <h1 className="text-3xl md:text-4xl font-normal text-black tracking-[-0.02em] leading-[1.1]">
+                <h1 className="text-3xl md:text-4xl font-normal text-foreground tracking-[-0.02em] leading-[1.1]">
                   {property.title}
                 </h1>
 
                 {/* Price - Luxterra style */}
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-sm text-black/50">Arriendo mensual</span>
-                  <span className="text-2xl font-medium text-black">
+                  <span className="text-sm text-muted-foreground">Arriendo mensual</span>
+                  <span className="text-2xl font-medium text-foreground">
                     {formatCurrency(property.monthlyRent)}
                   </span>
                 </div>
               </div>
 
               {/* Stats Row - Luxterra style boxes */}
-              <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-black/10">
+              <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-border">
                 <div>
-                  <p className="text-xs text-black/50 mb-1">Area (m2)</p>
-                  <p className="text-lg font-medium text-black">{property.area}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Area (m2)</p>
+                  <p className="text-lg font-medium text-foreground">{property.area}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-black/50 mb-1">Habitaciones</p>
-                  <p className="text-lg font-medium text-black">{property.bedrooms}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Habitaciones</p>
+                  <p className="text-lg font-medium text-foreground">{property.bedrooms}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-black/50 mb-1">Banos</p>
-                  <p className="text-lg font-medium text-black">{property.bathrooms}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Banos</p>
+                  <p className="text-lg font-medium text-foreground">{property.bathrooms}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-black/50 mb-1">Tipo</p>
-                  <p className="text-lg font-medium text-black">{typeLabels[property.type]}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Tipo</p>
+                  <p className="text-lg font-medium text-foreground">{typeLabels[property.type]}</p>
                 </div>
               </div>
 
               {/* Description */}
               <div className="mb-10">
-                <h2 className="text-sm font-medium text-black mb-3">Descripcion</h2>
-                <p className="text-base text-black/70 leading-relaxed">
+                <h2 className="text-sm font-medium text-foreground mb-3">Descripcion</h2>
+                <p className="text-base text-foreground/70 leading-relaxed">
                   {property.description}
                 </p>
               </div>
@@ -231,7 +231,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               {/* Gallery Section */}
               {property.images.length > 1 && (
                 <div className="mt-12">
-                  <h2 className="text-sm font-medium text-black mb-4">Galeria</h2>
+                  <h2 className="text-sm font-medium text-foreground mb-4">Galeria</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {property.images.slice(0, 6).map((image, index) => (
                       <button
@@ -254,7 +254,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   {property.images.length > 6 && (
                     <button
                       onClick={() => openGallery(0)}
-                      className="mt-4 text-sm text-black/60 hover:text-black transition-colors"
+                      className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Ver todas las imagenes ({property.images.length})
                     </button>
@@ -262,11 +262,28 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                 </div>
               )}
 
-              {/* Map Placeholder */}
+              {/* Map / Location */}
               <div className="mt-12">
-                <h2 className="text-sm font-medium text-black mb-4">Mapa de ubicacion</h2>
-                <div className="aspect-[16/9] bg-muted rounded-lg flex items-center justify-center">
-                  <span className="text-sm text-black/40">Mapa proximamente</span>
+                <h2 className="text-sm font-medium text-foreground mb-4">Mapa de ubicacion</h2>
+                <div className="border border-border rounded-sm bg-neutral-50 p-6 flex flex-col items-center justify-center gap-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-base font-medium text-foreground">
+                      {property.neighborhood}, {property.city}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">Colombia</p>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.neighborhood + ', ' + property.city + ', Colombia')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border rounded-sm hover:bg-black/5 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Ver en Google Maps
+                  </a>
                 </div>
               </div>
             </div>

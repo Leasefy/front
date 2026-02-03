@@ -104,7 +104,7 @@ export default function PricingPage() {
             </div>
 
             {/* Rent Calculator */}
-            <div className="mb-8 p-4 bg-white rounded-sm border border-border">
+            <div className="mb-8 p-4 bg-card rounded-sm border border-border">
               <label className="block text-sm font-medium text-foreground mb-2">
                 Calcula con tu arriendo mensual
               </label>
@@ -226,7 +226,7 @@ export default function PricingPage() {
 
             {/* Agency Pricing Card */}
             <div className="max-w-lg mx-auto">
-              <div className="rounded-sm border border-border bg-white p-8 text-center">
+              <div className="rounded-sm border border-border bg-card p-8 text-center">
                 <h3 className="text-xl font-semibold text-foreground">
                   Plan Inmobiliaria
                 </h3>
@@ -276,7 +276,7 @@ export default function PricingPage() {
       )}
 
       {/* Value props */}
-      <section className="py-16 px-4 bg-white border-t border-border">
+      <section className="py-16 px-4 bg-background border-t border-border">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-semibold text-foreground text-center mb-12">
             Por que elegir Arriendo Facil
@@ -303,7 +303,7 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ section */}
-      <section className="py-16 px-4 border-t border-border">
+      <section id="faq" className="py-16 px-4 border-t border-border">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-semibold text-foreground text-center mb-8">
             Preguntas frecuentes
@@ -386,7 +386,7 @@ function UserTypeButton({
       className={cn(
         'flex-1 flex flex-col items-center gap-1 px-4 py-3 rounded-sm transition-all text-center',
         selected
-          ? 'bg-white shadow-sm text-foreground'
+          ? 'bg-card shadow-sm text-foreground'
           : 'text-muted-foreground hover:text-foreground'
       )}
     >
@@ -410,7 +410,7 @@ function BenefitCard({
   description: string;
 }) {
   return (
-    <div className="rounded-sm border border-border bg-white p-6">
+    <div className="rounded-sm border border-border bg-card p-6">
       <h4 className="font-semibold text-foreground">{title}</h4>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
@@ -451,7 +451,7 @@ function FAQItem({
   answer: string;
 }) {
   return (
-    <div className="bg-white rounded-sm border border-border p-6">
+    <div className="bg-card rounded-sm border border-border p-6">
       <div className="flex gap-3">
         <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <div>

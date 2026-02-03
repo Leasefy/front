@@ -7,9 +7,9 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const PLAN_INFO = {
-  free: { name: 'Plan Gratis', icon: Zap, price: '$0', color: 'bg-black/5 text-black' },
-  pro: { name: 'Plan Propietario', icon: Sparkles, price: '$149.900/mes', color: 'bg-plan-accent text-black' },
-  business: { name: 'Plan Inmobiliaria', icon: Building2, price: '$499.900/mes', color: 'bg-black text-white' },
+  free: { name: 'Plan Gratis', icon: Zap, price: '$0', color: 'bg-indigo-100 text-indigo-900' },
+  pro: { name: 'Plan Propietario', icon: Sparkles, price: '$149.900/mes', color: 'bg-indigo-100 text-indigo-900' },
+  business: { name: 'Plan Inmobiliaria', icon: Building2, price: '$499.900/mes', color: 'bg-indigo-100 text-indigo-900' },
 };
 
 interface SectionProps {
@@ -20,13 +20,13 @@ interface SectionProps {
 
 function Section({ title, onEdit, children }: SectionProps) {
   return (
-    <div className="py-5 border-b border-black/5 last:border-0">
+    <div className="py-5 border-b border-border last:border-0">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-black">{title}</h4>
+        <h4 className="text-sm font-medium text-foreground">{title}</h4>
         <button
           type="button"
           onClick={onEdit}
-          className="flex items-center gap-1.5 text-xs text-black/50 hover:text-black transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <Edit2 className="w-3 h-3" />
           Editar
@@ -46,10 +46,10 @@ export function StepReview() {
   return (
     <div className="space-y-2">
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-black mb-1">
+        <h3 className="text-sm font-medium text-foreground mb-1">
           Revisa tu publicacion
         </h3>
-        <p className="text-sm text-black/50">
+        <p className="text-sm text-muted-foreground">
           Verifica que toda la informacion sea correcta antes de publicar
         </p>
       </div>
@@ -67,15 +67,15 @@ export function StepReview() {
 
       {/* Title and Description */}
       <Section title="Titulo y descripcion" onEdit={() => goToStep(7)}>
-        <h3 className="text-lg font-medium text-black mb-2">{draft.title || 'Sin titulo'}</h3>
-        <p className="text-sm text-black/60 line-clamp-3">{draft.description || 'Sin descripcion'}</p>
+        <h3 className="text-lg font-medium text-foreground mb-2">{draft.title || 'Sin titulo'}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-3">{draft.description || 'Sin descripcion'}</p>
       </Section>
 
       {/* Property Type and Location */}
       <Section title="Tipo y ubicacion" onEdit={() => goToStep(1)}>
         <div className="flex items-center gap-4 text-sm">
-          <span className="px-3 py-1 bg-black/5 rounded-sm text-black/70">{typeLabel}</span>
-          <span className="flex items-center gap-1.5 text-black/60">
+          <span className="px-3 py-1 bg-black/5 rounded-sm text-foreground/70">{typeLabel}</span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <MapPin className="w-4 h-4" />
             {draft.neighborhood}, {draft.city}
           </span>
@@ -86,24 +86,24 @@ export function StepReview() {
       <Section title="Caracteristicas" onEdit={() => goToStep(3)}>
         <div className="grid grid-cols-4 gap-4">
           <div className="text-center">
-            <Bed className="w-5 h-5 mx-auto text-black/40 mb-1" />
-            <p className="text-sm font-medium text-black">{draft.bedrooms}</p>
-            <p className="text-xs text-black/50">Habitaciones</p>
+            <Bed className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-sm font-medium text-foreground">{draft.bedrooms}</p>
+            <p className="text-xs text-muted-foreground">Habitaciones</p>
           </div>
           <div className="text-center">
-            <Bath className="w-5 h-5 mx-auto text-black/40 mb-1" />
-            <p className="text-sm font-medium text-black">{draft.bathrooms}</p>
-            <p className="text-xs text-black/50">Banos</p>
+            <Bath className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-sm font-medium text-foreground">{draft.bathrooms}</p>
+            <p className="text-xs text-muted-foreground">Banos</p>
           </div>
           <div className="text-center">
-            <Maximize2 className="w-5 h-5 mx-auto text-black/40 mb-1" />
-            <p className="text-sm font-medium text-black">{draft.area}</p>
-            <p className="text-xs text-black/50">m²</p>
+            <Maximize2 className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-sm font-medium text-foreground">{draft.area}</p>
+            <p className="text-xs text-muted-foreground">m²</p>
           </div>
           <div className="text-center">
-            <Car className="w-5 h-5 mx-auto text-black/40 mb-1" />
-            <p className="text-sm font-medium text-black">{draft.parkingSpaces}</p>
-            <p className="text-xs text-black/50">Parqueaderos</p>
+            <Car className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-sm font-medium text-foreground">{draft.parkingSpaces}</p>
+            <p className="text-xs text-muted-foreground">Parqueaderos</p>
           </div>
         </div>
       </Section>
@@ -115,7 +115,7 @@ export function StepReview() {
             {selectedAmenities.map((amenity) => (
               <span
                 key={amenity.value}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/5 rounded-sm text-sm text-black/70"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/5 rounded-sm text-sm text-foreground/70"
               >
                 <Check className="w-3 h-3" />
                 {amenity.label}
@@ -123,7 +123,7 @@ export function StepReview() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-black/40">Sin amenidades seleccionadas</p>
+          <p className="text-sm text-muted-foreground">Sin amenidades seleccionadas</p>
         )}
       </Section>
 
@@ -148,31 +148,31 @@ export function StepReview() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-black/40 mt-2">{draft.photos.length} foto{draft.photos.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs text-muted-foreground mt-2">{draft.photos.length} foto{draft.photos.length !== 1 ? 's' : ''}</p>
       </Section>
 
       {/* Pricing */}
       <Section title="Precios" onEdit={() => goToStep(6)}>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-black/60">Canon mensual</span>
-            <span className="font-medium text-black">{formatCurrency(draft.monthlyRent)}</span>
+            <span className="text-muted-foreground">Canon mensual</span>
+            <span className="font-medium text-foreground">{formatCurrency(draft.monthlyRent)}</span>
           </div>
           {draft.adminFee > 0 && (
             <div className="flex justify-between">
-              <span className="text-black/60">Administracion</span>
-              <span className="text-black">{formatCurrency(draft.adminFee)}</span>
+              <span className="text-muted-foreground">Administracion</span>
+              <span className="text-foreground">{formatCurrency(draft.adminFee)}</span>
             </div>
           )}
           {draft.deposit > 0 && (
             <div className="flex justify-between">
-              <span className="text-black/60">Deposito</span>
-              <span className="text-black">{formatCurrency(draft.deposit)}</span>
+              <span className="text-muted-foreground">Deposito</span>
+              <span className="text-foreground">{formatCurrency(draft.deposit)}</span>
             </div>
           )}
-          <div className="flex justify-between pt-2 border-t border-black/10">
-            <span className="font-medium text-black">Total mensual</span>
-            <span className="font-medium text-black">{formatCurrency(draft.monthlyRent + draft.adminFee)}</span>
+          <div className="flex justify-between pt-2 border-t border-border">
+            <span className="font-medium text-foreground">Total mensual</span>
+            <span className="font-medium text-foreground">{formatCurrency(draft.monthlyRent + draft.adminFee)}</span>
           </div>
         </div>
       </Section>
@@ -200,14 +200,14 @@ export function StepReview() {
       )}
 
       {/* Confirmation notice */}
-      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-sm">
+      <div className="mt-6 p-4 bg-[hsl(var(--sand-50))] border border-[hsl(var(--sand-200))] rounded-sm">
         <div className="flex items-start gap-3">
-          <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <Check className="w-5 h-5 text-[hsl(var(--sand-700))] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-green-800">
+            <p className="text-sm font-medium text-[hsl(var(--sand-900))]">
               Todo listo para publicar
             </p>
-            <p className="text-sm text-green-700 mt-1">
+            <p className="text-sm text-[hsl(var(--sand-700))] mt-1">
               Al publicar, tu inmueble sera visible para miles de inquilinos potenciales.
             </p>
           </div>

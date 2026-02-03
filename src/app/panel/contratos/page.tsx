@@ -115,7 +115,7 @@ export default function ContratosPage() {
         />
 
         {/* Contracts List */}
-        <section className="bg-white  border border-plan-border overflow-hidden">
+        <section className="bg-card  border border-plan-border overflow-hidden">
           {filteredContracts.length > 0 ? (
             <div className="divide-y divide-plan-border">
               {filteredContracts.map((contract) => (
@@ -138,7 +138,7 @@ export default function ContratosPage() {
               </p>
               <Link
                 href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white rounded-sm text-sm font-medium hover:bg-foreground transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Building2 className="w-4 h-4" />
                 Ver mis propiedades

@@ -142,7 +142,7 @@ export function FilterSidebar({
                 'w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-all duration-200',
                 onlyAffordable
                   ? 'bg-green-600 border-green-600'
-                  : 'bg-white border-border'
+                  : 'bg-card border-border'
               )}
             >
               {onlyAffordable && <Check className="w-3 h-3 text-white" />}
@@ -188,7 +188,7 @@ export function FilterSidebar({
           onChange={(e) => onCityChange(e.target.value || null)}
           aria-label="Filtrar por ciudad"
           className={cn(
-            'flex h-11 w-full rounded-sm border bg-white px-3 py-2',
+            'flex h-11 w-full rounded-sm border bg-card px-3 py-2',
             'text-sm text-foreground tracking-tight',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground',
@@ -221,7 +221,7 @@ export function FilterSidebar({
               onBlur={handleMinPriceBlur}
               aria-label="Precio minimo"
               className={cn(
-                'h-11 rounded-sm border bg-white text-sm placeholder:text-muted-foreground tracking-tight',
+                'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
                 'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.minPrice
@@ -240,7 +240,7 @@ export function FilterSidebar({
               onBlur={handleMaxPriceBlur}
               aria-label="Precio maximo"
               className={cn(
-                'h-11 rounded-sm border bg-white text-sm placeholder:text-muted-foreground tracking-tight',
+                'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
                 'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.maxPrice
@@ -268,7 +268,7 @@ export function FilterSidebar({
                 'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.bedrooms === num
                   ? 'bg-foreground text-white shadow-sm'
-                  : 'bg-white text-foreground border border-border hover:bg-muted hover:border-border'
+                  : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
               {num === 4 ? '4+' : num}
@@ -295,7 +295,7 @@ export function FilterSidebar({
                 'h-10 px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.propertyType === value
                   ? 'bg-foreground text-white shadow-sm'
-                  : 'bg-white text-foreground border border-border hover:bg-muted hover:border-border'
+                  : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
               {label}
@@ -314,7 +314,7 @@ export function FilterSidebar({
           onClick={() => setIsOpen(true)}
           className={cn(
             'mb-4 w-full flex items-center justify-center gap-2 h-11 rounded-sm',
-            'bg-white text-foreground border border-border',
+            'bg-card text-foreground border border-border',
             'text-sm tracking-tight transition-all duration-200',
             'hover:bg-muted hover:border-border active:scale-[0.99]'
           )}
@@ -347,11 +347,11 @@ export function FilterSidebar({
           {/* Drawer */}
           <div
             ref={drawerRef}
-            className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white rounded-t-[2px] animate-fade-in-up"
+            className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-card rounded-t-[2px] animate-fade-in-up"
             style={{ animationDuration: '200ms' }}
           >
             {/* Handle */}
-            <div className="sticky top-0 bg-white pt-3 pb-2 border-b border-border">
+            <div className="sticky top-0 bg-card pt-3 pb-2 border-b border-border">
               <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
             </div>
 
@@ -374,7 +374,7 @@ export function FilterSidebar({
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 px-6 py-4 bg-white border-t border-border">
+            <div className="sticky bottom-0 px-6 py-4 bg-card border-t border-border">
               <button
                 onClick={() => setIsOpen(false)}
                 className={cn(
@@ -391,7 +391,7 @@ export function FilterSidebar({
 
       {/* Desktop sidebar */}
       <aside className="hidden w-72 shrink-0 lg:block">
-        <div className="sticky top-24 bg-white p-6 rounded-sm shadow-sm border border-border">
+        <div className="sticky top-24 bg-card p-6 rounded-sm shadow-sm border border-border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-medium text-foreground tracking-tight">Filtros</h2>
             {activeFilterCount > 0 && (

@@ -96,7 +96,6 @@ export function PublishProvider({ children }: { children: ReactNode }) {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       // In real app, would call API to create property
-      console.log('Property submitted:', draft);
       setIsComplete(true);
     } finally {
       setIsSubmitting(false);

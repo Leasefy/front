@@ -13,6 +13,13 @@ import {
   FileText,
   MessageSquare,
   AlertTriangle,
+  HelpCircle,
+  ChevronDown,
+  Shield,
+  Briefcase,
+  CreditCard,
+  Home,
+  Scale,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -47,6 +54,109 @@ const candidateStatuses: Record<string, StatusFilter> = {
 
 interface CandidateRow extends Candidate {
   status: StatusFilter;
+}
+
+const SCORE_CATEGORIES = [
+  { icon: Briefcase, label: 'Estabilidad laboral', weight: '30%', description: 'Tipo de contrato, antigüedad, industria y cargo. Un contrato indefinido con más de 2 años pesa significativamente.' },
+  { icon: CreditCard, label: 'Capacidad financiera', weight: '25%', description: 'Relación ingreso/arriendo, obligaciones mensuales e ingreso adicional. Idealmente el arriendo no supera el 30% del ingreso.' },
+  { icon: Shield, label: 'Historial crediticio', weight: '20%', description: 'Reportes en centrales de riesgo, deudas vigentes y hábitos de pago. Sin reportes negativos suma puntos.' },
+  { icon: Home, label: 'Historial de arriendo', weight: '15%', description: 'Referencias de arrendadores anteriores, tiempo en viviendas previas y motivos de cambio.' },
+  { icon: Scale, label: 'Perfil general', weight: '10%', description: 'Documentación completa, coherencia de datos y verificación de identidad.' },
+];
+
+const RISK_LEVEL_DETAILS = [
+  { level: 'A', label: 'Excelente', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgColor: 'bg-emerald-50', description: 'Perfil muy confiable. Ingresos estables, excelente historial crediticio, empleo sólido. Riesgo mínimo de impago.' },
+  { level: 'B', label: 'Bueno', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50', description: 'Perfil sólido con fundamentos fuertes. Puede tener algún factor menor a considerar, pero el riesgo es bajo.' },
+  { level: 'C', label: 'Regular', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', description: 'Perfil con factores mixtos. Se recomienda solicitar garantías adicionales como un codeudor o depósito mayor.' },
+  { level: 'D', label: 'Riesgoso', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50', description: 'Perfil con factores de riesgo significativos. Se recomienda precaución y condiciones especiales si se decide aprobar.' },
+];
+
+function ScoringGuide() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'flex items-center gap-2.5 px-4 py-2.5 rounded-sm text-sm font-medium transition-colors border',
+          open
+            ? 'bg-primary/5 border-primary/20 text-primary'
+            : 'bg-card border-plan-border text-plan-primary hover:border-primary/30 hover:bg-primary/5'
+        )}
+      >
+        <HelpCircle className="w-4 h-4" />
+        <span>¿Cómo funciona el scoring de candidatos?</span>
+        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ml-1', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="mt-4 bg-card border border-plan-border overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-plan-border">
+            <h3 className="text-base font-semibold text-plan-primary">Sistema de evaluación de candidatos</h3>
+            <p className="text-sm text-plan-secondary mt-1">
+              Cada candidato recibe un puntaje de 0 a 100 basado en múltiples factores verificados. Este score se traduce en un nivel de riesgo (A–D) para facilitar tu decisión.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-plan-border">
+            {/* Left: Score categories */}
+            <div className="p-6">
+              <h4 className="text-sm font-semibold text-plan-primary mb-4 uppercase tracking-wider">Categorías evaluadas</h4>
+              <div className="space-y-4">
+                {SCORE_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <div key={cat.label} className="flex gap-3">
+                      <div className="w-8 h-8 rounded-sm bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-medium text-plan-primary">{cat.label}</span>
+                          <span className="text-xs text-plan-muted">Peso: {cat.weight}</span>
+                        </div>
+                        <p className="text-xs text-plan-secondary mt-0.5 leading-relaxed">{cat.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Risk levels */}
+            <div className="p-6">
+              <h4 className="text-sm font-semibold text-plan-primary mb-4 uppercase tracking-wider">Niveles de riesgo</h4>
+              <div className="space-y-3">
+                {RISK_LEVEL_DETAILS.map((risk) => (
+                  <div key={risk.level} className={cn('p-3 rounded-sm border', risk.bgColor, 'border-transparent')}>
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className={cn('w-7 h-7 rounded-sm flex items-center justify-center text-xs font-bold text-white', risk.color)}>
+                        {risk.level}
+                      </span>
+                      <div>
+                        <span className={cn('text-sm font-semibold', risk.textColor)}>{risk.label}</span>
+                        <span className="text-xs text-plan-muted ml-2">Score {risk.range}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-plan-secondary leading-relaxed ml-10">{risk.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 p-3 bg-[hsl(var(--sand-50))] rounded-sm">
+                <p className="text-xs text-plan-secondary leading-relaxed">
+                  <strong className="text-plan-primary">Nota:</strong> El scoring es una herramienta de apoyo, no una decisión automática. Siempre revisa el perfil completo del candidato antes de aprobar o rechazar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function CandidatosPage() {
@@ -358,14 +468,17 @@ export default function CandidatosPage() {
 
   return (
     <div className="min-h-screen bg-plan-page">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="text-2xl font-semibold text-plan-primary">Candidatos</h1>
           <p className="mt-1 text-plan-secondary">
             Evalúa y gestiona las aplicaciones de tus candidatos
           </p>
         </header>
+
+        {/* Scoring Guide — prominent placement */}
+        <ScoringGuide />
 
         {/* Stats */}
         <PlanStatsGrid columns={4} className="mb-8">
@@ -400,7 +513,7 @@ export default function CandidatosPage() {
         />
 
         {/* Filters Row */}
-        <div className="bg-white border border-plan-border p-4 mb-6">
+        <div className="bg-card border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Search */}
             <div className="relative flex-1">
@@ -425,7 +538,7 @@ export default function CandidatosPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     riskFilter === level
-                      ? 'bg-plan-primary text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >

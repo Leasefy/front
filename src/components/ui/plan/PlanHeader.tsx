@@ -194,8 +194,11 @@ export function PlanHeader({
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'mentions'>('all');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
+
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const [notifications, setNotifications] = useState(initialNotifications);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -287,7 +290,7 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white border-b border-border', className)}>
+    <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-border', className)}>
       <div className="flex items-center justify-between h-14 px-6">
         {/* Left: Search */}
         {showSearch && (
@@ -303,14 +306,14 @@ export function PlanHeader({
                 'w-full h-9 pl-9 pr-4',
                 'bg-muted border-none rounded-sm',
                 'text-[13px] text-plan-primary placeholder:text-plan-muted',
-                'focus:outline-none focus:ring-1 focus:ring-plan-primary focus:bg-white',
+                'focus:outline-none focus:ring-1 focus:ring-plan-primary focus:bg-white dark:focus:bg-card',
                 'transition-all duration-100'
               )}
             />
 
             {/* Search Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-plan-border shadow-lg max-h-[400px] overflow-y-auto z-50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-plan-border shadow-lg max-h-[400px] overflow-y-auto z-50">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
@@ -318,7 +321,7 @@ export function PlanHeader({
                       {Object.entries(groupedResults).map(([category, items]) => (
                         <div key={category}>
                           <div className="px-4 py-2 bg-muted border-b border-border">
-                            <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
+                            <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
                           </div>
@@ -358,7 +361,7 @@ export function PlanHeader({
                   <div>
                     {/* Quick Links */}
                     <div className="px-4 py-2 bg-muted border-b border-border">
-                      <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
+                      <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
                         Accesos rapidos
                       </p>
                     </div>
@@ -386,7 +389,7 @@ export function PlanHeader({
                     {recentSearches.length > 0 && (
                       <>
                         <div className="px-4 py-2 bg-muted border-t border-b border-border">
-                          <p className="text-[11px] font-medium text-plan-secondary uppercase tracking-wide">
+                          <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
                             Busquedas recientes
                           </p>
                         </div>
@@ -422,12 +425,12 @@ export function PlanHeader({
                   <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
                     <Zap className="w-5 h-5 stroke-[1.5px]" />
                     {MOCK_SUBSCRIPTION.planId === 'free' && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-plan-accent rounded-full" />
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[320px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[320px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
@@ -496,7 +499,7 @@ export function PlanHeader({
                       <Link
                         href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-plan-primary text-white text-[13px] font-medium text-center hover:bg-foreground transition-colors"
+                        className="block w-full py-2.5 bg-primary text-white text-[13px] font-medium text-center hover:bg-primary/90 transition-colors"
                       >
                         {MOCK_SUBSCRIPTION.planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -527,14 +530,14 @@ export function PlanHeader({
                   <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-plan-primary text-white text-[9px] font-medium flex items-center justify-center rounded-full">
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] font-medium flex items-center justify-center rounded-full">
                         {pendingInvites.length}
                       </span>
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[360px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[360px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
                   align="end"
                   sideOffset={8}
                 >
@@ -588,12 +591,19 @@ export function PlanHeader({
                             <input
                               type="email"
                               value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
+                              onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
+                              onBlur={() => { if (inviteEmail && !isValidEmail(inviteEmail)) setInviteEmailError('Ingresa un correo válido'); }}
                               placeholder="correo@ejemplo.com"
                               aria-label="Correo electrónico para invitación"
-                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                              className={cn(
+                                "w-full h-10 pl-9 pr-4 bg-muted border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
+                                inviteEmailError ? 'border-red-400 focus:ring-red-400' : 'border-plan-border focus:ring-plan-primary'
+                              )}
                             />
                           </div>
+                          {inviteEmailError && (
+                            <p className="text-xs text-red-500 mt-1">{inviteEmailError}</p>
+                          )}
                         </div>
 
                         {/* Role selector */}
@@ -618,7 +628,7 @@ export function PlanHeader({
                                   inviteRole === role.id ? 'border-plan-primary' : 'border-border'
                                 )}>
                                   {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-plan-primary" />
+                                    <div className="w-2 h-2 rounded-full bg-primary" />
                                   )}
                                 </div>
                                 <div className="flex-1">
@@ -633,15 +643,18 @@ export function PlanHeader({
                         {/* Submit */}
                         <button
                           onClick={() => {
-                            if (inviteEmail) {
-                              setInviteSent(true);
+                            if (!inviteEmail) return;
+                            if (!isValidEmail(inviteEmail)) {
+                              setInviteEmailError('Ingresa un correo válido');
+                              return;
                             }
+                            setInviteSent(true);
                           }}
                           disabled={!inviteEmail}
                           className={cn(
                             'w-full py-2.5 text-[13px] font-medium text-center transition-colors',
                             inviteEmail
-                              ? 'bg-plan-primary text-white hover:bg-foreground'
+                              ? 'bg-primary text-white hover:bg-primary/90'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
@@ -653,7 +666,7 @@ export function PlanHeader({
                     {/* Current team preview */}
                     {teamMembers.length > 1 && !inviteSent && (
                       <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-[11px] font-medium text-plan-muted uppercase tracking-wide mb-2">
+                        <p className="text-[11px] font-normal text-plan-muted font-mono uppercase tracking-wide mb-2">
                           Equipo actual ({teamMembers.length})
                         </p>
                         <div className="flex -space-x-2">
@@ -691,7 +704,7 @@ export function PlanHeader({
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[calc(100vw-2rem)] sm:w-[400px] p-0 bg-white border border-plan-border shadow-lg rounded-none"
+              className="w-[calc(100vw-2rem)] sm:w-[400px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
               align="end"
               sideOffset={8}
             >
@@ -739,15 +752,12 @@ export function PlanHeader({
                     {tab === 'unread' && 'Sin leer'}
                     {tab === 'mentions' && 'Menciones'}
                     {tab === 'all' && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-plan-primary text-white text-[10px] rounded-sm">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-primary text-white text-[10px] rounded-sm">
                         7
                       </span>
                     )}
                   </button>
                 ))}
-                <button className="ml-auto text-plan-muted hover:text-plan-secondary">
-                  <Settings className="w-4 h-4" />
-                </button>
               </div>
 
               {/* Notifications List */}
@@ -764,7 +774,7 @@ export function PlanHeader({
                     {/* Avatar */}
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      notification.unread ? 'bg-plan-primary text-white' : 'bg-muted text-plan-secondary'
+                      notification.unread ? 'bg-primary text-white' : 'bg-muted text-plan-secondary'
                     )}>
                       {notification.user.charAt(0)}
                     </div>
@@ -870,7 +880,7 @@ export function PlanHeader({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-56 bg-white border border-plan-border shadow-lg rounded-none p-1"
+              className="w-56 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none p-1"
               align="end"
               sideOffset={8}
             >
@@ -881,7 +891,7 @@ export function PlanHeader({
               <DropdownMenuSeparator className="bg-muted" />
               <DropdownMenuItem asChild>
                 <Link
-                  href={isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
+                  href={isLandlord ? "/panel/configuracion" : "/inquilino/perfil"}
                   className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px]" />

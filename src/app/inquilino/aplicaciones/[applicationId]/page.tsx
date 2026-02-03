@@ -140,7 +140,7 @@ export default function ApplicationDetailPage() {
         </button>
 
         {/* Header */}
-        <div className="bg-white border border-plan-border overflow-hidden mb-6">
+        <div className="bg-card border border-plan-border overflow-hidden mb-6">
           <div className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
@@ -195,7 +195,7 @@ export default function ApplicationDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Property Info */}
-            <div className="bg-white border border-plan-border overflow-hidden">
+            <div className="bg-card border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Propiedad</h2>
               </div>
@@ -231,7 +231,7 @@ export default function ApplicationDetailPage() {
             </div>
 
             {/* Timeline */}
-            <div className="bg-white border border-plan-border overflow-hidden">
+            <div className="bg-card border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">
                   Historial de la aplicacion
@@ -250,7 +250,7 @@ export default function ApplicationDetailPage() {
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
                             index === 0
-                              ? 'bg-plan-primary text-white'
+                              ? 'bg-primary text-white'
                               : 'bg-muted text-plan-secondary'
                           }`}
                         >
@@ -285,7 +285,7 @@ export default function ApplicationDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Actions */}
-            <div className="bg-white border border-plan-border overflow-hidden">
+            <div className="bg-card border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Acciones</h2>
               </div>
@@ -318,7 +318,7 @@ export default function ApplicationDetailPage() {
             </div>
 
             {/* Property Quick Info */}
-            <div className="bg-white border border-plan-border overflow-hidden">
+            <div className="bg-card border border-plan-border overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">
                   Detalles de la propiedad

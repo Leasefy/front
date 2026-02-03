@@ -180,7 +180,7 @@ export function PlanActivityCard({
   className,
 }: PlanActivityCardProps) {
   return (
-    <div className={cn('bg-white  border border-plan-border p-5', className)}>
+    <div className={cn('bg-white dark:bg-card border border-plan-border p-5', className)}>
       <h3 className="text-sm font-semibold text-plan-primary mb-4">{title}</h3>
       <PlanActivityTimeline
         items={items}

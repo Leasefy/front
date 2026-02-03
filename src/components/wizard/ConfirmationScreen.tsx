@@ -27,7 +27,7 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-white rounded-sm border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-sm border border-border shadow-sm overflow-hidden">
           {/* Success header */}
           <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">

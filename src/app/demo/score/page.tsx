@@ -68,7 +68,7 @@ export default function ScoreDemoPage() {
   return (
     <div className="min-h-screen bg-muted">
       {/* Header */}
-      <header className="bg-white border-b border-border sticky top-0 z-10">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -123,7 +123,7 @@ export default function ScoreDemoPage() {
             Vista previa
           </h2>
 
-          <div className="bg-white rounded-sm border border-border p-4 md:p-6">
+          <div className="bg-card rounded-sm border border-border p-4 md:p-6">
             <RiskScoreDisplay
               key={animationKey}
               candidate={selectedCandidate}
@@ -182,7 +182,7 @@ export default function ScoreDemoPage() {
             <p>
               <strong>Import patterns:</strong>
             </p>
-            <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+            <pre className="bg-card p-2 rounded text-xs overflow-x-auto">
 {`// Para badge rapido en listas
 import { LevelBadge } from '@/components/score';
 

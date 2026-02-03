@@ -210,7 +210,7 @@ export function CandidateDetail({
           </div>
 
           {/* Footer: Decision Buttons (sticky) */}
-          <div className="border-t border-border bg-white p-4 space-y-3">
+          <div className="border-t border-border bg-card p-4 space-y-3">
             {/* Generate Contract Button - shown when approved */}
             {currentStatus === 'approved' && (
               <Link

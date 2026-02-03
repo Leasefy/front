@@ -74,27 +74,27 @@ export function KPICard({
 
   const variantStyles = {
     default: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-muted text-muted-foreground',
       value: 'text-foreground',
     },
     primary: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-primary/10 text-primary',
       value: 'text-primary',
     },
     warning: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-amber-50 text-amber-600',
       value: 'text-amber-600',
     },
     success: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-emerald-50 text-emerald-600',
       value: 'text-emerald-600',
     },
     info: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-blue-50 text-blue-600',
       value: 'text-blue-600',
     },

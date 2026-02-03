@@ -99,9 +99,9 @@ export function PhotoGalleryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col" data-lenis-prevent>
+    <div className="fixed inset-0 z-50 bg-background flex flex-col" data-lenis-prevent>
       {/* Header - Airbnb style */}
-      <header className="flex-shrink-0 bg-white border-b border-border">
+      <header className="flex-shrink-0 bg-card border-b border-border">
         <div className="flex items-center justify-between h-16 px-6 md:px-8">
           {/* Back button */}
           <button

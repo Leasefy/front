@@ -1,28 +1,31 @@
 "use client"
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
+import { Slot, Slottable } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { ArrowUpRight, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium transition-all duration-[var(--duration-normal)] ease-[var(--ease-default)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.98]",
+  "group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[1px] text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.97]",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/85 hover:shadow-md",
+        white:
+          "bg-white dark:bg-card text-foreground shadow-sm hover:bg-white/90 dark:hover:bg-card/90 hover:shadow-md",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/85 hover:shadow-md",
         outline:
-          "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-border",
+          "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-foreground/20",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70 hover:border-border",
         ghost:
           "text-muted-foreground hover:bg-secondary hover:text-foreground",
         link:
-          "text-foreground underline-offset-4 hover:underline",
+          "text-foreground underline-offset-4 hover:underline !rounded-none !px-0 hover:text-primary",
       },
       size: {
         default: "h-10 px-5 py-2",
@@ -38,21 +41,60 @@ const buttonVariants = cva(
   }
 )
 
+const ARROW_VARIANTS = new Set<string>(["default", "white"])
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  isLoading?: boolean
+  hideArrow?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+  ({ className, variant, size, asChild = false, isLoading = false, hideArrow = false, children, ...props }, ref) => {
+    const resolvedVariant = variant ?? "default"
+    const showArrow = ARROW_VARIANTS.has(resolvedVariant) && !hideArrow && !isLoading && size !== "icon"
+
+    const arrowIcon = showArrow ? (
+      <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+    ) : null
+
+    const loaderIcon = isLoading ? (
+      <Loader2 className="h-4 w-4 animate-spin" />
+    ) : null
+
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(
+            buttonVariants({ variant, size, className }),
+            isLoading && "pointer-events-none opacity-70"
+          )}
+          ref={ref}
+          {...props}
+        >
+          {loaderIcon}
+          <Slottable>{children}</Slottable>
+          {arrowIcon}
+        </Slot>
+      )
+    }
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+      <button
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          isLoading && "pointer-events-none opacity-70"
+        )}
         ref={ref}
+        disabled={props.disabled || isLoading}
         {...props}
-      />
+      >
+        {loaderIcon}
+        {children}
+        {arrowIcon}
+      </button>
     )
   }
 )

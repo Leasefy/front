@@ -142,7 +142,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     >
       {/* Active indicator - vertical line on left */}
       {isActive && depth === 0 && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-plan-primary" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-primary" />
       )}
       <Icon className={cn(
         'w-[18px] h-[18px] stroke-[1.5px]',
@@ -152,7 +152,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         <>
           <span className="flex-1">{item.label}</span>
           {item.badge !== undefined && item.badge > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 bg-plan-primary text-white text-[10px] font-medium flex items-center justify-center rounded-sm">
+            <span className="min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-medium flex items-center justify-center rounded-sm">
               {item.badge}
             </span>
           )}
@@ -191,14 +191,14 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white relative">
+    <div className="flex flex-col h-full bg-white dark:bg-card relative">
       {/* Collapse Button - Circle at edge */}
       {showCollapseButton && (
         <button
           onClick={onCollapse}
           className={cn(
             'absolute top-5 -right-3 z-50',
-            'w-6 h-6 rounded-full bg-white border border-plan-border',
+            'w-6 h-6 rounded-full bg-white dark:bg-card border border-plan-border',
             'flex items-center justify-center',
             'text-plan-muted hover:text-plan-secondary',
             'shadow-sm transition-colors'
@@ -279,7 +279,7 @@ export function PlanSidebar({
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-white border-r border-border',
+          'bg-white dark:bg-card border-r border-border',
           'transition-all duration-200',
           isCollapsed ? 'lg:w-16' : 'lg:w-[240px]',
           className
@@ -300,7 +300,7 @@ export function PlanSidebar({
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-3 left-3 z-40 bg-white shadow-sm border border-plan-border rounded-sm"
+        className="lg:hidden fixed top-3 left-3 z-40 bg-white dark:bg-card shadow-sm border border-plan-border rounded-sm"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="w-5 h-5" />
@@ -309,7 +309,7 @@ export function PlanSidebar({
 
       {/* Mobile Sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[240px] p-0 bg-white">
+        <SheetContent side="left" className="w-[240px] p-0 bg-white dark:bg-card">
           <SheetHeader className="sr-only">
             <SheetTitle>Menu de navegacion</SheetTitle>
           </SheetHeader>

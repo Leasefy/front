@@ -208,7 +208,7 @@ export function PlanTable<T extends object>({
 
   if (loading) {
     return (
-      <div className={cn('bg-white border border-plan-border overflow-hidden', className)}>
+      <div className={cn('bg-white dark:bg-card border border-plan-border overflow-hidden', className)}>
         <div className="p-8 text-center">
           <div className="animate-spin w-8 h-8 border-2 border-plan-border border-t-plan-status-green rounded-full mx-auto" />
           <p className="text-[13px] text-plan-muted mt-3">Cargando...</p>
@@ -218,12 +218,12 @@ export function PlanTable<T extends object>({
   }
 
   return (
-    <div className={cn('bg-white border border-plan-border overflow-hidden', className)}>
+    <div className={cn('bg-white dark:bg-card border border-plan-border overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className={cn(
             'border-b border-plan-border',
-            stickyHeader && 'sticky top-0 z-10 bg-white'
+            stickyHeader && 'sticky top-0 z-10 bg-white dark:bg-card'
           )}>
             <tr>
               {selectable && (
@@ -233,9 +233,9 @@ export function PlanTable<T extends object>({
                     className={cn(
                       'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                       allSelected
-                        ? 'bg-plan-primary border-plan-primary text-white'
+                        ? 'bg-primary border-primary text-white'
                         : someSelected
-                          ? 'bg-plan-primary/10 border-plan-primary'
+                          ? 'bg-primary/10 border-primary'
                           : 'border-border hover:border-plan-muted'
                     )}
                   >
@@ -247,7 +247,7 @@ export function PlanTable<T extends object>({
                 <th
                   key={column.key}
                   className={cn(
-                    'px-3 py-2.5 text-left text-[11px] font-medium text-plan-muted uppercase tracking-wider',
+                    'px-3 py-2.5 text-left text-[11px] font-normal text-plan-muted font-mono uppercase tracking-wider',
                     column.sortable && 'cursor-pointer hover:text-plan-secondary select-none'
                   )}
                   style={{ width: column.width }}
@@ -306,7 +306,7 @@ export function PlanTable<T extends object>({
                           className={cn(
                             'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                             isSelected
-                              ? 'bg-plan-primary border-plan-primary text-white'
+                              ? 'bg-primary border-primary text-white'
                               : 'border-border hover:border-plan-muted'
                           )}
                         >
@@ -355,7 +355,7 @@ export function PlanTable<T extends object>({
                   className={cn(
                     'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                     currentPage === page
-                      ? 'bg-plan-primary text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >

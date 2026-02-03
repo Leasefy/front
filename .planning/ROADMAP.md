@@ -9,6 +9,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
 - ✅ **v1.1 Post-Approval Flow** - Phases 10-11 (complete)
 - ✅ **v2.0 Design System & QA Audit** - Phases 12-15 (complete)
+- ✅ **v2.1 Contract UX & Platform QA** - Phase 16 (complete)
 
 ## Phases
 
@@ -26,6 +27,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - [x] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
 - [x] **Phase 9: Interactive Map** - Airbnb-style map with clustering, price markers, filter sync
 - [x] **Phase 10: Post-Approval Flow** - Contracts, payments, pricing, coupons, post-rental views
+- [x] **Phase 16: Contract UX & Platform QA** - Contract signing redesign, Colombian law compliance, PDF generation, full platform QA (48 fixes), navigation audit (18 fixes), document preview
 
 ## Phase Details
 
@@ -243,6 +245,22 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 **Research**: Unlikely (standard responsive/a11y patterns)
 **Plans**: TBD
 
+### Phase 16: Contract UX & Platform QA
+**Goal**: Redesign contract signing flow, ensure Colombian legal compliance, comprehensive QA audit of entire platform
+**Depends on**: Phase 15
+**Success Criteria** (what must be TRUE):
+  1. Contract signing page uses 2-column layout with clear visual hierarchy
+  2. Contract templates reference specific Colombian law articles (Ley 820/2003)
+  3. PDF download generates real contract document with all parties and clauses
+  4. All navigation links resolve to existing routes (zero dead links)
+  5. All sidebar nav items point to built pages (no disabled items for existing pages)
+  6. Dark mode compatible (no hardcoded bg-white/text-black)
+  7. Design tokens used consistently across all components
+  8. Legal pages exist (/privacidad, /terminos, /ayuda)
+  9. Mobile back navigation on all tenant subpages
+**Research**: Completed (Colombian rental law Ley 820/2003, Ley 675/2001, Ley 527/1999)
+**Plans**: Executed inline (no formal plan files)
+
 ## Progress
 
 **Execution Order:**
@@ -265,6 +283,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. Component Redesign | 3/3 | Complete | 2026-02-02 |
 | 14. QA Functionality & Visual | 4/4 | Complete | 2026-02-02 |
 | 15. QA Responsive & A11y | 3/3 | Complete | 2026-02-02 |
+| 16. Contract UX & Platform QA | — | Complete | 2026-02-02 |
 
 ## Notes
 
@@ -294,6 +313,6 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-02-02 (v2.0 Design System & QA Audit roadmap created)*
+*Last updated: 2026-02-02 (v2.1 Contract UX & Platform QA complete)*
 *Vision: FRONTEND-VISION.md*
 

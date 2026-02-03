@@ -57,7 +57,7 @@ export function DemoControls({
   return (
     <div
       className={cn(
-        'rounded-sm border border-border bg-white p-4 space-y-4',
+        'rounded-sm border border-border bg-card p-4 space-y-4',
         className
       )}
     >

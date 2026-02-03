@@ -6,6 +6,7 @@
 import { getLandlordStats, getLeasesForLandlord, MOCK_PAYMENTS } from './mock-leases';
 import { getContractsForLandlord, getPendingContracts } from './mock-contracts';
 import { LANDLORD_PROPERTIES, getAllLandlordCandidates } from './mock-landlord-data';
+import { getPendingVisitCount } from './mock-visits';
 import type { RiskLevel } from '@/lib/types/risk-score';
 
 // ============================================================================
@@ -22,7 +23,7 @@ export interface FinancialStats {
 
 export interface UrgentAction {
   id: string;
-  type: 'signature' | 'late_payment' | 'pending_review' | 'ending_lease';
+  type: 'signature' | 'late_payment' | 'pending_review' | 'ending_lease' | 'pending_visit';
   title: string;
   description: string;
   count: number;
@@ -163,6 +164,20 @@ function getUrgentActions(landlordId: string): UrgentAction[] {
       description: `${endingSoon.length} arriendo${endingSoon.length > 1 ? 's' : ''} termina pronto`,
       count: endingSoon.length,
       href: '/panel/arriendos',
+      priority: 'medium',
+    });
+  }
+
+  // Check pending visits
+  const pendingVisits = getPendingVisitCount();
+  if (pendingVisits > 0) {
+    actions.push({
+      id: 'action-pending-visit',
+      type: 'pending_visit',
+      title: 'Visitas por confirmar',
+      description: `${pendingVisits} visita${pendingVisits > 1 ? 's' : ''} solicitada${pendingVisits > 1 ? 's' : ''} pendiente${pendingVisits > 1 ? 's' : ''}`,
+      count: pendingVisits,
+      href: '/panel/visitas',
       priority: 'medium',
     });
   }

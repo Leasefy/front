@@ -295,12 +295,12 @@ function CurrencyInput({
   return (
     <div className="relative">
       {icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
           {icon}
         </div>
       )}
       <span className={cn(
-        "absolute top-1/2 -translate-y-1/2 text-black/60 text-sm font-medium",
+        "absolute top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium",
         icon ? 'left-11' : 'left-4'
       )}>
         $
@@ -315,9 +315,9 @@ function CurrencyInput({
         onBlur={onBlur}
         className={cn(
           'w-full h-12 rounded-sm',
-          'bg-black/5 text-black placeholder:text-black/40',
-          'border border-black/10',
-          'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
+          'bg-black/5 text-foreground placeholder:text-muted-foreground',
+          'border border-border',
+          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
           'transition-colors',
           icon ? 'pl-16' : 'pl-9',
           'pr-4',

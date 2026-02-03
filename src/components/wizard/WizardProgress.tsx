@@ -78,8 +78,8 @@ export function WizardProgress({
                       isCompleted
                         ? 'bg-primary border-primary text-white'
                         : isCurrent
-                        ? 'bg-white border-primary text-primary'
-                        : 'bg-white border-border text-muted-foreground'
+                        ? 'bg-card border-primary text-primary'
+                        : 'bg-card border-border text-muted-foreground'
                     )}
                   >
                     {isCompleted ? (

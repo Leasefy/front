@@ -59,14 +59,14 @@ export function SocialProofBanner({ propertyId, className }: SocialProofProps) {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
         </span>
-        <span className="text-sm text-black/70">
-          <span className="font-medium text-black">{currentViewers} personas</span> viendo ahora
+        <span className="text-sm text-foreground/70">
+          <span className="font-medium text-foreground">{currentViewers} personas</span> viendo ahora
         </span>
       </div>
 
       {/* Views today */}
-      <div className="flex items-center gap-1.5 text-sm text-black/70">
-        <Eye className="w-4 h-4 text-black/40" />
+      <div className="flex items-center gap-1.5 text-sm text-foreground/70">
+        <Eye className="w-4 h-4 text-muted-foreground" />
         <span>{stats.viewsToday} visitas hoy</span>
       </div>
 
@@ -100,33 +100,33 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
   if (!stats) return null;
 
   return (
-    <div className={cn('border border-black/10 bg-black/[0.02] p-4', className)}>
+    <div className={cn('border border-border bg-black/[0.02] p-4', className)}>
       <div className="space-y-3">
         {/* Applications */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-black/50" />
-            <span className="text-sm text-black/70">Postulaciones esta semana</span>
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-foreground/70">Postulaciones esta semana</span>
           </div>
-          <span className="text-sm font-semibold text-black">{stats.applicationsThisWeek}</span>
+          <span className="text-sm font-semibold text-foreground">{stats.applicationsThisWeek}</span>
         </div>
 
         {/* Saved */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-black/50" />
-            <span className="text-sm text-black/70">Guardado por usuarios</span>
+            <Zap className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-foreground/70">Guardado por usuarios</span>
           </div>
-          <span className="text-sm font-semibold text-black">{stats.savedByUsers}</span>
+          <span className="text-sm font-semibold text-foreground">{stats.savedByUsers}</span>
         </div>
 
         {/* Response time */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-black/50" />
-            <span className="text-sm text-black/70">Tiempo de respuesta</span>
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-foreground/70">Tiempo de respuesta</span>
           </div>
-          <span className="text-sm font-semibold text-black">{stats.avgResponseTime}</span>
+          <span className="text-sm font-semibold text-foreground">{stats.avgResponseTime}</span>
         </div>
       </div>
     </div>
@@ -182,11 +182,11 @@ export function UrgencyBadge({
 export function TrustBadges({ className }: { className?: string }) {
   return (
     <div className={cn('flex flex-wrap gap-3', className)}>
-      <div className="flex items-center gap-1.5 text-xs text-black/60">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Shield className="w-3.5 h-3.5" />
         <span>Verificado</span>
       </div>
-      <div className="flex items-center gap-1.5 text-xs text-black/60">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock className="w-3.5 h-3.5" />
         <span>Respuesta rapida</span>
       </div>
@@ -216,18 +216,18 @@ export function LiveActivityFeed({ propertyId, className }: SocialProofProps) {
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-xs text-black/50 uppercase tracking-wide">Actividad reciente</p>
+      <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Actividad reciente</p>
       <div className="space-y-2">
         {activities.map((activity, index) => (
-          <div key={index} className="flex items-center gap-2 text-xs text-black/60">
+          <div key={index} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
             <span>
               {activity.type === 'postulacion' && 'Alguien se postuló'}
               {activity.type === 'visita' && 'Visita agendada'}
               {activity.type === 'guardado' && 'Guardado en favoritos'}
             </span>
-            <span className="text-black/40">·</span>
-            <span className="text-black/40">{activity.time}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">{activity.time}</span>
           </div>
         ))}
       </div>

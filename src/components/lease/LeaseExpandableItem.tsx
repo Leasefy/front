@@ -64,7 +64,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
       window.open(lease.contractUrl, '_blank');
     } else {
       // Navigate to contract detail page
-      router.push(`/panel/contratos/${lease.contractId}`);
+      router.push(`/panel/${lease.propertyId}/contract/${lease.tenantId}`);
     }
   };
 
@@ -153,7 +153,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
           <div className="ml-14 grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
             <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+              <p className="text-[10px] font-normal text-muted-foreground font-mono uppercase tracking-wide mb-3">
                 Detalles del arriendo
               </p>
               <div className="space-y-3">
@@ -185,7 +185,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
             {/* Card 2: Tenant Contact */}
             <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+              <p className="text-[10px] font-normal text-muted-foreground font-mono uppercase tracking-wide mb-3">
                 Arrendatario
               </p>
               <p className="text-sm font-medium text-foreground mb-3">{lease.tenantName}</p>
@@ -242,7 +242,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
             {/* Card 3: Payment Summary */}
             <div className="bg-muted/50 border border-border rounded-sm p-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-3">
+              <p className="text-[10px] font-normal text-muted-foreground font-mono uppercase tracking-wide mb-3">
                 Resumen de pagos
               </p>
               <div className="space-y-3">
@@ -280,9 +280,9 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
 
           {/* Payment history table - Full width below cards */}
           <div className="ml-14 mt-4">
-            <div className="border border-border rounded-sm overflow-hidden bg-white">
+            <div className="border border-border rounded-sm overflow-hidden bg-card">
               <div className="px-4 py-2.5 bg-muted/80 border-b border-border">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="text-[10px] font-normal text-muted-foreground font-mono uppercase tracking-wide">
                   Historial de pagos
                 </span>
               </div>
@@ -294,7 +294,7 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
               ) : (
                 <>
                   {/* Table header */}
-                  <div className="grid grid-cols-5 gap-4 px-4 py-2.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wide border-b border-border">
+                  <div className="grid grid-cols-5 gap-4 px-4 py-2.5 text-[11px] text-muted-foreground font-medium font-mono uppercase tracking-wider border-b border-border">
                     <div>Vencimiento</div>
                     <div>Concepto</div>
                     <div className="text-right">Monto</div>

@@ -77,7 +77,7 @@ function CheckoutContent() {
           {/* Main form column */}
           <div className="lg:col-span-3 space-y-6">
             {/* Plan summary card */}
-            <div className="bg-white rounded-sm border border-border p-5">
+            <div className="bg-card rounded-sm border border-border p-5">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
                   <Building2 className="w-6 h-6 text-primary" />
@@ -110,7 +110,7 @@ function CheckoutContent() {
             </div>
 
             {/* Billing cycle selector */}
-            <div className="bg-white rounded-sm border border-border p-5">
+            <div className="bg-card rounded-sm border border-border p-5">
               <label className="text-sm font-medium text-foreground mb-3 block">
                 Ciclo de facturacion
               </label>
@@ -158,7 +158,7 @@ function CheckoutContent() {
             </div>
 
             {/* Coupon input */}
-            <div className="bg-white rounded-sm border border-border p-5">
+            <div className="bg-card rounded-sm border border-border p-5">
               <CouponInput
                 planId={planId}
                 price={price}

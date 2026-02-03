@@ -60,8 +60,8 @@ export function StepDocuments() {
       {/* Required Documents Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <FileText className="h-5 w-5 text-black/60" />
-          <h3 className="text-sm font-medium text-black">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">
             Documentos Requeridos
           </h3>
           <span className="text-xs text-red-500">*</span>
@@ -97,11 +97,11 @@ export function StepDocuments() {
       {/* Optional Documents Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <FolderOpen className="h-5 w-5 text-black/60" />
-          <h3 className="text-sm font-medium text-black">
+          <FolderOpen className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">
             Documentos Opcionales
           </h3>
-          <span className="text-xs text-black/40 ml-1">
+          <span className="text-xs text-muted-foreground ml-1">
             (mejoran tu perfil)
           </span>
         </div>

@@ -56,10 +56,10 @@ function ActivityItem({ activity }: ActivityItemProps) {
   };
 
   const content = (
-    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-xl hover:bg-muted/80 transition-all duration-300 cursor-pointer">
+    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-sm hover:bg-muted/80 transition-all duration-300 cursor-pointer">
       {/* Icon with colored background */}
       <div className={cn(
-        'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+        'w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0',
         'transition-transform duration-300 group-hover:scale-110',
         typeColors[activity.type]
       )}>

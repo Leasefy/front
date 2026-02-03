@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FileText, MapPin, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Calendar } from 'lucide-react';
 
 import { getActiveApplications, getCompletedApplications } from '@/lib/data/mock-tenant-applications';
 import { mockProperties } from '@/lib/data/mock-properties';
@@ -146,6 +146,10 @@ export default function AplicacionesPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
 
         {/* Header */}
         <header className="mb-8">
@@ -178,7 +182,7 @@ export default function AplicacionesPage() {
         </PlanStatsGrid>
 
         {/* Tabs */}
-        <div className="bg-white  border border-plan-border overflow-hidden">
+        <div className="bg-card  border border-plan-border overflow-hidden">
           <div className="px-5 py-4 border-b border-plan-border">
             <PlanTabs
               tabs={tabs}

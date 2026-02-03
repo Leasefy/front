@@ -74,7 +74,7 @@ export function PropertyDashboardCard({
       className={cn('group block', className)}
     >
       {/* Card container - Premium design with subtle glow on hover */}
-      <div className="relative bg-white rounded-2xl border border-border/60 overflow-hidden transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08),0_0_0_1px_rgba(127,81,255,0.05)]">
+      <div className="relative bg-card rounded-sm border border-border/60 overflow-hidden transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08),0_0_0_1px_rgba(127,81,255,0.05)]">
         {/* Image container with gradient overlay */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <Image
@@ -92,14 +92,14 @@ export function PropertyDashboardCard({
           <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <Badge
               variant="default"
-              className="bg-white/95 backdrop-blur-sm text-foreground hover:bg-white shadow-lg shadow-black/10 px-3 py-2 text-sm font-semibold rounded-xl border-0"
+              className="bg-white/95 backdrop-blur-sm text-foreground hover:bg-white shadow-lg shadow-black/10 px-3 py-2 text-sm font-semibold rounded-sm border-0"
             >
               <Users className="w-4 h-4 mr-2 text-[black]" />
               {candidateCount} {candidateCount === 1 ? 'candidato' : 'candidatos'}
             </Badge>
 
             {/* Price tag on image */}
-            <div className="bg-black/80 backdrop-blur-sm text-white px-3 py-2 rounded-xl">
+            <div className="bg-black/80 backdrop-blur-sm text-white px-3 py-2 rounded-sm">
               <span className="font-semibold">{formatCurrency(monthlyRent)}</span>
               <span className="text-white/60 text-xs ml-1">/mes</span>
             </div>
@@ -108,7 +108,7 @@ export function PropertyDashboardCard({
           {/* Property status overlay if no candidates */}
           {candidateCount === 0 && (
             <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
-              <span className="bg-white/95 backdrop-blur-sm text-foreground text-sm px-5 py-2.5 rounded-xl font-medium shadow-lg">
+              <span className="bg-white/95 backdrop-blur-sm text-foreground text-sm px-5 py-2.5 rounded-sm font-medium shadow-lg">
                 Sin candidatos
               </span>
             </div>
@@ -139,7 +139,7 @@ export function PropertyDashboardCard({
             <div className="flex items-center gap-2 pt-4 border-t border-border">
               {/* Pending count */}
               {pendingCount > 0 && (
-                <div className="flex items-center gap-2 text-xs text-foreground bg-muted/80 px-3 py-2 rounded-lg font-medium">
+                <div className="flex items-center gap-2 text-xs text-foreground bg-muted/80 px-3 py-2 rounded-sm font-medium">
                   <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>{pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}</span>
                 </div>
@@ -147,7 +147,7 @@ export function PropertyDashboardCard({
 
               {/* Urgent badge - with subtle pulse */}
               {hasUrgent && (
-                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg font-medium">
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-sm font-medium">
                   <AlertCircle className="w-3.5 h-3.5 animate-pulse" />
                   <span>Urgente</span>
                 </div>

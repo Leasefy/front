@@ -149,7 +149,7 @@ export function ImageCarousel({
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
           >
             Ver todas las imagenes ({totalImages})
           </button>

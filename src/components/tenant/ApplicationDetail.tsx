@@ -205,7 +205,7 @@ export function ApplicationDetail({
             <div className="border-b border-border px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                  <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">
                     Codigo de seguimiento
                   </p>
                   <p className="flex items-center gap-1.5 text-base font-mono font-semibold text-foreground mt-0.5">
@@ -214,7 +214,7 @@ export function ApplicationDetail({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                  <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">
                     Aplicaste el
                   </p>
                   <p className="text-sm font-medium text-foreground mt-0.5">

@@ -26,7 +26,7 @@ export function SocialButtons({
         size="lg"
         onClick={onGoogleClick}
         disabled={isLoading}
-        className="w-full h-12 text-sm font-medium bg-white hover:bg-muted border-border"
+        className="w-full h-12 text-sm font-medium bg-card hover:bg-muted border-border"
       >
         <GoogleIcon className="w-5 h-5 mr-3" />
         Continuar con Google

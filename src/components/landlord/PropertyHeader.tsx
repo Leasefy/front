@@ -53,7 +53,7 @@ export function PropertyHeader({
   const preApprovedCount = getPreApprovedCount(allCandidateIds);
 
   return (
-    <div className={cn('bg-white rounded-sm border border-border overflow-hidden', className)}>
+    <div className={cn('bg-card rounded-sm border border-border overflow-hidden', className)}>
       {/* Back Navigation */}
       <div className="px-4 sm:px-6 py-3 border-b border-border">
         <Link

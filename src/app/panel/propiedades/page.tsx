@@ -77,7 +77,7 @@ export default function PropiedadesPage() {
 
   return (
     <div className="min-h-screen bg-plan-page">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -86,7 +86,7 @@ export default function PropiedadesPage() {
               Gestiona tus propiedades publicadas
             </p>
           </div>
-          <Link href="/publicar" className="flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors">
+          <Link href="/publicar" className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
             <Plus className="w-4 h-4" />
             Nueva Propiedad
           </Link>
@@ -121,7 +121,7 @@ export default function PropiedadesPage() {
         </PlanStatsGrid>
 
         {/* Filters */}
-        <div className="bg-white border border-plan-border p-4 mb-6">
+        <div className="bg-card border border-plan-border p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Search */}
             <div className="relative flex-1">
@@ -150,7 +150,7 @@ export default function PropiedadesPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium transition-colors',
                     filterStatus === filter.id
-                      ? 'bg-plan-primary text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-plan-secondary hover:bg-muted'
                   )}
                 >
@@ -165,7 +165,7 @@ export default function PropiedadesPage() {
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'grid' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-muted'
+                  viewMode === 'grid' ? 'bg-primary text-white' : 'text-plan-secondary hover:bg-muted'
                 )}
               >
                 <Grid className="w-4 h-4" />
@@ -174,7 +174,7 @@ export default function PropiedadesPage() {
                 onClick={() => setViewMode('list')}
                 className={cn(
                   'p-2 transition-colors',
-                  viewMode === 'list' ? 'bg-plan-primary text-white' : 'text-plan-secondary hover:bg-muted'
+                  viewMode === 'list' ? 'bg-primary text-white' : 'text-plan-secondary hover:bg-muted'
                 )}
               >
                 <List className="w-4 h-4" />
@@ -193,7 +193,7 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-white border border-plan-border overflow-hidden group hover:shadow-lg transition-shadow block"
+                    className="bg-card border border-plan-border overflow-hidden group hover:shadow-lg transition-shadow block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-muted">
@@ -283,7 +283,7 @@ export default function PropiedadesPage() {
             </div>
           ) : (
             /* List View */
-            <div className="bg-white border border-plan-border">
+            <div className="bg-card border border-plan-border">
               {filteredProperties.map((property, index) => {
                 const candidates = getCandidatesByProperty(property.id);
                 return (
@@ -377,7 +377,7 @@ export default function PropiedadesPage() {
             </div>
           )
         ) : (
-          <div className="bg-white border border-plan-border py-16 text-center">
+          <div className="bg-card border border-plan-border py-16 text-center">
             <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-plan-primary mb-2">
               No tienes propiedades
@@ -385,7 +385,7 @@ export default function PropiedadesPage() {
             <p className="text-plan-secondary mb-4">
               Publica tu primera propiedad para empezar a recibir candidatos
             </p>
-            <Link href="/publicar" className="inline-flex items-center gap-2 px-4 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground transition-colors">
+            <Link href="/publicar" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
               <Plus className="w-4 h-4" />
               Publicar propiedad
             </Link>

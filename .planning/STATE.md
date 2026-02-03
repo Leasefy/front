@@ -9,15 +9,15 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 11 - UI/UX Improvements (COMPLETE)
+**Current focus:** Phase 16 - Contract UX & Platform QA (COMPLETE)
 
 ## Current Position
 
-Milestone: v2.0 Design System & QA Audit
-Phase: 15 of 15 (QA Responsive & Accessibility)
-Plan: 3 of 3 (All plans complete)
-Status: Phase 15 COMPLETE - All phases done
-Last activity: 2026-02-02 — Completed 15-03-PLAN.md (Contrast & Screen Reader)
+Milestone: v2.1 Contract UX & Platform QA
+Phase: 16 of 16 (Contract UX & Platform QA)
+Plan: Informal session (no numbered plans)
+Status: Phase 16 COMPLETE
+Last activity: 2026-02-02 — Contract redesign, Colombian law templates, PDF generation, QA audit (66 fixes)
 
 Progress: ██████████████████████████████ 100%
 
@@ -441,6 +441,113 @@ Backend responsibilities (for other developer):
 **Dependencies Added:**
 - **canvas-confetti** - For success screen celebration effects
 
+### What's Complete (Phases 12-15) — v2.0 Design System & QA Audit
+
+- **Phase 12 - Design Tokens**: Comprehensive token system, Manrope/DM Sans/DM Mono typography
+- **Phase 13 - Component Redesign**: Component library updates with new design tokens
+- **Phase 14 - QA Functionality & Visual**: Functional and visual QA across all pages
+- **Phase 15 - QA Responsive & Accessibility**: Responsive audit, accessibility, contrast & screen reader support
+
+### What's Complete (Phase 16) — Contract UX & Platform QA (2026-02-02)
+
+**Contract Signing Flow Redesign:**
+- Redesigned contract page from 3-column (3/6/3) to 2-column (8/4) layout
+- Shared horizontal stepper at top for all contract states
+- Status banners: indigo for pending states, emerald for active
+- Active contracts show read-only view (no stepper, no sidebar)
+- "Esperando firma" card with indigo styling + CTA back to property
+- Rented property view shows different content (lease info, tenant info, contract details)
+
+**Contract Templates — Colombian Law Compliance:**
+- Rewrote all contract templates (basico, amoblado, compartido) with specific Colombian law article references
+- 18 common clauses referencing Ley 820/2003, Ley 675/2001, Ley 527/1999, Ley 1581/2012
+- Guarantee clause prohibits cash deposits (Art. 16, Ley 820)
+- Shared/furnished clauses with specific legal citations
+
+**PDF Generation:**
+- Created `src/lib/utils/generate-contract-pdf.ts` using jsPDF
+- Full contract PDF with parties, terms, clauses, signature boxes, legal footer
+- Download button on active contracts in ContractExpandableItem
+
+**Reminder System:**
+- "Recordar" button in ContractExpandableItem for pending tenant signatures
+- Loading state, toast confirmation with tenant name/email, 60s cooldown
+
+**QA Audit — General (48 findings fixed):**
+
+Critical (8):
+- Dynamic copyright year in Footer
+- "Agendar visita" modal with form (was placeholder toast)
+- Map section replaced with address + Google Maps link (was "proximamente")
+- Terms link to /terminos (was href="#")
+- Social links to real placeholder URLs (was href="#")
+- Removed console.log from PublishContext and StickyCTA
+- Landlord sidebar: unblocked 4 disabled nav items (Propiedades, Candidatos, Mensajes, Config)
+- Tenant sidebar: unblocked 3 disabled nav items (Documentos, Mensajes, Config)
+
+Important (13):
+- Dark mode: 216 bg-white to bg-card/bg-background across 62+ files
+- Dark mode: 435 text-black to text-foreground/text-muted-foreground
+- Dark mode: 135 border-black/* to border-border
+- Status badge colors in 3 type files to plan-status-* tokens
+- Border-radius standardized to rounded-sm in 20+ files
+- Navbar logo text-black to text-foreground
+- Tenant sidebar mobile menu aria-label added
+- Footer legal links (Privacidad, Terminos) now are Link elements
+- Newsletter form with validation + toast
+- Risk levels to risk-a/b/c/d tokens
+- Pricing page dark mode fixes
+- Blog pages bg-white to bg-background
+- Financial cards bg-indigo-950 preserved (intentional)
+
+Minor (9):
+- Notification colors to plan-status tokens
+- PRIORITY_STYLES to plan-status tokens
+- VISIT_STATUS_COLORS to plan-status tokens
+- Section label dots to plan-status tokens
+- Sidebar bg-[black] to bg-foreground
+- font-mono labels standardized
+- Tenant sidebar width w-60 to w-64 (matches landlord)
+- Cancel subscription toast with email + timeframe
+
+**QA Audit — Navigation (18 findings fixed):**
+
+Critical (6):
+- Created /privacidad page (Ley 1581/2012)
+- Created /terminos page (Ley 820/2003, Ley 527/1999)
+- Created /ayuda page (FAQ with collapsible sections)
+- Fixed LeaseExpandableItem to navigate to correct contract route
+- Added Notificaciones + Visitas to landlord sidebar
+- Added Notificaciones + Perfil to tenant sidebar
+
+Important (7):
+- /mi-arriendo redirect to /inquilino/arriendo
+- /mis-aplicaciones redirect to /inquilino/aplicaciones
+- Added id="faq" to pricing page for anchor scroll
+- Social links to arriendofacil profile URLs
+- Mobile back navigation (lg:hidden) on 8 tenant pages
+- PlanHeader role guards verified (already correct)
+
+Minor (5):
+- "Registrarme" to /auth?mode=register
+- Blog added to footer links
+- id="main-content" verified on pages
+- Perfil verified in tenant sidebar
+
+**Document Preview Modal:**
+- Candidate documents now clickable in property detail page
+- Modal shows verified status, mock PDF details, download button
+- Pending documents show explanation state
+
+**Files Created:**
+- `src/lib/utils/generate-contract-pdf.ts`
+- `src/app/privacidad/page.tsx`
+- `src/app/terminos/page.tsx`
+- `src/app/ayuda/page.tsx`
+
+**Dependencies Added:**
+- jspdf (PDF generation)
+
 ## MVP FRONTEND COMPLETE + ENHANCED
 
 All 10 phases executed successfully. The frontend is fully functional with:
@@ -460,9 +567,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 15-03-PLAN.md (Contrast & Screen Reader)
+Stopped at: Completed Phase 16 (Contract UX & Platform QA)
 Resume file: None
-Status: ALL PHASES COMPLETE
+Status: ALL PHASES COMPLETE (through Phase 16)
 
 ## Backend Integration Status
 

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function ApplicationCardSkeleton() {
   return (
-    <div className="w-full bg-white border border-border rounded-sm overflow-hidden">
+    <div className="w-full bg-card border border-border rounded-sm overflow-hidden">
       {/* Main content row */}
       <div className="flex">
         {/* Property thumbnail */}

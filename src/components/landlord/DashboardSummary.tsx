@@ -19,7 +19,7 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   const variantStyles = {
-    default: 'bg-white border-border text-foreground',
+    default: 'bg-card border-border text-foreground',
     pending: 'bg-amber-50/50 border-amber-100 text-amber-700',
     'pre-approved': 'bg-blue-50/50 border-blue-100 text-blue-700',
     approved: 'bg-emerald-50/50 border-emerald-100 text-emerald-700',

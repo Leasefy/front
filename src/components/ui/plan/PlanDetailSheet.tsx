@@ -23,6 +23,13 @@ export interface DetailSection {
   content: React.ReactNode;
 }
 
+export interface SecondaryPanel {
+  open: boolean;
+  title: string;
+  content: React.ReactNode;
+  onClose: () => void;
+}
+
 export interface PlanDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,6 +57,7 @@ export interface PlanDetailSheetProps {
   footerActions?: React.ReactNode;
   className?: string;
   width?: 'sm' | 'md' | 'lg';
+  secondaryPanel?: SecondaryPanel;
 }
 
 const widthClasses = {
@@ -72,6 +80,7 @@ export function PlanDetailSheet({
   footerActions,
   className,
   width = 'md',
+  secondaryPanel,
 }: PlanDetailSheetProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lenis = useLenis();
@@ -116,7 +125,7 @@ export function PlanDetailSheet({
       {/* Panel */}
       <div
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full bg-white shadow-xl',
+          'fixed inset-y-0 right-0 z-50 w-full bg-white dark:bg-card shadow-xl',
           'flex flex-col',
           'animate-in slide-in-from-right duration-300',
           widthClasses[width],
@@ -233,7 +242,7 @@ export function PlanDetailSheet({
           {/* Quick Actions */}
           {quickActions && quickActions.length > 0 && (
             <div className="px-6 py-4 border-b border-plan-border">
-              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
+              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Acciones Rapidas
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -244,7 +253,7 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-plan-primary text-white hover:bg-foreground'
+                        ? 'bg-primary text-white hover:bg-primary/90'
                         : action.variant === 'danger'
                           ? 'bg-plan-status-red-bg text-red-800 hover:bg-red-200'
                           : 'bg-muted text-plan-primary hover:bg-muted'
@@ -261,7 +270,7 @@ export function PlanDetailSheet({
           {/* Custom Sections */}
           {sections?.map(section => (
             <div key={section.id} className="px-6 py-4 border-b border-plan-border">
-              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
+              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 {section.title}
               </p>
               {section.content}
@@ -271,7 +280,7 @@ export function PlanDetailSheet({
           {/* Activity Timeline */}
           {activity && activity.length > 0 && (
             <div className="px-6 py-4 border-b border-plan-border">
-              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
+              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Actividad
               </p>
               <PlanActivityTimeline items={activity} maxItems={5} compact />
@@ -281,7 +290,7 @@ export function PlanDetailSheet({
           {/* Notes Section */}
           {(notes !== undefined || onNotesChange) && (
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-plan-secondary uppercase tracking-wide mb-3">
+              <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Notas
               </p>
               {onNotesChange ? (
@@ -313,6 +322,45 @@ export function PlanDetailSheet({
           </div>
         )}
       </div>
+
+      {/* Secondary Panel */}
+      {secondaryPanel?.open && (
+        <div
+          className={cn(
+            'fixed inset-y-0 z-50 w-full bg-white dark:bg-card shadow-xl',
+            'flex flex-col',
+            'animate-in slide-in-from-right duration-300',
+            widthClasses[width],
+            // Desktop: position to the left of main panel
+            'right-0 lg:right-[448px]'
+          )}
+        >
+          {/* Secondary Header */}
+          <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-plan-border">
+            <h2 className="text-lg font-semibold text-plan-primary">
+              {secondaryPanel.title}
+            </h2>
+            <button
+              onClick={secondaryPanel.onClose}
+              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Secondary Scrollable Content */}
+          <div
+            className="flex-1 overflow-y-auto px-6 py-4"
+            data-lenis-prevent
+            style={{
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {secondaryPanel.content}
+          </div>
+        </div>
+      )}
     </>
   );
 

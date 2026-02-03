@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -42,7 +43,7 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-md mx-4 shadow-xl">
+      <div className="relative bg-card w-full max-w-md mx-4 shadow-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
           <h3 className="text-lg font-semibold text-plan-primary">{title}</h3>
           <button onClick={onClose} className="text-plan-secondary hover:text-plan-primary">
@@ -153,11 +154,16 @@ export default function ConfiguracionPage() {
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-3xl mx-auto px-6 py-8">
+        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
+          <ArrowLeft className="w-4 h-4" />
+          Dashboard
+        </Link>
+
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-sm hover:bg-white text-plan-secondary hover:text-plan-primary transition-colors"
+            className="p-2 rounded-sm hover:bg-card text-plan-secondary hover:text-plan-primary transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -169,7 +175,7 @@ export default function ConfiguracionPage() {
 
         <div className="space-y-6">
           {/* Notifications */}
-          <section className="bg-white  border border-plan-border overflow-hidden">
+          <section className="bg-card  border border-plan-border overflow-hidden">
             <div className="px-6 py-4 border-b border-plan-border">
               <h2 className="font-semibold text-plan-primary flex items-center gap-2">
                 <Bell className="w-5 h-5 text-plan-secondary" />
@@ -216,7 +222,7 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Security */}
-          <section className="bg-white  border border-plan-border overflow-hidden">
+          <section className="bg-card  border border-plan-border overflow-hidden">
             <div className="px-6 py-4 border-b border-plan-border">
               <h2 className="font-semibold text-plan-primary flex items-center gap-2">
                 <Shield className="w-5 h-5 text-plan-secondary" />
@@ -247,7 +253,7 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Preferences */}
-          <section className="bg-white  border border-plan-border overflow-hidden">
+          <section className="bg-card  border border-plan-border overflow-hidden">
             <div className="px-6 py-4 border-b border-plan-border">
               <h2 className="font-semibold text-plan-primary flex items-center gap-2">
                 <Globe className="w-5 h-5 text-plan-secondary" />
@@ -276,7 +282,7 @@ export default function ConfiguracionPage() {
                   value={settings.language}
                   onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
                   aria-label="Idioma de la interfaz"
-                  className="px-3 py-2 text-sm border border-plan-border rounded-sm bg-white focus:outline-none focus:ring-2 focus:ring-plan-accent/50"
+                  className="px-3 py-2 text-sm border border-plan-border rounded-sm bg-card focus:outline-none focus:ring-2 focus:ring-plan-accent/50"
                 >
                   <option value="es">Español</option>
                   <option value="en">English</option>
@@ -286,7 +292,7 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Data & Privacy */}
-          <section className="bg-white  border border-plan-border overflow-hidden">
+          <section className="bg-card  border border-plan-border overflow-hidden">
             <div className="px-6 py-4 border-b border-plan-border">
               <h2 className="font-semibold text-plan-primary flex items-center gap-2">
                 <Download className="w-5 h-5 text-plan-secondary" />
@@ -316,7 +322,7 @@ export default function ConfiguracionPage() {
           </section>
 
           {/* Danger Zone */}
-          <section className="bg-white  border border-red-200 overflow-hidden">
+          <section className="bg-card  border border-red-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-red-200">
               <h2 className="font-semibold text-red-800 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
@@ -381,7 +387,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
@@ -465,7 +471,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleDownloadData}
               disabled={isLoading}
-              className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {isLoading ? 'Procesando...' : 'Solicitar datos'}
@@ -497,7 +503,7 @@ export default function ConfiguracionPage() {
                 <button
                   onClick={handleEnable2FA}
                   disabled={isLoading}
-                  className="flex-1 py-2 bg-plan-primary text-white text-sm font-medium hover:bg-foreground disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                   {isLoading ? 'Activando...' : 'Activar 2FA'}
@@ -610,7 +616,7 @@ function SettingToggle({
         aria-checked={enabled}
         className={cn(
           'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-plan-primary focus-visible:ring-offset-2',
-          enabled ? 'bg-plan-primary' : 'bg-border'
+          enabled ? 'bg-primary' : 'bg-border'
         )}
       >
         <span

@@ -19,13 +19,13 @@ export default function Home() {
       <Navbar />
       <main id="main-content">
         <HeroSection />
-        <AboutSection />
-        <StatsSection />
         <PropertiesSection />
+        <AboutSection />
+        {/* <StatsSection /> */}
         <CitiesSection />
         <WhyUsSection />
         <ServicesSection />
-        <TopAgentsSection />
+        {/* <TopAgentsSection /> */}
         <TestimonialsSection />
         <RecentInsightsSection />
         <FAQSection />

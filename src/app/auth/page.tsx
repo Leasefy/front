@@ -11,12 +11,12 @@ const TESTIMONIAL = {
   name: 'Maria Fernanda Rodriguez',
   role: 'Propietaria en Bogota',
   avatar:
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face&q=80',
 };
 
 // Property image for background
 const PROPERTY_IMAGE =
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&h=1600&fit=crop';
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&h=1600&fit=crop&q=80';
 
 // Loading fallback for auth form
 function AuthFormFallback() {

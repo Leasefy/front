@@ -1238,7 +1238,7 @@ export default function ConfiguracionPage() {
               {/* Simulated QR code */}
               <div className="flex justify-center py-4">
                 <div className="w-48 h-48 bg-white border-2 border-plan-border p-3 relative">
-                  <div className="w-full h-full bg-[repeating-conic-gradient(#1e1b4b_0%_25%,#fff_0%_50%)] bg-[length:12px_12px] opacity-90" />
+                  <div className="w-full h-full bg-[repeating-conic-gradient(hsl(var(--indigo-900))_0%_25%,hsl(var(--neutral-0))_0%_50%)] bg-[length:12px_12px] opacity-90" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-white px-2 py-1">
                       <Shield className="w-6 h-6 text-primary" />

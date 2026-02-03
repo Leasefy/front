@@ -66,6 +66,166 @@
     --error-700: 5 47% 38%;       /* #8E3328 */
 
     /* --------------------------------------------------------
+     * Extended Color Scales (Tailwind aliases)
+     * For product pages, marketing, and feature-specific theming
+     * -------------------------------------------------------- */
+
+    /* Emerald (Payments, Success states) */
+    --emerald-50:  152 81% 96%;   /* #ecfdf5 */
+    --emerald-100: 149 80% 90%;   /* #d1fae5 */
+    --emerald-200: 152 76% 80%;   /* #a7f3d0 */
+    --emerald-300: 156 72% 67%;   /* #6ee7b7 */
+    --emerald-400: 158 64% 52%;   /* #34d399 */
+    --emerald-500: 160 84% 39%;   /* #10b981 */
+    --emerald-600: 161 94% 30%;   /* #059669 */
+    --emerald-700: 163 94% 24%;   /* #047857 */
+    --emerald-800: 163 88% 20%;   /* #065f46 */
+    --emerald-900: 164 86% 16%;   /* #064e3b */
+    --emerald-950: 166 91% 9%;    /* #022c22 */
+
+    /* Teal (Payments accent) */
+    --teal-50:  166 76% 97%;      /* #f0fdfa */
+    --teal-100: 167 85% 89%;      /* #ccfbf1 */
+    --teal-200: 168 84% 78%;      /* #99f6e4 */
+    --teal-300: 171 77% 64%;      /* #5eead4 */
+    --teal-400: 172 66% 50%;      /* #2dd4bf */
+    --teal-500: 173 80% 40%;      /* #14b8a6 */
+    --teal-600: 175 84% 32%;      /* #0d9488 */
+    --teal-700: 175 77% 26%;      /* #0f766e */
+    --teal-800: 176 69% 22%;      /* #115e59 */
+    --teal-900: 176 61% 19%;      /* #134e4a */
+    --teal-950: 179 84% 10%;      /* #042f2e */
+
+    /* Cyan (Tech, Data) */
+    --cyan-50:  183 100% 96%;     /* #ecfeff */
+    --cyan-100: 185 96% 90%;      /* #cffafe */
+    --cyan-200: 186 94% 82%;      /* #a5f3fc */
+    --cyan-300: 187 92% 69%;      /* #67e8f9 */
+    --cyan-400: 188 86% 53%;      /* #22d3ee */
+    --cyan-500: 189 94% 43%;      /* #06b6d4 */
+    --cyan-600: 192 91% 36%;      /* #0891b2 */
+    --cyan-700: 193 82% 31%;      /* #0e7490 */
+    --cyan-800: 194 70% 27%;      /* #155e75 */
+    --cyan-900: 196 64% 24%;      /* #164e63 */
+    --cyan-950: 197 79% 15%;      /* #083344 */
+
+    /* Violet (Evaluation, AI) */
+    --violet-50:  250 100% 98%;   /* #f5f3ff */
+    --violet-100: 251 91% 95%;    /* #ede9fe */
+    --violet-200: 251 95% 92%;    /* #ddd6fe */
+    --violet-300: 252 95% 85%;    /* #c4b5fd */
+    --violet-400: 255 92% 76%;    /* #a78bfa */
+    --violet-500: 258 90% 66%;    /* #8b5cf6 */
+    --violet-600: 262 83% 58%;    /* #7c3aed */
+    --violet-700: 263 70% 50%;    /* #6d28d9 */
+    --violet-800: 263 69% 42%;    /* #5b21b6 */
+    --violet-900: 264 67% 35%;    /* #4c1d95 */
+    --violet-950: 265 73% 23%;    /* #2e1065 */
+
+    /* Purple (Contracts, Legal) */
+    --purple-50:  270 100% 98%;   /* #faf5ff */
+    --purple-100: 269 100% 95%;   /* #f3e8ff */
+    --purple-200: 269 100% 92%;   /* #e9d5ff */
+    --purple-300: 269 97% 85%;    /* #d8b4fe */
+    --purple-400: 270 95% 75%;    /* #c084fc */
+    --purple-500: 271 91% 65%;    /* #a855f7 */
+    --purple-600: 271 81% 56%;    /* #9333ea */
+    --purple-700: 272 72% 47%;    /* #7e22ce */
+    --purple-800: 273 67% 39%;    /* #6b21a8 */
+    --purple-900: 274 66% 32%;    /* #581c87 */
+    --purple-950: 276 87% 17%;    /* #3b0764 */
+
+    /* Amber (Insurance, Warnings) */
+    --amber-50:  48 100% 96%;     /* #fffbeb */
+    --amber-100: 48 96% 89%;      /* #fef3c7 */
+    --amber-200: 48 97% 77%;      /* #fde68a */
+    --amber-300: 46 97% 65%;      /* #fcd34d */
+    --amber-400: 43 96% 56%;      /* #fbbf24 */
+    --amber-500: 38 92% 50%;      /* #f59e0b */
+    --amber-600: 32 95% 44%;      /* #d97706 */
+    --amber-700: 26 90% 37%;      /* #b45309 */
+    --amber-800: 23 83% 31%;      /* #92400e */
+    --amber-900: 22 78% 26%;      /* #78350f */
+    --amber-950: 21 92% 14%;      /* #451a03 */
+
+    /* Orange (Agents, Energy) */
+    --orange-50:  33 100% 96%;    /* #fff7ed */
+    --orange-100: 34 100% 92%;    /* #ffedd5 */
+    --orange-200: 32 98% 83%;     /* #fed7aa */
+    --orange-300: 31 97% 72%;     /* #fdba74 */
+    --orange-400: 27 96% 61%;     /* #fb923c */
+    --orange-500: 25 95% 53%;     /* #f97316 */
+    --orange-600: 21 90% 48%;     /* #ea580c */
+    --orange-700: 17 88% 40%;     /* #c2410c */
+    --orange-800: 15 79% 34%;     /* #9a3412 */
+    --orange-900: 15 75% 28%;     /* #7c2d12 */
+    --orange-950: 13 81% 15%;     /* #431407 */
+
+    /* Blue (Info, Links) */
+    --blue-50:  214 100% 97%;     /* #eff6ff */
+    --blue-100: 214 95% 93%;      /* #dbeafe */
+    --blue-200: 213 97% 87%;      /* #bfdbfe */
+    --blue-300: 212 96% 78%;      /* #93c5fd */
+    --blue-400: 213 94% 68%;      /* #60a5fa */
+    --blue-500: 217 91% 60%;      /* #3b82f6 */
+    --blue-600: 221 83% 53%;      /* #2563eb */
+    --blue-700: 224 76% 48%;      /* #1d4ed8 */
+    --blue-800: 226 71% 40%;      /* #1e40af */
+    --blue-900: 224 64% 33%;      /* #1e3a8a */
+    --blue-950: 226 57% 21%;      /* #172554 */
+
+    /* Rose (Applications, Forms) */
+    --rose-50:  356 100% 97%;     /* #fff1f2 */
+    --rose-100: 356 100% 95%;     /* #ffe4e6 */
+    --rose-200: 353 96% 90%;      /* #fecdd3 */
+    --rose-300: 353 96% 82%;      /* #fda4af */
+    --rose-400: 351 95% 71%;      /* #fb7185 */
+    --rose-500: 350 89% 60%;      /* #f43f5e */
+    --rose-600: 347 77% 50%;      /* #e11d48 */
+    --rose-700: 345 83% 41%;      /* #be123c */
+    --rose-800: 343 80% 35%;      /* #9f1239 */
+    --rose-900: 342 75% 30%;      /* #881337 */
+    --rose-950: 343 88% 16%;      /* #4c0519 */
+
+    /* Slate (Corporate, Neutral dark) */
+    --slate-50:  210 40% 98%;     /* #f8fafc */
+    --slate-100: 210 40% 96%;     /* #f1f5f9 */
+    --slate-200: 214 32% 91%;     /* #e2e8f0 */
+    --slate-300: 213 27% 84%;     /* #cbd5e1 */
+    --slate-400: 215 20% 65%;     /* #94a3b8 */
+    --slate-500: 215 16% 47%;     /* #64748b */
+    --slate-600: 215 19% 35%;     /* #475569 */
+    --slate-700: 215 25% 27%;     /* #334155 */
+    --slate-800: 217 33% 17%;     /* #1e293b */
+    --slate-900: 222 47% 11%;     /* #0f172a */
+    --slate-950: 229 84% 5%;      /* #020617 */
+
+    /* --------------------------------------------------------
+     * Product Page Dark Theme
+     * For premium dark product/landing pages
+     * -------------------------------------------------------- */
+    --product-bg: 240 10% 2%;           /* #030305 - deepest background */
+    --product-bg-elevated: 240 6% 4%;   /* #0a0a0f - card/elevated surfaces */
+    --product-bg-subtle: 240 6% 6%;     /* #0f0f14 - subtle elevation */
+    --product-border: 240 6% 12%;       /* border on dark */
+    --product-border-subtle: 240 6% 8%; /* subtle border */
+
+    /* --------------------------------------------------------
+     * Z-Index Scale
+     * Semantic z-index values for layering
+     * -------------------------------------------------------- */
+    --z-base: 0;
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-fixed: 30;
+    --z-modal-backdrop: 40;
+    --z-modal: 50;
+    --z-popover: 60;
+    --z-tooltip: 70;
+    --z-toast: 80;
+    --z-max: 100;
+
+    /* --------------------------------------------------------
      * Role Tokens (consumed by Tailwind via hsl(var(--*)))
      * Maps semantic roles to the scales above.
      * -------------------------------------------------------- */
@@ -157,13 +317,15 @@
      * -------------------------------------------------------- */
 
     /* --------------------------------------------------------
-     * Border Radius Scale — 2px base, minimal
+     * Border Radius Scale — 2px base, extended
      * -------------------------------------------------------- */
     --radius: 0.125rem;
     --radius-sm: 0.125rem;
     --radius-md: 0.25rem;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;        /* 16px - cards, modals */
+    --radius-3xl: 1.5rem;      /* 24px - hero cards, large elements */
     --radius-full: 9999px;
 
     /* --------------------------------------------------------
@@ -188,6 +350,19 @@
     --shadow-md: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
     --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04);
     --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Glow Shadows (for dark product pages) */
+    --shadow-glow-violet: 0 0 40px rgba(139, 92, 246, 0.15);
+    --shadow-glow-emerald: 0 0 40px rgba(16, 185, 129, 0.15);
+    --shadow-glow-cyan: 0 0 40px rgba(6, 182, 212, 0.15);
+    --shadow-glow-amber: 0 0 40px rgba(245, 158, 11, 0.15);
+    --shadow-glow-rose: 0 0 40px rgba(244, 63, 94, 0.15);
+    --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.15);
+
+    /* Selection/Focus shadows */
+    --shadow-ring-primary: 0 0 0 3px rgba(91, 95, 239, 0.15);
+    --shadow-ring-emerald: 0 0 0 3px rgba(16, 185, 129, 0.15);
 
     /* ========================================================
      * Transition Durations

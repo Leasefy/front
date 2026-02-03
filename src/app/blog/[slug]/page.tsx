@@ -6,24 +6,47 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { blogPosts } from "@/lib/data/blog-posts";
+import { ArticleJsonLd } from "@/components/seo/JsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://arriendofacil.co';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = blogPosts.find((p) => p.slug === slug);
-  if (!post) return { title: "Artículo no encontrado" };
+  if (!post) return { title: "Articulo no encontrado" };
+
+  const articleUrl = `${siteUrl}/blog/${slug}`;
 
   return {
-    title: `${post.title} | Luxterra Blog`,
+    title: post.title,
     description: post.excerpt,
+    keywords: post.tags || [],
+    authors: [{ name: post.author || "Arriendo Facil" }],
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      images: [{ url: post.image, width: 1200, height: 630 }],
+      url: articleUrl,
+      siteName: "Arriendo Facil",
+      images: [{ url: post.image, width: 1200, height: 630, alt: post.title }],
       type: "article",
+      locale: "es_CO",
+      publishedTime: post.date,
+      section: post.category,
+      tags: post.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [post.image],
+      creator: "@arriendofacil",
+    },
+    alternates: {
+      canonical: articleUrl,
     },
   };
 }
@@ -102,6 +125,16 @@ export default async function BlogArticlePage({ params }: Props) {
 
   return (
     <>
+      <ArticleJsonLd
+        title={post.title}
+        description={post.excerpt}
+        url={`/blog/${slug}`}
+        image={post.image}
+        datePublished={post.date}
+        authorName={post.author || "Arriendo Facil"}
+        section={post.category}
+        tags={post.tags || []}
+      />
       <Navbar />
       <main id="main-content" className="bg-background">
         {/* Hero image */}
@@ -138,11 +171,11 @@ export default async function BlogArticlePage({ params }: Props) {
         <article className="py-12 md:py-20">
           <div className="mx-auto max-w-[720px] px-6">
             <Link
-              href="/blog"
+              href="/"
               className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-10"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Volver al blog
+              Volver al inicio
             </Link>
 
             {post.content ? (

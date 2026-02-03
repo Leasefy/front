@@ -8,6 +8,8 @@ export interface BlogPost {
   image: string;
   href: string;
   content?: string;
+  author?: string;
+  tags?: string[];
 }
 
 export const blogPosts: BlogPost[] = [

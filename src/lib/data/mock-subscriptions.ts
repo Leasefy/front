@@ -143,14 +143,14 @@ export const PLANS: Plan[] = [
   },
   {
     id: 'business',
-    name: 'Inmobiliaria',
-    description: 'Para agencias y administradores profesionales',
+    name: 'Inversionista',
+    description: 'Para propietarios con múltiples inmuebles',
     price: {
-      monthly: 499900,
-      yearly: 4799000, // ~20% discount
+      monthly: 299900,
+      yearly: 2879000, // ~20% discount
     },
     features: [
-      { ...PLAN_FEATURES.property_listing, included: true, limit: 'unlimited' },
+      { ...PLAN_FEATURES.property_listing, included: true, limit: 25 },
       { ...PLAN_FEATURES.basic_search, included: true },
       { ...PLAN_FEATURES.unlimited_contracts, included: true, limit: 'unlimited' },
       { ...PLAN_FEATURES.ai_scoring, included: true },
@@ -158,8 +158,7 @@ export const PLANS: Plan[] = [
       { ...PLAN_FEATURES.background_check, included: true },
       { ...PLAN_FEATURES.priority_support, included: true },
       { ...PLAN_FEATURES.advanced_analytics, included: true },
-      { ...PLAN_FEATURES.api_access, included: true },
-      { ...PLAN_FEATURES.multi_property, included: true, limit: 'unlimited' },
+      { ...PLAN_FEATURES.multi_property, included: true, limit: 25 },
     ],
   },
 ];
@@ -301,7 +300,7 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
     description: 'Numero de propiedades que puedes publicar',
     free: '1',
     pro: '10',
-    business: 'Ilimitadas',
+    business: '25',
   },
   {
     feature: 'Contratos digitales',
@@ -346,15 +345,8 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
     business: true,
   },
   {
-    feature: 'Acceso API',
-    description: 'Integra con tus sistemas',
-    free: false,
-    pro: false,
-    business: true,
-  },
-  {
-    feature: 'White-label',
-    description: 'Tu marca en la plataforma',
+    feature: 'Multi-propiedad',
+    description: 'Panel unificado para todas tus propiedades',
     free: false,
     pro: false,
     business: true,

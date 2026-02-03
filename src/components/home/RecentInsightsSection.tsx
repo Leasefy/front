@@ -81,7 +81,7 @@ export function RecentInsightsSection() {
               >
                 <Link
                   href={post.href}
-                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-[#FAFAFA]"
+                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-neutral-50"
                   style={{ border: "1px solid rgba(0,0,0,0.06)" }}
                 >
                   {/* Image — left, fixed width, full card height */}

@@ -32,19 +32,19 @@ const IMAGE_INTERVAL = 6000;
 
 const VALUE_PROPS = [
   {
-    icon: Zap,
-    label: "Búsqueda con IA",
-    description: "Encuentra en segundos lo que antes tomaba horas",
+    icon: Shield,
+    label: "Evaluación GRATIS",
+    description: "Verifica inquilinos sin costo. El solicitante paga la evaluación.",
   },
   {
-    icon: Shield,
-    label: "Arriendos seguros",
-    description: "Contratos digitales y verificación de identidad",
+    icon: Zap,
+    label: "Cobro automatizado",
+    description: "Recibimos el pago y te transferimos. Solo $3.900/transacción.",
   },
   {
     icon: Eye,
-    label: "Todo transparente",
-    description: "Sin costos ocultos, sin intermediarios innecesarios",
+    label: "Publica gratis",
+    description: "Un clic para FincaRaíz, Metrocuadrado y más portales.",
   },
 ];
 

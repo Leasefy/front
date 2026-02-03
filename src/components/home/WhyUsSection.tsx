@@ -8,31 +8,31 @@ import { TrendingUp, Users, PiggyBank, Heart } from "lucide-react";
 
 const stats = [
   {
-    value: "84",
-    suffix: "%",
-    label: "Cierran más rápido",
-    description: "Clientes trabajando con nosotros completan arriendos más rápido.",
-    icon: TrendingUp,
-  },
-  {
-    value: "3",
-    suffix: " de 5",
-    label: "Consiguen arriendo",
-    description: "Más de la mitad de nuestros clientes aseguran su propiedad ideal.",
-    icon: Users,
-  },
-  {
-    value: "$500M",
-    suffix: "+",
-    label: "Ahorrados anualmente",
-    description: "Ayudamos a inquilinos a evitar sobrepagar en el mercado.",
+    value: "$0",
+    suffix: "",
+    label: "Costo para propietarios",
+    description: "Evaluación de inquilinos y publicación en portales completamente gratis.",
     icon: PiggyBank,
   },
   {
-    value: "95",
+    value: "48",
+    suffix: "h",
+    label: "Tiempo promedio",
+    description: "Desde publicar hasta recibir candidatos pre-aprobados.",
+    icon: TrendingUp,
+  },
+  {
+    value: "92",
     suffix: "%",
-    label: "Refieren amigos",
-    description: "La mayoría de clientes recomiendan nuestro equipo.",
+    label: "Tasa de aprobación",
+    description: "Inquilinos evaluados que cumplen criterios de riesgo bajo.",
+    icon: Users,
+  },
+  {
+    value: "4.9",
+    suffix: "/5",
+    label: "Satisfacción",
+    description: "Propietarios que recomiendan la plataforma a otros.",
     icon: Heart,
   },
 ];
@@ -115,14 +115,14 @@ export function WhyUsSection() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="h-1 w-1 rounded-full bg-white/50" />
                 <span className="text-[11px] text-white/60 tracking-wide uppercase">
-                  La agencia de confianza en Colombia
+                  La plataforma de arriendos de Colombia
                 </span>
               </div>
               <h3 className="text-[1.5rem] md:text-[2rem] font-light text-white leading-[1.2] tracking-[-0.02em] max-w-md mb-3">
-                2k clientes eligen nuestra agencia de confianza
+                Arrienda sin pagar comisiones innecesarias
               </h3>
               <p className="text-[13px] text-white/60 leading-relaxed max-w-sm">
-                Experiencia y guía clara moldean cada decisión inmobiliaria.
+                Evaluación gratis, cobros automatizados y contratos digitales. Todo en un solo lugar.
               </p>
             </div>
           </motion.div>

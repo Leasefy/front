@@ -49,10 +49,10 @@ function RiskVisual() {
               />
               <defs>
                 <linearGradient id="gaugeDark" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#ef4444" />
-                  <stop offset="25%" stopColor="#f59e0b" />
-                  <stop offset="55%" stopColor="#22c55e" />
-                  <stop offset="100%" stopColor="#10b981" />
+                  <stop offset="0%" stopColor="hsl(var(--rose-500))" />
+                  <stop offset="25%" stopColor="hsl(var(--amber-500))" />
+                  <stop offset="55%" stopColor="hsl(var(--emerald-500))" />
+                  <stop offset="100%" stopColor="hsl(var(--emerald-400))" />
                 </linearGradient>
               </defs>
             </svg>
@@ -100,9 +100,9 @@ function RiskVisual() {
           {/* Bars with glow */}
           <div className="space-y-2.5">
             {[
-              { label: "Pago", score: 95, color: "#34d399", glow: "rgba(52,211,153,0.3)" },
-              { label: "Crédito", score: 88, color: "#60a5fa", glow: "rgba(96,165,250,0.3)" },
-              { label: "Referencias", score: 92, color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+              { label: "Pago", score: 95, colorClass: "bg-emerald-400", glowClass: "bg-emerald-400/30" },
+              { label: "Crédito", score: 88, colorClass: "bg-blue-400", glowClass: "bg-blue-400/30" },
+              { label: "Referencias", score: 92, colorClass: "bg-violet-400", glowClass: "bg-violet-400/30" },
             ].map((c, i) => (
               <motion.div
                 key={c.label}
@@ -114,16 +114,14 @@ function RiskVisual() {
                 <span className="text-[9px] text-white/40 font-medium w-[70px] flex-shrink-0">{c.label}</span>
                 <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden relative">
                   <motion.div
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: c.color }}
+                    className={`h-full rounded-full ${c.colorClass}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${c.score}%` }}
                     transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                   />
                   {/* Bar glow */}
                   <motion.div
-                    className="absolute top-0 h-full rounded-full blur-[4px]"
-                    style={{ backgroundColor: c.glow }}
+                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${c.score}%` }}
                     transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
@@ -282,11 +280,11 @@ function ContractVisual() {
             <div className="text-[7px] text-muted-foreground font-mono">REF-2026-00847</div>
           </div>
           <div
-            className="text-[7px] font-semibold px-2 py-0.5"
-            style={{
-              border: signed ? "1px solid rgba(16,185,129,0.25)" : "1px solid rgba(245,158,11,0.25)",
-              color: signed ? "#059669" : "#d97706",
-            }}
+            className={`text-[7px] font-semibold px-2 py-0.5 ${
+              signed
+                ? "border border-emerald-500/25 text-emerald-600"
+                : "border border-amber-500/25 text-amber-600"
+            }`}
           >
             {signed ? "✓ Firmado" : "Pendiente"}
           </div>
@@ -325,7 +323,7 @@ function ContractVisual() {
               <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
                   d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="#18181B" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
+                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                   transition={{ duration: 0.8 }}
                 />
@@ -371,10 +369,10 @@ function ContractVisual() {
    ================================================================ */
 function TransparencyVisual() {
   const items = [
-    { label: "Canon", amount: "$2.800.000", pct: 82, color: "#18181B", raw: 2800000 },
-    { label: "Administración", amount: "$280.000", pct: 8, color: "#71717A", raw: 280000 },
-    { label: "Seguro", amount: "$196.000", pct: 6, color: "#A1A1AA", raw: 196000 },
-    { label: "Plataforma", amount: "$140.000", pct: 4, color: "#D4D4D8", raw: 140000 },
+    { label: "Canon", amount: "$2.800.000", pct: 82, colorClass: "bg-neutral-900", raw: 2800000 },
+    { label: "Administración", amount: "$280.000", pct: 8, colorClass: "bg-neutral-500", raw: 280000 },
+    { label: "Seguro", amount: "$196.000", pct: 6, colorClass: "bg-neutral-400", raw: 196000 },
+    { label: "Plataforma", amount: "$140.000", pct: 4, colorClass: "bg-neutral-300", raw: 140000 },
   ];
 
   return (
@@ -396,8 +394,7 @@ function TransparencyVisual() {
           {items.map((item, i) => (
             <motion.div
               key={item.label}
-              className="h-full"
-              style={{ backgroundColor: item.color }}
+              className={`h-full ${item.colorClass}`}
               initial={{ width: 0 }}
               animate={{ flex: item.pct }}
               transition={{ delay: 0.3 + i * 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
@@ -417,7 +414,7 @@ function TransparencyVisual() {
             className="flex items-center gap-3 py-2"
             style={{ borderBottom: i < items.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}
           >
-            <div className="w-[6px] h-[6px] flex-shrink-0" style={{ backgroundColor: item.color }} />
+            <div className={`w-[6px] h-[6px] flex-shrink-0 ${item.colorClass}`} />
             <span className="text-[10px] text-foreground font-medium flex-1">{item.label}</span>
             <span className="text-[9px] text-muted-foreground tabular-nums mr-2">{item.pct}%</span>
             <span className="text-[11px] font-semibold text-foreground tabular-nums">{item.amount}</span>
@@ -467,7 +464,7 @@ function BentoCard({
     ? "bg-indigo-950 hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
     : outline
       ? "bg-white hover:shadow-md"
-      : "bg-[#F7F7F8] hover:shadow-lg";
+      : "bg-neutral-50 hover:shadow-lg";
 
   const borderStyle = dark
     ? "1px solid rgba(255,255,255,0.06)"

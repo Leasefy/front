@@ -117,10 +117,10 @@ export interface PlanCircularProgressProps {
 }
 
 const circularVariantColors = {
-  default: '#22C55E',
-  success: '#22C55E',
-  warning: '#EAB308',
-  danger: '#EF4444',
+  default: 'hsl(var(--success-500))',
+  success: 'hsl(var(--success-500))',
+  warning: 'hsl(var(--warning-500))',
+  danger: 'hsl(var(--error-500))',
 };
 
 export function PlanCircularProgress({
@@ -147,7 +147,7 @@ export function PlanCircularProgress({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#E5E7EB"
+          stroke="hsl(var(--neutral-200))"
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}

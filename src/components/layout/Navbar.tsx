@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X, User, LogOut, LayoutDashboard, FileText, ChevronDown, Home } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, FileText, ChevronDown, Home, Building2, Users, Briefcase, Building, Shield, CreditCard, BarChart3, Code, ClipboardList, Umbrella } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/use-auth";
 import { cn } from "@/lib/utils";
@@ -13,9 +13,27 @@ import { Button } from "@/components/ui/button";
  * Navbar - SpaceO clean style
  * Full-width white header with simple navigation
  */
+const audienceLinks = [
+  { href: '/para/propietarios', label: 'Propietarios', icon: Building2, description: 'Arrienda sin comisiones' },
+  { href: '/para/inquilinos', label: 'Inquilinos', icon: Users, description: 'Encuentra tu próximo hogar' },
+  { href: '/para/inmobiliarias', label: 'Inmobiliarias', icon: Building, description: 'Escala con tecnología' },
+  { href: '/para/agentes', label: 'Agentes', icon: Briefcase, description: 'Cierra más arriendos' },
+];
+
+const productLinks = [
+  { href: '/productos/evaluacion', label: 'Evaluación de inquilinos', icon: BarChart3, description: 'Scoring crediticio y verificación' },
+  { href: '/productos/pagos', label: 'Pagos', icon: CreditCard, description: 'Recauda arriendo automáticamente' },
+  { href: '/productos/contratos', label: 'Contratos digitales', icon: FileText, description: 'Firma electrónica certificada' },
+  { href: '/productos/aplicaciones', label: 'Aplicaciones', icon: ClipboardList, description: 'Recibe aplicaciones online' },
+  { href: '/productos/seguro', label: 'Seguro de arrendamiento', icon: Umbrella, description: 'Protección ante impagos' },
+  { href: '/productos/api', label: 'API para desarrolladores', icon: Code, description: 'Integra en tu plataforma' },
+];
+
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isParaQuienOpen, setIsParaQuienOpen] = useState(false);
+  const [isProductosOpen, setIsProductosOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const pathname = usePathname();
 
@@ -115,6 +133,130 @@ export function Navbar() {
               >
                 Precios
               </Link>
+
+              {/* Para quién dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsParaQuienOpen(!isParaQuienOpen)}
+                  className={cn(
+                    "flex items-center gap-1 text-sm transition-colors",
+                    isActive('/para')
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-expanded={isParaQuienOpen}
+                  aria-haspopup="true"
+                >
+                  Para quién
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isParaQuienOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isParaQuienOpen && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsParaQuienOpen(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="absolute left-0 top-full mt-3 w-64 bg-white dark:bg-card border border-border dark:border-border rounded-sm shadow-lg z-50 origin-top-left"
+                      >
+                        <div className="py-2">
+                          {audienceLinks.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setIsParaQuienOpen(false)}
+                                className="flex items-start gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                              >
+                                <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <Icon className="w-4 h-4 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Productos dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsProductosOpen(!isProductosOpen)}
+                  className={cn(
+                    "flex items-center gap-1 text-sm transition-colors",
+                    isActive('/productos')
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-expanded={isProductosOpen}
+                  aria-haspopup="true"
+                >
+                  Productos
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isProductosOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isProductosOpen && (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsProductosOpen(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="absolute left-0 top-full mt-3 w-72 bg-white dark:bg-card border border-border dark:border-border rounded-sm shadow-lg z-50 origin-top-left"
+                      >
+                        <div className="py-2">
+                          {productLinks.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setIsProductosOpen(false)}
+                                className="flex items-start gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                              >
+                                <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <Icon className="w-4 h-4 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
@@ -281,6 +423,52 @@ export function Navbar() {
                 Precios
                 {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
               </Link>
+
+              {/* Para quién - Mobile */}
+              <div className="pt-2 mt-2 border-t border-border">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2">Para quién</p>
+                {audienceLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
+                        isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Productos - Mobile */}
+              <div className="pt-2 mt-2 border-t border-border">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2">Productos</p>
+                {productLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
+                        isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />}
+                    </Link>
+                  );
+                })}
+              </div>
 
               {isAuthenticated && user ? (
                 <>

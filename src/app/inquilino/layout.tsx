@@ -57,8 +57,8 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         toastOptions={{
           style: {
             borderRadius: '2px',
-            background: '#fff',
-            border: '1px solid #E5E7EB',
+            background: 'hsl(var(--neutral-0))',
+            border: '1px solid hsl(var(--neutral-200))',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
           },
         }}

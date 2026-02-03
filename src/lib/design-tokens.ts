@@ -174,6 +174,41 @@ export const focusStates = {
 } as const;
 
 // ============================================================================
+// Gradients - Gradientes del sistema de diseño
+// ============================================================================
+
+export const gradients = {
+  /** Emerald → Teal - Éxito, completado, verificado */
+  emeraldTeal: 'from-emerald-500 to-teal-500',
+  /** Violet → Purple - Premium, destacado */
+  violetPurple: 'from-violet-500 to-purple-500',
+  /** Blue → Cyan - Información, tecnología */
+  blueCyan: 'from-blue-500 to-cyan-500',
+  /** Amber → Orange - Advertencia, atención */
+  amberOrange: 'from-amber-500 to-orange-500',
+  /** Rose → Pink - Aplicaciones, formularios */
+  rosePink: 'from-rose-500 to-pink-500',
+  /** Indigo → Violet - Contratos, documentos */
+  indigoViolet: 'from-indigo-500 to-violet-500',
+  /** Cyan → Blue - Pagos, finanzas */
+  cyanBlue: 'from-cyan-500 to-blue-500',
+  /** Blue → Indigo - Inmobiliarias, empresas */
+  blueIndigo: 'from-blue-500 to-indigo-500',
+  /** Rose → Orange - Propietarios */
+  roseOrange: 'from-rose-500 to-orange-500',
+} as const;
+
+/**
+ * Obtiene la clase de gradiente para un elemento
+ */
+export function getGradientClass(
+  gradient: keyof typeof gradients,
+  direction: 'r' | 'br' | 'b' | 'tr' = 'r'
+): string {
+  return `bg-gradient-to-${direction} ${gradients[gradient]}`;
+}
+
+// ============================================================================
 // Badge Styles - Estilos de badges consistentes
 // ============================================================================
 

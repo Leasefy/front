@@ -470,7 +470,7 @@ export default function InmobiliariasPage() {
                       <div className="space-y-1.5 pt-2 border-t border-white/10">
                         {[
                           { name: 'María L.', status: 'Aprobado', color: 'bg-emerald-400' },
-                          { name: 'Carlos R.', status: 'En revisión', color: 'bg-amber-400' },
+                          { name: 'Nicolás R.', status: 'En revisión', color: 'bg-amber-400' },
                           { name: 'Ana M.', status: 'Nuevo', color: 'bg-blue-400' },
                         ].map((item) => (
                           <div key={item.name} className="flex items-center gap-2 text-[9px]">

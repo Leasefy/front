@@ -278,7 +278,7 @@ export function getDashboardData(landlordId: string = 'landlord-001'): Dashboard
     urgentActions: getUrgentActions(landlordId),
     riskDistribution: getRiskDistribution(),
     upcomingEvents: getUpcomingEvents(landlordId),
-    landlordName: 'Carlos Alberto Mendez',
+    landlordName: 'Nicolás Alberto Mendez',
   };
 }
 

@@ -448,15 +448,15 @@ export function LandlordDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Stats (placeholder) */}
-            <div className="rounded-3xl bg-gradient-to-br from-neutral-900 to-neutral-800 dark:from-[#222224] dark:to-[#1a1a1c] dark:border dark:border-neutral-700 p-6 text-white">
+            <div className="rounded-3xl bg-stone-100 dark:bg-[#1a1a1c] border border-stone-200 dark:border-neutral-700 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <TrendUp className="w-5 h-5 text-amber-400" />
-                <span className="text-sm font-medium text-white/80">
+                <TrendUp className="w-5 h-5 text-amber-500" />
+                <span className="text-sm font-medium text-neutral-600 dark:text-white/80">
                   {locale === 'es' ? 'Tu potencial mensual' : 'Your monthly potential'}
                 </span>
               </div>
-              <p className="text-3xl font-bold mb-1">$0</p>
-              <p className="text-sm text-white/60">
+              <p className="text-3xl font-bold text-neutral-900 dark:text-white mb-1">$0</p>
+              <p className="text-sm text-neutral-500 dark:text-white/60">
                 {locale === 'es' ? 'Publica una propiedad para comenzar' : 'List a property to get started'}
               </p>
             </div>

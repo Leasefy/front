@@ -21,13 +21,13 @@ export const MOCK_LANDLORD_NOTIFICATIONS: LandlordNotification[] = [
     type: 'APP_NEW',
     category: 'application',
     title: 'Nueva aplicación',
-    message: 'Carlos Rodríguez aplicó para Apartamento Chapinero',
+    message: 'Nicolás Rodríguez aplicó para Apartamento Chapinero',
     read: false,
     createdAt: new Date(Date.now() - 12 * 60000).toISOString(), // 12 min ago
     actionUrl: '/panel/prop-001?tab=candidates',
     actionLabel: 'Ver aplicación',
     metadata: {
-      tenantName: 'Carlos Rodríguez',
+      tenantName: 'Nicolás Rodríguez',
       tenantEmail: 'carlos@email.com',
       propertyName: 'Apartamento Chapinero',
       propertyId: 'prop-001',
@@ -395,7 +395,7 @@ export const MOCK_TENANT_NOTIFICATIONS: TenantNotification[] = [
     actionUrl: '/inquilino/aplicaciones/app-002',
     actionLabel: 'Ver detalles',
     metadata: {
-      landlordName: 'Carlos Rodríguez',
+      landlordName: 'Nicolás Rodríguez',
       propertyName: 'Casa Usaquén',
       propertyId: 'prop-002',
       applicationId: 'app-002',
@@ -465,7 +465,7 @@ export const MOCK_TENANT_NOTIFICATIONS: TenantNotification[] = [
     actionUrl: '/inquilino/documentos?doc=con-002',
     actionLabel: 'Ver contrato',
     metadata: {
-      landlordName: 'Carlos Rodríguez',
+      landlordName: 'Nicolás Rodríguez',
       propertyName: 'Casa Usaquén',
       propertyId: 'prop-002',
       contractId: 'con-002',
@@ -572,7 +572,7 @@ export const MOCK_TENANT_NOTIFICATIONS: TenantNotification[] = [
     actionUrl: '/inquilino/aplicaciones?visit=vis-001',
     actionLabel: 'Ver detalles',
     metadata: {
-      landlordName: 'Carlos Rodríguez',
+      landlordName: 'Nicolás Rodríguez',
       propertyName: 'Casa Usaquén',
       propertyId: 'prop-002',
       visitId: 'vis-001',

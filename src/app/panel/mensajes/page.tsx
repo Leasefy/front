@@ -39,7 +39,7 @@ interface Conversation {
 const initialConversations: Conversation[] = [
   {
     id: 'conv-1',
-    name: 'Carlos Rodriguez',
+    name: 'Nicolás Rodriguez',
     avatar: '/images/avatars/avatar-1.jpg',
     role: 'Inquilino',
     property: 'Apartamento Chapinero Alto',
@@ -107,7 +107,7 @@ const initialConversations: Conversation[] = [
 const initialMessages: Record<string, Message[]> = {
   'conv-1': [
     { id: 'msg-1', senderId: 'other', content: 'Buenos días, me interesa mucho el apartamento en Chapinero Alto.', timestamp: '09:15', read: true },
-    { id: 'msg-2', senderId: 'me', content: 'Buenos días Carlos! Claro, el apartamento está disponible. ¿Te gustaría agendar una visita?', timestamp: '09:20', read: true },
+    { id: 'msg-2', senderId: 'me', content: 'Buenos días Nicolás! Claro, el apartamento está disponible. ¿Te gustaría agendar una visita?', timestamp: '09:20', read: true },
     { id: 'msg-3', senderId: 'other', content: 'Sí, me encantaría. ¿Tiene disponibilidad esta semana?', timestamp: '09:22', read: true },
     { id: 'msg-4', senderId: 'me', content: 'Tengo disponible el jueves a las 4pm o el viernes a las 10am. ¿Cuál te conviene más?', timestamp: '09:25', read: true },
     { id: 'msg-5', senderId: 'other', content: 'El jueves a las 4pm me queda perfecto.', timestamp: '09:30', read: true },

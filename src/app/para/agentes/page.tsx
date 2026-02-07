@@ -21,7 +21,7 @@ const testimonials = [
   },
   {
     quote: 'Antes me tomaba una semana evaluar candidatos. Ahora lo hago en el mismo día de la visita. Mis comisiones se duplicaron en 3 meses.',
-    author: 'Carlos Martínez',
+    author: 'Nicolás Martínez',
     role: 'Agente inmobiliario, Medellín',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
   },
@@ -445,7 +445,7 @@ function MobileAppVisual() {
       <div className="space-y-2">
         {[
           { icon: "📋", title: "Nueva aplicación", desc: "María González aplicó para Apto 302", time: "Ahora", isNew: true },
-          { icon: "🏠", title: "Visita confirmada", desc: "Carlos Ruiz · Apto Chapinero · 3pm", time: "Hace 5 min", isNew: true },
+          { icon: "🏠", title: "Visita confirmada", desc: "Nicolás Ruiz · Apto Chapinero · 3pm", time: "Hace 5 min", isNew: true },
           { icon: "✅", title: "Contrato firmado", desc: "Casa Usaquén · Comisión: $0.5M", time: "Hace 1h", isNew: false },
           { icon: "📊", title: "Reporte listo", desc: "Evaluación de Ana García disponible", time: "Hace 2h", isNew: false },
         ].map((notif, i) => (
@@ -970,7 +970,7 @@ export default function AgentesPage() {
                 <div className="mt-auto space-y-2">
                   {[
                     { name: 'María González', initials: 'MG', status: 'Cerrado', progress: 100 },
-                    { name: 'Carlos Ruiz', initials: 'CR', status: 'Esperando', progress: 60 },
+                    { name: 'Nicolás Ruiz', initials: 'CR', status: 'Esperando', progress: 60 },
                     { name: 'Ana Pérez', initials: 'AP', status: 'Perdido', progress: 20 },
                   ].map((candidate, i) => (
                     <div key={candidate.name} className="flex items-center gap-2.5 bg-white rounded-lg p-2.5 border border-border/50">

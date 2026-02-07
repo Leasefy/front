@@ -32,7 +32,7 @@ export const MOCK_LEASES: Lease[] = [
     propertyCity: 'Bogotá',
     propertyThumbnail:
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop',
-    tenantName: 'Carlos Rodriguez Martinez',
+    tenantName: 'Nicolás Rodriguez Martinez',
     tenantEmail: 'carlos.rodriguez@email.com',
     tenantPhone: '+57 300 123 4567',
     tenantAvatar: undefined,
@@ -128,7 +128,7 @@ export const MOCK_LEASES: Lease[] = [
     propertyCity: 'Bogotá',
     propertyThumbnail:
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
-    tenantName: 'Carlos Rodriguez Martinez',
+    tenantName: 'Nicolás Rodriguez Martinez',
     tenantEmail: 'carlos.rodriguez@email.com',
     tenantPhone: '+57 300 123 4567',
     tenantAvatar: undefined,

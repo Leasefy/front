@@ -80,7 +80,7 @@ const TENANT_SEARCH_DATA: SearchResult[] = [
   // Messages
   {
     id: 'msg-1',
-    title: 'Carlos Rodriguez',
+    title: 'Nicolás Rodriguez',
     subtitle: 'Propietario - Último mensaje hace 2 días',
     category: 'message',
     href: '/inquilino/mensajes',
@@ -166,7 +166,7 @@ const LANDLORD_SEARCH_DATA: SearchResult[] = [
   {
     id: 'lease-2',
     title: 'Arriendo Studio 302',
-    subtitle: 'Carlos Mejía - $1,800,000/mes',
+    subtitle: 'Nicolás Mejía - $1,800,000/mes',
     category: 'lease',
     href: '/panel/leases',
   },
@@ -180,7 +180,7 @@ const LANDLORD_SEARCH_DATA: SearchResult[] = [
   },
   {
     id: 'pay-2',
-    title: 'Pago Carlos Mejía',
+    title: 'Pago Nicolás Mejía',
     subtitle: '$1,800,000 - Pendiente',
     category: 'payment',
     href: '/panel/leases',

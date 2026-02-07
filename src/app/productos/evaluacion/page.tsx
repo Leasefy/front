@@ -174,7 +174,7 @@ export default function EvaluacionPage() {
                         className="rounded-xl object-cover ring-2 ring-white/20"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-[14px]">Carlos Andrés R.</p>
+                        <p className="text-white font-medium text-[14px]">Nicolás Andrés R.</p>
                         <div className="flex items-center gap-1.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                           <p className="text-white/50 text-[11px]">Evaluación completada</p>

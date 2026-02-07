@@ -191,7 +191,7 @@ export default function PagosPage() {
                       </span>
                       {[
                         { initials: 'ML', name: 'María López', amount: '+$2.5M', time: 'Hoy' },
-                        { initials: 'CG', name: 'Carlos Gómez', amount: '+$1.8M', time: 'Ayer' },
+                        { initials: 'CG', name: 'Nicolás Gómez', amount: '+$1.8M', time: 'Ayer' },
                       ].map((tx, i) => (
                         <motion.div
                           key={tx.name}
@@ -396,7 +396,7 @@ export default function PagosPage() {
                     <div className="space-y-2">
                       <div className="bg-amber-50 rounded-lg p-2">
                         <p className="text-[10px] text-amber-700">
-                          {'"'}Hola Carlos, recuerda que el arriendo de este mes está pendiente...{'"'}
+                          {'"'}Hola Nicolás, recuerda que el arriendo de este mes está pendiente...{'"'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
@@ -816,7 +816,7 @@ export default function PagosPage() {
                   <div className="space-y-3">
                     {[
                       { name: 'María López', property: 'Apto 301', amount: '+$2.5M', status: 'success', time: 'Hoy' },
-                      { name: 'Carlos Ruiz', property: 'Apto 502', amount: '+$1.8M', status: 'success', time: 'Ayer' },
+                      { name: 'Nicolás Ruiz', property: 'Apto 502', amount: '+$1.8M', status: 'success', time: 'Ayer' },
                       { name: 'Ana García', property: 'Casa 12', amount: '$3.2M', status: 'pending', time: '5 Feb' },
                     ].map((tx, i) => (
                       <motion.div

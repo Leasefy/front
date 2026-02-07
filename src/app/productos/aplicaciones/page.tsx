@@ -835,7 +835,7 @@ export default function AplicacionesPage() {
                     { name: 'María López', role: 'Diseñadora UX', score: 92, income: '$8.5M', status: 'recommended', verified: true, image: 'ML' },
                     { name: 'Juan Pérez', role: 'Ingeniero Software', score: 87, income: '$7.2M', status: 'verified', verified: true, image: 'JP' },
                     { name: 'Ana García', role: 'Médica', score: 85, income: '$9.0M', status: 'verified', verified: true, image: 'AG' },
-                    { name: 'Carlos Ruiz', role: 'Contador', score: 78, income: '$5.8M', status: 'pending', verified: false, image: 'CR' },
+                    { name: 'Nicolás Ruiz', role: 'Contador', score: 78, income: '$5.8M', status: 'pending', verified: false, image: 'CR' },
                   ].map((candidate, i) => (
                     <motion.div
                       key={candidate.name}

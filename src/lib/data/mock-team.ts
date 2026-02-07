@@ -10,7 +10,7 @@ export const MOCK_TEAM_MEMBERS: TeamMember[] = [
     id: 'member-001',
     userId: 'user-001',
     email: 'landlord@example.com',
-    name: 'Carlos Rodriguez',
+    name: 'Nicolás Rodriguez',
     role: 'admin',
     status: 'accepted',
     invitedAt: '2025-06-01T00:00:00Z',

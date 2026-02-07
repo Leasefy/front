@@ -108,7 +108,7 @@ const initialMessages: Record<string, Message[]> = {
     {
       id: 'msg-2',
       senderId: 'me',
-      content: 'Hola Carlos! Todo bien, gracias. Sí, dime, ¿qué necesitas saber?',
+      content: 'Hola Nicolás! Todo bien, gracias. Sí, dime, ¿qué necesitas saber?',
       timestamp: '10:18',
       read: true,
     },

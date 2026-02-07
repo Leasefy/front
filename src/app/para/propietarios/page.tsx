@@ -144,7 +144,7 @@ function EvaluationVisual() {
                   transition={{ delay: 0.8 }}
                   className="text-[13px] font-semibold text-white"
                 >
-                  Carlos Ruiz
+                  Nicolás Ruiz
                 </motion.span>
                 <motion.span
                   initial={{ scale: 0, rotate: -20 }}
@@ -298,7 +298,7 @@ function PaymentVisual() {
         </motion.span>
         {[
           { name: "María López", apt: "Apto 301", amount: "+$2.400.000", status: "Recibido", time: "Hoy" },
-          { name: "Carlos Ruiz", apt: "Apto 502", amount: "+$1.850.000", status: "Recibido", time: "Ayer" },
+          { name: "Nicolás Ruiz", apt: "Apto 502", amount: "+$1.850.000", status: "Recibido", time: "Ayer" },
           { name: "Ana García", apt: "Casa 12", amount: "+$3.200.000", status: "Pendiente", time: "En 2 días" },
         ].map((tx, i) => (
           <motion.div
@@ -943,7 +943,7 @@ export default function PropietariosPage() {
                         className="rounded-xl object-cover ring-2 ring-white/20"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-[14px]">Juan Carlos M.</p>
+                        <p className="text-white font-medium text-[14px]">Juan Nicolás M.</p>
                         <div className="flex items-center gap-1.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                           <p className="text-white/50 text-[11px]">Propietario verificado</p>

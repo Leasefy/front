@@ -17,7 +17,7 @@ const testimonials = [
   {
     quote:
       "Tenía mi apartamento vacío 4 meses. Lo publiqué acá y en 2 semanas ya tenía inquilino verificado. Lleva 8 meses pagando puntual.",
-    author: "Carlos Martínez",
+    author: "Nicolás Martínez",
     role: "Propietario · 3 propiedades",
     result: "0 meses vacancia",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400",

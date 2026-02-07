@@ -250,7 +250,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     tenantEmail: 'maria.rodriguez@email.com',
     tenantPhone: '+57 311 234 5678',
     tenantDocument: '52.987.654',
-    landlordName: 'Carlos Alberto Mendez',
+    landlordName: 'Nicolás Alberto Mendez',
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 3800000,
@@ -262,7 +262,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     paymentDueDay: 5,
     landlordSignature: {
       signedAt: '2026-01-15T10:30:00Z',
-      signedBy: 'Carlos Alberto Mendez',
+      signedBy: 'Nicolás Alberto Mendez',
       signerId: 'landlord-001',
       ipAddress: '190.85.23.145',
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -292,7 +292,7 @@ export const MOCK_CONTRACTS: Contract[] = [
         timestamp: '2026-01-14T09:00:00Z',
         metadata: {
           userId: 'landlord-001',
-          userName: 'Carlos Alberto Mendez',
+          userName: 'Nicolás Alberto Mendez',
         },
       },
       {
@@ -309,7 +309,7 @@ export const MOCK_CONTRACTS: Contract[] = [
         timestamp: '2026-01-15T10:30:00Z',
         metadata: {
           userId: 'landlord-001',
-          userName: 'Carlos Alberto Mendez',
+          userName: 'Nicolás Alberto Mendez',
           ipAddress: '190.85.23.145',
           userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
           otpVerified: true,
@@ -359,19 +359,19 @@ export const MOCK_CONTRACTS: Contract[] = [
     tenantEmail: 'andres.martinez@email.com',
     tenantPhone: '+57 310 456 7890',
     tenantDocument: '1.098.765.432',
-    landlordName: 'Carlos Alberto Mendez',
+    landlordName: 'Nicolás Alberto Mendez',
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 2800000,
     adminFee: 250000,
     guaranteeType: 'codeudor',
-    guaranteeDetails: 'Juan Carlos Martinez - C.C. 79.456.789',
+    guaranteeDetails: 'Juan Nicolás Martinez - C.C. 79.456.789',
     startDate: '2026-02-15',
     endDate: '2027-02-14',
     paymentDueDay: 1,
     landlordSignature: {
       signedAt: '2026-01-18T16:45:00Z',
-      signedBy: 'Carlos Alberto Mendez',
+      signedBy: 'Nicolás Alberto Mendez',
       signerId: 'landlord-001',
       ipAddress: '190.85.23.145',
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -390,7 +390,7 @@ export const MOCK_CONTRACTS: Contract[] = [
         timestamp: '2026-01-18T15:00:00Z',
         metadata: {
           userId: 'landlord-001',
-          userName: 'Carlos Alberto Mendez',
+          userName: 'Nicolás Alberto Mendez',
         },
       },
       {
@@ -407,7 +407,7 @@ export const MOCK_CONTRACTS: Contract[] = [
         timestamp: '2026-01-18T16:45:00Z',
         metadata: {
           userId: 'landlord-001',
-          userName: 'Carlos Alberto Mendez',
+          userName: 'Nicolás Alberto Mendez',
           ipAddress: '190.85.23.145',
           userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
           otpVerified: true,
@@ -437,7 +437,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     tenantEmail: 'laura.gonzalez@email.com',
     tenantPhone: '+57 300 876 5432',
     tenantDocument: '43.567.890',
-    landlordName: 'Carlos Alberto Mendez',
+    landlordName: 'Nicolás Alberto Mendez',
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: 1200000,
@@ -459,7 +459,7 @@ export const MOCK_CONTRACTS: Contract[] = [
         timestamp: '2026-01-20T09:00:00Z',
         metadata: {
           userId: 'landlord-001',
-          userName: 'Carlos Alberto Mendez',
+          userName: 'Nicolás Alberto Mendez',
         },
       },
       {
@@ -608,7 +608,7 @@ export function createContractFromTemplate(
       timestamp: now,
       metadata: {
         userId: 'landlord-001',
-        userName: 'Carlos Alberto Mendez',
+        userName: 'Nicolás Alberto Mendez',
       },
     },
     {
@@ -634,7 +634,7 @@ export function createContractFromTemplate(
     tenantEmail: candidate.email,
     tenantPhone: candidate.phone,
     tenantDocument: '1.234.567.890', // Would come from candidate data
-    landlordName: 'Carlos Alberto Mendez',
+    landlordName: 'Nicolás Alberto Mendez',
     landlordEmail: 'carlos.mendez@email.com',
     landlordDocument: '80.123.456',
     monthlyRent: property.monthlyRent,

@@ -156,7 +156,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-002',
-    fullName: 'Carlos Andres Rodriguez Mejia',
+    fullName: 'Nicolás Andres Rodriguez Mejia',
     photo: '/avatars/carlos-rodriguez.jpg',
     age: 42,
     occupation: 'Medico Especialista',

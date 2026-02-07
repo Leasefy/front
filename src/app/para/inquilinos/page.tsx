@@ -28,7 +28,7 @@ const testimonials = [
   },
   {
     quote: 'Como estudiante extranjero, pensé que sería imposible arrendar. Con mi perfil verificado, el propietario confió en mí de inmediato.',
-    author: 'Carlos Mendez',
+    author: 'Nicolás Mendez',
     role: 'Estudiante universitario',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
   },

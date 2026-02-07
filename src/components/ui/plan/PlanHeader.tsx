@@ -62,7 +62,7 @@ const notificationRoutes: Record<string, { landlord: string; tenant: string }> =
 const initialNotifications = [
   {
     id: '1',
-    user: 'Carlos Martinez',
+    user: 'Nicolás Martinez',
     action: 'completó el pago del arriendo',
     target: 'Apt. #203',
     time: 'hace 12 min',

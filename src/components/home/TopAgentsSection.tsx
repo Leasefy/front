@@ -15,7 +15,7 @@ const agents = [
     href: "/agentes/sofia-martinez",
   },
   {
-    name: "Carlos Ramírez",
+    name: "Nicolás Ramírez",
     role: "Asesor Inmobiliario",
     locations: "Medellín, Cali",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=600",

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export interface ImageCarouselProps {
@@ -155,7 +155,7 @@ export function ImageCarousel({
           </button>
         )}
 
-        {/* Navigation arrows */}
+        {/* Compass arrows */}
         {hasMultipleImages && (
           <>
             <button
@@ -170,7 +170,7 @@ export function ImageCarousel({
               )}
               aria-label="Imagen anterior"
             >
-              <ChevronLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
+              <CaretLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
             <button
               onClick={(e) => {
@@ -184,7 +184,7 @@ export function ImageCarousel({
               )}
               aria-label="Siguiente imagen"
             >
-              <ChevronRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
+              <CaretRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
           </>
         )}

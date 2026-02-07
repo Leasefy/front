@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -117,7 +117,7 @@ const CollapsiblePanel = React.forwardRef<
           )}
         </div>
       </div>
-      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+      <CaretDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
     </CollapsibleTrigger>
     <CollapsibleContent className={cn('px-3 pb-3', contentClassName)}>
       <div className="pt-2">

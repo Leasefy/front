@@ -44,7 +44,7 @@ export const MOCK_VISITS: Visit[] = [
   {
     id: 'visit-004',
     candidateId: 'cand-001',
-    candidateName: 'Carlos Mendoza',
+    candidateName: 'Nicolás García',
     propertyId: 'prop-001',
     propertyTitle: 'Apartamento Chapinero Alto',
     requestedDate: '2026-02-02',

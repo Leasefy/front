@@ -1,12 +1,12 @@
 'use client';
 
-import { RefreshCw } from 'lucide-react';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export type DisplayVariant = 'compact' | 'full' | 'embedded';
@@ -104,7 +104,7 @@ export function DemoControls({
           disabled={!animationEnabled}
           className="gap-2"
         >
-          <RefreshCw className="h-3 w-3" />
+          <ArrowsClockwise className="h-3 w-3" />
           Repetir
         </Button>
       </div>

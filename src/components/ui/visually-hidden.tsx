@@ -103,7 +103,7 @@ export interface UseLiveRegionOptions {
  *
  * return (
  *   <>
- *     <button onClick={handleSave}>Save</button>
+ *     <button onClick={handleSave}>FloppyDisk</button>
  *     <LiveRegion />
  *   </>
  * );

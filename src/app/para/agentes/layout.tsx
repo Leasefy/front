@@ -4,18 +4,18 @@ import { ServiceJsonLd } from "@/components/seo/JsonLd";
 export const metadata: Metadata = {
   title: "Para Agentes Inmobiliarios",
   description:
-    "Herramientas para agentes inmobiliarios independientes. Gestiona propiedades, genera leads, cierra arriendos mas rapido con scoring de inquilinos y contratos digitales.",
+    "Herramientas para agentes inmobiliarios independientes. Gestiona propiedades, genera leads, cierra arriendos más rápido con scoring de inquilinos y contratos digitales.",
   keywords: [
     "herramientas agente inmobiliario",
     "CRM agente arriendos",
     "captar propiedades arriendo",
-    "cerrar arriendos rapido",
+    "cerrar arriendos rápido",
     "comisiones agente inmobiliario",
   ],
   openGraph: {
-    title: "Para Agentes Inmobiliarios | Arriendo Facil",
+    title: "Para Agentes Inmobiliarios | Leasefy",
     description:
-      "Herramientas para gestionar propiedades, generar leads y cerrar arriendos mas rapido.",
+      "Herramientas para gestionar propiedades, generar leads y cerrar arriendos más rápido.",
     type: "website",
   },
   alternates: {
@@ -34,7 +34,7 @@ export default function AgentesLayout({
         name="Herramientas para Agentes Inmobiliarios"
         description="Plataforma de herramientas para agentes inmobiliarios independientes que gestionan arriendos."
         url="/para/agentes"
-        serviceType="Real Estate Agent Tools"
+        serviceTextT="Real Estate Agent Tools"
         areaServed={["Colombia"]}
       />
       {children}

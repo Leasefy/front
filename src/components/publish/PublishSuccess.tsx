@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Eye, Share2, ArrowRight, Sparkles, Building2, MapPin, DollarSign } from 'lucide-react';
+import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import confetti from 'canvas-confetti';
@@ -13,6 +13,30 @@ export function PublishSuccess() {
   const { draft } = usePublish();
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
+
+  // Mark property as published in localStorage for onboarding progress
+  useEffect(() => {
+    // Update the getting started progress
+    const saved = localStorage.getItem('plan_getting_started');
+    let progress = { completedSteps: ['create_account'], isCollapsed: false };
+
+    if (saved) {
+      try {
+        progress = JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing progress:', e);
+      }
+    }
+
+    // Add publish_property to completed steps if not already there
+    if (!progress.completedSteps.includes('publish_property')) {
+      progress.completedSteps.push('publish_property');
+      localStorage.setItem('plan_getting_started', JSON.stringify({
+        ...progress,
+        lastUpdated: new Date().toISOString(),
+      }));
+    }
+  }, []);
 
   // Confetti effect on mount
   useEffect(() => {
@@ -70,7 +94,7 @@ export function PublishSuccess() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-muted to-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -78,7 +102,7 @@ export function PublishSuccess() {
         className="max-w-lg w-full"
       >
         {/* Success card */}
-        <div className="bg-card rounded-sm border border-border shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-xl overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
             {/* Gradient background */}
@@ -87,8 +111,8 @@ export function PublishSuccess() {
             <div className="absolute inset-0 opacity-30" style={{
               backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)',
             }} />
-            {/* Bottom fade into white card */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+            {/* Robottom fade into card */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-[#222224] to-transparent" />
 
             <div className="relative z-10">
               {/* Animated rings */}
@@ -140,7 +164,7 @@ export function PublishSuccess() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="aspect-video rounded-sm overflow-hidden relative"
+                className="aspect-video rounded-xl overflow-hidden relative"
               >
                 <img
                   src={draft.photos[0]}
@@ -165,26 +189,26 @@ export function PublishSuccess() {
               transition={{ delay: 0.4 }}
               className="grid grid-cols-3 gap-3"
             >
-              <div className="bg-black/5 p-3 rounded-sm text-center">
-                <DollarSign className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-sm font-semibold text-foreground">
+              <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded-xl text-center">
+                <CurrencyDollar className="w-4 h-4 mx-auto text-neutral-500 dark:text-neutral-400 mb-1" />
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                   {formatCurrency(draft.monthlyRent)}
                 </p>
-                <p className="text-xs text-muted-foreground">/mes</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
               </div>
-              <div className="bg-black/5 p-3 rounded-sm text-center">
-                <Building2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-sm font-semibold text-foreground">
+              <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded-xl text-center">
+                <Buildings className="w-4 h-4 mx-auto text-neutral-500 dark:text-neutral-400 mb-1" />
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                   {draft.bedrooms} hab
                 </p>
-                <p className="text-xs text-muted-foreground">{draft.bathrooms} banos</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{draft.bathrooms} baños</p>
               </div>
-              <div className="bg-indigo-500/20 p-3 rounded-sm text-center">
-                <Sparkles className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-xs font-semibold text-foreground">
+              <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-xl text-center">
+                <Sparkle className="w-4 h-4 mx-auto text-indigo-600 dark:text-indigo-400 mb-1" />
+                <p className="text-xs font-semibold text-neutral-900 dark:text-white">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan as keyof typeof planLabels] : 'Plan'}
                 </p>
-                <p className="text-xs text-muted-foreground">Activo</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Activo</p>
               </div>
             </motion.div>
 
@@ -197,7 +221,7 @@ export function PublishSuccess() {
             >
               <Link
                 href="/panel/propiedades"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-primary text-white text-sm font-medium rounded-sm hover:bg-primary/85 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
               >
                 <Eye className="w-4 h-4" />
                 Ver mi propiedad en el panel
@@ -205,25 +229,25 @@ export function PublishSuccess() {
 
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-border text-foreground/70 text-sm font-medium rounded-sm hover:border-border hover:text-foreground transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium rounded-xl hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-900 dark:hover:text-white transition-colors"
               >
-                <Share2 className="w-4 h-4" />
+                <ShareNetwork className="w-4 h-4" />
                 Compartir anuncio
               </button>
             </motion.div>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-black/[0.02] border-t border-border">
+          <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-between">
               <Link
                 href="/publicar"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
               >
                 Publicar otro inmueble
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 Redirigiendo en {countdown}s...
               </span>
             </div>

@@ -2,132 +2,103 @@
 
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
-import {
-  Sparkles, Shield, Eye, Search, CheckCircle2,
-  Home, FileText, PenTool, Lock, Zap, ChevronRight,
-  Star, TrendingUp, MapPin, Bath, Bed, Maximize,
-} from "lucide-react";
+import { Sparkle, Shield, Eye, MagnifyingGlass, CheckCircle, House, FileText, PenNib, Lock, Lightning, CaretRight, Star, TrendUp, MapPin, Bathtub, Bed, ArrowsOut } from '@phosphor-icons/react';
 import { SectionLabel } from "@/components/ui/section-label";
 
 /* ================================================================
    VISUAL 1 — Evaluación de Riesgo (HERO — 7col, DARK)
-   Premium dashboard: big gauge + glowing bars + profile
+   Clean widget-based scoring display
    ================================================================ */
 function RiskVisual() {
   return (
-    <div className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
+    <div className="relative w-full h-full flex items-center px-6 py-4">
       {/* Glow effects */}
-      <div className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-emerald-500/[0.07] rounded-full blur-[80px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-blue-500/[0.05] rounded-full blur-[60px] pointer-events-none" />
+      <div className="absolute top-[20%] left-[10%] w-[120px] h-[120px] bg-success-500/10 rounded-full blur-[50px] pointer-events-none" />
 
-      <div className="flex items-center gap-10 w-full">
-        {/* Left: Gauge + score */}
+      <div className="flex items-center gap-6 w-full">
+        {/* Left: Score gauge with badge inside */}
         <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
+          initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="relative flex-shrink-0"
+          transition={{ duration: 0.6 }}
+          className="flex-shrink-0 flex flex-col items-center"
         >
-          <div className="w-[160px] h-[94px] overflow-hidden">
-            <svg viewBox="0 0 160 94" className="w-full h-full">
-              {/* Track */}
-              <path d="M 16 86 A 64 64 0 0 1 144 86" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" strokeLinecap="round" />
-              {/* Colored arc */}
-              <motion.path
-                d="M 16 86 A 64 64 0 0 1 144 86"
-                fill="none" stroke="url(#gaugeDark)" strokeWidth="10" strokeLinecap="round"
-                initial={{ pathLength: 0 }} animate={{ pathLength: 0.91 }}
-                transition={{ delay: 0.4, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-              />
-              {/* Glow copy */}
-              <motion.path
-                d="M 16 86 A 64 64 0 0 1 144 86"
-                fill="none" stroke="url(#gaugeDark)" strokeWidth="14" strokeLinecap="round"
-                opacity="0.25" style={{ filter: "blur(8px)" }}
-                initial={{ pathLength: 0 }} animate={{ pathLength: 0.91 }}
-                transition={{ delay: 0.4, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+          <div className="relative w-[100px] h-[100px]">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+              <motion.circle
+                cx="50" cy="50" r="42" fill="none" stroke="url(#gaugeGrad)" strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={264}
+                initial={{ strokeDashoffset: 264 }}
+                animate={{ strokeDashoffset: 264 * 0.09 }}
+                transition={{ delay: 0.3, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               />
               <defs>
-                <linearGradient id="gaugeDark" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(var(--rose-500))" />
-                  <stop offset="25%" stopColor="hsl(var(--amber-500))" />
-                  <stop offset="55%" stopColor="hsl(var(--emerald-500))" />
-                  <stop offset="100%" stopColor="hsl(var(--emerald-400))" />
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--success-400))" />
+                  <stop offset="100%" stopColor="hsl(var(--success-500))" />
                 </linearGradient>
               </defs>
             </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[28px] font-heading font-bold text-white leading-none">91</span>
+              <span className="text-[9px] text-white/40 mt-0.5">de 100</span>
+            </div>
           </div>
-          {/* Score below gauge */}
+          {/* Badge below gauge */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.5 }}
-            className="text-center mt-1"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 1, type: "spring" }}
+            className="flex items-center gap-1 bg-success-500/20 text-success-400 text-[9px] font-bold px-2.5 py-1 rounded-full border border-success-500/20 mt-2"
           >
-            <span className="text-[44px] font-bold text-white leading-none tracking-tight">91</span>
-            <span className="text-[12px] text-white/30 font-medium">/100</span>
+            <CheckCircle className="w-3 h-3" /> Aprobada
           </motion.div>
         </motion.div>
 
         {/* Right: Profile + bars */}
         <div className="flex-1 min-w-0">
-          {/* Profile */}
+          {/* Profile card */}
           <motion.div
-            initial={{ opacity: 0, x: 15 }}
+            initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex items-center gap-3 mb-4"
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-2.5 mb-4 bg-white/5 rounded-xl p-2.5 border border-white/10"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-[14px] font-semibold text-white/60">ML</span>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border border-white/10">
+              <span className="text-[12px] font-semibold text-white/80">ML</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-semibold text-white">María López</span>
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 1.2, type: "spring", stiffness: 400 }}
-                  className="flex items-center gap-0.5 bg-emerald-500/15 text-emerald-400 text-[8px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20"
-                >
-                  <CheckCircle2 className="w-2.5 h-2.5" /> Aprobada
-                </motion.span>
-              </div>
-              <span className="text-[9px] text-white/30 block mt-0.5">Riesgo bajo · Verificada</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[12px] font-heading font-semibold text-white block">María López</span>
+              <span className="text-[9px] text-white/40">Riesgo bajo · Verificada</span>
             </div>
           </motion.div>
 
-          {/* Bars with glow */}
+          {/* Score bars */}
           <div className="space-y-2.5">
             {[
-              { label: "Pago", score: 95, colorClass: "bg-emerald-400", glowClass: "bg-emerald-400/30" },
-              { label: "Crédito", score: 88, colorClass: "bg-blue-400", glowClass: "bg-blue-400/30" },
-              { label: "Referencias", score: 92, colorClass: "bg-violet-400", glowClass: "bg-violet-400/30" },
-            ].map((c, i) => (
+              { label: "Historial pago", score: 95, color: "bg-success-500" },
+              { label: "Estabilidad", score: 88, color: "bg-primary" },
+              { label: "Referencias", score: 92, color: "bg-indigo-400" },
+            ].map((item, i) => (
               <motion.div
-                key={c.label}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.7 + i * 0.12, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="flex items-center gap-3"
+                key={item.label}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+                className="flex items-center gap-2"
               >
-                <span className="text-[9px] text-white/40 font-medium w-[70px] flex-shrink-0">{c.label}</span>
-                <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden relative">
+                <span className="text-[9px] text-white/50 w-[72px] flex-shrink-0">{item.label}</span>
+                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <motion.div
-                    className={`h-full rounded-full ${c.colorClass}`}
+                    className={`h-full rounded-full ${item.color}`}
                     initial={{ width: 0 }}
-                    animate={{ width: `${c.score}%` }}
-                    transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                  {/* Bar glow */}
-                  <motion.div
-                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${c.score}%` }}
-                    transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    animate={{ width: `${item.score}%` }}
+                    transition={{ delay: 0.6 + i * 0.1, duration: 0.6 }}
                   />
                 </div>
-                <span className="text-[12px] font-bold text-white w-7 text-right tabular-nums">{c.score}</span>
+                <span className="text-[11px] font-bold text-white w-6 text-right tabular-nums">{item.score}</span>
               </motion.div>
             ))}
           </div>
@@ -139,109 +110,102 @@ function RiskVisual() {
 
 /* ================================================================
    VISUAL 2 — Búsqueda Inteligente (MEDIUM — 5col)
-   Featured property with depth + stacked card behind + AI pill
+   Clean widget-based search results display
    ================================================================ */
-function SearchVisual() {
+function MagnifyingGlassVisual() {
+  const results = [
+    { match: 96, location: "Chapinero", price: "$2.8M", beds: 2, highlight: true },
+    { match: 89, location: "Usaquén", price: "$3.2M", beds: 3, highlight: false },
+    { match: 84, location: "Cedritos", price: "$2.4M", beds: 2, highlight: false },
+  ];
+
   return (
-    <div className="relative w-full h-full overflow-hidden px-4 pt-2">
-      {/* Search bar */}
+    <div className="relative w-full h-full flex flex-col overflow-hidden px-5 py-4">
+      {/* MagnifyingGlass bar */}
       <motion.div
-        initial={{ y: -8, opacity: 0 }}
+        initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35 }}
-        className="w-full bg-white px-3 py-2 flex items-center gap-2"
-        style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+        transition={{ duration: 0.4 }}
+        className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-xl shadow-sm border border-border mb-4"
       >
-        <Search className="w-3.5 h-3.5 text-foreground flex-shrink-0" />
-        <span className="text-[9px] text-muted-foreground flex-1">Chapinero, 2 hab, $3M</span>
-        <div className="bg-foreground text-white text-[7px] font-semibold px-2 py-1 flex items-center gap-1">
-          <Sparkles className="w-2 h-2" /> Buscar
+        <MagnifyingGlass className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-[11px] text-muted-foreground flex-1">Chapinero, 2 hab, $3M máx</span>
+        <div className="bg-foreground text-white text-[9px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <Sparkle className="w-3 h-3" /> AI
         </div>
       </motion.div>
 
-      {/* Stacked cards container */}
-      <div className="relative mt-3 h-[160px]">
-        {/* Back card (peeking) */}
-        <motion.div
-          initial={{ y: 25, opacity: 0 }}
-          animate={{ y: 0, opacity: 0.4 }}
-          transition={{ delay: 0.35, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute top-2 left-2 right-2 bg-white overflow-hidden"
-          style={{ border: "1px solid rgba(0,0,0,0.04)", transform: "scale(0.96) translateY(6px)" }}
-        >
-          <div className="h-[58px] bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-50" />
-          <div className="p-2.5">
-            <div className="text-[9px] font-semibold text-foreground">Usaquén Norte</div>
-          </div>
-        </motion.div>
-
-        {/* Featured front card */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="relative bg-white overflow-hidden z-10"
-          style={{ border: "1px solid rgba(0,0,0,0.06)" }}
-        >
-          {/* Photo area - rich warm gradient with building silhouettes */}
-          <div className="h-[62px] bg-gradient-to-br from-amber-200 via-orange-100 to-rose-100 relative overflow-hidden">
-            {/* City skyline silhouette */}
-            <svg className="absolute bottom-0 left-0 right-0 h-[30px] w-full" viewBox="0 0 200 30" preserveAspectRatio="none">
-              <path d="M0 30 L0 18 L12 18 L12 10 L18 10 L18 14 L30 14 L30 8 L38 8 L38 14 L50 14 L50 20 L65 20 L65 6 L72 6 L72 2 L78 2 L78 6 L85 6 L85 16 L100 16 L100 12 L110 12 L110 18 L125 18 L125 10 L132 10 L132 4 L138 4 L138 10 L145 10 L145 18 L160 18 L160 14 L170 14 L170 20 L185 20 L185 16 L200 16 L200 30 Z" fill="rgba(0,0,0,0.06)" />
-            </svg>
-            {/* Match badge */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.6, type: "spring", stiffness: 400 }}
-              className="absolute top-2 right-2 bg-foreground text-white text-[8px] font-bold px-2 py-1 flex items-center gap-1"
-            >
-              <Sparkles className="w-2.5 h-2.5" /> 96%
-            </motion.div>
-            {/* Location pin */}
-            <div className="absolute top-2 left-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm text-[7px] font-medium text-foreground px-1.5 py-0.5">
-              <MapPin className="w-2 h-2" /> Chapinero Alto
-            </div>
-          </div>
-
-          {/* Property info */}
-          <div className="p-3">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <div className="text-[11px] font-bold text-foreground">Chapinero Alto</div>
-                <div className="text-[8px] text-muted-foreground mt-0.5">Bogotá · Apartamento</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[14px] font-bold text-foreground tracking-tight">$2.8M</div>
-                <div className="text-[7px] text-muted-foreground">/ mes</div>
-              </div>
-            </div>
-            {/* Feature chips */}
-            <div className="flex gap-2 mt-2">
-              {[
-                { icon: Bed, label: "2 hab" },
-                { icon: Bath, label: "1 baño" },
-                { icon: Maximize, label: "72m²" },
-              ].map(({ icon: Icon, label }) => (
-                <span key={label} className="flex items-center gap-1 text-[7px] text-muted-foreground">
-                  <Icon className="w-2.5 h-2.5" strokeWidth={1.5} />
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* AI results count */}
+      {/* Results label */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="flex items-center justify-center gap-1.5 mt-1"
+        transition={{ delay: 0.2 }}
+        className="flex items-center justify-between mb-3"
       >
-        <span className="text-[8px] text-muted-foreground">24 resultados</span>
-        <ChevronRight className="w-2.5 h-2.5 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground">Resultados para ti</span>
+        <span className="text-[10px] font-semibold text-primary">24 propiedades</span>
+      </motion.div>
+
+      {/* Property results stack */}
+      <div className="flex-1 flex flex-col gap-2.5">
+        {results.map((item, i) => (
+          <motion.div
+            key={item.location}
+            initial={{ opacity: 0, x: 15 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 + i * 0.1 }}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+              item.highlight
+                ? "bg-primary/5 border-primary/20 shadow-sm"
+                : "bg-white border-border hover:border-primary/20"
+            }`}
+          >
+            {/* Match badge */}
+            <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center ${
+              item.match >= 90
+                ? "bg-success-50 text-success-600"
+                : "bg-neutral-100 text-foreground"
+            }`}>
+              <span className="text-[14px] font-heading font-bold leading-none">{item.match}</span>
+              <span className="text-[7px] opacity-60">%</span>
+            </div>
+
+            {/* Property info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <MapPin className="w-3 h-3 text-primary" />
+                <span className="text-[12px] font-heading font-semibold text-foreground">{item.location}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Bed className="w-3 h-3" /> {item.beds} hab
+                </span>
+                <span className="text-[10px] text-muted-foreground">· Apto</span>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="text-right">
+              <div className="text-[14px] font-heading font-bold text-foreground">{item.price}</div>
+              <div className="text-[8px] text-muted-foreground">/mes</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Robottom insight */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="flex items-center gap-2 mt-3 pt-3 border-t border-border"
+      >
+        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+          <TrendUp className="w-3 h-3 text-primary" />
+        </div>
+        <span className="text-[10px] text-muted-foreground">
+          <span className="text-foreground font-semibold">3 propiedades nuevas</span> desde ayer
+        </span>
       </motion.div>
     </div>
   );
@@ -249,112 +213,120 @@ function SearchVisual() {
 
 /* ================================================================
    VISUAL 3 — Contratos Digitales (LOW — 5col, outline)
-   Stacked contract pages + animated stamp seal
+   Clean contract widget with signature animation
    ================================================================ */
 function ContractVisual() {
   const [signed, setSigned] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setSigned(true), 2200);
+    const t = setTimeout(() => setSigned(true), 2000);
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
-      {/* Background pages */}
-      <div className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[78%] h-[175px] bg-black/[0.01] border border-border translate-y-2 scale-[0.95]" />
-      <div className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[82%] h-[175px] bg-black/[0.005] border border-border translate-y-1 scale-[0.975]" />
-
-      {/* Main contract */}
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden p-5">
+      {/* Main contract card */}
       <motion.div
-        initial={{ y: 12, opacity: 0 }}
+        initial={{ y: 15, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full overflow-hidden z-10 bg-white/80 backdrop-blur-sm"
-        style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+        transition={{ duration: 0.5 }}
+        className="relative w-full bg-white rounded-2xl shadow-lg border border-border overflow-hidden"
       >
         {/* Header */}
-        <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-          <FileText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-          <div className="flex-1">
-            <div className="text-[10px] font-medium text-foreground">Contrato de Arriendo</div>
-            <div className="text-[7px] text-muted-foreground font-mono">REF-2026-00847</div>
+        <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-primary" />
           </div>
-          <div
-            className={`text-[7px] font-semibold px-2 py-0.5 ${
+          <div className="flex-1">
+            <div className="text-[13px] font-heading font-semibold text-foreground">Contrato de Arriendo</div>
+            <div className="text-[10px] text-muted-foreground font-mono">REF-2026-00847</div>
+          </div>
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            className={`text-[10px] font-semibold px-3 py-1.5 rounded-full ${
               signed
-                ? "border border-emerald-500/25 text-emerald-600"
-                : "border border-amber-500/25 text-amber-600"
+                ? "bg-success-50 text-success-600 border border-success-200"
+                : "bg-warning-50 text-warning-600 border border-warning-200"
             }`}
           >
             {signed ? "✓ Firmado" : "Pendiente"}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Clauses */}
-        <div className="px-4 py-1">
+        {/* Contract details */}
+        <div className="px-5 py-3">
           {[
-            { l: "Canon", v: "$2.800.000" },
-            { l: "Duración", v: "12 meses" },
-            { l: "Depósito", v: "1 mes" },
-          ].map((c, i) => (
+            { label: "Canon mensual", value: "$2.800.000" },
+            { label: "Duración", value: "12 meses" },
+            { label: "Depósito", value: "1 mes" },
+          ].map((item, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 + i * 0.06 }}
-              className="flex items-center justify-between py-1.5"
-              style={{ borderBottom: i < 2 ? "1px dashed rgba(0,0,0,0.05)" : "none" }}
+              key={item.label}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + i * 0.1 }}
+              className="flex items-center justify-between py-2.5 border-b border-dashed border-border/50 last:border-0"
             >
-              <span className="text-[8px] text-muted-foreground">{c.l}</span>
-              <span className="text-[9px] font-medium text-foreground">{c.v}</span>
+              <span className="text-[11px] text-muted-foreground">{item.label}</span>
+              <span className="text-[12px] font-heading font-semibold text-foreground">{item.value}</span>
             </motion.div>
           ))}
         </div>
 
         {/* Signature area */}
-        <div className="px-4 py-2.5 relative" style={{ borderTop: "1px solid rgba(0,0,0,0.03)" }}>
-          <div className="h-9 flex items-center justify-center" style={{ border: "1px dashed rgba(0,0,0,0.06)" }}>
+        <div className="px-5 py-4 bg-neutral-50/50 border-t border-border">
+          <div className="h-12 flex items-center justify-center rounded-xl border-2 border-dashed border-border bg-white">
             {!signed ? (
-              <motion.div animate={{ opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 2, repeat: Infinity }} className="flex items-center gap-1">
-                <PenTool className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
-                <span className="text-[7px] text-muted-foreground">Esperando firma...</span>
+              <motion.div
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="flex items-center gap-2"
+              >
+                <PenNib className="w-4 h-4 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground">Esperando firma...</span>
               </motion.div>
             ) : (
-              <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <motion.svg width="120" height="24" viewBox="0 0 120 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
-                  d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
+                  d="M8 18 Q20 4 32 14 Q44 24 56 10 Q68 2 80 12 Q92 20 104 8 L116 6"
+                  fill="none" stroke="hsl(var(--foreground))" strokeWidth="2" strokeLinecap="round" opacity={0.5}
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                   transition={{ duration: 0.8 }}
                 />
               </motion.svg>
             )}
           </div>
-
-          {/* Stamp seal - appears when signed */}
-          {signed && (
-            <motion.div
-              initial={{ scale: 0, rotate: -20, opacity: 0 }}
-              animate={{ scale: 1, rotate: -8, opacity: 1 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 300, damping: 15 }}
-              className="absolute -top-3 right-6"
-            >
-              <div className="w-14 h-14 rounded-full border-2 border-emerald-500/40 flex items-center justify-center bg-emerald-50/50 backdrop-blur-sm">
-                <div className="w-10 h-10 rounded-full border border-dashed border-emerald-500/30 flex flex-col items-center justify-center">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span className="text-[5px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Verified</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
         </div>
+
+        {/* Verified stamp */}
+        {signed && (
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: -12 }}
+            transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+            className="absolute top-16 right-4 w-16 h-16 rounded-full border-3 border-success-500 flex items-center justify-center bg-success-50/80 backdrop-blur-sm"
+          >
+            <div className="text-center">
+              <CheckCircle className="w-5 h-5 text-success-500 mx-auto" />
+              <span className="text-[7px] text-success-600 font-bold uppercase tracking-wider">Verificado</span>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
-      {/* Pills */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="flex gap-2 mt-2.5 z-10">
-        {[{ icon: Lock, label: "Encriptado" }, { icon: Zap, label: "Firma digital" }].map(({ icon: Icon, label }) => (
-          <span key={label} className="flex items-center gap-1 text-[7px] font-medium text-muted-foreground px-2 py-1" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
-            <Icon className="w-2.5 h-2.5" strokeWidth={1.5} />
+      {/* Security badges */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="flex gap-3 mt-4"
+      >
+        {[
+          { icon: Lock, label: "Encriptado" },
+          { icon: Lightning, label: "Firma digital" },
+        ].map(({ icon: Icon, label }) => (
+          <span key={label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
             {label}
           </span>
         ))}
@@ -365,80 +337,103 @@ function ContractVisual() {
 
 /* ================================================================
    VISUAL 4 — Transparencia Total (MEDIUM — 7col)
-   Premium stacked bar + total + breakdown with proportional widths
+   Clean pricing breakdown with visual comparison
    ================================================================ */
 function TransparencyVisual() {
   const items = [
-    { label: "Canon", amount: "$2.800.000", pct: 82, colorClass: "bg-neutral-900", raw: 2800000 },
-    { label: "Administración", amount: "$280.000", pct: 8, colorClass: "bg-neutral-500", raw: 280000 },
-    { label: "Seguro", amount: "$196.000", pct: 6, colorClass: "bg-neutral-400", raw: 196000 },
-    { label: "Plataforma", amount: "$140.000", pct: 4, colorClass: "bg-neutral-300", raw: 140000 },
+    { label: "Canon", amount: "$2.8M", pct: 82, colorClass: "bg-foreground" },
+    { label: "Admin", amount: "$280K", pct: 8, colorClass: "bg-primary" },
+    { label: "Seguro", amount: "$196K", pct: 6, colorClass: "bg-indigo-400" },
+    { label: "Fee", amount: "$140K", pct: 4, colorClass: "bg-indigo-300" },
   ];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
-      {/* Top: Total + stacked bar */}
-      <div className="mb-4">
+    <div className="relative w-full h-full flex items-center overflow-hidden px-5 py-4">
+      <div className="w-full">
+        {/* Header with badge */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-baseline gap-2 mb-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center justify-between mb-4"
         >
-          <span className="text-[28px] font-bold text-foreground leading-none tracking-tight tabular-nums">$3.416.000</span>
-          <span className="text-[10px] text-muted-foreground font-medium">COP / mes</span>
+          <span className="text-[11px] text-muted-foreground">Desglose mensual</span>
+          <div className="flex items-center gap-1.5 bg-success-50 text-success-600 text-[9px] font-semibold px-2 py-1 rounded-full border border-success-100">
+            <Eye className="w-3 h-3" />
+            Transparente
+          </div>
         </motion.div>
 
-        {/* Full-width stacked bar */}
-        <div className="w-full h-[10px] flex overflow-hidden" style={{ gap: "2px" }}>
-          {items.map((item, i) => (
-            <motion.div
-              key={item.label}
-              className={`h-full ${item.colorClass}`}
-              initial={{ width: 0 }}
-              animate={{ flex: item.pct }}
-              transition={{ delay: 0.3 + i * 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            />
-          ))}
-        </div>
-      </div>
+        {/* Main card with total and breakdown */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden"
+        >
+          {/* Total section */}
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-[10px] text-muted-foreground block mb-1">Total a pagar</span>
+                <span className="text-[28px] font-heading font-bold text-foreground leading-none tracking-tight tabular-nums">$3.416.000</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground mb-1">COP/mes</span>
+            </div>
 
-      {/* Bottom: Breakdown rows */}
-      <div className="space-y-0">
-        {items.map((item, i) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 + i * 0.08, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center gap-3 py-2"
-            style={{ borderBottom: i < items.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}
-          >
-            <div className={`w-[6px] h-[6px] flex-shrink-0 ${item.colorClass}`} />
-            <span className="text-[10px] text-foreground font-medium flex-1">{item.label}</span>
-            <span className="text-[9px] text-muted-foreground tabular-nums mr-2">{item.pct}%</span>
-            <span className="text-[11px] font-semibold text-foreground tabular-nums">{item.amount}</span>
-          </motion.div>
-        ))}
-      </div>
+            {/* Stacked bar */}
+            <div className="w-full h-2.5 flex rounded-full overflow-hidden mt-4 gap-0.5">
+              {items.map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  className={`h-full first:rounded-l-full last:rounded-r-full ${item.colorClass}`}
+                  initial={{ width: 0 }}
+                  animate={{ flex: item.pct }}
+                  transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
+                />
+              ))}
+            </div>
+          </div>
 
-      {/* Badge */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="mt-3 self-start flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1"
-        style={{ border: "1px solid rgba(16,185,129,0.15)" }}
-      >
-        <Eye className="w-3 h-3 text-emerald-600" />
-        <span className="text-[8px] text-emerald-700 font-semibold">Sin costos ocultos</span>
-      </motion.div>
+          {/* Compact breakdown grid */}
+          <div className="grid grid-cols-2 gap-px bg-border/50">
+            {items.map((item, i) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 + i * 0.08 }}
+                className="bg-white px-4 py-3 flex items-center gap-2.5"
+              >
+                <div className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${item.colorClass}`} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] text-muted-foreground block">{item.label}</span>
+                  <span className="text-[13px] font-heading font-semibold text-foreground tabular-nums">{item.amount}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{item.pct}%</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Comparison badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="flex items-center justify-center gap-2 mt-3"
+        >
+          <TrendUp className="w-3.5 h-3.5 text-success-500" />
+          <span className="text-[10px] text-muted-foreground">
+            <span className="text-success-600 font-semibold">12% menos</span> que promedio zona
+          </span>
+        </motion.div>
+      </div>
     </div>
   );
 }
 
 /* ================================================================
-   BENTO CARD — sharp corners, 1px borders
+   BENTO CARD — soft rounded corners, 1px borders
    ================================================================ */
 function BentoCard({
   title,
@@ -476,14 +471,14 @@ function BentoCard({
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`group flex flex-col overflow-hidden transition-shadow duration-500 ${bg} ${className}`}
+      className={`group flex flex-col overflow-hidden rounded-2xl transition-shadow duration-500 ${bg} ${className}`}
       style={{ border: borderStyle }}
     >
       <div className="px-6 pt-5 pb-0">
-        <h3 className={`text-[20px] sm:text-[24px] font-semibold tracking-tight leading-tight ${dark ? "text-white" : "text-foreground"}`}>
+        <h3 className={`text-[20px] sm:text-[24px] font-heading font-medium tracking-[-0.02em] leading-tight ${dark ? "text-white" : "text-foreground"}`}>
           {title}
         </h3>
-        <p className={`text-[12px] leading-relaxed mt-1 max-w-[380px] ${dark ? "text-white/40" : "text-muted-foreground"}`}>
+        <p className={`text-[13px] font-sans leading-relaxed mt-1.5 max-w-[380px] ${dark ? "text-white/50" : "text-muted-foreground"}`}>
           {description}
         </p>
       </div>
@@ -499,28 +494,16 @@ function BentoCard({
    ================================================================ */
 export function AboutSection() {
   return (
-    <section className="bg-white py-24 lg:py-32 overflow-hidden relative">
-      <div className="absolute inset-x-0 top-0 mx-auto max-w-[1400px] px-6 md:px-12 pointer-events-none hidden lg:block">
-        <div className="grid grid-cols-3">
-          <div className="border-r border-border" style={{ height: "calc(6rem + 2.5rem)" }} />
-          <div className="border-r border-border" style={{ height: "calc(6rem + 2.5rem + 10rem + 5rem + 320px)" }} />
-          <div />
-        </div>
-      </div>
-
-      <div className="container-wide relative z-10">
+    <section className="bg-neutral-50 pt-12 lg:pt-16 pb-24 lg:pb-32 relative">
+      <div className="container-platform relative z-10">
         <div className="mb-14 lg:mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <SectionLabel>Nosotros</SectionLabel>
-            <div className="flex-1 h-px bg-border -mr-[calc((100vw-100%)/2+1rem)]" />
-          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-              Nuestra misión te lleva a un mejor hogar
+            <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+              Arriendo inteligente, resultados reales
             </h2>
             <div className="flex items-start pl-0 lg:pl-6 pt-2">
               <p className="text-[15px] text-muted-foreground leading-relaxed">
-                Apoyamos a propietarios e inquilinos en Colombia con herramientas que simplifican decisiones, mejoran resultados y brindan claridad.
+                Inquilinos encuentran hogar en días, no meses. Propietarios tienen inquilinos verificados que pagan a tiempo. Así de simple.
               </p>
             </div>
           </div>
@@ -528,8 +511,8 @@ export function AboutSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
           <BentoCard
-            title="Evaluación de Riesgo"
-            description="Verificamos capacidad de pago, referencias e historial con nuestro sistema de scoring inteligente."
+            title="Inquilinos que pagan"
+            description="Scoring AI que predice comportamiento de pago. 92% de aprobación."
             index={0}
             className="md:col-span-7 h-[320px]"
             dark
@@ -538,17 +521,17 @@ export function AboutSection() {
           </BentoCard>
 
           <BentoCard
-            title="Búsqueda Inteligente"
-            description="IA que filtra y recomienda propiedades para ti."
+            title="Tu hogar en días"
+            description="Propiedades que se ajustan a ti. Sin visitas innecesarias."
             index={1}
             className="md:col-span-5 h-[320px]"
           >
-            <SearchVisual />
+            <MagnifyingGlassVisual />
           </BentoCard>
 
           <BentoCard
-            title="Contratos Digitales"
-            description="Firma electrónica, cláusulas claras y seguimiento en tiempo real."
+            title="Firmado en minutos"
+            description="De aplicación a contrato en 48 horas. Todo digital."
             index={2}
             className="md:col-span-5 h-[320px]"
             outline
@@ -557,8 +540,8 @@ export function AboutSection() {
           </BentoCard>
 
           <BentoCard
-            title="Transparencia Total"
-            description="Cada tarifa y cada paso, visible desde el primer momento."
+            title="Cero sorpresas"
+            description="Sabes exactamente qué pagarás. Sin costos ocultos."
             index={3}
             className="md:col-span-7 h-[320px]"
           >

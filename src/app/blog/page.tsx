@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from '@phosphor-icons/react';
 import { blogPosts, blogCategories } from "@/lib/data/blog-posts";
 
 export default function BlogPage() {
@@ -27,7 +27,7 @@ export default function BlogPage() {
       <main id="main-content" className="bg-background">
         {/* Header */}
         <section className="pt-32 pb-10 md:pt-40 md:pb-14">
-          <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+          <div className="container-platform">
             <SectionLabel className="mb-4">Blog</SectionLabel>
             <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-6">
               Ideas, guías y tendencias<br className="hidden md:block" /> del mercado inmobiliario
@@ -55,7 +55,7 @@ export default function BlogPage() {
         {/* Featured post */}
         {featured && (
           <section className="pb-6">
-            <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+            <div className="container-platform">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -102,7 +102,7 @@ export default function BlogPage() {
         {/* Grid */}
         {rest.length > 0 && (
           <section className="py-10 md:py-16">
-            <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+            <div className="container-platform">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {rest.map((post, index) => (
                   <motion.div

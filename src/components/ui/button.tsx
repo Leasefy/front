@@ -3,12 +3,12 @@
 import * as React from "react"
 import { Slot, Slottable } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-import { ArrowUpRight, Loader2 } from "lucide-react"
+import { ArrowUpRight, SpinnerGap } from '@phosphor-icons/react'
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[1px] text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.97]",
+  "group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.97]",
   {
     variants: {
       variant: {
@@ -22,6 +22,8 @@ const buttonVariants = cva(
           "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-foreground/20",
         secondary:
           "bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70 hover:border-border",
+        glass:
+          "bg-white/15 text-white border border-white/20 hover:bg-white/25 backdrop-blur-sm",
         ghost:
           "text-muted-foreground hover:bg-secondary hover:text-foreground",
         link:
@@ -29,7 +31,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-10 px-5 py-2",
-        sm: "h-9 px-4 text-xs",
+        sm: "h-9 px-4 text-[14px]",
         lg: "h-12 px-8 text-base",
         icon: "h-10 w-10",
       },
@@ -61,7 +63,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ) : null
 
     const loaderIcon = isLoading ? (
-      <Loader2 className="h-4 w-4 animate-spin" />
+      <SpinnerGap className="h-4 w-4 animate-spin" />
     ) : null
 
     if (asChild) {

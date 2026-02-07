@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Eye, Users, TrendingUp, Clock, Zap, Shield } from 'lucide-react';
+import { Eye, Users, TrendUp, Clock, Lightning, Shield } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 interface SocialProofProps {
@@ -52,33 +52,33 @@ export function SocialProofBanner({ propertyId, className }: SocialProofProps) {
   if (!stats) return null;
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-6 gap-y-2', className)}>
-      {/* Live viewers */}
-      <div className="flex items-center gap-2">
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      {/* Live viewers - Chip style */}
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-100 border border-border rounded-full">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
-        <span className="text-sm text-foreground/70">
-          <span className="font-medium text-foreground">{currentViewers} personas</span> viendo ahora
+        <span className="text-[12px] text-muted-foreground">
+          <span className="font-semibold text-foreground">{currentViewers}</span> viendo ahora
         </span>
       </div>
 
-      {/* Views today */}
-      <div className="flex items-center gap-1.5 text-sm text-foreground/70">
-        <Eye className="w-4 h-4 text-muted-foreground" />
+      {/* Views today - Chip style */}
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 border border-border rounded-full text-[12px] text-muted-foreground">
+        <Eye className="w-3.5 h-3.5" />
         <span>{stats.viewsToday} visitas hoy</span>
       </div>
 
-      {/* Demand indicator */}
+      {/* Demand indicator - Colored chip */}
       {stats.demandLevel !== 'media' && (
         <div className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium',
+          'inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-full',
           stats.demandLevel === 'muy-alta'
-            ? 'bg-red-50 text-red-700 border border-red-100'
-            : 'bg-amber-50 text-amber-700 border border-amber-100'
+            ? 'bg-red-50 text-red-600 border border-red-100'
+            : 'bg-amber-50 text-amber-600 border border-amber-100'
         )}>
-          <TrendingUp className="w-3.5 h-3.5" />
+          <TrendUp className="w-3.5 h-3.5" />
           {stats.demandLevel === 'muy-alta' ? 'Muy alta demanda' : 'Alta demanda'}
         </div>
       )}
@@ -114,7 +114,7 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
         {/* Saved */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-muted-foreground" />
+            <Lightning className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-foreground/70">Guardado por usuarios</span>
           </div>
           <span className="text-sm font-semibold text-foreground">{stats.savedByUsers}</span>
@@ -156,7 +156,7 @@ export function UrgencyBadge({
         stats.demandLevel === 'muy-alta' ? 'text-red-600' : 'text-amber-600',
         className
       )}>
-        <TrendingUp className="w-3 h-3" />
+        <TrendUp className="w-3 h-3" />
         {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular'}
       </span>
     );
@@ -170,7 +170,7 @@ export function UrgencyBadge({
         : 'bg-amber-500 text-white',
       className
     )}>
-      <TrendingUp className="w-3.5 h-3.5" />
+      <TrendUp className="w-3.5 h-3.5" />
       {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular'}
     </div>
   );
@@ -188,7 +188,7 @@ export function TrustBadges({ className }: { className?: string }) {
       </div>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock className="w-3.5 h-3.5" />
-        <span>Respuesta rapida</span>
+        <span>Respuesta rápida</span>
       </div>
     </div>
   );
@@ -203,7 +203,7 @@ export function LiveActivityFeed({ propertyId, className }: SocialProofProps) {
 
   useEffect(() => {
     // Generate mock recent activities
-    const locations = ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena'];
+    const locations = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'];
     const mockActivities = [
       { type: 'postulacion', time: 'hace 12 min', location: locations[Math.floor(Math.random() * locations.length)] },
       { type: 'visita', time: 'hace 34 min', location: locations[Math.floor(Math.random() * locations.length)] },

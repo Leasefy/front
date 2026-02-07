@@ -54,7 +54,7 @@ interface ApplicationContextValue {
   isLoading: boolean;
   isHydrated: boolean;
 
-  // Navigation
+  // Compass
   currentStep: number;
   totalSteps: number;
   canGoBack: boolean;
@@ -113,6 +113,9 @@ interface ApplicationProviderProps {
   children: ReactNode;
   initialName?: string;
   initialEmail?: string;
+  // Agent attribution (from shareable links)
+  agentCode?: string;
+  linkCode?: string;
 }
 
 // ============================================================================
@@ -124,6 +127,8 @@ export function ApplicationProvider({
   children,
   initialName,
   initialEmail,
+  agentCode,
+  linkCode,
 }: ApplicationProviderProps) {
   const [application, setApplication] = useState<Application>(() => {
     const emptyApp = createEmptyApplication(propertyId);
@@ -131,6 +136,11 @@ export function ApplicationProvider({
     if (initialName || initialEmail) {
       emptyApp.personal.fullName = initialName || '';
       emptyApp.personal.email = initialEmail || '';
+    }
+    // Store agent attribution if present
+    if (agentCode || linkCode) {
+      (emptyApp as Application & { agentCode?: string; linkCode?: string }).agentCode = agentCode;
+      (emptyApp as Application & { agentCode?: string; linkCode?: string }).linkCode = linkCode;
     }
     return emptyApp;
   });
@@ -163,7 +173,7 @@ export function ApplicationProvider({
   }, [propertyId]);
 
   // ========================================================================
-  // Save to localStorage on changes (after hydration)
+  // FloppyDisk to localStorage on changes (after hydration)
   // ========================================================================
 
   useEffect(() => {
@@ -171,13 +181,13 @@ export function ApplicationProvider({
 
     const storage = createApplicationStorage(propertyId);
     // Don't save File objects to localStorage (they can't be serialized)
-    const toSave = {
+    const toFloppyDisk = {
       ...application,
       documents: sanitizeDocumentsForStorage(application.documents),
       updatedAt: new Date().toISOString(),
     };
 
-    storage.set(toSave, {
+    storage.set(toFloppyDisk, {
       onError: (error) => {
         contextLogger.error('Failed to save application to localStorage', error);
       },
@@ -185,7 +195,7 @@ export function ApplicationProvider({
   }, [application, isHydrated, propertyId]);
 
   // ========================================================================
-  // Navigation helpers
+  // Compass helpers
   // ========================================================================
 
   const currentStep = application.currentStep;

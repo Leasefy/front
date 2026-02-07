@@ -57,7 +57,7 @@ export const INSURANCE_POLICIES: InsurancePolicy[] = [
     features: [
       '12 meses de renta garantizada',
       'Cobertura de servicios publicos',
-      'Danos a la propiedad hasta $15M',
+      'Daños a la propiedad hasta $15M',
       'Reparaciones de emergencia 24/7',
     ],
     recommended: true,
@@ -79,7 +79,7 @@ export const INSURANCE_POLICIES: InsurancePolicy[] = [
     features: [
       '24 meses de renta garantizada',
       'Cobertura de servicios publicos',
-      'Danos a la propiedad hasta $50M',
+      'Daños a la propiedad hasta $50M',
       'Asistencia legal incluida',
       'Reparaciones de emergencia 24/7',
       'Gestor personal asignado',

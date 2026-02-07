@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MapPin, CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
@@ -98,7 +98,7 @@ export function PropertyCard({
     <Link
       href={`/propiedades/${id}`}
       className={cn(
-        'group block rounded-sm transition-all duration-300 ease-out',
+        'group block rounded-2xl transition-all duration-300 ease-out',
         isHighlighted && 'ring-2 ring-primary ring-offset-2',
         className
       )}
@@ -106,7 +106,7 @@ export function PropertyCard({
       onMouseLeave={handleMouseLeave}
     >
       {/* Image container */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
         {/* All images stacked with opacity crossfade */}
         {allImages.map((src, i) => (
           <Image
@@ -127,7 +127,7 @@ export function PropertyCard({
         {/* Subtle bottom gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        {/* Navigation arrows — visible on hover when multiple images */}
+        {/* Compass arrows — visible on hover when multiple images */}
         {allImages.length > 1 && (
           <>
             <button
@@ -142,7 +142,7 @@ export function PropertyCard({
               )}
               aria-label="Imagen anterior"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <CaretLeft className="h-4 w-4" />
             </button>
             <button
               onClick={handleNext}
@@ -156,7 +156,7 @@ export function PropertyCard({
               )}
               aria-label="Imagen siguiente"
             >
-              <ChevronRight className="h-4 w-4" />
+              <CaretRight className="h-4 w-4" />
             </button>
           </>
         )}
@@ -214,11 +214,11 @@ export function PropertyCard({
           </button>
         )}
 
-        {/* Status overlay */}
-        {status !== 'available' && (
+        {/* Status overlay - only for rented properties */}
+        {status === 'rented' && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-30">
             <span className="text-white text-sm font-medium bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2">
-              {status === 'pending' ? 'En proceso' : 'Arrendado'}
+              Arrendado
             </span>
           </div>
         )}
@@ -249,45 +249,45 @@ export function PropertyCard({
 
       {/* Content */}
       <div className="pt-4 pb-1.5">
-        {/* Location — small, muted, above title */}
-        <div className="flex items-center gap-1 mb-1.5">
-          <MapPin className="h-3 w-3 text-muted-foreground/50 flex-shrink-0" strokeWidth={1.5} />
-          <p className="text-[12px] text-muted-foreground/80 truncate tracking-[-0.01em]">
+        {/* Location — small, above title */}
+        <div className="flex items-center gap-1.5 mb-1">
+          <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" strokeWidth={1.5} />
+          <p className="text-[13px] text-muted-foreground truncate">
             {neighborhood}, {city}
           </p>
         </div>
 
         {/* Title */}
-        <h3 className="text-[15px] font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-foreground/70 transition-colors duration-200">
+        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-primary transition-colors duration-200">
           {title}
         </h3>
 
         {/* Price — prominent */}
-        <p className="text-[20px] font-semibold text-foreground tracking-[-0.03em] leading-none mt-2.5">
+        <p className="text-[22px] font-heading font-bold text-foreground tracking-[-0.03em] leading-none mt-3">
           {formatCurrency(monthlyRent)}
-          <span className="text-[12px] font-normal text-muted-foreground/60 ml-0.5">/mes</span>
+          <span className="text-[13px] font-normal text-muted-foreground ml-1">/mes</span>
         </p>
 
         {/* Features — clean chips */}
         <div
-          className="flex items-center gap-2 mt-3"
+          className="flex items-center gap-2 mt-4"
           aria-label="Características de la propiedad"
         >
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 bg-muted/60 px-2 py-1" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
-            <svg className="h-3 w-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-lg px-2.5 py-1.5">
+            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="1" />
               <path d="M3 9h18M9 21V9" />
             </svg>
             {formatArea(area)}
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 bg-muted/60 px-2 py-1" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
-            <svg className="h-3 w-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-lg px-2.5 py-1.5">
+            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
             </svg>
             {bedrooms} hab
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 bg-muted/60 px-2 py-1" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
-            <svg className="h-3 w-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-lg px-2.5 py-1.5">
+            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
               <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
             </svg>

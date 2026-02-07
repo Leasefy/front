@@ -1,7 +1,7 @@
 {
-  "name": "Arriendo Facil",
-  "short_name": "ArriendoFacil",
-  "description": "Plataforma de arriendos en Colombia con scoring de riesgo AI, contratos digitales y pagos automatizados.",
+  "name": "Leasefy",
+  "short_name": "Leasefy",
+  "description": "Plataforma de arriendos en Colombia con evaluación AI, contratos digitales y pagos automatizados.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -66,7 +66,7 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Pagina principal de Arriendo Facil"
+      "label": "Pagina principal de Leasefy"
     }
   ],
   "shortcuts": [

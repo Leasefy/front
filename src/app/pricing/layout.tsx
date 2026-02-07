@@ -1,20 +1,21 @@
 import { Metadata } from "next";
+import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Precios y Planes",
   description:
-    "Conoce los planes y precios de Arriendo Facil. Desde gratis para propietarios individuales hasta soluciones enterprise para inmobiliarias. Sin comisiones ocultas.",
+    "Conoce los planes y precios de Leasefy. Desde gratis para propietarios individuales hasta soluciones enterprise para inmobiliarias. Sin comisiones ocultas.",
   keywords: [
-    "precios arriendo facil",
+    "precios arriendo fácil",
     "planes inmobiliaria",
     "costo publicar propiedad",
     "software inmobiliario precios",
-    "gestion arriendos costo",
+    "gestión arriendos costo",
   ],
   openGraph: {
-    title: "Precios y Planes | Arriendo Facil",
+    title: "Precios y Planes | Leasefy",
     description:
-      "Planes flexibles para propietarios e inmobiliarias. Publica gratis o accede a herramientas avanzadas de gestion.",
+      "Planes flexibles para propietarios e inmobiliarias. Publica gratis o accede a herramientas avanzadas de gestión.",
     type: "website",
   },
   alternates: {
@@ -27,5 +28,5 @@ export default function PricingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ForceLightMode>{children}</ForceLightMode>;
 }

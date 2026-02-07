@@ -6,27 +6,27 @@ import { motion } from "framer-motion";
 
 const agents = [
   {
-    name: "Sofia Martinez",
+    name: "Sofía Martínez",
     role: "Consultora de Propiedades",
-    locations: "Bogota, Medellin",
+    locations: "Bogotá, Medellín",
     image: "https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
     href: "/agentes/sofia-martinez",
   },
   {
-    name: "Carlos Ramirez",
+    name: "Carlos Ramírez",
     role: "Asesor Inmobiliario",
-    locations: "Medellin, Cali",
+    locations: "Medellín, Cali",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
     href: "/agentes/carlos-ramirez",
   },
   {
-    name: "Valentina Lopez",
+    name: "Valentina López",
     role: "Especialista en Inversiones",
-    locations: "Cartagena, Bogota",
+    locations: "Cartagena, Bogotá",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
@@ -64,7 +64,7 @@ export function TopAgentsSection() {
   return (
     <section className="bg-white overflow-hidden">
       {/* Container - matches Luxterra */}
-      <div className="mx-auto max-w-[1356px] px-8 py-[90px] pb-[100px]">
+      <div className="container-platform py-[90px] pb-[100px]">
         {/* Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -86,7 +86,7 @@ export function TopAgentsSection() {
           </div>
 
           {/* Main heading - 58px, letter-spacing -4.176px */}
-          <h2 className="text-[40px] md:text-[58px] font-normal text-foreground tracking-[-4.176px] leading-[1.05]">
+          <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05]">
             Nuestros mejores agentes
           </h2>
         </motion.div>
@@ -121,7 +121,7 @@ export function TopAgentsSection() {
                 {/* Name and Social Links */}
                 <div className="flex items-center justify-between mb-[2px]">
                   {/* Name - 19px, -0.76px letter-spacing */}
-                  <h3 className="text-[19px] font-normal text-foreground tracking-[-0.76px] leading-[25.27px]">
+                  <h3 className="text-[19px] font-heading font-normal text-foreground tracking-[-0.76px] leading-[25.27px]">
                     {agent.name}
                   </h3>
                   <div className="flex gap-[12px]">
@@ -163,10 +163,10 @@ export function TopAgentsSection() {
                 >
                   <span className="relative overflow-hidden h-[20px]">
                     <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
-                      Mas info
+                      Más info
                     </span>
                     <span className="block absolute top-full transition-transform duration-300 group-hover/btn:-translate-y-full">
-                      Mas info
+                      Más info
                     </span>
                   </span>
                 </Link>

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
+import { CaretDown, X, SlidersHorizontal } from '@phosphor-icons/react';
 
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
@@ -21,10 +21,10 @@ const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recomendado' },
   { value: 'price_asc', label: 'Menor precio' },
   { value: 'price_desc', label: 'Mayor precio' },
-  { value: 'newest', label: 'Mas reciente' },
+  { value: 'newest', label: 'Más reciente' },
 ];
 
-const CITIES = ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena'];
+const CITIES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'];
 const BEDROOMS = ['1', '2', '3', '4+'];
 const PROPERTY_TYPES = [
   { value: 'apartment', label: 'Apartamento' },
@@ -35,7 +35,7 @@ const PRICE_RANGES = [
   { value: '0-1500000', label: 'Hasta $1.5M' },
   { value: '1500000-2500000', label: '$1.5M - $2.5M' },
   { value: '2500000-4000000', label: '$2.5M - $4M' },
-  { value: '4000000-99999999', label: 'Mas de $4M' },
+  { value: '4000000-99999999', label: 'Más de $4M' },
 ];
 
 export default function PropiedadesPage() {
@@ -53,21 +53,21 @@ function PropiedadesContent() {
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
-  const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
-  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [aiMagnifyingGlassQuery, setAiMagnifyingGlassQuery] = useState(heroQuery || '');
+  const [isAiMagnifyingGlassing, setIsAiMagnifyingGlassing] = useState(false);
   const [showAiResults, setShowAiResults] = useState(false);
   const [aiResults, setAiResults] = useState<typeof mockProperties>([]);
   const [mapKey, setMapKey] = useState(0);
   const [sortBy, setSortBy] = useState('recommended');
-  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showSortList, setShowSortList] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const heroSearchTriggered = useRef(false);
+  const heroMagnifyingGlassTriggered = useRef(false);
 
-  // Filter state
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  // Funnel state
+  const [activeFunnel, setActiveFunnel] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedBedrooms, setSelectedBedrooms] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedTextT, setSelectedTextT] = useState<string | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
 
   // Use wishlist hook
@@ -86,19 +86,19 @@ function PropiedadesContent() {
   }, []);
 
   // Handle AI search
-  const handleAiSearch = useCallback((query: string) => {
+  const handleAiMagnifyingGlass = useCallback((query: string) => {
     if (!query.trim()) {
       setShowAiResults(false);
       setAiResults([]);
       return;
     }
 
-    setIsAiSearching(true);
+    setIsAiMagnifyingGlassing(true);
     setShowAiResults(false);
 
     // Simulate AI processing and return random results
     setTimeout(() => {
-      setIsAiSearching(false);
+      setIsAiMagnifyingGlassing(false);
       // Get random 4-8 properties as "AI results"
       const shuffled = [...mockProperties].sort(() => 0.5 - Math.random());
       const resultCount = Math.floor(Math.random() * 5) + 4;
@@ -109,13 +109,13 @@ function PropiedadesContent() {
 
   // Auto-trigger AI search from hero query param
   useEffect(() => {
-    if (heroQuery && !heroSearchTriggered.current) {
-      heroSearchTriggered.current = true;
-      handleAiSearch(heroQuery);
+    if (heroQuery && !heroMagnifyingGlassTriggered.current) {
+      heroMagnifyingGlassTriggered.current = true;
+      handleAiMagnifyingGlass(heroQuery);
     }
-  }, [heroQuery, handleAiSearch]);
+  }, [heroQuery, handleAiMagnifyingGlass]);
 
-  // Filter and sort properties
+  // Funnel and sort properties
   const filteredProperties = useMemo(() => {
     let result = [...mockProperties];
 
@@ -130,8 +130,8 @@ function PropiedadesContent() {
         result = result.filter(p => p.bedrooms === parseInt(selectedBedrooms));
       }
     }
-    if (selectedType) {
-      result = result.filter(p => p.type === selectedType);
+    if (selectedTextT) {
+      result = result.filter(p => p.type === selectedTextT);
     }
     if (selectedPrice) {
       const [min, max] = selectedPrice.split('-').map(Number);
@@ -155,15 +155,15 @@ function PropiedadesContent() {
     });
 
     return result;
-  }, [selectedCity, selectedBedrooms, selectedType, selectedPrice, sortBy]);
+  }, [selectedCity, selectedBedrooms, selectedTextT, selectedPrice, sortBy]);
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
-  const hasActiveFilters = selectedCity || selectedBedrooms || selectedType || selectedPrice;
+  const hasActiveFunnels = selectedCity || selectedBedrooms || selectedTextT || selectedPrice;
 
-  const clearAllFilters = () => {
+  const clearAllFunnels = () => {
     setSelectedCity(null);
     setSelectedBedrooms(null);
-    setSelectedType(null);
+    setSelectedTextT(null);
     setSelectedPrice(null);
   };
 
@@ -192,7 +192,7 @@ function PropiedadesContent() {
       <Navbar />
 
       {/* Main Layout - Split View */}
-      <div className="flex">
+      <div className="flex pt-[76px]">
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
@@ -209,52 +209,59 @@ function PropiedadesContent() {
             </div>
           )}
 
-          {/* AI Search Section */}
+          {/* AI MagnifyingGlass Section */}
           <div className="bg-background py-4 md:py-5">
             <div className="px-4 md:px-6">
               <h1 className="text-lg font-medium text-foreground tracking-tight mb-4">
                 Busqueda inteligente
               </h1>
               <AISearchInput
-                value={aiSearchQuery}
-                onChange={setAiSearchQuery}
-                onSearch={handleAiSearch}
-                isSearching={isAiSearching}
+                value={aiMagnifyingGlassQuery}
+                onChange={setAiMagnifyingGlassQuery}
+                onMagnifyingGlass={handleAiMagnifyingGlass}
+                onClear={() => {
+                  setShowAiResults(false);
+                  setAiResults([]);
+                }}
+                isMagnifyingGlassing={isAiMagnifyingGlassing}
                 results={aiResults}
                 showResults={showAiResults}
               />
             </div>
           </div>
 
-          {/* Filter & Results Bar */}
-          <div className="sticky top-0 z-40 bg-background border-y border-border">
+          {/* Funnel & Results Bar */}
+          <div className="bg-background border-y border-border">
             <div className="px-4 md:px-6 py-3">
-              {/* Filter Pills Row */}
-              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
-                {/* City Filter */}
-                <div className="relative">
+              {/* Funnel Pills Row */}
+              <div className="flex items-center gap-2 mb-3 pb-1 flex-wrap">
+                {/* City Funnel */}
+                <div className="relative z-10">
                   <button
                     type="button"
-                    onClick={() => setActiveFilter(activeFilter === 'city' ? null : 'city')}
+                    onClick={() => {
+                      console.log('City filter clicked, current:', activeFunnel);
+                      setActiveFunnel(activeFunnel === 'city' ? null : 'city');
+                    }}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedCity
                         ? 'bg-black text-white border-black'
-                        : 'border-border text-foreground/70 hover:border-border'
+                        : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
                     {selectedCity || 'Ciudad'}
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFunnel === 'city' && 'rotate-180')} />
                   </button>
-                  {activeFilter === 'city' && (
+                  {activeFunnel === 'city' && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[140px]">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setActiveFunnel(null)} />
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-border rounded-sm shadow-xl z-[110] min-w-[140px]">
                         {CITIES.map((city) => (
                           <button
                             key={city}
                             type="button"
-                            onClick={() => { setSelectedCity(selectedCity === city ? null : city); setActiveFilter(null); }}
+                            onClick={() => { setSelectedCity(selectedCity === city ? null : city); setActiveFunnel(null); }}
                             className={cn('w-full px-3 py-2 text-left text-sm', selectedCity === city ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
                           >
                             {city}
@@ -265,30 +272,30 @@ function PropiedadesContent() {
                   )}
                 </div>
 
-                {/* Bedrooms Filter */}
-                <div className="relative">
+                {/* Bedrooms Funnel */}
+                <div className="relative z-10">
                   <button
                     type="button"
-                    onClick={() => setActiveFilter(activeFilter === 'bedrooms' ? null : 'bedrooms')}
+                    onClick={() => setActiveFunnel(activeFunnel === 'bedrooms' ? null : 'bedrooms')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedBedrooms
                         ? 'bg-black text-white border-black'
-                        : 'border-border text-foreground/70 hover:border-border'
+                        : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
                     {selectedBedrooms ? `${selectedBedrooms} hab` : 'Habitaciones'}
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFunnel === 'bedrooms' && 'rotate-180')} />
                   </button>
-                  {activeFilter === 'bedrooms' && (
+                  {activeFunnel === 'bedrooms' && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[120px]">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setActiveFunnel(null)} />
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-border rounded-sm shadow-xl z-[110] min-w-[120px]">
                         {BEDROOMS.map((bed) => (
                           <button
                             key={bed}
                             type="button"
-                            onClick={() => { setSelectedBedrooms(selectedBedrooms === bed ? null : bed); setActiveFilter(null); }}
+                            onClick={() => { setSelectedBedrooms(selectedBedrooms === bed ? null : bed); setActiveFunnel(null); }}
                             className={cn('w-full px-3 py-2 text-left text-sm', selectedBedrooms === bed ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
                           >
                             {bed} habitacion{bed !== '1' ? 'es' : ''}
@@ -299,31 +306,31 @@ function PropiedadesContent() {
                   )}
                 </div>
 
-                {/* Type Filter */}
-                <div className="relative">
+                {/* TextT Funnel */}
+                <div className="relative z-10">
                   <button
                     type="button"
-                    onClick={() => setActiveFilter(activeFilter === 'type' ? null : 'type')}
+                    onClick={() => setActiveFunnel(activeFunnel === 'type' ? null : 'type')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
-                      selectedType
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
+                      selectedTextT
                         ? 'bg-black text-white border-black'
-                        : 'border-border text-foreground/70 hover:border-border'
+                        : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
-                    {PROPERTY_TYPES.find(t => t.value === selectedType)?.label || 'Tipo'}
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    {PROPERTY_TYPES.find(t => t.value === selectedTextT)?.label || 'Tipo'}
+                    <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFunnel === 'type' && 'rotate-180')} />
                   </button>
-                  {activeFilter === 'type' && (
+                  {activeFunnel === 'type' && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[140px]">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setActiveFunnel(null)} />
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-border rounded-sm shadow-xl z-[110] min-w-[140px]">
                         {PROPERTY_TYPES.map((type) => (
                           <button
                             key={type.value}
                             type="button"
-                            onClick={() => { setSelectedType(selectedType === type.value ? null : type.value); setActiveFilter(null); }}
-                            className={cn('w-full px-3 py-2 text-left text-sm', selectedType === type.value ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
+                            onClick={() => { setSelectedTextT(selectedTextT === type.value ? null : type.value); setActiveFunnel(null); }}
+                            className={cn('w-full px-3 py-2 text-left text-sm', selectedTextT === type.value ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
                           >
                             {type.label}
                           </button>
@@ -333,30 +340,30 @@ function PropiedadesContent() {
                   )}
                 </div>
 
-                {/* Price Filter */}
-                <div className="relative">
+                {/* Price Funnel */}
+                <div className="relative z-10">
                   <button
                     type="button"
-                    onClick={() => setActiveFilter(activeFilter === 'price' ? null : 'price')}
+                    onClick={() => setActiveFunnel(activeFunnel === 'price' ? null : 'price')}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap',
+                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedPrice
                         ? 'bg-black text-white border-black'
-                        : 'border-border text-foreground/70 hover:border-border'
+                        : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
                     {PRICE_RANGES.find(p => p.value === selectedPrice)?.label || 'Precio'}
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFunnel === 'price' && 'rotate-180')} />
                   </button>
-                  {activeFilter === 'price' && (
+                  {activeFunnel === 'price' && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setActiveFilter(null)} />
-                      <div className="absolute left-0 top-full mt-1 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[160px]">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setActiveFunnel(null)} />
+                      <div className="absolute left-0 top-full mt-1 py-1 bg-white border border-border rounded-sm shadow-xl z-[110] min-w-[160px]">
                         {PRICE_RANGES.map((range) => (
                           <button
                             key={range.value}
                             type="button"
-                            onClick={() => { setSelectedPrice(selectedPrice === range.value ? null : range.value); setActiveFilter(null); }}
+                            onClick={() => { setSelectedPrice(selectedPrice === range.value ? null : range.value); setActiveFunnel(null); }}
                             className={cn('w-full px-3 py-2 text-left text-sm', selectedPrice === range.value ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
                           >
                             {range.label}
@@ -367,11 +374,11 @@ function PropiedadesContent() {
                   )}
                 </div>
 
-                {/* Clear Filters */}
-                {hasActiveFilters && (
+                {/* Clear Funnels */}
+                {hasActiveFunnels && (
                   <button
                     type="button"
-                    onClick={clearAllFilters}
+                    onClick={clearAllFunnels}
                     className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -390,22 +397,22 @@ function PropiedadesContent() {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setShowSortMenu(!showSortMenu)}
+                    onClick={() => setShowSortList(!showSortList)}
                     className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
                   >
                     <span>{currentSortLabel}</span>
-                    <ChevronDown className={cn('w-4 h-4 transition-transform', showSortMenu && 'rotate-180')} />
+                    <CaretDown className={cn('w-4 h-4 transition-transform', showSortList && 'rotate-180')} />
                   </button>
 
-                  {showSortMenu && (
+                  {showSortList && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-card border border-border rounded-sm shadow-lg z-50 min-w-[160px]">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-white border border-border rounded-sm shadow-xl z-[110] min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() => { setSortBy(option.value); setShowSortMenu(false); }}
+                            onClick={() => { setSortBy(option.value); setShowSortList(false); }}
                             className={cn('w-full px-4 py-2 text-left text-sm transition-colors', sortBy === option.value ? 'bg-black/5 text-foreground font-medium' : 'text-foreground/70 hover:bg-black/5')}
                           >
                             {option.label}
@@ -436,8 +443,8 @@ function PropiedadesContent() {
         {/* Right Panel - Fixed Map (Full Height) */}
         <div
           className={cn(
-            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-0',
-            'h-screen',
+            'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[76px]',
+            'h-[calc(100vh-76px)]',
             !showMap && 'hidden lg:block'
           )}
         >

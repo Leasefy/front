@@ -4,7 +4,106 @@ All notable changes to the Arriendo Facil frontend.
 
 ---
 
-## [Unreleased] - 2026-01-29
+## [Unreleased] - 2026-02-07
+
+### Phase 15: Complete QA & Polish
+
+#### Empty States & Loading States
+- **NEW:** `EmptyState` component with icon, title, description, and action button
+- **NEW:** `ErrorState` component for error handling with retry actions
+- **NEW:** Loading skeletons for all list views:
+  - `LeaseCardSkeleton` - Lease list items
+  - `PaymentRowSkeleton` - Payment history rows
+  - `DocumentRowSkeleton` - Document list items
+  - `NotificationRowSkeleton` - Notification items
+  - `MessageRowSkeleton` - Conversation items
+  - `CandidateCardSkeleton` - Candidate cards
+
+#### Landlord Dashboard Empty States
+- `/panel/visitas` - Tab-aware empty states (próximas/completadas/canceladas)
+- `/panel/contratos` - Empty state with create action
+- `/panel/leases` - Empty state with "Buscar inquilinos" action
+- `/panel/candidatos` - Empty state with publish property action
+- `/panel/mensajes` - Empty conversation and chat states
+- `/panel/notificaciones` - Loading skeleton + empty state
+
+#### Tenant Dashboard Empty States
+- `/inquilino/aplicaciones` - Tab-aware empty states (activas/finalizadas)
+- `/inquilino/arriendo` - Empty state with property search action
+- `/inquilino/pagos` - Empty state for no payments
+- `/inquilino/documentos` - Empty state with upload action
+- `/inquilino/mensajes` - Empty conversation and chat states
+- `/inquilino/notificaciones` - Loading skeleton + empty state
+
+### Phase 14: Typography & Design System
+
+#### Typography System
+- **CHANGED:** Replaced Inter with Manrope (headings)
+- **CHANGED:** Added DM Sans for body text
+- **CHANGED:** Added DM Mono for monospace/code
+- **NEW:** CSS custom properties for typography:
+  - `--font-heading`: Manrope
+  - `--font-body`: DM Sans
+  - `--font-mono`: DM Mono
+- **IMPROVED:** Consistent font weights and sizes
+
+#### Dark Mode
+- **NEW:** Full dark mode support across all pages
+- **NEW:** Theme toggle in navbar
+- **IMPROVED:** Dark mode colors with proper contrast
+- **FIXED:** Dark mode in all dashboard pages
+- **FIXED:** Dark mode in landing and product pages
+
+### Phase 13: Navigation & Product Pages
+
+#### Mega Menu
+- **NEW:** Mega menu for "Productos" dropdown
+- **NEW:** Mega menu for "Para Quién" dropdown
+- **IMPROVED:** Hover animations and transitions
+- **IMPROVED:** Mobile navigation menu
+
+#### Product Pages (Complete Redesigns)
+- `/productos/evaluacion` - Risk evaluation product page
+- `/productos/contratos` - Digital contracts product page
+- `/productos/pagos` - Payment collection product page
+- `/productos/aplicaciones` - Application management page
+- `/productos/seguro` - Insurance product page
+- `/productos/api` - API product page
+
+#### Audience Pages
+- `/para/propietarios` - Landlord landing page
+- `/para/inmobiliarias` - Real estate agencies page
+- `/para/inquilinos` - Tenant landing page
+- `/para/agentes` - Real estate agents page
+
+### Phase 12: Landing Page Redesign
+
+#### Hero Section
+- **CHANGED:** Dark theme hero with gradient background
+- **NEW:** Animated property cards preview
+- **NEW:** Trust badges and social proof
+- **IMPROVED:** CTA buttons with better contrast
+
+#### About Section (Bento Grid)
+- **NEW:** Modern bento grid layout
+- **NEW:** Risk score preview widget
+- **NEW:** Contract signing preview widget
+- **NEW:** Search preview widget
+- **IMPROVED:** Glass morphism effects
+
+#### Problem/Solution Section
+- **NEW:** Pain point cards with statistics
+- **NEW:** Solution cards with icons
+- **IMPROVED:** Visual hierarchy and spacing
+
+#### CTA Section
+- **NEW:** Gradient background with glass effect
+- **NEW:** Floating UI widgets for visual interest
+- **IMPROVED:** Conversion-focused design
+
+---
+
+## [1.1.0] - 2026-01-29
 
 ### Phase 11: UI/UX Improvements & Publish Flow Enhancement
 
@@ -221,6 +320,107 @@ All notable changes to the Arriendo Facil frontend.
 - Risk level badge variants
 - Prisma schema (reference)
 - Format utilities (COP currency)
+
+---
+
+## Technical Summary for Backend
+
+### Routes (50+ pages)
+
+**Public Pages:**
+- `/` - Landing page
+- `/propiedades` - Property listing with filters
+- `/propiedades/[id]` - Property detail
+- `/aplicar/[propertyId]` - Application wizard (6 steps)
+- `/auth` - Login/Register
+- `/pricing` - Subscription plans
+- `/productos/*` - Product pages (6)
+- `/para/*` - Audience pages (4)
+- `/blog`, `/ayuda`, `/privacidad`, `/terminos`
+
+**Landlord Dashboard (`/panel`):**
+- `/panel` - Dashboard home
+- `/panel/propiedades` - My properties
+- `/panel/candidatos` - All candidates
+- `/panel/[propertyId]` - Property with candidates
+- `/panel/[propertyId]/contract/[candidateId]` - Contract flow
+- `/panel/contratos` - Contract management
+- `/panel/leases` - Active leases
+- `/panel/visitas` - Visit scheduling
+- `/panel/mensajes` - Messages
+- `/panel/notificaciones` - Notifications
+- `/panel/configuracion` - Settings + Team + Payment Accounts
+- `/panel/checkout` - Subscription checkout
+- `/panel/upgrade` - Plan upgrade
+
+**Tenant Dashboard (`/inquilino`):**
+- `/inquilino` - Dashboard home
+- `/inquilino/aplicaciones` - My applications
+- `/inquilino/aplicaciones/[id]` - Application detail
+- `/inquilino/arriendo` - Active leases
+- `/inquilino/arriendo/[id]` - Lease detail
+- `/inquilino/pagos` - Payment history
+- `/inquilino/documentos` - My documents
+- `/inquilino/mensajes` - Messages
+- `/inquilino/notificaciones` - Notifications
+- `/inquilino/perfil` - Profile
+- `/inquilino/configuracion` - Settings
+
+### Mock Data Files
+
+- `mock-properties.ts` - 16 properties
+- `mock-candidates.ts` - 8 candidates with risk scores
+- `mock-contracts.ts` - Contract templates and instances
+- `mock-leases.ts` - Active leases with payment history
+- `mock-visits.ts` - Visit scheduling data
+- `mock-dashboard.ts` - Dashboard stats and activity
+- `mock-users.ts` - User profiles
+- `mock-subscriptions.ts` - Subscription plans and coupons
+- `mock-insurance.ts` - Insurance tiers
+- `mock-explanations.ts` - AI explanations for risk scores
+- `mock-payment-accounts.ts` - Colombian banks and wallets
+
+### TypeScript Types
+
+- `property.ts` - Property, PropertyFilter, PropertyType
+- `application.ts` - Application, ApplicationStep, ApplicationStatus
+- `risk-score.ts` - RiskScore, RiskLevel, RiskCategory
+- `candidate.ts` - Candidate, CandidateStatus, CandidateDecision
+- `contract.ts` - Contract, ContractType, SignatureData
+- `lease.ts` - Lease, LeaseStatus, Payment, PaymentStatus
+- `user.ts` - User, UserRole, UserProfile
+- `subscription.ts` - Plan, Subscription, Coupon
+- `publish.ts` - PublishStep, PublishData
+- `payment-accounts.ts` - BankAccount, DigitalWallet
+
+### React Contexts
+
+- `AuthContext` - Authentication state
+- `UserProfileContext` - User profile and preferences
+- `ApplicationContext` - Application wizard state
+- `TenantApplicationContext` - Tenant's applications
+- `PublishContext` - Property publishing wizard
+- `DecisionContext` - Candidate decision flow
+- `SidebarContext` - Dashboard sidebar state
+
+### Components (150+)
+
+**UI Components (shadcn/ui):**
+- Button, Card, Badge, Input, Select, Checkbox
+- Dialog, Sheet, Dropdown, Accordion, Tabs
+- Toast, Skeleton, ScrollArea, Pagination
+
+**Custom Components:**
+- PropertyCard, PropertyGrid, FilterSidebar
+- CandidateCard, CandidateDetail, CandidateNotes
+- RiskScoreDisplay, LevelBadge, ScoreCard
+- ContractTimeline, ContractPreview, SignatureForm
+- LeaseCard, PaymentHistory, PaymentMethodSelector
+- ApplicationCard, ApplicationTimeline
+- EmptyState, ErrorState, NotFound
+- WizardShell, WizardProgress, WizardNavigation
+- PricingCard, PricingTable, CouponInput
+- InsuranceSelector, PropertyMap, PriceMarker
 
 ---
 

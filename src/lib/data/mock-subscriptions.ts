@@ -227,7 +227,7 @@ export const ADD_ONS: AddOn[] = [
   {
     id: 'insurance',
     name: 'Poliza de Arriendo',
-    description: 'Proteccion contra impago (12-24 meses) + danos a propiedad + servicios',
+    description: 'Proteccion contra impago (12-24 meses) + daños a propiedad + servicios',
     price: 2,
     priceType: 'percentage',
     icon: 'shield',
@@ -354,12 +354,12 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
 ];
 
 /**
- * Mock user subscription (free tier by default)
+ * Mock user subscription (pro tier for demo purposes)
  */
 export const MOCK_SUBSCRIPTION: Subscription = {
   id: 'sub-001',
   userId: 'user-001',
-  planId: 'free',
+  planId: 'pro',
   status: 'active',
   billingCycle: 'monthly',
   currentPeriodStart: '2026-01-01T00:00:00Z',

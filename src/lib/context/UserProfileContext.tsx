@@ -69,7 +69,7 @@ const MOCK_USER_PROFILE: UserProfile = {
   maxAffordableRent: 1410000, // $1.41M COP (30% of available)
 
   // Preferences
-  preferredCities: ['Medellin', 'Bogota'],
+  preferredCities: ['Medellín', 'Bogotá'],
   preferredBedrooms: 2,
   preferredPropertyTypes: ['apartment', 'studio'],
 };
@@ -93,7 +93,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Save state to localStorage when it changes
+  // FloppyDisk state to localStorage when it changes
   useEffect(() => {
     storage.set(
       { isSimulating, profile },

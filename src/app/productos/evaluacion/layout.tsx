@@ -2,19 +2,19 @@ import { Metadata } from "next";
 import { SoftwareProductJsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Evaluacion de Inquilinos con IA",
+  title: "Evaluación de Inquilinos con IA",
   description:
-    "Sistema de scoring inteligente para evaluar inquilinos. Analiza historial crediticio, referencias, capacidad de pago y mas. Reduce el riesgo de impago hasta un 80%.",
+    "Sistema de scoring inteligente para evaluar inquilinos. Analiza historial crediticio, referencias, capacidad de pago y más. Reduce el riesgo de impago hasta un 80%.",
   keywords: [
-    "evaluacion inquilinos",
+    "evaluación inquilinos",
     "scoring arrendatarios",
     "verificar inquilino Colombia",
     "historial crediticio inquilino",
     "riesgo inquilino",
-    "verificacion arrendatario",
+    "verificación arrendatario",
   ],
   openGraph: {
-    title: "Evaluacion de Inquilinos con IA | Arriendo Facil",
+    title: "Evaluación de Inquilinos con IA | Leasefy",
     description:
       "Sistema de scoring inteligente que analiza capacidad de pago, historial y referencias. Toma decisiones informadas en minutos.",
     type: "website",
@@ -32,8 +32,8 @@ export default function EvaluacionLayout({
   return (
     <>
       <SoftwareProductJsonLd
-        name="Scoring de Inquilinos Arriendo Facil"
-        description="Sistema de evaluacion de riesgo con inteligencia artificial para verificar inquilinos en Colombia."
+        name="Scoring de Inquilinos Leasefy"
+        description="Sistema de evaluación de riesgo con inteligencia artificial para verificar inquilinos en Colombia."
         url="/productos/evaluacion"
         category="BusinessApplication"
         rating={{ value: 4.8, count: 1250 }}

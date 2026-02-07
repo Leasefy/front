@@ -15,9 +15,9 @@ export const metadata: Metadata = {
     "alquiler apartamentos",
   ],
   openGraph: {
-    title: "Para Inquilinos | Arriendo Facil",
+    title: "Para Inquilinos | Leasefy",
     description:
-      "Encuentra tu proximo hogar. Propiedades verificadas, aplicacion online y contratos digitales. Sin fiadores tradicionales.",
+      "Encuentra tu próximo hogar. Propiedades verificadas, aplicación online y contratos digitales. Sin fiadores tradicionales.",
     type: "website",
   },
   alternates: {
@@ -33,10 +33,10 @@ export default function InquilinosLayout({
   return (
     <>
       <ServiceJsonLd
-        name="Busqueda de Arriendo para Inquilinos"
-        description="Plataforma para encontrar propiedades en arriendo verificadas con aplicacion online y contratos digitales."
+        name="Búsqueda de Arriendo para Inquilinos"
+        description="Plataforma para encontrar propiedades en arriendo verificadas con aplicación online y contratos digitales."
         url="/para/inquilinos"
-        serviceType="Real Estate Search Service"
+        serviceTextT="Real Estate MagnifyingGlass Service"
         areaServed={["Colombia"]}
       />
       {children}

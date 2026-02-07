@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { motion } from 'framer-motion';
@@ -27,7 +27,7 @@ const PLAN_OPTIONS: PlanOption[] = [
     icon: '⚡',
     features: [
       '1 propiedad activa',
-      'Publicacion basica',
+      'Publicación básica',
       '1 contrato digital',
       'Soporte por email',
     ],
@@ -41,10 +41,10 @@ const PLAN_OPTIONS: PlanOption[] = [
     icon: '✨',
     features: [
       'Hasta 10 propiedades',
-      'Analisis AI de candidatos',
+      'Análisis AI de candidatos',
       'Contratos ilimitados',
-      'Verificacion de documentos',
-      'Verificacion de antecedentes',
+      'Verificación de documentos',
+      'Verificación de antecedentes',
       'Soporte prioritario',
     ],
     highlighted: true,
@@ -62,7 +62,7 @@ const PLAN_OPTIONS: PlanOption[] = [
       'Todo lo de Propietario',
       'Acceso API completo',
       'Multi-usuarios',
-      'Analiticas avanzadas',
+      'Analíticas avanzadas',
       'Soporte 24/7',
     ],
   },
@@ -74,10 +74,10 @@ export function StepPlan() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
-        <h3 className="text-lg font-semibold text-foreground">
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
           Elige el plan ideal para ti
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
           Puedes cambiar o cancelar tu plan en cualquier momento
         </p>
       </div>
@@ -95,16 +95,16 @@ export function StepPlan() {
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ selectedPlan: plan.id })}
               className={cn(
-                'relative w-full text-left p-5 rounded-[1px] border transition-all duration-200',
-                plan.highlighted && !isSelected && 'border-primary/25 bg-primary/[0.03] hover:border-primary/40 scale-[1.01]',
-                plan.highlighted && isSelected && 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15),0_0_24px_rgba(91,95,239,0.08)] scale-[1.01]',
-                !plan.highlighted && isSelected && 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)]',
-                !plan.highlighted && !isSelected && 'border-border hover:border-border bg-card hover:shadow-sm'
+                'relative w-full text-left p-5 rounded-xl border transition-all duration-200',
+                plan.highlighted && !isSelected && 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10 hover:border-indigo-400 dark:hover:border-indigo-600 scale-[1.01]',
+                plan.highlighted && isSelected && 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-md scale-[1.01]',
+                !plan.highlighted && isSelected && 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm',
+                !plan.highlighted && !isSelected && 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
               )}
             >
               {/* Badge */}
               {plan.badge && (
-                <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-primary text-white shadow-sm">
+                <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-indigo-600 text-white shadow-sm">
                   {plan.badge}
                 </span>
               )}
@@ -112,12 +112,12 @@ export function StepPlan() {
               <div className="flex items-start gap-4">
                 {/* Icon */}
                 <div className={cn(
-                  'w-12 h-12 rounded-[1px] flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                  'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
                   plan.highlighted
-                    ? 'bg-primary text-white'
+                    ? 'bg-indigo-600 text-white'
                     : isSelected
-                    ? 'bg-primary/10'
-                    : 'bg-black/[0.03]'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30'
+                    : 'bg-neutral-100 dark:bg-neutral-800'
                 )}>
                   <span className="text-2xl">{plan.icon}</span>
                 </div>
@@ -127,38 +127,38 @@ export function StepPlan() {
                   <div className="flex items-baseline gap-2">
                     <h4 className={cn(
                       'text-base font-semibold',
-                      isSelected ? 'text-foreground' : 'text-foreground/80'
+                      isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
                     )}>
                       {plan.name}
                     </h4>
                     <div className="flex items-baseline gap-1">
                       <span className={cn(
                         'text-lg font-bold',
-                        isSelected ? 'text-foreground' : 'text-foreground/70'
+                        isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
                       )}>
                         {plan.price}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
                         {plan.priceNote}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                     {plan.description}
                   </p>
 
                   {/* Features */}
                   <div className={cn(
-                    'mt-3 pt-3 border-t border-border grid grid-cols-2 gap-x-4 gap-y-1.5 transition-opacity',
+                    'mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700 grid grid-cols-2 gap-x-4 gap-y-1.5 transition-opacity',
                     !isSelected && 'opacity-50'
                   )}>
                     {plan.features.map((feature, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <Check className={cn(
                           'w-3.5 h-3.5 flex-shrink-0',
-                          isSelected || plan.highlighted ? 'text-primary' : 'text-muted-foreground'
+                          isSelected || plan.highlighted ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-neutral-500'
                         )} />
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                           {feature}
                         </span>
                       </div>
@@ -168,12 +168,12 @@ export function StepPlan() {
 
                 {/* Selection indicator */}
                 <div className={cn(
-                  'w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                  'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200',
                   isSelected
-                    ? 'border-primary bg-primary'
+                    ? 'border-indigo-600 bg-indigo-600'
                     : plan.highlighted
-                    ? 'border-primary/40'
-                    : 'border-border'
+                    ? 'border-indigo-400 dark:border-indigo-600'
+                    : 'border-neutral-300 dark:border-neutral-600'
                 )}>
                   {isSelected && (
                     <Check className="w-3 h-3 text-white" strokeWidth={3} />
@@ -186,7 +186,7 @@ export function StepPlan() {
       </div>
 
       {/* Trust indicator */}
-      <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
+      <div className="flex items-center justify-center gap-6 pt-4 text-xs text-neutral-500 dark:text-neutral-400">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           Sin compromisos

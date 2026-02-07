@@ -2,535 +2,871 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import {
-  ArrowRight,
-  CheckCircle2,
-  Shield,
-  Clock,
-  CreditCard,
-  FileSignature,
-  Megaphone,
-  UserCheck,
-  Star,
-  TrendingUp,
-  Zap,
-  Lock,
-  Play,
-  Quote,
-  BadgeCheck,
-  Sparkles,
-} from 'lucide-react';
+import { CTASection } from '@/components/home/CTASection';
+import { FAQSection } from '@/components/home/FAQSection';
+import { SectionLabel } from '@/components/ui/section-label';
+import { CaretLeft, CaretRight, CheckCircle, Users, CreditCard, FileText, ShareNetwork, Wallet, Bell, TrendUp, Calendar, Buildings, PenNib, Lock, Lightning, Eye } from '@phosphor-icons/react';
 
-// Hero stats
-const heroStats = [
-  { value: '$0', label: 'Costo de evaluación', sublabel: 'para ti' },
-  { value: '48h', label: 'Tiempo promedio', sublabel: 'para encontrar inquilino' },
-  { value: '4.9', label: 'Satisfacción', sublabel: 'de propietarios' },
-];
-
-// Detailed features with visual mockups
-const detailedFeatures = [
-  {
-    icon: UserCheck,
-    title: 'Evaluación de inquilinos',
-    pricing: {
-      highlight: 'GRATIS',
-      detail: 'para propietarios',
-      subtext: 'El solicitante paga la evaluación (desde $24.900)',
-    },
-    description:
-      'Identifica inquilinos calificados con verificación de antecedentes, historial crediticio y referencias laborales. Nuestro scoring con IA te da decisiones en minutos.',
-    visual: 'screening',
-    benefits: [
-      'Verificación de identidad',
-      'Historial crediticio',
-      'Referencias laborales',
-      'Score de riesgo con IA',
-    ],
-    accentColor: 'emerald',
-  },
-  {
-    icon: CreditCard,
-    title: 'Cobro de arriendos',
-    pricing: {
-      highlight: '$3.900',
-      detail: 'por transacción',
-      subtext: 'PSE, tarjeta o efectivo — inquilino elige',
-    },
-    description:
-      'Automatiza el cobro mensual. Recibimos el pago del inquilino y te transferimos automáticamente. Historial de pagos, recordatorios y reportes incluidos.',
-    visual: 'payments',
-    benefits: [
-      'PSE, tarjeta y efectivo',
-      'Transferencia automática',
-      'Recordatorios de pago',
-      'Historial completo',
-    ],
-    accentColor: 'blue',
-  },
-  {
-    icon: Megaphone,
-    title: 'Publicación en portales',
-    pricing: {
-      highlight: 'GRATIS',
-      detail: 'para propietarios',
-      subtext: 'FincaRaíz, Metrocuadrado, Properati y más',
-    },
-    description:
-      'Crea tu anuncio una vez y lo publicamos en los principales portales de Colombia. Recibe candidatos directamente en tu panel sin pagar comisiones.',
-    visual: 'marketing',
-    benefits: [
-      'Un clic, todos los portales',
-      'Fotos optimizadas con IA',
-      'Candidatos centralizados',
-      'Sin comisiones ocultas',
-    ],
-    accentColor: 'violet',
-  },
-  {
-    icon: FileSignature,
-    title: 'Contratos digitales',
-    pricing: {
-      highlight: 'Incluido',
-      detail: 'en todos los planes',
-      subtext: 'Firma electrónica con validez legal (Ley 527/1999)',
-    },
-    description:
-      'Genera contratos de arrendamiento conformes a la Ley 820 de 2003. Firma electrónica para ambas partes, almacenamiento seguro y descarga en PDF.',
-    visual: 'contracts',
-    benefits: [
-      'Plantillas legales',
-      'Firma electrónica',
-      'Almacenamiento seguro',
-      'Descarga PDF',
-    ],
-    accentColor: 'amber',
-  },
-];
-
-const additionalFeatures = [
-  {
-    icon: Shield,
-    title: 'Póliza de arriendo',
-    description: 'Protección contra impago de 12-24 meses. Cobertura de daños y servicios.',
-    highlight: 'Desde 2%',
-    gradient: 'from-rose-500 to-orange-500',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Valoración de mercado',
-    description: 'Análisis comparativo con IA para fijar el precio óptimo de tu propiedad.',
-    highlight: 'GRATIS',
-    gradient: 'from-cyan-500 to-blue-500',
-  },
-];
-
-const benefits = [
-  {
-    icon: Clock,
-    title: 'Ahorra tiempo',
-    description: 'Publica, evalúa y firma en minutos. Todo desde tu celular.',
-    stat: '10h',
-    statLabel: 'ahorradas/mes',
-  },
-  {
-    icon: CreditCard,
-    title: 'Cobra sin esfuerzo',
-    description: 'Recordatorios automáticos y transferencias puntuales.',
-    stat: '98%',
-    statLabel: 'pagos a tiempo',
-  },
-  {
-    icon: Zap,
-    title: 'Arrienda más rápido',
-    description: 'Candidatos pre-aprobados listos para firmar.',
-    stat: '48h',
-    statLabel: 'promedio',
-  },
-  {
-    icon: Lock,
-    title: 'Reduce el riesgo',
-    description: 'Inquilinos verificados con score de confianza.',
-    stat: '92%',
-    statLabel: 'tasa éxito',
-  },
-];
-
+// Testimonials data
 const testimonials = [
   {
-    quote: 'Antes me demoraba semanas buscando inquilino. Ahora en 3 días ya tenía candidatos verificados y listos para firmar.',
+    quote: 'Antes me demoraba semanas buscando inquilino. Ahora en 3 días ya tenía candidatos verificados y listos para firmar. El scoring con IA me dio total confianza.',
     author: 'Carolina Mendoza',
     role: 'Propietaria en Bogotá',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face&q=80',
-    rating: 5,
-    properties: 2,
+    image: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
   },
   {
-    quote: 'El cobro automático me cambió la vida. Ya no tengo que estar pendiente cada mes ni perseguir a nadie.',
+    quote: 'El cobro automático me cambió la vida. Ya no tengo que estar pendiente cada mes ni perseguir a nadie. El dinero llega puntual a mi cuenta.',
     author: 'Roberto García',
     role: 'Propietario de 3 apartamentos',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
-    rating: 5,
-    properties: 3,
+    image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400',
   },
   {
-    quote: 'La evaluación con IA me dio total confianza. El score de riesgo es increíblemente preciso.',
+    quote: 'La publicación en múltiples portales con un solo clic es increíble. Recibí 12 candidatos pre-aprobados en menos de una semana.',
     author: 'Ana Lucía Restrepo',
     role: 'Inversionista inmobiliaria',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face&q=80',
-    rating: 5,
-    properties: 5,
+    image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+  },
+  {
+    quote: 'Los contratos digitales son rápidos y seguros. Firmamos todo en el mismo día sin necesidad de reunirnos presencialmente.',
+    author: 'Diego Fernández',
+    role: 'Propietario en Medellín',
+    image: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400',
   },
 ];
 
-const trustedBy = [
-  { name: 'DataCrédito', logo: '📊' },
-  { name: 'TransUnion', logo: '🔒' },
-  { name: 'Certicámara', logo: '✓' },
-];
-
-// Visual mockup components
-function ScreeningVisual() {
+/* ================================================================
+   VISUAL 1 — Evaluación de Inquilinos (HERO — 7col, DARK)
+   Premium gauge + candidate profile + score bars
+   ================================================================ */
+function EvaluationVisual() {
   return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-2xl shadow-emerald-500/10 border border-emerald-100 dark:border-emerald-900/30 p-5 space-y-4"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: 0.2 }}
-    >
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Image
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&h=160&fit=crop&crop=face&q=80"
-            alt="Candidate"
-            width={48}
-            height={48}
-            className="rounded-full object-cover ring-2 ring-emerald-500 ring-offset-2"
-          />
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-            <CheckCircle2 className="w-3 h-3 text-white" />
+    <div className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
+      {/* Animated glow effects */}
+      <motion.div
+        className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-emerald-500/[0.07] rounded-full blur-[80px] pointer-events-none"
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.07, 0.12, 0.07],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-blue-500/[0.05] rounded-full blur-[60px] pointer-events-none"
+        animate={{
+          scale: [1, 1.4, 1],
+          opacity: [0.05, 0.1, 0.05],
+        }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      />
+
+      <div className="flex items-center gap-10 w-full">
+        {/* Left: Gauge + score with enhanced animation */}
+        <motion.div
+          initial={{ scale: 0.3, opacity: 0, rotate: -10 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ duration: 1, type: "spring", stiffness: 80, damping: 12 }}
+          className="relative flex-shrink-0"
+        >
+          <div className="w-[160px] h-[94px] overflow-hidden">
+            <svg viewBox="0 0 160 94" className="w-full h-full">
+              <path d="M 16 86 A 64 64 0 0 1 144 86" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" strokeLinecap="round" />
+              <motion.path
+                d="M 16 86 A 64 64 0 0 1 144 86"
+                fill="none" stroke="url(#gaugeProp)" strokeWidth="10" strokeLinecap="round"
+                initial={{ pathLength: 0 }} animate={{ pathLength: 0.87 }}
+                transition={{ delay: 0.5, duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+              />
+              <motion.path
+                d="M 16 86 A 64 64 0 0 1 144 86"
+                fill="none" stroke="url(#gaugeProp)" strokeWidth="14" strokeLinecap="round"
+                opacity="0.25" style={{ filter: "blur(8px)" }}
+                initial={{ pathLength: 0 }} animate={{ pathLength: 0.87 }}
+                transition={{ delay: 0.5, duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+              />
+              <defs>
+                <linearGradient id="gaugeProp" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f43f5e" />
+                  <stop offset="25%" stopColor="#f59e0b" />
+                  <stop offset="55%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#34d399" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 15, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 1.2, duration: 0.6, type: "spring" }}
+            className="text-center mt-1"
+          >
+            <motion.span
+              className="text-[44px] font-bold text-white leading-none tracking-tight inline-block"
+              animate={{
+                textShadow: ["0 0 20px rgba(52,211,153,0)", "0 0 30px rgba(52,211,153,0.4)", "0 0 20px rgba(52,211,153,0)"]
+              }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+            >
+              87
+            </motion.span>
+            <span className="text-[12px] text-white/30 font-medium">/100</span>
+          </motion.div>
+        </motion.div>
+
+        {/* Right: Profile + bars */}
+        <div className="flex-1 min-w-0">
+          <motion.div
+            initial={{ opacity: 0, x: 25 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.6, type: "spring" }}
+            className="flex items-center gap-3 mb-4"
+          >
+            <motion.div
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
+              whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.3)" }}
+              animate={{
+                boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 15px 2px rgba(255,255,255,0.1)", "0 0 0 0 rgba(255,255,255,0)"]
+              }}
+              transition={{ boxShadow: { duration: 3, repeat: Infinity } }}
+            >
+              <span className="text-[14px] font-semibold text-white/60">CR</span>
+            </motion.div>
+            <div>
+              <div className="flex items-center gap-2">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="text-[13px] font-semibold text-white"
+                >
+                  Carlos Ruiz
+                </motion.span>
+                <motion.span
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 1.4, type: "spring", stiffness: 400, damping: 12 }}
+                  className="flex items-center gap-0.5 bg-emerald-500/15 text-emerald-400 text-[8px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <CheckCircle className="w-2.5 h-2.5" />
+                  </motion.div>
+                  Bajo riesgo
+                </motion.span>
+              </div>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="text-[9px] text-white/30 block mt-0.5"
+              >
+                Empleado · 3 años antigüedad
+              </motion.span>
+            </div>
+          </motion.div>
+
+          <div className="space-y-2.5">
+            {[
+              { label: "Capacidad de pago", score: 92, colorClass: "bg-emerald-400", glowClass: "bg-emerald-400/30" },
+              { label: "Historial crediticio", score: 85, colorClass: "bg-blue-400", glowClass: "bg-blue-400/30" },
+              { label: "Referencias", score: 88, colorClass: "bg-violet-400", glowClass: "bg-violet-400/30" },
+            ].map((c, i) => (
+              <motion.div
+                key={c.label}
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{
+                  delay: 0.8 + i * 0.15,
+                  duration: 0.5,
+                  type: "spring",
+                  stiffness: 100
+                }}
+                whileHover={{ x: 4 }}
+                className="flex items-center gap-3 cursor-pointer"
+              >
+                <span className="text-[9px] text-white/40 font-medium w-[100px] flex-shrink-0">{c.label}</span>
+                <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden relative">
+                  <motion.div
+                    className={`h-full rounded-full ${c.colorClass}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${c.score}%` }}
+                    transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                  <motion.div
+                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${c.score}%` }}
+                    transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                </div>
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.3 + i * 0.15, type: "spring" }}
+                  className="text-[12px] font-bold text-white w-7 text-right tabular-nums"
+                >
+                  {c.score}
+                </motion.span>
+              </motion.div>
+            ))}
           </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">María López</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-            <BadgeCheck className="w-3 h-3" />
-            Verificada
-          </p>
-        </div>
       </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Score de confianza</span>
-          <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">92</span>
-        </div>
-        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
-            initial={{ width: 0 }}
-            whileInView={{ width: '92%' }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {['Identidad', 'Crédito', 'Empleo', 'Referencias'].map((item, i) => (
-          <motion.div
-            key={item}
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6 + i * 0.1 }}
-            className="flex items-center gap-1.5 text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg px-2.5 py-1.5"
-          >
-            <CheckCircle2 className="w-3 h-3" />
-            {item}
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
-function PaymentsVisual() {
-  const payments = [
-    { month: 'Ene', status: 'paid', amount: '$2.400.000' },
-    { month: 'Feb', status: 'paid', amount: '$2.400.000' },
-    { month: 'Mar', status: 'pending', amount: '$2.400.000' },
+/* ================================================================
+   VISUAL 2 — Cobro Automático (5col)
+   Payment dashboard with recent transactions
+   ================================================================ */
+function PaymentVisual() {
+  return (
+    <div className="relative w-full h-full overflow-hidden px-4 pt-3">
+      {/* Balance card with enhanced animation */}
+      <motion.div
+        initial={{ y: -20, opacity: 0, scale: 0.95 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+        whileHover={{ y: -2, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}
+        className="bg-foreground text-white px-4 py-3 mb-3 cursor-pointer"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] text-white/50 font-medium">Balance disponible</span>
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+          >
+            <Wallet className="w-3.5 h-3.5 text-white/30" />
+          </motion.div>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3, type: "spring" }}
+          className="flex items-baseline gap-1"
+        >
+          <motion.span
+            className="text-[24px] font-bold tracking-tight"
+            animate={{
+              textShadow: ["0 0 0 transparent", "0 0 20px rgba(52,211,153,0.3)", "0 0 0 transparent"]
+            }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+          >
+            $4.850.000
+          </motion.span>
+          <span className="text-[9px] text-white/40">COP</span>
+        </motion.div>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+          className="h-[3px] bg-emerald-400/30 mt-2 rounded-full overflow-hidden"
+        >
+          <motion.div
+            className="h-full bg-emerald-400 rounded-full relative"
+            initial={{ width: 0 }}
+            animate={{ width: "78%" }}
+            transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+            />
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
+      {/* Recent transactions with stagger */}
+      <div className="space-y-2">
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-[8px] text-muted-foreground font-medium uppercase tracking-wider block"
+        >
+          Últimos pagos
+        </motion.span>
+        {[
+          { name: "María López", apt: "Apto 301", amount: "+$2.400.000", status: "Recibido", time: "Hoy" },
+          { name: "Carlos Ruiz", apt: "Apto 502", amount: "+$1.850.000", status: "Recibido", time: "Ayer" },
+          { name: "Ana García", apt: "Casa 12", amount: "+$3.200.000", status: "Pendiente", time: "En 2 días" },
+        ].map((tx, i) => (
+          <motion.div
+            key={tx.name}
+            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{
+              delay: 0.5 + i * 0.12,
+              type: "spring",
+              stiffness: 150,
+              damping: 15
+            }}
+            whileHover={{ x: 4, backgroundColor: "rgba(0,0,0,0.03)" }}
+            className="flex items-center gap-3 p-2 bg-muted/50 cursor-pointer transition-colors"
+          >
+            <motion.div
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-[10px] font-bold text-foreground"
+              whileHover={{ scale: 1.1 }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.6 + i * 0.12, type: "spring", stiffness: 300 }}
+            >
+              {tx.name.charAt(0)}
+            </motion.div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-medium text-foreground truncate">{tx.name}</span>
+                <span className="text-[8px] text-muted-foreground">· {tx.apt}</span>
+              </div>
+              <span className="text-[8px] text-muted-foreground">{tx.time}</span>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.12 }}
+              className="text-right"
+            >
+              <motion.span
+                className={`text-[11px] font-bold ${tx.status === 'Recibido' ? 'text-emerald-600' : 'text-amber-600'}`}
+                animate={tx.status === 'Recibido' ? { scale: [1, 1.05, 1] } : {}}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              >
+                {tx.amount}
+              </motion.span>
+              <span className={`block text-[7px] ${tx.status === 'Recibido' ? 'text-emerald-600/60' : 'text-amber-600/60'}`}>
+                {tx.status}
+              </span>
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Auto-transfer badge with pulse */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1 }}
+        className="flex items-center justify-center gap-1.5 mt-3"
+      >
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.5, 1, 0.5]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Bell className="w-2.5 h-2.5 text-muted-foreground" />
+        </motion.div>
+        <span className="text-[8px] text-muted-foreground">Transferencia automática cada viernes</span>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ================================================================
+   VISUAL 3 — Contratos Digitales (5col, outline)
+   Contract with signature animation
+   ================================================================ */
+function ContractVisual() {
+  const [signed, setSigned] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSigned(true), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
+      {/* Animated glow effects */}
+      <motion.div
+        className="absolute top-[30%] left-[20%] w-[100px] h-[100px] bg-violet-500/[0.06] rounded-full blur-[50px] pointer-events-none"
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.06, 0.1, 0.06],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-[20%] right-[15%] w-[80px] h-[80px] bg-emerald-500/[0.05] rounded-full blur-[40px] pointer-events-none"
+        animate={{
+          scale: [1, 1.4, 1],
+          opacity: [0.05, 0.09, 0.05],
+        }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      />
+
+      {/* Background pages with subtle animation */}
+      <motion.div
+        className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[78%] h-[175px] bg-black/[0.01] border border-border translate-y-2 scale-[0.95]"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 8 }}
+        transition={{ delay: 0.1 }}
+      />
+      <motion.div
+        className="absolute top-[24px] left-1/2 -translate-x-1/2 w-[82%] h-[175px] bg-black/[0.005] border border-border translate-y-1 scale-[0.975]"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 4 }}
+        transition={{ delay: 0.15 }}
+      />
+
+      <motion.div
+        initial={{ y: 12, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], type: "spring", stiffness: 100 }}
+        whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.08)" }}
+        className="relative w-full overflow-hidden z-10 bg-white/80 backdrop-blur-sm cursor-pointer"
+        style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+      >
+        <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+          <motion.div
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+          >
+            <FileText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+          </motion.div>
+          <div className="flex-1">
+            <div className="text-[10px] font-medium text-foreground">Contrato de Arriendo</div>
+            <div className="text-[7px] text-muted-foreground font-mono">REF-2026-00847</div>
+          </div>
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+            className={`text-[7px] font-semibold px-2 py-0.5 ${signed ? "border border-emerald-500/25 text-emerald-600" : "border border-amber-500/25 text-amber-600"}`}
+          >
+            {signed ? "✓ Firmado" : "Pendiente"}
+          </motion.div>
+        </div>
+
+        <div className="px-4 py-1">
+          {[
+            { l: "Inquilino", v: "María López" },
+            { l: "Canon", v: "$2.800.000" },
+            { l: "Duración", v: "12 meses" },
+          ].map((c, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 120 }}
+              whileHover={{ x: 3 }}
+              className="flex items-center justify-between py-1.5 cursor-pointer"
+              style={{ borderBottom: i < 2 ? "1px dashed rgba(0,0,0,0.05)" : "none" }}
+            >
+              <span className="text-[8px] text-muted-foreground">{c.l}</span>
+              <motion.span
+                className="text-[9px] font-medium text-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+              >
+                {c.v}
+              </motion.span>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="px-4 py-2.5 relative" style={{ borderTop: "1px solid rgba(0,0,0,0.03)" }}>
+          <motion.div
+            className="h-9 flex items-center justify-center"
+            style={{ border: "1px dashed rgba(0,0,0,0.06)" }}
+            animate={!signed ? {
+              borderColor: ["rgba(0,0,0,0.06)", "rgba(245,158,11,0.2)", "rgba(0,0,0,0.06)"]
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            {!signed ? (
+              <motion.div
+                animate={{ opacity: [0.3, 0.7, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="flex items-center gap-1"
+              >
+                <motion.div
+                  animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <PenNib className="w-2.5 h-2.5 text-amber-500" strokeWidth={1.5} />
+                </motion.div>
+                <span className="text-[7px] text-muted-foreground">Esperando firma...</span>
+              </motion.div>
+            ) : (
+              <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <motion.path
+                  d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
+                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
+                  initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                />
+              </motion.svg>
+            )}
+          </motion.div>
+
+          {signed && (
+            <motion.div
+              initial={{ scale: 0, rotate: -30, opacity: 0 }}
+              animate={{ scale: 1, rotate: -8, opacity: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 250, damping: 12 }}
+              className="absolute -top-3 right-6"
+            >
+              <motion.div
+                className="w-14 h-14 rounded-full border-2 border-emerald-500/40 flex items-center justify-center bg-emerald-50/50 backdrop-blur-sm"
+                animate={{
+                  boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 20px 5px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
+                }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              >
+                <div className="w-10 h-10 rounded-full border border-dashed border-emerald-500/30 flex flex-col items-center justify-center">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                  </motion.div>
+                  <span className="text-[5px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Legal</span>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, type: "spring" }}
+        className="flex gap-2 mt-2.5 z-10"
+      >
+        {[{ icon: Lock, label: "Ley 820" }, { icon: Lightning, label: "Firma digital" }].map(({ icon: Icon, label }, i) => (
+          <motion.span
+            key={label}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7 + i * 0.1, type: "spring" }}
+            whileHover={{ scale: 1.05, y: -1 }}
+            className="flex items-center gap-1 text-[7px] font-medium text-muted-foreground px-2 py-1 cursor-pointer"
+            style={{ border: "1px solid rgba(0,0,0,0.05)" }}
+          >
+            <Icon className="w-2.5 h-2.5" strokeWidth={1.5} />
+            {label}
+          </motion.span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ================================================================
+   VISUAL 4 — Publicación Multi-Portal (7col)
+   Portal logos with sync animation
+   ================================================================ */
+function PublishVisual() {
+  const portals = [
+    { name: "FincaRaíz", color: "#E53935", delay: 0.3 },
+    { name: "Metrocuadrado", color: "#1565C0", delay: 0.45 },
+    { name: "Properati", color: "#7B1FA2", delay: 0.6 },
+    { name: "Ciencuadras", color: "#00897B", delay: 0.75 },
   ];
 
   return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-2xl shadow-blue-500/10 border border-blue-100 dark:border-blue-900/30 p-5 space-y-4"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: 0.2 }}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Marzo 2026
-          </span>
-          <p className="text-lg font-bold text-foreground">$7.200.000</p>
-        </div>
-        <div className="text-right">
-          <span className="text-xs text-emerald-600 font-medium">+2 pagados</span>
-          <p className="text-xs text-muted-foreground">este trimestre</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {payments.map((payment, i) => (
+    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
+      {/* Property preview with hover */}
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+        whileHover={{ y: -3, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+        className="bg-white p-3 mb-4 cursor-pointer"
+        style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+      >
+        <div className="flex gap-3">
           <motion.div
-            key={payment.month}
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 + i * 0.1 }}
-            className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/50"
+            className="w-16 h-12 bg-gradient-to-br from-amber-100 to-orange-100 flex-shrink-0 flex items-center justify-center overflow-hidden relative"
+            whileHover={{ scale: 1.05 }}
           >
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground w-8">{payment.month}</span>
-              <span
-                className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                  payment.status === 'paid'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                }`}
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+            />
+            <motion.div
+              animate={{ y: [0, -2, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Buildings className="w-5 h-5 text-amber-600/40" />
+            </motion.div>
+          </motion.div>
+          <div className="flex-1 min-w-0">
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-[11px] font-semibold text-foreground"
+            >
+              Apartamento Chapinero
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-[9px] text-muted-foreground"
+            >
+              2 hab · 72m² · $2.800.000/mes
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex items-center gap-1 mt-1"
+            >
+              <motion.span
+                className="text-[7px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 font-medium"
+                animate={{
+                  boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 8px 2px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                {payment.status === 'paid' ? 'Pagado' : 'Pendiente'}
-              </span>
+                Publicado
+              </motion.span>
+              <span className="text-[7px] text-muted-foreground">· 12 candidatos</span>
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Portals grid with enhanced animations */}
+      <div className="grid grid-cols-2 gap-2">
+        {portals.map((portal, i) => (
+          <motion.div
+            key={portal.name}
+            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{
+              delay: portal.delay,
+              duration: 0.4,
+              type: "spring",
+              stiffness: 200
+            }}
+            whileHover={{ scale: 1.03, backgroundColor: "rgba(0,0,0,0.03)" }}
+            className="flex items-center gap-2 p-2 bg-muted/50 cursor-pointer transition-colors"
+          >
+            <motion.div
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[8px] font-bold"
+              style={{ backgroundColor: portal.color }}
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              animate={{
+                boxShadow: ["0 0 0 0 transparent", `0 0 10px 2px ${portal.color}40`, "0 0 0 0 transparent"]
+              }}
+              transition={{
+                boxShadow: { duration: 2, repeat: Infinity, delay: i * 0.3 }
+              }}
+            >
+              {portal.name.charAt(0)}
+            </motion.div>
+            <div className="flex-1 min-w-0">
+              <span className="text-[9px] font-medium text-foreground block truncate">{portal.name}</span>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: portal.delay + 0.2 }}
+                className="text-[7px] text-emerald-600 flex items-center gap-0.5"
+              >
+                <motion.span
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                >
+                  ✓
+                </motion.span>
+                Sincronizado
+              </motion.span>
             </div>
-            <span className="text-sm font-semibold text-foreground">{payment.amount}</span>
           </motion.div>
         ))}
       </div>
-    </motion.div>
+
+      {/* Stats with pop effect */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1 }}
+        className="flex items-center justify-between mt-4 pt-3"
+        style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
+      >
+        <motion.div
+          className="flex items-center gap-1.5"
+          whileHover={{ x: 3 }}
+        >
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            <ShareNetwork className="w-3 h-3 text-muted-foreground" />
+          </motion.div>
+          <span className="text-[8px] text-muted-foreground">Un clic, 4 portales</span>
+        </motion.div>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.1, type: "spring" }}
+          whileHover={{ scale: 1.05 }}
+          className="flex items-center gap-1 bg-primary/10 px-2 py-1 cursor-pointer"
+        >
+          <motion.div
+            animate={{ y: [0, -2, 0] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            <TrendUp className="w-2.5 h-2.5 text-primary" />
+          </motion.div>
+          <motion.span
+            className="text-[8px] font-semibold text-primary"
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            +340% visibilidad
+          </motion.span>
+        </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
-function MarketingVisual() {
-  const portals = ['FincaRaíz', 'Metrocuadrado', 'Properati', 'Ciencuadras'];
+/* ================================================================
+   BENTO CARD
+   ================================================================ */
+import { Check } from '@phosphor-icons/react';
+
+function BentoCard({
+  title,
+  description,
+  benefits,
+  children,
+  index,
+  className = "",
+  dark = false,
+  outline = false,
+}: {
+  title: string;
+  description: string;
+  benefits?: string[];
+  children: React.ReactNode;
+  index: number;
+  className?: string;
+  dark?: boolean;
+  outline?: boolean;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  const bg = dark
+    ? "bg-indigo-950 hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
+    : outline
+      ? "bg-white hover:shadow-md"
+      : "bg-neutral-50 hover:shadow-lg";
+
+  const borderStyle = dark
+    ? "1px solid rgba(255,255,255,0.06)"
+    : "1px solid rgba(0,0,0,0.08)";
 
   return (
     <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-2xl shadow-violet-500/10 border border-violet-100 dark:border-violet-900/30 p-5 space-y-4"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: 0.2 }}
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`group flex flex-col overflow-hidden transition-shadow duration-500 ${bg} ${className}`}
+      style={{ border: borderStyle }}
     >
-      <div className="flex items-center gap-3">
-        <div className="w-20 h-14 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 rounded-xl flex items-center justify-center overflow-hidden">
-          <Image
-            src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=160&h=112&fit=crop&q=80"
-            alt="Apartment"
-            width={80}
-            height={56}
-            className="object-cover rounded-lg"
-          />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">Apto Chapinero</p>
-          <p className="text-xs text-muted-foreground">2 hab · 65m² · $2.4M</p>
-        </div>
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground mb-2">Publicado en:</p>
-        <div className="flex flex-wrap gap-1.5">
-          {portals.map((portal, i) => (
-            <motion.span
-              key={portal}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className="text-[10px] bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-700 dark:text-violet-400 rounded-full px-2.5 py-1 font-medium"
-            >
-              {portal} ✓
-            </motion.span>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-center justify-between pt-2 border-t border-border">
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 border-2 border-white dark:border-card" />
+      <div className="px-6 pt-5 pb-0">
+        <h3 className={`text-[20px] sm:text-[24px] font-heading font-semibold tracking-tight leading-tight ${dark ? "text-white" : "text-foreground"}`}>
+          {title}
+        </h3>
+        <p className={`text-[12px] leading-relaxed mt-1 max-w-[380px] ${dark ? "text-white/40" : "text-muted-foreground"}`}>
+          {description}
+        </p>
+        {benefits && benefits.length > 0 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+            {benefits.map((benefit) => (
+              <div key={benefit} className="flex items-center gap-1.5">
+                <Check className={`w-3 h-3 ${dark ? "text-emerald-400" : "text-foreground/40"}`} />
+                <span className={`text-[11px] ${dark ? "text-white/50" : "text-foreground/60"}`}>{benefit}</span>
+              </div>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">12 candidatos</span>
-        </div>
-        <span className="text-xs font-semibold text-emerald-600">3 pre-aprobados</span>
+        )}
+      </div>
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        {isInView && children}
       </div>
     </motion.div>
   );
 }
-
-function ContractsVisual() {
-  return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-2xl shadow-amber-500/10 border border-amber-100 dark:border-amber-900/30 p-5 space-y-4"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: 0.2 }}
-    >
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-          <FileSignature className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <p className="text-xs font-medium text-foreground">Contrato de Arrendamiento</p>
-          <p className="text-[10px] text-muted-foreground">Ley 820 de 2003</p>
-        </div>
-      </div>
-      <div className="border border-border rounded-xl p-3 space-y-2 bg-muted/30">
-        <div className="h-2 bg-muted rounded w-3/4" />
-        <div className="h-2 bg-muted rounded w-full" />
-        <div className="h-2 bg-muted rounded w-5/6" />
-        <div className="h-2 bg-muted rounded w-2/3" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <motion.div
-          className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20"
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Propietario</span>
-        </motion.div>
-        <motion.div
-          className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20"
-          initial={{ opacity: 0, x: 10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Inquilino</span>
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-}
-
-const visuals: Record<string, () => JSX.Element> = {
-  screening: ScreeningVisual,
-  payments: PaymentsVisual,
-  marketing: MarketingVisual,
-  contracts: ContractsVisual,
-};
-
-const accentColors: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
-  emerald: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    gradient: 'from-emerald-500 to-teal-500',
-  },
-  blue: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
-    border: 'border-blue-200 dark:border-blue-800',
-    gradient: 'from-blue-500 to-cyan-500',
-  },
-  violet: {
-    bg: 'bg-violet-100 dark:bg-violet-900/30',
-    text: 'text-violet-600 dark:text-violet-400',
-    border: 'border-violet-200 dark:border-violet-800',
-    gradient: 'from-violet-500 to-purple-500',
-  },
-  amber: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-600 dark:text-amber-400',
-    border: 'border-amber-200 dark:border-amber-800',
-    gradient: 'from-amber-500 to-orange-500',
-  },
-};
 
 export default function PropietariosPage() {
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextTestimonial = () => {
+    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
+  };
 
   return (
     <>
       <Navbar />
-      <main className="pt-16 overflow-hidden">
-        {/* Hero Section - Premium Design */}
-        <section ref={heroRef} className="relative min-h-[90vh] flex items-center overflow-hidden">
-          {/* Background Image with Parallax */}
-          <motion.div
-            className="absolute inset-0 z-0"
-            style={{ y: heroY }}
-          >
-            <Image
-              src="/hero-interior.jpg"
-              alt="Modern apartment interior"
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
-            {/* Dark overlays for legibility - like home page */}
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40" />
-          </motion.div>
+      <main className="overflow-hidden">
+        {/* Hero Section */}
+        <section className="relative h-[600px] overflow-hidden bg-black">
+          <Image
+            src="/hero-interior.jpg"
+            alt="Modern apartment interior"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-black/40 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
 
-          <motion.div
-            className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 py-20"
-            style={{ opacity: heroOpacity }}
-          >
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="relative z-10 h-full container-platform pt-[72px] flex items-center">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
               {/* Left Content */}
-              <div className="space-y-8">
-                <motion.div
+              <div className="space-y-4">
+                <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
+                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
-                  <span className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Plataforma #1 para propietarios en Colombia
-                  </span>
-                </motion.div>
+                  <Lightning className="w-3.5 h-3.5" />
+                  Plataforma #1 para propietarios en Colombia
+                </motion.span>
 
                 <motion.h1
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight"
+                  transition={{ delay: 0.1 }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
-                  Arrienda tu propiedad
-                  <span className="block mt-2 text-white/90">
-                    sin comisiones
-                  </span>
+                  <span className="whitespace-nowrap">Arrienda tu propiedad</span>
+                  <span className="block mt-2 text-white/90">sin comisiones</span>
                 </motion.h1>
 
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-lg md:text-xl text-white/70 max-w-lg leading-relaxed"
+                  transition={{ delay: 0.2 }}
+                  className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado.
                   <span className="text-white font-medium"> Tú mantienes el control.</span>
@@ -539,36 +875,40 @@ export default function PropietariosPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="flex flex-col sm:flex-row gap-4"
+                  transition={{ delay: 0.3 }}
+                  className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" className="w-full sm:w-auto bg-white text-foreground hover:bg-white/90 font-semibold text-base h-14 px-8 rounded-sm shadow-lg">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
                       Comenzar gratis
-                      <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                   </Link>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium text-base h-14 px-8 rounded-sm backdrop-blur-2xl"
-                  >
-                    <Play className="w-4 h-4 mr-2 fill-current" />
-                    Ver cómo funciona
-                  </Button>
+                  <Link href="/pricing">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
+                    >
+                      Ver precios
+                    </Button>
+                  </Link>
                 </motion.div>
 
-                {/* Stats */}
+                {/* Hero Stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="flex items-center gap-8 pt-8 border-t border-white/10"
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center gap-8 pt-6"
                 >
-                  {heroStats.map((stat, i) => (
-                    <div key={stat.label} className="text-center sm:text-left">
-                      <p className="text-3xl md:text-4xl font-bold text-white">{stat.value}</p>
-                      <p className="text-xs text-white/60 mt-1">{stat.label}</p>
+                  {[
+                    { value: '$0', label: 'Costo de evaluación' },
+                    { value: '48h', label: 'Tiempo promedio' },
+                    { value: '4.9', label: 'Satisfacción' },
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
                     </div>
                   ))}
                 </motion.div>
@@ -576,381 +916,578 @@ export default function PropietariosPage() {
 
               {/* Right - Hero Card */}
               <motion.div
-                initial={{ opacity: 0, x: 50, rotateY: -10 }}
-                animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="hidden lg:block"
+                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
-                  {/* Main Card - Glass effect */}
-                  <div className="bg-white/10 backdrop-blur-2xl rounded-[1px] border border-white/15 p-6 shadow-2xl">
-                    <div className="flex items-center gap-4 mb-6">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                  >
+                    {/* Header with profile */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4 }}
+                      className="flex items-center gap-3 mb-5 pb-4 border-b border-white/10"
+                    >
                       <Image
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face&q=80"
-                        alt="Happy landlord"
-                        width={56}
-                        height={56}
-                        className="rounded-[1px] object-cover ring-2 ring-white/20"
+                        src="/images/people/woman-desk-coffee.jpg"
+                        alt="Propietaria feliz"
+                        width={44}
+                        height={44}
+                        className="rounded-xl object-cover ring-2 ring-white/20"
                       />
-                      <div>
-                        <p className="text-white font-semibold">Juan Carlos M.</p>
-                        <p className="text-white/60 text-sm">Propietario verificado</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-[14px]">Juan Carlos M.</p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <p className="text-white/50 text-[11px]">Propietario verificado</p>
+                        </div>
                       </div>
-                      <BadgeCheck className="w-6 h-6 text-white ml-auto" />
-                    </div>
+                    </motion.div>
 
-                    <div className="space-y-4">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-[1px] p-4 border border-white/10">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white/60 text-sm">Ingresos este mes</span>
-                          <span className="text-white/80 text-xs font-medium">+12%</span>
-                        </div>
-                        <p className="text-3xl font-bold text-white">$4.800.000</p>
+                    {/* Main income card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.4 }}
+                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10 mb-3"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-white/50 text-[11px]">Ingresos este mes</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                          <TrendUp className="w-3 h-3" />
+                          +12%
+                        </span>
                       </div>
+                      <p className="text-[28px] font-bold text-white tracking-tight">$4.800.000</p>
+                    </motion.div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-[1px] p-3 text-center border border-white/10">
-                          <p className="text-2xl font-bold text-white">2</p>
-                          <p className="text-[10px] text-white/60">Propiedades</p>
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7, duration: 0.4 }}
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Buildings className="w-3.5 h-3.5 text-white/40" />
+                          <p className="text-[10px] text-white/50">Propiedades</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-[1px] p-3 text-center border border-white/10">
-                          <p className="text-2xl font-bold text-white">100%</p>
-                          <p className="text-[10px] text-white/60">Ocupación</p>
+                        <p className="text-xl font-bold text-white">2</p>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8, duration: 0.4 }}
+                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Users className="w-3.5 h-3.5 text-white/40" />
+                          <p className="text-[10px] text-white/50">Ocupación</p>
                         </div>
-                      </div>
+                        <p className="text-xl font-bold text-white">100%</p>
+                      </motion.div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, x: -20 }}
-                    animate={{ opacity: 1, y: 0, x: 0 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                    className="absolute -bottom-6 -left-6 bg-white dark:bg-card rounded-2xl shadow-xl p-4 border border-border"
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">Pago recibido</p>
-                        <p className="text-xs text-muted-foreground">$2.400.000 · Hace 2min</p>
+                        <p className="text-[13px] font-medium text-foreground">Pago recibido</p>
+                        <p className="text-[11px] text-muted-foreground">$2.400.000 · Hace 2min</p>
                       </div>
                     </div>
                   </motion.div>
                 </div>
               </motion.div>
             </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2"
-            >
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-white" />
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* Trust Bar */}
-        <section className="py-6 bg-muted/50 border-y border-border">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-              <p className="text-sm text-muted-foreground">Verificaciones powered by:</p>
-              {trustedBy.map((partner) => (
-                <div key={partner.name} className="flex items-center gap-2 text-muted-foreground">
-                  <span className="text-xl">{partner.logo}</span>
-                  <span className="text-sm font-medium">{partner.name}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
-        {/* Features Section with Visual Mockups */}
-        <section className="py-24 md:py-32 bg-gradient-to-b from-background to-muted/30">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-20"
-            >
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 rounded-full px-3 py-1 mb-4">
-                Herramientas completas
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Todo lo que necesitas para arrendar
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                Herramientas profesionales sin costo oculto. El inquilino paga la evaluación, tú no pagas nada.
-              </p>
-            </motion.div>
+        {/* Bento Section - Problems */}
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Arrendar no debería ser tan <span className="italic">difícil</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Impagos, vacancia, desalojos interminables. El proceso tradicional está roto. Pero no tiene que ser así.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-              {detailedFeatures.map((feature, index) => {
-                const Icon = feature.icon;
-                const Visual = visuals[feature.visual];
-                const colors = accentColors[feature.accentColor];
+            {/* Top Row - Image Cards with Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-4 lg:mb-5">
+              {/* Card 1 - Impago */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-interior.jpg"
+                  alt="Interior moderno"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Impago
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    $18M
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    pérdida promedio por impago
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    Sin verificación real, el riesgo lo asume completo el propietario
+                  </p>
+                </div>
+              </motion.div>
 
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-50px' }}
-                    transition={{ delay: index * 0.1, duration: 0.5 }}
-                    className="group relative bg-card rounded-3xl border border-border p-8 hover:shadow-xl hover:shadow-primary/5 transition-all duration-500"
-                  >
-                    {/* Gradient accent line */}
-                    <div className={`absolute top-0 left-8 right-8 h-1 bg-gradient-to-r ${colors.gradient} rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity`} />
+              {/* Card 2 - Vacancia */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-2.jpg"
+                  alt="Espacio moderno"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Vacancia
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    47 días
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    promedio para arrendar
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    Documentos, visitas, negociaciones... un proceso del siglo pasado
+                  </p>
+                </div>
+              </motion.div>
 
-                    <div className="flex flex-col xl:flex-row gap-8">
-                      {/* Content */}
-                      <div className="flex-1 space-y-5">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-14 h-14 rounded-2xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className={`w-7 h-7 ${colors.text}`} />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-bold text-foreground mb-1">
-                              {feature.title}
-                            </h3>
-                            <div className="flex items-baseline gap-2">
-                              <span className={`text-2xl font-bold bg-gradient-to-r ${colors.gradient} bg-clip-text text-transparent`}>
-                                {feature.pricing.highlight}
-                              </span>
-                              <span className="text-sm text-muted-foreground">
-                                {feature.pricing.detail}
+              {/* Card 3 - Desalojo */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-3.jpg"
+                  alt="Habitación moderna"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Desalojo
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    14 meses
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    proceso legal promedio
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    Sin contrato sólido, recuperar tu propiedad es una pesadilla
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Robottom Row - Illustration Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+              {/* Card 4 - Blind Selection Widget */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+              >
+                {/* Widget Illustration */}
+                <div className="flex-shrink-0 relative">
+                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
+                      <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-neutral-400" />
+                      </div>
+                      <div>
+                        <p className="text-[12px] font-medium text-foreground">Candidato #1</p>
+                        <p className="text-[10px] text-muted-foreground">Sin verificar</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">Ingresos</span>
+                        <span className="text-[10px] text-neutral-300">— — —</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">Historial</span>
+                        <span className="text-[10px] text-neutral-300">— — —</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">Score</span>
+                        <span className="text-[10px] text-neutral-300">— — —</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    ?
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    {'"'}Elegir a ciegas{'"'}
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Card 5 - Payment Tracker Widget */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 }}
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+              >
+                {/* Widget Illustration */}
+                <div className="flex-shrink-0 relative">
+                  <div className="bg-white rounded-xl shadow-lg p-4 w-[220px] border border-neutral-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-medium text-foreground bg-amber-100 px-2 py-0.5 rounded">Cuenta de arriendo</span>
+                      <span className="text-[10px] text-muted-foreground">2024</span>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { month: 'Ene', paid: true, amount: '$2.5M' },
+                        { month: 'Feb', paid: true, amount: '$2.5M' },
+                        { month: 'Mar', paid: false, amount: '$2.5M' },
+                        { month: 'Abr', paid: false, amount: '$2.5M' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                              <span className={`text-[8px] ${item.paid ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {item.paid ? '✓' : '✕'}
                               </span>
                             </div>
+                            <span className="text-muted-foreground">{item.month}</span>
+                          </div>
+                          <span className={item.paid ? 'text-foreground' : 'text-red-500 font-medium'}>{item.amount}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Deuda acumulada:</span>
+                      <span className="text-[12px] text-red-600 font-bold">$5.0M</span>
+                    </div>
+                  </div>
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                    <Bell className="w-3 h-3" />
+                    4 meses
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    {'"'}4 meses sin cobrar arriendo{'"'}
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Bento Section - Solutions */}
+        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Todo lo que necesitas para <span className="italic">arrendar con confianza</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Evaluación, cobro automático, contratos digitales y publicación en múltiples portales. Todo desde una sola plataforma.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+              {/* Large Card - Evaluation */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="md:col-span-7 bg-foreground rounded-xl p-8 min-h-[360px] flex flex-col justify-between relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    Evaluación de Inquilinos
+                  </h3>
+                  <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
+                    Verificamos capacidad de pago, historial crediticio y referencias. Tú eliges con datos, no con corazonadas.
+                  </p>
+                </div>
+                <div className="relative z-10 flex flex-wrap gap-2 mt-6">
+                  {['Score de riesgo IA', 'Verificación de identidad', 'Historial crediticio'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Small Card - Automatic Collection */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
+                    <Wallet className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    Cobro Automático
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Recibe el pago puntual cada mes. Sin perseguir a nadie, sin excusas.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Small Card - Digital Contracts */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <FileText className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    Contratos Digitales
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Firma electrónica con validez legal. Todo conforme a la Ley 820 de Colombia.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Large Card - Multi Portal */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="md:col-span-7 relative rounded-xl overflow-hidden min-h-[360px] group"
+              >
+                <Image
+                  src="/hero-5.jpg"
+                  alt="Propiedad moderna"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+                <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                    <ShareNetwork className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                      Publicación Multi-Portal
+                    </h3>
+                    <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
+                      Un clic y tu propiedad aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {['4 portales', 'Fotos optimizadas', 'Sin comisión'].map((item, i) => (
+                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="bg-white overflow-hidden">
+          <div className="container-platform py-[80px] pb-[100px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="lg:sticky lg:top-32"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+                  <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
+                    Testimonios
+                  </span>
+                </div>
+
+                <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+                  Propietarios que confían en nosotros
+                </h2>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={prevTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Anterior testimonio"
+                  >
+                    <CaretLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Siguiente testimonio"
+                  >
+                    <CaretRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <AnimatePresence mode="popLayout">
+                  {[0, 1].map((offset) => {
+                    const index = (currentIndex + offset) % testimonials.length;
+                    const testimonial = testimonials[index];
+                    return (
+                      <motion.div
+                        key={`${index}-${currentIndex}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4, delay: offset * 0.1 }}
+                        className="bg-white rounded-xl p-8 flex flex-col"
+                      >
+                        <div className="mb-6">
+                          <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
+                          </svg>
+                        </div>
+
+                        <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-foreground mb-8 flex-grow">
+                          {testimonial.quote}
+                        </p>
+
+                        <div className="flex items-center gap-4">
+                          <div className="w-[52px] h-[52px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                            <Image
+                              src={testimonial.image}
+                              alt={testimonial.author}
+                              width={52}
+                              height={52}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[16px] font-normal text-foreground tracking-[-0.32px] leading-[21.6px]">
+                              {testimonial.author}
+                            </p>
+                            <p className="text-[16px] text-muted-foreground tracking-[-0.32px] leading-[21.6px]">
+                              {testimonial.role}
+                            </p>
                           </div>
                         </div>
-
-                        <p className="text-muted-foreground leading-relaxed">
-                          {feature.description}
-                        </p>
-
-                        <p className="text-xs text-muted-foreground/70 italic">
-                          {feature.pricing.subtext}
-                        </p>
-
-                        <ul className="grid grid-cols-2 gap-3">
-                          {feature.benefits.map((benefit) => (
-                            <li
-                              key={benefit}
-                              className="flex items-center gap-2 text-sm text-muted-foreground"
-                            >
-                              <CheckCircle2 className={`w-4 h-4 ${colors.text} flex-shrink-0`} />
-                              {benefit}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Visual */}
-                      <div className="xl:w-[260px] flex-shrink-0">
-                        <Visual />
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {/* Additional Features */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-              {additionalFeatures.map((feature, i) => {
-                const Icon = feature.icon;
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative bg-card rounded-2xl border border-border p-6 hover:shadow-lg transition-all duration-300 overflow-hidden"
-                  >
-                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.gradient} opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`} />
-                    <div className="relative flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center flex-shrink-0`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-foreground">{feature.title}</h3>
-                          <span className={`text-sm font-bold bg-gradient-to-r ${feature.gradient} bg-clip-text text-transparent`}>
-                            {feature.highlight}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{feature.description}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-24 bg-foreground dark:bg-card">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-background dark:text-foreground mb-4">
-                Simplifica tu vida de propietario
-              </h2>
-              <p className="text-background/70 dark:text-muted-foreground max-w-xl mx-auto">
-                Menos trabajo, más tranquilidad, mejores resultados
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {benefits.map((benefit, i) => {
-                const Icon = benefit.icon;
-                return (
-                  <motion.div
-                    key={benefit.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group text-center p-6 rounded-2xl bg-background/5 dark:bg-muted/50 hover:bg-background/10 dark:hover:bg-muted transition-colors"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="mb-3">
-                      <span className="text-3xl font-bold text-background dark:text-foreground">{benefit.stat}</span>
-                      <span className="text-xs text-background/50 dark:text-muted-foreground ml-1">{benefit.statLabel}</span>
-                    </div>
-                    <h3 className="font-semibold text-background dark:text-foreground mb-2">{benefit.title}</h3>
-                    <p className="text-sm text-background/60 dark:text-muted-foreground">{benefit.description}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Propietarios que confían en nosotros
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
-                Más de 500 propietarios ya están ahorrando tiempo y dinero
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {testimonials.map((testimonial, i) => (
-                <motion.div
-                  key={testimonial.author}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative bg-card rounded-2xl border border-border p-6 hover:shadow-xl transition-all duration-300"
-                >
-                  <Quote className="absolute top-6 right-6 w-8 h-8 text-primary/10" />
-
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-
-                  <p className="text-foreground mb-6 leading-relaxed">&ldquo;{testimonial.quote}&rdquo;</p>
-
-                  <div className="flex items-center gap-4">
-                    <Image
-                      src={testimonial.image}
-                      alt={testimonial.author}
-                      width={48}
-                      height={48}
-                      className="rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-foreground">{testimonial.author}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{testimonial.properties} propiedades</span>
-                    <BadgeCheck className="w-5 h-5 text-emerald-500" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className="relative py-24 overflow-hidden">
-          {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700" />
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-
-          <div className="relative max-w-4xl mx-auto px-6 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-                Empieza a arrendar
-                <span className="block">sin complicaciones hoy</span>
-              </h2>
-              <p className="text-xl text-white/80 max-w-2xl mx-auto">
-                Crea tu cuenta gratis y publica tu primera propiedad en menos de 5 minutos.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/auth">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-indigo-700 hover:bg-indigo-50 font-semibold text-lg h-14 px-10 rounded-sm shadow-lg shadow-indigo-900/30">
-                    Crear cuenta gratis
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/pricing">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 font-medium text-lg h-14 px-10 rounded-sm"
-                  >
-                    Ver precios
-                  </Button>
-                </Link>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
-              <p className="text-sm text-white/60">
-                Sin tarjeta de crédito · Configura en 5 minutos · Cancela cuando quieras
-              </p>
-            </motion.div>
+            </div>
           </div>
         </section>
+
+        <FAQSection />
+        <CTASection />
       </main>
       <Footer />
     </>

@@ -1,179 +1,221 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Check, Trash2, Settings, Users, Building2, FileText, CreditCard, ChevronRight, AlertTriangle, Star, BarChart3, Wrench } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Bell,
+  Check,
+  TrashSimple,
+  Gear,
+  Users,
+  Buildings,
+  FileText,
+  CurrencyDollar,
+  CaretRight,
+  Warning,
+  Star,
+  Wrench,
+  Calendar,
+  ChatCircle,
+  ShieldCheck,
+  House,
+  Eye,
+  Megaphone,
+  UserPlus,
+  PenNib,
+  Bank,
+  Clock,
+  Sparkle,
+  ArrowRight,
+} from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  getLandlordNotifications,
+  getUnreadCount,
+  getLandlordFilterOptions,
+} from '@/lib/data/mock-notifications';
+import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
+import type { LandlordNotification, LandlordNotificationCategory } from '@/lib/types/notification';
 
-// Notification types with their routes and colors
-const notificationConfig: Record<string, { route: string; color: string }> = {
-  'Pago': { route: '/panel', color: 'text-plan-status-green' },
-  'Aplicación': { route: '/panel/candidatos', color: 'text-plan-status-blue' },
-  'Contrato': { route: '/panel/contratos', color: 'text-plan-status-purple' },
-  'Mantenimiento': { route: '/panel', color: 'text-plan-status-yellow' },
-  'Alerta': { route: '/panel', color: 'text-plan-status-red' },
-  'Verificación': { route: '/panel/candidatos', color: 'text-plan-status-blue' },
-  'Propiedad': { route: '/panel/propiedades', color: 'text-plan-status-green' },
-  'Reseña': { route: '/panel', color: 'text-plan-status-yellow' },
-  'Informe': { route: '/panel', color: 'text-muted-foreground' },
+// Icon mapping for notification types
+const getNotificationIcon = (type: string) => {
+  const iconMap: Record<string, typeof Bell> = {
+    // Applications
+    APP_NEW: UserPlus,
+    APP_DOCS_UPLOADED: FileText,
+    APP_DOCS_PENDING: FileText,
+    APP_WITHDRAWN: Users,
+    // Verifications
+    VER_COMPLETED: ShieldCheck,
+    VER_SCORE_HIGH: ShieldCheck,
+    VER_SCORE_LOW: Warning,
+    VER_RED_FLAGS: Warning,
+    VER_INCOME_VERIFIED: ShieldCheck,
+    // Contracts
+    CON_READY: FileText,
+    CON_TENANT_SIGNED: PenNib,
+    CON_COMPLETED: Check,
+    CON_PENDING_SIGNATURE: PenNib,
+    CON_CANCELLED: FileText,
+    CON_AMENDMENT: FileText,
+    // Payments
+    PAY_RECEIVED: CurrencyDollar,
+    PAY_DEPOSITED: Bank,
+    PAY_OVERDUE: Warning,
+    PAY_PARTIAL: CurrencyDollar,
+    PAY_FAILED: Warning,
+    PAY_REMINDER_SENT: Bell,
+    // Leases
+    LEA_STARTED: House,
+    LEA_EXPIRING_90: Clock,
+    LEA_EXPIRING_30: Clock,
+    LEA_EXPIRED: Warning,
+    LEA_RENEWED: House,
+    LEA_TERMINATED: House,
+    LEA_EARLY_TERMINATION: Warning,
+    // Visits
+    VIS_SCHEDULED: Calendar,
+    VIS_REMINDER: Bell,
+    VIS_COMPLETED: Check,
+    VIS_CANCELLED: Calendar,
+    VIS_RESCHEDULED: Calendar,
+    VIS_NO_SHOW: Warning,
+    // Properties
+    PRO_PUBLISHED: Megaphone,
+    PRO_VIEWS_MILESTONE: Eye,
+    PRO_FEATURED: Star,
+    PRO_EXPIRED: Warning,
+    PRO_DEACTIVATED: Buildings,
+    PRO_PRICE_SUGGESTION: Buildings,
+    // Messages
+    MSG_NEW: ChatCircle,
+    MSG_REPLY: ChatCircle,
+    // Maintenance
+    MNT_REQUEST: Wrench,
+    MNT_UPDATED: Wrench,
+    MNT_COMPLETED: Check,
+    // Reviews
+    REV_RECEIVED: Star,
+    REV_RESPONSE_NEEDED: Star,
+    // System
+    SYS_SUBSCRIPTION_EXPIRING: Warning,
+    SYS_SUBSCRIPTION_EXPIRED: Warning,
+    SYS_PAYMENT_METHOD_EXPIRING: CurrencyDollar,
+    SYS_SECURITY_ALERT: ShieldCheck,
+    SYS_WELCOME: Sparkle,
+    SYS_PROFILE_INCOMPLETE: Users,
+    SYS_NEW_FEATURE: Sparkle,
+    SYS_REPORT_READY: FileText,
+  };
+
+  return iconMap[type] || Bell;
 };
 
-// Mock notifications data for landlords
-const mockNotifications = [
-  {
-    id: '1',
-    user: 'Carlos Martinez',
-    action: 'completó el pago del arriendo',
-    target: 'Apt. #203',
-    time: '12 min',
-    type: 'Pago',
-    icon: CreditCard,
-    unread: true,
-  },
-  {
-    id: '2',
-    user: 'Maria Garcia',
-    action: 'envió una nueva aplicación para',
-    target: 'Casa Providencia',
-    time: '1 hora',
-    type: 'Aplicación',
-    icon: Users,
-    unread: true,
-  },
-  {
-    id: '3',
-    user: 'Sistema',
-    action: 'Recordatorio: Contrato por vencer en',
-    target: '30 días - Depto. Las Condes',
-    time: '3 horas',
-    type: 'Contrato',
-    icon: FileText,
-    unread: true,
-  },
-  {
-    id: '4',
-    user: 'Roberto Silva',
-    action: 'solicitó mantenimiento en',
-    target: 'Baño principal - Apt. #105',
-    time: '5 horas',
-    type: 'Mantenimiento',
-    icon: Building2,
-    unread: false,
-  },
-  {
-    id: '5',
-    user: 'Ana Torres',
-    action: 'firmó el contrato para',
-    target: 'Oficina Santiago Centro',
-    time: '1 día',
-    type: 'Contrato',
-    icon: FileText,
-    unread: false,
-  },
-  {
-    id: '6',
-    user: 'Sistema',
-    action: 'Pago atrasado detectado:',
-    target: 'Juan Pérez - Casa Ñuñoa',
-    time: '2 días',
-    type: 'Alerta',
-    icon: CreditCard,
-    unread: false,
-  },
-  {
-    id: '7',
-    user: 'Diego Fernandez',
-    action: 'completó la verificación de antecedentes',
-    target: 'Puntuación: 85/100',
-    time: '3 días',
-    type: 'Verificación',
-    icon: Users,
-    unread: false,
-  },
-  {
-    id: '8',
-    user: 'Sistema',
-    action: 'Nueva propiedad publicada:',
-    target: 'Depto. Vitacura - $850.000/mes',
-    time: '1 semana',
-    type: 'Propiedad',
-    icon: Building2,
-    unread: false,
-  },
-  {
-    id: '9',
-    user: 'Laura Mendez',
-    action: 'dejó una reseña en',
-    target: 'Casa Providencia - ⭐⭐⭐⭐⭐',
-    time: '1 semana',
-    type: 'Reseña',
-    icon: Users,
-    unread: false,
-  },
-  {
-    id: '10',
-    user: 'Sistema',
-    action: 'Informe mensual disponible:',
-    target: 'Resumen Diciembre 2025',
-    time: '2 semanas',
-    type: 'Informe',
-    icon: FileText,
-    unread: false,
-  },
-];
+// Format relative time
+const formatRelativeTime = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-type FilterType = 'all' | 'unread' | 'payments' | 'applications' | 'contracts' | 'properties';
+  if (diffMins < 1) return 'ahora';
+  if (diffMins < 60) return `${diffMins} min`;
+  if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+  if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
+  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+};
+
+type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'contract' | 'lease' | 'visit' | 'property';
+
+// Skeleton component for loading state
+function NotificationSkeleton() {
+  return (
+    <div className="flex items-start gap-4 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 animate-pulse">
+      {/* Icon skeleton */}
+      <div className="w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+
+      {/* Content skeleton */}
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4" />
+        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-full" />
+        <div className="flex items-center gap-2 mt-2">
+          <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-16" />
+          <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-20" />
+        </div>
+      </div>
+
+      {/* Action skeleton */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700" />
+        <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700" />
+      </div>
+    </div>
+  );
+}
 
 export default function NotificacionesPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<LandlordNotification[]>(getLandlordNotifications());
   const [filter, setFilter] = useState<FilterType>('all');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const filteredNotifications = notifications.filter(n => {
+  const unreadCount = getUnreadCount(notifications);
+
+  const filteredNotifications = notifications.filter((n) => {
     if (filter === 'all') return true;
-    if (filter === 'unread') return n.unread;
-    if (filter === 'payments') return n.type === 'Pago' || n.type === 'Alerta';
-    if (filter === 'applications') return n.type === 'Aplicación' || n.type === 'Verificación';
-    if (filter === 'contracts') return n.type === 'Contrato';
-    if (filter === 'properties') return n.type === 'Propiedad' || n.type === 'Mantenimiento';
-    return true;
+    if (filter === 'unread') return !n.read;
+    return n.category === filter || (filter === 'payment' && n.category === 'alert');
   });
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, unread: false } : n
-    ));
+    setNotifications(
+      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+    setNotifications(notifications.filter((n) => n.id !== id));
   };
 
-  const handleNotificationClick = (notification: typeof mockNotifications[0]) => {
-    // Mark as read when clicked
-    if (notification.unread) {
+  const handleNotificationClick = (notification: LandlordNotification) => {
+    if (!notification.read) {
       markAsRead(notification.id);
     }
-    // Navigate to the relevant page
-    const config = notificationConfig[notification.type];
-    if (config) {
-      router.push(config.route);
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
     }
+  };
+
+  const getCategoryConfig = (category: LandlordNotificationCategory) => {
+    return LANDLORD_CATEGORIES[category] || LANDLORD_CATEGORIES.system;
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-semibold text-plan-primary">Notificaciones</h1>
-          <p className="text-[13px] text-plan-secondary mt-1">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+            Notificaciones
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todas leídas'}
           </p>
         </div>
@@ -181,134 +223,230 @@ export default function NotificacionesPage() {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
             >
               <Check className="w-4 h-4" />
               Marcar todo como leído
             </button>
           )}
-          <button className="p-2 text-plan-muted hover:text-plan-secondary transition-colors">
-            <Settings className="w-5 h-5" />
+          <button
+            onClick={() => router.push('/panel/configuracion')}
+            className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+          >
+            <Gear className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border">
+      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-neutral-200 dark:border-neutral-700 overflow-x-auto">
         {[
           { id: 'all', label: 'Todas' },
-          { id: 'unread', label: 'Sin leer' },
-          { id: 'payments', label: 'Pagos' },
-          { id: 'applications', label: 'Candidatos' },
-          { id: 'contracts', label: 'Contratos' },
-          { id: 'properties', label: 'Propiedades' },
+          { id: 'unread', label: 'Sin leer', count: unreadCount },
+          { id: 'payment', label: 'Pagos' },
+          { id: 'application', label: 'Candidatos' },
+          { id: 'contract', label: 'Contratos' },
+          { id: 'lease', label: 'Arriendos' },
+          { id: 'visit', label: 'Visitas' },
+          { id: 'property', label: 'Propiedades' },
         ].map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id as FilterType)}
             className={cn(
-              'px-4 py-2 text-[13px] font-medium transition-colors',
+              'px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-2',
               filter === f.id
-                ? 'bg-primary text-white'
-                : 'bg-muted text-plan-secondary hover:bg-muted'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
             )}
           >
             {f.label}
+            {f.count !== undefined && f.count > 0 && (
+              <span
+                className={cn(
+                  'text-xs px-1.5 py-0.5 rounded-full',
+                  filter === f.id
+                    ? 'bg-white/20 text-white'
+                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                )}
+              >
+                {f.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Notifications List */}
-      <div className="bg-card border border-plan-border">
-        {filteredNotifications.length === 0 ? (
-          <div className="py-16 text-center">
-            <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-[15px] font-medium text-foreground">No hay notificaciones</p>
-            <p className="text-[13px] text-plan-muted mt-1">
-              {filter === 'all'
-                ? 'Cuando tengas nuevas notificaciones aparecerán aquí'
-                : 'No hay notificaciones en esta categoría'}
-            </p>
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        {isLoading ? (
+          // Loading skeleton
+          <div>
+            {[...Array(5)].map((_, i) => (
+              <NotificationSkeleton key={i} />
+            ))}
           </div>
         ) : (
-          filteredNotifications.map((notification, index) => {
-            const IconComponent = notification.icon;
-            const config = notificationConfig[notification.type] || { route: '/panel', color: 'text-muted-foreground' };
+        <AnimatePresence mode="popLayout">
+          {filteredNotifications.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title={
+                filter === 'all'
+                  ? 'No hay notificaciones'
+                  : filter === 'unread'
+                    ? 'No hay notificaciones sin leer'
+                    : 'No hay notificaciones en esta categoría'
+              }
+              description="Cuando haya actividad en tus propiedades o candidatos, te notificaremos aquí."
+              className="border-0 rounded-none bg-transparent"
+            />
+          ) : (
+            filteredNotifications.map((notification, index) => {
+              const IconComponent = getNotificationIcon(notification.type);
+              const categoryConfig = getCategoryConfig(notification.category);
 
-            return (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={cn(
-                  'flex items-start gap-4 px-5 py-4 hover:bg-muted transition-colors cursor-pointer group',
-                  index !== filteredNotifications.length - 1 && 'border-b border-border',
-                  notification.unread && 'bg-muted'
-                )}
-              >
-                {/* Icon */}
-                <div className={cn(
-                  'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-sm',
-                  notification.unread ? 'bg-primary' : 'bg-muted'
-                )}>
-                  <IconComponent className={cn(
-                    'w-5 h-5',
-                    notification.unread ? 'text-white' : config.color
-                  )} />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-plan-primary">
-                    <span className="font-medium">{notification.user}</span>
-                    {' '}{notification.action}{' '}
-                    {notification.target && (
-                      <span className="font-medium">{notification.target}</span>
+              return (
+                <motion.div
+                  key={notification.id}
+                  layout
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={cn(
+                    'flex items-start gap-4 px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer group',
+                    index !== filteredNotifications.length - 1 &&
+                      'border-b border-neutral-100 dark:border-neutral-800',
+                    !notification.read && 'bg-indigo-50/50 dark:bg-indigo-500/5'
+                  )}
+                >
+                  {/* Icon */}
+                  <div
+                    className={cn(
+                      'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-xl',
+                      categoryConfig.bgColor,
+                      categoryConfig.darkBgColor
                     )}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[12px] text-plan-muted">{notification.time}</span>
-                    <span className="text-[12px] text-plan-muted">•</span>
-                    <span className={cn(
-                      'text-[12px] font-medium',
-                      config.color
-                    )}>
-                      {notification.type}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {notification.unread && (
-                    <button
-                      onClick={() => markAsRead(notification.id)}
-                      className="p-2 text-plan-muted hover:text-plan-status-green hover:bg-green-50 rounded-sm transition-colors"
-                      title="Marcar como leído"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteNotification(notification.id)}
-                    className="p-2 text-plan-muted hover:text-plan-status-red hover:bg-red-50 rounded-sm transition-colors"
-                    title="Eliminar"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                    <IconComponent
+                      className={cn('w-5 h-5', categoryConfig.color)}
+                      weight={!notification.read ? 'fill' : 'regular'}
+                    />
+                  </div>
 
-                {/* Arrow indicator and unread dot */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {notification.unread && (
-                    <div className="w-2 h-2 bg-plan-status-blue rounded-full" />
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={cn(
+                        'text-sm',
+                        !notification.read
+                          ? 'text-neutral-900 dark:text-white font-medium'
+                          : 'text-neutral-700 dark:text-neutral-300'
+                      )}
+                    >
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                        {formatRelativeTime(notification.createdAt)}
+                      </span>
+                      <span className="text-neutral-300 dark:text-neutral-600">
+                        •
+                      </span>
+                      <span
+                        className={cn(
+                          'text-xs font-medium',
+                          categoryConfig.color
+                        )}
+                      >
+                        {categoryConfig.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {notification.actionLabel && (
+                    <div
+                      className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => {
+                          if (notification.actionUrl) {
+                            markAsRead(notification.id);
+                            router.push(notification.actionUrl);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                      >
+                        {notification.actionLabel}
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-plan-muted transition-colors" />
-                </div>
-              </div>
-            );
-          })
+
+                  {/* Quick Actions */}
+                  <div
+                    className="flex items-center gap-1 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {!notification.read && (
+                      <button
+                        onClick={() => markAsRead(notification.id)}
+                        className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        title="Marcar como leído"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteNotification(notification.id)}
+                      className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Eliminar"
+                    >
+                      <TrashSimple className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Unread indicator and arrow */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {!notification.read && (
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full" />
+                    )}
+                    <CaretRight className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
         )}
       </div>
+
+      {/* Summary */}
+      {notifications.length > 0 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
+          <span>
+            Mostrando {filteredNotifications.length} de {notifications.length}{' '}
+            notificaciones
+          </span>
+          {notifications.length > 0 && (
+            <button
+              onClick={() =>
+                setNotifications(notifications.filter((n) => !n.read))
+              }
+              className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+            >
+              Limpiar leídas
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

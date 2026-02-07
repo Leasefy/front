@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { SpinnerGap, MagnifyingGlass } from '@phosphor-icons/react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
@@ -95,9 +95,9 @@ export function PropertyGrid({
   if (properties.length === 0) {
     return (
       <EmptyState
-        icon={Search}
+        icon={MagnifyingGlass}
         title="No encontramos propiedades"
-        description="Intenta ajustar los filtros para ver mas opciones."
+        description="Intenta ajustar los filtros para ver más opciones."
         action={{ label: 'Limpiar filtros', href: '/propiedades' }}
       />
     );
@@ -138,12 +138,12 @@ export function PropertyGrid({
           >
             {isLoadingMore ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <SpinnerGap className="w-4 h-4 mr-2 animate-spin" />
                 Cargando...
               </>
             ) : (
               <>
-                Cargar mas
+                Cargar más
                 <span className="ml-2 text-muted-foreground">
                   ({remainingCount} {remainingCount === 1 ? 'propiedad' : 'propiedades'})
                 </span>

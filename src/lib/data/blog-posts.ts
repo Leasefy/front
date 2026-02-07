@@ -20,7 +20,7 @@ export const blogPosts: BlogPost[] = [
     category: "Inversiones",
     date: "Ene 15, 2026",
     readTime: "6 min",
-    image: "https://images.pexels.com/photos/681335/pexels-photo-681335.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    image: "https://images.pexels.com/photos/2119714/pexels-photo-2119714.jpeg?auto=compress&cs=tinysrgb&w=1600&q=80",
     href: "/blog/invertir-propiedades-colombia",
     content: `Colombia se consolida como uno de los destinos más atractivos para la inversión inmobiliaria en América Latina. Con una economía en crecimiento, una clase media en expansión y un marco regulatorio cada vez más favorable para inversionistas nacionales y extranjeros, el 2026 presenta oportunidades únicas para quienes buscan rentabilidad en el sector de finca raíz.
 
@@ -92,7 +92,7 @@ El mercado inmobiliario colombiano ofrece opciones para todos los perfiles de in
     category: "Contratos",
     date: "Dic 22, 2025",
     readTime: "5 min",
-    image: "https://images.pexels.com/photos/4427430/pexels-photo-4427430.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    image: "https://images.pexels.com/photos/7681091/pexels-photo-7681091.jpeg?auto=compress&cs=tinysrgb&w=1600&q=80",
     href: "/blog/verificar-contrato-arriendo",
   },
   {
@@ -102,7 +102,7 @@ El mercado inmobiliario colombiano ofrece opciones para todos los perfiles de in
     category: "Lifestyle",
     date: "Nov 8, 2025",
     readTime: "4 min",
-    image: "https://images.pexels.com/photos/2462015/pexels-photo-2462015.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    image: "https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=1600&q=80",
     href: "/blog/colombia-mejor-opcion",
   },
   {
@@ -112,7 +112,7 @@ El mercado inmobiliario colombiano ofrece opciones para todos los perfiles de in
     category: "Propietarios",
     date: "Oct 3, 2025",
     readTime: "7 min",
-    image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    image: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1600&q=80",
     href: "/blog/preparar-apartamento-arriendo",
   },
 ];

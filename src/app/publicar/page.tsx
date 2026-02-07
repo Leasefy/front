@@ -11,6 +11,7 @@ import {
   StepPhotos,
   StepPricing,
   StepDescription,
+  StepTenantRequirements,
   StepPlan,
   StepReview,
 } from '@/components/publish/steps';
@@ -40,8 +41,10 @@ function PublishWizardContent() {
       case 7:
         return <StepDescription />;
       case 8:
-        return <StepPlan />;
+        return <StepTenantRequirements />;
       case 9:
+        return <StepPlan />;
+      case 10:
         return <StepReview />;
       default:
         return <StepType />;

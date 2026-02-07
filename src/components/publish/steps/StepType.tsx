@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { PROPERTY_TYPES } from '@/lib/types/publish';
@@ -20,10 +20,10 @@ export function StepType() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
-        <h3 className="text-lg font-semibold text-foreground">
-          Que tipo de inmueble vas a publicar?
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          ¿Qué tipo de inmueble vas a publicar?
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
           Selecciona el tipo que mejor describe tu propiedad
         </p>
       </div>
@@ -42,18 +42,18 @@ export function StepType() {
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ type: type.value as PropertyDraft['type'] })}
               className={cn(
-                'relative group p-6 rounded-[1px] border transition-all duration-200',
+                'relative group p-6 rounded-xl border transition-all duration-200',
                 isSelected
-                  ? 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)]'
-                  : 'border-border hover:border-border bg-card hover:shadow-sm'
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
+                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
               )}
             >
               {/* Selection indicator */}
               <div className={cn(
-                'absolute top-3 right-3 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-200',
+                'absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
                 isSelected
-                  ? 'border-primary bg-primary'
-                  : 'border-border'
+                  ? 'border-indigo-600 bg-indigo-600'
+                  : 'border-neutral-300 dark:border-neutral-600'
               )}>
                 {isSelected && (
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
@@ -73,13 +73,13 @@ export function StepType() {
               {/* Text */}
               <p className={cn(
                 'font-semibold text-[15px]',
-                isSelected ? 'text-foreground' : 'text-foreground/80'
+                isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
               )}>
                 {type.label}
               </p>
               <p className={cn(
                 'text-xs mt-1',
-                isSelected ? 'text-primary' : 'text-muted-foreground'
+                isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400'
               )}>
                 {type.description}
               </p>

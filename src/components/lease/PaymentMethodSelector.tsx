@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Check, Info } from 'lucide-react';
+import { Check, Info } from '@phosphor-icons/react';
 import { PAYMENT_METHODS } from '@/lib/data/mock-leases';
 import type { PaymentMethod } from '@/lib/types/lease';
 
@@ -24,10 +24,10 @@ export function PaymentMethodSelector({
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-foreground">
-          Metodo de pago
+          Método de pago
         </label>
         <span className="text-xs text-muted-foreground">
-          Selecciona como deseas pagar
+          Selecciona cómo deseas pagar
         </span>
       </div>
 
@@ -104,7 +104,7 @@ export function PaymentMethodSelector({
               {/* Coming soon badge */}
               {isDisabled && (
                 <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
-                  Proximamente
+                  Próximamente
                 </span>
               )}
             </button>
@@ -116,8 +116,8 @@ export function PaymentMethodSelector({
       <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-sm text-xs text-blue-700">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
-          Tu pago sera procesado de forma segura. Recibiras confirmacion por
-          correo electronico una vez completado.
+          Tu pago será procesado de forma segura. Recibirás confirmación por
+          correo electrónico una vez completado.
         </p>
       </div>
     </div>

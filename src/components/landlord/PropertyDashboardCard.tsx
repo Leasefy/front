@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Users, Clock, AlertCircle } from 'lucide-react';
+import { Users, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
@@ -148,7 +148,7 @@ export function PropertyDashboardCard({
               {/* Urgent badge - with subtle pulse */}
               {hasUrgent && (
                 <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-sm font-medium">
-                  <AlertCircle className="w-3.5 h-3.5 animate-pulse" />
+                  <WarningCircle className="w-3.5 h-3.5 animate-pulse" />
                   <span>Urgente</span>
                 </div>
               )}

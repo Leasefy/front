@@ -3,33 +3,33 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X } from "lucide-react";
+import { Plus, X } from '@phosphor-icons/react';
 
 const faqs = [
   {
-    question: "Como funciona el proceso de arriendo?",
+    question: "¿Cómo funciona el proceso de arriendo?",
     answer:
-      "Comenzamos con una consulta para entender tus necesidades, areas preferidas y presupuesto. Nuestro equipo luego selecciona propiedades personalizadas, coordina visitas y te guia en el proceso de aplicacion. Cada paso es apoyado con claridad y transparencia.",
+      "Comenzamos con una consulta para entender tus necesidades, áreas preferidas y presupuesto. Nuestro equipo luego selecciona propiedades personalizadas, coordina visitas y te guía en el proceso de aplicación. Cada paso es apoyado con claridad y transparencia.",
   },
   {
-    question: "Que es el scoring de riesgo AI?",
+    question: "¿Qué es el scoring de riesgo AI?",
     answer:
-      "Nuestro sistema de scoring AI evalua multiples factores del inquilino potencial: capacidad de pago, historial crediticio, referencias y estabilidad laboral. El resultado es un score de A a D que te ayuda a tomar decisiones informadas.",
+      "Nuestro sistema de scoring AI evalúa múltiples factores del inquilino potencial: capacidad de pago, historial crediticio, referencias y estabilidad laboral. El resultado es un score de A a D que te ayuda a tomar decisiones informadas.",
   },
   {
-    question: "Cuanto tiempo toma el proceso?",
+    question: "¿Cuánto tiempo toma el proceso?",
     answer:
-      "El tiempo varia segun el tipo de propiedad y la documentacion del inquilino. En promedio, el proceso completo desde la busqueda hasta la firma del contrato toma entre 1 y 2 semanas.",
+      "El tiempo varía según el tipo de propiedad y la documentación del inquilino. En promedio, el proceso completo desde la búsqueda hasta la firma del contrato toma entre 1 y 2 semanas.",
   },
   {
-    question: "Ofrecen visitas virtuales?",
+    question: "¿Ofrecen visitas virtuales?",
     answer:
-      "Si. Ofrecemos tours virtuales en HD, recorridos en video en vivo y consultas remotas para clientes que no pueden visitar en persona.",
+      "Sí. Ofrecemos tours virtuales en HD, recorridos en video en vivo y consultas remotas para clientes que no pueden visitar en persona.",
   },
   {
-    question: "Cuales son los costos del servicio?",
+    question: "¿Cuáles son los costos del servicio?",
     answer:
-      "Para inquilinos, nuestro servicio de busqueda es gratuito. Para propietarios, manejamos diferentes planes segun el nivel de servicio requerido.",
+      "Para inquilinos, nuestro servicio de búsqueda es gratuito. Para propietarios, manejamos diferentes planes según el nivel de servicio requerido.",
   },
 ];
 
@@ -46,8 +46,8 @@ export function FAQSection() {
   };
 
   return (
-    <section className="bg-muted overflow-hidden">
-      <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
+    <section className="bg-white overflow-hidden">
+      <div className="container-platform py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left - Header, Image & CTA */}
           <motion.div
@@ -66,7 +66,7 @@ export function FAQSection() {
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-[40px]">
+            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-[40px]">
               Preguntas frecuentes
             </h2>
 
@@ -83,31 +83,32 @@ export function FAQSection() {
 
             {/* Helper text - 18px, -0.72px letter-spacing, black/70% */}
             <p className="text-[18px] tracking-[-0.72px] leading-[24px] text-foreground/70 mb-[16px] max-w-[300px]">
-              Tienes mas preguntas? Nuestro equipo esta feliz de ayudar.
+              ¿Tienes más preguntas? Nuestro equipo está feliz de ayudar.
             </p>
 
             {/* CTA Button - Luxterra style: 35px height, 2px border-radius */}
             <a
-              href="mailto:info@arriendofacil.co"
+              href="mailto:info@leasefy.co"
               className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-border text-[15px] text-foreground tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
             >
               <span className="relative overflow-hidden h-[20px]">
                 <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
-                  Contactanos
+                  Contáctanos
                 </span>
                 <span className="block absolute top-full transition-transform duration-300 group-hover/btn:-translate-y-full">
-                  Contactanos
+                  Contáctanos
                 </span>
               </span>
             </a>
           </motion.div>
 
-          {/* Right - FAQ Accordion */}
+          {/* Right - FAQ Accordion with fixed height to prevent layout shift */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
+            className="min-h-[600px]"
           >
             {faqs.map((faq, index) => (
               <div

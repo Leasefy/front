@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeSlash, Envelope, Lock, User } from '@phosphor-icons/react';
 
 interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,14 +13,15 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 /**
- * Auth input component with icon, label, and error state
+ * Premium Auth input component with icon, label, and error state
  * Password input has show/hide toggle
  */
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
   ({ className, type = 'text', label, error, icon, isNewPassword, autoComplete, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
+    const [isFocused, setIsFocused] = React.useState(false);
     const isPassword = type === 'password';
-    const inputType = isPassword && showPassword ? 'text' : type;
+    const inputTextT = isPassword && showPassword ? 'text' : type;
 
     // Determine autoComplete value based on type and context
     const getAutoComplete = () => {
@@ -32,7 +33,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     };
 
     const IconComponent = {
-      email: Mail,
+      email: Envelope,
       password: Lock,
       user: User,
     }[icon || 'user'];
@@ -40,32 +41,38 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-sm font-medium text-foreground">
+          <label className="text-[13px] font-medium text-foreground">
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative group">
           {/* Left icon */}
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <IconComponent className="w-4 h-4" />
+            <div className={cn(
+              "absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200",
+              isFocused ? "text-primary" : "text-muted-foreground",
+              error && "text-destructive"
+            )}>
+              <IconComponent className="w-[18px] h-[18px]" strokeWidth={1.5} />
             </div>
           )}
 
           <input
-            type={inputType}
+            type={inputTextT}
             ref={ref}
             autoComplete={getAutoComplete()}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             className={cn(
-              'flex h-11 w-full rounded-sm border bg-card px-3 py-2 text-sm',
-              'transition-colors placeholder:text-muted-foreground',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'flex h-12 w-full rounded-xl border bg-background px-4 text-[14px]',
+              'transition-all duration-200 placeholder:text-muted-foreground/60',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              icon && 'pl-10',
-              isPassword && 'pr-10',
+              icon && 'pl-11',
+              isPassword && 'pr-11',
               error
-                ? 'border-destructive focus-visible:ring-destructive'
-                : 'border-input',
+                ? 'border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive'
+                : 'border-border hover:border-foreground/20',
               className
             )}
             {...props}
@@ -76,22 +83,42 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className={cn(
+                "absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200",
+                "text-muted-foreground hover:text-foreground focus:outline-none"
+              )}
               tabIndex={-1}
-              aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               {showPassword ? (
-                <EyeOff className="w-4 h-4" />
+                <EyeSlash className="w-[18px] h-[18px]" strokeWidth={1.5} />
               ) : (
-                <Eye className="w-4 h-4" />
+                <Eye className="w-[18px] h-[18px]" strokeWidth={1.5} />
               )}
             </button>
           )}
+
+          {/* Focus ring effect - subtle glow */}
+          <div
+            className={cn(
+              'absolute inset-0 rounded-xl pointer-events-none transition-opacity duration-200',
+              isFocused && !error ? 'opacity-100' : 'opacity-0',
+              'shadow-[0_0_0_4px_rgba(var(--primary-rgb),0.1)]'
+            )}
+            style={{
+              '--primary-rgb': '79, 70, 229'
+            } as React.CSSProperties}
+          />
         </div>
 
         {/* Error message */}
         {error && (
-          <p className="text-caption text-destructive">{error}</p>
+          <p className="text-[12px] text-destructive flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </p>
         )}
       </div>
     );

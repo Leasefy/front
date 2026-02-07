@@ -4,7 +4,7 @@ import { SoftwareProductJsonLd } from "@/components/seo/JsonLd";
 export const metadata: Metadata = {
   title: "Pagos de Arriendo Automatizados",
   description:
-    "Automatiza el cobro de arriendos. Recibe pagos con tarjeta, PSE, Nequi y efectivo. Recordatorios automaticos, reportes en tiempo real y conciliacion simplificada.",
+    "Automatiza el cobro de arriendos. Recibe pagos con tarjeta, PSE, Nequi y efectivo. Recordatorios automáticos, reportes en tiempo real y conciliación simplificada.",
   keywords: [
     "pago arriendo online",
     "cobrar arriendo tarjeta",
@@ -14,9 +14,9 @@ export const metadata: Metadata = {
     "pagar arriendo Nequi",
   ],
   openGraph: {
-    title: "Pagos de Arriendo Automatizados | Arriendo Facil",
+    title: "Pagos de Arriendo Automatizados | Leasefy",
     description:
-      "Recibe pagos de arriendo automaticamente. Multiples metodos de pago, recordatorios y reportes en tiempo real.",
+      "Recibe pagos de arriendo automáticamente. Múltiples métodos de pago, recordatorios y reportes en tiempo real.",
     type: "website",
   },
   alternates: {
@@ -32,8 +32,8 @@ export default function PagosLayout({
   return (
     <>
       <SoftwareProductJsonLd
-        name="Pagos de Arriendo Arriendo Facil"
-        description="Plataforma de recaudo automatizado para arriendos con multiples metodos de pago y reportes en tiempo real."
+        name="Pagos de Arriendo Leasefy"
+        description="Plataforma de recaudo automatizado para arriendos con múltiples métodos de pago y reportes en tiempo real."
         url="/productos/pagos"
         category="FinanceApplication"
         rating={{ value: 4.9, count: 2340 }}

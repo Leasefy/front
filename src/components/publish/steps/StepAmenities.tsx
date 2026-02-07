@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { AMENITIES_OPTIONS } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
@@ -35,10 +35,10 @@ export function StepAmenities() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-foreground mb-1">
-          Que amenidades tiene tu inmueble?
+        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
+          ¿Qué amenidades tiene tu inmueble?
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Selecciona todas las que apliquen. Esto ayuda a destacar tu propiedad.
         </p>
       </div>
@@ -53,23 +53,23 @@ export function StepAmenities() {
               type="button"
               onClick={() => toggleAmenity(amenity.value)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-[1px] border text-left transition-all duration-200',
+                'flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200',
                 isSelected
-                  ? 'border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)]'
-                  : 'border-border hover:border-border bg-card hover:shadow-sm'
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
+                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
               )}
             >
               <div className={cn(
-                'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-[1.5px] transition-all duration-200',
+                'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                 isSelected
-                  ? 'bg-primary border-primary'
-                  : 'border-border'
+                  ? 'bg-indigo-600 border-indigo-600'
+                  : 'border-neutral-300 dark:border-neutral-600'
               )}>
                 {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
               </div>
               <span className={cn(
                 'text-sm',
-                isSelected ? 'text-foreground font-medium' : 'text-foreground/70'
+                isSelected ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-700 dark:text-neutral-300'
               )}>
                 {amenity.label}
               </span>
@@ -83,12 +83,12 @@ export function StepAmenities() {
             key={amenity}
             type="button"
             onClick={() => toggleAmenity(amenity)}
-            className="flex items-center gap-3 px-4 py-3 rounded-[1px] border border-primary/40 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(91,95,239,0.15)] text-left transition-all duration-200"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm text-left transition-all duration-200"
           >
-            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-[1.5px] bg-primary border-primary">
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 bg-indigo-600 border-indigo-600">
               <Check className="w-3 h-3 text-white" strokeWidth={3} />
             </div>
-            <span className="text-sm text-foreground font-medium">{amenity}</span>
+            <span className="text-sm text-neutral-900 dark:text-white font-medium">{amenity}</span>
           </button>
         ))}
 
@@ -97,12 +97,12 @@ export function StepAmenities() {
           <button
             type="button"
             onClick={() => setShowCustom(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-[1px] border border-dashed border-border text-left transition-all duration-200 hover:border-border hover:shadow-sm"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-left transition-all duration-200 hover:border-neutral-400 dark:hover:border-neutral-500 hover:shadow-sm bg-white dark:bg-[#2a2a2c]"
           >
-            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-[1.5px] border-border">
-              <Plus className="w-3 h-3 text-muted-foreground" strokeWidth={2.5} />
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 border-neutral-300 dark:border-neutral-600">
+              <Plus className="w-3 h-3 text-neutral-400 dark:text-neutral-500" strokeWidth={2.5} />
             </div>
-            <span className="text-sm text-muted-foreground">Otro</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Otro</span>
           </button>
         ) : (
           <div className="col-span-2 sm:col-span-3 flex items-center gap-2">
@@ -116,20 +116,20 @@ export function StepAmenities() {
                 if (e.key === 'Enter') addCustom();
                 if (e.key === 'Escape') { setShowCustom(false); setCustomValue(''); }
               }}
-              className="flex-1"
+              className="flex-1 rounded-xl border-neutral-200 dark:border-neutral-700"
             />
             <button
               type="button"
               onClick={addCustom}
               disabled={!customValue.trim()}
-              className="px-4 py-2 text-sm font-medium bg-black text-white disabled:opacity-30 transition-opacity"
+              className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-xl disabled:opacity-30 transition-opacity hover:bg-indigo-700"
             >
               Agregar
             </button>
             <button
               type="button"
               onClick={() => { setShowCustom(false); setCustomValue(''); }}
-              className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
             >
               Cancelar
             </button>
@@ -138,7 +138,7 @@ export function StepAmenities() {
       </div>
 
       {draft.amenities.length > 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {draft.amenities.length} amenidad{draft.amenities.length !== 1 ? 'es' : ''} seleccionada{draft.amenities.length !== 1 ? 's' : ''}
         </p>
       )}

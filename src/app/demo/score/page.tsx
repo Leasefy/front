@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info } from '@phosphor-icons/react';
 import { RiskScoreDisplay } from '@/components/score';
 import { CandidateSelector, DemoControls, type DisplayVariant } from '@/components/demo';
 import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
@@ -84,7 +84,7 @@ export default function ScoreDemoPage() {
             </div>
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3" />
-              <span>Pagina de desarrollo</span>
+              <span>Página de desarrollo</span>
             </div>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function ScoreDemoPage() {
           </div>
         </section>
 
-        {/* Quick Level Navigation */}
+        {/* Quick Level Compass */}
         <section className="space-y-2">
           <h2 className="text-sm font-medium text-foreground">
             Saltar a nivel
@@ -176,14 +176,14 @@ export default function ScoreDemoPage() {
         {/* Integration Notes */}
         <section className="mt-8 pt-6 border-t border-border">
           <h2 className="text-sm font-medium text-foreground mb-3">
-            Notas de integracion (Fase 5)
+            Notas de integración (Fase 5)
           </h2>
           <div className="bg-muted rounded-sm p-4 text-sm text-muted-foreground space-y-2">
             <p>
               <strong>Import patterns:</strong>
             </p>
             <pre className="bg-card p-2 rounded text-xs overflow-x-auto">
-{`// Para badge rapido en listas
+{`// Para badge rápido en listas
 import { LevelBadge } from '@/components/score';
 
 // Para vista de detalle completa
@@ -202,7 +202,7 @@ import {
         {/* Footer */}
         <footer className="text-center text-xs text-muted-foreground py-6 border-t border-border">
           <p>
-            Esta pagina de demo valida que la Fase 4 esta completa.
+            Esta página de demo valida que la Fase 4 está completa.
             <br />
             Siguiente: Fase 5 - Dashboard del Propietario
           </p>

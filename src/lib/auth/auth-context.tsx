@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { User, AuthContextType } from './types'
+import type { User, AuthContextType, UserRole } from './types'
 import { validateMockCredentials, mockUsers } from '@/lib/data/mock-users'
 import { StorageManager } from '@/lib/utils/storage'
 import { authLogger } from '@/lib/utils/logger'
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       name: string,
       email: string,
       password: string,
-      role: 'tenant' | 'landlord'
+      role: UserRole
     ): Promise<{ success: boolean; error?: string; user?: User }> => {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 500))
@@ -103,12 +103,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         (u) => u.email.toLowerCase() === email.toLowerCase()
       )
       if (existingUser) {
-        return { success: false, error: 'Este correo ya esta registrado' }
+        return { success: false, error: 'Este correo ya está registrado' }
       }
 
       // Validate password
       if (password.length < 8) {
-        return { success: false, error: 'La contrasena debe tener al menos 8 caracteres' }
+        return { success: false, error: 'La contraseña debe tener al menos 8 caracteres' }
       }
 
       // Create new user (in memory only - won't persist between reloads)
@@ -117,6 +117,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email,
         name,
         role,
+        // Roboth landlords and tenants start with onboarding not completed
+        onboardingCompleted: false,
+        onboardingStatus: 'not_started',
       }
 
       setUser(newUser)

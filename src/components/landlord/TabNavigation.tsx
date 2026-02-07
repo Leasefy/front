@@ -19,7 +19,7 @@ interface TabNavigationProps {
 }
 
 /**
- * Tab Navigation - Premium horizontal tabs with animated indicator
+ * Tab Compass - Premium horizontal tabs with animated indicator
  * Used in property detail page
  */
 export function TabNavigation({

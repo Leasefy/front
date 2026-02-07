@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -23,7 +23,7 @@ import type { Candidate } from '@/lib/types/candidate';
 import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateCardProps {
@@ -55,7 +55,7 @@ function getFullCandidateData(candidateId: string): Candidate | undefined {
 /**
  * Derive history rating from candidate data
  */
-function getHistoryRating(
+function getClockCounterClockwiseRating(
   candidate: Candidate
 ): 'positive' | 'mixed' | 'limited' {
   if (candidate.previousLandlordsCount >= 2) {
@@ -112,7 +112,7 @@ export function CandidateCard({
   const employmentMonths = fullCandidate?.timeAtJob || 0;
   const monthlyIncome = fullCandidate?.totalIncome || 0;
   const historyRating = fullCandidate
-    ? getHistoryRating(fullCandidate)
+    ? getClockCounterClockwiseRating(fullCandidate)
     : 'limited';
   const aiExplanation = fullCandidate?.riskScore.aiExplanation || '';
 
@@ -128,8 +128,8 @@ export function CandidateCard({
 
     // Check pre-approval limit
     if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
-      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
-        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      toast.error(`Máximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobación de otro candidato primero.',
       });
       return;
     }
@@ -218,7 +218,7 @@ export function CandidateCard({
             <p className="text-sm text-muted-foreground truncate">
               {candidate.occupation}
             </p>
-            <p className="text-xs text-muted-foreground">{candidate.age} anos</p>
+            <p className="text-xs text-muted-foreground">{candidate.age} años</p>
           </div>
 
           {/* Risk Badge */}

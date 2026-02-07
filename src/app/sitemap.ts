@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { blogPosts } from '@/lib/data/blog-posts';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://arriendofacil.co';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
 
   // Static pages with their priorities and change frequencies
   const staticPages: MetadataRoute.Sitemap = [

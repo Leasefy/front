@@ -3,7 +3,7 @@
  * For SEO rich snippets and Google Knowledge Graph
  */
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://arriendofacil.co';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
 
 // ============================================
 // Organization Schema
@@ -12,8 +12,8 @@ export function OrganizationJsonLd() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Arriendo Facil",
-    alternateName: "ArriendoFacil",
+    name: "Leasefy",
+    alternateName: "Leasefy",
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description:
@@ -22,24 +22,24 @@ export function OrganizationJsonLd() {
     founders: [
       {
         "@type": "Person",
-        name: "Arriendo Facil Team",
+        name: "Leasefy Team",
       },
     ],
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Bogota",
+      addressLocality: "Bogotá",
       addressCountry: "CO",
     },
     contactPoint: {
       "@type": "ContactPoint",
-      contactType: "customer service",
-      email: "contacto@arriendofacil.co",
+      contactTextT: "customer service",
+      email: "contacto@leasefy.co",
       availableLanguage: ["Spanish"],
     },
     sameAs: [
-      "https://twitter.com/arriendofacil",
-      "https://linkedin.com/company/arriendofacil",
-      "https://instagram.com/arriendofacil",
+      "https://twitter.com/leasefy",
+      "https://linkedin.com/company/leasefy",
+      "https://instagram.com/leasefy",
     ],
     areaServed: {
       "@type": "Country",
@@ -56,19 +56,19 @@ export function OrganizationJsonLd() {
 }
 
 // ============================================
-// Website Schema with SearchAction
+// Website Schema with MagnifyingGlassAction
 // ============================================
 export function WebsiteJsonLd() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Arriendo Facil",
+    name: "Leasefy",
     url: siteUrl,
     description:
-      "Marketplace de arriendos en Colombia con verificacion de inquilinos y contratos digitales.",
+      "Marketplace de arriendos en Colombia con verificación de inquilinos y contratos digitales.",
     inLanguage: "es-CO",
     potentialAction: {
-      "@type": "SearchAction",
+      "@type": "MagnifyingGlassAction",
       target: {
         "@type": "EntryPoint",
         urlTemplate: `${siteUrl}/propiedades?q={search_term_string}`,
@@ -92,7 +92,7 @@ export function LocalBusinessJsonLd() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
-    name: "Arriendo Facil",
+    name: "Leasefy",
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     image: `${siteUrl}/og-image.jpg`,
@@ -100,7 +100,7 @@ export function LocalBusinessJsonLd() {
       "Plataforma digital de arriendos con scoring de inquilinos AI y contratos inteligentes.",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Bogota",
+      addressLocality: "Bogotá",
       addressRegion: "Cundinamarca",
       addressCountry: "CO",
     },
@@ -110,8 +110,8 @@ export function LocalBusinessJsonLd() {
       longitude: -74.0721,
     },
     areaServed: [
-      { "@type": "City", name: "Bogota" },
-      { "@type": "City", name: "Medellin" },
+      { "@type": "City", name: "Bogotá" },
+      { "@type": "City", name: "Medellín" },
       { "@type": "City", name: "Cali" },
       { "@type": "City", name: "Barranquilla" },
       { "@type": "City", name: "Cartagena" },
@@ -213,7 +213,7 @@ export function ArticleJsonLd({
   image,
   datePublished,
   dateModified,
-  authorName = "Arriendo Facil",
+  authorName = "Leasefy",
   section = "Real Estate",
   tags = [],
 }: ArticleProps) {
@@ -238,7 +238,7 @@ export function ArticleJsonLd({
     },
     publisher: {
       "@type": "Organization",
-      name: "Arriendo Facil",
+      name: "Leasefy",
       logo: {
         "@type": "ImageObject",
         url: `${siteUrl}/logo.png`,
@@ -278,7 +278,7 @@ interface PropertyListingProps {
     neighborhood: string;
     region?: string;
   };
-  propertyType: string;
+  propertyTextT: string;
   bedrooms?: number;
   bathrooms?: number;
   areaSize?: number;
@@ -292,7 +292,7 @@ export function PropertyListingJsonLd({
   price,
   currency = "COP",
   address,
-  propertyType,
+  propertyTextT,
   bedrooms,
   bathrooms,
   areaSize,
@@ -323,8 +323,8 @@ export function PropertyListingJsonLd({
     additionalProperty: [
       {
         "@type": "PropertyValue",
-        name: "Property Type",
-        value: propertyType,
+        name: "Property TextT",
+        value: propertyTextT,
       },
       ...(bedrooms
         ? [
@@ -339,7 +339,7 @@ export function PropertyListingJsonLd({
         ? [
             {
               "@type": "PropertyValue",
-              name: "Bathrooms",
+              name: "Bathtubrooms",
               value: bathrooms,
             },
           ]
@@ -438,16 +438,16 @@ interface ServiceProps {
   url: string;
   provider?: string;
   areaServed?: string[];
-  serviceType: string;
+  serviceTextT: string;
 }
 
 export function ServiceJsonLd({
   name,
   description,
   url,
-  provider = "Arriendo Facil",
+  provider = "Leasefy",
   areaServed = ["Colombia"],
-  serviceType,
+  serviceTextT,
 }: ServiceProps) {
   const schema = {
     "@context": "https://schema.org",
@@ -464,7 +464,7 @@ export function ServiceJsonLd({
       "@type": "Country",
       name: area,
     })),
-    serviceType,
+    serviceTextT,
   };
 
   return (

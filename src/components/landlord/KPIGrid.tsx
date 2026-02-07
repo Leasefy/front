@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Users, Clock, CheckCircle2, Award } from 'lucide-react';
+import { Buildings, Users, Clock, CheckCircle, Medal, Trophy } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { KPICard } from './KPICard';
@@ -48,14 +48,14 @@ export function KPIGrid({ summary, className }: KPIGridProps) {
       <KPICard
         title="Pre-aprobados"
         value={preApproved}
-        icon={CheckCircle2}
+        icon={CheckCircle}
         variant="info"
       />
 
       <KPICard
         title="Aprobados"
         value={approved}
-        icon={Award}
+        icon={Trophy}
         variant="success"
       />
     </div>

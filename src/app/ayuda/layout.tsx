@@ -1,10 +1,11 @@
 import { Metadata } from "next";
 import { FAQJsonLd } from "@/components/seo/JsonLd";
+import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Centro de Ayuda y Preguntas Frecuentes",
   description:
-    "Resuelve tus dudas sobre arriendos en Colombia. Preguntas frecuentes para arrendadores, arrendatarios, contratos, pagos y mas.",
+    "Resuelve tus dudas sobre arriendos en Colombia. Preguntas frecuentes para arrendadores, arrendatarios, contratos, pagos y más.",
   keywords: [
     "ayuda arriendos",
     "preguntas frecuentes alquiler",
@@ -13,9 +14,9 @@ export const metadata: Metadata = {
     "scoring inquilinos que es",
   ],
   openGraph: {
-    title: "Centro de Ayuda | Arriendo Facil",
+    title: "Centro de Ayuda | Leasefy",
     description:
-      "Encuentra respuestas a todas tus preguntas sobre arriendos, contratos, pagos y verificacion de inquilinos.",
+      "Encuentra respuestas a todas tus preguntas sobre arriendos, contratos, pagos y verificación de inquilinos.",
     type: "website",
   },
   alternates: {
@@ -28,5 +29,5 @@ export default function AyudaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ForceLightMode>{children}</ForceLightMode>;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, PaperPlaneTilt } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { WIZARD_STEPS } from '@/lib/types/application';
 import { Button } from '@/components/ui/button';
@@ -84,7 +84,7 @@ export function WizardNavigation({
         ) : isReviewStep ? (
           <>
             <span>Enviar solicitud</span>
-            <Send className="h-4 w-4" />
+            <PaperPlaneTilt className="h-4 w-4" />
           </>
         ) : (
           <>

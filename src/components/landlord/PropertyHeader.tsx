@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Bed, Maximize2, Users, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Bed, CornersOut, Users, CheckCircle, ArrowsOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
@@ -54,7 +54,7 @@ export function PropertyHeader({
 
   return (
     <div className={cn('bg-card rounded-sm border border-border overflow-hidden', className)}>
-      {/* Back Navigation */}
+      {/* Back Compass */}
       <div className="px-4 sm:px-6 py-3 border-b border-border">
         <Link
           href="/panel"
@@ -102,7 +102,7 @@ export function PropertyHeader({
                   <span>{bedrooms} hab.</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Maximize2 className="w-4 h-4 text-muted-foreground" />
+                  <ArrowsOut className="w-4 h-4 text-muted-foreground" />
                   <span>{area} m²</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -111,7 +111,7 @@ export function PropertyHeader({
                 </div>
                 {preApprovedCount > 0 && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-medium">
                       {preApprovedCount}/{MAX_PRE_APPROVALS} pre-aprobados
                     </span>

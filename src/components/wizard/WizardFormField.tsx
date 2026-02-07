@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, type InputHTMLAttributes, forwardRef } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -145,7 +145,7 @@ export function DarkSelect({
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50 pointer-events-none" />
+      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50 pointer-events-none" />
     </div>
   );
 }
@@ -233,7 +233,7 @@ export function LightSelect({
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
     </div>
   );
 }

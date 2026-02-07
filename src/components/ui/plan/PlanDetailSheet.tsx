@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Phone, MapPin, MoreHorizontal } from 'lucide-react';
+import { X, Envelope, Phone, MapPin, DotsThree } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { PlanStatusBadge, PlanStatusType } from './PlanStatusBadge';
@@ -141,7 +141,7 @@ export function PlanDetailSheet({
           </h2>
           <div className="flex items-center gap-2">
             <button className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
+              <DotsThree className="w-5 h-5" />
             </button>
             <button
               onClick={() => onOpenChange(false)}
@@ -207,7 +207,7 @@ export function PlanDetailSheet({
                   href={`mailto:${contact.email}`}
                   className="flex items-center gap-3 text-sm text-plan-secondary hover:text-plan-primary transition-colors"
                 >
-                  <Mail className="w-4 h-4" />
+                  <Envelope className="w-4 h-4" />
                   <span>{contact.email}</span>
                 </a>
               )}

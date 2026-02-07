@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Phone, FileText, Lock, X } from 'lucide-react';
+import { Envelope, Phone, FileText, Lock, X } from '@phosphor-icons/react';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { cn } from '@/lib/utils';
 import {
@@ -28,7 +28,7 @@ import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateDetailProps {
@@ -147,13 +147,13 @@ export function CandidateDetail({
                     {candidate.fullName}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {candidate.occupation}, {candidate.age} anos
+                    {candidate.occupation}, {candidate.age} años
                   </p>
 
                   {/* Contact Info */}
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5" />
+                      <Envelope className="h-3.5 w-3.5" />
                       <span className={cn(!isDataRevealed && 'font-mono text-muted-foreground')}>
                         {getDisplayEmail(candidate.email, currentStatus)}
                       </span>

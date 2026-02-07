@@ -1,11 +1,11 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Warning, ArrowsClockwise } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ErrorStateProps {
@@ -33,8 +33,8 @@ export interface ErrorStateProps {
  * - Professional, non-alarming design
  */
 export function ErrorState({
-  title = 'Algo salio mal',
-  description = 'No pudimos cargar esta pagina. Por favor intenta de nuevo.',
+  title = 'Algo salió mal',
+  description = 'No pudimos cargar esta página. Por favor intenta de nuevo.',
   onRetry,
   className,
 }: ErrorStateProps) {
@@ -45,7 +45,7 @@ export function ErrorState({
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-red-500/10 rounded-sm blur-xl" />
           <div className="relative rounded-sm bg-gradient-to-br from-red-100 to-red-50 p-5 border border-red-200/50">
-            <AlertTriangle className="h-8 w-8 text-red-500" />
+            <Warning className="h-8 w-8 text-red-500" />
           </div>
         </div>
 
@@ -58,7 +58,7 @@ export function ErrorState({
         {/* Retry Button */}
         {onRetry && (
           <Button onClick={onRetry} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+            <ArrowsClockwise className="h-4 w-4" />
             Intentar de nuevo
           </Button>
         )}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { SectionLabel } from "@/components/ui/section-label";
-import { ArrowUpRight, Search, ShieldCheck, BarChart3 } from "lucide-react";
+import { ArrowUpRight, MagnifyingGlass, ShieldCheck, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
 
 const services = [
   {
@@ -14,7 +14,7 @@ const services = [
     image: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1600",
     href: "/propiedades",
     cta: "Ver propiedades",
-    icon: Search,
+    icon: MagnifyingGlass,
     // Hero — tall, spans 7 cols and 2 rows
     className: "md:col-span-7 md:row-span-2 h-[320px] md:h-auto",
   },
@@ -23,7 +23,7 @@ const services = [
     subtitle: "Scoring inteligente",
     description: "Evaluamos inquilinos con IA para decisiones informadas en minutos.",
     image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    href: "/pricing",
+    href: "/productos/evaluacion",
     cta: "Cómo funciona",
     icon: ShieldCheck,
     className: "md:col-span-5 h-[280px] md:h-auto",
@@ -33,9 +33,9 @@ const services = [
     subtitle: "Precio justo, datos reales",
     description: "Análisis comparativo del mercado para entender el valor real de tu propiedad.",
     image: "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    href: "/pricing",
+    href: "/para/propietarios",
     cta: "Solicitar valoración",
-    icon: BarChart3,
+    icon: ChartBar,
     className: "md:col-span-5 h-[280px] md:h-auto",
   },
 ];
@@ -43,13 +43,13 @@ const services = [
 export function ServicesSection() {
   return (
     <section className="bg-white py-20 md:py-28">
-      <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+      <div className="container-platform">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-14 md:mb-20">
           <SectionLabel className="mb-4 justify-center">
             Nuestros servicios
           </SectionLabel>
-          <h2 className="text-[1.75rem] md:text-[2.5rem] font-light text-foreground leading-[1.2] tracking-[-0.02em] italic mb-3">
+          <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic mb-3">
             Lo que ofrecemos
           </h2>
           <p className="text-muted-foreground text-[15px] md:text-base max-w-md leading-relaxed">
@@ -100,7 +100,7 @@ export function ServicesSection() {
                     </div>
 
                     {/* Title */}
-                    <h3 className={`font-medium text-white tracking-[-0.02em] leading-tight mb-1.5 flex items-center gap-2 ${
+                    <h3 className={`font-heading font-medium text-white tracking-[-0.02em] leading-tight mb-1.5 flex items-center gap-2 ${
                       index === 0 ? "text-[1.75rem] md:text-[2.25rem]" : "text-[1.25rem] md:text-[1.5rem]"
                     }`}>
                       {service.title}

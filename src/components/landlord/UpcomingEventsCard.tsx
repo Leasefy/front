@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, CreditCard, RefreshCw, ClipboardCheck } from 'lucide-react';
+import { Calendar, CreditCard, ArrowsClockwise, ClipboardText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import type { UpcomingEvent } from '@/lib/data/mock-dashboard';
@@ -15,8 +15,8 @@ interface UpcomingEventsCardProps {
 const eventIcons = {
   lease_ending: Calendar,
   payment_due: CreditCard,
-  contract_renewal: RefreshCw,
-  inspection: ClipboardCheck,
+  contract_renewal: ArrowsClockwise,
+  inspection: ClipboardText,
 };
 
 function formatDaysUntil(days: number): string {
@@ -25,7 +25,7 @@ function formatDaysUntil(days: number): string {
     return `hace ${absDays}d`;
   }
   if (days === 0) return 'Hoy';
-  if (days === 1) return 'Manana';
+  if (days === 1) return 'Mañana';
   if (days <= 7) return `${days}d`;
   if (days <= 30) {
     const weeks = Math.round(days / 7);
@@ -116,7 +116,7 @@ export function UpcomingEventsCard({ events, className, maxEvents = 5 }: Upcomin
   if (events.length === 0) {
     return (
       <div className={cn('text-sm text-muted-foreground text-center py-8', className)}>
-        No hay eventos proximos
+        No hay eventos próximos
       </div>
     );
   }

@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, Clock, Search, Bell, FileText, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 interface ConfirmationScreenProps {
@@ -31,13 +31,13 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
           {/* Success header */}
           <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+              <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Aplicacion enviada!
+              Aplicación enviada!
             </h1>
             <p className="text-muted-foreground">
-              Tu aplicacion para{' '}
+              Tu aplicación para{' '}
               <span className="font-medium text-foreground">
                 {property.title}
               </span>{' '}
@@ -49,26 +49,26 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
           <div className="px-6 py-6">
             <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
               <FileText className="h-4 w-4 text-blue-600" />
-              Que sigue:
+              ¿Qué sigue?
             </h2>
 
             <div className="space-y-4">
               <TimelineItem
-                icon={<Search className="h-4 w-4" />}
-                title="Verificacion de documentos"
-                description="Revisaremos tus documentos en las proximas 24 horas."
+                icon={<MagnifyingGlass className="h-4 w-4" />}
+                title="Verificación de documentos"
+                description="Revisaremos tus documentos en las próximas 24 horas."
                 number={1}
               />
               <TimelineItem
                 icon={<Clock className="h-4 w-4" />}
-                title="Evaluacion AI"
-                description="Nuestro sistema evaluara tu perfil de riesgo automaticamente."
+                title="Evaluación AI"
+                description="Nuestro sistema evaluará tu perfil de riesgo automáticamente."
                 number={2}
               />
               <TimelineItem
                 icon={<Bell className="h-4 w-4" />}
                 title="Resultado"
-                description="Te contactaremos por email y WhatsApp con la decision."
+                description="Te contactaremos por email y WhatsApp con la decisión."
                 number={3}
                 isLast
               />
@@ -77,12 +77,12 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
 
           {/* Tracking code */}
           <div className="mx-6 mb-6 p-4 bg-muted border border-border rounded-sm">
-            <p className="text-xs text-muted-foreground mb-1">Codigo de seguimiento</p>
+            <p className="text-xs text-muted-foreground mb-1">Código de seguimiento</p>
             <p className="text-lg font-mono font-bold text-foreground tracking-wider">
               {trackingCode}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Guarda este codigo para consultar el estado de tu aplicacion.
+              Guarda este código para consultar el estado de tu aplicación.
             </p>
           </div>
 
@@ -96,15 +96,14 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
             <Link href="/propiedades" className="flex-1">
               <Button className="w-full">
                 Volver a propiedades
-                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Save indicator */}
+        {/* FloppyDisk indicator */}
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Los datos de esta aplicacion han sido guardados.
+          Los datos de esta aplicación han sido guardados.
         </p>
       </div>
     </div>

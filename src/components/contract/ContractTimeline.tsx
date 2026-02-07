@@ -2,11 +2,11 @@
 
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
-import { Check, Circle, Clock } from 'lucide-react';
+import { Check, Circle, Clock } from '@phosphor-icons/react';
 import type { ContractStep } from '@/lib/types/contract';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ContractTimelineProps {

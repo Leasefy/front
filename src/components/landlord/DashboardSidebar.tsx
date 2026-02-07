@@ -3,22 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  MessageSquare,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronRight,
-  Sparkles,
-  FileText,
-  Home,
-  Bell,
-  Calendar,
-} from 'lucide-react';
+import { SquaresFour, Buildings, Users, Chat, Gear, SignOut, List, X, CaretRight, Sparkle, FileText, House, Bell, Calendar } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -31,18 +16,18 @@ import {
 } from '@/components/ui/sheet';
 import { MOCK_SUBSCRIPTION, getPlanById } from '@/lib/data/mock-subscriptions';
 
-// Navigation items
+// Compass items
 const NAV_ITEMS = [
   {
     label: 'Panel',
     href: '/panel',
-    icon: LayoutDashboard,
+    icon: SquaresFour,
     exact: true,
   },
   {
     label: 'Mis Propiedades',
     href: '/panel/propiedades',
-    icon: Building2,
+    icon: Buildings,
   },
   {
     label: 'Candidatos',
@@ -57,7 +42,7 @@ const NAV_ITEMS = [
   {
     label: 'Arriendos',
     href: '/panel/leases',
-    icon: Home,
+    icon: House,
   },
   {
     label: 'Visitas',
@@ -67,7 +52,7 @@ const NAV_ITEMS = [
   {
     label: 'Mensajes',
     href: '/panel/mensajes',
-    icon: MessageSquare,
+    icon: Chat,
     badge: 3,
   },
   {
@@ -78,7 +63,7 @@ const NAV_ITEMS = [
   {
     label: 'Configuracion',
     href: '/panel/configuracion',
-    icon: Settings,
+    icon: Gear,
   },
 ];
 
@@ -157,7 +142,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
           <div className="w-10 h-10 bg-gradient-to-br from-foreground to-foreground/80 rounded-sm flex items-center justify-center shadow-lg shadow-foreground/20 transition-transform duration-300 group-hover:scale-105">
-            <Building2 className="w-5 h-5 text-white" />
+            <Buildings className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
             <span className="text-base font-semibold text-foreground tracking-[-0.02em]">
@@ -173,7 +158,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Subtle divider */}
       <div className="mx-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-      {/* Navigation - with stagger animation */}
+      {/* Compass - with stagger animation */}
       <nav className="flex-1 p-4 space-y-1">
         {NAV_ITEMS.map((item) => (
           <NavItem
@@ -195,7 +180,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
 
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-white/90" />
+                <Sparkle className="w-4 h-4 text-white/90" />
                 <span className="text-xs font-normal text-white/90 font-mono uppercase tracking-wider">
                   Pro
                 </span>
@@ -210,7 +195,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
                   className="w-full bg-white text-foreground hover:bg-white/90 font-semibold shadow-md"
                 >
                   Mejorar plan
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <CaretRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -238,7 +223,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
           className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-sm transition-all duration-200"
           onClick={logout}
         >
-          <LogOut className="w-4 h-4" />
+          <SignOut className="w-4 h-4" />
           <span className="text-sm">Cerrar sesion</span>
         </Button>
       </div>
@@ -272,14 +257,14 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
         <SidebarContent />
       </aside>
 
-      {/* Mobile Menu Button */}
+      {/* Mobile List Button */}
       <Button
         variant="ghost"
         size="icon"
         className="lg:hidden fixed top-4 left-4 z-40 bg-white dark:bg-card shadow-sm border border-border"
         onClick={() => setMobileOpen(true)}
       >
-        <Menu className="w-5 h-5" />
+        <List className="w-5 h-5" />
         <span className="sr-only">Abrir menu</span>
       </Button>
 
@@ -287,7 +272,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="sr-only">
-            <SheetTitle>Menu de navegacion</SheetTitle>
+            <SheetTitle>List de navegacion</SheetTitle>
           </SheetHeader>
           <SidebarContent onItemClick={() => setMobileOpen(false)} />
         </SheetContent>

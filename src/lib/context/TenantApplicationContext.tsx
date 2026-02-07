@@ -18,7 +18,7 @@ import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 /**

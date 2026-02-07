@@ -1,331 +1,474 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowUpRight, Calendar, MapPin, CreditCard, FileText, Home } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb } from '@phosphor-icons/react';
 
-import { getActiveLeasesForTenant, getNextPayment } from '@/lib/data/mock-leases';
-import { getActiveApplications } from '@/lib/data/mock-tenant-applications';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
-import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
-import { PlanStatusBadge, getApplicationStatus } from '@/components/ui/plan/PlanStatusBadge';
+import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
+import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
+import { useTranslation } from '@/lib/i18n';
+import type { Property } from '@/lib/types/property';
 
 /**
- * Tenant Dashboard - PLan CRM Style
+ * Tenant Dashboard - Landing Page Style
+ * Handles both new users (empty states) and active users (with data)
  */
 export default function InquilinoPage() {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
-  const firstName = user?.name?.split(' ')[0] || 'Usuario';
+  const { t, locale, formatCurrency: i18nFormatCurrency } = useTranslation();
+  const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');
 
-  const tenantId = 'user-tenant-1';
-  const activeLeases = getActiveLeasesForTenant(tenantId);
-  const activeApplications = getActiveApplications();
-  const primaryLease = activeLeases[0];
-  const nextPayment = primaryLease ? getNextPayment(primaryLease.id) : undefined;
+  // Property detail sheet state
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Calculate days until next payment
-  const getDaysUntilPayment = () => {
-    if (!nextPayment) return null;
-    const dueDate = new Date(nextPayment.dueDate);
-    const today = new Date();
-    return Math.max(0, Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  // Onboarding state - check if profile is complete
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkOnboardingStatus = () => {
+      const saved = localStorage.getItem('plan_onboarding_tenant');
+      if (!saved) {
+        setIsOnboardingComplete(false);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(saved);
+        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 3);
+        setIsOnboardingComplete(completedSteps.length >= 3);
+      } catch {
+        setIsOnboardingComplete(false);
+      }
+    };
+
+    checkOnboardingStatus();
+
+    window.addEventListener('storage', checkOnboardingStatus);
+    window.addEventListener('onboarding-updated', checkOnboardingStatus);
+    return () => {
+      window.removeEventListener('storage', checkOnboardingStatus);
+      window.removeEventListener('onboarding-updated', checkOnboardingStatus);
+    };
+  }, []);
+
+  const handleViewProperty = (property: Property) => {
+    setSelectedProperty(property);
+    setSheetOpen(true);
   };
 
-  const daysUntil = getDaysUntilPayment();
+  // ==========================================================================
+  // TODO (Backend): Replace these with actual API calls
+  // For a new user, these should all be empty
+  // ==========================================================================
+  const activeLeases: any[] = []; // Empty for new users
+  const activeApplications: any[] = []; // Empty for new users
+  const nextPayment: { amount: number; dueDate: string } | null = null; // No payments for new users
+  const primaryLease: { id: string; propertyName: string } | null = null;
+  // ==========================================================================
 
-  // Calculate payment progress (days passed in month)
-  const getPaymentProgress = () => {
-    if (!nextPayment) return 0;
-    const dueDate = new Date(nextPayment.dueDate);
-    const today = new Date();
-    const startOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
-    const totalDays = dueDate.getDate() - startOfMonth.getDate();
-    const daysElapsed = Math.min(today.getDate() - 1, totalDays);
-    return Math.round((daysElapsed / totalDays) * 100);
-  };
+  // Featured properties for recommendation (always show)
+  const featuredProperties = mockProperties.slice(0, 4);
 
-  const getPropertyForApplication = (propertyId: string) => {
-    return mockProperties.find(p => p.id === propertyId);
-  };
+  // Loading state
+  if (isOnboardingComplete === null) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  // Show onboarding if not complete
+  if (!isOnboardingComplete) {
+    return <TenantDashboardEmpty />;
+  }
+
+  // Check if user is "new" (no leases, no applications)
+  const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-plan-primary">
-            {greeting}, {firstName}
-          </h1>
-          <p className="mt-1 text-plan-secondary">
-            Resumen de tu arriendo y actividad reciente
+        {/* Hero Header */}
+        <motion.header
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+            {greeting}
           </p>
-        </header>
+          <h1 className="text-3xl sm:text-4xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            {t('dashboard.hello', { name: firstName })}
+          </h1>
+          {isNewUser && (
+            <p className="mt-2 text-neutral-500 dark:text-neutral-400">
+              {locale === 'es'
+                ? '¡Tu perfil está listo! Ahora puedes buscar y aplicar a propiedades.'
+                : 'Your profile is ready! Now you can search and apply to properties.'}
+            </p>
+          )}
+        </motion.header>
 
-        {/* Stats Row */}
-        <PlanStatsGrid columns={4} className="mb-8">
-          <PlanStatsCard
-            label="Proximo pago"
-            value={formatCurrency(nextPayment?.amount || (primaryLease ? primaryLease.monthlyRent + primaryLease.adminFee : 0))}
-            sublabel={daysUntil !== null ? `Vence en ${daysUntil} dias` : 'Sin pagos pendientes'}
-            icon={CreditCard}
-          />
-          <PlanStatsCard
-            label="Arriendos activos"
-            value={activeLeases.length}
-            sublabel={activeLeases.length > 0 ? 'Contratos vigentes' : 'Sin arriendos'}
-            icon={Home}
-          />
-          <PlanStatsCard
-            label="Aplicaciones"
-            value={activeApplications.length}
-            sublabel="En proceso"
-            icon={FileText}
-          />
-          <PlanStatsCard
-            label="Progreso del mes"
-            value={`${getPaymentProgress()}%`}
-            sublabel="Hacia proximo pago"
-            variant="accent"
-          />
-        </PlanStatsGrid>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* Active Leases */}
-            <section className="bg-card border border-plan-border overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="font-semibold text-plan-primary">Mis arriendos</h2>
-                {activeLeases.length > 0 && (
-                  <Link
-                    href="/inquilino/arriendo"
-                    className="text-sm text-plan-secondary hover:text-plan-primary transition-colors flex items-center gap-1"
-                  >
-                    Ver todos
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
-                )}
+        {/* Welcome Card for New Users */}
+        {isNewUser && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6 sm:p-8"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
               </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+                  {locale === 'es' ? '¡Perfil completado!' : 'Profile completed!'}
+                </h2>
+                <p className="text-neutral-500 dark:text-neutral-400">
+                  {locale === 'es'
+                    ? 'Tu score de inquilino está activo. Explora propiedades y aplica con un solo clic.'
+                    : 'Your tenant score is active. Explore properties and apply with one click.'}
+                </p>
+              </div>
+              <Link
+                href="/propiedades"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors flex-shrink-0"
+              >
+                <MagnifyingGlass className="w-4 h-4" />
+                {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
+              </Link>
+            </div>
+          </motion.div>
+        )}
 
-              {activeLeases.length > 0 ? (
-                <div className="divide-y divide-plan-border">
-                  {activeLeases.slice(0, 2).map((lease) => (
-                    <Link key={lease.id} href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group flex gap-4 p-5 hover:bg-muted transition-colors">
-                        {/* Image */}
-                        <div className="relative w-20 h-20 overflow-hidden flex-shrink-0 bg-muted">
-                          <Image
-                            src={lease.propertyThumbnail}
-                            alt={lease.propertyTitle}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
+        {/* Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
+          {/* Trust Score - Always show */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Tu score' : 'Your score'}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">A</p>
+              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
+                {t('profile.score.excellent')}
+              </span>
+            </div>
+          </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <h3 className="font-medium text-plan-primary group-hover:text-plan-secondary transition-colors">
-                                {lease.propertyTitle}
-                              </h3>
-                              <p className="text-sm text-plan-secondary mt-0.5 flex items-center gap-1.5">
-                                <MapPin className="w-3.5 h-3.5" />
-                                {lease.propertyAddress}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-plan-primary">
-                                {formatCurrency(lease.monthlyRent + lease.adminFee)}
-                              </p>
-                              <p className="text-xs text-plan-muted">/mes</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 mt-3">
-                            <span className="text-xs text-plan-secondary flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              Vence {formatDate(lease.endDate)}
-                            </span>
-                            <PlanStatusBadge
-                              status={lease.status === 'ending_soon' ? 'important' : 'in_progress'}
-                              label={lease.status === 'ending_soon' ? 'Termina pronto' : 'Activo'}
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+          {/* Active Leases */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+              <House className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{activeLeases.length}</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">
+              {activeLeases.length === 0
+                ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
+                : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
+            </p>
+          </div>
+
+          {/* Applications */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+              <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('nav.applications')}</p>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{activeApplications.length}</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">
+              {activeApplications.length === 0
+                ? (locale === 'es' ? 'Sin aplicaciones' : 'No applications')
+                : (locale === 'es' ? 'En proceso' : 'In progress')}
+            </p>
+          </div>
+
+          {/* Next Payment or CTA */}
+          {nextPayment && primaryLease ? (
+            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+                <CreditCard className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('dashboard.nextPayment')}</p>
+              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
+              </p>
+            </div>
+          ) : (
+            <Link href="/propiedades" className="group">
+              <div className="h-full rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
+                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+                  <MagnifyingGlass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                 </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                    <Home className="w-6 h-6 text-plan-muted" />
-                  </div>
-                  <p className="text-plan-secondary mb-2">No tienes arriendos activos</p>
-                  <Link href="/propiedades" className="text-sm text-plan-primary font-medium hover:underline">
-                    Explorar propiedades
-                  </Link>
-                </div>
-              )}
-            </section>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
+                  {locale === 'es' ? 'Comienza ahora' : 'Get started'}
+                </p>
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
+                </p>
+              </div>
+            </Link>
+          )}
+        </motion.div>
 
-            {/* Applications */}
-            <section className="bg-card border border-plan-border overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="font-semibold text-plan-primary">Aplicaciones en proceso</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+
+            {/* Recommended Properties - Always show prominently */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                    {locale === 'es' ? 'Propiedades para ti' : 'Properties for you'}
+                  </h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    {locale === 'es' ? 'Basado en tu perfil y preferencias' : 'Based on your profile and preferences'}
+                  </p>
+                </div>
                 <Link
-                  href="/inquilino/aplicaciones"
-                  className="text-sm text-plan-secondary hover:text-plan-primary transition-colors flex items-center gap-1"
+                  href="/propiedades"
+                  className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
-                  Ver todas
+                  {t('common.showMore')}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {activeApplications.length > 0 ? (
-                <div className="divide-y divide-plan-border">
-                  {activeApplications.slice(0, 4).map((application) => {
-                    const property = getPropertyForApplication(application.propertyId);
-                    const statusLabels: Record<string, string> = {
-                      submitted: 'Enviada',
-                      under_review: 'En revision',
-                      pre_approved: 'Pre-aprobada',
-                    };
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {featuredProperties.map((property, index) => (
+                  <motion.button
+                    key={property.id}
+                    onClick={() => handleViewProperty(property)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + index * 0.05 }}
+                    className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 text-left w-full"
+                  >
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <Image
+                        src={property.images[0]}
+                        alt={property.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
 
-                    // Calculate progress based on status
-                    const progressMap: Record<string, number> = {
-                      submitted: 25,
-                      under_review: 50,
-                      pre_approved: 75,
-                    };
+                      {/* Match badge */}
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1 shadow-sm">
+                        <Check className="w-3 h-3" />
+                        {92 - index * 5}% match
+                      </div>
 
-                    return (
-                      <Link key={application.id} href={`/inquilino/aplicaciones/${application.id}`}>
-                        <div className="group flex items-center justify-between p-5 hover:bg-muted transition-colors">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 bg-muted flex items-center justify-center flex-shrink-0">
-                              <FileText className="w-5 h-5 text-plan-secondary" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-medium text-plan-primary truncate">
-                                {property?.title || 'Propiedad'}
-                              </h3>
-                              <p className="text-xs text-plan-muted mt-0.5">
-                                {application.trackingCode}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-24 hidden sm:block">
-                              <PlanProgressBar
-                                value={progressMap[application.status] || 25}
-                                size="sm"
-                              />
-                            </div>
-                            <PlanStatusBadge
-                              status={getApplicationStatus(application.status)}
-                              label={statusLabels[application.status]}
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                      {/* Heart - Glass effect */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-white/20 border border-white/30 shadow-lg hover:bg-white/30 cursor-pointer"
+                      >
+                        <Heart className="w-4 h-4 text-white drop-shadow-sm" />
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                          {property.title}
+                        </h3>
+                        <p className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap flex-shrink-0">
+                          {i18nFormatCurrency(property.monthlyRent)}
+                          <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                        </p>
+                      </div>
+
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-3">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        {property.neighborhood}, {property.city}
+                      </p>
+
+                      <div className="flex items-center gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-700">
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                          {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
+                        </span>
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                          {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
+                        </span>
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                          {property.area} m²
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.section>
+
+            {/* Empty State for Applications - Show when no applications */}
+            {activeApplications.length === 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+              >
+                <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6 sm:p-8 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <FileText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                    {locale === 'es' ? 'Sin aplicaciones aún' : 'No applications yet'}
+                  </h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5 max-w-sm mx-auto">
+                    {locale === 'es'
+                      ? 'Cuando apliques a una propiedad, podrás ver el estado de tu aplicación aquí.'
+                      : 'When you apply to a property, you\'ll see the status of your application here.'}
+                  </p>
+                  <Link
+                    href="/propiedades"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                  >
+                    {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <p className="text-plan-secondary">Sin aplicaciones activas</p>
-                </div>
-              )}
-            </section>
+              </motion.section>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
 
-            {/* Next Payment Card */}
-            {nextPayment && primaryLease && (
-              <div className="bg-indigo-950 p-5 text-white">
-                <p className="text-white/60 text-sm mb-1">Proximo pago</p>
-                <p className="text-3xl font-bold tracking-tight">
-                  {formatCurrency(nextPayment.amount)}
-                </p>
-                <p className="text-white/60 text-sm mt-1 mb-4">
-                  {primaryLease.propertyTitle}
-                </p>
-                <PlanProgressBar
-                  value={getPaymentProgress()}
-                  variant="default"
-                  size="md"
-                />
-                <div className="flex items-center justify-between mt-3 text-sm">
-                  <span className="text-white/60">
-                    {daysUntil === 0 ? 'Vence hoy' : `Vence en ${daysUntil} dias`}
-                  </span>
-                  <Link
-                    href="/inquilino/pagos"
-                    className="font-medium text-plan-accent hover:underline"
-                  >
-                    Pagar ahora
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+            >
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+                {t('dashboard.quickActions')}
+              </h3>
+              <div className="space-y-2">
+                {[
+                  {
+                    href: '/propiedades',
+                    icon: MagnifyingGlass,
+                    label: locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties',
+                    desc: locale === 'es' ? 'Explora el mercado' : 'Explore the market',
+                  },
+                  {
+                    href: '/inquilino/guardados',
+                    icon: Heart,
+                    label: locale === 'es' ? 'Propiedades guardadas' : 'Saved properties',
+                    desc: locale === 'es' ? 'Ver favoritos' : 'View favorites'
+                  },
+                  {
+                    href: '/inquilino/aplicaciones',
+                    icon: FileText,
+                    label: t('nav.applications'),
+                    desc: locale === 'es' ? 'Ver mis aplicaciones' : 'View my applications'
+                  },
+                  {
+                    href: '/inquilino/perfil',
+                    icon: Shield,
+                    label: locale === 'es' ? 'Mi perfil' : 'My profile',
+                    desc: locale === 'es' ? 'Editar información' : 'Edit information'
+                  },
+                ].map((action, i) => (
+                  <Link key={i} href={action.href}>
+                    <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm group-hover:shadow transition-shadow">
+                        <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {action.label}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
+                      </div>
+                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                    </div>
                   </Link>
-                </div>
+                ))}
               </div>
+            </motion.div>
+
+            {/* Tips Card for New Users */}
+            {isNewUser && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <Lightbulb className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-1">
+                      {locale === 'es' ? 'Consejo' : 'Tip'}
+                    </h4>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                      {locale === 'es'
+                        ? 'Guarda propiedades que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
+                        : 'FloppyDisk properties you like by tapping the heart. This way you can easily compare them.'}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
-            {/* Quick Actions */}
-            <div className="bg-card border border-plan-border overflow-hidden">
-              <div className="px-5 py-4 border-b border-border">
-                <h2 className="font-semibold text-plan-primary">Acciones rapidas</h2>
-              </div>
-              <div className="p-3">
-                {primaryLease && (
-                  <Link href="/inquilino/pagos">
-                    <div className="flex items-center gap-3 p-3 hover:bg-muted transition-colors">
-                      <div className="w-9 h-9 bg-plan-status-green-bg flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-plan-status-green" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium text-plan-primary">Pagar arriendo</p>
-                        <p className="text-[11px] text-plan-secondary">Realiza tu pago mensual</p>
-                      </div>
-                    </div>
-                  </Link>
-                )}
-                <Link href="/inquilino/documentos">
-                  <div className="flex items-center gap-3 p-3 hover:bg-muted transition-colors">
-                    <div className="w-9 h-9 bg-plan-status-purple-bg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-plan-status-purple" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-medium text-plan-primary">Mis documentos</p>
-                      <p className="text-[11px] text-plan-secondary">Contratos y recibos</p>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-
+            {/* Help Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-5"
+            >
+              <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">
+                {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
+              </h4>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+                {locale === 'es'
+                  ? 'Nuestro equipo está listo para asistirte.'
+                  : 'Our team is ready to assist you.'}
+              </p>
+              <Link
+                href="/ayuda"
+                className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              >
+                {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
           </div>
         </div>
-
       </div>
+
+      {/* Property Detail Sheet */}
+      <PropertyDetailSheet
+        property={selectedProperty}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
     </div>
   );
 }

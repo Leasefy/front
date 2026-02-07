@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Users, Clock, CheckCircle, XCircle, AlertCircle, Eye, FileText, Send, CheckCircle2, AlertTriangle, Info, TrendingUp, CalendarDays, Building2, MessageSquare, X, Download, Shield } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
 import { getCandidateById } from '@/lib/data/mock-candidates';
@@ -31,9 +31,11 @@ import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
 import { RISK_LEVELS } from '@/lib/types/risk-score';
+import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
+import { DEFAULT_AVAILABILITY_SCHEDULE, type AvailabilitySchedule } from '@/lib/types/property';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 interface PropertyCandidatesPageProps {
@@ -81,7 +83,19 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // State for document preview modal
   const [previewDoc, setPreviewDoc] = useState<{ name: string; subtitle: string; verified: boolean } | null>(null);
 
-  // Filter candidates by tab
+  // State for availability schedule
+  const [availabilitySchedule, setAvailabilitySchedule] = useState<AvailabilitySchedule>(
+    property?.availabilitySchedule || DEFAULT_AVAILABILITY_SCHEDULE
+  );
+
+  // Handle save availability schedule
+  const handleSaveSchedule = useCallback((schedule: AvailabilitySchedule) => {
+    setAvailabilitySchedule(schedule);
+    // In a real app, this would make an API call to persist the schedule
+    // For now, we just update local state
+  }, []);
+
+  // Funnel candidates by tab
   const filteredCandidates = useMemo(() => {
     if (activeTab === 'all') return candidates;
     if (activeTab === 'pending') return candidates.filter(c => c.status === 'pending');
@@ -108,6 +122,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
     { id: 'approved', label: 'Aprobados', count: counts.approved },
     { id: 'rejected', label: 'Rechazados', count: counts.rejected },
     { id: 'visits', label: 'Visitas', count: propertyVisits.length },
+    { id: 'schedule', label: 'Horarios' },
   ];
 
   // Transform candidates for table
@@ -287,7 +302,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
     {
       id: 'send-message',
       label: 'Enviar mensaje',
-      icon: <Send className="w-4 h-4" />,
+      icon: <PaperPlaneTilt className="w-4 h-4" />,
       onClick: () => {
         handleCloseDetail();
         router.push(`/panel/mensajes?to=${selectedCandidate.id}`);
@@ -379,13 +394,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {selectedCandidate.riskScore?.drivers && selectedCandidate.riskScore.drivers.length > 0 && (
             <div>
               <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
+                <TrendUp className="w-3 h-3" />
                 Factores positivos
               </p>
               <ul className="space-y-1.5">
                 {selectedCandidate.riskScore.drivers.slice(0, 4).map((driver, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                     {driver}
                   </li>
                 ))}
@@ -397,7 +412,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {selectedCandidate.riskScore?.flags && selectedCandidate.riskScore.flags.length > 0 && (
             <div>
               <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
+                <Warning className="w-3 h-3" />
                 Puntos a considerar
               </p>
               <ul className="space-y-2">
@@ -407,7 +422,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     flag.severity === 'medium' ? 'bg-amber-50 text-amber-700' :
                     'bg-blue-50 text-blue-700'
                   }`}>
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div>
                       <p>{flag.message}</p>
                       {flag.suggestion && (
@@ -614,21 +629,21 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // Property not found
   if (!property) {
     return (
-      <div className="min-h-screen bg-plan-page">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-plan-muted" />
+            <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
+              <WarningCircle className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
             </div>
-            <h1 className="text-xl font-semibold text-plan-primary mb-2">
+            <h1 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
               Propiedad no encontrada
             </h1>
-            <p className="text-plan-secondary mb-4">
+            <p className="text-neutral-500 dark:text-neutral-400 mb-6">
               La propiedad que buscas no existe o no tienes acceso.
             </p>
             <Link
               href="/panel"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver al panel
@@ -640,44 +655,76 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   }
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Back Link */}
         <Link
           href="/panel/propiedades"
-          className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver a mis propiedades
         </Link>
 
-        {/* Property Header */}
-        <header className="mb-8">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Property Image */}
-            <div className="relative w-full lg:w-64 h-40 rounded-sm overflow-hidden flex-shrink-0 bg-muted">
-              <Image
-                src={property.thumbnailUrl}
-                alt={property.title}
-                fill
-                className="object-cover"
-              />
-            </div>
+        {/* Property Header - Premium Glass Style */}
+        <header className="relative rounded-2xl overflow-hidden mb-8">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0">
+            <Image
+              src={property.thumbnailUrl}
+              alt={property.title}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+          </div>
 
-            {/* Property Info */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-semibold text-plan-primary">
-                {property.title}
-              </h1>
-              <p className="text-plan-secondary mt-1 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" />
-                {property.neighborhood}, {property.city}
-              </p>
-              <p className="text-2xl font-semibold text-plan-primary mt-4">
-                {formatCurrency(property.monthlyRent)}
-                <span className="text-base font-normal text-plan-secondary">/mes</span>
-              </p>
+          {/* Content */}
+          <div className="relative px-6 py-8 lg:px-8 lg:py-10">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+              {/* Property Image Thumbnail */}
+              <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/20 shadow-2xl">
+                <Image
+                  src={property.thumbnailUrl}
+                  alt={property.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              {/* Property Info */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl lg:text-3xl font-semibold text-white">
+                  {property.title}
+                </h1>
+                <p className="text-white/70 mt-2 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" />
+                  {property.neighborhood}, {property.city}
+                </p>
+                <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-white/10">
+                  <span className="text-3xl font-bold text-white">
+                    {formatCurrency(property.monthlyRent)}
+                  </span>
+                  <span className="text-lg font-normal text-white/70">/mes</span>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="flex gap-3 lg:gap-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                  <p className="text-2xl font-bold text-white">{counts.all}</p>
+                  <p className="text-xs text-white/60">Candidatos</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                  <p className="text-2xl font-bold text-amber-400">{counts.pending}</p>
+                  <p className="text-xs text-white/60">Pendientes</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                  <p className="text-2xl font-bold text-emerald-400">{counts.approved}</p>
+                  <p className="text-xs text-white/60">Aprobados</p>
+                </div>
+              </div>
             </div>
           </div>
         </header>
@@ -686,11 +733,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         {activeContract ? (
           <div className="space-y-6">
             {/* Active lease banner */}
-            <div className="rounded-sm border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-800">Propiedad arrendada</p>
-                <p className="text-xs text-emerald-700 mt-0.5">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Propiedad arrendada</p>
+                <p className="text-xs text-emerald-700/70 dark:text-emerald-300/70 mt-0.5">
                   Contrato activo desde {new Date(activeContract.startDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
@@ -705,69 +754,69 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     label="Canon mensual"
                     value={formatCurrency(activeContract.monthlyRent)}
                     sublabel={`Día de pago: ${activeContract.paymentDueDay}`}
-                    icon={Building2}
+                    icon={Buildings}
                   />
                   <PlanStatsCard
                     label="Administración"
                     value={activeContract.adminFee > 0 ? formatCurrency(activeContract.adminFee) : 'Incluida'}
                     sublabel="Cuota mensual"
-                    icon={Building2}
+                    icon={Buildings}
                   />
                   <PlanStatsCard
                     label="Vigencia"
                     value={`${Math.round((new Date(activeContract.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30))} meses`}
                     sublabel={`Hasta ${new Date(activeContract.endDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                    icon={CalendarDays}
+                    icon={CalendarBlank}
                   />
                 </PlanStatsGrid>
 
                 {/* Contract details card */}
-                <div className="rounded-sm border border-border bg-card p-6 space-y-5">
+                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Contrato</p>
-                    <p className="text-lg font-semibold text-foreground mt-0.5">{CONTRACT_TYPE_LABELS[activeContract.type]}</p>
+                    <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{CONTRACT_TYPE_LABELS[activeContract.type]}</p>
                   </div>
 
-                  <div className="h-px bg-border" />
+                  <div className="h-px bg-neutral-100 dark:bg-neutral-700" />
 
                   {/* Parties */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Arrendador</p>
-                      <p className="font-medium text-foreground">{activeContract.landlordName}</p>
-                      <p className="text-sm text-muted-foreground">{activeContract.landlordEmail}</p>
+                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendador</p>
+                      <p className="font-medium text-neutral-900 dark:text-white">{activeContract.landlordName}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeContract.landlordEmail}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Arrendatario</p>
-                      <p className="font-medium text-foreground">{activeContract.tenantName}</p>
-                      <p className="text-sm text-muted-foreground">{activeContract.tenantEmail}</p>
+                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendatario</p>
+                      <p className="font-medium text-neutral-900 dark:text-white">{activeContract.tenantName}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeContract.tenantEmail}</p>
                     </div>
                   </div>
 
-                  <div className="h-px bg-border" />
+                  <div className="h-px bg-neutral-100 dark:bg-neutral-700" />
 
                   {/* Guarantee & Dates */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-muted-foreground">Garantía</p>
-                      <p className="text-sm font-medium text-foreground mt-0.5">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Garantía</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">
                         {activeContract.guaranteeType === 'poliza' ? 'Póliza de arrendamiento' : 'Codeudor'}
                       </p>
                       {activeContract.guaranteeDetails && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{activeContract.guaranteeDetails}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{activeContract.guaranteeDetails}</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Firmado</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Firmado</p>
                       <div className="mt-0.5 space-y-1">
                         {activeContract.landlordSignature && (
-                          <p className="text-xs text-emerald-600 flex items-center gap-1">
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                         {activeContract.tenantSignature && (
-                          <p className="text-xs text-emerald-600 flex items-center gap-1">
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                           </p>
@@ -780,40 +829,44 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
               {/* Sidebar actions */}
               <div className="space-y-4">
-                <div className="rounded-sm border border-border bg-card p-5 space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">Acciones rápidas</h3>
+                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5 space-y-3">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Acciones rápidas</h3>
                   <Link
                     href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
-                    className="flex items-center gap-3 w-full rounded-sm border border-border p-3 text-left hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Ver contrato</p>
-                      <p className="text-xs text-muted-foreground">Detalles y cláusulas</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">Ver contrato</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Detalles y cláusulas</p>
                     </div>
                   </Link>
                   <Link
                     href={`/panel/mensajes?to=${activeContract.tenantId}`}
-                    className="flex items-center gap-3 w-full rounded-sm border border-border p-3 text-left hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                      <Chat className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Enviar mensaje</p>
-                      <p className="text-xs text-muted-foreground">Contactar al arrendatario</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">Enviar mensaje</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Contactar al arrendatario</p>
                     </div>
                   </Link>
                 </div>
 
                 {/* Tenant summary card */}
-                <div className="rounded-sm border border-border bg-card p-5">
-                  <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3">Arrendatario</p>
+                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5">
+                  <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Arrendatario</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                       {activeContract.tenantName.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground text-sm">{activeContract.tenantName}</p>
-                      <p className="text-xs text-muted-foreground">{activeContract.tenantEmail}</p>
+                      <p className="font-medium text-neutral-900 dark:text-white text-sm">{activeContract.tenantName}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{activeContract.tenantEmail}</p>
                     </div>
                   </div>
                 </div>
@@ -822,110 +875,163 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           </div>
         ) : (
           <>
-            {/* Stats Row */}
-            <PlanStatsGrid columns={4} className="mb-8">
-              <PlanStatsCard
-                label="Total candidatos"
-                value={counts.all}
-                sublabel="Aplicaciones recibidas"
-                icon={Users}
-              />
-              <PlanStatsCard
-                label="Pendientes"
-                value={counts.pending}
-                sublabel="Por revisar"
-                icon={Clock}
-                variant={counts.pending > 0 ? 'accent' : 'default'}
-              />
-              <PlanStatsCard
-                label="Pre-aprobados"
-                value={counts.preApproved}
-                sublabel="En evaluacion"
-                icon={AlertCircle}
-              />
-              <PlanStatsCard
-                label="Aprobados"
-                value={counts.approved}
-                sublabel="Listos para contrato"
-                icon={CheckCircle}
-              />
-            </PlanStatsGrid>
+            {/* Stats Row - Compact Style */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.all}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Total candidatos</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.pending}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Pendientes</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.preApproved}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Pre-aprobados</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.approved}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Aprobados</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {/* Tabs */}
-            <PlanTabs
-              tabs={tabs}
-              activeTab={activeTab}
-              onChange={setActiveTab}
-              variant="underline"
-              className="mb-6"
-            />
-
-            {/* Candidates Table */}
-            {activeTab !== 'visits' ? (
-              <PlanTable
-                data={tableData}
-                columns={columns}
-                keyExtractor={(row) => row.id}
-                onRowClick={handleRowClick}
-                emptyMessage={
-                  activeTab === 'all'
-                    ? 'Aun no hay candidatos para esta propiedad'
-                    : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
-                }
-                stickyHeader
-                pagination
-                pageSize={4}
-              />
-            ) : (
-              <PlanTable<Visit>
-                data={propertyVisits}
-                pagination
-                pageSize={4}
-                columns={[
-                  {
-                    key: 'candidateName',
-                    header: 'Candidato',
-                    sortable: true,
-                    type: 'avatar',
-                    nameKey: 'candidateName',
-                  },
-                  {
-                    key: 'requestedDate',
-                    header: 'Fecha',
-                    sortable: true,
-                    render: (row: Visit) => (
-                      <span className="text-sm text-plan-secondary">
-                        {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {/* Tabs - Modern Pill Style */}
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                      ${activeTab === tab.id
+                        ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white shadow-sm'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                      }
+                    `}
+                  >
+                    {tab.label}
+                    {tab.count !== undefined && (
+                      <span
+                        className={`
+                          px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums
+                          ${activeTab === tab.id
+                            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                          }
+                        `}
+                      >
+                        {tab.count}
                       </span>
-                    ),
-                  },
-                  {
-                    key: 'requestedTime',
-                    header: 'Hora',
-                    sortable: true,
-                    render: (row: Visit) => {
-                      const [h, m] = row.requestedTime.split(':');
-                      const hour = parseInt(h, 10);
-                      return <span className="text-sm text-plan-secondary">{hour > 12 ? hour - 12 : hour}:{m} {hour >= 12 ? 'PM' : 'AM'}</span>;
-                    },
-                  },
-                  {
-                    key: 'status',
-                    header: 'Estado',
-                    sortable: true,
-                    render: (row: Visit) => (
-                      <PlanStatusBadge
-                        status={VISIT_STATUS_TO_PLAN[row.status]}
-                        label={VISIT_STATUS_LABELS[row.status]}
-                        size="sm"
-                      />
-                    ),
-                  },
-                ]}
-                keyExtractor={(row) => row.id}
-                emptyMessage="No hay visitas para esta propiedad"
-                stickyHeader
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content based on active tab */}
+            {activeTab === 'schedule' ? (
+              <AvailabilityScheduleEditor
+                schedule={availabilitySchedule}
+                onSave={handleSaveSchedule}
               />
+            ) : activeTab !== 'visits' ? (
+              <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <PlanTable
+                  data={tableData}
+                  columns={columns}
+                  keyExtractor={(row) => row.id}
+                  onRowClick={handleRowClick}
+                  emptyMessage={
+                    activeTab === 'all'
+                      ? 'Aún no hay candidatos para esta propiedad'
+                      : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
+                  }
+                  stickyHeader
+                  pagination
+                  pageSize={4}
+                />
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <PlanTable<Visit>
+                  data={propertyVisits}
+                  pagination
+                  pageSize={4}
+                  columns={[
+                    {
+                      key: 'candidateName',
+                      header: 'Candidato',
+                      sortable: true,
+                      type: 'avatar',
+                      nameKey: 'candidateName',
+                    },
+                    {
+                      key: 'requestedDate',
+                      header: 'Fecha',
+                      sortable: true,
+                      render: (row: Visit) => (
+                        <span className="text-sm text-plan-secondary">
+                          {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: 'requestedTime',
+                      header: 'Hora',
+                      sortable: true,
+                      render: (row: Visit) => {
+                        const [h, m] = row.requestedTime.split(':');
+                        const hour = parseInt(h, 10);
+                        return <span className="text-sm text-plan-secondary">{hour > 12 ? hour - 12 : hour}:{m} {hour >= 12 ? 'PM' : 'AM'}</span>;
+                      },
+                    },
+                    {
+                      key: 'status',
+                      header: 'Estado',
+                      sortable: true,
+                      render: (row: Visit) => (
+                        <PlanStatusBadge
+                          status={VISIT_STATUS_TO_PLAN[row.status]}
+                          label={VISIT_STATUS_LABELS[row.status]}
+                          size="sm"
+                        />
+                      ),
+                    },
+                  ]}
+                  keyExtractor={(row) => row.id}
+                  emptyMessage="No hay visitas para esta propiedad"
+                  stickyHeader
+                />
+              </div>
             )}
           </>
         )}
@@ -955,17 +1061,17 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
       {/* Document Preview Modal */}
       {previewDoc && selectedCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewDoc(null)} />
-          <div className="relative bg-card border border-border rounded-sm shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
               <div>
-                <h3 className="text-base font-semibold text-foreground">{previewDoc.name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{selectedCandidate.fullName} · {previewDoc.subtitle}</p>
+                <h3 className="text-base font-semibold text-neutral-900 dark:text-white">{previewDoc.name}</h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{selectedCandidate.fullName} · {previewDoc.subtitle}</p>
               </div>
-              <button type="button" onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-muted rounded-sm transition-colors">
-                <X className="w-5 h-5 text-muted-foreground" />
+              <button type="button" onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
               </button>
             </div>
 
@@ -974,52 +1080,52 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               {previewDoc.verified ? (
                 <div className="space-y-5">
                   {/* Status */}
-                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 rounded-sm border border-emerald-200">
-                    <Shield className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-emerald-800">Documento verificado</p>
-                      <p className="text-xs text-emerald-600">Verificación automática completada</p>
+                      <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Documento verificado</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">Verificación automática completada</p>
                     </div>
                   </div>
 
                   {/* Mock document preview */}
-                  <div className="border border-border rounded-sm bg-muted/30 p-8 flex flex-col items-center justify-center min-h-[280px]">
-                    <FileText className="w-12 h-12 text-muted-foreground/40 mb-3" />
-                    <p className="text-sm font-medium text-foreground">{previewDoc.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF · Subido el 15 ene, 2026</p>
-                    <p className="text-xs text-muted-foreground">245 KB · 2 páginas</p>
+                  <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-8 flex flex-col items-center justify-center min-h-[280px]">
+                    <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-500 mb-3" />
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{previewDoc.name}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">PDF · Subido el 15 ene, 2026</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">245 KB · 2 páginas</p>
                   </div>
 
                   {/* Details */}
                   <div className="space-y-3">
-                    <p className="text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider">Detalles de verificación</p>
+                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 font-mono uppercase tracking-wider">Detalles de verificación</p>
                     <div className="space-y-2.5">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Estado</span>
-                        <span className="text-emerald-600 font-medium">Aprobado</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">Estado</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Aprobado</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Fecha de carga</span>
-                        <span className="text-foreground">15 ene, 2026</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">Fecha de carga</span>
+                        <span className="text-neutral-900 dark:text-white">15 ene, 2026</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Verificado el</span>
-                        <span className="text-foreground">16 ene, 2026</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">Verificado el</span>
+                        <span className="text-neutral-900 dark:text-white">16 ene, 2026</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Método</span>
-                        <span className="text-foreground">Verificación automática</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">Método</span>
+                        <span className="text-neutral-900 dark:text-white">Verificación automática</span>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <FileText className="w-8 h-8 text-muted-foreground" />
+                  <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                    <FileText className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
                   </div>
-                  <p className="text-base font-medium text-foreground mb-1">Documento pendiente</p>
-                  <p className="text-sm text-muted-foreground max-w-xs">
+                  <p className="text-base font-medium text-neutral-900 dark:text-white mb-1">Documento pendiente</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
                     El candidato aún no ha subido este documento. Se le ha notificado para completar su documentación.
                   </p>
                 </div>
@@ -1028,14 +1134,14 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
             {/* Footer */}
             {previewDoc.verified && (
-              <div className="px-6 py-4 border-t border-border flex gap-3">
+              <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
                     setPreviewDoc(null);
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-sm text-sm font-medium hover:bg-foreground/90 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Descargar
@@ -1043,7 +1149,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <button
                   type="button"
                   onClick={() => setPreviewDoc(null)}
-                  className="px-4 py-2.5 border border-border rounded-sm text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                  className="px-4 py-2.5 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                 >
                   Cerrar
                 </button>

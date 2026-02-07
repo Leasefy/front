@@ -1,8 +1,9 @@
 import { Metadata } from "next";
+import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Arriendo Facil",
+    template: "%s | Leasefy",
     default: "Soluciones para Ti",
   },
   description:
@@ -17,5 +18,5 @@ export default function ParaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ForceLightMode>{children}</ForceLightMode>;
 }

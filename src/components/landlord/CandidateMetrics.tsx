@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateMetricsProps {
@@ -30,10 +30,10 @@ export interface CandidateMetricsProps {
 function formatEmploymentTenure(months: number): string {
   if (months >= 24) {
     const years = Math.floor(months / 12);
-    return `${years} ${years === 1 ? 'ano' : 'anos'} estable`;
+    return `${years} ${years === 1 ? 'año' : 'años'} estable`;
   }
   if (months >= 12) {
-    return '1 ano estable';
+    return '1 año estable';
   }
   if (months >= 6) {
     return `${months} meses`;
@@ -176,7 +176,7 @@ export function CandidateMetrics({
           <p className="text-xs text-muted-foreground">Estabilidad laboral</p>
           <p className="font-medium text-foreground">
             {employmentMonths >= 12
-              ? `${Math.floor(employmentMonths / 12)} ${Math.floor(employmentMonths / 12) === 1 ? 'ano' : 'anos'} en empleo actual`
+              ? `${Math.floor(employmentMonths / 12)} ${Math.floor(employmentMonths / 12) === 1 ? 'año' : 'años'} en empleo actual`
               : `${employmentMonths} meses en empleo actual`}
           </p>
         </div>

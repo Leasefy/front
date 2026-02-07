@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { ImagePlus, X, GripVertical, AlertCircle } from 'lucide-react';
+import { ImageSquare, X, DotsSixVertical, WarningCircle } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { cn } from '@/lib/utils';
 
@@ -102,10 +102,10 @@ export function StepPhotos() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-foreground mb-1">
+        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
           Fotos del inmueble
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Agrega al menos 1 foto. La primera será la imagen principal.
         </p>
       </div>
@@ -129,29 +129,29 @@ export function StepPhotos() {
         onDragLeave={handleDragLeaveZone}
         disabled={isFull}
         className={cn(
-          'w-full border-2 border-dashed rounded-sm p-8 text-center transition-colors',
+          'w-full border-2 border-dashed rounded-xl p-8 text-center transition-colors',
           isFull
-            ? 'border-border bg-black/[0.02] cursor-not-allowed'
+            ? 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 cursor-not-allowed'
             : isDragOver
-              ? 'border-black bg-black/[0.04]'
-              : 'border-border hover:border-border hover:bg-black/[0.02]'
+              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+              : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         )}
       >
-        <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm font-medium text-foreground/70">
+        <ImageSquare className="w-10 h-10 mx-auto text-neutral-400 dark:text-neutral-500 mb-3" />
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
           {isFull
             ? 'Máximo de fotos alcanzado'
             : isDragOver
               ? 'Suelta las fotos aquí'
               : 'Haz clic o arrastra fotos aquí'}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
           {draft.photos.length}/{MAX_PHOTOS} fotos · JPG, PNG o WebP · Máx 10MB
         </p>
       </button>
 
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       {/* Photo grid */}
@@ -165,9 +165,9 @@ export function StepPhotos() {
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
               className={cn(
-                'relative aspect-[4/3] rounded-sm overflow-hidden group cursor-move',
+                'relative aspect-[4/3] rounded-xl overflow-hidden group cursor-move',
                 'border-2 border-transparent',
-                draggedIndex === index && 'border-black opacity-50'
+                draggedIndex === index && 'border-indigo-500 opacity-50'
               )}
             >
               <img
@@ -181,14 +181,14 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-black text-white text-xs font-medium rounded-sm">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-indigo-600 text-white text-xs font-medium rounded-lg">
                   Principal
                 </span>
               )}
 
               {/* Drag handle */}
               <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                <GripVertical className="w-5 h-5 text-white drop-shadow-lg" />
+                <DotsSixVertical className="w-5 h-5 text-white drop-shadow-lg" />
               </div>
 
               {/* Remove button */}
@@ -207,21 +207,21 @@ export function StepPhotos() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-[4/3] rounded-sm border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-border transition-colors"
+              className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors bg-white dark:bg-[#2a2a2c]"
             >
-              <ImagePlus className="w-6 h-6 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Agregar</span>
+              <ImageSquare className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">Agregar</span>
             </button>
           )}
         </div>
       )}
 
       {/* Tips */}
-      <div className="flex items-start gap-3 p-4 bg-black/[0.02] rounded-sm">
-        <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-muted-foreground">
-          <p className="font-medium text-foreground/70 mb-1">Tips para mejores fotos:</p>
-          <ul className="list-disc list-inside space-y-0.5">
+      <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <WarningCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-neutral-600 dark:text-neutral-300">
+          <p className="font-medium text-neutral-900 dark:text-white mb-1">Tips para mejores fotos:</p>
+          <ul className="list-disc list-inside space-y-0.5 text-neutral-500 dark:text-neutral-400">
             <li>Usa luz natural cuando sea posible</li>
             <li>Muestra todas las habitaciones principales</li>
             <li>Asegúrate de que el espacio esté ordenado</li>

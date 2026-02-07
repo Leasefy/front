@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  FileText,
-  Send,
-  CheckCircle2,
-  Search,
-  Clock,
-  XCircle,
-  LogOut,
-} from 'lucide-react';
+import { FileText, PaperPlaneTilt, CheckCircle, MagnifyingGlass, Clock, XCircle, SignOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/format';
@@ -24,13 +16,13 @@ export interface ApplicationTimelineProps {
  */
 const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
   created: FileText,
-  submitted: Send,
-  documents_verified: CheckCircle2,
-  under_review: Search,
+  submitted: PaperPlaneTilt,
+  documents_verified: CheckCircle,
+  under_review: MagnifyingGlass,
   pre_approved: Clock,
-  approved: CheckCircle2,
+  approved: CheckCircle,
   rejected: XCircle,
-  withdrawn: LogOut,
+  withdrawn: SignOut,
 };
 
 /**

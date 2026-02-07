@@ -1,35 +1,38 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  MessageSquare,
-  Settings,
-  FileText,
-  Home,
-  CalendarDays,
-} from 'lucide-react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
+import { PlanSidebar, NavItem, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
+import { I18nProvider, useTranslation } from '@/lib/i18n';
 import { MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
 import { cn } from '@/lib/utils';
+
+// Define the setup steps - same as LandlordDashboardEmpty
+const LANDLORD_SETUP_STEPS: ProfileCompletionStep[] = [
+  { id: 1, labelEs: 'Info personal', labelEn: 'Personal info', completed: false },
+  { id: 2, labelEs: 'Propiedad', labelEn: 'Property', completed: false },
+  { id: 3, labelEs: 'Inquilino ideal', labelEn: 'Ideal tenant', completed: false },
+  { id: 4, labelEs: 'Cobros', labelEn: 'Payments', completed: false },
+];
+
+const ONBOARDING_STORAGE_KEY = 'plan_onboarding_landlord';
 
 const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
     label: 'Panel',
     href: '/panel',
-    icon: LayoutDashboard,
+    icon: SquaresFour,
     exact: true,
   },
   {
     label: 'Mis Propiedades',
     href: '/panel/propiedades',
-    icon: Building2,
+    icon: Buildings,
   },
   {
     label: 'Candidatos',
@@ -39,7 +42,7 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
     label: 'Visitas',
     href: '/panel/visitas',
-    icon: CalendarDays,
+    icon: CalendarBlank,
   },
   {
     label: 'Contratos',
@@ -49,12 +52,12 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
     label: 'Arriendos',
     href: '/panel/leases',
-    icon: Home,
+    icon: House,
   },
   {
     label: 'Mensajes',
     href: '/panel/mensajes',
-    icon: MessageSquare,
+    icon: Chat,
     badge: 3,
   },
 ];
@@ -68,7 +71,59 @@ interface PanelLayoutProps {
  */
 function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
+  const { t, locale } = useTranslation();
   const showUpgrade = MOCK_SUBSCRIPTION.planId === 'free';
+
+  // Onboarding progress state
+  const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(LANDLORD_SETUP_STEPS);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load onboarding progress from localStorage
+  useEffect(() => {
+    const loadOnboardingProgress = () => {
+      const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const completedStepIds = parsed.completedSteps || [];
+          setOnboardingSteps(LANDLORD_SETUP_STEPS.map(step => ({
+            ...step,
+            completed: completedStepIds.includes(step.id),
+          })));
+        } catch (e) {
+          console.error('Error loading onboarding progress:', e);
+        }
+      }
+      setIsLoaded(true);
+    };
+
+    loadOnboardingProgress();
+
+    // Listen for storage changes (for cross-tab sync and manual updates)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === ONBOARDING_STORAGE_KEY) {
+        loadOnboardingProgress();
+      }
+    };
+
+    // Custom event for same-tab updates
+    const handleOnboardingUpdate = () => {
+      loadOnboardingProgress();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('onboarding-updated', handleOnboardingUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('onboarding-updated', handleOnboardingUpdate);
+    };
+  }, []);
+
+  // Calculate profile completion
+  const completedCount = onboardingSteps.filter(s => s.completed).length;
+  const totalSteps = onboardingSteps.length;
+  const percentage = Math.round((completedCount / totalSteps) * 100);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -82,6 +137,15 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"
         upgradeLabel="Mejorar Plan"
+        profileCompletion={isLoaded ? {
+          percentage,
+          href: '/onboarding/propietario',
+          label: locale === 'es' ? 'Completa tu cuenta' : 'Complete your account',
+          completedCount,
+          totalSteps,
+          steps: onboardingSteps,
+          locale: locale as 'es' | 'en',
+        } : undefined}
       />
 
       {/* Main content area */}
@@ -95,15 +159,15 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Toast notifications - PLan style */}
+      {/* Toast notifications - Premium style */}
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: '2px',
-            background: 'hsl(var(--neutral-0))',
-            border: '1px solid hsl(var(--neutral-200))',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+            borderRadius: '16px',
+            background: 'white',
+            border: '1px solid rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
           },
         }}
       />
@@ -117,11 +181,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
 export default function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <ProtectedRoute allowedRoles={['landlord']}>
-      <DecisionProvider>
-        <SidebarProvider>
-          <PanelLayoutInner>{children}</PanelLayoutInner>
-        </SidebarProvider>
-      </DecisionProvider>
+      <I18nProvider>
+        <DecisionProvider>
+          <SidebarProvider>
+            <PanelLayoutInner>{children}</PanelLayoutInner>
+          </SidebarProvider>
+        </DecisionProvider>
+      </I18nProvider>
     </ProtectedRoute>
   );
 }

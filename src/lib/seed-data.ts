@@ -1,5 +1,5 @@
 /**
- * Seed Data for Arriendo Facil
+ * Seed Data for Leasefy
  *
  * Realistic Colombian rental market data for testing and demos.
  * Includes properties across 5 major cities, landlords, and tenants

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
+import { TrendUp, TrendDown } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 
@@ -47,7 +48,7 @@ function useAnimatedCounter(end: number, duration: number = 1000) {
 export interface KPICardProps {
   title: string;
   value: number;
-  icon: LucideIcon;
+  icon: Icon;
   variant?: 'default' | 'primary' | 'warning' | 'success' | 'info';
   trend?: {
     value: number;
@@ -144,9 +145,9 @@ export function KPICard({
           )}
         >
           {trend.isPositive ? (
-            <TrendingUp className="w-3.5 h-3.5" />
+            <TrendUp className="w-3.5 h-3.5" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5" />
+            <TrendDown className="w-3.5 h-3.5" />
           )}
           <span>{trend.value}%</span>
         </div>

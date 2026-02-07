@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, ChevronsUpDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretDown, CaretUp, CaretUpDown, Check, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { PlanProgressBar } from './PlanProgressBar';
 import { PlanStatusBadge, PlanStatusType } from './PlanStatusBadge';
@@ -259,12 +259,12 @@ export function PlanTable<T extends object>({
                       <span className="text-muted-foreground">
                         {sortConfig?.key === column.key ? (
                           sortConfig.direction === 'asc' ? (
-                            <ChevronUp className="w-3 h-3" />
+                            <CaretUp className="w-3 h-3" />
                           ) : (
-                            <ChevronDown className="w-3 h-3" />
+                            <CaretDown className="w-3 h-3" />
                           )
                         ) : (
-                          <ChevronsUpDown className="w-3 h-3" />
+                          <CaretUpDown className="w-3 h-3" />
                         )}
                       </span>
                     )}
@@ -344,7 +344,7 @@ export function PlanTable<T extends object>({
                   : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
               )}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <CaretLeft className="w-4 h-4" />
               Anterior
             </button>
             <div className="flex items-center gap-1">
@@ -374,7 +374,7 @@ export function PlanTable<T extends object>({
               )}
             >
               Siguiente
-              <ChevronRight className="w-4 h-4" />
+              <CaretRight className="w-4 h-4" />
             </button>
           </div>
         </div>

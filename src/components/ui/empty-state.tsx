@@ -1,11 +1,11 @@
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface EmptyStateAction {
@@ -15,7 +15,7 @@ export interface EmptyStateAction {
 
 export interface EmptyStateProps {
   /** Icon to display */
-  icon: LucideIcon;
+  icon: Icon;
   /** Main title text */
   title: string;
   /** Description text */

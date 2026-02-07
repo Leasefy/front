@@ -1,13 +1,13 @@
 'use client';
 
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export interface PlanStatsCardProps {
   label: string;
   value: string | number;
   sublabel?: string;
-  icon?: LucideIcon;
+  icon?: Icon;
   trend?: {
     value: number;
     isPositive: boolean;

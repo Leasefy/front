@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { LevelBadge } from './LevelBadge';
@@ -11,7 +11,7 @@ import { RISK_LEVEL_COLORS, RISK_LEVEL_LABELS } from '@/lib/constants/risk-level
 import type { Candidate } from '@/lib/types/candidate';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface RiskScoreDisplayProps {
@@ -198,7 +198,7 @@ export function RiskScoreDisplay({
               'hover:text-foreground transition-colors w-full'
             )}
           >
-            <ChevronDown
+            <CaretDown
               className={cn(
                 'h-4 w-4 transition-transform duration-200',
                 showBreakdown && 'rotate-180'

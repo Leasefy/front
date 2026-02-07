@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
-import { AlertTriangle, FileText, FolderOpen } from 'lucide-react';
+import { Warning, FileText, FolderOpen } from '@phosphor-icons/react';
 import { DocumentUpload } from '@/components/wizard/DocumentUpload';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import { validateDocumentsStep } from '@/lib/validation/applicationValidation';
-import type { DocumentUpload as DocumentUploadType } from '@/lib/types/application';
+import type { DocumentUpload as DocumentUploadTextT } from '@/lib/types/application';
 
 // ============================================================================
 // Component
@@ -34,7 +34,7 @@ export function StepDocuments() {
   const handleDocumentChange = useCallback(
     (
       field: 'idDocument' | 'incomeProof' | 'employmentLetter' | 'bankStatements' | 'creditReport',
-      data: DocumentUploadType | null
+      data: DocumentUploadTextT | null
     ) => {
       updateDocuments({ [field]: data });
     },
@@ -45,13 +45,13 @@ export function StepDocuments() {
     <div className="space-y-6">
       {/* Warning about file persistence */}
       <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <Warning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm text-amber-800 font-medium">
             Importante sobre tus documentos
           </p>
           <p className="text-xs text-amber-700/80 mt-1">
-            Los archivos se guardan temporalmente. Si cierras esta pagina, tendras que
+            Los archivos se guardan temporalmente. Si cierras esta página, tendrás que
             volver a subirlos.
           </p>
         </div>
@@ -76,7 +76,7 @@ export function StepDocuments() {
             maxSizeMB={5}
             value={documents.idDocument || null}
             onChange={(data) => handleDocumentChange('idDocument', data)}
-            hint="Cedula de ciudadania o extranjeria por ambos lados"
+            hint="Cédula de ciudadanía o extranjería por ambos lados"
             error={getDocumentError('idDocument')}
           />
 
@@ -88,7 +88,7 @@ export function StepDocuments() {
             maxSizeMB={5}
             value={documents.incomeProof || null}
             onChange={(data) => handleDocumentChange('incomeProof', data)}
-            hint="Ultimos 3 desprendibles de nomina o declaracion de renta"
+            hint="Últimos 3 desprendibles de nómina o declaración de renta"
             error={getDocumentError('incomeProof')}
           />
         </div>
@@ -124,17 +124,17 @@ export function StepDocuments() {
             maxSizeMB={5}
             value={documents.bankStatements || null}
             onChange={(data) => handleDocumentChange('bankStatements', data)}
-            hint="Ultimos 3 meses de tu cuenta principal"
+            hint="Últimos 3 meses de tu cuenta principal"
           />
 
           {/* Credit Report */}
           <DocumentUpload
-            label="Reporte de credito"
+            label="Reporte de crédito"
             accept=".pdf"
             maxSizeMB={5}
             value={documents.creditReport || null}
             onChange={(data) => handleDocumentChange('creditReport', data)}
-            hint="Descarga gratuita de Datacredito o TransUnion"
+            hint="Descarga gratuita de Datacrédito o TransUnion"
           />
         </div>
       </section>

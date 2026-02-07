@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { CaretDown, SlidersHorizontal, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { PropertyFilters } from '@/lib/hooks/usePropertyFilters';
@@ -94,7 +94,7 @@ export function FilterBar({
     return filters.bedrooms === 4 ? '4+ hab' : `${filters.bedrooms} hab`;
   };
 
-  const getTypeLabel = () => {
+  const getTextTLabel = () => {
     const type = PROPERTY_TYPE_OPTIONS.find(t => t.value === filters.propertyType);
     return type?.label || 'Tipo';
   };
@@ -188,9 +188,9 @@ export function FilterBar({
             </div>
           </FilterDropdown>
 
-          {/* Property Type Dropdown */}
+          {/* Property TextT Dropdown */}
           <FilterDropdown
-            label={getTypeLabel()}
+            label={getTextTLabel()}
             isOpen={openDropdown === 'type'}
             onToggle={() => toggleDropdown('type')}
             hasValue={!!filters.propertyType}
@@ -281,7 +281,7 @@ function FilterDropdown({
         )}
       >
         {label}
-        <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isOpen && 'rotate-180')} />
+        <CaretDown className={cn('w-4 h-4 transition-transform duration-200', isOpen && 'rotate-180')} />
       </button>
       <AnimatePresence>
         {isOpen && (

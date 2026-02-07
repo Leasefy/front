@@ -3,25 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Users,
-  Search,
-  Building2,
-  UserCheck,
-  UserX,
-  Eye,
-  FileText,
-  MessageSquare,
-  AlertTriangle,
-  HelpCircle,
-  ChevronDown,
-  Shield,
-  Briefcase,
-  CreditCard,
-  Home,
-  Scale,
-} from 'lucide-react';
+import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, Clock, CheckCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 import { getAllCandidates, getCandidateById } from '@/lib/data/mock-candidates';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
@@ -30,14 +14,13 @@ import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
-import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
 import type { Candidate } from '@/lib/types/candidate';
 
-type StatusFilter = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
-type RiskFilter = 'all' | 'A' | 'B' | 'C' | 'D';
+type StatusFunnel = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
+type RiskFunnel = 'all' | 'A' | 'B' | 'C' | 'D';
 
 // Simulated status for candidates
-const candidateStatuses: Record<string, StatusFilter> = {
+const candidateStatuses: Record<string, StatusFunnel> = {
   'cand-001': 'approved',
   'cand-002': 'reviewing',
   'cand-003': 'new',
@@ -53,22 +36,22 @@ const candidateStatuses: Record<string, StatusFilter> = {
 };
 
 interface CandidateRow extends Candidate {
-  status: StatusFilter;
+  status: StatusFunnel;
 }
 
 const SCORE_CATEGORIES = [
   { icon: Briefcase, label: 'Estabilidad laboral', weight: '30%', description: 'Tipo de contrato, antigüedad, industria y cargo. Un contrato indefinido con más de 2 años pesa significativamente.' },
   { icon: CreditCard, label: 'Capacidad financiera', weight: '25%', description: 'Relación ingreso/arriendo, obligaciones mensuales e ingreso adicional. Idealmente el arriendo no supera el 30% del ingreso.' },
   { icon: Shield, label: 'Historial crediticio', weight: '20%', description: 'Reportes en centrales de riesgo, deudas vigentes y hábitos de pago. Sin reportes negativos suma puntos.' },
-  { icon: Home, label: 'Historial de arriendo', weight: '15%', description: 'Referencias de arrendadores anteriores, tiempo en viviendas previas y motivos de cambio.' },
-  { icon: Scale, label: 'Perfil general', weight: '10%', description: 'Documentación completa, coherencia de datos y verificación de identidad.' },
+  { icon: House, label: 'Historial de arriendo', weight: '15%', description: 'Referencias de arrendadores anteriores, tiempo en viviendas previas y motivos de cambio.' },
+  { icon: Scales, label: 'Perfil general', weight: '10%', description: 'Documentación completa, coherencia de datos y verificación de identidad.' },
 ];
 
 const RISK_LEVEL_DETAILS = [
-  { level: 'A', label: 'Excelente', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgColor: 'bg-emerald-50', description: 'Perfil muy confiable. Ingresos estables, excelente historial crediticio, empleo sólido. Riesgo mínimo de impago.' },
-  { level: 'B', label: 'Bueno', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50', description: 'Perfil sólido con fundamentos fuertes. Puede tener algún factor menor a considerar, pero el riesgo es bajo.' },
-  { level: 'C', label: 'Regular', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', description: 'Perfil con factores mixtos. Se recomienda solicitar garantías adicionales como un codeudor o depósito mayor.' },
-  { level: 'D', label: 'Riesgoso', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50', description: 'Perfil con factores de riesgo significativos. Se recomienda precaución y condiciones especiales si se decide aprobar.' },
+  { level: 'A', label: 'Excelente', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', description: 'Perfil muy confiable. Ingresos estables, excelente historial crediticio, empleo sólido. Riesgo mínimo de impago.' },
+  { level: 'B', label: 'Bueno', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20', description: 'Perfil sólido con fundamentos fuertes. Puede tener algún factor menor a considerar, pero el riesgo es bajo.' },
+  { level: 'C', label: 'Regular', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/20', description: 'Perfil con factores mixtos. Se recomienda solicitar garantías adicionales como un codeudor o depósito mayor.' },
+  { level: 'D', label: 'Riesgoso', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/20', description: 'Perfil con factores de riesgo significativos. Se recomienda precaución y condiciones especiales si se decide aprobar.' },
 ];
 
 function ScoringGuide() {
@@ -80,45 +63,45 @@ function ScoringGuide() {
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center gap-2.5 px-4 py-2.5 rounded-sm text-sm font-medium transition-colors border',
+          'flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border',
           open
-            ? 'bg-primary/5 border-primary/20 text-primary'
-            : 'bg-card border-plan-border text-plan-primary hover:border-primary/30 hover:bg-primary/5'
+            ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
+            : 'bg-white dark:bg-[#222224] border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
         )}
       >
-        <HelpCircle className="w-4 h-4" />
+        <Question className="w-4 h-4" />
         <span>¿Cómo funciona el scoring de candidatos?</span>
-        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ml-1', open && 'rotate-180')} />
+        <CaretDown className={cn('w-3.5 h-3.5 transition-transform ml-1', open && 'rotate-180')} />
       </button>
 
       {open && (
-        <div className="mt-4 bg-card border border-plan-border overflow-hidden">
+        <div className="mt-4 bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-5 border-b border-plan-border">
-            <h3 className="text-base font-semibold text-plan-primary">Sistema de evaluación de candidatos</h3>
-            <p className="text-sm text-plan-secondary mt-1">
+          <div className="px-6 py-5 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Sistema de evaluación de candidatos</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
               Cada candidato recibe un puntaje de 0 a 100 basado en múltiples factores verificados. Este score se traduce en un nivel de riesgo (A–D) para facilitar tu decisión.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-plan-border">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100 dark:divide-neutral-700">
             {/* Left: Score categories */}
             <div className="p-6">
-              <h4 className="text-sm font-semibold text-plan-primary mb-4 uppercase tracking-wider">Categorías evaluadas</h4>
+              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">Categorías evaluadas</h4>
               <div className="space-y-4">
                 {SCORE_CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
                   return (
                     <div key={cat.label} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-sm bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-indigo-600" />
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-medium text-plan-primary">{cat.label}</span>
-                          <span className="text-xs text-plan-muted">Peso: {cat.weight}</span>
+                          <span className="text-sm font-medium text-neutral-900 dark:text-white">{cat.label}</span>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500">Peso: {cat.weight}</span>
                         </div>
-                        <p className="text-xs text-plan-secondary mt-0.5 leading-relaxed">{cat.description}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{cat.description}</p>
                       </div>
                     </div>
                   );
@@ -128,27 +111,27 @@ function ScoringGuide() {
 
             {/* Right: Risk levels */}
             <div className="p-6">
-              <h4 className="text-sm font-semibold text-plan-primary mb-4 uppercase tracking-wider">Niveles de riesgo</h4>
+              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">Niveles de riesgo</h4>
               <div className="space-y-3">
                 {RISK_LEVEL_DETAILS.map((risk) => (
-                  <div key={risk.level} className={cn('p-3 rounded-sm border', risk.bgColor, 'border-transparent')}>
+                  <div key={risk.level} className={cn('p-3 rounded-xl', risk.bgColor)}>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className={cn('w-7 h-7 rounded-sm flex items-center justify-center text-xs font-bold text-white', risk.color)}>
+                      <span className={cn('w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white', risk.color)}>
                         {risk.level}
                       </span>
                       <div>
                         <span className={cn('text-sm font-semibold', risk.textColor)}>{risk.label}</span>
-                        <span className="text-xs text-plan-muted ml-2">Score {risk.range}</span>
+                        <span className="text-xs text-neutral-400 dark:text-neutral-500 ml-2">Score {risk.range}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-plan-secondary leading-relaxed ml-10">{risk.description}</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed ml-10">{risk.description}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 p-3 bg-[hsl(var(--sand-50))] rounded-sm">
-                <p className="text-xs text-plan-secondary leading-relaxed">
-                  <strong className="text-plan-primary">Nota:</strong> El scoring es una herramienta de apoyo, no una decisión automática. Siempre revisa el perfil completo del candidato antes de aprobar o rechazar.
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                  <strong>Nota:</strong> El scoring es una herramienta de apoyo, no una decisión automática. Siempre revisa el perfil completo del candidato antes de aprobar o rechazar.
                 </p>
               </div>
             </div>
@@ -161,9 +144,9 @@ function ScoringGuide() {
 
 export default function CandidatosPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFunnel, setStatusFunnel] = useState<StatusFunnel>('all');
+  const [riskFunnel, setRiskFunnel] = useState<RiskFunnel>('all');
+  const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -172,8 +155,8 @@ export default function CandidatosPage() {
   // Apply filters
   const filteredCandidates = allCandidates.filter(c => {
     const status = candidateStatuses[c.id] || 'new';
-    if (statusFilter !== 'all' && status !== statusFilter) return false;
-    if (riskFilter !== 'all' && c.riskLevel !== riskFilter) return false;
+    if (statusFunnel !== 'all' && status !== statusFunnel) return false;
+    if (riskFunnel !== 'all' && c.riskLevel !== riskFunnel) return false;
     if (searchQuery &&
         !c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !(c.propertyTitle?.toLowerCase().includes(searchQuery.toLowerCase())) &&
@@ -196,9 +179,9 @@ export default function CandidatosPage() {
     status: candidateStatuses[c.id] || 'new',
   }));
 
-  // Map status to PLan status type
-  const getStatusType = (status: StatusFilter): PlanStatusType => {
-    const map: Record<StatusFilter, PlanStatusType> = {
+  // Map status to Plan status type
+  const getStatusType = (status: StatusFunnel): PlanStatusType => {
+    const map: Record<StatusFunnel, PlanStatusType> = {
       'new': 'new',
       'reviewing': 'in_progress',
       'approved': 'accepted',
@@ -208,8 +191,8 @@ export default function CandidatosPage() {
     return map[status];
   };
 
-  const getStatusLabel = (status: StatusFilter): string => {
-    const map: Record<StatusFilter, string> = {
+  const getStatusLabel = (status: StatusFunnel): string => {
+    const map: Record<StatusFunnel, string> = {
       'new': 'Nuevo',
       'reviewing': 'En revisión',
       'approved': 'Aprobado',
@@ -235,8 +218,8 @@ export default function CandidatosPage() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-plan-muted" />
-          <span className="text-sm text-plan-secondary truncate max-w-[200px]">
+          <Buildings className="w-4 h-4 text-neutral-400" />
+          <span className="text-sm text-neutral-600 dark:text-neutral-300 truncate max-w-[200px]">
             {row.propertyTitle}
           </span>
         </div>
@@ -263,7 +246,7 @@ export default function CandidatosPage() {
               variant={row.numericScore >= 70 ? 'success' : row.numericScore >= 50 ? 'warning' : 'danger'}
             />
           </div>
-          <span className="text-xs text-plan-secondary">{row.numericScore}</span>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">{row.numericScore}</span>
         </div>
       ),
     },
@@ -272,7 +255,7 @@ export default function CandidatosPage() {
       header: 'Ingresos',
       sortable: true,
       render: (row) => (
-        <span className="text-sm font-medium text-plan-primary">
+        <span className="text-sm font-medium text-neutral-900 dark:text-white">
           {formatCurrency(row.totalIncome)}
         </span>
       ),
@@ -331,20 +314,20 @@ export default function CandidatosPage() {
     {
       id: 'reject',
       label: 'Rechazar',
-      icon: <UserX className="w-4 h-4" />,
+      icon: <UserMinus className="w-4 h-4" />,
       onClick: () => handleReject(candidate),
       variant: 'danger',
     },
     {
       id: 'message',
       label: 'Mensaje',
-      icon: <MessageSquare className="w-4 h-4" />,
+      icon: <Chat className="w-4 h-4" />,
       onClick: () => router.push(`/panel/mensajes?to=${candidate.id}`),
     },
     {
       id: 'property',
       label: 'Ver propiedad',
-      icon: <Building2 className="w-4 h-4" />,
+      icon: <Buildings className="w-4 h-4" />,
       onClick: () => router.push(`/panel/${candidate.propertyId}`),
     },
   ];
@@ -359,8 +342,8 @@ export default function CandidatosPage() {
           <div className="flex items-center justify-between">
             <PlanRiskBadge level={candidate.riskLevel} />
             <div className="text-right">
-              <span className="text-2xl font-bold text-plan-primary">{candidate.numericScore}</span>
-              <span className="text-sm text-plan-secondary">/100</span>
+              <span className="text-2xl font-bold text-neutral-900 dark:text-white">{candidate.numericScore}</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">/100</span>
             </div>
           </div>
           <PlanProgressBar
@@ -373,8 +356,8 @@ export default function CandidatosPage() {
               {candidate.riskScore.categories.map(cat => (
                 <div key={cat.name}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-plan-secondary">{cat.label}</span>
-                    <span className="font-medium">{cat.score}%</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{cat.label}</span>
+                    <span className="font-medium text-neutral-900 dark:text-white">{cat.score}%</span>
                   </div>
                   <PlanProgressBar value={cat.score} size="sm" />
                 </div>
@@ -389,17 +372,17 @@ export default function CandidatosPage() {
       title: 'Información Financiera',
       content: (
         <div className="space-y-2">
-          <div className="flex justify-between py-2 border-b border-plan-border">
-            <span className="text-sm text-plan-secondary">Ingresos mensuales</span>
-            <span className="text-sm font-medium text-plan-primary">{formatCurrency(candidate.totalIncome)}</span>
+          <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Ingresos mensuales</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.totalIncome)}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-plan-border">
-            <span className="text-sm text-plan-secondary">Obligaciones</span>
-            <span className="text-sm font-medium text-plan-primary">{formatCurrency(candidate.monthlyObligations)}</span>
+          <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Obligaciones</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.monthlyObligations)}</span>
           </div>
-          <div className="flex justify-between py-2 bg-emerald-50 px-2 -mx-2">
-            <span className="text-sm text-emerald-700">Disponible para arriendo</span>
-            <span className="text-sm font-semibold text-emerald-700">{formatCurrency(candidate.availableForRent)}</span>
+          <div className="flex justify-between py-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 -mx-3 rounded-lg">
+            <span className="text-sm text-emerald-700 dark:text-emerald-400">Disponible para arriendo</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(candidate.availableForRent)}</span>
           </div>
         </div>
       ),
@@ -410,19 +393,19 @@ export default function CandidatosPage() {
       content: (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-sm text-plan-secondary">Ocupación</span>
-            <span className="text-sm text-plan-primary">{candidate.occupation}</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Ocupación</span>
+            <span className="text-sm text-neutral-900 dark:text-white">{candidate.occupation}</span>
           </div>
           {candidate.companyName && (
             <div className="flex justify-between">
-              <span className="text-sm text-plan-secondary">Empresa</span>
-              <span className="text-sm text-plan-primary">{candidate.companyName}</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">Empresa</span>
+              <span className="text-sm text-neutral-900 dark:text-white">{candidate.companyName}</span>
             </div>
           )}
           {candidate.timeAtJob && (
             <div className="flex justify-between">
-              <span className="text-sm text-plan-secondary">Tiempo en cargo</span>
-              <span className="text-sm text-plan-primary">{Math.floor(candidate.timeAtJob / 12)} años {candidate.timeAtJob % 12} meses</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">Tiempo en cargo</span>
+              <span className="text-sm text-neutral-900 dark:text-white">{Math.floor(candidate.timeAtJob / 12)} años {candidate.timeAtJob % 12} meses</span>
             </div>
           )}
         </div>
@@ -437,13 +420,13 @@ export default function CandidatosPage() {
             <div
               key={flag.id}
               className={cn(
-                'flex items-start gap-2 p-2 text-sm',
-                flag.severity === 'high' ? 'bg-red-50 text-red-700' :
-                flag.severity === 'medium' ? 'bg-amber-50 text-amber-700' :
-                'bg-blue-50 text-blue-700'
+                'flex items-start gap-2 p-3 text-sm rounded-lg',
+                flag.severity === 'high' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' :
+                flag.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' :
+                'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
               )}
             >
-              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <Warning className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div>
                 <p>{flag.message}</p>
                 {flag.suggestion && (
@@ -467,12 +450,12 @@ export default function CandidatosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-plan-primary">Candidatos</h1>
-          <p className="mt-1 text-plan-secondary">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Candidatos</h1>
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
             Evalúa y gestiona las aplicaciones de tus candidatos
           </p>
         </header>
@@ -480,90 +463,147 @@ export default function CandidatosPage() {
         {/* Scoring Guide — prominent placement */}
         <ScoringGuide />
 
-        {/* Stats */}
-        <PlanStatsGrid columns={4} className="mb-8">
-          <PlanStatsCard
-            label="Total candidatos"
-            value={statusCounts.all}
-            icon={Users}
-          />
-          <PlanStatsCard
-            label="Nuevos"
-            value={statusCounts.new}
-            sublabel="Por revisar"
-            variant={statusCounts.new > 0 ? 'accent' : 'default'}
-          />
-          <PlanStatsCard
-            label="Aprobados"
-            value={statusCounts.approved}
-          />
-          <PlanStatsCard
-            label="Rechazados"
-            value={statusCounts.rejected}
-          />
-        </PlanStatsGrid>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
+                <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.all}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Total candidatos</p>
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.new}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Nuevos</p>
+            {statusCounts.new > 0 && (
+              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium rounded-full">
+                Por revisar
+              </span>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.approved}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Aprobados</p>
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.rejected}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Rechazados</p>
+          </div>
+        </div>
 
         {/* Tabs */}
-        <PlanTabs
-          tabs={tabs}
-          activeTab={statusFilter}
-          onChange={(tab) => setStatusFilter(tab as StatusFilter)}
-          variant="underline"
-          className="mb-6"
-        />
+        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFunnel(tab.id as StatusFunnel)}
+              className={cn(
+                'px-4 py-2 text-sm font-medium rounded-xl transition-all flex items-center gap-2',
+                statusFunnel === tab.id
+                  ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+              )}
+            >
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={cn(
+                  'text-xs px-1.5 py-0.5 rounded-full',
+                  statusFunnel === tab.id
+                    ? 'bg-neutral-200 dark:bg-neutral-600 text-neutral-700 dark:text-neutral-200'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400'
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-        {/* Filters Row */}
-        <div className="bg-card border border-plan-border p-4 mb-6">
+        {/* Funnels Row */}
+        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Search */}
+            {/* MagnifyingGlass */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
+              <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
                 placeholder="Buscar candidato, propiedad u ocupación..."
                 aria-label="Buscar candidato"
-                className="w-full h-10 pl-10 pr-4 bg-muted border border-plan-border text-sm placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
-            {/* Risk Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-plan-secondary">Riesgo:</span>
-              {(['all', 'A', 'B', 'C', 'D'] as const).map(level => (
-                <button
-                  key={level}
-                  onClick={() => setRiskFilter(level)}
-                  className={cn(
-                    'px-3 py-1.5 text-sm font-medium transition-colors',
-                    riskFilter === level
-                      ? 'bg-primary text-white'
-                      : 'bg-muted text-plan-secondary hover:bg-muted'
-                  )}
-                >
-                  {level === 'all' ? 'Todos' : level}
-                </button>
-              ))}
+            {/* Risk Funnel */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">Riesgo:</span>
+              <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
+                {(['all', 'A', 'B', 'C', 'D'] as const).map(level => (
+                  <button
+                    key={level}
+                    onClick={() => setRiskFunnel(level)}
+                    className={cn(
+                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-all',
+                      riskFunnel === level
+                        ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    )}
+                  >
+                    {level === 'all' ? 'Todos' : level}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Table with Pagination */}
-        <PlanTable
-          data={tableData}
-          columns={columns}
-          keyExtractor={(row) => row.id}
-          onRowClick={handleRowClick}
-          emptyMessage={
-            searchQuery || statusFilter !== 'all' || riskFilter !== 'all'
-              ? 'No se encontraron candidatos con los filtros aplicados'
-              : 'Cuando recibas aplicaciones, aparecerán aquí'
-          }
-          stickyHeader
-          pagination
-          pageSize={10}
-        />
+        {allCandidates.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No hay candidatos"
+            description="Cuando los inquilinos apliquen a tus propiedades, aparecerán aquí para que puedas evaluarlos."
+            action={{ label: "Ver propiedades", href: "/panel/propiedades" }}
+          />
+        ) : (
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <PlanTable
+              data={tableData}
+              columns={columns}
+              keyExtractor={(row) => row.id}
+              onRowClick={handleRowClick}
+              emptyMessage={
+                searchQuery || statusFunnel !== 'all' || riskFunnel !== 'all'
+                  ? 'No se encontraron candidatos con los filtros aplicados'
+                  : 'Cuando recibas aplicaciones, aparecerán aquí'
+              }
+              stickyHeader
+              pagination
+              pageSize={10}
+            />
+          </div>
+        )}
       </div>
 
       {/* Detail Sheet */}

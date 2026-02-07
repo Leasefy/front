@@ -118,10 +118,10 @@ function AspectRatioImage({
 }
 
 // ============================================================================
-// Aspect Ratio with Video
+// Aspect Ratio with VideoCamera
 // ============================================================================
 
-export interface AspectRatioVideoProps extends Omit<AspectRatioProps, 'children'> {
+export interface AspectRatioVideoCameraProps extends Omit<AspectRatioProps, 'children'> {
   src: string;
   poster?: string;
   autoPlay?: boolean;
@@ -131,7 +131,7 @@ export interface AspectRatioVideoProps extends Omit<AspectRatioProps, 'children'
   playsInline?: boolean;
 }
 
-function AspectRatioVideo({
+function AspectRatioVideoCamera({
   src,
   poster,
   ratio = aspectRatios.video,
@@ -142,7 +142,7 @@ function AspectRatioVideo({
   playsInline = true,
   className,
   ...props
-}: AspectRatioVideoProps) {
+}: AspectRatioVideoCameraProps) {
   return (
     <AspectRatio ratio={ratio} className={cn('overflow-hidden', className)} {...props}>
       <video
@@ -192,4 +192,4 @@ function AspectRatioIframe({
   );
 }
 
-export { AspectRatio, AspectRatioImage, AspectRatioVideo, AspectRatioIframe };
+export { AspectRatio, AspectRatioImage, AspectRatioVideoCamera, AspectRatioIframe };

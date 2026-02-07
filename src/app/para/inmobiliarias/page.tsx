@@ -2,915 +2,772 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import {
-  ArrowRight,
-  CheckCircle2,
-  Shield,
-  Clock,
-  Building2,
-  Users,
-  FileText,
-  BarChart3,
-  Star,
-  Zap,
-  Lock,
-  Code,
-  Palette,
-  Headphones,
-  Sparkles,
-  TrendingUp,
-  LineChart,
-  Globe,
-  Database,
-  Layers,
-  Quote,
-  Play,
-  ChevronRight,
-  BadgeCheck,
-  Rocket,
-} from 'lucide-react';
+import { CTASection } from '@/components/home/CTASection';
+import { FAQSection } from '@/components/home/FAQSection';
+import { CaretLeft, CaretRight, CheckCircle, Users, FileText, Code, TrendUp, Buildings, Building, Clock, Lightning, Warning, XCircle, Shield, Cpu, PencilLine, ArrowRight } from '@phosphor-icons/react';
 
-// Hero stats
-const heroStats = [
-  { value: '50+', label: 'Inmobiliarias', sublabel: 'activas' },
-  { value: '5,000+', label: 'Propiedades', sublabel: 'gestionadas' },
-  { value: '99.9%', label: 'Uptime', sublabel: 'garantizado' },
-];
-
-// Features with visuals
-const features = [
-  {
-    icon: Users,
-    title: 'CRM de candidatos',
-    description: 'Gestiona todos tus candidatos desde un solo panel. Historial completo, comunicaciones centralizadas y estados personalizables.',
-    visual: 'crm',
-    gradient: 'from-blue-500 to-indigo-500',
-  },
-  {
-    icon: BarChart3,
-    title: 'Scoring con IA',
-    description: 'Evalúa candidatos en segundos. Nuestro algoritmo analiza riesgo crediticio, historial laboral y referencias automáticamente.',
-    visual: 'scoring',
-    gradient: 'from-violet-500 to-purple-500',
-    highlight: '92% precisión',
-  },
-  {
-    icon: FileText,
-    title: 'Contratos digitales',
-    description: 'Plantillas conformes a Ley 820/2003. Firma electrónica avanzada, almacenamiento seguro en la nube.',
-    visual: 'contracts',
-    gradient: 'from-emerald-500 to-teal-500',
-  },
-  {
-    icon: Code,
-    title: 'API REST completa',
-    description: 'Integra con tu software existente. Sincroniza propiedades, candidatos y contratos en tiempo real con webhooks.',
-    visual: 'api',
-    gradient: 'from-amber-500 to-orange-500',
-    highlight: 'Documentación completa',
-  },
-];
-
-// Plans
-const plans = [
-  {
-    name: 'Starter',
-    price: '149.000',
-    properties: '20',
-    users: '3',
-    features: ['CRM de candidatos', 'Publicación en portales', 'Contratos digitales', 'Scoring IA básico', 'Soporte email'],
-    color: 'slate',
-  },
-  {
-    name: 'Growth',
-    price: '399.000',
-    properties: '100',
-    users: '10',
-    popular: true,
-    features: ['Todo en Starter', 'API REST básica', 'Reportes avanzados', 'Recordatorios automáticos', 'Soporte prioritario'],
-    color: 'blue',
-  },
-  {
-    name: 'Business',
-    price: '899.000',
-    properties: '300',
-    users: '25',
-    features: ['Todo en Growth', 'API REST completa', 'Webhooks tiempo real', 'Multi-sucursal', 'Gerente dedicado'],
-    color: 'violet',
-  },
-  {
-    name: 'Enterprise',
-    price: 'Personalizado',
-    properties: 'Ilimitado',
-    users: 'Ilimitado',
-    features: ['Todo en Business', 'White-label completo', 'SLA garantizado 99.9%', 'Onboarding personalizado', 'Soporte 24/7'],
-    isEnterprise: true,
-    color: 'slate',
-  },
-];
-
-// Benefits with stats
-const benefits = [
-  {
-    icon: Clock,
-    title: 'Ahorra tiempo',
-    description: 'Automatiza evaluaciones, recordatorios y cobros.',
-    stat: '10+',
-    statLabel: 'horas/semana',
-  },
-  {
-    icon: Zap,
-    title: 'Cierra más rápido',
-    description: 'De candidato a inquilino firmado.',
-    stat: '48h',
-    statLabel: 'promedio',
-  },
-  {
-    icon: Shield,
-    title: 'Reduce el riesgo',
-    description: 'Scoring de IA con alta precisión.',
-    stat: '92%',
-    statLabel: 'precisión',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Escala sin límites',
-    description: 'Gestiona más propiedades sin más personal.',
-    stat: '4x',
-    statLabel: 'capacidad',
-  },
-];
-
-// Testimonials with company info
+// Testimonials data
 const testimonials = [
   {
-    quote: 'Pasamos de gestionar 50 propiedades a 200 sin aumentar el equipo. La automatización es clave.',
+    quote: 'Pasamos de gestionar 50 propiedades a 200 sin aumentar el equipo. La automatización del scoring y los contratos digitales son un game-changer.',
     author: 'Inmobiliaria Santafé',
     role: 'Bogotá, 200+ propiedades',
     image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&h=400&fit=crop&q=80',
-    rating: 5,
   },
   {
-    quote: 'El API nos permitió integrar con nuestro ERP existente. Migración sin fricciones en solo 2 semanas.',
+    quote: 'El API nos permitió integrar con nuestro ERP existente. La migración fue sin fricciones, en solo 2 semanas teníamos todo funcionando.',
     author: 'Grupo Inmobiliario Antioquia',
     role: 'Medellín, 350+ propiedades',
     image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=400&fit=crop&q=80',
-    rating: 5,
   },
   {
-    quote: 'El scoring con IA redujo nuestros impagos en un 60%. El ROI fue inmediato desde el primer mes.',
+    quote: 'El scoring con IA redujo nuestros impagos en un 60%. El ROI fue inmediato desde el primer mes de implementación.',
     author: 'Arriendos del Valle',
     role: 'Cali, 120+ propiedades',
     image: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=400&h=400&fit=crop&q=80',
-    rating: 5,
+  },
+  {
+    quote: 'La plataforma white-label nos permitió ofrecer a nuestros clientes una experiencia completamente personalizada con nuestra marca.',
+    author: 'Propiedades Premium',
+    role: 'Barranquilla, 85+ propiedades',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=400&fit=crop&q=80',
   },
 ];
 
-// Integration logos
-const integrations = [
-  { name: 'Fincaraíz', logo: '/logos/fincaraiz.svg' },
-  { name: 'Metrocuadrado', logo: '/logos/metrocuadrado.svg' },
-  { name: 'Ciencuadras', logo: '/logos/ciencuadras.svg' },
-];
-
-// Visual components for features
-function CRMVisual() {
-  return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-xl border border-border p-4 space-y-3"
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-foreground">Candidatos activos</span>
-        <span className="text-xs text-muted-foreground">Hoy</span>
-      </div>
-      {['María López', 'Carlos Ruiz', 'Ana García'].map((name, i) => (
-        <motion.div
-          key={name}
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 + i * 0.1 }}
-          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-        >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-medium">
-            {name.charAt(0)}
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">{name}</p>
-            <p className="text-[10px] text-muted-foreground">Apto 301 - Chapinero</p>
-          </div>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full ${i === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : i === 1 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-            {i === 0 ? 'Pendiente' : i === 1 ? 'Aprobado' : 'En revisión'}
-          </span>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-}
-
-function ScoringVisual() {
-  return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-xl border border-border p-4"
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-          <BarChart3 className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">Score de riesgo</p>
-          <p className="text-[10px] text-muted-foreground">Análisis completado</p>
-        </div>
-      </div>
-      <div className="relative h-3 bg-muted rounded-full overflow-hidden mb-3">
-        <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
-          initial={{ width: 0 }}
-          whileInView={{ width: '85%' }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-        />
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">85</span>
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">
-          Bajo riesgo
-        </span>
-      </div>
-      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-        {['Historial crediticio', 'Estabilidad laboral', 'Referencias'].map((item, i) => (
-          <div key={item} className="flex items-center gap-2 text-[10px]">
-            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-            <span className="text-muted-foreground">{item}</span>
-            <span className="ml-auto text-foreground font-medium">{90 - i * 5}%</span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function ContractsVisual() {
-  return (
-    <motion.div
-      className="bg-white dark:bg-card rounded-2xl shadow-xl border border-border p-4"
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-          <FileText className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <p className="text-xs font-medium text-foreground">Contrato #2024-0847</p>
-          <p className="text-[10px] text-muted-foreground">Creado hace 2 min</p>
-        </div>
-      </div>
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-muted-foreground">Inquilino</span>
-          <span className="text-foreground">María López</span>
-        </div>
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-muted-foreground">Propiedad</span>
-          <span className="text-foreground">Apto 301, Ed. Torre Norte</span>
-        </div>
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-muted-foreground">Canon</span>
-          <span className="text-foreground">$2.500.000/mes</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 pt-3 border-t border-border">
-        <div className="flex -space-x-2">
-          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center ring-2 ring-white dark:ring-card">
-            <CheckCircle2 className="w-3 h-3 text-white" />
-          </div>
-          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-card">
-            <CheckCircle2 className="w-3 h-3 text-white" />
-          </div>
-        </div>
-        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">2/2 firmado</span>
-      </div>
-    </motion.div>
-  );
-}
-
-function APIVisual() {
-  return (
-    <motion.div
-      className="bg-slate-900 rounded-2xl shadow-xl border border-slate-700 p-4 font-mono text-xs"
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-        <span className="ml-2 text-slate-400 text-[10px]">api.arriendofacil.co</span>
-      </div>
-      <div className="space-y-1">
-        <p className="text-slate-400">
-          <span className="text-emerald-400">GET</span> /v1/candidates
-        </p>
-        <p className="text-slate-500">{'// Response'}</p>
-        <p className="text-amber-400">{'{'}</p>
-        <p className="text-slate-300 pl-2">&quot;data&quot;: [</p>
-        <p className="text-slate-300 pl-4">{'{ "id": 1, "score": 85 }'}</p>
-        <p className="text-slate-300 pl-2">],</p>
-        <p className="text-slate-300 pl-2">&quot;total&quot;: <span className="text-cyan-400">247</span></p>
-        <p className="text-amber-400">{'}'}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-const visuals: Record<string, () => JSX.Element> = {
-  crm: CRMVisual,
-  scoring: ScoringVisual,
-  contracts: ContractsVisual,
-  api: APIVisual,
-};
 
 export default function InmobiliariasPage() {
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextTestimonial = () => {
+    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
+  };
 
   return (
     <>
       <Navbar />
-      <main className="pt-16 overflow-hidden">
+      <main className="overflow-hidden">
         {/* Hero Section */}
-        <section ref={heroRef} className="relative min-h-[90vh] flex items-center overflow-hidden">
-          {/* Background */}
-          <motion.div className="absolute inset-0 z-0" style={{ y: heroY }}>
-            <Image
-              src="/hero-7.jpg"
-              alt="Modern apartment interior"
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-black/45" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40" />
-          </motion.div>
+        <section className="relative h-[600px] overflow-hidden bg-black">
+          <Image
+            src="/hero-7.jpg"
+            alt="Modern office building"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/40 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
 
-          <motion.div
-            className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 py-20"
-            style={{ opacity: heroOpacity }}
-          >
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="relative z-10 h-full container-platform pt-[72px] pb-16 flex items-center">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
               {/* Left Content */}
-              <div className="space-y-8">
-                <motion.div
+              <div className="space-y-4">
+                <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
+                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
-                  <span className="inline-flex items-center gap-2 text-xs font-medium text-white/80 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15">
-                    <Building2 className="w-3.5 h-3.5" />
-                    Para inmobiliarias profesionales
-                  </span>
-                </motion.div>
+                  <Building className="w-3.5 h-3.5" />
+                  Solución empresarial para inmobiliarias
+                </motion.span>
 
                 <motion.h1
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight"
+                  transition={{ delay: 0.1 }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   Escala tu operación
-                  <span className="block mt-2 text-white/90">
-                    con tecnología
-                  </span>
+                  <span className="block mt-2 text-white/90">con <span className="italic">tecnología</span></span>
                 </motion.h1>
 
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-lg md:text-xl text-white/70 max-w-lg leading-relaxed"
+                  transition={{ delay: 0.2 }}
+                  className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
-                  CRM de candidatos, evaluación con IA, contratos digitales y API completa.
-                  <span className="text-white font-medium"> Gestiona más propiedades con menos esfuerzo.</span>
+                  CRM de candidatos, scoring con IA, contratos digitales y API completa.
+                  <span className="text-white font-medium"> Todo integrado.</span>
                 </motion.p>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="flex flex-col sm:flex-row gap-4"
+                  transition={{ delay: 0.3 }}
+                  className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" className="w-full sm:w-auto bg-white text-foreground hover:bg-white/90 font-semibold text-base h-14 px-8 rounded-sm shadow-lg">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
                       Empezar prueba gratis
-                      <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                   </Link>
-                  <a href="mailto:ventas@arriendofacil.co">
+                  <Link href="/pricing">
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium text-base h-14 px-8 rounded-sm backdrop-blur-2xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
                     >
-                      <Play className="w-4 h-4 mr-2" />
-                      Ver demo
+                      Ver planes
                     </Button>
-                  </a>
+                  </Link>
                 </motion.div>
 
-                {/* Stats */}
+                {/* Hero Stats - No separator line */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="flex items-center gap-8 pt-8 border-t border-white/10"
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center gap-8 pt-6"
                 >
-                  {heroStats.map((stat) => (
-                    <div key={stat.label} className="text-center sm:text-left">
-                      <p className="text-3xl md:text-4xl font-bold text-white">{stat.value}</p>
-                      <p className="text-xs text-white/60 mt-1">{stat.label}</p>
+                  {[
+                    { value: '92%', label: 'Precisión IA' },
+                    { value: '500+', label: 'Inmobiliarias' },
+                    { value: '10x', label: 'Más rápido' },
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
                     </div>
                   ))}
                 </motion.div>
               </div>
 
-              {/* Right - Dashboard Preview */}
+              {/* Right - Hero Widget (Glass style, aligned to right) */}
               <motion.div
-                initial={{ opacity: 0, x: 50, rotateY: -10 }}
-                animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="hidden lg:block"
+                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
-                  {/* Main Dashboard Card */}
-                  <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden shadow-2xl p-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-white font-semibold">Panel de control</h3>
-                        <p className="text-slate-400 text-sm">Inmobiliaria Santafé</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs text-slate-400">En vivo</span>
-                      </div>
-                    </div>
-
-                    {/* Stats Row */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      {[
-                        { label: 'Propiedades', value: '127', change: '+12%' },
-                        { label: 'Candidatos', value: '43', change: '+8%' },
-                        { label: 'Contratos', value: '12', change: '+25%' },
-                      ].map((stat) => (
-                        <div key={stat.label} className="bg-white/5 rounded-xl p-3">
-                          <p className="text-2xl font-bold text-white">{stat.value}</p>
-                          <div className="flex items-center gap-1">
-                            <p className="text-xs text-slate-400">{stat.label}</p>
-                            <span className="text-[10px] text-emerald-400">{stat.change}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="space-y-3">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Actividad reciente</p>
-                      {[
-                        { action: 'Nuevo candidato', detail: 'Carlos Ruiz para Apto 301', time: '2 min' },
-                        { action: 'Contrato firmado', detail: 'María López - Ed. Torre Norte', time: '15 min' },
-                        { action: 'Scoring completado', detail: 'Score: 85 - Bajo riesgo', time: '1 hora' },
-                      ].map((item, i) => (
-                        <motion.div
-                          key={item.action}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.6 + i * 0.1 }}
-                          className="flex items-center gap-3 bg-white/5 rounded-lg p-3"
-                        >
-                          <div className={`w-8 h-8 rounded-lg ${i === 0 ? 'bg-blue-500/20' : i === 1 ? 'bg-emerald-500/20' : 'bg-violet-500/20'} flex items-center justify-center`}>
-                            {i === 0 ? <Users className="w-4 h-4 text-blue-400" /> : i === 1 ? <FileText className="w-4 h-4 text-emerald-400" /> : <BarChart3 className="w-4 h-4 text-violet-400" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-white">{item.action}</p>
-                            <p className="text-xs text-slate-400">{item.detail}</p>
-                          </div>
-                          <span className="text-xs text-slate-500">{item.time}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Floating Badge */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, x: -20 }}
-                    animate={{ opacity: 1, y: 0, x: 0 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                    className="absolute -bottom-6 -left-6 bg-white dark:bg-card rounded-2xl shadow-xl p-4 border border-border"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                        <Rocket className="w-5 h-5 text-white" />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4 }}
+                      className="flex items-center gap-3 mb-5"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                        <Building className="w-6 h-6 text-white" />
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">14 días gratis</p>
-                        <p className="text-xs text-muted-foreground">Sin tarjeta de crédito</p>
+                      <div className="flex-1">
+                        <p className="text-white font-semibold text-sm">Inmobiliaria Bogotá</p>
+                        <p className="text-white/60 text-xs">Plan Empresarial</p>
+                      </div>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.8, type: "spring", stiffness: 400 }}
+                      >
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      </motion.div>
+                    </motion.div>
+
+                    <div className="space-y-3">
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.4 }}
+                        className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white/60 text-xs">Candidatos este mes</span>
+                          <span className="text-emerald-400 text-xs font-medium">+28%</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">347</p>
+                      </motion.div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <motion.div
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.7, duration: 0.4 }}
+                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
+                        >
+                          <p className="text-lg font-bold text-white">45</p>
+                          <p className="text-[9px] text-white/60">Propiedades</p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.75, duration: 0.4 }}
+                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
+                        >
+                          <p className="text-lg font-bold text-white">12</p>
+                          <p className="text-[9px] text-white/60">Agentes</p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.8, duration: 0.4 }}
+                          className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
+                        >
+                          <p className="text-lg font-bold text-white">89%</p>
+                          <p className="text-[9px] text-white/60">Ocupación</p>
+                        </motion.div>
                       </div>
                     </div>
                   </motion.div>
 
-                  {/* Floating Stat */}
+                  {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1, duration: 0.5 }}
-                    className="absolute -top-4 -right-4 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-xl p-3 text-white"
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-xl p-3 border border-border"
                   >
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-sm font-semibold">+40% eficiencia</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+                        <Lightning className="w-4 h-4 text-violet-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-foreground">Scoring completado</p>
+                        <p className="text-[10px] text-muted-foreground">Score: 87/100 · Bajo riesgo</p>
+                      </div>
                     </div>
                   </motion.div>
                 </div>
               </motion.div>
             </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2"
-            >
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-white" />
-            </motion.div>
-          </motion.div>
+          </div>
         </section>
 
-        {/* Trust Bar */}
-        <section className="py-12 bg-muted/30 border-y border-border">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <p className="text-sm text-muted-foreground">Integraciones disponibles con los principales portales</p>
-              <div className="flex items-center gap-12 opacity-60">
-                {['Fincaraíz', 'Metrocuadrado', 'Ciencuadras', 'Properati'].map((name) => (
-                  <span key={name} className="text-lg font-semibold text-muted-foreground">{name}</span>
-                ))}
+        {/* Problems Bento Section */}
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            {/* Section Title - 3 column grid */}
+            <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
+              <div className="md:col-span-7">
+                <h2 className="text-[clamp(2.25rem,5vw,3.5rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Escalar una inmobiliaria no debería ser tan <span className="italic">complicado</span>
+                </h2>
               </div>
+              <div className="md:col-span-5 flex items-end">
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  Procesos manuales, evaluaciones lentas y errores humanos limitan tu crecimiento. Es hora de automatizar.
+                </p>
+              </div>
+            </div>
+
+            {/* Problems Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+              {/* Image Card 1 - Procesos manuales */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
+              >
+                <Image
+                  src="/hero-interior.jpg"
+                  alt="Manual processes"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white/60 text-xs font-medium">Problema #1</span>
+                  </div>
+                  <h3 className="text-white text-xl font-semibold mb-1">Procesos manuales</h3>
+                  <p className="text-white/70 text-sm">Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.</p>
+                </div>
+              </motion.div>
+
+              {/* Image Card 2 - Evaluaciones lentas */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
+              >
+                <Image
+                  src="/hero-2.jpg"
+                  alt="Slow evaluations"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white/60 text-xs font-medium">Problema #2</span>
+                  </div>
+                  <h3 className="text-white text-xl font-semibold mb-1">Evaluaciones lentas</h3>
+                  <p className="text-white/70 text-sm">Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.</p>
+                </div>
+              </motion.div>
+
+              {/* Image Card 3 - Impagos frecuentes */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
+              >
+                <Image
+                  src="/hero-3.jpg"
+                  alt="Payment defaults"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Warning className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white/60 text-xs font-medium">Problema #3</span>
+                  </div>
+                  <h3 className="text-white text-xl font-semibold mb-1">Impagos frecuentes</h3>
+                  <p className="text-white/70 text-sm">Sin scoring predictivo, los impagos afectan tu rentabilidad.</p>
+                </div>
+              </motion.div>
+
+              {/* Illustration Card 1 - Sin integración */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="md:col-span-6 bg-neutral-50 rounded-xl p-8 h-[280px] flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-4">
+                    <XCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <h3 className="text-foreground text-xl font-semibold mb-2">Sin integración</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {['bg-red-400', 'bg-orange-400', 'bg-amber-400'].map((color, i) => (
+                      <div key={i} className={`w-6 h-6 rounded-full ${color} border-2 border-white flex items-center justify-center`}>
+                        <span className="text-[8px] text-white font-bold">!</span>
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">3 sistemas desconectados</span>
+                </div>
+              </motion.div>
+
+              {/* Illustration Card 2 - Escalabilidad limitada */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="md:col-span-6 bg-neutral-50 rounded-xl p-8 h-[280px] flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
+                    <TrendUp className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <h3 className="text-foreground text-xl font-semibold mb-2">Escalabilidad limitada</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Cada 50 propiedades nuevas, necesitas contratar más personal. Tu operación no escala eficientemente.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-foreground">50</span>
+                    <span className="text-xs text-muted-foreground">propiedades<br/>por persona</span>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-emerald-600">200+</span>
+                    <span className="text-xs text-muted-foreground">con<br/>automatización</span>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section className="py-24 bg-background">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 rounded-full px-3 py-1 mb-4">
-                Herramientas profesionales
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Todo lo que tu equipo necesita
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
-                Plataforma completa para gestionar propiedades de forma eficiente
-              </p>
-            </motion.div>
+        {/* Solutions Bento Section */}
+        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            {/* Section Title - 3 column grid */}
+            <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
+              <div className="md:col-span-7">
+                <h2 className="text-[clamp(2.25rem,5vw,3.5rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Todo lo que necesitas para <span className="italic">escalar</span>
+                </h2>
+              </div>
+              <div className="md:col-span-5 flex items-end">
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  Plataforma completa para gestionar candidatos, automatizar evaluaciones e integrar con tu operación.
+                </p>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {features.map((feature, i) => {
-                const Icon = feature.icon;
-                const Visual = visuals[feature.visual];
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative bg-card rounded-3xl border border-border p-8 hover:shadow-xl transition-all duration-300"
+            {/* Solutions Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+              {/* Large Card - CRM de Candidatos */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="md:col-span-7 bg-foreground rounded-xl p-6 relative overflow-hidden"
+              >
+                <div className="flex gap-6">
+                  {/* Left: Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-white text-xl font-semibold mb-2">CRM de Candidatos</h3>
+                    <p className="text-white/70 text-sm leading-relaxed mb-4">
+                      Gestiona todos tus candidatos desde un solo panel con historial completo.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {['Pipeline', 'Historial', 'Chat', 'Reportes'].map((feature) => (
+                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right: Visual - Mini CRM Dashboard */}
+                  <div className="hidden sm:block w-[200px] flex-shrink-0">
+                    <div className="bg-white/10 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-white/50">Candidatos</span>
+                        <span className="text-emerald-400">+12%</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">247</div>
+                      <div className="space-y-1.5 pt-2 border-t border-white/10">
+                        {[
+                          { name: 'María L.', status: 'Aprobado', color: 'bg-emerald-400' },
+                          { name: 'Carlos R.', status: 'En revisión', color: 'bg-amber-400' },
+                          { name: 'Ana M.', status: 'Nuevo', color: 'bg-blue-400' },
+                        ].map((item) => (
+                          <div key={item.name} className="flex items-center gap-2 text-[9px]">
+                            <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
+                            <span className="text-white/70 flex-1">{item.name}</span>
+                            <span className="text-white/40">{item.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Small Card - Scoring con IA */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
+              >
+                <div className="flex gap-4">
+                  {/* Left: Content */}
+                  <div className="flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center mb-4">
+                      <Cpu className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <h3 className="text-foreground text-xl font-semibold mb-2">Scoring con IA</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                      Evalúa candidatos en segundos con 92% de precisión.
+                    </p>
+                  </div>
+                  {/* Right: Visual - Score Gauge */}
+                  <div className="hidden sm:flex flex-col items-center justify-center w-[100px]">
+                    <div className="relative">
+                      <svg viewBox="0 0 100 60" className="w-[90px] h-[54px]">
+                        <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="#e5e7eb" strokeWidth="8" strokeLinecap="round" />
+                        <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="url(#gaugeGradient)" strokeWidth="8" strokeLinecap="round" strokeDasharray="126" strokeDashoffset="16" />
+                        <defs>
+                          <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#f43f5e" />
+                            <stop offset="50%" stopColor="#f59e0b" />
+                            <stop offset="100%" stopColor="#10b981" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex items-end justify-center pb-0.5">
+                        <span className="text-xl font-bold text-foreground">87</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-medium mt-1">Bajo riesgo</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Small Card - Multi-Propiedad */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
+              >
+                <div className="flex gap-4">
+                  {/* Left: Content */}
+                  <div className="flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
+                      <Buildings className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h3 className="text-foreground text-xl font-semibold mb-2">Multi-Propiedad</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                      Gestiona cientos de propiedades por sucursal.
+                    </p>
+                  </div>
+                  {/* Right: Visual - Property Grid */}
+                  <div className="hidden sm:block w-[100px]">
+                    <div className="grid grid-cols-3 gap-1">
+                      {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
+                        <div key={i} className="aspect-square rounded bg-muted p-1 flex flex-col justify-end">
+                          <div
+                            className={`w-full rounded-sm ${occ > 85 ? 'bg-emerald-400' : occ > 70 ? 'bg-amber-400' : 'bg-red-400'}`}
+                            style={{ height: `${occ * 0.6}%` }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      <span className="text-[10px] text-muted-foreground">91%</span>
+                      <span className="text-[9px] text-muted-foreground/70">ocupación</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Large Card - API REST */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="md:col-span-7 bg-slate-900 rounded-xl p-6 relative overflow-hidden"
+              >
+                <div className="flex gap-6">
+                  {/* Left: Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+                      <Code className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-white text-xl font-semibold mb-2">API REST Completa</h3>
+                    <p className="text-white/70 text-sm leading-relaxed mb-4">
+                      Integra con tu ERP existente. Webhooks en tiempo real.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {['REST API', 'Webhooks', 'SDK', 'Sandbox'].map((feature) => (
+                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs font-mono">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right: Visual - Code Terminal */}
+                  <div className="hidden sm:block w-[180px] flex-shrink-0">
+                    <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-slate-700">
+                        <div className="w-2 h-2 rounded-full bg-red-400/80" />
+                        <div className="w-2 h-2 rounded-full bg-amber-400/80" />
+                        <div className="w-2 h-2 rounded-full bg-emerald-400/80" />
+                        <span className="text-[8px] text-slate-500 ml-1.5 font-mono">terminal</span>
+                      </div>
+                      <div className="p-2.5 font-mono text-[9px] leading-relaxed">
+                        <div><span className="text-emerald-400">GET</span> <span className="text-slate-400">/candidates</span></div>
+                        <div className="text-slate-500 mt-1">{"{"}</div>
+                        <div className="text-slate-400 pl-2">&quot;id&quot;: <span className="text-cyan-400">1247</span>,</div>
+                        <div className="text-slate-400 pl-2">&quot;score&quot;: <span className="text-emerald-400">87</span>,</div>
+                        <div className="text-slate-400 pl-2">&quot;risk&quot;: <span className="text-green-400">&quot;low&quot;</span></div>
+                        <div className="text-slate-500">{"}"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Additional row - Contratos Digitales & Seguro */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
+              >
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-foreground text-lg font-semibold mb-2">Contratos Digitales</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Firma electrónica con validez legal. Genera contratos desde plantillas.
+                    </p>
+                  </div>
+                  {/* Visual - Document preview */}
+                  <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
+                    <div className="w-14 h-18 bg-muted rounded border border-border relative">
+                      <div className="absolute top-2 left-2 right-2 space-y-1">
+                        <div className="h-1 bg-border rounded w-full" />
+                        <div className="h-1 bg-border rounded w-3/4" />
+                        <div className="h-1 bg-border rounded w-full" />
+                        <div className="h-1 bg-border rounded w-1/2" />
+                      </div>
+                      <div className="absolute bottom-2 right-2">
+                        <CheckCircle className="w-4 h-4 text-blue-500" />
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
+              >
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
+                      <Shield className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h3 className="text-foreground text-lg font-semibold mb-2">Seguro de Arriendo</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Protección completa contra impagos. Cobertura desde el primer día.
+                    </p>
+                  </div>
+                  {/* Visual - Shield with checkmark */}
+                  <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
+                    <div className="relative">
+                      <Shield className="w-12 h-12 text-amber-200 fill-amber-100" />
+                      <CheckCircle className="w-5 h-5 text-amber-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    </div>
+                    <span className="text-[9px] text-muted-foreground mt-1.5">100% cubierto</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="bg-white overflow-hidden">
+          <div className="container-platform py-[80px] pb-[100px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="lg:sticky lg:top-32"
+              >
+                <h2 className="text-[40px] md:text-[52px] font-heading font-light text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
+                  Inmobiliarias que <span className="italic">confían</span> en nosotros
+                </h2>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={prevTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Anterior testimonio"
                   >
-                    {/* Gradient accent */}
-                    <div className={`absolute top-0 left-8 right-8 h-1 bg-gradient-to-r ${feature.gradient} rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <CaretLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Siguiente testimonio"
+                  >
+                    <CaretRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
 
-                    <div className="flex flex-col md:flex-row gap-6">
-                      <div className="flex-1 space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-6 h-6 text-white" />
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <AnimatePresence mode="popLayout">
+                  {[0, 1].map((offset) => {
+                    const index = (currentIndex + offset) % testimonials.length;
+                    const testimonial = testimonials[index];
+                    return (
+                      <motion.div
+                        key={`${index}-${currentIndex}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4, delay: offset * 0.1 }}
+                        className="bg-muted rounded-xl p-8 flex flex-col"
+                      >
+                        <div className="mb-6">
+                          <svg className="w-10 h-10 text-muted-foreground/50" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
+                          </svg>
+                        </div>
+
+                        <p className="text-[20px] tracking-[-0.5px] leading-[1.4] text-foreground mb-8 flex-grow">
+                          {testimonial.quote}
+                        </p>
+
+                        <div className="flex items-center gap-4">
+                          <div className="w-[48px] h-[48px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                            <Image
+                              src={testimonial.image}
+                              alt={testimonial.author}
+                              width={48}
+                              height={48}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-foreground mb-1">
-                              {feature.title}
-                            </h3>
-                            {feature.highlight && (
-                              <span className={`text-sm font-semibold bg-gradient-to-r ${feature.gradient} bg-clip-text text-transparent`}>
-                                {feature.highlight}
-                              </span>
-                            )}
+                            <p className="text-[15px] font-medium text-foreground">
+                              {testimonial.author}
+                            </p>
+                            <p className="text-[13px] text-muted-foreground">
+                              {testimonial.role}
+                            </p>
                           </div>
                         </div>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {feature.description}
-                        </p>
-                      </div>
-                      <div className="md:w-[220px] flex-shrink-0">
-                        <Visual />
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Additional Features */}
-        <section className="py-16 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { icon: Building2, title: 'Multi-propiedad', desc: 'Gestiona cientos desde un panel' },
-                { icon: Palette, title: 'White-label', desc: 'Tu marca, nuestra tecnología' },
-                { icon: Globe, title: 'Multi-sucursal', desc: 'Organiza por ubicación' },
-                { icon: Layers, title: 'Reportes', desc: 'Analytics en tiempo real' },
-              ].map((item, i) => (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-card rounded-2xl border border-border p-5 text-center hover:shadow-lg transition-shadow"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
-                    <item.icon className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section className="py-24 bg-background">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Planes que escalan contigo
-              </h2>
-              <p className="text-muted-foreground">
-                Paga por lo que usas. Sin contratos largos. Cancela cuando quieras.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {plans.map((plan, i) => (
-                <motion.div
-                  key={plan.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`relative bg-card border rounded-2xl p-6 ${
-                    plan.popular ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-border'
-                  } hover:shadow-xl transition-all duration-300`}
-                >
-                  {plan.popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-medium px-4 py-1 rounded-full">
-                      Más popular
-                    </span>
-                  )}
-                  <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                  <div className="mt-4 mb-6">
-                    {plan.isEnterprise ? (
-                      <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                    ) : (
-                      <>
-                        <span className="text-3xl font-bold text-foreground">${plan.price}</span>
-                        <span className="text-muted-foreground text-sm">/mes</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex gap-4 mb-6 pb-6 border-b border-border">
-                    <div className="text-center flex-1">
-                      <p className="text-lg font-semibold text-foreground">{plan.properties}</p>
-                      <p className="text-xs text-muted-foreground">propiedades</p>
-                    </div>
-                    <div className="text-center flex-1">
-                      <p className="text-lg font-semibold text-foreground">{plan.users}</p>
-                      <p className="text-xs text-muted-foreground">usuarios</p>
-                    </div>
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className={`w-full ${plan.popular ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white' : ''}`}
-                    variant={plan.popular ? 'default' : 'outline'}
-                  >
-                    {plan.isEnterprise ? 'Contactar ventas' : 'Empezar gratis'}
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="text-center mt-10">
-              <Link href="/pricing">
-                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                  Ver comparación completa de planes
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits */}
-        <section className="py-24 bg-slate-900 dark:bg-slate-950">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Resultados reales
-              </h2>
-              <p className="text-slate-400 max-w-xl mx-auto">
-                Inmobiliarias que usan nuestra plataforma ven resultados desde el primer mes
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {benefits.map((benefit, i) => {
-                const Icon = benefit.icon;
-                return (
-                  <motion.div
-                    key={benefit.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group text-center p-6 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="mb-3">
-                      <span className="text-3xl font-bold text-white">{benefit.stat}</span>
-                      <span className="text-xs text-slate-400 ml-1">{benefit.statLabel}</span>
-                    </div>
-                    <h3 className="font-semibold text-white mb-2">{benefit.title}</h3>
-                    <p className="text-sm text-slate-400">{benefit.description}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Inmobiliarias que confían en nosotros
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
-                Historias de éxito de nuestros clientes
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {testimonials.map((testimonial, i) => (
-                <motion.div
-                  key={testimonial.author}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative bg-card rounded-2xl border border-border p-6 hover:shadow-xl transition-all duration-300"
-                >
-                  <Quote className="absolute top-6 right-6 w-8 h-8 text-blue-500/10" />
-
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: testimonial.rating }).map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-
-                  <p className="text-foreground mb-6 leading-relaxed">&ldquo;{testimonial.quote}&rdquo;</p>
-
-                  <div className="flex items-center gap-4">
-                    <Image
-                      src={testimonial.image}
-                      alt={testimonial.author}
-                      width={48}
-                      height={48}
-                      className="rounded-xl object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-foreground">{testimonial.author}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="relative py-24 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-
-          <div className="relative max-w-4xl mx-auto px-6 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-                ¿Listo para escalar
-                <span className="block">tu inmobiliaria?</span>
-              </h2>
-              <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                Prueba gratis por 14 días. Sin tarjeta de crédito. Configuración en 5 minutos.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/auth">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-slate-900 hover:bg-slate-100 font-semibold text-lg h-14 px-10 rounded-sm shadow-lg shadow-slate-950/30">
-                    Empezar prueba gratis
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <a href="mailto:ventas@arriendofacil.co">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 font-medium text-lg h-14 px-10 rounded-sm"
-                  >
-                    Hablar con ventas
-                  </Button>
-                </a>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
-              <p className="text-sm text-slate-500">
-                Soporte local · Migración asistida · Sin contratos largos
-              </p>
-            </motion.div>
+            </div>
           </div>
         </section>
+
+        <FAQSection />
+        <CTASection />
       </main>
       <Footer />
     </>

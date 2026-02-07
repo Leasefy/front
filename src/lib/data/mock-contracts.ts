@@ -9,6 +9,7 @@ import type {
   ContractClause,
   ContractStep,
   ContractType,
+  ContractAuditEvent,
 } from '@/lib/types/contract';
 import { mockProperties } from './mock-properties';
 import { MOCK_CANDIDATES } from './mock-candidates';
@@ -44,14 +45,14 @@ const COMMON_CLAUSES: ContractClause[] = [
     id: 'clause-garantia',
     title: 'CLAUSULA TERCERA: Garantia del Contrato (Art. 16, Ley 820/2003)',
     content:
-      'De conformidad con el Articulo 16 de la Ley 820 de 2003, queda expresamente PROHIBIDO exigir depositos en dinero efectivo, constituir garantias reales, o cualquier mecanismo directo o indirecto que implique deposito monetario como garantia del contrato. El cumplimiento de las obligaciones del presente contrato se garantiza mediante una de las siguientes modalidades legalmente permitidas: a) Poliza de seguro de arrendamiento expedida por compania aseguradora autorizada por la Superintendencia Financiera; b) Fiador o codeudor solidario que cumpla los requisitos de solvencia economica. La garantia debera mantenerse vigente durante toda la duracion del contrato y sus prorrogas. PARAGRAFO: Unicamente se permite deposito para servicios publicos domiciliarios por valor maximo de dos (2) periodos consecutivos de facturacion, pagado directamente a la empresa de servicios, nunca al arrendador.',
+      'De conformidad con el Articulo 16 de la Ley 820 de 2003, queda expresamente PROHIBIDO exigir depositos en dinero efectivo, constituir garantias reales, o cualquier mecanismo directo o indirecto que implique deposito monetario como garantia del contrato. El cumplimiento de las obligaciones del presente contrato se garantiza mediante una de las siguientes modalidades legalmente permitidas: a) Poliza de seguro de arrendamiento expedida por compania aseguradora autorizada por la Superintendencia Financiera; b) Fiador o codeudor solidario que cumpla los requisitos de solvencia economica. La garantia debera mantenerse vigente durante toda la duración del contrato y sus prorrogas. PARAGRAFO: Unicamente se permite deposito para servicios publicos domiciliarios por valor maximo de dos (2) periodos consecutivos de facturacion, pagado directamente a la empresa de servicios, nunca al arrendador.',
     required: true,
   },
   {
     id: 'clause-duracion',
-    title: 'CLAUSULA CUARTA: Duracion y Prorroga (Art. 5, 6 y 7, Ley 820/2003)',
+    title: 'CLAUSULA CUARTA: Duración y Prórroga (Art. 5, 6 y 7, Ley 820/2003)',
     content:
-      'El termino de duracion del presente contrato es de doce (12) meses, contados a partir de la fecha de inicio estipulada. De conformidad con el Articulo 6 de la Ley 820 de 2003, a su vencimiento el contrato se entendera renovado automaticamente por un periodo igual al inicialmente pactado, en las mismas condiciones y terminos, salvo que alguna de las partes comunique a la otra por escrito, con no menos de tres (3) meses de antelacion al vencimiento del termino o de su prorroga, su decision de no renovarlo. PARAGRAFO: Conforme al Articulo 7, en caso de pluralidad de arrendadores o arrendatarios, las obligaciones del presente contrato seran solidarias.',
+      'El término de duración del presente contrato es de doce (12) meses, contados a partir de la fecha de inicio estipulada. De conformidad con el Articulo 6 de la Ley 820 de 2003, a su vencimiento el contrato se entendera renovado automaticamente por un periodo igual al inicialmente pactado, en las mismas condiciones y terminos, salvo que alguna de las partes comunique a la otra por escrito, con no menos de tres (3) meses de antelacion al vencimiento del termino o de su prorroga, su decision de no renovarlo. PARAGRAFO: Conforme al Articulo 7, en caso de pluralidad de arrendadores o arrendatarios, las obligaciones del presente contrato seran solidarias.',
     required: true,
   },
   {
@@ -163,10 +164,10 @@ const FURNISHED_CLAUSES: ContractClause[] = [
     required: true,
   },
   {
-    id: 'clause-danos-muebles',
+    id: 'clause-daños-muebles',
     title: 'CLAUSULA ADICIONAL: Responsabilidad por Bienes Muebles',
     content:
-      'El ARRENDATARIO se obliga a conservar y cuidar los bienes muebles entregados con la diligencia de un buen padre de familia. Los danos, deterioros o perdidas de bienes muebles que excedan el desgaste natural por uso legitimo y paso del tiempo seran de exclusiva responsabilidad del ARRENDATARIO, quien debera asumir el costo de reparacion o reposicion a valor de mercado vigente. Al momento de la restitucion del inmueble, se realizara un inventario de devolucion comparativo con el inventario inicial para determinar las diferencias.',
+      'El ARRENDATARIO se obliga a conservar y cuidar los bienes muebles entregados con la diligencia de un buen padre de familia. Los daños, deterioros o perdidas de bienes muebles que excedan el desgaste natural por uso legitimo y paso del tiempo seran de exclusiva responsabilidad del ARRENDATARIO, quien debera asumir el costo de reparacion o reposicion a valor de mercado vigente. Al momento de la restitucion del inmueble, se realizara un inventario de devolucion comparativo con el inventario inicial para determinar las diferencias.',
     required: true,
   },
 ];
@@ -176,7 +177,7 @@ const SHARED_CLAUSES: ContractClause[] = [
     id: 'clause-espacio-arrendado',
     title: 'CLAUSULA ADICIONAL: Identificacion del Espacio Arrendado (Art. 4c, Ley 820/2003)',
     content:
-      'De conformidad con el Articulo 4 literal c) de la Ley 820 de 2003, el presente contrato corresponde a la modalidad de arrendamiento compartido. Se arrienda al ARRENDATARIO la parte del inmueble identificada como [habitacion/espacio] con acceso a las siguientes areas comunes compartidas: cocina, sala, banos, zona de lavado. El ARRENDATARIO comparte el uso de estas areas con el ARRENDADOR y/u otros arrendatarios del inmueble.',
+      'De conformidad con el Articulo 4 literal c) de la Ley 820 de 2003, el presente contrato corresponde a la modalidad de arrendamiento compartido. Se arrienda al ARRENDATARIO la parte del inmueble identificada como [habitacion/espacio] con acceso a las siguientes areas comunes compartidas: cocina, sala, baños, zona de lavado. El ARRENDATARIO comparte el uso de estas areas con el ARRENDADOR y/u otros arrendatarios del inmueble.',
     required: true,
   },
   {
@@ -244,7 +245,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     type: 'basico',
     status: 'active',
     propertyAddress: 'Calle 116 #15-40, Apto 1201',
-    propertyCity: 'Bogota',
+    propertyCity: 'Bogotá',
     tenantName: 'Maria Elena Rodriguez',
     tenantEmail: 'maria.rodriguez@email.com',
     tenantPhone: '+57 311 234 5678',
@@ -266,6 +267,8 @@ export const MOCK_CONTRACTS: Contract[] = [
       ipAddress: '190.85.23.145',
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
       status: 'signed',
+      otpVerified: true,
+      otpVerifiedAt: '2026-01-15T10:29:45Z',
     },
     tenantSignature: {
       signedAt: '2026-01-16T14:20:00Z',
@@ -274,9 +277,72 @@ export const MOCK_CONTRACTS: Contract[] = [
       ipAddress: '181.52.67.89',
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0)',
       status: 'signed',
+      otpVerified: true,
+      otpVerifiedAt: '2026-01-16T14:19:30Z',
     },
     createdAt: '2026-01-14T09:00:00Z',
     updatedAt: '2026-01-16T14:20:00Z',
+    certificateId: 'CERT-CONTRACT-001-1705416000000',
+    documentHash: 'a3f2b8c1d4e5f6789012345678901234567890abcdef0123456789abcdef0123',
+    auditTrail: [
+      {
+        id: 'audit-001-1',
+        contractId: 'contract-001',
+        type: 'created',
+        timestamp: '2026-01-14T09:00:00Z',
+        metadata: {
+          userId: 'landlord-001',
+          userName: 'Carlos Alberto Mendez',
+        },
+      },
+      {
+        id: 'audit-001-2',
+        contractId: 'contract-001',
+        type: 'sent_to_landlord',
+        timestamp: '2026-01-14T09:05:00Z',
+        metadata: {},
+      },
+      {
+        id: 'audit-001-3',
+        contractId: 'contract-001',
+        type: 'landlord_signed',
+        timestamp: '2026-01-15T10:30:00Z',
+        metadata: {
+          userId: 'landlord-001',
+          userName: 'Carlos Alberto Mendez',
+          ipAddress: '190.85.23.145',
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+          otpVerified: true,
+        },
+      },
+      {
+        id: 'audit-001-4',
+        contractId: 'contract-001',
+        type: 'sent_to_tenant',
+        timestamp: '2026-01-15T10:35:00Z',
+        metadata: {},
+      },
+      {
+        id: 'audit-001-5',
+        contractId: 'contract-001',
+        type: 'tenant_signed',
+        timestamp: '2026-01-16T14:20:00Z',
+        metadata: {
+          userId: 'cand-002',
+          userName: 'Maria Elena Rodriguez',
+          ipAddress: '181.52.67.89',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0)',
+          otpVerified: true,
+        },
+      },
+      {
+        id: 'audit-001-6',
+        contractId: 'contract-001',
+        type: 'activated',
+        timestamp: '2026-01-16T14:20:00Z',
+        metadata: {},
+      },
+    ],
   },
   // Contract 2: Pending tenant signature
   {
@@ -288,7 +354,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     type: 'amoblado',
     status: 'pending_tenant',
     propertyAddress: 'Carrera 7 #73-55, Apto 802',
-    propertyCity: 'Bogota',
+    propertyCity: 'Bogotá',
     tenantName: 'Andres Felipe Martinez',
     tenantEmail: 'andres.martinez@email.com',
     tenantPhone: '+57 310 456 7890',
@@ -310,10 +376,51 @@ export const MOCK_CONTRACTS: Contract[] = [
       ipAddress: '190.85.23.145',
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
       status: 'signed',
+      otpVerified: true,
+      otpVerifiedAt: '2026-01-18T16:44:30Z',
     },
     tenantSignature: null,
     createdAt: '2026-01-18T15:00:00Z',
     updatedAt: '2026-01-18T16:45:00Z',
+    auditTrail: [
+      {
+        id: 'audit-002-1',
+        contractId: 'contract-002',
+        type: 'created',
+        timestamp: '2026-01-18T15:00:00Z',
+        metadata: {
+          userId: 'landlord-001',
+          userName: 'Carlos Alberto Mendez',
+        },
+      },
+      {
+        id: 'audit-002-2',
+        contractId: 'contract-002',
+        type: 'sent_to_landlord',
+        timestamp: '2026-01-18T15:05:00Z',
+        metadata: {},
+      },
+      {
+        id: 'audit-002-3',
+        contractId: 'contract-002',
+        type: 'landlord_signed',
+        timestamp: '2026-01-18T16:45:00Z',
+        metadata: {
+          userId: 'landlord-001',
+          userName: 'Carlos Alberto Mendez',
+          ipAddress: '190.85.23.145',
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+          otpVerified: true,
+        },
+      },
+      {
+        id: 'audit-002-4',
+        contractId: 'contract-002',
+        type: 'sent_to_tenant',
+        timestamp: '2026-01-18T16:50:00Z',
+        metadata: {},
+      },
+    ],
   },
   // Contract 3: Pending landlord signature (draft state ready for signing)
   {
@@ -325,7 +432,7 @@ export const MOCK_CONTRACTS: Contract[] = [
     type: 'compartido',
     status: 'pending_landlord',
     propertyAddress: 'Calle 10 #43D-20, Apto 501',
-    propertyCity: 'Medellin',
+    propertyCity: 'Medellín',
     tenantName: 'Laura Patricia Gonzalez',
     tenantEmail: 'laura.gonzalez@email.com',
     tenantPhone: '+57 300 876 5432',
@@ -344,6 +451,25 @@ export const MOCK_CONTRACTS: Contract[] = [
     tenantSignature: null,
     createdAt: '2026-01-20T09:00:00Z',
     updatedAt: '2026-01-20T09:00:00Z',
+    auditTrail: [
+      {
+        id: 'audit-003-1',
+        contractId: 'contract-003',
+        type: 'created',
+        timestamp: '2026-01-20T09:00:00Z',
+        metadata: {
+          userId: 'landlord-001',
+          userName: 'Carlos Alberto Mendez',
+        },
+      },
+      {
+        id: 'audit-003-2',
+        contractId: 'contract-003',
+        type: 'sent_to_landlord',
+        timestamp: '2026-01-20T09:05:00Z',
+        metadata: {},
+      },
+    ],
   },
 ];
 
@@ -467,13 +593,35 @@ export function createContractFromTemplate(
   }
 
   const now = new Date().toISOString();
+  const contractId = `contract-new-${Date.now()}`;
   const startDate = new Date();
   startDate.setMonth(startDate.getMonth() + 1);
   const endDate = new Date(startDate);
   endDate.setFullYear(endDate.getFullYear() + 1);
 
+  // Generate initial audit trail
+  const auditTrail: ContractAuditEvent[] = [
+    {
+      id: `audit-${contractId}-1`,
+      contractId,
+      type: 'created',
+      timestamp: now,
+      metadata: {
+        userId: 'landlord-001',
+        userName: 'Carlos Alberto Mendez',
+      },
+    },
+    {
+      id: `audit-${contractId}-2`,
+      contractId,
+      type: 'sent_to_landlord',
+      timestamp: new Date(Date.now() + 1000).toISOString(), // 1 second later
+      metadata: {},
+    },
+  ];
+
   return {
-    id: `contract-new-${Date.now()}`,
+    id: contractId,
     propertyId,
     tenantId: candidateId,
     landlordId: 'landlord-001',
@@ -500,6 +648,7 @@ export function createContractFromTemplate(
     tenantSignature: null,
     createdAt: now,
     updatedAt: now,
+    auditTrail,
   };
 }
 

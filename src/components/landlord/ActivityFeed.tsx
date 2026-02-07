@@ -1,12 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  UserPlus,
-  CheckCircle2,
-  MessageSquare,
-  FileText,
-} from 'lucide-react';
+import { UserPlus, CheckCircle, Chat, FileText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import type { Activity, ActivityType } from '@/lib/data/mock-activity';
@@ -35,8 +30,8 @@ function formatRelativeTime(isoDate: string): string {
 // Icon by activity type
 const activityIcons: Record<ActivityType, typeof UserPlus> = {
   application: UserPlus,
-  status_change: CheckCircle2,
-  message: MessageSquare,
+  status_change: CheckCircle,
+  message: Chat,
   document: FileText,
 };
 

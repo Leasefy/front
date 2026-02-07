@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
@@ -92,7 +92,7 @@ export function ForYouCarousel({
             )}
             aria-label="Anterior"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <CaretLeft className="h-5 w-5" />
           </button>
         )}
 
@@ -110,7 +110,7 @@ export function ForYouCarousel({
             )}
             aria-label="Siguiente"
           >
-            <ChevronRight className="h-5 w-5" />
+            <CaretRight className="h-5 w-5" />
           </button>
         )}
 

@@ -120,7 +120,7 @@ function ScrollAreaWithShadows({
   ...props
 }: ScrollAreaWithShadowsProps) {
   const [showTopShadow, setShowTopShadow] = React.useState(false);
-  const [showBottomShadow, setShowBottomShadow] = React.useState(false);
+  const [showRobottomShadow, setShowRobottomShadow] = React.useState(false);
   const [showLeftShadow, setShowLeftShadow] = React.useState(false);
   const [showRightShadow, setShowRightShadow] = React.useState(false);
 
@@ -130,7 +130,7 @@ function ScrollAreaWithShadows({
 
     if (orientation === 'vertical' || orientation === 'both') {
       setShowTopShadow(scrollTop > 0);
-      setShowBottomShadow(scrollTop < scrollHeight - clientHeight - 1);
+      setShowRobottomShadow(scrollTop < scrollHeight - clientHeight - 1);
     }
 
     if (orientation === 'horizontal' || orientation === 'both') {
@@ -163,7 +163,7 @@ function ScrollAreaWithShadows({
                 className={cn(
                   'pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t to-transparent transition-opacity duration-200',
                   shadowColor,
-                  showBottomShadow ? 'opacity-100' : 'opacity-0'
+                  showRobottomShadow ? 'opacity-100' : 'opacity-0'
                 )}
               />
             </>

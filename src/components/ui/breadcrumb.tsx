@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ChevronRight, Home, MoreHorizontal } from 'lucide-react';
+import { CaretRight, House, DotsThree } from '@phosphor-icons/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
@@ -43,7 +43,7 @@ const breadcrumbItemVariants = cva(
 );
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface BreadcrumbItem {
@@ -58,7 +58,7 @@ export interface BreadcrumbProps
     VariantProps<typeof breadcrumbVariants> {
   items: BreadcrumbItem[];
   separator?: React.ReactNode;
-  showHomeIcon?: boolean;
+  showHouseIcon?: boolean;
   homeHref?: string;
   maxItems?: number;
   itemsBeforeCollapse?: number;
@@ -82,7 +82,7 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
     items,
     size,
     separator,
-    showHomeIcon = true,
+    showHouseIcon = true,
     homeHref = '/',
     maxItems,
     itemsBeforeCollapse = 1,
@@ -122,7 +122,7 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
     const separatorSize = separatorSizes[resolvedSize];
 
     const defaultSeparator = (
-      <ChevronRight className={cn(separatorSize, 'text-muted-foreground/50 shrink-0')} />
+      <CaretRight className={cn(separatorSize, 'text-muted-foreground/50 shrink-0')} />
     );
 
     return (
@@ -134,8 +134,8 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
           {...props}
         >
           <ol className={cn('flex items-center', breadcrumbVariants({ size }))}>
-            {/* Home icon */}
-            {showHomeIcon && (
+            {/* House icon */}
+            {showHouseIcon && (
               <>
                 <li>
                   <Link
@@ -144,9 +144,9 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
                       breadcrumbItemVariants({ variant: 'default' }),
                       'flex items-center'
                     )}
-                    aria-label="Home"
+                    aria-label="House"
                   >
-                    <Home className={iconSize} />
+                    <House className={iconSize} />
                   </Link>
                 </li>
                 {items.length > 0 && (
@@ -167,7 +167,7 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
                   <li className="flex items-center">
                     {isCollapsed ? (
                       <span className={cn(breadcrumbItemVariants({ variant: 'disabled' }), 'flex items-center gap-1')}>
-                        <MoreHorizontal className={iconSize} />
+                        <DotsThree className={iconSize} />
                       </span>
                     ) : isLast || !item.href || item.disabled ? (
                       <span
@@ -308,7 +308,7 @@ const BreadcrumbSeparator = React.forwardRef<
       {...props}
     >
       {children ?? (
-        <ChevronRight
+        <CaretRight
           className={cn(separatorSizes[resolvedSize], 'text-muted-foreground/50')}
         />
       )}
@@ -337,7 +337,7 @@ const BreadcrumbEllipsis = React.forwardRef<
       className={cn('flex items-center', className)}
       {...props}
     >
-      <MoreHorizontal className={iconSizes[resolvedSize]} />
+      <DotsThree className={iconSizes[resolvedSize]} />
       <span className="sr-only">More</span>
     </span>
   );

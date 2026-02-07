@@ -4,19 +4,19 @@ import { SoftwareProductJsonLd } from "@/components/seo/JsonLd";
 export const metadata: Metadata = {
   title: "Seguro de Arriendo",
   description:
-    "Protege tu inversion con nuestro seguro de arriendo. Cobertura por impago, danos a la propiedad y asistencia juridica. Desde $50,000/mes.",
+    "Protege tu inversión con nuestro seguro de arriendo. Cobertura por impago, daños a la propiedad y asistencia jurídica. Desde $50,000/mes.",
   keywords: [
     "seguro arriendo Colombia",
     "seguro impago arrendamiento",
-    "poliza arriendo",
-    "proteccion arrendador",
+    "póliza arriendo",
+    "protección arrendador",
     "seguro inquilino",
     "garantia arriendo",
   ],
   openGraph: {
-    title: "Seguro de Arriendo | Arriendo Facil",
+    title: "Seguro de Arriendo | Leasefy",
     description:
-      "Proteccion completa para propietarios. Cobertura por impago, danos y asistencia juridica.",
+      "Protección completa para propietarios. Cobertura por impago, daños y asistencia jurídica.",
     type: "website",
   },
   alternates: {
@@ -32,8 +32,8 @@ export default function SeguroLayout({
   return (
     <>
       <SoftwareProductJsonLd
-        name="Seguro de Arriendo Arriendo Facil"
-        description="Seguro de arriendo con cobertura por impago, danos a la propiedad y asistencia juridica para propietarios en Colombia."
+        name="Seguro de Arriendo Leasefy"
+        description="Seguro de arriendo con cobertura por impago, daños a la propiedad y asistencia jurídica para propietarios en Colombia."
         url="/productos/seguro"
         category="FinanceApplication"
         offers={{ price: "50000", priceCurrency: "COP" }}

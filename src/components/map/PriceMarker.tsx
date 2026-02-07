@@ -56,13 +56,13 @@ export function PriceMarker({
         'bg-foreground text-white',
         // Shadow and transitions
         'shadow-md hover:shadow-lg',
-        'transition-all duration-150 ease-out',
+        'transition-all duration-200 ease-out',
         // Hover effect
         'hover:scale-110 hover:z-20',
         // Selected state
         isSelected && 'ring-2 ring-primary ring-offset-2 scale-110 bg-primary z-30',
-        // Hovered state (from list hover)
-        isHovered && !isSelected && 'scale-110 bg-foreground z-20'
+        // Hovered state (from list hover) - Airbnb style highlight
+        isHovered && !isSelected && 'scale-125 bg-primary text-white z-30 shadow-xl ring-2 ring-primary/30 ring-offset-2'
       )}
     >
       {formattedPrice}

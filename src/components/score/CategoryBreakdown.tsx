@@ -12,7 +12,7 @@ import type { ScoreCategory } from '@/lib/types/risk-score';
 import { getScoreLevel, RISK_LEVEL_COLORS } from '@/lib/constants/risk-levels';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CategoryBreakdownProps {
@@ -158,7 +158,7 @@ export function CategoryBreakdown({
 
                 {/* Weight indicator */}
                 <div className="mt-3 text-xs text-muted-foreground/70">
-                  Peso en evaluacion: {Math.round(category.weight * 100)}%
+                  Peso en evaluación: {Math.round(category.weight * 100)}%
                 </div>
               </div>
             </AccordionContent>

@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-interface SidebarContextType {
+interface SidebarContextTextT {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggle: () => void;
 }
 
-const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+const SidebarContext = createContext<SidebarContextTextT | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);

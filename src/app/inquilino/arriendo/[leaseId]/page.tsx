@@ -3,32 +3,15 @@
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  MapPin,
-  Calendar,
-  FileText,
-  Download,
-  CreditCard,
-  User,
-  Phone,
-  Mail,
-  Shield,
-  Home,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  ArrowUpRight,
-  Receipt,
-  Building2,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, ArrowSquareOut, Chat } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { getLeaseById, getPaymentsForLease, getNextPayment, PAYMENT_METHODS } from '@/lib/data/mock-leases';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
-import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
+import { useTranslation } from '@/lib/i18n';
 
 export default function LeaseDetailPage() {
+  const { t, locale } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const leaseId = params.leaseId as string;
@@ -39,27 +22,35 @@ export default function LeaseDetailPage() {
 
   if (!lease) {
     return (
-      <div className="min-h-screen bg-plan-page flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-muted flex items-center justify-center mx-auto mb-4">
-            <Home className="w-8 h-8 text-plan-muted" />
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <div className="w-20 h-20 rounded-full bg-stone-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
+            <House className="w-10 h-10 text-neutral-400" />
           </div>
-          <h2 className="text-lg font-semibold text-plan-primary mb-2">Arriendo no encontrado</h2>
-          <p className="text-plan-secondary mb-4">El arriendo que buscas no existe o no tienes acceso.</p>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+            {locale === 'es' ? 'Arriendo no encontrado' : 'Rental not found'}
+          </h2>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
+            {locale === 'es' ? 'El arriendo que buscas no existe o no tienes acceso.' : 'The rental you are looking for does not exist or you do not have access.'}
+          </p>
           <Link
             href="/inquilino/arriendo"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver a mis arriendos
+            {locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'}
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -67,7 +58,7 @@ export default function LeaseDetailPage() {
   };
 
   const formatFullDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -92,15 +83,15 @@ export default function LeaseDetailPage() {
   const getPaymentStatusInfo = (status: string) => {
     switch (status) {
       case 'paid':
-        return { label: 'Pagado', color: 'bg-plan-status-green-bg text-green-800', icon: CheckCircle2 };
+        return { label: locale === 'es' ? 'Pagado' : 'Paid', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', icon: CheckCircle };
       case 'pending':
-        return { label: 'Pendiente', color: 'bg-plan-status-yellow-bg text-yellow-800', icon: Clock };
+        return { label: locale === 'es' ? 'Pendiente' : 'Pending', bgColor: 'bg-amber-50', textColor: 'text-amber-700', icon: Clock };
       case 'late':
-        return { label: 'Atrasado', color: 'bg-plan-status-red-bg text-destructive', icon: AlertCircle };
+        return { label: locale === 'es' ? 'Atrasado' : 'Late', bgColor: 'bg-red-50', textColor: 'text-red-700', icon: WarningCircle };
       case 'overdue':
-        return { label: 'Vencido', color: 'bg-plan-status-red-bg text-destructive', icon: AlertCircle };
+        return { label: locale === 'es' ? 'Vencido' : 'Overdue', bgColor: 'bg-red-50', textColor: 'text-red-700', icon: WarningCircle };
       default:
-        return { label: status, color: 'bg-muted text-plan-secondary', icon: Clock };
+        return { label: status, bgColor: 'bg-neutral-100', textColor: 'text-neutral-600', icon: Clock };
     }
   };
 
@@ -111,266 +102,354 @@ export default function LeaseDetailPage() {
 
   const daysRemaining = getDaysRemaining(lease.endDate);
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
-
-  // Separate payments into paid and pending
   const paidPayments = payments.filter(p => p.status === 'paid' || p.status === 'late');
-  const pendingPayments = payments.filter(p => p.status === 'pending');
-
-  // Calculate total paid
   const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-plan-secondary hover:text-plan-primary transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Volver</span>
-        </button>
+    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Header Section */}
-        <div className="bg-card border border-plan-border mb-6">
+        {/* Back Button */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6 group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm">{locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'}</span>
+          </button>
+        </motion.div>
+
+        {/* Hero Section - Property Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden shadow-sm mb-8"
+        >
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-80 h-64 lg:h-auto bg-muted flex-shrink-0">
+            <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
               <Image
                 src={lease.propertyThumbnail}
                 alt={lease.propertyTitle}
                 fill
                 className="object-cover"
+                priority
               />
+              {/* Status Badge Overlay */}
+              <div className="absolute top-4 left-4">
+                <span className={cn(
+                  'px-3 py-1.5 text-xs font-medium rounded-full backdrop-blur-sm',
+                  lease.status === 'ending_soon'
+                    ? 'bg-amber-100/90 text-amber-700'
+                    : 'bg-emerald-100/90 text-emerald-700'
+                )}>
+                  {lease.status === 'ending_soon'
+                    ? (locale === 'es' ? 'Termina pronto' : 'Ending soon')
+                    : (locale === 'es' ? 'Contrato Activo' : 'Active Contract')}
+                </span>
+              </div>
             </div>
 
             {/* Property Info */}
-            <div className="flex-1 p-6">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+            <div className="flex-1 p-6 lg:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-2xl font-semibold text-plan-primary">{lease.propertyTitle}</h1>
-                  <p className="text-plan-secondary mt-1 flex items-center gap-1.5">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+                    {lease.propertyTitle}
+                  </h1>
+                  <p className="text-neutral-500 dark:text-neutral-400 mt-2 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
                     {lease.propertyAddress}, {lease.propertyCity}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-semibold text-plan-primary">
+                <div className="text-left sm:text-right">
+                  <p className="text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-white tracking-tight">
                     {formatCurrency(lease.monthlyRent + lease.adminFee)}
                   </p>
-                  <p className="text-sm text-plan-muted">/mes</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">/{locale === 'es' ? 'mes' : 'mo'}</p>
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-plan-border">
-                <div>
-                  <p className="text-xs text-plan-muted mb-1">Arriendo</p>
-                  <p className="text-sm font-medium text-plan-primary">{formatCurrency(lease.monthlyRent)}</p>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-neutral-100 dark:border-neutral-700">
+                <div className="text-center sm:text-left">
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.monthlyRent)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-plan-muted mb-1">Administracion</p>
-                  <p className="text-sm font-medium text-plan-primary">{formatCurrency(lease.adminFee)}</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Admin</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.adminFee)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-plan-muted mb-1">Dia de pago</p>
-                  <p className="text-sm font-medium text-plan-primary">Dia {lease.paymentDueDay}</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDueDay}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-plan-muted mb-1">Estado</p>
-                  <PlanStatusBadge
-                    status={lease.status === 'ending_soon' ? 'important' : 'in_progress'}
-                    label={lease.status === 'ending_soon' ? 'Termina pronto' : 'Activo'}
-                    size="sm"
+                <div className="text-center sm:text-left">
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{daysRemaining} {locale === 'es' ? 'días' : 'days'}</p>
+                </div>
+              </div>
+
+              {/* Contract Timeline */}
+              <div className="pt-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-neutral-400" />
+                    {formatDate(lease.startDate)}
+                  </span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                    {formatDate(lease.endDate)}
+                  </span>
+                </div>
+                <div className="relative h-3 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${leaseProgress}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    className={cn(
+                      "h-full rounded-full",
+                      daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                    )}
                   />
+                  {/* Progress Indicator Dot */}
+                  <motion.div
+                    initial={{ left: 0 }}
+                    animate={{ left: `${leaseProgress}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-4 border-white shadow-md",
+                      daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                    )} />
+                  </motion.div>
                 </div>
-              </div>
-
-              {/* Contract Progress */}
-              <div className="pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-plan-secondary flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Inicio: {formatDate(lease.startDate)}
-                  </span>
-                  <span className="text-xs text-plan-secondary">
-                    Fin: {formatDate(lease.endDate)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <PlanProgressBar
-                      value={leaseProgress}
-                      size="sm"
-                      variant={daysRemaining < 30 ? 'warning' : 'default'}
-                    />
-                  </div>
-                  <span className="text-xs text-plan-secondary whitespace-nowrap">
-                    {daysRemaining} dias restantes
-                  </span>
-                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                  {leaseProgress}% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
+                </p>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
+
             {/* Next Payment CTA */}
             {nextPayment && (
-              <div className="bg-indigo-950 text-white p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6 lg:p-8"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                   <div>
-                    <p className="text-sm text-plan-muted mb-1">Proximo pago</p>
-                    <p className="text-2xl font-semibold">{formatCurrency(nextPayment.amount)}</p>
-                    <p className="text-sm text-plan-muted mt-1">
-                      Vence el {formatFullDate(nextPayment.dueDate)}
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{t('dashboard.nextPayment')}</span>
+                    </div>
+                    <p className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">{formatCurrency(nextPayment.amount)}</p>
+                    <p className="text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      {locale === 'es' ? 'Vence el' : 'Due on'} {formatFullDate(nextPayment.dueDate)}
                     </p>
                   </div>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
+                    className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    Pagar ahora
+                    <Wallet className="w-5 h-5" />
+                    {locale === 'es' ? 'Pagar ahora' : 'Pay now'}
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* Payment History */}
-            <div className="bg-card border border-plan-border">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-plan-secondary" />
-                  <h2 className="font-semibold text-plan-primary">Historial de Pagos</h2>
+            {/* Quick Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+            >
+              <div className="rounded-2xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+                  <TrendUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <span className="text-sm text-plan-secondary">
-                  Total pagado: {formatCurrency(totalPaid)}
-                </span>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{formatCurrency(totalPaid)}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
+              </div>
+              <div className="rounded-2xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+                  <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{paidPayments.length}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
+              </div>
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 p-5 col-span-2 sm:col-span-1">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{locale === 'es' ? 'Al día' : 'Up to date'}</p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+              </div>
+            </motion.div>
+
+            {/* Payment History */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{payments.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
+                  </div>
+                </div>
               </div>
 
               {payments.length > 0 ? (
-                <div className="divide-y divide-plan-border">
-                  {payments.map((payment) => {
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                  {payments.map((payment, index) => {
                     const statusInfo = getPaymentStatusInfo(payment.status);
                     const StatusIcon = statusInfo.icon;
                     const methodInfo = getPaymentMethodInfo(payment.method);
 
                     return (
-                      <div
+                      <motion.div
                         key={payment.id}
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + index * 0.05 }}
+                        className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 dark:hover:bg-[#222224] transition-colors"
                       >
-                        {/* Icon */}
+                        {/* Status Icon */}
                         <div className={cn(
-                          'w-10 h-10 flex items-center justify-center flex-shrink-0',
-                          payment.status === 'paid' ? 'bg-plan-status-green-bg' :
-                          payment.status === 'pending' ? 'bg-plan-status-yellow-bg' :
-                          'bg-plan-status-red-bg'
+                          'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
+                          statusInfo.bgColor
                         )}>
-                          <StatusIcon className={cn(
-                            'w-5 h-5',
-                            payment.status === 'paid' ? 'text-green-800' :
-                            payment.status === 'pending' ? 'text-yellow-800' :
-                            'text-destructive'
-                          )} />
+                          <StatusIcon className={cn('w-5 h-5', statusInfo.textColor)} />
                         </div>
 
                         {/* Details */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-plan-primary">
-                              {payment.concept === 'rent' ? 'Arriendo mensual' :
-                               payment.concept === 'deposit' ? 'Deposito de garantia' :
-                               payment.concept === 'admin_fee' ? 'Administracion' :
-                               payment.concept === 'late_fee' ? 'Recargo por mora' :
-                               payment.concept === 'repair' ? 'Reparacion' :
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-neutral-900 dark:text-white">
+                              {payment.concept === 'rent' ? (locale === 'es' ? 'Arriendo mensual' : 'Monthly rent') :
+                               payment.concept === 'deposit' ? (locale === 'es' ? 'Depósito de garantía' : 'Security deposit') :
+                               payment.concept === 'admin_fee' ? (locale === 'es' ? 'Administración' : 'Admin fee') :
+                               payment.concept === 'late_fee' ? (locale === 'es' ? 'Recargo por mora' : 'Late fee') :
+                               payment.concept === 'repair' ? (locale === 'es' ? 'Reparación' : 'Repair') :
                                payment.concept}
                             </p>
-                            <span className={cn('text-[10px] px-1.5 py-0.5', statusInfo.color)}>
+                            <span className={cn(
+                              'text-xs px-2 py-0.5 rounded-full font-medium',
+                              statusInfo.bgColor,
+                              statusInfo.textColor
+                            )}>
                               {statusInfo.label}
                             </span>
                           </div>
-                          <p className="text-xs text-plan-muted mt-0.5">
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
                             {payment.paidDate ? (
-                              <>Pagado el {formatDate(payment.paidDate)}</>
+                              <>{locale === 'es' ? 'Pagado el' : 'Paid on'} {formatDate(payment.paidDate)}</>
                             ) : (
-                              <>Vence el {formatDate(payment.dueDate)}</>
+                              <>{locale === 'es' ? 'Vence el' : 'Due on'} {formatDate(payment.dueDate)}</>
                             )}
                             {methodInfo && (
-                              <> • {methodInfo.icon} {methodInfo.name}</>
-                            )}
-                            {payment.reference && (
-                              <> • Ref: {payment.reference}</>
+                              <> · {methodInfo.icon} {methodInfo.name}</>
                             )}
                           </p>
-                          {payment.notes && (
-                            <p className="text-xs text-plan-secondary mt-1">{payment.notes}</p>
+                          {payment.reference && (
+                            <p className="text-xs text-neutral-400 mt-1">Ref: {payment.reference}</p>
                           )}
                         </div>
 
                         {/* Amount */}
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold text-plan-primary">
+                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">
                             {formatCurrency(payment.amount)}
                           </p>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="py-12 text-center">
-                  <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-plan-secondary">No hay historial de pagos</p>
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+                    <Receipt className="w-8 h-8 text-neutral-400" />
+                  </div>
+                  <p className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
 
-          {/* Sidebar - 1 column */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Contract Info */}
-            <div className="bg-card border border-plan-border">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
-                <FileText className="w-5 h-5 text-plan-secondary" />
-                <h2 className="font-semibold text-plan-primary">Contrato</h2>
+
+            {/* Contract Info Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            >
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
               </div>
-              <div className="p-5 space-y-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <p className="text-xs text-plan-muted mb-1">Vigencia</p>
-                  <p className="text-sm text-plan-primary">
-                    {formatFullDate(lease.startDate)} - {formatFullDate(lease.endDate)}
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Vigencia' : 'Term'}</p>
+                  <p className="text-sm text-neutral-900 dark:text-white font-medium">
+                    {formatFullDate(lease.startDate)} — {formatFullDate(lease.endDate)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-plan-muted mb-1">Garantia</p>
-                  <p className="text-sm text-plan-primary flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-plan-status-green" />
-                    {lease.guaranteeType === 'poliza' ? 'Poliza de arriendo' :
-                     lease.guaranteeType === 'codeudor' ? 'Codeudor' :
-                     lease.guaranteeType}
-                  </p>
-                  <p className="text-xs text-plan-secondary mt-0.5">{lease.guaranteeDetails}</p>
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                    <p className="text-sm text-neutral-900 dark:text-white font-medium">
+                      {lease.guaranteeType === 'poliza' ? (locale === 'es' ? 'Póliza de arriendo' : 'Rental insurance') :
+                       lease.guaranteeType === 'codeudor' ? (locale === 'es' ? 'Codeudor' : 'Co-signer') :
+                       lease.guaranteeType}
+                    </p>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 ml-6">{lease.guaranteeDetails}</p>
                 </div>
 
                 {/* Documents */}
-                <div className="pt-4 border-t border-plan-border space-y-2">
-                  <p className="text-xs text-plan-muted mb-2">Documentos</p>
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700 space-y-2">
+                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-3">{t('documents.title')}</p>
 
                   {lease.contractUrl && (
                     <a
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <FileText className="w-4 h-4 text-plan-secondary" />
-                      <span className="text-sm text-plan-primary flex-1">Contrato de arriendo</span>
-                      <Download className="w-4 h-4 text-plan-muted" />
+                      <FileText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Contrato de arriendo' : 'Lease agreement'}</span>
+                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
                     </a>
                   )}
 
@@ -379,11 +458,11 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <Shield className="w-4 h-4 text-plan-secondary" />
-                      <span className="text-sm text-plan-primary flex-1">Poliza de seguro</span>
-                      <Download className="w-4 h-4 text-plan-muted" />
+                      <Shield className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Póliza de seguro' : 'Insurance policy'}</span>
+                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
                     </a>
                   )}
 
@@ -392,85 +471,103 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 bg-muted hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <Building2 className="w-4 h-4 text-plan-secondary" />
-                      <span className="text-sm text-plan-primary flex-1">Inventario</span>
-                      <Download className="w-4 h-4 text-plan-muted" />
+                      <Buildings className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Inventario' : 'Inventory'}</span>
+                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
                     </a>
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Landlord Contact */}
-            <div className="bg-card border border-plan-border">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
-                <User className="w-5 h-5 text-plan-secondary" />
-                <h2 className="font-semibold text-plan-primary">Propietario</h2>
+            {/* Landlord Contact Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            >
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+                <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <User className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                </div>
+                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
               </div>
-              <div className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-muted flex items-center justify-center text-plan-secondary font-medium">
+              <div className="p-6">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xl font-semibold shadow-lg">
                     {lease.landlordName.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-medium text-plan-primary">{lease.landlordName}</p>
-                    <p className="text-xs text-plan-secondary">Propietario</p>
+                    <p className="font-semibold text-neutral-900 dark:text-white">{lease.landlordName}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 mb-5">
                   <a
                     href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
                   >
-                    <Mail className="w-4 h-4" />
+                    <Envelope className="w-4 h-4 text-neutral-400" />
                     {lease.landlordEmail}
                   </a>
                   <a
                     href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-plan-secondary hover:text-plan-primary hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
                   >
-                    <Phone className="w-4 h-4" />
+                    <Phone className="w-4 h-4 text-neutral-400" />
                     {lease.landlordPhone}
                   </a>
                 </div>
 
                 <Link
                   href="/inquilino/mensajes"
-                  className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-muted transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                 >
-                  Enviar mensaje
+                  <Chat className="w-4 h-4" />
+                  {locale === 'es' ? 'Enviar mensaje' : 'PaperPlaneTilt message'}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Payment Methods Info */}
-            <div className="bg-card border border-plan-border">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-plan-border">
-                <CreditCard className="w-5 h-5 text-plan-secondary" />
-                <h2 className="font-semibold text-plan-primary">Metodos de pago</h2>
+            {/* Payment Methods Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            >
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/50 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
               </div>
-              <div className="p-5 space-y-2">
+              <div className="p-4 space-y-2">
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-3 py-2 bg-muted"
+                    className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl"
                   >
-                    <span className="text-lg">{method.icon}</span>
+                    <span className="text-xl">{method.icon}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-plan-primary">{method.name}</p>
-                      <p className="text-xs text-plan-muted">{method.processingTime}</p>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{method.name}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{method.processingTime}</p>
                     </div>
-                    {method.fee && method.fee > 0 && (
-                      <span className="text-xs text-plan-secondary">+{method.fee}%</span>
+                    {method.fee && method.fee > 0 ? (
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400 bg-white dark:bg-[#2a2a2c] px-2 py-1 rounded-lg">+{method.fee}%</span>
+                    ) : (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/50 px-2 py-1 rounded-lg font-medium">{locale === 'es' ? 'Gratis' : 'Free'}</span>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
+
           </div>
         </div>
       </div>

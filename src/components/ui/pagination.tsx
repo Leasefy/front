@@ -2,13 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  MoreHorizontal,
-} from 'lucide-react';
+import { CaretLeft, CaretRight, CaretDoubleLeft, CaretDoubleRight, DotsThree } from '@phosphor-icons/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Button, type ButtonProps } from './button';
@@ -211,7 +205,7 @@ function PaginationButton({
 }
 
 // ============================================================================
-// Pagination Navigation Buttons
+// Pagination Compass Buttons
 // ============================================================================
 
 function PaginationPrevious({
@@ -227,7 +221,7 @@ function PaginationPrevious({
       className={cn('gap-1 pl-2.5', className)}
       {...props}
     >
-      <ChevronLeft className={iconSize} />
+      <CaretLeft className={iconSize} />
       <span className="hidden sm:inline">Anterior</span>
     </PaginationLink>
   );
@@ -247,7 +241,7 @@ function PaginationNext({
       {...props}
     >
       <span className="hidden sm:inline">Siguiente</span>
-      <ChevronRight className={iconSize} />
+      <CaretRight className={iconSize} />
     </PaginationLink>
   );
 }
@@ -265,7 +259,7 @@ function PaginationFirst({
       className={className}
       {...props}
     >
-      <ChevronsLeft className={iconSize} />
+      <CaretDoubleLeft className={iconSize} />
     </PaginationLink>
   );
 }
@@ -283,7 +277,7 @@ function PaginationLast({
       className={className}
       {...props}
     >
-      <ChevronsRight className={iconSize} />
+      <CaretDoubleRight className={iconSize} />
     </PaginationLink>
   );
 }
@@ -305,7 +299,7 @@ function PaginationEllipsis({
       className={cn('flex h-9 w-9 items-center justify-center', className)}
       {...props}
     >
-      <MoreHorizontal className={cn(iconSize, 'text-muted-foreground')} />
+      <DotsThree className={cn(iconSize, 'text-muted-foreground')} />
       <span className="sr-only">More pages</span>
     </span>
   );
@@ -396,7 +390,7 @@ function Pagination({
                 disabled={currentPage === 1}
                 aria-label="Go to first page"
               >
-                <ChevronsLeft className="h-4 w-4" />
+                <CaretDoubleLeft className="h-4 w-4" />
               </PaginationButton>
             )}
           </PaginationItem>
@@ -416,7 +410,7 @@ function Pagination({
               aria-label="Go to previous page"
               className="gap-1 pl-2.5"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <CaretLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Anterior</span>
             </PaginationButton>
           )}
@@ -459,7 +453,7 @@ function Pagination({
               className="gap-1 pr-2.5"
             >
               <span className="hidden sm:inline">Siguiente</span>
-              <ChevronRight className="h-4 w-4" />
+              <CaretRight className="h-4 w-4" />
             </PaginationButton>
           )}
         </PaginationItem>
@@ -478,7 +472,7 @@ function Pagination({
                 disabled={currentPage === totalPages}
                 aria-label="Go to last page"
               >
-                <ChevronsRight className="h-4 w-4" />
+                <CaretDoubleRight className="h-4 w-4" />
               </PaginationButton>
             )}
           </PaginationItem>

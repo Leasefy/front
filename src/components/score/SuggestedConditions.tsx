@@ -1,11 +1,11 @@
 'use client';
 
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { SuggestedCondition } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface SuggestedConditionsProps {
@@ -39,7 +39,7 @@ export interface SuggestedConditionsProps {
  * Examples:
  * - "Solicitar copia de contrato laboral vigente"
  * - "Verificar referencias del arrendador anterior"
- * - "Considerar deposito adicional de seguridad"
+ * - "Considerar depósito adicional de seguridad"
  *
  * @example
  * ```tsx
@@ -47,7 +47,7 @@ export interface SuggestedConditionsProps {
  *   conditions={[
  *     {
  *       id: 'cond-1',
- *       condition: 'Solicitar deposito de 2 meses',
+ *       condition: 'Solicitar depósito de 2 meses',
  *       reason: 'Mitigar variabilidad de ingresos',
  *     },
  *   ]}

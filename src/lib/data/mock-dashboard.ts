@@ -285,7 +285,10 @@ export function getDashboardData(landlordId: string = 'landlord-001'): Dashboard
 /**
  * Format currency in Colombian Pesos
  */
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | undefined | null): string {
+  if (amount == null || isNaN(amount)) {
+    return '$0';
+  }
   if (amount >= 1000000) {
     const millions = amount / 1000000;
     return `$${millions.toFixed(1)}M`;
@@ -300,6 +303,9 @@ export function formatCurrency(amount: number): string {
 /**
  * Format currency with full detail
  */
-export function formatCurrencyFull(amount: number): string {
+export function formatCurrencyFull(amount: number | undefined | null): string {
+  if (amount == null || isNaN(amount)) {
+    return '$0';
+  }
   return `$${amount.toLocaleString('es-CO')}`;
 }

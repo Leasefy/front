@@ -1,6 +1,6 @@
 'use client';
 
-import { X, SlidersHorizontal, Check } from 'lucide-react';
+import { X, SlidersHorizontal, Check } from '@phosphor-icons/react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { PropertyFilters } from '@/lib/hooks/usePropertyFilters';
 import type { PropertyType } from '@/lib/types/property';
 
-export interface FilterSidebarProps {
+export interface FunnelSidebarProps {
   filters: PropertyFilters;
   onCityChange: (city: string | null) => void;
   onPriceRangeChange: (min: number | null, max: number | null) => void;
@@ -32,14 +32,14 @@ const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
   { value: 'apartment', label: 'Apartamento' },
   { value: 'house', label: 'Casa' },
   { value: 'studio', label: 'Estudio' },
-  { value: 'room', label: 'Habitacion' },
+  { value: 'room', label: 'Habitación' },
 ];
 
 /**
- * FilterSidebar - Luxterra style with refined UI
+ * FunnelSidebar - Luxterra style with refined UI
  * Clean design with subtle borders, better spacing, improved mobile drawer
  */
-export function FilterSidebar({
+export function FunnelSidebar({
   filters,
   onCityChange,
   onPriceRangeChange,
@@ -52,7 +52,7 @@ export function FilterSidebar({
   showPersonalization = false,
   onlyAffordable = false,
   onOnlyAffordableChange,
-}: FilterSidebarProps) {
+}: FunnelSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -114,7 +114,7 @@ export function FilterSidebar({
   }, [isOpen, handleKeyDown]);
 
   // Count active filters for badge
-  const activeFilterCount = [
+  const activeFunnelCount = [
     filters.city,
     filters.minPrice,
     filters.maxPrice,
@@ -149,7 +149,7 @@ export function FilterSidebar({
             </div>
             <div className="text-left flex-1">
               <p className="text-sm font-medium text-foreground tracking-tight">
-                Solo propiedades para mi
+                Solo propiedades para mí
               </p>
               <p className="text-xs text-muted-foreground tracking-tight mt-0.5">
                 Filtrar por tu presupuesto y preferencias
@@ -219,7 +219,7 @@ export function FilterSidebar({
               value={minPriceInput}
               onChange={(e) => setMinPriceInput(e.target.value)}
               onBlur={handleMinPriceBlur}
-              aria-label="Precio minimo"
+              aria-label="Precio mínimo"
               className={cn(
                 'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
@@ -238,7 +238,7 @@ export function FilterSidebar({
               value={maxPriceInput}
               onChange={(e) => setMaxPriceInput(e.target.value)}
               onBlur={handleMaxPriceBlur}
-              aria-label="Precio maximo"
+              aria-label="Precio máximo"
               className={cn(
                 'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
@@ -263,7 +263,7 @@ export function FilterSidebar({
                 onBedroomsChange(filters.bedrooms === num ? null : num)
               }
               aria-pressed={filters.bedrooms === num}
-              aria-label={`${num === 4 ? '4 o mas' : num} habitaciones`}
+              aria-label={`${num === 4 ? '4 o más' : num} habitaciones`}
               className={cn(
                 'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.bedrooms === num
@@ -321,9 +321,9 @@ export function FilterSidebar({
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filtros
-          {activeFilterCount > 0 && (
+          {activeFunnelCount > 0 && (
             <span className="ml-2 px-2 py-0.5 rounded-sm bg-foreground text-xs text-white font-medium">
-              {activeFilterCount}
+              {activeFunnelCount}
             </span>
           )}
         </button>
@@ -394,9 +394,9 @@ export function FilterSidebar({
         <div className="sticky top-24 bg-card p-6 rounded-sm shadow-sm border border-border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-medium text-foreground tracking-tight">Filtros</h2>
-            {activeFilterCount > 0 && (
+            {activeFunnelCount > 0 && (
               <span className="px-2 py-0.5 rounded-sm bg-muted text-xs text-foreground font-medium">
-                {activeFilterCount} activo{activeFilterCount > 1 ? 's' : ''}
+                {activeFunnelCount} activo{activeFunnelCount > 1 ? 's' : ''}
               </span>
             )}
           </div>

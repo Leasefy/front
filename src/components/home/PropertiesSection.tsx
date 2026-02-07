@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SectionLabel } from "@/components/ui/section-label";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { mockProperties } from "@/lib/data/mock-properties";
@@ -8,25 +7,21 @@ export function PropertiesSection() {
   const displayedProperties = mockProperties.slice(0, 6);
 
   return (
-    <section className="bg-white pt-16 md:pt-24 pb-24 md:pb-32 relative -mt-px overflow-visible">
-      {/* Vertical grid lines */}
-      <div className="absolute inset-0 -bottom-32 mx-auto max-w-[1400px] px-6 md:px-12 pointer-events-none hidden lg:block">
-        <div className="h-full grid grid-cols-3">
-          <div className="border-r border-border" />
-          <div className="border-r border-border" />
-          <div />
-        </div>
-      </div>
+    <section className="bg-white pt-16 md:pt-24 pb-24 md:pb-32 relative -mt-px">
 
-      <div className="mx-auto max-w-[1400px] px-6 md:px-12 relative z-10">
+      <div className="container-platform relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
-          <SectionLabel className="text-muted-foreground mb-4 justify-center">
-            Propiedades
-          </SectionLabel>
-          <h2 className="text-[2.5rem] md:text-[3rem] font-light text-foreground leading-[1.1] tracking-[-0.02em]">
-            Propiedades
-          </h2>
+        <div className="mb-14 lg:mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+              Encuentra tu próximo hogar
+            </h2>
+            <div className="flex items-start pl-0 lg:pl-6 pt-2">
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                Propiedades verificadas con información transparente. Sin sorpresas, sin comisiones ocultas.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Property Grid */}

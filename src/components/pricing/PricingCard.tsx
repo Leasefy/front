@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Sparkles } from 'lucide-react';
+import { Check, X, Sparkle } from '@phosphor-icons/react';
 import type { Plan, BillingCycle, PlanId } from '@/lib/types/subscription';
 import { cardStyles, borderRadius, transitions, shadows, borders, hoverEffects } from '@/lib/design-tokens';
 
@@ -71,7 +71,7 @@ export function PricingCard({
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge variant="default">
-            <Sparkles className="w-3 h-3 mr-1" />
+            <Sparkle className="w-3 h-3 mr-1" />
             {plan.badge}
           </Badge>
         </div>

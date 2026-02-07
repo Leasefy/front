@@ -1,20 +1,60 @@
 'use client';
 
-import Link from 'next/link';
-import { FileText, Building2, Clock, CheckCircle, AlertCircle, Pen } from 'lucide-react';
+import { FileText, Clock, CheckCircle, WarningCircle, Pen } from '@phosphor-icons/react';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   getContractsForLandlord,
   getPendingContracts,
   getActiveContracts,
 } from '@/lib/data/mock-contracts';
-import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
-import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
-/**
- * Contracts Management Page - PLan CRM Style
- */
+// ============================================================================
+// TextTs
+// ============================================================================
+
+interface TabConfig {
+  id: string;
+  label: string;
+  count: number;
+}
+
+// ============================================================================
+// Stats Card Component
+// ============================================================================
+
+interface StatsCardProps {
+  label: string;
+  value: number;
+  sublabel: string;
+  icon: React.ElementType;
+  iconBgClass: string;
+  iconColorClass: string;
+}
+
+function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorClass }: StatsCardProps) {
+  return (
+    <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+      <div className="flex items-start gap-4">
+        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', iconBgClass)}>
+          <Icon className={cn('w-5 h-5', iconColorClass)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{sublabel}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 export default function ContratosPage() {
   const landlordId = 'landlord-001';
   const allContracts = getContractsForLandlord(landlordId);
@@ -26,7 +66,7 @@ export default function ContratosPage() {
 
   const [activeTab, setActiveTab] = useState('all');
 
-  // Filter contracts by tab
+  // Funnel contracts by tab
   const filteredContracts = useMemo(() => {
     if (activeTab === 'all') return allContracts;
     if (activeTab === 'needs_action') return needsAction;
@@ -36,7 +76,7 @@ export default function ContratosPage() {
   }, [activeTab, allContracts, needsAction, awaitingTenant, activeContracts]);
 
   // Tabs configuration
-  const tabs: PlanTab[] = [
+  const tabs: TabConfig[] = [
     { id: 'all', label: 'Todos', count: allContracts.length },
     { id: 'needs_action', label: 'Requieren firma', count: needsAction.length },
     { id: 'awaiting', label: 'Esperando inquilino', count: awaitingTenant.length },
@@ -44,60 +84,67 @@ export default function ContratosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-plan-primary">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
             Contratos
           </h1>
-          <p className="mt-1 text-plan-secondary">
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
             Gestiona los contratos de tus propiedades
           </p>
         </header>
 
         {/* Stats Row */}
-        <PlanStatsGrid columns={4} className="mb-8">
-          <PlanStatsCard
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatsCard
             label="Total contratos"
             value={allContracts.length}
             sublabel="En el sistema"
             icon={FileText}
+            iconBgClass="bg-neutral-100 dark:bg-neutral-800"
+            iconColorClass="text-neutral-600 dark:text-neutral-300"
           />
-          <PlanStatsCard
+          <StatsCard
             label="Por firmar"
             value={needsAction.length}
             sublabel="Requieren tu firma"
             icon={Pen}
-            variant={needsAction.length > 0 ? 'accent' : 'default'}
+            iconBgClass={needsAction.length > 0 ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-neutral-100 dark:bg-neutral-800'}
+            iconColorClass={needsAction.length > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-300'}
           />
-          <PlanStatsCard
+          <StatsCard
             label="Esperando"
             value={awaitingTenant.length}
             sublabel="Firma del inquilino"
             icon={Clock}
+            iconBgClass="bg-amber-100 dark:bg-amber-900/30"
+            iconColorClass="text-amber-600 dark:text-amber-400"
           />
-          <PlanStatsCard
+          <StatsCard
             label="Activos"
             value={activeContracts.length}
             sublabel="Contratos vigentes"
             icon={CheckCircle}
+            iconBgClass="bg-emerald-100 dark:bg-emerald-900/30"
+            iconColorClass="text-emerald-600 dark:text-emerald-400"
           />
-        </PlanStatsGrid>
+        </div>
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <div className="mb-6 p-4 bg-plan-status-yellow-bg border border-plan-status-yellow/30 ">
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-sm bg-plan-status-yellow/20 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-yellow-800" />
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-yellow-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                   {needsAction.length} contrato{needsAction.length > 1 ? 's' : ''} requiere{needsAction.length > 1 ? 'n' : ''} tu firma
                 </p>
-                <p className="text-xs text-yellow-800/70">
+                <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
                   Haz clic en un contrato para revisar y firmar
                 </p>
               </div>
@@ -106,43 +153,51 @@ export default function ContratosPage() {
         )}
 
         {/* Tabs */}
-        <PlanTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          variant="underline"
-          className="mb-6"
-        />
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white shadow-sm'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                )}
+              >
+                {tab.label}
+                <span
+                  className={cn(
+                    'px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums',
+                    activeTab === tab.id
+                      ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                      : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Contracts List */}
-        <section className="bg-card  border border-plan-border overflow-hidden">
+        <section className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           {filteredContracts.length > 0 ? (
-            <div className="divide-y divide-plan-border">
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
               {filteredContracts.map((contract) => (
                 <ContractExpandableItem key={contract.id} contract={contract} />
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-plan-muted" />
-              </div>
-              <h3 className="font-medium text-plan-primary mb-2">
-                {activeTab === 'all'
-                  ? 'No tienes contratos'
-                  : `No hay contratos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
-                }
-              </h3>
-              <p className="text-sm text-plan-secondary mb-4">
-                Los contratos apareceran aqui cuando apruebes candidatos
-              </p>
-              <Link
-                href="/panel"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Building2 className="w-4 h-4" />
-                Ver mis propiedades
-              </Link>
+            <div className="p-6">
+              <EmptyState
+                icon={FileText}
+                title="No hay contratos"
+                description="Cuando apruebes candidatos y generes contratos, aparecerán aquí."
+                action={{ label: "Ver candidatos", href: "/panel/candidatos" }}
+              />
             </div>
           )}
         </section>

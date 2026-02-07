@@ -118,7 +118,7 @@ const KEY_SYMBOLS: Record<string, string> = {
   right: '→',
   pageup: 'PgUp',
   pagedown: 'PgDn',
-  home: 'Home',
+  home: 'House',
   end: 'End',
 };
 

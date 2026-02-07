@@ -1,16 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import {
-  User,
-  Briefcase,
-  DollarSign,
-  Users,
-  FileText,
-  Pencil,
-  Check,
-  AlertCircle,
-} from 'lucide-react';
+import { User, Briefcase, CurrencyDollar, Users, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
@@ -81,13 +72,13 @@ export function StepReview() {
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
         <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <WarningCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-amber-800 font-medium">
-              Algunos pasos estan incompletos
+              Algunos pasos están incompletos
             </p>
             <p className="text-xs text-amber-700/80 mt-1">
-              Completa todos los pasos antes de enviar tu aplicacion.
+              Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
         </div>
@@ -96,7 +87,7 @@ export function StepReview() {
       {/* Personal Information Summary */}
       <SummaryCard
         icon={<User className="h-5 w-5 text-muted-foreground" />}
-        title="Informacion Personal"
+        title="Información Personal"
         onEdit={() => goToStep(1)}
       >
         <div className="space-y-1.5 text-sm">
@@ -110,7 +101,7 @@ export function StepReview() {
           <p className="text-muted-foreground">{personal.currentAddress || '-'}</p>
           {personal.timeAtCurrentAddress !== undefined && personal.timeAtCurrentAddress > 0 && (
             <p className="text-muted-foreground text-xs">
-              {personal.timeAtCurrentAddress} meses en direccion actual
+              {personal.timeAtCurrentAddress} meses en dirección actual
             </p>
           )}
         </div>
@@ -136,7 +127,7 @@ export function StepReview() {
           )}
           {employment.timeAtJob !== undefined && employment.timeAtJob > 0 && (
             <p className="text-muted-foreground text-xs">
-              {employment.timeAtJob} meses de antiguedad
+              {employment.timeAtJob} meses de antigüedad
             </p>
           )}
         </div>
@@ -144,7 +135,7 @@ export function StepReview() {
 
       {/* Income Summary */}
       <SummaryCard
-        icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
+        icon={<CurrencyDollar className="h-5 w-5 text-muted-foreground" />}
         title="Ingresos"
         onEdit={() => goToStep(3)}
       >
@@ -231,7 +222,7 @@ export function StepReview() {
             uploaded={!!documents.bankStatements?.fileName || !!documents.bankStatements?.file}
           />
           <DocumentStatus
-            label="Reporte de credito"
+            label="Reporte de crédito"
             uploaded={!!documents.creditReport?.fileName || !!documents.creditReport?.file}
           />
         </div>
@@ -284,7 +275,7 @@ export function StepReview() {
               )}
             />
             <span className="text-sm text-foreground/70">
-              Autorizo la verificacion de mis datos personales, laborales y
+              Autorizo la verificación de mis datos personales, laborales y
               crediticios
             </span>
           </label>
@@ -292,7 +283,7 @@ export function StepReview() {
 
         {!acceptTerms || !authorizeVerification ? (
           <p className="text-xs text-muted-foreground">
-            Acepta los terminos y autoriza la verificacion para continuar.
+            Acepta los términos y autoriza la verificación para continuar.
           </p>
         ) : null}
       </div>

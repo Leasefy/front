@@ -144,7 +144,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
       'A', 92,
       createScoreCategories(95, 92, 88, 100),
       [
-        'Estabilidad laboral de 4 anos en empresa reconocida',
+        'Estabilidad laboral de 4 años en empresa reconocida',
         'Ingresos holgados (ratio 21%)',
         'Excelentes referencias de arrendadores anteriores',
         'Documentacion completa verificada',
@@ -205,10 +205,10 @@ export const MOCK_CANDIDATES: Candidate[] = [
       'A', 89,
       createScoreCategories(92, 95, 82, 100),
       [
-        '5 anos como medico especialista estable',
+        '5 años como medico especialista estable',
         'Alto ingreso con bajo ratio de obligaciones',
         'Profesion con alta demanda laboral',
-        'Propiedad actual por 4 anos sin problemas',
+        'Propiedad actual por 4 años sin problemas',
       ],
       [],
       [],
@@ -343,7 +343,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
       'B', 75,
       createScoreCategories(74, 80, 75, 100),
       [
-        'Estabilidad laboral de 2.5 anos',
+        'Estabilidad laboral de 2.5 años',
         'Profesion con demanda constante',
         'Buenos antecedentes de arrendamiento',
       ],
@@ -409,7 +409,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
       'B', 73,
       createScoreCategories(78, 68, 80, 75),
       [
-        '3 anos de experiencia freelance documentada',
+        '3 años de experiencia freelance documentada',
         'Ingresos promedio consistentes',
         'Excelentes referencias de arrendadores',
       ],
@@ -660,7 +660,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
         {
           id: 'flag-008-2',
           severity: 'medium',
-          message: 'Historial laboral con cambios frecuentes (3 empleos en 5 anos)',
+          message: 'Historial laboral con cambios frecuentes (3 empleos en 5 años)',
           suggestion: 'Verificar razon de cambios laborales',
         },
         {
@@ -823,7 +823,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
       'C', 52,
       createScoreCategories(48, 60, 55, 75),
       [
-        '7 anos con negocio propio',
+        '7 años con negocio propio',
         'Estabilidad en residencia actual',
       ],
       [

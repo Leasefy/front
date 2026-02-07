@@ -4,7 +4,7 @@ import Image from "next/image";
 import { SectionLabel } from "@/components/ui/section-label";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { TrendingUp, Users, PiggyBank, Heart } from "lucide-react";
+import { TrendUp, Users, PiggyBank, Heart, Shield, Lightning, CheckCircle } from '@phosphor-icons/react';
 
 const stats = [
   {
@@ -19,7 +19,7 @@ const stats = [
     suffix: "h",
     label: "Tiempo promedio",
     description: "Desde publicar hasta recibir candidatos pre-aprobados.",
-    icon: TrendingUp,
+    icon: TrendUp,
   },
   {
     value: "92",
@@ -80,11 +80,11 @@ function StatCard({ stat, index }: { stat: typeof stats[number]; index: number }
 export function WhyUsSection() {
   return (
     <section className="bg-white py-20 md:py-28">
-      <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+      <div className="container-platform">
         {/* Header */}
         <div className="mb-14 md:mb-20">
           <SectionLabel className="mb-4">Por qué nosotros</SectionLabel>
-          <h2 className="text-[1.75rem] md:text-[2.5rem] font-light text-foreground leading-[1.2] tracking-[-0.02em] italic whitespace-nowrap">
+          <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic whitespace-nowrap">
             Expertos en arriendos en Colombia
           </h2>
         </div>
@@ -97,7 +97,7 @@ export function WhyUsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6 }}
-            className="lg:col-span-7 relative overflow-hidden min-h-[520px] lg:min-h-0 group"
+            className="lg:col-span-7 relative overflow-hidden min-h-[520px] lg:min-h-0 group rounded-2xl"
           >
             <Image
               src="https://images.pexels.com/photos/7613843/pexels-photo-7613843.jpeg?auto=compress&cs=tinysrgb&w=1600"
@@ -110,6 +110,63 @@ export function WhyUsSection() {
             {/* Gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
+            {/* Floating widget - top left (Glass morphism) */}
+            <motion.div
+              initial={{ opacity: 0, x: -20, y: -10 }}
+              whileInView={{ opacity: 1, x: 0, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="absolute top-6 left-6 md:top-8 md:left-8"
+            >
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-success-500" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-medium text-foreground">Evaluación Gratis</p>
+                  <p className="text-[10px] text-muted-foreground">Para propietarios</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Floating widget - top right (Glass morphism) */}
+            <motion.div
+              initial={{ opacity: 0, x: 20, y: -10 }}
+              whileInView={{ opacity: 1, x: 0, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="absolute top-6 right-6 md:top-8 md:right-8"
+            >
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Lightning className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-medium text-foreground">Cobro Automatizado</p>
+                  <p className="text-[10px] text-muted-foreground">$3.900/transacción</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Floating widget - middle right (Glass morphism) */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="absolute top-[45%] right-6 md:right-8 hidden md:block"
+            >
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-warning-50 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-warning-500" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-medium text-foreground">Contratos Digitales</p>
+                  <p className="text-[10px] text-muted-foreground">Firma electrónica</p>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Content overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
               <div className="flex items-center gap-2 mb-3">
@@ -118,7 +175,7 @@ export function WhyUsSection() {
                   La plataforma de arriendos de Colombia
                 </span>
               </div>
-              <h3 className="text-[1.5rem] md:text-[2rem] font-light text-white leading-[1.2] tracking-[-0.02em] max-w-md mb-3">
+              <h3 className="text-[1.5rem] md:text-[2rem] font-heading font-light text-white leading-[1.2] tracking-[-0.02em] max-w-md mb-3">
                 Arrienda sin pagar comisiones innecesarias
               </h3>
               <p className="text-[13px] text-white/60 leading-relaxed max-w-sm">

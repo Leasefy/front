@@ -1,36 +1,184 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { CTASection } from '@/components/home/CTASection';
 import { PricingTable } from '@/components/pricing';
 import { ManagementTierCard } from '@/components/pricing/ManagementTierCard';
-import { AddOnCard } from '@/components/pricing/AddOnCard';
-import {
-  Shield,
-  Zap,
-  HeadphonesIcon,
-  CheckCircle2,
-  Home,
-  Briefcase,
-  Calculator,
-  ArrowUpRight,
-  Building2,
-  Users,
-  FileText,
-  Sparkles,
-  UserCheck,
-  BadgeCheck,
-  Clock,
-  Infinity,
-  Star,
-} from 'lucide-react';
+import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, ArrowUpRight, Buildings, Users, FileText, Sparkle, UserCheck, SealCheck, Clock, Infinity, Star, Plus, X, TrendUp, ArrowRight, CircleDashed, Circle } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { MANAGEMENT_TIERS, ADD_ONS } from '@/lib/data/mock-subscriptions';
+import { MANAGEMENT_TIERS } from '@/lib/data/mock-subscriptions';
 
-type UserType = 'owner-managed' | 'owner-diy' | 'agency';
+type UserTextT = 'owner-managed' | 'owner-diy' | 'agency' | 'evaluation';
+type AgencyPlan = 'starter' | 'growth' | 'business' | 'enterprise' | null;
+
+const PRICING_HERO_IMAGES = [
+  '/pricing-hero-1.jpg', // Cozy candlelit room
+  '/pricing-hero-2.jpg', // Woman meditating in apartment
+  '/pricing-hero-3.jpg', // Person reading by fireplace
+  '/pricing-hero-4.jpg', // Couple relaxing in bedroom
+];
+
+const HERO_IMAGE_INTERVAL = 6000;
+
+/**
+ * Animated Score Gauge Visual - Shows risk score animation
+ */
+function ScoreGaugeVisual() {
+  const [score, setScore] = useState(0);
+  const targetScore = 87;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const interval = setInterval(() => {
+        setScore((prev) => {
+          if (prev >= targetScore) {
+            clearInterval(interval);
+            return targetScore;
+          }
+          return prev + 2;
+        });
+      }, 20);
+      return () => clearInterval(interval);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const circumference = 2 * Math.PI * 40;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className="flex items-center justify-center">
+      <div className="relative w-[100px] h-[100px]">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="8"
+            className="text-white/10"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            fill="none"
+            stroke="url(#scoreGradient)"
+            strokeWidth="8"
+            strokeLinecap="round"
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset,
+              transition: 'stroke-dashoffset 0.3s ease-out',
+            }}
+          />
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#22c55e" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[28px] font-heading font-bold text-white">{score}</span>
+          <span className="text-[10px] text-white/60 uppercase tracking-wide">Score</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Animated Calculator Visual - Shows cost calculation
+ */
+function CalculatorVisual() {
+  const [currentValue, setCurrentValue] = useState(0);
+  const targetValue = 120000;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const interval = setInterval(() => {
+        setCurrentValue((prev) => {
+          if (prev >= targetValue) {
+            clearInterval(interval);
+            return targetValue;
+          }
+          return prev + 4000;
+        });
+      }, 30);
+      return () => clearInterval(interval);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-muted-foreground">Arriendo $2.4M</span>
+        <span className="text-emerald-500 font-medium">5%</span>
+      </div>
+      <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: '100%' }}
+          transition={{ duration: 1.2, delay: 0.5, ease: 'easeOut' }}
+          className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full"
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] text-muted-foreground">Tu costo:</span>
+        <span className="text-[17px] font-heading font-bold text-foreground">
+          ${currentValue.toLocaleString('es-CO')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Animated Properties Visual - Shows property management
+ */
+function PropertiesVisual() {
+  return (
+    <div className="space-y-2">
+      {[
+        { name: 'Apartamento Chapinero', price: '$2.8M', status: 'Arrendado' },
+        { name: 'Casa Usaquén', price: '$4.5M', status: 'Disponible' },
+        { name: 'Estudio Centro', price: '$1.2M', status: 'En proceso' },
+      ].map((property, i) => (
+        <motion.div
+          key={property.name}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 + i * 0.15 }}
+          className="flex items-center gap-3 p-2 rounded-lg bg-white/60 border border-border/50"
+        >
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-indigo-500/20 flex items-center justify-center">
+            <Buildings className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-medium text-foreground truncate">{property.name}</p>
+            <p className="text-[10px] text-muted-foreground">{property.price}/mes</p>
+          </div>
+          <span className={cn(
+            'text-[9px] font-medium px-2 py-0.5 rounded-full',
+            property.status === 'Arrendado' && 'bg-emerald-100 text-emerald-700',
+            property.status === 'Disponible' && 'bg-primary/10 text-primary',
+            property.status === 'En proceso' && 'bg-amber-100 text-amber-700'
+          )}>
+            {property.status}
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Public pricing page - Hybrid Model
@@ -41,102 +189,389 @@ type UserType = 'owner-managed' | 'owner-diy' | 'agency';
  * 3. Real estate agencies (business subscription)
  */
 export default function PricingPage() {
-  const [userType, setUserType] = useState<UserType>('owner-managed');
+  const [userTextT, setUserTextT] = useState<UserTextT>('owner-managed');
   const [exampleRent, setExampleRent] = useState(2000000);
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const [selectedAgencyPlan, setSelectedAgencyPlan] = useState<AgencyPlan>(null);
+  const [activeHeroImage, setActiveHeroImage] = useState(0);
 
-  const toggleAddOn = (addonId: string) => {
-    setSelectedAddOns((prev) =>
-      prev.includes(addonId)
-        ? prev.filter((id) => id !== addonId)
-        : [...prev, addonId]
-    );
-  };
+  // Auto-cycle hero images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveHeroImage((prev) => (prev + 1) % PRICING_HERO_IMAGES.length);
+    }, HERO_IMAGE_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background pt-20">
-        {/* Hero section */}
-        <section className="py-16 px-4 sm:py-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-            Arrienda sin complicaciones
-          </h1>
-          <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Tu decides cuanto control quieres. Nosotros nos adaptamos.
-          </p>
-        </div>
-      </section>
+      <main className="min-h-screen bg-background">
+        {/* Hero Section - Full width like home, starts behind navbar */}
+        <section className="relative h-[500px] overflow-hidden bg-black">
+          {/* Background — crossfade image slideshow */}
+          {PRICING_HERO_IMAGES.map((src, i) => (
+            <div
+              key={src}
+              className="absolute inset-0"
+              style={{
+                opacity: i === activeHeroImage ? 1 : 0,
+                transition: 'opacity 4s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <img
+                src={src}
+                alt={`Interior ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+          {/* Overlays for legibility */}
+          <div className="absolute inset-0 bg-black/25 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50 z-[1]" />
 
-      {/* User Type Selector */}
-      <section className="pb-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <UserTypeCard
-              icon={<Home className="h-5 w-5" />}
-              label="Quiero que administren mi propiedad"
-              description="Nosotros nos encargamos de todo"
-              selected={userType === 'owner-managed'}
-              onClick={() => setUserType('owner-managed')}
-              accentColor="emerald"
-            />
-            <UserTypeCard
-              icon={<Calculator className="h-5 w-5" />}
-              label="Yo administro mi propiedad"
-              description="Herramientas para hacerlo tu mismo"
-              selected={userType === 'owner-diy'}
-              onClick={() => setUserType('owner-diy')}
-              accentColor="indigo"
-            />
-            <UserTypeCard
-              icon={<Briefcase className="h-5 w-5" />}
-              label="Soy inmobiliaria"
-              description="Soluciones para agencias"
-              selected={userType === 'agency'}
-              onClick={() => setUserType('agency')}
-              accentColor="amber"
-            />
+          {/* Content */}
+          <div className="relative z-10 flex flex-col md:flex-row h-full container-platform">
+            {/* Left — headline area */}
+            <div className="flex-1 flex flex-col justify-end pb-6 md:pb-10">
+              <div className="max-w-xl space-y-4">
+                {/* Headline */}
+                <div className="space-y-2 mb-2">
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em]"
+                  >
+                    Precios simples.
+                  </motion.h1>
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-base md:text-lg text-white/60"
+                  >
+                    Administración completa o herramientas para hacerlo tú mismo.
+                  </motion.p>
+                </div>
+
+                {/* Stats row */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex flex-wrap gap-6"
+                >
+                  {[
+                    { value: '5-6%', label: 'Administración' },
+                    { value: '$0', label: 'Publicar' },
+                    { value: '2,400+', label: 'Clientes' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex items-baseline gap-2">
+                      <span className="text-[24px] font-heading font-bold text-white">{stat.value}</span>
+                      <span className="text-[13px] text-white/50">{stat.label}</span>
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Right — value props panel */}
+            <div className="hidden md:flex items-end justify-end pb-10 w-[340px] flex-shrink-0">
+              <div className="w-full space-y-3">
+                {[
+                  { icon: Shield, label: 'Sin comisiones ocultas', description: 'Precios transparentes, sin letra pequeña ni cargos sorpresa.' },
+                  { icon: Lightning, label: 'Cancela cuando quieras', description: 'Sin contratos de permanencia. Flexibilidad total.' },
+                  { icon: CheckCircle, label: 'Todo incluido', description: 'Evaluación, contratos, cobro y soporte en un solo lugar.' },
+                ].map((prop, i) => {
+                  const Icon = prop.icon;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                      className="w-full text-left p-4 rounded-xl bg-white/15 backdrop-blur-2xl border border-white/20"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-semibold text-white">{prop.label}</p>
+                          <p className="text-[12px] leading-relaxed mt-0.5 text-white/60">{prop.description}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+      {/* User TextT Selector - Bento Grid Style */}
+      <section className="py-12">
+        <div className="container-platform">
+          {/* Bento grid layout - no section header, straight to content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+            {/* Card 1: Managed - Large with real image + glass widgets */}
+            <motion.button
+              onClick={() => setUserTextT('owner-managed')}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="group relative lg:col-span-5 lg:row-span-2 text-left rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl"
+            >
+              {/* Background image - NO dark overlay */}
+              <div className="absolute inset-0">
+                <img
+                  src="/homeowner-reading.jpg"
+                  alt="Propietaria leyendo en casa"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="relative z-10 flex flex-col h-full p-6 min-h-[320px]">
+                {/* Small glass widget at top left */}
+                <div className="inline-flex items-center gap-2.5 bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2.5 self-start">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[13px] font-medium text-white">Tú descansas, nosotros cobramos</span>
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Card 2: DIY - White with border */}
+            <motion.button
+              onClick={() => setUserTextT('owner-diy')}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className={cn(
+                "group relative lg:col-span-4 text-left rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg",
+                "bg-white border",
+                userTextT === 'owner-diy' ? "border-foreground" : "border-neutral-200 hover:border-neutral-300"
+              )}
+            >
+              {userTextT === 'owner-diy' && (
+                <div className="absolute top-3 right-3 z-10">
+                  <div className="w-7 h-7 bg-foreground text-white rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+
+              <div className="relative z-10 flex flex-col h-full p-5 min-h-[180px]">
+                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center mb-auto">
+                  <House className="w-4 h-4 text-foreground" />
+                </div>
+                <div className="mt-auto">
+                  <h3 className="text-[17px] font-heading font-semibold text-foreground mb-1">
+                    Yo administro
+                  </h3>
+                  <p className="text-[13px] text-muted-foreground mb-3">Herramientas profesionales</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[24px] font-heading font-bold text-foreground">$0</span>
+                    <span className="text-[12px] text-muted-foreground">para empezar</span>
+                  </div>
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Card 3: Agency - Sand color */}
+            <motion.button
+              onClick={() => setUserTextT('agency')}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              className="group relative lg:col-span-3 text-left rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl"
+            >
+              {/* Solid sand background */}
+              <div className="absolute inset-0 bg-sand-100" />
+
+              {userTextT === 'agency' && (
+                <div className="absolute top-3 right-3 z-10">
+                  <div className="w-7 h-7 bg-white text-sand-700 rounded-full flex items-center justify-center shadow-lg">
+                    <Check className="w-4 h-4" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+
+              <div className="relative z-10 flex flex-col h-full p-5 min-h-[180px]">
+                <div className="w-9 h-9 rounded-lg bg-sand-200/50 flex items-center justify-center mb-auto">
+                  <Briefcase className="w-4 h-4 text-sand-700" />
+                </div>
+                <div className="mt-auto">
+                  <h3 className="text-[17px] font-heading font-semibold text-sand-900 mb-1">
+                    Inmobiliarias
+                  </h3>
+                  <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[24px] font-heading font-bold text-sand-900">$149K</span>
+                    <span className="text-[12px] text-sand-600">/mes</span>
+                  </div>
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Card 4: Evaluation - Clean stroke style */}
+            <motion.button
+              onClick={() => setUserTextT('evaluation')}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className={cn(
+                "group relative lg:col-span-4 text-left rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg",
+                "bg-white border",
+                userTextT === 'evaluation' ? "border-foreground" : "border-neutral-200 hover:border-neutral-300"
+              )}
+            >
+              {userTextT === 'evaluation' && (
+                <div className="absolute top-3 right-3 z-10">
+                  <div className="w-6 h-6 bg-foreground text-white rounded-full flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+
+              <div className="relative z-10 flex flex-col h-full p-5 min-h-[180px]">
+                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center mb-auto">
+                  <UserCheck className="w-4 h-4 text-foreground" />
+                </div>
+                <div className="mt-auto">
+                  <h3 className="text-[17px] font-heading font-semibold text-foreground mb-1">
+                    Evaluar inquilino
+                  </h3>
+                  <p className="text-[13px] text-muted-foreground mb-3">Crédito, identidad, antecedentes</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[24px] font-heading font-bold text-foreground">$24.9K</span>
+                    <span className="text-[12px] text-muted-foreground">/reporte</span>
+                  </div>
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Card 5: Social proof card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="lg:col-span-3 rounded-2xl p-5 bg-neutral-50 flex flex-col justify-center"
+            >
+              <div className="flex -space-x-2 mb-3">
+                {['774909', '2379004', '1239291', '220453'].map((id, i) => (
+                  <img
+                    key={i}
+                    src={`https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=100`}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                  />
+                ))}
+              </div>
+              <p className="text-[13px] text-muted-foreground">
+                <span className="font-semibold text-foreground">+2,400 clientes</span> confían en nosotros para administrar sus propiedades
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Property Management Section */}
-      {userType === 'owner-managed' && (
-        <section className="pb-16 px-4">
-          <div className="max-w-5xl mx-auto">
+      {userTextT === 'owner-managed' && (
+        <section className="pb-20">
+          <div className="container-platform">
             {/* Section Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Administracion de propiedades
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                Cobramos un porcentaje del arriendo. Mucho menos que el mercado
-                (10-12%).
-              </p>
-            </div>
-
-            {/* Rent Calculator */}
-            <div className="mb-8 p-4 bg-card rounded-sm border border-border">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Calcula con tu arriendo mensual
-              </label>
-              <div className="flex items-center gap-4">
-                <span className="text-muted-foreground">$</span>
-                <input
-                  type="number"
-                  value={exampleRent}
-                  onChange={(e) =>
-                    setExampleRent(Math.max(0, parseInt(e.target.value) || 0))
-                  }
-                  aria-label="Valor del arriendo mensual"
-                  className="flex-1 h-10 px-3 border border-border rounded-sm text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  step={100000}
-                  min={0}
-                />
-                <span className="text-muted-foreground">COP/mes</span>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Circle className="w-4 h-4 text-primary" />
+                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Administración completa
+                </span>
               </div>
-            </div>
+              <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                Nosotros <span className="font-medium">manejamos todo</span>
+              </h2>
+            </motion.div>
+
+            {/* Interactive Rent Calculator - Compact light style */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-10 p-5 rounded-xl bg-neutral-50 border border-neutral-200"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                {/* Input section */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-[13px] font-medium text-foreground">Calculadora</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 max-w-[180px]">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={exampleRent ? exampleRent.toLocaleString('es-CO') : ''}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d]/g, '');
+                          if (rawValue === '') {
+                            setExampleRent(0);
+                            return;
+                          }
+                          const numValue = parseInt(rawValue, 10);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setExampleRent(numValue);
+                          }
+                        }}
+                        placeholder="2.000.000"
+                        aria-label="Valor del arriendo mensual"
+                        className="w-full h-10 pl-7 pr-3 bg-white text-[15px] font-medium text-foreground rounded-lg border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                      />
+                    </div>
+                    <span className="text-[12px] text-muted-foreground">/mes</span>
+                  </div>
+                </div>
+
+                {/* Results preview - compact */}
+                <div className="flex gap-3">
+                  <div className="px-4 py-3 rounded-lg bg-white border border-neutral-200 text-center min-w-[100px]">
+                    <p className="text-[11px] text-muted-foreground mb-0.5">5%</p>
+                    <p className="text-[18px] font-heading font-bold text-foreground">
+                      ${(exampleRent * 0.05).toLocaleString('es-CO')}
+                    </p>
+                  </div>
+                  <div className="px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-center min-w-[100px]">
+                    <p className="text-[11px] text-emerald-600 mb-0.5">6%</p>
+                    <p className="text-[18px] font-heading font-bold text-foreground">
+                      ${(exampleRent * 0.06).toLocaleString('es-CO')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings indicator - compact */}
+              <div className="mt-4 pt-3 border-t border-neutral-200 flex flex-wrap items-center gap-4 text-[12px]">
+                <span className="text-muted-foreground">
+                  Ahorro: <span className="text-emerald-600 font-medium">${(exampleRent * 0.05).toLocaleString('es-CO')}</span>/mes
+                </span>
+                <span className="text-neutral-300">•</span>
+                <span className="text-muted-foreground">Sin compromisos</span>
+              </div>
+            </motion.div>
 
             {/* Management Tiers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -149,59 +584,33 @@ export default function PricingPage() {
               ))}
             </div>
 
-            {/* Add-ons */}
-            <div className="mt-12">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
-                Servicios adicionales
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ADD_ONS.map((addon) => (
-                  <AddOnCard
-                    key={addon.id}
-                    addon={addon}
-                    exampleRent={exampleRent}
-                    selected={selectedAddOns.includes(addon.id)}
-                    onToggle={toggleAddOn}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Comparison Banner */}
-            <div className="mt-12 p-6 bg-emerald-50 border border-emerald-200 rounded-sm">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h4 className="font-semibold text-emerald-900">
-                    Ahorra hasta un 50% vs la competencia
-                  </h4>
-                  <p className="text-sm text-emerald-700 mt-1">
-                    Mientras otros cobran 10-12%, nosotros cobramos solo 5-6%.
-                    <br />
-                    Para un arriendo de $2M, eso son $100,000 - $140,000 de
-                    ahorro al mes.
-                  </p>
-                </div>
-                <Link href="/auth">
-                  <Button size="lg">Comenzar ahora</Button>
-                </Link>
-              </div>
-            </div>
           </div>
         </section>
       )}
 
       {/* DIY Subscription Section */}
-      {userType === 'owner-diy' && (
-        <section className="pb-16 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Planes para propietarios
+      {userTextT === 'owner-diy' && (
+        <section className="pb-20">
+          <div className="container-platform">
+            {/* Section Header - Premium editorial style */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Circle className="w-4 h-4 text-primary" />
+                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Suscripciones DIY
+                </span>
+              </div>
+              <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                Planes para <span className="font-medium">propietarios</span>
               </h2>
-              <p className="text-muted-foreground mt-2">
-                Tu administras, nosotros te damos las herramientas
+              <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
+                Tú administras, nosotros te damos las <span className="text-primary font-medium">herramientas profesionales</span>.
               </p>
-            </div>
+            </motion.div>
 
             <PricingTable showComparison />
           </div>
@@ -209,17 +618,28 @@ export default function PricingPage() {
       )}
 
       {/* Agency Section */}
-      {userType === 'agency' && (
-        <section className="pb-16 px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Planes para inmobiliarias
+      {userTextT === 'agency' && (
+        <section className="pb-20">
+          <div className="container-platform">
+            {/* Section Header - Premium editorial style */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-12"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Circle className="w-4 h-4 text-amber-500" />
+                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Para inmobiliarias
+                </span>
+              </div>
+              <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                Planes para <span className="font-medium">inmobiliarias</span>
               </h2>
-              <p className="text-muted-foreground mt-2 max-w-xl mx-auto">
-                Precios que escalan con tu negocio. Paga por lo que usas, no más.
+              <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
+                Precios que <span className="text-amber-600 font-medium">escalan con tu negocio</span>. Paga por lo que usas.
               </p>
-            </div>
+            </motion.div>
 
             {/* Pricing Tiers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
@@ -238,6 +658,8 @@ export default function PricingPage() {
                   'Scoring de arrendatarios',
                   'Soporte por email',
                 ]}
+                selected={selectedAgencyPlan === 'starter'}
+                onSelect={() => setSelectedAgencyPlan('starter')}
               />
 
               {/* Growth - Popular */}
@@ -256,6 +678,8 @@ export default function PricingPage() {
                   'Recordatorios automáticos',
                   'Soporte prioritario',
                 ]}
+                selected={selectedAgencyPlan === 'growth'}
+                onSelect={() => setSelectedAgencyPlan('growth')}
               />
 
               {/* Business */}
@@ -273,13 +697,15 @@ export default function PricingPage() {
                   'Multi-sucursal',
                   'Gerente de cuenta dedicado',
                 ]}
+                selected={selectedAgencyPlan === 'business'}
+                onSelect={() => setSelectedAgencyPlan('business')}
               />
 
               {/* Enterprise */}
               <AgencyTierCard
                 name="Enterprise"
                 price="Personalizado"
-                description="Para grandes inmobiliarias"
+                description="500+ propiedades"
                 properties={-1}
                 users={-1}
                 features={[
@@ -289,58 +715,62 @@ export default function PricingPage() {
                   'White-label completo',
                   'SLA garantizado 99.9%',
                   'Onboarding personalizado',
+                  'Descuentos por volumen hasta 24%',
                 ]}
                 isEnterprise
+                selected={selectedAgencyPlan === 'enterprise'}
+                onSelect={() => setSelectedAgencyPlan('enterprise')}
               />
             </div>
 
-            {/* Add-ons section */}
-            <div className="bg-muted/50 rounded-sm border border-border p-6 mb-12">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
-                Servicios adicionales
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <AddOnItem
-                  icon={<Users className="w-4 h-4" />}
-                  name="Usuario extra"
-                  price="$30.000/usuario/mes"
-                />
-                <AddOnItem
-                  icon={<Building2 className="w-4 h-4" />}
-                  name="Propiedad extra"
-                  price="$3.000/propiedad/mes"
-                />
-                <AddOnItem
-                  icon={<FileText className="w-4 h-4" />}
-                  name="Screening de arrendatario"
-                  price="$20.000/aplicación"
-                />
-                <AddOnItem
-                  icon={<Sparkles className="w-4 h-4" />}
-                  name="White-label"
-                  price="Desde $200.000/mes"
-                />
-              </div>
-            </div>
-
-            {/* Volume discount banner */}
-            <div className="bg-indigo-50 border border-indigo-200 rounded-sm p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h4 className="font-semibold text-indigo-900">
-                    ¿Más de 500 propiedades?
-                  </h4>
-                  <p className="text-sm text-indigo-700 mt-1">
-                    Obtén descuentos por volumen de hasta 24%. Contacta a nuestro equipo de ventas para una cotización personalizada.
-                  </p>
-                </div>
-                <a href="mailto:ventas@arriendofacil.co">
-                  <Button variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100">
-                    Contactar ventas
-                  </Button>
-                </a>
-              </div>
-            </div>
+            {/* Add-ons section - Only show after selecting a plan */}
+            <AnimatePresence>
+              {selectedAgencyPlan && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gradient-to-br from-primary/5 via-card to-card rounded-2xl border border-primary/10 p-6 mb-12"
+                >
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-primary" />
+                      </div>
+                      <h3 className="text-[17px] font-semibold text-foreground">
+                        Servicios adicionales
+                      </h3>
+                    </div>
+                    <span className="text-[12px] text-primary font-medium bg-primary/10 px-3 py-1.5 rounded-full">
+                      Plan: {selectedAgencyPlan.charAt(0).toUpperCase() + selectedAgencyPlan.slice(1)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <AddOnItem
+                      icon={<Users className="w-4 h-4" />}
+                      name="Usuario extra"
+                      price="$30.000/usuario/mes"
+                    />
+                    <AddOnItem
+                      icon={<Buildings className="w-4 h-4" />}
+                      name="Propiedad extra"
+                      price="$3.000/propiedad/mes"
+                    />
+                    <AddOnItem
+                      icon={<FileText className="w-4 h-4" />}
+                      name="Screening de arrendatario"
+                      price="$20.000/aplicación"
+                    />
+                    <AddOnItem
+                      icon={<Sparkle className="w-4 h-4" />}
+                      name="White-label"
+                      price="Desde $200.000/mes"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Benefits */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -361,285 +791,382 @@ export default function PricingPage() {
         </section>
       )}
 
-      {/* Value props */}
-      <section className="py-16 px-4 bg-background border-t border-border">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-semibold text-foreground text-center mb-12">
-            Por que elegir Arriendo Facil
-          </h2>
+      {/* Value props - Premium Bento Style */}
+      <section className="py-20 bg-muted/30">
+        <div className="container-platform">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-14"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Circle className="w-4 h-4 text-primary" />
+              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                Beneficios
+              </span>
+            </div>
+            <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+              Por qué elegir <span className="font-medium">Leasefy</span>
+            </h2>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <ValueProp
-              icon={<Shield className="w-6 h-6" />}
-              title="Seguridad garantizada"
-              description="Verificacion de identidad y antecedentes de todos los candidatos para tu tranquilidad."
-            />
-            <ValueProp
-              icon={<Zap className="w-6 h-6" />}
-              title="Proceso rapido"
-              description="Encuentra inquilinos calificados en dias, no semanas. Nuestro AI hace el trabajo pesado."
-            />
-            <ValueProp
-              icon={<HeadphonesIcon className="w-6 h-6" />}
-              title="Soporte experto"
-              description="Nuestro equipo esta listo para ayudarte en cada paso del proceso de arrendamiento."
-            />
+          {/* Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4">
+            {/* Large card - Security */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 hover:shadow-lg transition-all relative overflow-hidden"
+            >
+              {/* Decorative corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
+
+              <div className="flex flex-col h-full relative z-10">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                  <Shield className="w-5 h-5 text-emerald-600" />
+                </div>
+                <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+                  Seguridad garantizada
+                </h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
+                  Verificación de identidad y antecedentes de todos los candidatos para tu tranquilidad.
+                </p>
+                {/* Visual */}
+                <div className="mt-auto p-3 rounded-lg bg-white border border-sand-200">
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-1.5">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-600 border-2 border-white">
+                          ✓
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-medium text-foreground">+2,400 verificados</p>
+                      <p className="text-[10px] text-muted-foreground">este mes</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Medium card - Speed */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-white border border-neutral-200 hover:shadow-lg transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
+                <Lightning className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+                Proceso rápido
+              </h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
+                Encuentra inquilinos calificados en días, no semanas.
+              </p>
+              {/* Speed visual */}
+              <div className="space-y-2">
+                {['Publicar', 'Evaluar', 'Contratar'].map((step, i) => (
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.1 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
+                      i === 2 ? 'bg-emerald-500 text-white' : 'bg-neutral-100 text-muted-foreground'
+                    )}>
+                      {i + 1}
+                    </div>
+                    <span className="text-[13px] text-foreground">{step}</span>
+                    {i < 2 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Small card - Support */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-neutral-50 border border-neutral-200 hover:shadow-lg transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-neutral-200 flex items-center justify-center mb-4">
+                <Headphones className="w-5 h-5 text-foreground" />
+              </div>
+              <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+                Soporte experto
+              </h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Equipo local listo para ayudarte en cada paso.
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[12px] text-muted-foreground">Online ahora</span>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Tenant Screening Section - Arriendo Pass */}
-      <section className="py-16 px-4 bg-gradient-to-b from-emerald-50 to-background dark:from-emerald-950/20 dark:to-background border-t border-border">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-3 py-1 mb-4">
-              <UserCheck className="w-3.5 h-3.5" />
-              Para inquilinos
-            </span>
-            <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-3">
-              Evaluación de Inquilinos
+      {userTextT === 'evaluation' && (
+      <section className="py-20">
+        <div className="container-platform">
+          {/* Section Header - Premium editorial style */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Circle className="w-4 h-4 text-emerald-500" />
+              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                Evaluación de inquilinos
+              </span>
+            </div>
+            <h2 className="text-[clamp(2rem,4vw,3rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+              Reportes de verificación <span className="font-medium">completos</span>
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Verifica tu perfil una vez y aplica a todas las propiedades que quieras.
-              Tu reporte te acompaña durante todo el proceso de búsqueda.
+            <p className="text-[16px] text-muted-foreground mt-4 max-w-2xl leading-relaxed">
+              Para propietarios, inmobiliarias, agentes o cualquiera que necesite verificar la confiabilidad de un inquilino. También útil si eres inquilino y quieres <span className="text-emerald-600 font-medium">pre-verificarte</span>.
             </p>
-          </div>
+          </motion.div>
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {/* Basic */}
-            <div className="bg-card border border-border rounded-lg p-6 flex flex-col">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Evaluación Básica</h3>
-                <p className="text-sm text-muted-foreground mt-1">Para una sola propiedad</p>
+            {/* Evaluación Básica */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="group bg-card p-6 flex flex-col rounded-2xl border border-border hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+            >
+              <div className="mb-5">
+                <h3 className="text-[17px] font-semibold text-foreground">Evaluación Básica</h3>
+                <p className="text-[13px] text-muted-foreground mt-1">Verificación rápida</p>
               </div>
               <div className="mb-6">
-                <span className="text-3xl font-bold text-foreground">$24.900</span>
-                <span className="text-muted-foreground text-sm"> COP</span>
+                <span className="text-[32px] font-heading font-bold text-foreground">$24.900</span>
+                <span className="text-muted-foreground text-[13px] ml-1">COP / evaluación</span>
               </div>
               <ul className="space-y-3 flex-1 mb-6">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Verificación de identidad</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Verificación de identidad</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Historial crediticio</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Historial crediticio (DataCrédito)</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Score de riesgo con IA</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Score de riesgo con IA</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Válido para 1 aplicación</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Reporte PDF descargable</span>
                 </li>
               </ul>
-              <Link href="/propiedades">
-                <Button variant="outline" className="w-full">
-                  Ver propiedades
+              <Link href="/auth">
+                <Button variant="outline" className="w-full rounded-xl">
+                  Solicitar evaluación
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
-            {/* Arriendo Pass - Popular */}
-            <div className="relative bg-card border-2 border-emerald-500 rounded-lg p-6 flex flex-col ring-1 ring-emerald-500/20">
+            {/* Evaluación Completa - Popular */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="relative bg-primary text-primary-foreground p-6 flex flex-col rounded-2xl shadow-xl shadow-primary/20"
+            >
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-emerald-500 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
+                <span className="bg-amber-400 text-amber-950 text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                   <Star className="w-3 h-3" />
-                  Más popular
+                  Más completo
                 </span>
               </div>
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Arriendo Pass</h3>
-                <p className="text-sm text-muted-foreground mt-1">60 días, aplicaciones ilimitadas</p>
+              <div className="mb-5">
+                <h3 className="text-[17px] font-semibold">Evaluación Completa</h3>
+                <p className="text-[13px] text-primary-foreground/70 mt-1">Análisis profundo del candidato</p>
               </div>
               <div className="mb-6">
-                <span className="text-3xl font-bold text-foreground">$39.900</span>
-                <span className="text-muted-foreground text-sm"> COP</span>
+                <span className="text-[32px] font-heading font-bold">$39.900</span>
+                <span className="text-primary-foreground/70 text-[13px] ml-1">COP / evaluación</span>
               </div>
               <ul className="space-y-3 flex-1 mb-6">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Todo en Básica</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground/60 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-primary-foreground/80">Todo en Básica</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Verificación de antecedentes</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground/60 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-primary-foreground/80">Verificación de antecedentes judiciales</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Referencias laborales</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground/60 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-primary-foreground/80">Referencias laborales verificadas</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Infinity className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-foreground font-medium">Aplicaciones ilimitadas por 60 días</span>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground/60 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-primary-foreground/80">Verificación de ingresos</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] font-semibold">Score IA avanzado con recomendación</span>
                 </li>
               </ul>
-              <Link href="/propiedades">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+              <Link href="/auth">
+                <Button className="w-full bg-white text-primary hover:bg-white/90 rounded-xl shadow-lg">
+                  Solicitar evaluación completa
+                </Button>
+              </Link>
+            </motion.div>
+
+            {/* Arriendo Pass */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              className="group bg-card p-6 flex flex-col rounded-2xl border border-border hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+            >
+              <div className="mb-5">
+                <h3 className="text-[17px] font-semibold text-foreground">Arriendo Pass</h3>
+                <p className="text-[13px] text-muted-foreground mt-1">Para inquilinos en búsqueda activa</p>
+              </div>
+              <div className="mb-6">
+                <span className="text-[32px] font-heading font-bold text-foreground">$59.900</span>
+                <span className="text-muted-foreground text-[13px] ml-1">COP / 60 días</span>
+              </div>
+              <ul className="space-y-3 flex-1 mb-6">
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Todo en Evaluación Completa</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Infinity className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-foreground font-semibold">Aplicaciones ilimitadas por 60 días</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <SealCheck className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-foreground font-semibold">Badge &ldquo;Inquilino Verificado&rdquo;</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Lightning className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-muted-foreground">Prioridad con propietarios</span>
+                </li>
+              </ul>
+              <Link href="/auth">
+                <Button variant="outline" className="w-full rounded-xl">
                   Obtener Arriendo Pass
                 </Button>
               </Link>
-            </div>
+            </motion.div>
+          </div>
 
-            {/* Premium Pass */}
-            <div className="bg-card border border-border rounded-lg p-6 flex flex-col">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Pass Premium</h3>
-                <p className="text-sm text-muted-foreground mt-1">90 días + beneficios exclusivos</p>
+          {/* B2B Volume Pricing Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-6 bg-gradient-to-br from-amber-500/10 via-card to-card rounded-2xl border border-amber-500/20 mb-16"
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <Buildings className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-foreground">¿Eres inmobiliaria o agente?</h3>
+                  <p className="text-[13px] text-muted-foreground">
+                    Precios por volumen desde <span className="font-semibold text-amber-600">$9.900/evaluación</span>. Hasta 60% de descuento.
+                  </p>
+                </div>
               </div>
-              <div className="mb-6">
-                <span className="text-3xl font-bold text-foreground">$59.900</span>
-                <span className="text-muted-foreground text-sm"> COP</span>
-              </div>
-              <ul className="space-y-3 flex-1 mb-6">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Todo en Arriendo Pass</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-muted-foreground">Verificación de ingresos</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <BadgeCheck className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-foreground font-medium">Badge &ldquo;Inquilino Verificado&rdquo;</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-foreground font-medium">Válido por 90 días</span>
-                </li>
-              </ul>
-              <Link href="/propiedades">
-                <Button variant="outline" className="w-full">
-                  Obtener Pass Premium
+              <Link href="mailto:ventas@leasefy.co?subject=Precios%20por%20volumen%20-%20Evaluaciones">
+                <Button variant="outline" className="whitespace-nowrap rounded-xl">
+                  Contactar ventas
                 </Button>
               </Link>
             </div>
-          </div>
+          </motion.div>
 
           {/* How it works */}
-          <div className="bg-card border border-border rounded-lg p-6 md:p-8">
-            <h3 className="text-lg font-semibold text-foreground mb-6 text-center">
-              ¿Cómo funciona?
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">1</span>
-                </div>
-                <h4 className="font-medium text-foreground text-sm mb-1">Elige tu plan</h4>
-                <p className="text-xs text-muted-foreground">Básica, Pass o Premium según tu necesidad</p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">2</span>
-                </div>
-                <h4 className="font-medium text-foreground text-sm mb-1">Completa tu perfil</h4>
-                <p className="text-xs text-muted-foreground">Sube documentos y autoriza verificaciones</p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">3</span>
-                </div>
-                <h4 className="font-medium text-foreground text-sm mb-1">Recibe tu score</h4>
-                <p className="text-xs text-muted-foreground">En minutos tienes tu reporte verificado</p>
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">4</span>
-                </div>
-                <h4 className="font-medium text-foreground text-sm mb-1">Aplica con confianza</h4>
-                <p className="text-xs text-muted-foreground">Propietarios ven tu perfil verificado</p>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-8 md:p-10 bg-card rounded-2xl border border-border"
+          >
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <h3 className="text-[15px] font-semibold text-foreground">
+                ¿Cómo funciona?
+              </h3>
             </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {[
+                { num: '1', title: 'Elige tu plan', desc: 'Básica, Pass o Premium según tu necesidad' },
+                { num: '2', title: 'Completa tu perfil', desc: 'Sube documentos y autoriza verificaciones' },
+                { num: '3', title: 'Recibe tu score', desc: 'En minutos tienes tu reporte verificado' },
+                { num: '4', title: 'Aplica con confianza', desc: 'Propietarios ven tu perfil verificado' },
+              ].map((step, i) => (
+                <motion.div
+                  key={step.num}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+                    <span className="text-[15px] font-bold">{step.num}</span>
+                  </div>
+                  <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">{step.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
 
           {/* Trust note */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Gratis para propietarios</span> — Los propietarios reciben los reportes sin costo.
-              <br />
-              <span className="text-xs">Verificaciones powered by DataCrédito y fuentes oficiales colombianas.</span>
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="mt-8 text-center"
+          >
+            <p className="text-[14px] text-muted-foreground">
+              <span className="font-semibold text-foreground">Resultados en minutos</span> — Verificaciones powered by DataCrédito y fuentes oficiales colombianas.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
+      )}
 
-      {/* FAQ section */}
-      <section id="faq" className="py-16 px-4 border-t border-border">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-semibold text-foreground text-center mb-8">
-            Preguntas frecuentes
-          </h2>
+      {/* FAQ section - Accordion style matching home */}
+      <PricingFAQSection />
 
-          <div className="space-y-6">
-            <FAQItem
-              question="Cual es la diferencia entre administracion y suscripcion?"
-              answer="La administracion es para propietarios que quieren desentenderse: nosotros cobramos el arriendo, gestionamos la comunicacion y coordinamos mantenimientos. La suscripcion es para quienes quieren herramientas pero prefieren administrar directamente."
-            />
-            <FAQItem
-              question="Como funciona el cobro del porcentaje?"
-              answer="Cobramos el arriendo al inquilino (PSE, tarjeta, efectivo) y te transferimos el monto menos nuestro porcentaje. Todo automatico, sin que tengas que hacer nada."
-            />
-            <FAQItem
-              question="Puedo cambiar de plan en cualquier momento?"
-              answer="Si, puedes actualizar o cambiar tu plan cuando quieras. Los cambios se aplican inmediatamente y ajustamos la facturacion de forma proporcional."
-            />
-            <FAQItem
-              question="Que incluye la poliza de arriendo?"
-              answer="La poliza cubre entre 12 y 24 meses de arriendo en caso de impago, dependiendo del plan que elijas (Basica: 12 meses, Premium: 24 meses). Tambien incluye cobertura por danos a la propiedad, servicios publicos y reparaciones de emergencia. Es opcional y tiene un costo desde 2% del arriendo mensual."
-            />
-            <FAQItem
-              question="¿Como funciona el Arriendo Pass para inquilinos?"
-              answer="El Arriendo Pass te permite verificar tu perfil una sola vez y aplicar a todas las propiedades que quieras durante 60 días (o 90 con Premium). Pagas una única vez, completas tu verificación, y los propietarios ven tu score sin costo adicional. Es la forma más económica de buscar arriendo si planeas aplicar a varias propiedades."
-            />
-            <FAQItem
-              question="¿Por que los inquilinos pagan la evaluacion?"
-              answer="Este modelo beneficia a todos: los propietarios reciben candidatos pre-verificados sin costo, y los inquilinos serios demuestran compromiso real. Además, con el Arriendo Pass tu reporte es portable — lo pagas una vez y aplicas a muchas propiedades, ahorrando tiempo y dinero vs. pagar evaluación en cada inmobiliaria."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA section */}
-      <section className="relative py-20 px-4 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-300 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-3xl mx-auto text-center">
-          <p className="text-indigo-200 text-sm font-medium tracking-wide uppercase mb-3">
-            Sin tarjeta de crédito requerida
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-semibold text-white mb-4">
-            ¿Listo para empezar?
-          </h2>
-          <p className="text-indigo-100/80 text-lg mb-10 max-w-xl mx-auto">
-            Crea tu cuenta gratis y comienza a encontrar los mejores inquilinos hoy.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth">
-              <Button size="lg" className="w-full sm:w-auto bg-white text-indigo-700 hover:bg-indigo-50 font-semibold shadow-lg shadow-indigo-900/30">
-                Comenzar gratis
-                <ArrowUpRight className="w-4 h-4 ml-1.5" />
-              </Button>
-            </Link>
-            <a href="mailto:ventas@arriendofacil.co">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 hover:border-white/50"
-              >
-                Contactar ventas
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
+      {/* CTA section - reusable component matching home */}
+      <CTASection />
       </main>
       <Footer />
     </>
@@ -647,100 +1174,112 @@ export default function PricingPage() {
 }
 
 /**
- * User type selector card - visually distinctive
+ * User type selector card - Bento style for smaller cards
  */
-function UserTypeCard({
+function UserTextTCardBento({
   icon,
   label,
   description,
+  price,
+  priceLabel,
   selected,
   onClick,
-  accentColor,
+  delay = 0,
+  accentColor = 'primary',
 }: {
   icon: React.ReactNode;
   label: string;
   description: string;
+  price: string;
+  priceLabel: string;
   selected: boolean;
   onClick: () => void;
-  accentColor: 'emerald' | 'indigo' | 'amber';
+  delay?: number;
+  accentColor?: 'primary' | 'emerald' | 'amber';
 }) {
   const colorClasses = {
-    emerald: {
-      iconBg: selected ? 'bg-emerald-500' : 'bg-emerald-100 dark:bg-emerald-900/30',
-      iconText: selected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400',
-      border: selected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-border hover:border-emerald-300',
-      accent: 'bg-emerald-500',
+    primary: {
+      icon: selected ? 'bg-white/10 text-white' : 'bg-primary/10 text-primary',
+      badge: 'bg-primary text-white',
     },
-    indigo: {
-      iconBg: selected ? 'bg-indigo-500' : 'bg-indigo-100 dark:bg-indigo-900/30',
-      iconText: selected ? 'text-white' : 'text-indigo-600 dark:text-indigo-400',
-      border: selected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-border hover:border-indigo-300',
-      accent: 'bg-indigo-500',
+    emerald: {
+      icon: selected ? 'bg-white/10 text-white' : 'bg-emerald-500/10 text-emerald-600',
+      badge: 'bg-emerald-500 text-white',
     },
     amber: {
-      iconBg: selected ? 'bg-amber-500' : 'bg-amber-100 dark:bg-amber-900/30',
-      iconText: selected ? 'text-white' : 'text-amber-600 dark:text-amber-400',
-      border: selected ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-border hover:border-amber-300',
-      accent: 'bg-amber-500',
+      icon: selected ? 'bg-white/10 text-white' : 'bg-amber-500/10 text-amber-600',
+      badge: 'bg-amber-500 text-white',
     },
   };
 
-  const colors = colorClasses[accentColor];
-
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3, delay }}
       className={cn(
-        'group relative flex flex-col items-center text-center p-6 rounded-lg border-2 bg-card transition-all duration-200',
-        colors.border,
-        selected ? 'shadow-lg' : 'hover:shadow-md'
+        'group relative flex flex-col p-5 text-left rounded-2xl transition-all duration-300',
+        selected
+          ? 'bg-indigo-950 text-white shadow-xl shadow-primary/20'
+          : 'bg-white hover:shadow-lg'
       )}
+      style={{ border: selected ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)' }}
     >
-      {/* Selected indicator bar */}
+      {/* Selection badge */}
       {selected && (
-        <div className={cn('absolute top-0 left-4 right-4 h-1 rounded-b-full', colors.accent)} />
+        <div className="absolute top-3 right-3">
+          <div className="w-6 h-6 bg-white text-indigo-950 rounded-full flex items-center justify-center">
+            <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+          </div>
+        </div>
       )}
 
       {/* Icon */}
-      <div
-        className={cn(
-          'w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-200',
-          colors.iconBg,
-          colors.iconText,
-          !selected && 'group-hover:scale-110'
-        )}
-      >
+      <div className={cn(
+        'w-10 h-10 rounded-xl flex items-center justify-center mb-4',
+        colorClasses[accentColor].icon
+      )}>
         {icon}
       </div>
 
-      {/* Label */}
+      {/* Text */}
       <h3 className={cn(
-        'font-semibold text-sm leading-tight mb-1.5 transition-colors',
-        selected ? 'text-foreground' : 'text-foreground/80 group-hover:text-foreground'
+        'text-[15px] font-heading font-semibold leading-tight mb-1.5',
+        selected ? 'text-white' : 'text-foreground'
       )}>
         {label}
       </h3>
-
-      {/* Description */}
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className={cn(
+        'text-[12px] leading-relaxed mb-4',
+        selected ? 'text-white/70' : 'text-muted-foreground'
+      )}>
         {description}
       </p>
 
-      {/* Checkmark indicator */}
-      {selected && (
-        <div className={cn(
-          'absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center',
-          colors.accent
+      {/* Price */}
+      <div className="mt-auto flex items-baseline gap-1">
+        <span className={cn(
+          'text-[20px] font-heading font-bold',
+          selected ? 'text-white' : 'text-foreground'
         )}>
-          <CheckCircle2 className="w-4 h-4 text-white" />
-        </div>
-      )}
-    </button>
+          {price}
+        </span>
+        <span className={cn(
+          'text-[11px]',
+          selected ? 'text-white/60' : 'text-muted-foreground'
+        )}>
+          {priceLabel}
+        </span>
+      </div>
+    </motion.button>
   );
 }
 
 /**
- * Benefit card for agency section
+ * Benefit card for agency section - Premium style
  */
 function BenefitCard({
   title,
@@ -750,61 +1289,156 @@ function BenefitCard({
   description: string;
 }) {
   return (
-    <div className="rounded-sm border border-border bg-card p-6">
-      <h4 className="font-semibold text-foreground">{title}</h4>
-      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="rounded-2xl border border-border bg-card p-6 hover:shadow-lg transition-shadow"
+    >
+      <h4 className="text-[15px] font-semibold text-foreground">{title}</h4>
+      <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">{description}</p>
+    </motion.div>
   );
 }
 
-/**
- * Value proposition card
- */
-function ValueProp({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="text-center">
-      <div className="w-12 h-12 rounded-sm bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
-  );
-}
 
 /**
- * FAQ item with question and answer
+ * Pricing FAQ Section - Accordion style matching home
  */
-function FAQItem({
-  question,
-  answer,
-}: {
-  question: string;
-  answer: string;
-}) {
+const pricingFaqs = [
+  {
+    question: "¿Cuál es la diferencia entre administración y suscripción?",
+    answer: "La administración es para propietarios que quieren desentenderse: nosotros cobramos el arriendo, gestionamos la comunicación y coordinamos mantenimientos. La suscripción es para quienes quieren herramientas pero prefieren administrar directamente.",
+  },
+  {
+    question: "¿Cómo funciona el cobro del porcentaje?",
+    answer: "Cobramos el arriendo al inquilino (PSE, tarjeta, efectivo) y te transferimos el monto menos nuestro porcentaje. Todo automático, sin que tengas que hacer nada.",
+  },
+  {
+    question: "¿Puedo cambiar de plan en cualquier momento?",
+    answer: "Sí, puedes actualizar o cambiar tu plan cuando quieras. Los cambios se aplican inmediatamente y ajustamos la facturación de forma proporcional.",
+  },
+  {
+    question: "¿Qué incluye la póliza de arriendo?",
+    answer: "La póliza cubre entre 12 y 24 meses de arriendo en caso de impago, dependiendo del plan que elijas (Básica: 12 meses, Premium: 24 meses). También incluye cobertura por daños a la propiedad, servicios públicos y reparaciones de emergencia. Es opcional y tiene un costo desde 2% del arriendo mensual.",
+  },
+  {
+    question: "¿Cómo funciona el Arriendo Pass para inquilinos?",
+    answer: "El Arriendo Pass te permite verificar tu perfil una sola vez y aplicar a todas las propiedades que quieras durante 60 días (o 90 con Premium). Pagas una única vez, completas tu verificación, y los propietarios ven tu score sin costo adicional. Es la forma más económica de buscar arriendo si planeas aplicar a varias propiedades.",
+  },
+  {
+    question: "¿Por qué los inquilinos pagan la evaluación?",
+    answer: "Este modelo beneficia a todos: los propietarios reciben candidatos pre-verificados sin costo, y los inquilinos serios demuestran compromiso real. Además, con el Arriendo Pass tu reporte es portable — lo pagas una vez y aplicas a muchas propiedades, ahorrando tiempo y dinero vs. pagar evaluación en cada inmobiliaria.",
+  },
+];
+
+function PricingFAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
   return (
-    <div className="bg-card rounded-sm border border-border p-6">
-      <div className="flex gap-3">
-        <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <div>
-          <h3 className="font-medium text-foreground mb-2">{question}</h3>
-          <p className="text-sm text-muted-foreground">{answer}</p>
+    <section id="faq" className="bg-muted overflow-hidden">
+      <div className="container-platform py-20 lg:py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          {/* Left - Header */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="lg:sticky lg:top-32 self-start"
+          >
+            {/* Label with icon */}
+            <div className="flex items-center gap-2 mb-4">
+              <Circle className="w-4 h-4 text-primary" />
+              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                FAQ
+              </span>
+            </div>
+
+            {/* Main heading */}
+            <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em] mb-8">
+              Preguntas frecuentes
+            </h2>
+
+            {/* Helper text */}
+            <p className="text-[17px] text-muted-foreground leading-relaxed mb-6 max-w-[340px]">
+              ¿Tienes más preguntas? Nuestro equipo está feliz de ayudar.
+            </p>
+
+            {/* CTA Button */}
+            <a
+              href="mailto:info@leasefy.co"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-foreground text-background text-[14px] font-medium hover:bg-foreground/90 transition-colors"
+            >
+              Contáctanos
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </a>
+          </motion.div>
+
+          {/* Right - FAQ Accordion */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            {pricingFaqs.map((faq, index) => (
+              <div
+                key={index}
+                className="border-b border-border/60 last:border-0"
+              >
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="w-full flex items-center justify-between py-6 text-left group"
+                >
+                  {/* Question text */}
+                  <span className="text-[17px] md:text-[19px] font-heading font-medium text-foreground leading-snug pr-6">
+                    {faq.question}
+                  </span>
+                  <span className={cn(
+                    "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                    openIndex === index
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                  )}>
+                    {openIndex === index ? (
+                      <X className="w-4 h-4" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {openIndex === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      {/* Answer text */}
+                      <p className="text-[15px] md:text-[16px] text-muted-foreground leading-relaxed pb-6 pr-12">
+                        {faq.answer}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 /**
- * Agency tier pricing card
+ * Agency tier pricing card - Premium style with motion
  */
 function AgencyTierCard({
   name,
@@ -816,6 +1450,8 @@ function AgencyTierCard({
   features,
   popular,
   isEnterprise,
+  selected,
+  onSelect,
 }: {
   name: string;
   price: string;
@@ -826,84 +1462,110 @@ function AgencyTierCard({
   features: string[];
   popular?: boolean;
   isEnterprise?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3 }}
       className={cn(
-        'relative rounded-sm border bg-card p-6 flex flex-col',
-        popular ? 'border-primary ring-1 ring-primary' : 'border-border'
+        'relative rounded-2xl border bg-card p-6 flex flex-col transition-all duration-300',
+        selected
+          ? 'border-primary ring-2 ring-primary/20 shadow-xl shadow-primary/10'
+          : popular
+            ? 'border-primary/50 shadow-lg shadow-primary/5'
+            : 'border-border hover:border-primary/30 hover:shadow-lg'
       )}
     >
-      {popular && (
+      {popular && !selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
+          <span className="bg-primary text-primary-foreground text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-primary/25">
             Más popular
           </span>
         </div>
       )}
 
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-foreground">{name}</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+      {selected && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="bg-primary text-primary-foreground text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg shadow-primary/25">
+            <Check className="w-3 h-3" />
+            Seleccionado
+          </span>
+        </div>
+      )}
+
+      <div className="mb-5">
+        <h3 className="text-[17px] font-semibold text-foreground">{name}</h3>
+        <p className="text-[13px] text-muted-foreground mt-1">{description}</p>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-5">
         {isEnterprise ? (
-          <span className="text-2xl font-bold text-foreground">{price}</span>
+          <span className="text-[28px] font-heading font-bold text-foreground">{price}</span>
         ) : (
           <>
-            <span className="text-3xl font-bold text-foreground">${price}</span>
-            <span className="text-muted-foreground text-sm">{period}</span>
+            <span className="text-[32px] font-heading font-bold text-foreground">${price}</span>
+            <span className="text-muted-foreground text-[13px] ml-1">{period}</span>
           </>
         )}
       </div>
 
       {/* Limits */}
       {!isEnterprise && (
-        <div className="flex gap-4 mb-4 pb-4 border-b border-border">
-          <div className="flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-foreground font-medium">{properties}</span>
-            <span className="text-xs text-muted-foreground">propiedades</span>
+        <div className="flex gap-4 mb-5 pb-5 border-b border-border">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+            <Buildings className="w-4 h-4 text-primary" />
+            <span className="text-[13px] text-foreground font-semibold">{properties}</span>
+            <span className="text-[11px] text-muted-foreground">propiedades</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-foreground font-medium">{users}</span>
-            <span className="text-xs text-muted-foreground">usuarios</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-[13px] text-foreground font-semibold">{users}</span>
+            <span className="text-[11px] text-muted-foreground">usuarios</span>
           </div>
         </div>
       )}
 
       {/* Features */}
-      <ul className="space-y-2.5 flex-1 mb-6">
+      <ul className="space-y-3 flex-1 mb-6">
         {features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-            <span className="text-sm text-muted-foreground">{feature}</span>
+          <li key={i} className="flex items-start gap-2.5">
+            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <span className="text-[13px] text-muted-foreground">{feature}</span>
           </li>
         ))}
       </ul>
 
       {/* CTA */}
       {isEnterprise ? (
-        <a href="mailto:ventas@arriendofacil.co">
-          <Button variant="outline" className="w-full">
-            Contactar ventas
+        <a href="mailto:ventas@leasefy.co">
+          <Button
+            variant={selected ? 'default' : 'outline'}
+            className="w-full rounded-xl"
+            onClick={onSelect}
+          >
+            {selected ? 'Contactar ventas' : 'Solicitar cotización'}
           </Button>
         </a>
       ) : (
-        <Link href="/auth">
-          <Button variant={popular ? 'default' : 'outline'} className="w-full">
-            Comenzar gratis
-          </Button>
-        </Link>
+        <Button
+          variant={selected ? 'default' : popular ? 'default' : 'outline'}
+          className="w-full rounded-xl"
+          onClick={onSelect}
+        >
+          {selected ? 'Continuar' : 'Seleccionar plan'}
+        </Button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 /**
- * Add-on item for agency section
+ * Add-on item for agency section - Premium style
  */
 function AddOnItem({
   icon,
@@ -915,13 +1577,13 @@ function AddOnItem({
   price: string;
 }) {
   return (
-    <div className="flex items-center gap-3 bg-card rounded-sm border border-border p-3">
-      <div className="w-8 h-8 rounded-sm bg-muted flex items-center justify-center text-muted-foreground">
+    <div className="flex items-center gap-3 bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
         {icon}
       </div>
       <div>
-        <p className="text-sm font-medium text-foreground">{name}</p>
-        <p className="text-xs text-muted-foreground">{price}</p>
+        <p className="text-[13px] font-semibold text-foreground">{name}</p>
+        <p className="text-[12px] text-muted-foreground">{price}</p>
       </div>
     </div>
   );

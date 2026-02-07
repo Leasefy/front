@@ -2,18 +2,18 @@ import { Metadata } from "next";
 import { SoftwareProductJsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Gestion de Aplicaciones",
+  title: "Gestión de Aplicaciones",
   description:
-    "Centraliza y gestiona todas las aplicaciones de arriendo. Compara candidatos, revisa documentos y toma decisiones rapidas con nuestro sistema de gestion.",
+    "Centraliza y gestiona todas las aplicaciones de arriendo. Compara candidatos, revisa documentos y toma decisiones rápidas con nuestro sistema de gestión.",
   keywords: [
-    "gestion aplicaciones arriendo",
+    "gestión aplicaciones arriendo",
     "candidatos inquilinos",
-    "seleccion arrendatarios",
+    "selección arrendatarios",
     "filtrar aplicantes arriendo",
     "proceso arriendo digital",
   ],
   openGraph: {
-    title: "Gestion de Aplicaciones | Arriendo Facil",
+    title: "Gestión de Aplicaciones | Leasefy",
     description:
       "Sistema centralizado para gestionar aplicaciones de arriendo. Compara candidatos y toma decisiones informadas.",
     type: "website",
@@ -31,8 +31,8 @@ export default function AplicacionesLayout({
   return (
     <>
       <SoftwareProductJsonLd
-        name="Gestion de Aplicaciones Arriendo Facil"
-        description="Sistema de gestion de aplicaciones de arriendo para comparar candidatos y tomar decisiones informadas."
+        name="Gestión de Aplicaciones Leasefy"
+        description="Sistema de gestión de aplicaciones de arriendo para comparar candidatos y tomar decisiones informadas."
         url="/productos/aplicaciones"
         category="BusinessApplication"
         rating={{ value: 4.6, count: 890 }}

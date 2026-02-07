@@ -36,7 +36,7 @@ export function RouteAnnouncer() {
     const matchedKey = Object.keys(ROUTE_NAMES).find((key) =>
       pathname.startsWith(key)
     );
-    const pageName = matchedKey ? ROUTE_NAMES[matchedKey] : 'Arriendo Facil';
+    const pageName = matchedKey ? ROUTE_NAMES[matchedKey] : 'Leasefy';
     setAnnouncement(`Navegaste a ${pageName}`);
   }, [pathname]);
 

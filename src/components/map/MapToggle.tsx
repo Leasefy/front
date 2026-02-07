@@ -1,6 +1,6 @@
 'use client';
 
-import { Map, List } from 'lucide-react';
+import { MapTrifold, List } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 interface MapToggleProps {
@@ -27,7 +27,7 @@ export function MapToggle({ showMap, onToggle }: MapToggleProps) {
         </>
       ) : (
         <>
-          <Map className="w-4 h-4" />
+          <MapTrifold className="w-4 h-4" />
           Ver mapa
         </>
       )}

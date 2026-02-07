@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Lock, Check, Building2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Lock, Check, Buildings } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { CouponInput, PriceSummary } from '@/components/pricing';
 import { getPlanById } from '@/lib/data/mock-subscriptions';
@@ -80,7 +80,7 @@ function CheckoutContent() {
             <div className="bg-card rounded-sm border border-border p-5">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
-                  <Building2 className="w-6 h-6 text-primary" />
+                  <Buildings className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-foreground">
@@ -214,7 +214,7 @@ function CheckoutContent() {
           </div>
         </div>
 
-        {/* Bottom trust message */}
+        {/* Robottom trust message */}
         <div className="mt-12 text-center">
           <p className="text-sm text-muted-foreground">
             Puedes cancelar en cualquier momento. Sin compromisos.

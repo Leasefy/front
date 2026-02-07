@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
-import { Check, Clock, AlertCircle, X, Receipt } from 'lucide-react';
+import { Check, Clock, WarningCircle, X, Receipt } from '@phosphor-icons/react';
 import type { Payment } from '@/lib/types/lease';
 
 interface PaymentHistoryProps {
@@ -33,7 +33,7 @@ const statusConfig: Record<
   late: {
     label: 'Atrasado',
     variant: 'destructive',
-    icon: AlertCircle,
+    icon: WarningCircle,
   },
   failed: {
     label: 'Fallido',
@@ -44,16 +44,16 @@ const statusConfig: Record<
 
 const conceptLabels: Record<Payment['concept'], string> = {
   rent: 'Arriendo',
-  deposit: 'Deposito',
-  admin_fee: 'Administracion',
+  deposit: 'Depósito',
+  admin_fee: 'Administración',
   late_fee: 'Mora',
-  repair: 'Reparacion',
+  repair: 'Reparación',
 };
 
 const methodLabels: Record<string, string> = {
   pse: 'PSE',
-  credit_card: 'Tarjeta credito',
-  debit_card: 'Tarjeta debito',
+  credit_card: 'Tarjeta crédito',
+  debit_card: 'Tarjeta débito',
   nequi: 'Nequi',
   daviplata: 'Daviplata',
   cash: 'Efectivo',
@@ -81,7 +81,7 @@ export function PaymentHistory({
         </div>
         <p className="text-muted-foreground font-medium">No hay historial de pagos</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Los pagos apareceran aqui
+          Los pagos aparecerán aquí
         </p>
       </div>
     );
@@ -112,7 +112,7 @@ export function PaymentHistory({
                 Fecha pago
               </th>
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Metodo
+                Método
               </th>
               <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                 Referencia

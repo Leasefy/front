@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tag, X, Check, Loader2 } from 'lucide-react';
+import { Tag, X, Check, SpinnerGap } from '@phosphor-icons/react';
 import { validateCoupon } from '@/lib/utils/coupon-validation';
 import type { PlanId } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
@@ -57,7 +57,7 @@ export function CouponInput({
       });
       setCode('');
     } else {
-      setError(result.error || 'Cupon no valido');
+      setError(result.error || 'Cupón no válido');
     }
 
     setIsLoading(false);
@@ -96,7 +96,7 @@ export function CouponInput({
           <button
             onClick={handleRemove}
             className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
-            aria-label="Quitar cupon"
+            aria-label="Quitar cupón"
           >
             <X className="w-4 h-4" />
           </button>
@@ -112,7 +112,7 @@ export function CouponInput({
         htmlFor="coupon-code"
         className="text-sm font-medium text-foreground mb-2 block"
       >
-        ¿Tienes un cupon?
+        ¿Tienes un cupón?
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -125,7 +125,7 @@ export function CouponInput({
               setError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Ingresa tu codigo"
+            placeholder="Ingresa tu código"
             className={cn(
               'pl-10',
               error && 'border-red-300 focus-visible:ring-red-500'
@@ -144,7 +144,7 @@ export function CouponInput({
           className="shrink-0"
         >
           {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <SpinnerGap className="w-4 h-4 animate-spin" />
           ) : (
             'Aplicar'
           )}

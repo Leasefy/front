@@ -1,27 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  CalendarDays,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Building2,
-  MessageSquare,
-  CalendarPlus,
-  X,
-} from 'lucide-react';
+import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, X, CalendarCheck, CalendarX } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { MOCK_VISITS, getVisitStats } from '@/lib/data/mock-visits';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
-import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
-import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
+import { EmptyState } from '@/components/ui/empty-state';
 
-type TabFilter = 'all' | VisitStatus;
+type TabFunnel = 'all' | VisitStatus;
 
 const STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
   requested: 'new',
@@ -73,36 +64,37 @@ function CancelModal({
   const canSubmit = finalReason.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-md mx-4 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-          <h3 className="font-semibold text-plan-primary">Cancelar visita</h3>
-          <button onClick={onClose} className="text-plan-muted hover:text-plan-primary transition-colors">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+          <h3 className="font-semibold text-neutral-900 dark:text-white">Cancelar visita</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-4">
-          <p className="text-sm text-plan-secondary">
-            Visita con <span className="font-medium text-plan-primary">{visit.candidateName}</span> el {formatDate(visit.requestedDate)} a las {formatTime(visit.requestedTime)}.
+        <div className="px-6 py-5 space-y-5">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            Visita con <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span> el {formatDate(visit.requestedDate)} a las {formatTime(visit.requestedTime)}.
           </p>
 
           <div>
-            <label className="text-sm font-medium text-plan-primary block mb-2">
+            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-3">
               Motivo de cancelación
             </label>
             <div className="space-y-2">
               {CANCEL_REASONS.map((reason) => (
                 <label
                   key={reason}
-                  className={`flex items-center gap-3 p-3 border cursor-pointer transition-colors ${
+                  className={cn(
+                    'flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all border',
                     selectedReason === reason
-                      ? 'border-primary bg-indigo-50/50'
-                      : 'border-plan-border hover:bg-muted'
-                  }`}
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                  )}
                 >
                   <input
                     type="radio"
@@ -110,9 +102,9 @@ function CancelModal({
                     value={reason}
                     checked={selectedReason === reason}
                     onChange={() => setSelectedReason(reason)}
-                    className="accent-primary"
+                    className="accent-indigo-600"
                   />
-                  <span className="text-sm text-plan-primary">{reason}</span>
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">{reason}</span>
                 </label>
               ))}
             </div>
@@ -124,23 +116,23 @@ function CancelModal({
               onChange={(e) => setCustomReason(e.target.value)}
               placeholder="Escribe el motivo..."
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-plan-border bg-muted placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-plan-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             Volver
           </button>
           <button
             onClick={() => canSubmit && onConfirm(finalReason)}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Confirmar cancelación
           </button>
@@ -174,35 +166,35 @@ function RescheduleModal({
   const minDate = tomorrow.toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-md mx-4 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-          <h3 className="font-semibold text-plan-primary">Reagendar visita</h3>
-          <button onClick={onClose} className="text-plan-muted hover:text-plan-primary transition-colors">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+          <h3 className="font-semibold text-neutral-900 dark:text-white">Reagendar visita</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-4">
-          <div className="p-3 bg-muted rounded-sm">
-            <p className="text-sm text-plan-secondary">
-              Visita original con <span className="font-medium text-plan-primary">{visit.candidateName}</span>
+        <div className="px-6 py-5 space-y-5">
+          <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Visita original con <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span>
             </p>
-            <p className="text-sm text-plan-muted mt-0.5">
+            <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-0.5">
               {formatDate(visit.requestedDate)} a las {formatTime(visit.requestedTime)}
             </p>
           </div>
 
-          <p className="text-sm text-plan-secondary">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
             Se propondrá una nueva fecha al candidato. La visita original será cancelada automáticamente.
           </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-plan-primary block mb-1.5">
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">
                 Nueva fecha
               </label>
               <input
@@ -210,35 +202,35 @@ function RescheduleModal({
                 value={newDate}
                 min={minDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                className="w-full h-10 px-3 text-sm border border-plan-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-plan-primary block mb-1.5">
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">
                 Nueva hora
               </label>
               <input
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="w-full h-10 px-3 text-sm border border-plan-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-plan-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             Volver
           </button>
           <button
             onClick={() => canSubmit && onConfirm(newDate, newTime)}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Reagendar visita
           </button>
@@ -291,36 +283,36 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-md mx-4 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-          <h3 className="font-semibold text-plan-primary">Agendar visita</h3>
-          <button onClick={onClose} className="text-plan-muted hover:text-plan-primary transition-colors">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+          <h3 className="font-semibold text-neutral-900 dark:text-white">Agendar visita</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-6 py-5 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-plan-primary block mb-1.5">Fecha</label>
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Fecha</label>
               <input
                 type="date"
                 value={fecha}
                 min={minDate}
                 onChange={(e) => setFecha(e.target.value)}
-                className="w-full h-10 px-3 text-sm border border-plan-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-plan-primary block mb-1.5">Hora</label>
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Hora</label>
               <select
                 value={hora}
                 onChange={(e) => setHora(e.target.value)}
-                className="w-full h-10 px-3 text-sm border border-plan-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="">Seleccionar</option>
                 {SCHEDULE_HOURS.map((h) => (
@@ -331,11 +323,11 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-plan-primary block mb-1.5">Propiedad</label>
+            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Propiedad</label>
             <select
               value={propiedad}
               onChange={(e) => setPropiedad(e.target.value)}
-              className="w-full h-10 px-3 text-sm border border-plan-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="">Seleccionar propiedad</option>
               {SCHEDULE_PROPERTIES.map((p) => (
@@ -345,29 +337,29 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-plan-primary block mb-1.5">Notas</label>
+            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Notas</label>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Notas adicionales para la visita..."
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-plan-border bg-card placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-plan-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-plan-secondary hover:text-plan-primary transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Confirmar
           </button>
@@ -382,7 +374,7 @@ function ScheduleModal({
 // ============================================================================
 
 export default function VisitasPage() {
-  const [tabFilter, setTabFilter] = useState<TabFilter>('all');
+  const [tabFunnel, setTabFunnel] = useState<TabFunnel>('all');
   const [visits, setVisits] = useState<Visit[]>(MOCK_VISITS);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -403,16 +395,16 @@ export default function VisitasPage() {
   // Counts per status
   const countByStatus = (s: VisitStatus) => visits.filter(v => v.status === s).length;
 
-  // Filter
-  const getFilteredVisits = () => {
-    if (tabFilter === 'cancelled') {
+  // Funnel
+  const getFunneledVisits = () => {
+    if (tabFunnel === 'cancelled') {
       return visits.filter(v => v.status === 'cancelled' || v.status === 'no_show');
     }
-    if (tabFilter === 'all') return visits;
-    return visits.filter(v => v.status === tabFilter);
+    if (tabFunnel === 'all') return visits;
+    return visits.filter(v => v.status === tabFunnel);
   };
 
-  const tabs: PlanTab[] = [
+  const tabs = [
     { id: 'all', label: 'Todas', count: visits.length },
     { id: 'requested', label: 'Solicitadas', count: countByStatus('requested') },
     { id: 'confirmed', label: 'Confirmadas', count: countByStatus('confirmed') },
@@ -434,8 +426,8 @@ export default function VisitasPage() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-plan-muted" />
-          <span className="text-sm text-plan-secondary truncate max-w-[200px]">
+          <Buildings className="w-4 h-4 text-neutral-400" />
+          <span className="text-sm text-neutral-600 dark:text-neutral-300 truncate max-w-[200px]">
             {row.propertyTitle}
           </span>
         </div>
@@ -446,7 +438,7 @@ export default function VisitasPage() {
       header: 'Fecha',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-plan-secondary">{formatDate(row.requestedDate)}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-300">{formatDate(row.requestedDate)}</span>
       ),
     },
     {
@@ -454,7 +446,7 @@ export default function VisitasPage() {
       header: 'Hora',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-plan-secondary">{formatTime(row.requestedTime)}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-300">{formatTime(row.requestedTime)}</span>
       ),
     },
     {
@@ -618,15 +610,15 @@ export default function VisitasPage() {
       content: (
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-sm text-plan-secondary">Fecha</span>
-            <span className="text-sm font-medium text-plan-primary">{formatDate(visit.requestedDate)}</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Fecha</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatDate(visit.requestedDate)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-plan-secondary">Hora</span>
-            <span className="text-sm font-medium text-plan-primary">{formatTime(visit.requestedTime)}</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Hora</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatTime(visit.requestedTime)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-plan-secondary">Estado</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Estado</span>
             <PlanStatusBadge
               status={STATUS_TO_PLAN[visit.status]}
               label={VISIT_STATUS_LABELS[visit.status]}
@@ -634,12 +626,12 @@ export default function VisitasPage() {
             />
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-plan-secondary">Propiedad</span>
-            <span className="text-sm text-plan-primary">{visit.propertyTitle}</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">Propiedad</span>
+            <span className="text-sm text-neutral-900 dark:text-white">{visit.propertyTitle}</span>
           </div>
           {visit.rescheduledFrom && (
-            <div className="p-2 bg-indigo-50 rounded-sm">
-              <p className="text-xs text-indigo-700">Reagendada desde otra visita</p>
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+              <p className="text-xs text-indigo-700 dark:text-indigo-400">Reagendada desde otra visita</p>
             </div>
           )}
         </div>
@@ -649,10 +641,10 @@ export default function VisitasPage() {
       id: 'candidate-message',
       title: 'Mensaje del Candidato',
       content: (
-        <div className="p-3 bg-muted rounded-sm">
-          <div className="flex items-start gap-2">
-            <MessageSquare className="w-4 h-4 text-plan-muted mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-plan-secondary italic">
+        <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+          <div className="flex items-start gap-3">
+            <Chat className="w-4 h-4 text-neutral-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 italic">
               &ldquo;{visit.candidateMessage}&rdquo;
             </p>
           </div>
@@ -663,10 +655,10 @@ export default function VisitasPage() {
       id: 'cancel-reason',
       title: 'Motivo de Cancelación',
       content: (
-        <div className="p-3 bg-red-50 rounded-sm">
-          <div className="flex items-start gap-2">
-            <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-700">{visit.cancellationReason}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+          <div className="flex items-start gap-3">
+            <XCircle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-400">{visit.cancellationReason}</p>
           </div>
         </div>
       ),
@@ -675,85 +667,141 @@ export default function VisitasPage() {
       id: 'landlord-notes',
       title: 'Notas',
       content: (
-        <div className="p-3 bg-amber-50 rounded-sm">
-          <p className="text-sm text-amber-800">{visit.landlordNotes}</p>
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+          <p className="text-sm text-amber-800 dark:text-amber-300">{visit.landlordNotes}</p>
         </div>
       ),
     }] : []),
   ];
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
-        <header className="mb-8 flex items-start justify-between">
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-plan-primary">Visitas</h1>
-            <p className="mt-1 text-plan-secondary">
+            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Visitas</h1>
+            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
               Gestiona las visitas programadas a tus propiedades
             </p>
           </div>
           <button
             type="button"
             onClick={() => setShowScheduleModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shrink-0"
           >
             <CalendarPlus className="w-4 h-4" />
             Agendar visita
           </button>
         </header>
 
-        {/* Stats */}
-        <PlanStatsGrid columns={4} className="mb-8">
-          <PlanStatsCard
-            label="Total visitas"
-            value={stats.total}
-            icon={CalendarDays}
-          />
-          <PlanStatsCard
-            label="Pendientes"
-            value={stats.requested}
-            sublabel="Por confirmar"
-            variant={stats.requested > 0 ? 'accent' : 'default'}
-            icon={Clock}
-          />
-          <PlanStatsCard
-            label="Confirmadas hoy"
-            value={confirmedToday}
-            sublabel={today}
-            icon={CheckCircle}
-          />
-          <PlanStatsCard
-            label="Completadas"
-            value={stats.completed}
-            icon={CheckCircle}
-          />
-        </PlanStatsGrid>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
+                <CalendarBlank className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.total}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Total visitas</p>
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.requested}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</p>
+            {stats.requested > 0 && (
+              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                Por confirmar
+              </span>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <CalendarCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{confirmedToday}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Confirmadas hoy</p>
+          </div>
+
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.completed}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Completadas</p>
+          </div>
+        </div>
 
         {/* Tabs */}
-        <PlanTabs
-          tabs={tabs}
-          activeTab={tabFilter}
-          onChange={(tab) => setTabFilter(tab as TabFilter)}
-          variant="underline"
-          className="mb-6"
-        />
+        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setTabFunnel(tab.id as TabFunnel)}
+              className={cn(
+                'px-4 py-2 text-sm font-medium rounded-xl transition-all flex items-center gap-2',
+                tabFunnel === tab.id
+                  ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+              )}
+            >
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={cn(
+                  'text-xs px-1.5 py-0.5 rounded-full',
+                  tabFunnel === tab.id
+                    ? 'bg-neutral-200 dark:bg-neutral-600 text-neutral-700 dark:text-neutral-200'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400'
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
         {/* Table */}
-        <PlanTable
-          data={getFilteredVisits()}
-          columns={columns}
-          keyExtractor={(row) => row.id}
-          onRowClick={handleRowClick}
-          emptyMessage={
-            tabFilter === 'all'
-              ? 'No hay visitas programadas aún'
-              : `No hay visitas ${tabs.find(t => t.id === tabFilter)?.label.toLowerCase() || ''}`
-          }
-          stickyHeader
-          pagination
-          pageSize={5}
-        />
+        {getFunneledVisits().length === 0 ? (
+          <EmptyState
+            icon={CalendarBlank}
+            title={
+              tabFunnel === 'all'
+                ? 'No hay visitas programadas'
+                : tabFunnel === 'requested'
+                ? 'No hay visitas solicitadas'
+                : tabFunnel === 'confirmed'
+                ? 'No hay visitas confirmadas'
+                : tabFunnel === 'completed'
+                ? 'No hay visitas completadas'
+                : 'No hay visitas canceladas'
+            }
+            description="Cuando los inquilinos soliciten visitar tus propiedades, aparecerán aquí."
+            action={{ label: 'Ver propiedades', href: '/panel/propiedades' }}
+          />
+        ) : (
+          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <PlanTable
+              data={getFunneledVisits()}
+              columns={columns}
+              keyExtractor={(row) => row.id}
+              onRowClick={handleRowClick}
+              stickyHeader
+              pagination
+              pageSize={5}
+            />
+          </div>
+        )}
       </div>
 
       {/* Detail Sheet */}

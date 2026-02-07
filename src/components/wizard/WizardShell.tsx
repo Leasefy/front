@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Check, WarningCircle } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
@@ -26,12 +26,12 @@ interface WizardShellProps {
 // ============================================================================
 
 const STEP_DESCRIPTIONS: Record<number, string> = {
-  1: 'Ingresa tu informacion personal basica',
-  2: 'Cuentanos sobre tu situacion laboral',
+  1: 'Ingresa tu información personal básica',
+  2: 'Cuéntanos sobre tu situación laboral',
   3: 'Detalla tus ingresos mensuales',
   4: 'Proporciona referencias de contacto',
   5: 'Sube los documentos requeridos',
-  6: 'Revisa toda la informacion',
+  6: 'Revisa toda la información',
 };
 
 // ============================================================================
@@ -288,7 +288,7 @@ export function WizardShell({
               {attemptedAdvance && !currentStepValidation.isValid && (
                 <div className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
                   <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <WarningCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-red-800">
                         Completa los campos requeridos para continuar
@@ -303,7 +303,7 @@ export function WizardShell({
                 </div>
               )}
 
-              {/* Navigation */}
+              {/* Compass */}
               <div className="px-4 pb-6 lg:px-6 lg:pb-8">
                 <WizardNavigation
                   currentStep={currentStep}
@@ -317,9 +317,9 @@ export function WizardShell({
               </div>
             </div>
 
-            {/* Save indicator */}
+            {/* FloppyDisk indicator */}
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Tu progreso se guarda automaticamente
+              Tu progreso se guarda automáticamente
             </p>
           </div>
         </main>

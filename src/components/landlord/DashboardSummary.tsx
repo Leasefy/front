@@ -1,12 +1,12 @@
 'use client';
 
-import { Users, Clock, CheckCircle2, Award } from 'lucide-react';
+import { Users, Clock, CheckCircle, Medal, Trophy } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import type { DashboardSummary as DashboardSummaryType } from '@/lib/types/landlord';
+import type { DashboardSummary as DashboardSummaryTextT } from '@/lib/types/landlord';
 
 export interface DashboardSummaryProps {
-  summary: DashboardSummaryType;
+  summary: DashboardSummaryTextT;
   className?: string;
 }
 
@@ -92,14 +92,14 @@ export function DashboardSummary({ summary, className }: DashboardSummaryProps) 
       />
 
       <StatCard
-        icon={<CheckCircle2 className="w-6 h-6" />}
+        icon={<CheckCircle className="w-6 h-6" />}
         label="Pre-aprobados"
         value={preApproved}
         variant="pre-approved"
       />
 
       <StatCard
-        icon={<Award className="w-6 h-6" />}
+        icon={<Trophy className="w-6 h-6" />}
         label="Aprobados"
         value={approved}
         variant="approved"

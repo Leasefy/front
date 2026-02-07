@@ -317,15 +317,15 @@
      * -------------------------------------------------------- */
 
     /* --------------------------------------------------------
-     * Border Radius Scale — 2px base, extended
+     * Border Radius Scale — Soft/rounded aesthetic
      * -------------------------------------------------------- */
-    --radius: 0.125rem;
-    --radius-sm: 0.125rem;
-    --radius-md: 0.25rem;
-    --radius-lg: 0.5rem;
-    --radius-xl: 0.75rem;
-    --radius-2xl: 1rem;        /* 16px - cards, modals */
-    --radius-3xl: 1.5rem;      /* 24px - hero cards, large elements */
+    --radius: 0.5rem;          /* 8px - default */
+    --radius-sm: 0.375rem;     /* 6px - small elements */
+    --radius-md: 0.625rem;     /* 10px - buttons, inputs */
+    --radius-lg: 0.875rem;     /* 14px - cards */
+    --radius-xl: 1.125rem;     /* 18px - larger cards */
+    --radius-2xl: 1.5rem;      /* 24px - modals, hero elements */
+    --radius-3xl: 2rem;        /* 32px - large hero cards */
     --radius-full: 9999px;
 
     /* --------------------------------------------------------
@@ -573,6 +573,12 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01";
+    overflow-x: hidden;
+  }
+
+  /* Headings use Manrope by default */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
 
   /* ==========================================================
@@ -626,6 +632,11 @@
 
   .container-content {
     @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Platform container - 72px margin on desktop */
+  .container-platform {
+    @apply px-4 md:px-[72px];
   }
 
   /* ==========================================================
@@ -762,7 +773,7 @@
 
   /* Card styles - premium */
   .card-minimal {
-    @apply rounded-sm border border-border bg-card overflow-hidden shadow-subtle;
+    @apply rounded-xl border border-border bg-card overflow-hidden shadow-subtle;
   }
 
   .card-interactive {
@@ -776,7 +787,7 @@
 
   /* Premium card with glow on hover */
   .card-premium {
-    @apply bg-card rounded-sm border border-border/50 overflow-hidden;
+    @apply bg-card rounded-xl border border-border/50 overflow-hidden;
     @apply transition-all duration-500 ease-out;
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.02),
@@ -1177,7 +1188,7 @@
 
   /* PLan card styles */
   .plan-card {
-    @apply rounded-sm border;
+    @apply rounded-xl border;
     background-color: var(--plan-card-bg);
     border-color: var(--plan-border);
   }
@@ -1272,4 +1283,122 @@
   .plan-status-dot-purple {
     background-color: var(--plan-status-purple);
   }
+}
+
+/* ==========================================================
+ * FORCE LIGHT MODE - Public/Marketing Pages
+ *
+ * These styles ensure that landing pages, pricing, products, etc.
+ * always display in light mode regardless of user's theme preference.
+ * Dark mode is only available in dashboard pages (/inquilino/*, /panel/*).
+ * ========================================================== */
+
+.force-light-mode,
+.force-light-mode * {
+  /* Force light color scheme */
+  color-scheme: light !important;
+}
+
+/* Reset all dark mode Tailwind classes inside force-light-mode */
+.dark .force-light-mode,
+.force-light-mode.dark,
+html.dark .force-light-mode {
+  /* Background & Surface - Light values */
+  --background: 0 0% 100%;
+  --foreground: var(--neutral-900);
+  --card: 0 0% 100%;
+  --card-foreground: var(--neutral-900);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--neutral-900);
+
+  /* Primary */
+  --primary: var(--indigo-500);
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--neutral-900);
+
+  /* Muted */
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--neutral-600);
+
+  /* Accent */
+  --accent: var(--indigo-50);
+  --accent-foreground: var(--indigo-700);
+
+  /* Brand */
+  --brand: var(--indigo-500);
+  --brand-foreground: 0 0% 100%;
+  --brand-muted: var(--indigo-50);
+
+  /* Destructive */
+  --destructive: var(--error-500);
+  --destructive-foreground: 0 0% 100%;
+
+  /* Borders */
+  --border: var(--neutral-200);
+  --input: var(--neutral-200);
+  --ring: var(--indigo-500);
+}
+
+/* Override specific dark: utility classes */
+.force-light-mode .dark\:bg-\[#0f0f10\],
+.force-light-mode .dark\:bg-\[#1a1a1c\],
+.force-light-mode .dark\:bg-\[#18181a\],
+.force-light-mode .dark\:bg-\[#18181B\],
+.force-light-mode .dark\:bg-\[#222224\],
+.force-light-mode .dark\:bg-\[#2a2a2c\] {
+  background-color: inherit !important;
+}
+
+.force-light-mode .dark\:text-white {
+  color: inherit !important;
+}
+
+.force-light-mode .dark\:text-neutral-400,
+.force-light-mode .dark\:text-neutral-300 {
+  color: inherit !important;
+}
+
+.force-light-mode .dark\:border-neutral-700,
+.force-light-mode .dark\:border-neutral-800 {
+  border-color: inherit !important;
+}
+
+/* ============================================================================
+   Autofill Styling Override
+   ============================================================================ */
+
+/* Override browser autofill background colors */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--background)) !important;
+  caret-color: hsl(var(--foreground)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode autofill override */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
 }

@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 
-interface PublishContextType {
+interface PublishContextTextT {
   // State
   draft: PropertyDraft;
   currentStep: number;
@@ -25,7 +25,7 @@ interface PublishContextType {
   canProceed: boolean;
 }
 
-const PublishContext = createContext<PublishContextType | null>(null);
+const PublishContext = createContext<PublishContextTextT | null>(null);
 
 export function PublishProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<PropertyDraft>(initialPropertyDraft);
@@ -42,7 +42,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const isStepValid = useCallback((step: number): boolean => {
     switch (step) {
-      case 1: // Type
+      case 1: // TextT
         return draft.type !== '';
       case 2: // Location
         return draft.city !== '' && draft.neighborhood !== '' && draft.address !== '';
@@ -56,9 +56,11 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         return draft.monthlyRent > 0;
       case 7: // Description
         return draft.title !== '' && draft.description !== '';
-      case 8: // Plan
+      case 8: // Tenant Requirements
+        return true; // Optional - landlord can skip this step
+      case 9: // Plan
         return draft.selectedPlan !== '';
-      case 9: // Review
+      case 10: // Review
         return true;
       default:
         return false;
@@ -108,7 +110,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setCompletedSteps([]);
   }, []);
 
-  const value: PublishContextType = {
+  const value: PublishContextTextT = {
     draft,
     currentStep,
     totalSteps,

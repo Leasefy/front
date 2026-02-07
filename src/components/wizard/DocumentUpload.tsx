@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Upload, File, X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, File, X, Check, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 interface DocumentUploadProps {
@@ -45,17 +45,17 @@ export function DocumentUpload({
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
   // Validate file type
-  const isValidType = useCallback(
+  const isValidTextT = useCallback(
     (file: File): boolean => {
-      const acceptedTypes = accept.split(',').map((t) => t.trim().toLowerCase());
+      const acceptedTextTs = accept.split(',').map((t) => t.trim().toLowerCase());
       const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-      const fileMimeType = file.type.toLowerCase();
+      const fileMimeTextT = file.type.toLowerCase();
 
-      return acceptedTypes.some((type) => {
+      return acceptedTextTs.some((type) => {
         if (type.startsWith('.')) {
           return fileExtension === type;
         }
-        return fileMimeType === type || fileMimeType.startsWith(type.replace('*', ''));
+        return fileMimeTextT === type || fileMimeTextT.startsWith(type.replace('*', ''));
       });
     },
     [accept]
@@ -67,7 +67,7 @@ export function DocumentUpload({
       setUploadError('');
 
       // Validate file type
-      if (!isValidType(file)) {
+      if (!isValidTextT(file)) {
         setUploadError('Tipo de archivo no permitido');
         setState('error');
         return;
@@ -94,7 +94,7 @@ export function DocumentUpload({
       });
       setState('success');
     },
-    [isValidType, maxSizeBytes, maxSizeMB, onChange]
+    [isValidTextT, maxSizeBytes, maxSizeMB, onChange]
   );
 
   // Handle drop event
@@ -222,12 +222,12 @@ export function DocumentUpload({
 
           {state === 'uploading' ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+              <SpinnerGap className="h-8 w-8 text-muted-foreground animate-spin" />
               <p className="text-sm text-muted-foreground">Subiendo...</p>
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
-              <AlertCircle className="h-8 w-8 text-red-500" />
+              <WarningCircle className="h-8 w-8 text-red-500" />
               <p className="text-sm text-red-600">{displayError}</p>
               <button
                 type="button"

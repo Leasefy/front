@@ -1,13 +1,7 @@
 'use client';
 
 import { Toaster as Sonner, toast as sonnerToast } from 'sonner';
-import {
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Info,
-  Loader2,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Warning, Info, SpinnerGap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -165,7 +159,7 @@ export const toast = {
       description: opts.description,
       duration: opts.duration,
       id: opts.id,
-      icon: <CheckCircle2 className={cn('h-5 w-5', iconStyles.success)} />,
+      icon: <CheckCircle className={cn('h-5 w-5', iconStyles.success)} />,
       action: opts.action ? {
         label: opts.action.label,
         onClick: opts.action.onClick,
@@ -199,7 +193,7 @@ export const toast = {
       description: opts.description,
       duration: opts.duration ?? 5000,
       id: opts.id,
-      icon: <AlertTriangle className={cn('h-5 w-5', iconStyles.warning)} />,
+      icon: <Warning className={cn('h-5 w-5', iconStyles.warning)} />,
       action: opts.action ? {
         label: opts.action.label,
         onClick: opts.action.onClick,
@@ -233,7 +227,7 @@ export const toast = {
       description: opts.description,
       duration: opts.duration ?? Infinity, // Loading toasts persist until dismissed
       id: opts.id,
-      icon: <Loader2 className={cn('h-5 w-5', iconStyles.loading)} />,
+      icon: <SpinnerGap className={cn('h-5 w-5', iconStyles.loading)} />,
     });
   },
 

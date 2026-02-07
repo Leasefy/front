@@ -6,7 +6,7 @@ import type { Plan, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { calculateDiscountedPrice, isTrialCoupon, getTrialDuration } from '@/lib/utils/coupon-validation';
 import { getCouponByCode } from '@/lib/data/mock-coupons';
-import { Gift, Calendar, Info } from 'lucide-react';
+import { Gift, Calendar, Info } from '@phosphor-icons/react';
 
 export interface PriceSummaryProps {
   /** Selected plan */
@@ -96,10 +96,10 @@ export function PriceSummary({
                 </p>
                 <p className="text-xs text-emerald-600 mt-0.5">
                   {trialDays > 30
-                    ? `Despues de ${Math.round(trialDays / 30)} meses se cobrara el precio normal.`
+                    ? `Después de ${Math.round(trialDays / 30)} meses se cobrará el precio normal.`
                     : trialDays === 30
-                    ? 'Despues se cobrara el precio normal.'
-                    : `Despues de ${trialDays} dias se cobrara el precio normal.`}
+                    ? 'Después se cobrará el precio normal.'
+                    : `Después de ${trialDays} días se cobrará el precio normal.`}
                 </p>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Heart, Share2, Video, MapPin, Eye, Users, TrendingUp, Clock } from 'lucide-react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Sparkle, ArrowRight, Calendar, SpinnerGap } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +40,7 @@ function generateMockStats(propertyId: string) {
   return {
     viewingNow: (seed % 8) + 3,
     applicationsThisWeek: (seed % 12) + 5,
-    demandLevel: seed % 3 === 0 ? 'alta' : seed % 3 === 1 ? 'muy-alta' : 'media',
+    demandLevel: seed % 3 === 0 ? 'alta' : seed % 3 === 1 ? 'muy-alta' : 'media', // demandLevel values are used in conditional logic and i18n
   };
 }
 
@@ -59,11 +59,13 @@ export function StickyCTA({
   className,
 }: StickyCTAProps) {
   const [activeTab, setActiveTab] = useState<'apply' | 'visit'>('apply');
-  const [visitType, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
+  const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
   const [currentViewers, setCurrentViewers] = useState(0);
+  const [visitConfirmed, setVisitConfirmed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const days = getNextDays();
 
@@ -83,96 +85,108 @@ export function StickyCTA({
     return () => clearInterval(interval);
   }, [propertyId]);
 
-  const handleScheduleVisit = () => {
+  const handleScheduleVisit = async () => {
     if (selectedDay && selectedTime) {
+      setIsSubmitting(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsSubmitting(false);
+      setVisitConfirmed(true);
     }
+  };
+
+  const handleResetVisit = () => {
+    setVisitConfirmed(false);
+    setSelectedDay(null);
+    setSelectedTime(null);
   };
 
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
-      {/* CTA Card */}
-      <div className="bg-white dark:bg-card border border-border dark:border-border">
-        {/* Urgency Banner */}
+      {/* CTA Card - Rounded corners */}
+      <div className="bg-white dark:bg-card border border-border rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
+        {/* Urgency Banner - Using design system amber/orange */}
         {stats && stats.demandLevel !== 'media' && (
-          <div className={cn(
-            'px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-medium',
-            stats.demandLevel === 'muy-alta'
-              ? 'bg-red-500 text-white'
-              : 'bg-amber-500 text-white'
-          )}>
-            <TrendingUp className="w-4 h-4" />
+          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+            <TrendUp className="w-4 h-4" />
             {stats.demandLevel === 'muy-alta'
-              ? 'Muy solicitado - No te quedes sin verlo'
+              ? 'Muy solicitado — No te quedes sin verlo'
               : 'Popular esta semana'}
           </div>
         )}
 
         <div className="p-6">
           {/* Live viewers indicator */}
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
-            <span className="text-sm text-foreground/70">
-              <span className="font-medium text-foreground">{currentViewers} personas</span> viendo ahora
+            <span className="text-[13px] text-muted-foreground">
+              <span className="font-semibold text-foreground">{currentViewers} personas</span> viendo ahora
             </span>
           </div>
 
           {/* Header with actions */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-sm font-medium text-foreground">Arriendo Facil</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Respuesta en menos de 24h</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[15px] font-heading font-semibold text-foreground tracking-tight">Leasefy</p>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold uppercase tracking-wide rounded-full">
+                  <Check className="w-3 h-3" />
+                  Verificado
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Respuesta en menos de 24h</p>
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
                 <button
                   onClick={onWishlistToggle}
                   className={cn(
-                    'min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border transition-colors',
+                    'w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200',
                     isWishlisted
-                      ? 'border-red-200 bg-red-50 text-red-500'
-                      : 'border-border hover:bg-black/5 text-muted-foreground'
+                      ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100'
+                      : 'border-border hover:bg-neutral-100 text-muted-foreground'
                   )}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                 >
-                  <Heart className={cn('w-5 h-5', isWishlisted && 'fill-current')} />
+                  <Heart className={cn('w-[18px] h-[18px]', isWishlisted && 'fill-current')} />
                 </button>
               )}
               <button
-                className="min-w-[44px] min-h-[44px] w-10 h-10 flex items-center justify-center border border-border hover:bg-black/5 text-muted-foreground transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl border border-border hover:bg-neutral-100 text-muted-foreground transition-all duration-200"
                 aria-label="Compartir"
               >
-                <Share2 className="w-5 h-5" />
+                <ShareNetwork className="w-[18px] h-[18px]" />
               </button>
             </div>
           </div>
 
-          {/* Price */}
+          {/* Price - More prominent */}
           <div className="mb-6 pb-6 border-b border-border">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-semibold text-foreground">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[30px] font-heading font-bold text-foreground tracking-[-0.02em]">
                 {formatCurrency(price)}
               </span>
-              <span className="text-sm text-muted-foreground">/mes</span>
+              <span className="text-[14px] text-muted-foreground font-medium">/mes</span>
             </div>
             {adminFee > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-[13px] text-muted-foreground mt-1.5">
                 + {formatCurrency(adminFee)} administración
               </p>
             )}
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex mb-5">
+          {/* Tab Compass - Pill style with rounded corners */}
+          <div className="flex p-1 bg-neutral-100 dark:bg-white/[0.04] rounded-xl mb-6">
             <button
               onClick={() => setActiveTab('apply')}
               className={cn(
-                'flex-1 py-3 text-sm font-medium border-b-2 transition-colors',
+                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
                 activeTab === 'apply'
-                  ? 'border-black text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-muted-foreground'
+                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Postularme
@@ -180,10 +194,10 @@ export function StickyCTA({
             <button
               onClick={() => setActiveTab('visit')}
               className={cn(
-                'flex-1 py-3 text-sm font-medium border-b-2 transition-colors',
+                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
                 activeTab === 'visit'
-                  ? 'border-black text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-muted-foreground'
+                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Agendar visita
@@ -194,54 +208,78 @@ export function StickyCTA({
           {activeTab === 'apply' ? (
             /* Apply Tab */
             <div>
-              {/* Social proof stats */}
-              <div className="bg-black/[0.02] border border-border p-4 mb-5 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xs">✓</span>
+              {/* Benefits */}
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
+                  <div className="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Sin codeudor requerido</p>
+                    <p className="text-[13px] font-semibold text-foreground">Sin codeudor requerido</p>
+                    <p className="text-[11px] text-muted-foreground">Aplica solo con tu información</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Postulaciones esta semana</span>
+
+                {/* Response time */}
+                <div className="flex items-center gap-3 p-3.5 bg-neutral-50 dark:bg-white/[0.02] border border-border rounded-xl">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">Respuesta en menos de 24h</p>
+                    <p className="text-[11px] text-muted-foreground">Tiempo promedio de evaluación</p>
                   </div>
-                  <span className="text-xs font-semibold text-foreground">{stats?.applicationsThisWeek || 0}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Respuesta promedio</span>
-                  </div>
-                  <span className="text-xs font-semibold text-foreground">&lt; 24 horas</span>
                 </div>
               </div>
 
-              <Link href={`/aplicar/${propertyId}`} className="block">
-                <button className="w-full py-4 bg-black text-white text-sm font-medium tracking-tight hover:bg-black/90 transition-colors">
+              {/* CTA Button */}
+              <Link href={`/aplicar/${propertyId}`} className="block group">
+                <button className="w-full py-4 bg-primary text-white text-[14px] font-semibold tracking-tight rounded-xl hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md">
+                  <Sparkle className="w-4 h-4" />
                   Postularme a esta propiedad
+                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
                 </button>
               </Link>
 
-              <p className="text-xs text-muted-foreground text-center mt-3">
+              <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
+            </div>
+          ) : visitConfirmed ? (
+            /* Visit Confirmed State */
+            <div className="text-center py-4">
+              <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                <Check className="w-8 h-8 text-white" strokeWidth={3} />
+              </div>
+              <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
+                ¡Visita agendada!
+              </h3>
+              <p className="text-sm text-muted-foreground mb-1">
+                {visitTextT === 'presencial' ? 'Visita presencial' : 'Visita virtual'}
+              </p>
+              <p className="text-sm font-medium text-foreground mb-4">
+                {days.find(d => d.full === selectedDay)?.dayName} {days.find(d => d.full === selectedDay)?.dayNumber} · {selectedTime}
+              </p>
+              <p className="text-xs text-muted-foreground mb-6">
+                Te enviaremos un correo con los detalles de la visita y recordatorios.
+              </p>
+              <button
+                onClick={handleResetVisit}
+                className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Agendar otra visita
+              </button>
             </div>
           ) : (
             /* Visit Tab */
             <div className="space-y-5">
-              {/* Visit Type */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Visit TextT */}
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setVisitType('presencial')}
                   className={cn(
-                    'py-3 px-4 border text-sm font-medium transition-all flex items-center justify-center gap-2',
-                    visitType === 'presencial'
-                      ? 'border-black bg-black text-white'
-                      : 'border-border text-foreground/70 hover:border-border'
+                    'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
+                    visitTextT === 'presencial'
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
                   <MapPin className="w-4 h-4" />
@@ -250,39 +288,42 @@ export function StickyCTA({
                 <button
                   onClick={() => setVisitType('virtual')}
                   className={cn(
-                    'py-3 px-4 border text-sm font-medium transition-all flex items-center justify-center gap-2',
-                    visitType === 'virtual'
-                      ? 'border-black bg-black text-white'
-                      : 'border-border text-foreground/70 hover:border-border'
+                    'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
+                    visitTextT === 'virtual'
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
-                  <Video className="w-4 h-4" />
+                  <VideoCamera className="w-4 h-4" />
                   Virtual
                 </button>
               </div>
 
               {/* Date Selection */}
               <div>
-                <p className="text-xs text-muted-foreground mb-2.5 font-mono uppercase tracking-wide">Fecha</p>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                  <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">Selecciona fecha</p>
+                </div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {days.map((day) => (
                     <button
                       key={day.full}
                       onClick={() => setSelectedDay(day.full)}
                       className={cn(
-                        'py-2 border text-center transition-all',
+                        'py-2.5 border text-center rounded-xl transition-all duration-200',
                         selectedDay === day.full
-                          ? 'border-black bg-black text-white'
-                          : 'border-border hover:border-border'
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-border hover:border-primary/30'
                       )}
                     >
                       <span className={cn(
-                        'block text-[10px] font-mono uppercase',
-                        selectedDay === day.full ? 'text-white/60' : 'text-muted-foreground'
+                        'block text-[9px] font-semibold uppercase tracking-wide',
+                        selectedDay === day.full ? 'text-white/70' : 'text-muted-foreground'
                       )}>
                         {day.dayName}
                       </span>
-                      <span className="block text-sm font-semibold">
+                      <span className="block text-[15px] font-bold mt-0.5">
                         {day.dayNumber}
                       </span>
                     </button>
@@ -292,17 +333,20 @@ export function StickyCTA({
 
               {/* Time Selection */}
               <div>
-                <p className="text-xs text-muted-foreground mb-2.5 font-mono uppercase tracking-wide">Hora</p>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                  <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">Selecciona hora</p>
+                </div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {timeSlots.map((time) => (
                     <button
                       key={time}
                       onClick={() => setSelectedTime(time)}
                       className={cn(
-                        'py-2.5 text-sm border transition-all',
+                        'py-2.5 text-[12px] font-semibold border rounded-lg transition-all duration-200',
                         selectedTime === time
-                          ? 'border-black bg-black text-white'
-                          : 'border-border text-foreground/70 hover:border-border'
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                       )}
                     >
                       {time}
@@ -314,31 +358,44 @@ export function StickyCTA({
               {/* Schedule Button */}
               <button
                 onClick={handleScheduleVisit}
-                disabled={!selectedDay || !selectedTime}
+                disabled={!selectedDay || !selectedTime || isSubmitting}
                 className={cn(
-                  'w-full py-4 text-sm font-medium transition-all',
-                  selectedDay && selectedTime
-                    ? 'bg-black text-white hover:bg-black/90'
-                    : 'bg-black/5 text-muted-foreground cursor-not-allowed'
+                  'w-full py-4 text-[14px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
+                  selectedDay && selectedTime && !isSubmitting
+                    ? 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                    : 'bg-neutral-100 text-muted-foreground cursor-not-allowed'
                 )}
               >
-                {selectedDay && selectedTime
-                  ? 'Confirmar visita'
-                  : 'Selecciona fecha y hora'}
+                {isSubmitting ? (
+                  <>
+                    <SpinnerGap className="w-4 h-4 animate-spin" />
+                    Agendando...
+                  </>
+                ) : selectedDay && selectedTime ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Confirmar visita
+                  </>
+                ) : (
+                  'Selecciona fecha y hora'
+                )}
               </button>
 
-              <p className="text-xs text-muted-foreground text-center">
-                Visita gratuita · Cancelación flexible
+              <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                Visita gratuita
+                <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                Cancelación flexible
               </p>
             </div>
           )}
         </div>
 
         {/* Recent activity footer */}
-        <div className="px-6 py-4 bg-black/[0.02] border-t border-border">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <span>Última postulación hace 12 minutos</span>
+        <div className="px-6 py-3.5 bg-neutral-50 dark:from-white/[0.02] dark:to-white/[0.04] border-t border-border">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
           </div>
         </div>
       </div>
@@ -363,36 +420,36 @@ export function MobileStickyCTA({
   }, [propertyId]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border lg:hidden z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
       {/* Urgency banner for mobile */}
       {stats && stats.demandLevel !== 'media' && (
-        <div className="px-4 py-1.5 bg-red-500 text-white text-xs font-medium text-center flex items-center justify-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5" />
-          Alta demanda - {stats.applicationsThisWeek} postulaciones esta semana
+        <div className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
+          <TrendUp className="w-3.5 h-3.5" />
+          {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular esta semana'}
         </div>
       )}
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-medium text-foreground">
+            <p className="text-lg font-heading font-bold text-foreground tracking-tight">
               {formatCurrency(price)}
-              <span className="text-sm font-normal text-muted-foreground">/mes</span>
+              <span className="text-[13px] font-medium text-muted-foreground">/mes</span>
             </p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               {stats?.viewingNow || 0} personas viendo
             </p>
           </div>
           <div className="flex gap-2">
             <Link href={`/aplicar/${propertyId}`}>
-              <button className="min-h-[44px] px-5 py-3 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors">
+              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
                 Postularme
               </button>
             </Link>
-            <button className="min-h-[44px] px-4 py-3 border border-border text-sm font-medium text-foreground hover:bg-black/5 transition-colors">
+            <button className="min-h-[44px] px-4 py-3 border border-border rounded-xl text-[13px] font-semibold text-foreground hover:bg-neutral-100 transition-all duration-200">
               Visita
             </button>
           </div>

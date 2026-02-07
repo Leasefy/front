@@ -1,9 +1,43 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Sparkles, ArrowUp, Loader2, Shield, Zap, Eye } from "lucide-react";
+import { ArrowUp, SpinnerGap, Shield, Lightning, Eye } from '@phosphor-icons/react';
+
+/** Sparkle icon with 3 four-pointed stars - gray or gradient */
+function SparkleIcon({ active = false, className }: { active?: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="hero-sparkles-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#3B82F6" />
+        </linearGradient>
+      </defs>
+      {/* Large star */}
+      <path
+        d="M10 16c0-3.5 2.5-6 6-6c-3.5 0-6-2.5-6-6c0 3.5-2.5 6-6 6c3.5 0 6 2.5 6 6z"
+        fill={active ? "url(#hero-sparkles-gradient)" : "currentColor"}
+      />
+      {/* Small star top-right */}
+      <path
+        d="M18 9c0-1.5 1-2.5 2.5-2.5c-1.5 0-2.5-1-2.5-2.5c0 1.5-1 2.5-2.5 2.5c1.5 0 2.5 1 2.5 2.5z"
+        fill={active ? "url(#hero-sparkles-gradient)" : "currentColor"}
+      />
+      {/* Medium star bottom-right */}
+      <path
+        d="M19 20c0-2 1.5-3.5 3.5-3.5c-2 0-3.5-1.5-3.5-3.5c0 2-1.5 3.5-3.5 3.5c2 0 3.5 1.5 3.5 3.5z"
+        fill={active ? "url(#hero-sparkles-gradient)" : "currentColor"}
+      />
+    </svg>
+  );
+}
 
 const SUGGESTIONS = [
   "2 hab. en Chapinero con parqueadero",
@@ -19,13 +53,10 @@ const THINKING_STEPS = [
 ];
 
 const HERO_IMAGES = [
-  "/hero-1.jpg",
-  "/hero-2.jpg",
-  "/hero-3.jpg",
-  "/hero-4.jpg",
-  "/hero-5.jpg",
-  "/hero-6.jpg",
-  "/hero-7.jpg",
+  "/hero-8.jpg",  // Family in living room
+  "/hero-9.jpg",  // Couple playing chess
+  "/hero-10.jpg", // Family with baby
+  "/hero-11.jpg", // Woman relaxing on couch
 ];
 
 const IMAGE_INTERVAL = 6000;
@@ -37,7 +68,7 @@ const VALUE_PROPS = [
     description: "Verifica inquilinos sin costo. El solicitante paga la evaluación.",
   },
   {
-    icon: Zap,
+    icon: Lightning,
     label: "Cobro automatizado",
     description: "Recibimos el pago y te transferimos. Solo $3.900/transacción.",
   },
@@ -51,8 +82,8 @@ const VALUE_PROPS = [
 export function HeroSection() {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchStep, setSearchStep] = useState(0);
+  const [isMagnifyingGlassing, setIsMagnifyingGlassing] = useState(false);
+  const [searchStep, setMagnifyingGlassStep] = useState(0);
   const [activeValue, setActiveValue] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
   const router = useRouter();
@@ -74,28 +105,26 @@ export function HeroSection() {
     return () => clearInterval(interval);
   }, []);
 
-  function startSearchSequence(searchQuery: string) {
-    if (!searchQuery.trim() || isSearching) return;
-    setIsSearching(true);
-    setSearchStep(0);
-    const t1 = setTimeout(() => setSearchStep(1), 800);
-    const t2 = setTimeout(() => setSearchStep(2), 1800);
+  function startMagnifyingGlassSequence(searchQuery: string) {
+    if (!searchQuery.trim() || isMagnifyingGlassing) return;
+    setIsMagnifyingGlassing(true);
+    setMagnifyingGlassStep(0);
+    const t1 = setTimeout(() => setMagnifyingGlassStep(1), 800);
+    const t2 = setTimeout(() => setMagnifyingGlassStep(2), 1800);
     const t3 = setTimeout(() => {
       router.push(`/propiedades?q=${encodeURIComponent(searchQuery.trim())}`);
     }, 2400);
     timersRef.current = [t1, t2, t3];
   }
 
-  function handleSearch() {
-    startSearchSequence(query);
+  function handleMagnifyingGlass() {
+    startMagnifyingGlassSequence(query);
   }
 
   function handleSuggestion(suggestion: string) {
     setQuery(suggestion);
-    startSearchSequence(suggestion);
+    startMagnifyingGlassSequence(suggestion);
   }
-
-  const showNewBadge = !isFocused && !query && !isSearching;
 
   return (
     <section className="relative h-[500px] overflow-hidden bg-black">
@@ -125,54 +154,58 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50 z-[1]" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col md:flex-row h-full">
+      <div className="relative z-10 flex flex-col md:flex-row h-full container-platform">
         {/* Left — search area */}
-        <div className="flex-1 flex flex-col justify-end p-5 md:p-8 pb-6 md:pb-10">
+        <div className="flex-1 flex flex-col justify-end pb-6 md:pb-10">
           <div className="max-w-xl space-y-4">
-            {/* Search input */}
-            <div className="relative flex flex-col bg-white/10 backdrop-blur-2xl border border-white/15 rounded-sm px-5 pt-4 pb-3">
+            {/* Headline */}
+            <div className="space-y-2 mb-2">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em]">
+                De buscar a vivir.
+              </h1>
+              <p className="text-base md:text-lg text-white/60 whitespace-nowrap">
+                Sin papeleo, sin incertidumbre, sin esperas.
+              </p>
+            </div>
+
+            {/* MagnifyingGlass input */}
+            <div className="relative flex flex-col bg-white/10 backdrop-blur-2xl border border-white/15 rounded-2xl px-5 pt-4 pb-3">
               {/* Top: icon + textarea */}
               <div className="flex items-start gap-3">
-                <Sparkles
-                  className={`h-4 w-4 mt-1 text-white/50 flex-shrink-0 ${
-                    isSearching ? "animate-sparkle-spin text-white" : ""
-                  }`}
-                />
+                <div className={`flex-shrink-0 mt-0.5 ${isMagnifyingGlassing ? "animate-spin" : ""}`} style={{ animationDuration: "2s" }}>
+                  <SparkleIcon
+                    active={isMagnifyingGlassing}
+                    className={`w-7 h-7 ${isMagnifyingGlassing ? "" : "text-white/50"}`}
+                  />
+                </div>
                 <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
-                  placeholder="Cuéntanos qué necesitas para vivir bien…"
+                  placeholder="Busca tu próximo arriendo: 2 hab en Chapinero, estudio amoblado…"
                   className="flex-1 bg-transparent text-[15px] text-white placeholder:text-white/40 focus:outline-none resize-none min-h-[60px]"
-                  disabled={isSearching}
+                  disabled={isMagnifyingGlassing}
                   rows={2}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSearch();
+                      handleMagnifyingGlass();
                     }
                   }}
                 />
               </div>
 
-              {/* Bottom: badge + send */}
+              {/* Robottom: send button */}
               <div className="flex items-center justify-end gap-2 mt-2">
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-mono font-medium uppercase tracking-wide text-white bg-blue-500 rounded-full px-2.5 py-1 transition-opacity duration-500 ease-in-out ${
-                    showNewBadge ? "opacity-100" : "opacity-0 pointer-events-none"
-                  }`}
-                >
-                  Nuevo
-                </span>
                 <button
-                  onClick={handleSearch}
-                  disabled={isSearching}
+                  onClick={handleMagnifyingGlass}
+                  disabled={isMagnifyingGlassing}
                   className="flex-shrink-0 h-8 w-8 rounded-full bg-white/20 border border-white/10 flex items-center justify-center hover:bg-white/30 transition-colors disabled:opacity-50"
                   aria-label="Buscar"
                 >
-                  {isSearching ? (
-                    <Loader2 className="h-4 w-4 text-white animate-spin" />
+                  {isMagnifyingGlassing ? (
+                    <SpinnerGap className="h-4 w-4 text-white animate-spin" />
                   ) : (
                     <ArrowUp className="h-4 w-4 text-white" />
                   )}
@@ -182,7 +215,7 @@ export function HeroSection() {
 
             {/* Suggestion chips OR thinking steps */}
             <div className="flex flex-wrap gap-2 pl-1 min-h-[36px]">
-              {isSearching ? (
+              {isMagnifyingGlassing ? (
                 THINKING_STEPS.map((step, i) => (
                   <span
                     key={step}
@@ -212,7 +245,7 @@ export function HeroSection() {
         </div>
 
         {/* Right — value props panel */}
-        <div className="hidden md:flex items-end justify-end p-8 pb-10 w-[340px] flex-shrink-0">
+        <div className="hidden md:flex items-end justify-end pb-10 w-[340px] flex-shrink-0">
           <div className="w-full space-y-3">
             {VALUE_PROPS.map((prop, i) => {
               const Icon = prop.icon;
@@ -221,7 +254,7 @@ export function HeroSection() {
                 <button
                   key={i}
                   onClick={() => setActiveValue(i)}
-                  className={`w-full text-left p-4 rounded-[1px] border transition-all duration-500 ${
+                  className={`w-full text-left p-4 rounded-xl border transition-all duration-500 ${
                     isActive
                       ? "bg-white/15 backdrop-blur-2xl border-white/20"
                       : "bg-transparent border-transparent hover:bg-white/5"
@@ -229,7 +262,7 @@ export function HeroSection() {
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-[1px] flex items-center justify-center transition-all duration-500 ${
+                      className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500 ${
                         isActive ? "bg-white/20" : "bg-white/10"
                       }`}
                     >

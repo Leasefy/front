@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot } from 'lucide-react';
+import { Robot } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import type { RiskFlag, SuggestedCondition } from '@/lib/types/risk-score';
@@ -11,7 +11,7 @@ import { SuggestedConditions } from './SuggestedConditions';
 import type { RiskLevel } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface AIExplanationProps {
@@ -95,7 +95,7 @@ export function AIExplanation({
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <div className="p-2 rounded-sm bg-primary/10">
-          <Bot className="h-5 w-5 text-primary" />
+          <Robot className="h-5 w-5 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground">Analisis del Asesor</h3>
       </div>

@@ -3,31 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import {
-  Search,
-  Bell,
-  ChevronDown,
-  Zap,
-  UserPlus,
-  User,
-  Settings,
-  LogOut,
-  HelpCircle,
-  CreditCard,
-  Check,
-  Crown,
-  Mail,
-  X,
-  FileText,
-  Home,
-  Users,
-  Building2,
-  MessageSquare,
-  Clock,
-} from 'lucide-react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { useTranslation } from '@/lib/i18n';
 import { getPlanById, MOCK_SUBSCRIPTION, PLANS } from '@/lib/data/mock-subscriptions';
+import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
+import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, type TeamRole } from '@/lib/types/team';
 import { getTeamMembers, getPendingInvites } from '@/lib/data/mock-team';
 import {
@@ -40,12 +22,12 @@ import {
   type SearchResult,
 } from '@/lib/data/mock-search';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListLabel,
+  DropdownListSeparator,
+  DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   Popover,
@@ -57,11 +39,13 @@ export interface PlanHeaderProps {
   title?: string;
   subtitle?: string;
   breadcrumb?: string;
-  showSearch?: boolean;
+  showMagnifyingGlass?: boolean;
   searchPlaceholder?: string;
-  onSearch?: (query: string) => void;
+  onMagnifyingGlass?: (query: string) => void;
   actions?: React.ReactNode;
   className?: string;
+  /** For tenant dashboards - pass subscription type */
+  tenantSubscription?: TenantSubscriptionTextT;
 }
 
 // Notification type routing config
@@ -177,17 +161,19 @@ export function PlanHeader({
   title,
   subtitle,
   breadcrumb,
-  showSearch = true,
+  showMagnifyingGlass = true,
   searchPlaceholder = 'Buscar o escribir un comando',
-  onSearch,
+  onMagnifyingGlass,
   actions,
   className,
+  tenantSubscription,
 }: PlanHeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
+  const { t, locale } = useTranslation();
+  const [searchQuery, setMagnifyingGlassQuery] = useState('');
+  const [searchFocused, setMagnifyingGlassFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
@@ -233,7 +219,7 @@ export function PlanHeader({
   const teamMembers = getTeamMembers();
   const pendingInvites = getPendingInvites();
 
-  // Search functionality
+  // MagnifyingGlass functionality
   useEffect(() => {
     if (searchQuery.length >= 2) {
       const results = searchData(searchQuery, isLandlord);
@@ -247,22 +233,22 @@ export function PlanHeader({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchFocused(false);
+        setMagnifyingGlassFocused(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMagnifyingGlass = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSearchQuery(value);
-    onSearch?.(value);
+    setMagnifyingGlassQuery(value);
+    onMagnifyingGlass?.(value);
   };
 
-  const handleSearchSelect = (result: SearchResult) => {
-    setSearchQuery('');
-    setSearchFocused(false);
+  const handleMagnifyingGlassSelect = (result: SearchResult) => {
+    setMagnifyingGlassQuery('');
+    setMagnifyingGlassFocused(false);
     router.push(result.href);
   };
 
@@ -272,14 +258,14 @@ export function PlanHeader({
 
   const getCategoryIcon = (category: SearchCategory) => {
     const icons: Record<SearchCategory, React.ReactNode> = {
-      property: <Building2 className="w-4 h-4" />,
+      property: <Buildings className="w-4 h-4" />,
       candidate: <Users className="w-4 h-4" />,
       contract: <FileText className="w-4 h-4" />,
-      lease: <Home className="w-4 h-4" />,
+      lease: <House className="w-4 h-4" />,
       payment: <CreditCard className="w-4 h-4" />,
       application: <FileText className="w-4 h-4" />,
       document: <FileText className="w-4 h-4" />,
-      message: <MessageSquare className="w-4 h-4" />,
+      message: <Chat className="w-4 h-4" />,
     };
     return icons[category];
   };
@@ -290,55 +276,57 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-border', className)}>
-      <div className="flex items-center justify-between h-14 px-6">
-        {/* Left: Search */}
-        {showSearch && (
+    <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-neutral-200 dark:border-border', className)}>
+      <div className="flex items-center justify-between h-16 px-6">
+        {/* Left: MagnifyingGlass */}
+        {showMagnifyingGlass && (
           <div ref={searchRef} className="relative w-full max-w-[400px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted z-10" />
+            <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
             <input
               type="text"
               value={searchQuery}
-              onChange={handleSearch}
-              onFocus={() => setSearchFocused(true)}
-              placeholder={isLandlord ? "Buscar propiedades, candidatos..." : "Buscar pagos, documentos..."}
+              onChange={handleMagnifyingGlass}
+              onFocus={() => setMagnifyingGlassFocused(true)}
+              placeholder={isLandlord
+                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "MagnifyingGlass properties, candidates...")
+                : t('header.search')}
               className={cn(
-                'w-full h-9 pl-9 pr-4',
-                'bg-muted border-none rounded-sm',
-                'text-[13px] text-plan-primary placeholder:text-plan-muted',
-                'focus:outline-none focus:ring-1 focus:ring-plan-primary focus:bg-white dark:focus:bg-card',
-                'transition-all duration-100'
+                'w-full h-10 pl-10 pr-4',
+                'bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full',
+                'text-[14px] text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+                'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:bg-white dark:focus:bg-white/10',
+                'transition-colors'
               )}
             />
 
-            {/* Search Dropdown */}
+            {/* MagnifyingGlass Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-plan-border shadow-lg max-h-[400px] overflow-y-auto z-50">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
                     <div>
                       {Object.entries(groupedResults).map(([category, items]) => (
                         <div key={category}>
-                          <div className="px-4 py-2 bg-muted border-b border-border">
-                            <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
+                          <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/10">
+                            <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
                           </div>
                           {items.map((result) => (
                             <button
                               key={result.id}
-                              onClick={() => handleSearchSelect(result)}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+                              onClick={() => handleMagnifyingGlassSelect(result)}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
                             >
-                              <div className="w-8 h-8 bg-muted flex items-center justify-center text-plan-secondary">
+                              <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                                 {getCategoryIcon(result.category)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium text-plan-primary truncate">
+                                <p className="text-[13px] font-medium text-neutral-900 dark:text-white truncate">
                                   {result.title}
                                 </p>
-                                <p className="text-[11px] text-plan-muted truncate">
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
                                   {result.subtitle}
                                 </p>
                               </div>
@@ -349,10 +337,15 @@ export function PlanHeader({
                     </div>
                   ) : (
                     // No results
-                    <div className="px-4 py-8 text-center">
-                      <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-[13px] text-plan-secondary">
-                        No se encontraron resultados para &quot;{searchQuery}&quot;
+                    <div className="px-4 py-10 text-center">
+                      <div className="w-12 h-12 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <MagnifyingGlass className="w-5 h-5 text-neutral-400" />
+                      </div>
+                      <p className="text-[13px] text-neutral-600 dark:text-neutral-300 font-medium">
+                        {t('common.noResults')}
+                      </p>
+                      <p className="text-[12px] text-neutral-400 mt-1">
+                        {locale === 'es' ? `No encontramos "${searchQuery}"` : `We couldn't find "${searchQuery}"`}
                       </p>
                     </div>
                   )
@@ -360,47 +353,47 @@ export function PlanHeader({
                   // Show quick links and recent searches
                   <div>
                     {/* Quick Links */}
-                    <div className="px-4 py-2 bg-muted border-b border-border">
-                      <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
-                        Accesos rapidos
+                    <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/10">
+                      <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        {locale === 'es' ? 'Accesos rápidos' : 'Quick Links'}
                       </p>
                     </div>
                     {quickLinks.map((link) => (
                       <button
                         key={link.id}
-                        onClick={() => handleSearchSelect(link)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+                        onClick={() => handleMagnifyingGlassSelect(link)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
                       >
-                        <div className="w-8 h-8 bg-muted flex items-center justify-center text-plan-secondary">
+                        <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                           {getCategoryIcon(link.category)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-plan-primary">
+                          <p className="text-[13px] font-medium text-neutral-900 dark:text-white">
                             {link.title}
                           </p>
-                          <p className="text-[11px] text-plan-muted">
+                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                             {link.subtitle}
                           </p>
                         </div>
                       </button>
                     ))}
 
-                    {/* Recent Searches */}
+                    {/* Recent MagnifyingGlasses */}
                     {recentSearches.length > 0 && (
                       <>
-                        <div className="px-4 py-2 bg-muted border-t border-b border-border">
-                          <p className="text-[11px] font-normal text-plan-secondary font-mono uppercase tracking-wide">
-                            Busquedas recientes
+                        <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-t border-b border-neutral-100 dark:border-white/10">
+                          <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                            {locale === 'es' ? 'Búsquedas recientes' : 'Recent MagnifyingGlasses'}
                           </p>
                         </div>
                         {recentSearches.map((search, index) => (
                           <button
                             key={index}
-                            onClick={() => setSearchQuery(search)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors text-left"
+                            onClick={() => setMagnifyingGlassQuery(search)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
                           >
-                            <Clock className="w-4 h-4 text-plan-muted" />
-                            <span className="text-[13px] text-plan-secondary">{search}</span>
+                            <Clock className="w-4 h-4 text-neutral-400" />
+                            <span className="text-[13px] text-neutral-600 dark:text-neutral-300">{search}</span>
                           </button>
                         ))}
                       </>
@@ -413,7 +406,7 @@ export function PlanHeader({
         )}
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1.5 ml-auto">
           {actions}
 
           {/* Quick Action Icons - Only for Landlords */}
@@ -422,25 +415,25 @@ export function PlanHeader({
               {/* Subscription Popover */}
               <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
-                    <Zap className="w-5 h-5 stroke-[1.5px]" />
+                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                    <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {MOCK_SUBSCRIPTION.planId === 'free' && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[320px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-2xl overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-border">
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-[#222224]">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-plan-primary">Tu Suscripcion</h3>
+                      <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Tu Suscripción</h3>
                       <button
                         onClick={() => setSubscriptionOpen(false)}
-                        className="text-plan-muted hover:text-plan-secondary"
+                        className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -455,7 +448,7 @@ export function PlanHeader({
                         MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
                       )}>
                         {MOCK_SUBSCRIPTION.planId === 'free' ? (
-                          <Zap className="w-5 h-5 text-plan-secondary" />
+                          <Lightning className="w-5 h-5 text-plan-secondary" />
                         ) : (
                           <Crown className="w-5 h-5 text-plan-accent" />
                         )}
@@ -467,7 +460,7 @@ export function PlanHeader({
                         <p className="text-[12px] text-plan-secondary">
                           {MOCK_SUBSCRIPTION.planId === 'free'
                             ? 'Funciones limitadas'
-                            : `Facturacion ${MOCK_SUBSCRIPTION.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                            : `Facturación ${MOCK_SUBSCRIPTION.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
                           }
                         </p>
                       </div>
@@ -499,7 +492,7 @@ export function PlanHeader({
                       <Link
                         href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-primary text-white text-[13px] font-medium text-center hover:bg-primary/90 transition-colors"
+                        className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium text-center rounded-xl transition-colors"
                       >
                         {MOCK_SUBSCRIPTION.planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -511,7 +504,7 @@ export function PlanHeader({
                       onClick={() => setSubscriptionOpen(false)}
                       className="block mt-2 text-center text-[12px] text-plan-secondary hover:text-plan-primary"
                     >
-                      Gestionar suscripcion
+                      Gestionar suscripción
                     </Link>
                   </div>
                 </PopoverContent>
@@ -527,33 +520,33 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
+                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] font-medium flex items-center justify-center rounded-full">
+                      <span className="absolute top-0 right-0 w-4 h-4 bg-indigo-500 text-white text-[9px] font-medium flex items-center justify-center rounded-full">
                         {pendingInvites.length}
                       </span>
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[360px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
+                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-2xl overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-border">
+                  <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-[#222224]">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-plan-primary">Invitar al Equipo</h3>
+                      <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Invitar al Equipo</h3>
                       <button
                         onClick={() => setTeamInviteOpen(false)}
-                        className="text-plan-muted hover:text-plan-secondary"
+                        className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-[12px] text-plan-secondary mt-1">
-                      Colabora con tu equipo en la gestion de propiedades
+                    <p className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-1">
+                      Colabora con tu equipo en la gestión de propiedades
                     </p>
                   </div>
 
@@ -564,9 +557,9 @@ export function PlanHeader({
                         <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
                           <Check className="w-6 h-6 text-green-800" />
                         </div>
-                        <p className="text-[14px] font-medium text-plan-primary">Invitacion enviada</p>
+                        <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
                         <p className="text-[12px] text-plan-secondary mt-1">
-                          Se envio un correo a {inviteEmail}
+                          Se envió un correo a {inviteEmail}
                         </p>
                         <button
                           onClick={() => {
@@ -584,10 +577,10 @@ export function PlanHeader({
                         {/* Email input */}
                         <div className="mb-4">
                           <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Correo electronico
+                            Correo electrónico
                           </label>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
+                            <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
                             <input
                               type="email"
                               value={inviteEmail}
@@ -643,22 +636,18 @@ export function PlanHeader({
                         {/* Submit */}
                         <button
                           onClick={() => {
-                            if (!inviteEmail) return;
-                            if (!isValidEmail(inviteEmail)) {
-                              setInviteEmailError('Ingresa un correo válido');
-                              return;
-                            }
+                            if (!inviteEmail || !isValidEmail(inviteEmail)) return;
                             setInviteSent(true);
                           }}
-                          disabled={!inviteEmail}
+                          disabled={!inviteEmail || !isValidEmail(inviteEmail)}
                           className={cn(
-                            'w-full py-2.5 text-[13px] font-medium text-center transition-colors',
-                            inviteEmail
-                              ? 'bg-primary text-white hover:bg-primary/90'
+                            'w-full py-2.5 text-[13px] font-medium text-center rounded-xl transition-colors',
+                            inviteEmail && isValidEmail(inviteEmail)
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
-                          Enviar Invitacion
+                          Enviar Invitación
                         </button>
                       </>
                     )}
@@ -673,14 +662,14 @@ export function PlanHeader({
                           {teamMembers.slice(0, 5).map((member) => (
                             <div
                               key={member.id}
-                              className="w-8 h-8 rounded-full bg-muted border-2 border-white flex items-center justify-center text-[11px] font-medium text-plan-secondary"
+                              className="w-8 h-8 rounded-full bg-muted border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[11px] font-medium text-plan-secondary"
                               title={member.name || member.email}
                             >
                               {(member.name || member.email).charAt(0).toUpperCase()}
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-plan-primary border-2 border-white flex items-center justify-center text-[10px] font-medium text-white">
+                            <div className="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[10px] font-medium text-white">
                               +{teamMembers.length - 5}
                             </div>
                           )}
@@ -696,21 +685,21 @@ export function PlanHeader({
           {/* Notifications */}
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
-              <button className="relative p-2.5 text-plan-muted hover:text-plan-secondary transition-colors">
+              <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-plan-status-blue rounded-full" />
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full ring-2 ring-white" />
                 )}
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[calc(100vw-2rem)] sm:w-[400px] p-0 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none"
+              className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl overflow-hidden"
               align="end"
               sideOffset={8}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h3 className="text-[15px] font-semibold text-plan-primary">Notificaciones</h3>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
+                <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">{t('header.notifications')}</h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
@@ -736,23 +725,23 @@ export function PlanHeader({
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-border">
+              <div className="flex items-center gap-1.5 px-5 py-3 border-b border-neutral-100 dark:border-white/10">
                 {(['all', 'unread', 'mentions'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={cn(
-                      'px-3 py-1.5 text-[12px] font-medium rounded-sm transition-colors',
+                      'px-3 py-1.5 text-[12px] font-medium rounded-full transition-colors',
                       activeTab === tab
-                        ? 'bg-muted text-plan-primary'
-                        : 'text-plan-secondary hover:text-plan-primary'
+                        ? 'bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5'
                     )}
                   >
-                    {tab === 'all' && 'Todas'}
-                    {tab === 'unread' && 'Sin leer'}
-                    {tab === 'mentions' && 'Menciones'}
+                    {tab === 'all' && (locale === 'es' ? 'Todas' : 'All')}
+                    {tab === 'unread' && (locale === 'es' ? 'Sin leer' : 'Unread')}
+                    {tab === 'mentions' && (locale === 'es' ? 'Menciones' : 'Mentions')}
                     {tab === 'all' && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-primary text-white text-[10px] rounded-sm">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full">
                         7
                       </span>
                     )}
@@ -800,11 +789,8 @@ export function PlanHeader({
 
                       {/* Message reply */}
                       {notification.message && (
-                        <div className={cn(
-                          'mt-2 px-3 py-2 rounded-sm flex items-center justify-between',
-                          notification.replyColor || 'bg-muted'
-                        )}>
-                          <p className="text-[12px] text-foreground">{notification.message}</p>
+                        <div className="mt-2 px-3 py-2 rounded-sm flex items-center justify-between bg-neutral-100 dark:bg-white/10">
+                          <p className="text-[12px] text-neutral-700 dark:!text-white">{notification.message}</p>
                           {notification.hasReply && (
                             <button
                               onClick={(e) => {
@@ -812,7 +798,7 @@ export function PlanHeader({
                                 setNotificationsOpen(false);
                                 router.push(isLandlord ? '/panel/mensajes' : '/inquilino/mensajes');
                               }}
-                              className="px-3 py-1 bg-white text-[11px] font-medium text-plan-primary rounded-sm border border-plan-border hover:bg-muted transition-colors"
+                              className="px-3 py-1 bg-white dark:bg-neutral-700 text-[11px] font-medium text-neutral-900 dark:text-white rounded-sm border border-neutral-200 dark:border-white/20 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors"
                             >
                               Responder
                             </button>
@@ -828,15 +814,15 @@ export function PlanHeader({
                             setNotificationsOpen(false);
                             router.push(isLandlord ? '/panel/contratos' : '/inquilino/documentos');
                           }}
-                          className="mt-2 px-3 py-2 bg-muted rounded-sm flex items-center justify-between hover:bg-muted transition-colors"
+                          className="mt-2 px-3 py-2 bg-neutral-100 dark:bg-white/10 rounded-sm flex items-center justify-between hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors"
                         >
                           <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-plan-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
-                            <span className="text-[12px] text-foreground">{notification.file}</span>
+                            <span className="text-[12px] text-neutral-700 dark:text-white">{notification.file}</span>
                           </div>
-                          <span className="text-[11px] text-plan-muted">{notification.fileSize}</span>
+                          <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{notification.fileSize}</span>
                         </div>
                       )}
                     </div>
@@ -850,105 +836,131 @@ export function PlanHeader({
               </div>
 
               {/* View all link */}
-              <div className="px-5 py-3 border-t border-border">
+              <div className="px-5 py-3 border-t border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
                 <button
                   onClick={() => {
                     setNotificationsOpen(false);
                     router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
                   }}
-                  className="w-full text-center text-[13px] font-medium text-plan-primary hover:text-plan-secondary transition-colors"
+                  className="w-full text-center text-[13px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                 >
-                  Ver todas las notificaciones
+                  {t('header.viewAll')}
                 </button>
               </div>
             </PopoverContent>
           </Popover>
 
           {/* Separator */}
-          <div className="w-px h-6 bg-muted mx-2" />
+          <div className="w-px h-6 bg-neutral-200 dark:bg-white/10 mx-2" />
 
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1 outline-none">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                  <span className="text-plan-secondary font-medium text-sm">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </span>
+          {/* User List */}
+          <DropdownList>
+            <DropdownListTrigger asChild>
+              <button className="flex items-center gap-2 p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors outline-none">
+                {/* Avatar with subscription badge */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  {/* Subscription badge */}
+                  {isLandlord ? (
+                    <AvatarSubscriptionIndicator
+                      variant="landlord"
+                      planId={MOCK_SUBSCRIPTION.planId}
+                    />
+                  ) : tenantSubscription ? (
+                    <AvatarSubscriptionIndicator
+                      variant="tenant"
+                      tenantSubscription={tenantSubscription}
+                    />
+                  ) : null}
                 </div>
-                <ChevronDown className="w-4 h-4 text-plan-muted" />
+                <CaretDown className="w-4 h-4 text-neutral-400" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-56 bg-white dark:bg-card border border-plan-border shadow-lg rounded-none p-1"
+            </DropdownListTrigger>
+            <DropdownListContent
+              className="w-56 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl p-1.5"
               align="end"
               sideOffset={8}
             >
-              <DropdownMenuLabel className="px-3 py-2">
-                <p className="text-[13px] font-medium text-plan-primary">{user?.name || 'Usuario'}</p>
-                <p className="text-[12px] text-plan-secondary">{user?.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-muted" />
-              <DropdownMenuItem asChild>
+              <DropdownListLabel className="px-3 py-2">
+                <p className="text-[14px] font-medium text-neutral-900 dark:text-white">{user?.name || 'Usuario'}</p>
+                <p className="text-[12px] text-neutral-500 dark:text-neutral-400">{user?.email}</p>
+              </DropdownListLabel>
+              <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
+              <DropdownListItem asChild>
                 <Link
                   href={isLandlord ? "/panel/configuracion" : "/inquilino/perfil"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
-                  <User className="w-4 h-4 stroke-[1.5px]" />
-                  Mi Perfil
+                  <User className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                  {t('header.profile')}
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              </DropdownListItem>
+              <DropdownListItem asChild>
                 <Link
                   href={isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
-                  <Settings className="w-4 h-4 stroke-[1.5px]" />
-                  Configuración
+                  <Gear className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                  {t('header.settings')}
                 </Link>
-              </DropdownMenuItem>
+              </DropdownListItem>
               {!isLandlord && (
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/inquilino/pagos"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
-                  >
-                    <CreditCard className="w-4 h-4 stroke-[1.5px]" />
-                    Mis Pagos
-                  </Link>
-                </DropdownMenuItem>
+                <>
+                  <DropdownListItem asChild>
+                    <Link
+                      href="/inquilino/pagos"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                    >
+                      <CreditCard className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                      {t('nav.payments')}
+                    </Link>
+                  </DropdownListItem>
+                  <DropdownListItem asChild>
+                    <Link
+                      href="/inquilino/guardados"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                    >
+                      <Heart className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                      {locale === 'es' ? 'Ver guardados' : 'Saved'}
+                    </Link>
+                  </DropdownListItem>
+                </>
               )}
               {isLandlord && (
-                <DropdownMenuItem asChild>
+                <DropdownListItem asChild>
                   <Link
                     href="/panel/upgrade"
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                   >
-                    <Crown className="w-4 h-4 stroke-[1.5px]" />
-                    Mi Plan
+                    <Crown className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                    {locale === 'es' ? 'Mi Plan' : 'My Plan'}
                   </Link>
-                </DropdownMenuItem>
+                </DropdownListItem>
               )}
-              <DropdownMenuSeparator className="bg-muted" />
-              <DropdownMenuItem asChild>
+              <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
+              <DropdownListItem asChild>
                 <Link
                   href="/ayuda"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
-                  <HelpCircle className="w-4 h-4 stroke-[1.5px]" />
-                  Ayuda
+                  <Question className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
+                  {t('nav.help')}
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-muted" />
-              <DropdownMenuItem
+              </DropdownListItem>
+              <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
+              <DropdownListItem
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-plan-status-red hover:bg-red-50 cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 text-[13px] text-red-600 dark:!text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full cursor-pointer"
               >
-                <LogOut className="w-4 h-4 stroke-[1.5px]" />
-                Cerrar Sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <SignOut className="w-4 h-4 stroke-[1.5px]" />
+                {t('nav.logout')}
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
         </div>
       </div>
     </header>
@@ -970,15 +982,15 @@ export function PlanPageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('px-6 py-4', className)}>
+    <div className={cn('px-6 py-5', className)}>
       {breadcrumb && (
-        <p className="text-[12px] text-plan-muted mb-1">{breadcrumb}</p>
+        <p className="text-[12px] text-neutral-400 mb-1.5">{breadcrumb}</p>
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-[22px] font-semibold text-plan-primary">{title}</h1>
+          <h1 className="text-[24px] font-semibold text-neutral-900 tracking-tight">{title}</h1>
           {count !== undefined && (
-            <span className="text-[13px] text-plan-muted">{count} items</span>
+            <span className="text-[13px] text-neutral-500 bg-neutral-100 px-2.5 py-0.5 rounded-full">{count} items</span>
           )}
         </div>
         {actions && (

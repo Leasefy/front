@@ -2,844 +2,977 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { FAQSection } from '@/components/home/FAQSection';
+import { CTASection } from '@/components/home/CTASection';
 import { Button } from '@/components/ui/button';
-import {
-  ArrowRight,
-  CheckCircle2,
-  Shield,
-  Clock,
-  CreditCard,
-  Wallet,
-  Calendar,
-  Bell,
-  TrendingUp,
-  Repeat,
-  Banknote,
-  Building2,
-  Smartphone,
-  QrCode,
-  Receipt,
-  Zap,
-  Lock,
-  BadgeCheck,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ChevronRight,
-  Check,
-  Sparkles,
-  CircleDollarSign,
-  Send,
-  RefreshCcw,
-  BarChart3,
-  PieChart,
-  Landmark,
-  Timer,
-  BellRing,
-  FileText,
-  Download,
-} from 'lucide-react';
+import { CaretLeft, CaretRight, CheckCircle, Shield, CreditCard, Calendar, TrendUp, Wallet, DeviceMobile, Lightning, CurrencyCircleDollar, PaperPlaneTilt, Bank, BellRinging, ChartBar, Clock, FileText, WarningCircle, Receipt, ChartBarHorizontal, ArrowRight } from '@phosphor-icons/react';
 
-// Animated counter with input validation
-function useCounter(end: number, duration: number = 2000, decimals: number = 0) {
-  const [count, setCount] = useState(0);
-  const [isInView, setIsInView] = useState(false);
-
-  // Validate inputs
-  const safeEnd = Number.isFinite(end) && end >= 0 ? end : 0;
-  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 2000;
-  const safeDecimals = Number.isFinite(decimals) && decimals >= 0 ? decimals : 0;
-
-  useEffect(() => {
-    if (!isInView) return;
-    let startTime: number;
-    const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / safeDuration, 1);
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-      setCount(Number((safeEnd * easeOut).toFixed(safeDecimals)));
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [isInView, safeEnd, safeDuration, safeDecimals]);
-
-  return { count, setIsInView };
-}
-
-// Format currency with validation
-function formatCurrency(amount: number): string {
-  if (!Number.isFinite(amount)) return '$0';
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-// Live transaction feed
-function TransactionFeed() {
-  const [transactions, setTransactions] = useState([
-    { id: 1, name: 'María López', amount: 2500000, time: 'Hace 2 min', status: 'completed' },
-    { id: 2, name: 'Carlos Gómez', amount: 1800000, time: 'Hace 5 min', status: 'completed' },
-    { id: 3, name: 'Ana Rodríguez', amount: 3200000, time: 'Hace 8 min', status: 'completed' },
-  ]);
-
-  return (
-    <div className="space-y-3">
-      {transactions.map((tx, i) => (
-        <motion.div
-          key={tx.id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.8 + i * 0.15 }}
-          className="flex items-center gap-3 bg-white/[0.03] rounded-xl p-3 border border-white/5"
-        >
-          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{tx.name}</p>
-            <p className="text-xs text-white/40">{tx.time}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-semibold text-emerald-400">+{formatCurrency(tx.amount)}</p>
-            <p className="text-[10px] text-white/40 uppercase">Recibido</p>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// Hero Dashboard
-function PaymentDashboard() {
-  const totalAmount = useCounter(34200000, 2000);
-  const [activeTab, setActiveTab] = useState<'recibido' | 'pendiente'>('recibido');
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40, rotateX: 8 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ duration: 1, delay: 0.3 }}
-      className="relative"
-      style={{ perspective: '1000px' }}
-    >
-      {/* Glow */}
-      <div className="absolute -inset-4 bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-cyan-600/20 rounded-3xl blur-2xl" />
-
-      {/* Main dashboard */}
-      <div className="relative bg-product-elevated/90 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-white/[0.02]">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-mono text-white/50">DASHBOARD DE PAGOS</span>
-          </div>
-          <span className="text-xs text-white/30">Actualizado ahora</span>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {/* Balance card */}
-          <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 rounded-xl p-5 mb-5 overflow-hidden">
-            {/* Pattern overlay */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              }} />
-            </div>
-
-            <div className="relative">
-              <p className="text-emerald-100/80 text-sm mb-1">Balance disponible</p>
-              <motion.p
-                className="text-4xl font-bold text-white mb-4 tabular-nums"
-                onViewportEnter={() => totalAmount.setIsInView(true)}
-              >
-                {formatCurrency(totalAmount.count)}
-              </motion.p>
-
-              <div className="flex items-center gap-4">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium text-white transition-colors">
-                  <Send className="w-4 h-4" />
-                  Retirar
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium text-white/80 transition-colors">
-                  <BarChart3 className="w-4 h-4" />
-                  Ver reporte
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4">
-            {(['recibido', 'pendiente'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/40 hover:text-white/60'
-                }`}
-              >
-                {tab === 'recibido' ? 'Recibido' : 'Pendiente'}
-              </button>
-            ))}
-          </div>
-
-          {/* Transaction feed */}
-          <TransactionFeed />
-        </div>
-      </div>
-
-      {/* Floating card - next payment */}
-      <motion.div
-        initial={{ opacity: 0, x: 40, y: -20 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ delay: 1.5 }}
-        className="absolute -right-4 top-16 bg-product-elevated rounded-xl border border-white/10 p-4 shadow-xl max-w-[200px]"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-            <Calendar className="w-4 h-4 text-amber-400" />
-          </div>
-          <span className="text-xs font-medium text-white">Próximo cobro</span>
-        </div>
-        <p className="text-lg font-bold text-white">$2.500.000</p>
-        <p className="text-xs text-white/40">5 Feb · María López</p>
-      </motion.div>
-
-      {/* Floating stat */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.8 }}
-        className="absolute -left-4 bottom-20 bg-emerald-500 rounded-xl p-3 shadow-xl"
-      >
-        <div className="flex items-center gap-2 text-white">
-          <TrendingUp className="w-4 h-4" />
-          <span className="text-sm font-bold">95% a tiempo</span>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// Payment method card
-function PaymentMethodCard({
-  icon: Icon,
-  name,
-  description,
-  popular = false,
-  delay = 0,
-}: {
-  icon: React.ElementType;
-  name: string;
-  description: string;
-  popular?: boolean;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="relative bg-product-elevated/80 backdrop-blur-sm rounded-xl border border-white/[0.08] p-5 group hover:border-white/20 transition-colors"
-    >
-      {popular && (
-        <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-medium bg-emerald-500 text-white rounded-full">
-          Popular
-        </span>
-      )}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center group-hover:bg-white/[0.08] transition-colors">
-          <Icon className="w-6 h-6 text-white/60" />
-        </div>
-        <div>
-          <p className="text-base font-medium text-white">{name}</p>
-          <p className="text-sm text-white/40">{description}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Feature bento item
-function FeatureBento({
-  icon: Icon,
-  title,
-  description,
-  children,
-  className = '',
-  gradient,
-  delay = 0,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  children?: React.ReactNode;
-  className?: string;
-  gradient: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ delay }}
-      className={`relative bg-product-elevated/80 backdrop-blur-sm rounded-2xl border border-white/[0.08] overflow-hidden group hover:border-white/15 transition-colors ${className}`}
-    >
-      {/* Gradient line at top */}
-      <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${gradient} opacity-50`} />
-
-      <div className="relative h-full p-6 flex flex-col">
-        <div className="flex items-start gap-4 mb-4">
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
-            <Icon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            <p className="text-sm text-white/40 mt-1">{description}</p>
-          </div>
-        </div>
-
-        {children && <div className="mt-auto">{children}</div>}
-      </div>
-    </motion.div>
-  );
-}
+// Testimonials data for payments
+const testimonials = [
+  {
+    quote: 'Antes perseguía al inquilino cada mes. Ahora el dinero llega puntual a mi cuenta sin que yo haga nada. El cobro automático me devolvió mi tranquilidad.',
+    author: 'Carolina Mendoza',
+    role: 'Propietaria de 2 apartamentos',
+    image: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+  },
+  {
+    quote: 'Los recordatorios automáticos por WhatsApp funcionan increíble. Mis inquilinos pagan sin que yo les tenga que escribir. Ya no hay excusas ni retrasos.',
+    author: 'Roberto García',
+    role: 'Propietario en Medellín',
+    image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400',
+  },
+  {
+    quote: 'El reporte mensual es oro. Veo exactamente cuánto recibí, de quién, y cuándo. Mi contador está feliz y yo tengo todo organizado.',
+    author: 'Ana Lucía Restrepo',
+    role: 'Inversionista inmobiliaria',
+    image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+  },
+  {
+    quote: 'Que el inquilino pueda pagar con Nequi o PSE me abrió a más candidatos. El dinero me llega en 24 horas. Sin comisiones ocultas.',
+    author: 'Diego Fernández',
+    role: 'Propietario en Bogotá',
+    image: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400',
+  },
+];
 
 export default function PagosPage() {
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextTestimonial = () => {
+    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
+  };
 
   return (
     <>
       <Navbar />
       <main className="overflow-hidden">
         {/* Hero Section */}
-        <section ref={heroRef} className="relative min-h-screen flex items-center pt-20">
-          {/* Background with real image */}
-          <motion.div className="absolute inset-0 z-0" style={{ y: heroY }}>
-            <Image
-              src="/hero-4.jpg"
-              alt="Modern home interior"
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
-            {/* Dark overlays for legibility - like home page */}
-            <div className="absolute inset-0 bg-black/45" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40" />
-          </motion.div>
+        <section className="relative h-[600px] overflow-hidden bg-black">
+          <Image
+            src="/hero-4.jpg"
+            alt="Modern home interior"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/40 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
 
-          <motion.div
-            className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 py-12"
-            style={{ opacity: heroOpacity, scale: heroScale }}
-          >
-            <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
-              {/* Left */}
-              <div className="space-y-8">
-                <motion.div
+          <div className="relative z-10 h-full container-platform pt-[72px] flex items-center">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
+              {/* Left Content */}
+              <div className="space-y-4">
+                <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
-                  <span className="relative flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full pl-2 pr-4 py-1.5 border border-white/15">
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                    </span>
-                    Cobro automático de arriendos
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                   </span>
-                </motion.div>
+                  Cobro automático de arriendos
+                </motion.span>
 
                 <motion.h1
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.05] tracking-tight"
+                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   Recibe tu arriendo
-                  <br />
-                  <span className="text-white/90">
-                    sin perseguir
-                  </span>
-                  <br />
-                  a nadie
+                  <span className="block mt-2 text-white/90">sin perseguir a nadie</span>
                 </motion.h1>
 
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-lg md:text-xl text-white/70 max-w-lg leading-relaxed"
+                  className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   Cobro automático, recordatorios inteligentes y múltiples métodos de pago.{' '}
-                  <span className="text-white font-medium">
-                    Tu dinero en tu cuenta en 24 horas, sin comisiones.
-                  </span>
+                  <span className="text-white font-medium">Tu dinero en tu cuenta en 24 horas.</span>
                 </motion.p>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="flex flex-col sm:flex-row gap-4"
+                  className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button
-                      size="lg"
-                      className="w-full sm:w-auto bg-white text-foreground hover:bg-white/90 font-semibold text-base h-14 px-8 rounded-sm shadow-lg group"
-                    >
-                      <span>Activar cobro automático</span>
-                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                      Activar cobro automático
                     </Button>
                   </Link>
                   <Link href="#como-funciona">
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium text-base h-14 px-8 rounded-sm backdrop-blur-2xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
                     >
                       Ver cómo funciona
                     </Button>
                   </Link>
                 </motion.div>
 
-                {/* Trust badges */}
+                {/* Hero Stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="flex items-center gap-6 pt-4"
+                  className="flex items-center gap-8 pt-6"
                 >
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-white/80" />
-                    <span className="text-sm text-white/50">PCI-DSS</span>
-                  </div>
-                  <div className="h-4 w-px bg-white/10" />
-                  <div className="flex items-center gap-2">
-                    <CircleDollarSign className="w-5 h-5 text-white/80" />
-                    <span className="text-sm text-white/50">0% comisión</span>
-                  </div>
-                  <div className="h-4 w-px bg-white/10" />
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-white/80" />
-                    <span className="text-sm text-white/50">24h máx</span>
-                  </div>
+                  {[
+                    { value: '0%', label: 'Comisión' },
+                    { value: '24h', label: 'A tu cuenta' },
+                    { value: '95%', label: 'Pagos puntuales' },
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
+                    </div>
+                  ))}
                 </motion.div>
               </div>
 
-              {/* Right - Dashboard */}
-              <div className="hidden lg:block">
-                <PaymentDashboard />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="flex flex-col items-center gap-2"
-            >
-              <span className="text-xs text-white/30 uppercase tracking-widest">Descubre más</span>
-              <div className="w-5 h-8 rounded-full border border-white/20 flex items-start justify-center p-1.5">
-                <motion.div
-                  animate={{ y: [0, 8, 0], opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-1 h-1 rounded-full bg-white/60"
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* Stats Bar */}
-        <section className="relative py-8 border-y border-white/[0.05] bg-white/[0.01]">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {[
-                { value: '$120M+', label: 'Recaudado mensualmente' },
-                { value: '0%', label: 'Comisión para propietarios' },
-                { value: '95%', label: 'Pagos puntuales' },
-                { value: '<24h', label: 'A tu cuenta bancaria' },
-              ].map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-center"
-                >
-                  <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                    {stat.value}
-                  </p>
-                  <p className="text-sm text-white/40 mt-1">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Payment Methods */}
-        <section id="metodos" className="py-20 relative">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-400 bg-teal-500/10 rounded-full px-3 py-1 mb-4 border border-teal-500/20">
-                <CreditCard className="w-3 h-3" />
-                Múltiples opciones
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Tu inquilino elige cómo pagar
-              </h2>
-              <p className="text-white/40 max-w-xl mx-auto">
-                Aceptamos todos los métodos de pago populares en Colombia
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <PaymentMethodCard
-                icon={CreditCard}
-                name="Tarjeta débito/crédito"
-                description="Visa, Mastercard, Amex"
-                popular
-                delay={0}
-              />
-              <PaymentMethodCard
-                icon={Landmark}
-                name="PSE"
-                description="Todos los bancos"
-                delay={0.1}
-              />
-              <PaymentMethodCard
-                icon={Smartphone}
-                name="Nequi / Daviplata"
-                description="Billeteras digitales"
-                delay={0.2}
-              />
-              <PaymentMethodCard
-                icon={Banknote}
-                name="Efectivo"
-                description="Efecty, Baloto, SuRed"
-                delay={0.3}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Features Bento */}
-        <section id="como-funciona" className="py-24 relative">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 rounded-full px-3 py-1 mb-4 border border-emerald-500/20">
-                <Sparkles className="w-3 h-3" />
-                Todo automatizado
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-                Cobra sin esfuerzo
-              </h2>
-              <p className="text-white/40 max-w-xl mx-auto text-lg">
-                Configura una vez, recibe cada mes
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
-              {/* Cobro automático - Large */}
-              <FeatureBento
-                icon={RefreshCcw}
-                title="Cobro automático"
-                description="Configura la fecha y nosotros cobramos"
-                gradient="from-emerald-500 to-teal-500"
-                className="lg:col-span-2 lg:row-span-2"
-                delay={0}
+              {/* Right - Hero Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="hidden lg:flex lg:justify-end"
               >
-                <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="relative">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                  >
+                    {/* Balance section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4 }}
+                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-white/10"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-white/50 text-[11px]">Balance disponible</span>
+                        <Wallet className="w-4 h-4 text-white/40" />
+                      </div>
+                      <p className="text-[28px] font-bold text-white tracking-tight">$34.200.000</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-[11px] font-medium text-foreground">
+                          <PaperPlaneTilt className="w-3 h-3" />
+                          Retirar
+                        </button>
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-lg text-[11px] font-medium text-white/70">
+                          <ChartBar className="w-3 h-3" />
+                          Reporte
+                        </button>
+                      </div>
+                    </motion.div>
+
+                    {/* Recent transactions */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-white/30 uppercase tracking-wider block px-1">
+                        Últimos pagos
+                      </span>
+                      {[
+                        { initials: 'ML', name: 'María López', amount: '+$2.5M', time: 'Hoy' },
+                        { initials: 'CG', name: 'Carlos Gómez', amount: '+$1.8M', time: 'Ayer' },
+                      ].map((tx, i) => (
+                        <motion.div
+                          key={tx.name}
+                          initial={{ opacity: 0, x: -15 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 + i * 0.1 }}
+                          className="flex items-center gap-3 bg-white/[0.06] rounded-lg p-2.5 border border-white/[0.06]"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                            <span className="text-[10px] font-medium text-white/60">{tx.initials}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-medium text-white/80 truncate">{tx.name}</p>
+                            <p className="text-[10px] text-white/40">{tx.time}</p>
+                          </div>
+                          <span className="text-[13px] font-medium text-emerald-400">{tx.amount}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Next payment */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.9 }}
+                      className="mt-4 pt-3 border-t border-white/[0.08] flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-white/40" />
+                        <span className="text-[11px] text-white/40">Próximo: <span className="text-white/70 font-medium">5 Feb</span></span>
+                      </div>
+                      <span className="text-[13px] font-medium text-white/70">$2.5M</span>
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Floating notification */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                        <Repeat className="w-5 h-5 text-emerald-400" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">Débito automático</p>
-                        <p className="text-xs text-white/40">Activo</p>
+                        <p className="text-[13px] font-medium text-foreground">3 pagos hoy</p>
+                        <p className="text-[11px] text-muted-foreground">$6.8M recibidos</p>
                       </div>
                     </div>
-                    <div className="w-12 h-6 bg-emerald-500 rounded-full relative">
-                      <motion.div
-                        className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"
-                        layoutId="toggle"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Día de cobro', value: 'Día 5' },
-                      { label: 'Próximo cobro', value: '5 Feb' },
-                      { label: 'Monto', value: '$2.5M' },
-                    ].map((item) => (
-                      <div key={item.label} className="bg-white/[0.03] rounded-lg p-3">
-                        <p className="text-[10px] text-white/40 uppercase">{item.label}</p>
-                        <p className="text-sm font-semibold text-white">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
+                  </motion.div>
                 </div>
-              </FeatureBento>
-
-              {/* Recordatorios */}
-              <FeatureBento
-                icon={BellRing}
-                title="Recordatorios"
-                description="WhatsApp, email y SMS"
-                gradient="from-blue-500 to-cyan-500"
-                delay={0.1}
-              >
-                <div className="space-y-2">
-                  {[
-                    { icon: '📱', channel: 'WhatsApp', time: '3 días antes', done: true },
-                    { icon: '📧', channel: 'Email', time: '1 día antes', done: true },
-                    { icon: '💬', channel: 'SMS', time: 'Día de pago', done: false },
-                  ].map((r, i) => (
-                    <motion.div
-                      key={r.channel}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <span className="text-base">{r.icon}</span>
-                      <span className="text-white/60 flex-1">{r.channel}</span>
-                      {r.done ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-amber-400" />
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              </FeatureBento>
-
-              {/* Recibos */}
-              <FeatureBento
-                icon={Receipt}
-                title="Recibos digitales"
-                description="Comprobante automático"
-                gradient="from-violet-500 to-purple-500"
-                delay={0.2}
-              >
-                <div className="bg-white/[0.03] rounded-lg p-3 border border-white/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-white/40">#2026-0142</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">Pagado</span>
-                  </div>
-                  <p className="text-lg font-bold text-white">$2.850.000</p>
-                  <div className="flex gap-2 mt-3">
-                    <button className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-white/5 hover:bg-white/10 rounded text-xs text-white/60 transition-colors">
-                      <Download className="w-3 h-3" />
-                      PDF
-                    </button>
-                    <button className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-white/5 hover:bg-white/10 rounded text-xs text-white/60 transition-colors">
-                      <Send className="w-3 h-3" />
-                      Enviar
-                    </button>
-                  </div>
-                </div>
-              </FeatureBento>
-
-              {/* Dashboard */}
-              <FeatureBento
-                icon={PieChart}
-                title="Dashboard de ingresos"
-                description="Visualiza y exporta reportes"
-                gradient="from-amber-500 to-orange-500"
-                className="md:col-span-2"
-                delay={0.3}
-              >
-                <div className="flex items-end gap-1 h-16">
-                  {[40, 65, 55, 80, 70, 90, 85, 95, 75, 88, 92, 100].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      className="flex-1 bg-gradient-to-t from-amber-500/80 to-amber-400/60 rounded-t"
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${h}%` }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.4 + i * 0.03 }}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center justify-between mt-4">
-                  <div>
-                    <p className="text-2xl font-bold text-white">$34.2M</p>
-                    <p className="text-xs text-white/40">Este año</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-emerald-400 text-sm font-medium">
-                    <TrendingUp className="w-4 h-4" />
-                    +12%
-                  </div>
-                </div>
-              </FeatureBento>
-
-              {/* Transferencia */}
-              <FeatureBento
-                icon={Landmark}
-                title="Transferencia rápida"
-                description="Dinero en tu cuenta en 24h"
-                gradient="from-cyan-500 to-blue-500"
-                delay={0.4}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
-                      initial={{ width: 0 }}
-                      whileInView={{ width: '100%' }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.6, duration: 1 }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-white">24h</span>
-                </div>
-                <p className="text-xs text-white/40 mt-2">Pago → Tu cuenta bancaria</p>
-              </FeatureBento>
+              </motion.div>
             </div>
           </div>
         </section>
 
-        {/* Benefits Stats */}
-        <section className="py-24 relative bg-gradient-to-b from-transparent via-emerald-950/30 to-transparent">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-                Resultados reales
-              </h2>
-              <p className="text-white/40 max-w-xl mx-auto text-lg">
-                Lo que experimentan nuestros propietarios
-              </p>
-            </motion.div>
+        {/* Problems Bento Section */}
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Cobrar arriendo no debería ser <span className="italic">tan difícil</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Perseguir inquilinos, excusas, retrasos, desorden contable. El proceso tradicional de cobro está roto.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Top Row - Image Cards with Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-4 lg:mb-5">
+              {/* Card 1 - Perseguir */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-interior.jpg"
+                  alt="Interior moderno"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Perseguir
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    8h
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    mensuales cobrando arriendo
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    Llamadas, mensajes, excusas. Un ritual agotador que se repite cada mes
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Card 2 - Retrasos */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-2.jpg"
+                  alt="Espacio moderno"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Retrasos
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    67%
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    inquilinos pagan tarde
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    {'"'}Ya te consigno mañana{'"'} es la frase más repetida en los arriendos tradicionales
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Card 3 - Desorden */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="relative h-[420px] rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src="/hero-3.jpg"
+                  alt="Habitación moderna"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                    Desorden
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-[64px] md:text-[72px] font-heading font-light text-white leading-none tracking-tight mb-2">
+                    0
+                  </p>
+                  <p className="text-[15px] font-medium text-white/90 mb-1">
+                    registro de pagos organizado
+                  </p>
+                  <p className="text-[13px] text-white/60 leading-relaxed">
+                    Sin sistema, la contabilidad es un desastre de extractos y WhatsApps
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Robottom Row - Illustration Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+              {/* Card 4 - Manual Payment Widget */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+              >
+                {/* Widget Illustration */}
+                <div className="flex-shrink-0 relative">
+                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <BellRinging className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-[12px] font-medium text-foreground">Recordatorio #47</p>
+                        <p className="text-[10px] text-muted-foreground">Hoy 9:30 AM</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="bg-amber-50 rounded-lg p-2">
+                        <p className="text-[10px] text-amber-700">
+                          {'"'}Hola Carlos, recuerda que el arriendo de este mes está pendiente...{'"'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>Enviado hace 3 días</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    47
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    {'"'}Ya te escribo mañana{'"'}
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Mensajes manuales que nadie lee. Excusas que se repiten cada mes. Un ciclo agotador que consume tu tiempo y energía.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Card 5 - No Receipt Widget */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 }}
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+              >
+                {/* Widget Illustration */}
+                <div className="flex-shrink-0 relative">
+                  <div className="bg-white rounded-xl shadow-lg p-4 w-[220px] border border-neutral-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-medium text-foreground">Control de pagos</span>
+                      <WarningCircle className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { month: 'Enero', status: 'Consignación Bancol...', unclear: true },
+                        { month: 'Febrero', status: 'WhatsApp dice que pagó', unclear: true },
+                        { month: 'Marzo', status: '???', unclear: true },
+                        { month: 'Abril', status: 'Nequi ¿cuánto?', unclear: true },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{item.month}</span>
+                          <span className="text-red-500/70 text-[10px] truncate max-w-[100px]">{item.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="flex items-center gap-2 text-[10px] text-red-500">
+                      <Receipt className="w-3 h-3" />
+                      <span>Sin recibos formales</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    {'"'}¿Ya me pagó este mes?{'"'}
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Sin un sistema centralizado, cada mes es un detective work revisando extractos, WhatsApps y notas. Un caos contable.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Solutions Bento Section */}
+        <section id="como-funciona" className="bg-muted py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Cobra tu arriendo <span className="italic">sin esfuerzo</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Configura una vez, recibe cada mes. Cobro automático, recordatorios inteligentes y reportes detallados.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+              {/* Large Card - Cobro Automático */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="md:col-span-7 bg-foreground rounded-xl p-8 min-h-[360px] flex flex-col justify-between relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
+                    <Wallet className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    Cobro Automático
+                  </h3>
+                  <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
+                    Configura la fecha de cobro y el monto. Nosotros nos encargamos del resto. Tu inquilino paga, tú recibes.
+                  </p>
+                </div>
+                <div className="relative z-10 flex flex-wrap gap-2 mt-6">
+                  {['Débito automático', 'PSE y tarjeta', 'Nequi y Daviplata'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Small Card - Recordatorios */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
+                    <BellRinging className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    Recordatorios Inteligentes
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    WhatsApp, email y SMS automáticos. Tu inquilino recibe recordatorios amigables sin que tú escribas nada.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['3 días antes', '1 día antes', 'Día de pago'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Small Card - Recibos */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <Receipt className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                    Recibos Automáticos
+                  </h3>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed">
+                    Cada pago genera un recibo digital. Tu inquilino lo recibe automáticamente, tú tienes todo documentado.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['PDF descargable', 'Envío automático', 'Historial completo'].map((item, i) => (
+                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Large Card - Transferencia */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="md:col-span-7 relative rounded-xl overflow-hidden min-h-[360px] group"
+              >
+                <Image
+                  src="/hero-5.jpg"
+                  alt="Propiedad moderna"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+                <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                    <Bank className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                      Tu Dinero en 24 Horas
+                    </h3>
+                    <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
+                      Cuando tu inquilino paga, el dinero está en tu cuenta bancaria al día siguiente. Sin intermediarios, sin comisiones.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {['0% comisión', 'Todos los bancos', 'Transferencia automática'].map((item, i) => (
+                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Payment Methods Section */}
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Tu inquilino elige <span className="italic">cómo pagar</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Aceptamos todos los métodos de pago populares en Colombia. Más opciones = menos excusas.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
               {[
-                { icon: Timer, value: '95%', label: 'Pagos a tiempo', description: 'Con recordatorios automáticos' },
-                { icon: Shield, value: '100%', label: 'Seguro', description: 'Certificación PCI-DSS' },
-                { icon: Zap, value: '24h', label: 'Transferencia', description: 'Máximo a tu cuenta' },
-                { icon: CircleDollarSign, value: '0%', label: 'Comisión', description: 'Para propietarios' },
-              ].map((item, i) => {
-                const Icon = item.icon;
+                { icon: CreditCard, name: 'Tarjeta débito/crédito', description: 'Visa, Mastercard, Amex', popular: true },
+                { icon: Bank, name: 'PSE', description: 'Todos los bancos de Colombia', popular: false },
+                { icon: DeviceMobile, name: 'Nequi / Daviplata', description: 'Billeteras digitales', popular: false },
+                { icon: CurrencyCircleDollar, name: 'Efectivo', description: 'Efecty, Baloto, SuRed', popular: false },
+              ].map((method, i) => {
+                const Icon = method.icon;
                 return (
                   <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 30 }}
+                    key={method.name}
+                    initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className="relative bg-product-elevated/60 backdrop-blur-sm rounded-2xl border border-white/[0.08] p-6 text-center group hover:border-emerald-500/30 transition-colors"
+                    className="relative bg-sand-50 rounded-xl p-6 min-h-[200px] flex flex-col"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                      <Icon className="w-7 h-7 text-emerald-400" />
+                    {method.popular && (
+                      <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-medium uppercase tracking-wider bg-foreground text-white rounded-full">
+                        Más usado
+                      </span>
+                    )}
+                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4 shadow-sm">
+                      <Icon className="w-6 h-6 text-foreground/70" />
                     </div>
-                    <p className="text-4xl font-bold text-white mb-1">{item.value}</p>
-                    <p className="text-sm font-medium text-white/80">{item.label}</p>
-                    <p className="text-xs text-white/40 mt-1">{item.description}</p>
+                    <h3 className="text-[17px] font-heading font-medium text-foreground mb-1">{method.name}</h3>
+                    <p className="text-[13px] text-muted-foreground">{method.description}</p>
                   </motion.div>
                 );
               })}
             </div>
-          </div>
-        </section>
 
-        {/* Final CTA */}
-        <section className="relative py-24 md:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-950/30 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.12),transparent_70%)]" />
-
-          <div className="relative max-w-4xl mx-auto px-6 text-center">
+            {/* Trust Badges */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="space-y-8"
+              transition={{ delay: 0.5 }}
+              className="mt-12 flex items-center justify-center gap-8 flex-wrap"
             >
-              <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight">
-                Deja de perseguir,
-                <span className="block bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
-                  empieza a recibir
-                </span>
-              </h2>
-              <p className="text-xl text-white/50 max-w-2xl mx-auto">
-                Activa el cobro automático hoy. Sin costo de activación, sin comisiones ocultas.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/auth">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto bg-white text-product-elevated hover:bg-white/90 font-semibold text-lg h-14 px-10 rounded-sm shadow-lg shadow-white/10 group"
-                  >
-                    Activar cobro automático
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="flex items-center justify-center gap-6 pt-4 text-sm text-white/30">
-                <span className="flex items-center gap-1.5">
-                  <Shield className="w-4 h-4" />
-                  PCI-DSS
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CircleDollarSign className="w-4 h-4" />
-                  0% comisión
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-4 h-4" />
-                  24h transferencia
-                </span>
-              </div>
+              {[
+                { icon: Shield, label: 'Certificación PCI-DSS' },
+                { icon: CheckCircle, label: 'Regulado por SFC Colombia' },
+                { icon: Lightning, label: 'Soporte 24/7' },
+              ].map((badge, i) => (
+                <div key={i} className="flex items-center gap-2 text-muted-foreground">
+                  <badge.icon className="w-4 h-4" />
+                  <span className="text-[13px]">{badge.label}</span>
+                </div>
+              ))}
             </motion.div>
           </div>
         </section>
+
+        {/* Dashboard Preview Section - Visual Bento */}
+        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
+          <div className="container-platform">
+            <div className="mb-14 lg:mb-20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                <h2 className="lg:col-span-2 text-[clamp(2.5rem,5.5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
+                  Todo en un solo <span className="italic">dashboard</span>
+                </h2>
+                <div className="flex items-start pl-0 lg:pl-6 pt-2">
+                  <p className="text-[15px] text-muted-foreground leading-relaxed">
+                    Visualiza ingresos, pagos pendientes y reportes. Tu contador te lo agradecerá.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+              {/* Large Card - Main Dashboard Preview */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="md:col-span-8 bg-foreground rounded-xl p-6 min-h-[420px] relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
+
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                  <div>
+                    <p className="text-[11px] text-white/40 uppercase tracking-wider mb-1">Panel de Pagos</p>
+                    <h3 className="text-[20px] font-heading font-medium text-white">Resumen del mes</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-white/50 bg-white/10 px-3 py-1.5 rounded-full">Enero 2026</span>
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 mb-6 relative z-10">
+                  <div className="bg-white/[0.08] rounded-xl p-4 border border-white/[0.06]">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Recibido</p>
+                    <p className="text-[28px] font-bold text-white tracking-tight">$12.5M</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendUp className="w-3 h-3 text-emerald-400" />
+                      <span className="text-[11px] text-emerald-400">+12%</span>
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.08] rounded-xl p-4 border border-white/[0.06]">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Pendiente</p>
+                    <p className="text-[28px] font-bold text-white tracking-tight">$2.5M</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3 text-amber-400" />
+                      <span className="text-[11px] text-amber-400">1 pago</span>
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.08] rounded-xl p-4 border border-white/[0.06]">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Propiedades</p>
+                    <p className="text-[28px] font-bold text-white tracking-tight">4</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <CheckCircle className="w-3 h-3 text-white/40" />
+                      <span className="text-[11px] text-white/40">Activas</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chart Area */}
+                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06] relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[12px] text-white/60 font-medium">Ingresos últimos 6 meses</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="text-[10px] text-white/40">Recibido</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-white/20" />
+                        <span className="text-[10px] text-white/40">Esperado</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Bar Chart */}
+                  <div className="flex items-end gap-2 h-28">
+                    {[
+                      { month: 'Ago', received: 65, expected: 80 },
+                      { month: 'Sep', received: 80, expected: 80 },
+                      { month: 'Oct', received: 75, expected: 85 },
+                      { month: 'Nov', received: 90, expected: 90 },
+                      { month: 'Dic', received: 85, expected: 95 },
+                      { month: 'Ene', received: 100, expected: 100 },
+                    ].map((bar, i) => (
+                      <div key={bar.month} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full flex gap-0.5 items-end h-20">
+                          <motion.div
+                            className="flex-1 bg-white/10 rounded-t"
+                            initial={{ height: 0 }}
+                            whileInView={{ height: `${bar.expected}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.3 + i * 0.05, duration: 0.5 }}
+                          />
+                          <motion.div
+                            className="flex-1 bg-emerald-400 rounded-t"
+                            initial={{ height: 0 }}
+                            whileInView={{ height: `${bar.received}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.4 + i * 0.05, duration: 0.5 }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-white/30">{bar.month}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right Column - Stacked Cards */}
+              <div className="md:col-span-4 flex flex-col gap-4 lg:gap-5">
+                {/* Recent Transactions Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white rounded-xl p-5 border border-neutral-200 flex-1"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[14px] font-medium text-foreground">Últimos pagos</h4>
+                    <span className="text-[11px] text-muted-foreground">Ver todos →</span>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { name: 'María López', property: 'Apto 301', amount: '+$2.5M', status: 'success', time: 'Hoy' },
+                      { name: 'Carlos Ruiz', property: 'Apto 502', amount: '+$1.8M', status: 'success', time: 'Ayer' },
+                      { name: 'Ana García', property: 'Casa 12', amount: '$3.2M', status: 'pending', time: '5 Feb' },
+                    ].map((tx, i) => (
+                      <motion.div
+                        key={tx.name}
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                        className="flex items-center gap-3"
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${tx.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {tx.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-medium text-foreground truncate">{tx.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{tx.property} · {tx.time}</p>
+                        </div>
+                        <span className={`text-[12px] font-semibold ${tx.status === 'success' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {tx.amount}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Quick Actions Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-sand-50 rounded-xl p-5"
+                >
+                  <h4 className="text-[14px] font-medium text-foreground mb-4">Acciones rápidas</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { icon: FileText, label: 'Reporte PDF', color: 'bg-primary/10 text-primary' },
+                      { icon: PaperPlaneTilt, label: 'Recordatorio', color: 'bg-emerald-50 text-emerald-600' },
+                      { icon: ChartBar, label: 'Estadísticas', color: 'bg-amber-50 text-amber-600' },
+                      { icon: Receipt, label: 'Recibos', color: 'bg-sand-200 text-sand-700' },
+                    ].map((action, i) => (
+                      <motion.button
+                        key={action.label}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.4 + i * 0.05 }}
+                        className="flex items-center gap-2 p-3 bg-white rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors text-left"
+                      >
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${action.color}`}>
+                          <action.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-[11px] font-medium text-foreground">{action.label}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="bg-white overflow-hidden">
+          <div className="container-platform py-[80px] pb-[100px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="lg:sticky lg:top-32"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+                  <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
+                    Testimonios
+                  </span>
+                </div>
+
+                <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+                  Propietarios que ya cobran automático
+                </h2>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={prevTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Anterior testimonio"
+                  >
+                    <CaretLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextTestimonial}
+                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    aria-label="Siguiente testimonio"
+                  >
+                    <CaretRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <AnimatePresence mode="popLayout">
+                  {[0, 1].map((offset) => {
+                    const index = (currentIndex + offset) % testimonials.length;
+                    const testimonial = testimonials[index];
+                    return (
+                      <motion.div
+                        key={`${index}-${currentIndex}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4, delay: offset * 0.1 }}
+                        className="bg-white rounded-xl p-8 flex flex-col"
+                      >
+                        <div className="mb-6">
+                          <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
+                          </svg>
+                        </div>
+
+                        <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-foreground mb-8 flex-grow">
+                          {testimonial.quote}
+                        </p>
+
+                        <div className="flex items-center gap-4">
+                          <div className="w-[52px] h-[52px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                            <Image
+                              src={testimonial.image}
+                              alt={testimonial.author}
+                              width={52}
+                              height={52}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-[16px] font-normal text-foreground tracking-[-0.32px] leading-[21.6px]">
+                              {testimonial.author}
+                            </p>
+                            <p className="text-[16px] text-muted-foreground tracking-[-0.32px] leading-[21.6px]">
+                              {testimonial.role}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <FAQSection />
+        <CTASection />
       </main>
       <Footer />
     </>

@@ -132,7 +132,7 @@ export function validatePersonalStep(data: Partial<PersonalInfo>): ValidationRes
   if (!data.dateOfBirth) {
     errors.dateOfBirth = 'Fecha de nacimiento requerida';
   } else if (!isAdult(data.dateOfBirth)) {
-    errors.dateOfBirth = 'Debes ser mayor de 18 anos';
+    errors.dateOfBirth = 'Debes ser mayor de 18 años';
   }
 
   // Phone - required, Colombian format

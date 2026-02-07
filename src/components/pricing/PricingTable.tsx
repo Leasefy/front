@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { PricingCard } from './PricingCard';
 import { PLANS, PLAN_COMPARISON } from '@/lib/data/mock-subscriptions';
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { BillingCycle, PlanId } from '@/lib/types/subscription';

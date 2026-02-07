@@ -11,7 +11,7 @@ interface DividerProps {
  * Auth divider - "or continue with email" pattern
  * Line - text - line
  */
-export function Divider({ text = 'o continua con email', className }: DividerProps) {
+export function Divider({ text = 'o continúa con email', className }: DividerProps) {
   return (
     <div className={cn('relative flex items-center', className)}>
       <div className="flex-1 border-t border-border" />

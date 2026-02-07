@@ -5,5 +5,6 @@ export { StepAmenities } from './StepAmenities';
 export { StepPhotos } from './StepPhotos';
 export { StepPricing } from './StepPricing';
 export { StepDescription } from './StepDescription';
+export { StepTenantRequirements } from './StepTenantRequirements';
 export { StepPlan } from './StepPlan';
 export { StepReview } from './StepReview';

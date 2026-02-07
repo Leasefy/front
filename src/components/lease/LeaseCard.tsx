@@ -7,16 +7,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cardStyles, borderRadius, transitions, borders, badgeStyles, hoverEffects } from '@/lib/design-tokens';
-import {
-  MapPin,
-  Calendar,
-  MessageCircle,
-  FileText,
-  CreditCard,
-  User,
-  Phone,
-  Mail,
-} from 'lucide-react';
+import { MapPin, Calendar, ChatCircle, FileText, CreditCard, User, Phone, Envelope } from '@phosphor-icons/react';
 import type { Lease } from '@/lib/types/lease';
 
 interface LeaseCardProps {
@@ -36,7 +27,7 @@ const statusConfig: Record<
     variant: 'success',
   },
   ending_soon: {
-    label: 'Proximo a vencer',
+    label: 'Próximo a vencer',
     variant: 'warning',
   },
   ended: {
@@ -144,7 +135,7 @@ export function LeaseCard({
                     {contactPhone}
                   </span>
                   <span className="flex items-center gap-1 truncate">
-                    <Mail className="w-3 h-3" />
+                    <Envelope className="w-3 h-3" />
                     {contactEmail}
                   </span>
                 </div>
@@ -162,7 +153,7 @@ export function LeaseCard({
             </div>
             {lease.status === 'active' && daysRemaining > 0 && (
               <span className={cn('text-xs px-2 py-0.5', borderRadius.sm, 'bg-muted text-foreground')}>
-                {daysRemaining} dias restantes
+                {daysRemaining} días restantes
               </span>
             )}
             {lease.status === 'ending_soon' && (
@@ -175,7 +166,7 @@ export function LeaseCard({
           {/* Quick actions */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="gap-2">
-              <MessageCircle className="w-4 h-4" />
+              <ChatCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Mensaje</span>
             </Button>
             {lease.contractUrl && (

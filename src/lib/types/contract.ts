@@ -119,6 +119,45 @@ export interface Signature {
   ipAddress: string;     // IP for legal record
   userAgent: string;     // Browser info for legal record
   status: SignatureStatus;
+  otpVerified: boolean;       // Whether OTP verification was completed
+  otpVerifiedAt?: string;     // ISO date string when OTP was verified
+}
+
+// ============================================================================
+// Audit Trail
+// ============================================================================
+
+/**
+ * Types of audit events in contract lifecycle
+ */
+export type ContractAuditEventType =
+  | 'created'
+  | 'sent_to_landlord'
+  | 'landlord_signed'
+  | 'sent_to_tenant'
+  | 'tenant_signed'
+  | 'activated';
+
+/**
+ * Audit event metadata
+ */
+export interface ContractAuditEventMetadata {
+  userId?: string;
+  userName?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  otpVerified?: boolean;
+}
+
+/**
+ * Individual audit event in contract history
+ */
+export interface ContractAuditEvent {
+  id: string;
+  contractId: string;
+  type: ContractAuditEventType;
+  timestamp: string;        // ISO date string
+  metadata: ContractAuditEventMetadata;
 }
 
 // ============================================================================
@@ -173,6 +212,11 @@ export interface Contract {
   // Metadata
   createdAt: string;
   updatedAt: string;
+
+  // Audit & Certification
+  auditTrail: ContractAuditEvent[];
+  certificateId?: string;        // e.g., CERT-{contractId}-{timestamp}
+  documentHash?: string;         // SHA-256 hash of the PDF
 }
 
 // ============================================================================

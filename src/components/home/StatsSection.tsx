@@ -90,7 +90,7 @@ function FlowLines() {
           );
         })}
 
-        {/* Bottom dots */}
+        {/* Robottom dots */}
         {lines.map((line, i) => {
           const cx = parseFloat(line.x1) / 100 * 1400;
           return (
@@ -160,11 +160,11 @@ export function StatsSection() {
   return (
     <section className="bg-white pt-0 pb-16 md:pb-24">
       {/* Flow lines connecting from bento above — same container as AboutSection bento */}
-      <div className="container-wide">
+      <div className="container-platform">
         <FlowLines />
       </div>
 
-      <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+      <div className="container-platform">
         {/* Stats row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-14 gap-x-8">
           {stats.map((stat, index) => (

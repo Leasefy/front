@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, MessageCircle, Eye } from 'lucide-react';
+import { Check, X, ChatCircle, Eye } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface DecisionButtonsProps {
@@ -50,8 +50,8 @@ export function DecisionButtons({
     }
 
     if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
-      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
-        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      toast.error(`Máximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobación de otro candidato primero.',
       });
       return;
     }
@@ -76,7 +76,7 @@ export function DecisionButtons({
         break;
       case 'more-info':
         toast.info('Solicitud enviada', {
-          description: 'El candidato recibira una notificacion.',
+          description: 'El candidato recibirá una notificación.',
         });
         break;
     }
@@ -192,7 +192,7 @@ export function DecisionButtons({
           )}
           onClick={() => handleDecision('more-info')}
         >
-          <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+          <ChatCircle className="mr-1.5 h-3.5 w-3.5" />
           Más info
         </Button>
       </div>

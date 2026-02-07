@@ -1,6 +1,6 @@
 'use client';
 
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export interface TimelineItem {
@@ -8,7 +8,7 @@ export interface TimelineItem {
   title: string;
   description?: string;
   timestamp: Date | string;
-  icon?: LucideIcon;
+  icon?: Icon;
   iconColor?: string;
   iconBg?: string;
   user?: {

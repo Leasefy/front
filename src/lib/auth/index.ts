@@ -8,4 +8,4 @@
 
 export { AuthProvider, AuthContext } from './auth-context'
 export { useAuth } from './use-auth'
-export type { User, AuthState, AuthContextType, MockUser } from './types'
+export type { User, AuthState, AuthContextType, MockUser, OnboardingData, TenantOnboardingData, OnboardingStatus, PaymentMethod, RiskLevel, PreferredContact, EmploymentType } from './types'

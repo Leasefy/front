@@ -1,9 +1,10 @@
 import { Metadata } from "next";
+import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Propiedades en Arriendo",
   description:
-    "Encuentra apartamentos y casas en arriendo en Bogota, Medellin, Cali y toda Colombia. Filtros inteligentes, busqueda con IA y propietarios verificados.",
+    "Encuentra apartamentos y casas en arriendo en Bogotá, Medellín, Cali y toda Colombia. Filtros inteligentes, búsqueda con IA y propietarios verificados.",
   keywords: [
     "propiedades en arriendo",
     "apartamentos arriendo Bogota",
@@ -13,9 +14,9 @@ export const metadata: Metadata = {
     "apartaestudios arriendo",
   ],
   openGraph: {
-    title: "Propiedades en Arriendo | Arriendo Facil",
+    title: "Propiedades en Arriendo | Leasefy",
     description:
-      "Encuentra tu proximo hogar. Apartamentos y casas en arriendo con busqueda inteligente y propietarios verificados.",
+      "Encuentra tu próximo hogar. Apartamentos y casas en arriendo con búsqueda inteligente y propietarios verificados.",
     type: "website",
   },
   alternates: {
@@ -28,5 +29,5 @@ export default function PropiedadesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ForceLightMode>{children}</ForceLightMode>;
 }

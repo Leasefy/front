@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
-import { Building2, User, Calendar } from 'lucide-react';
+import { Buildings, User, Calendar } from '@phosphor-icons/react';
 import type { Lease } from '@/lib/types/lease';
 
 interface LeaseListItemProps {
@@ -38,7 +38,7 @@ export function LeaseListItem({ lease, onSelect, isSelected }: LeaseListItemProp
           'w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0',
           isSelected ? 'bg-foreground' : 'bg-muted'
         )}>
-          <Building2 className={cn(
+          <Buildings className={cn(
             'w-5 h-5',
             isSelected ? 'text-white' : 'text-muted-foreground'
           )} />

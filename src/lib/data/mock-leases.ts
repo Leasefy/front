@@ -29,7 +29,7 @@ export const MOCK_LEASES: Lease[] = [
     paymentDueDay: 5,
     propertyTitle: 'Apartamento Moderno en Chapinero',
     propertyAddress: 'Cra 7 #72-45, Apto 501',
-    propertyCity: 'Bogota',
+    propertyCity: 'Bogotá',
     propertyThumbnail:
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop',
     tenantName: 'Carlos Rodriguez Martinez',
@@ -61,7 +61,7 @@ export const MOCK_LEASES: Lease[] = [
     paymentDueDay: 1,
     propertyTitle: 'Estudio en el Poblado',
     propertyAddress: 'Cra 43A #14-95, Apto 302',
-    propertyCity: 'Medellin',
+    propertyCity: 'Medellín',
     propertyThumbnail:
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop',
     tenantName: 'Ana Sofia Herrera',
@@ -125,7 +125,7 @@ export const MOCK_LEASES: Lease[] = [
     paymentDueDay: 15,
     propertyTitle: 'Habitacion Amoblada Centro',
     propertyAddress: 'Cra 5 #15-30, Hab 3',
-    propertyCity: 'Bogota',
+    propertyCity: 'Bogotá',
     propertyThumbnail:
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
     tenantName: 'Carlos Rodriguez Martinez',

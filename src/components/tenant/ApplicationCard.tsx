@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { MapPin, Calendar, Hash, ChevronRight, X } from 'lucide-react';
+import { MapPin, Calendar, Hash, CaretRight, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDate, formatCurrency } from '@/lib/format';
@@ -32,7 +32,7 @@ export interface ApplicationCardProps {
  * |                      | Location                   |
  * |                      | $ 2.500.000/mes            |
  * +--------------------------------------------------+
- * | Enviada: 18 ene 2026 | Codigo: AF-K7N3P2   [>]   |
+ * | Enviada: 18 ene 2026 | Código: AF-K7N3P2   [>]   |
  * +--------------------------------------------------+
  */
 export function ApplicationCard({
@@ -156,7 +156,7 @@ export function ApplicationCard({
           )}
 
           {/* Navigate indicator */}
-          <ChevronRight className={cn(
+          <CaretRight className={cn(
             'w-4 h-4 opacity-40 group-hover:opacity-60',
             transitions.colors
           )} />

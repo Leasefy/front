@@ -14,7 +14,7 @@ import type { CandidateBasic } from '@/lib/types/candidate';
 import type { RiskLevel } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateSelectorProps {

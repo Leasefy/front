@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { SectionLabel } from "@/components/ui/section-label";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from '@phosphor-icons/react';
 
 const cities = [
   {
@@ -46,13 +46,13 @@ const cities = [
 export function CitiesSection() {
   return (
     <section className="bg-white py-20 md:py-28">
-      <div className="mx-auto max-w-[1400px] px-6 md:px-12">
+      <div className="container-platform">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-14 md:mb-20">
           <SectionLabel className="mb-4 justify-center">
             Ubicaciones
           </SectionLabel>
-          <h2 className="text-[1.75rem] md:text-[2.5rem] font-light text-foreground leading-[1.2] tracking-[-0.02em] italic mb-3">
+          <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic mb-3">
             Ciudades destacadas
           </h2>
           <p className="text-muted-foreground text-[15px] md:text-base max-w-md leading-relaxed">
@@ -101,7 +101,7 @@ export function CitiesSection() {
                   </div>
 
                   {/* City name */}
-                  <h3 className="text-[22px] md:text-[26px] font-medium text-white tracking-[-0.02em] leading-tight mb-0.5 flex items-center gap-2">
+                  <h3 className="text-[22px] md:text-[26px] font-heading font-medium text-white tracking-[-0.02em] leading-tight mb-0.5 flex items-center gap-2">
                     {city.name}
                     <ArrowUpRight className="w-4 h-4 text-white/60 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all duration-300" />
                   </h3>

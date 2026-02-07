@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { MapPin, Hash, AlertTriangle, X } from 'lucide-react';
+import { MapPin, Hash, Warning, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -33,16 +33,16 @@ import type { Property } from '@/lib/types/property';
 // ============================================================================
 
 const STATUS_EXPLANATIONS: Record<string, string> = {
-  submitted: 'Tu aplicacion ha sido recibida y esta en cola para revision.',
-  under_review: 'El propietario esta revisando tu aplicacion.',
-  pre_approved: 'El propietario esta interesado! Te contactaran pronto.',
-  approved: 'Felicitaciones! Tu aplicacion ha sido aprobada.',
-  rejected: 'Lo sentimos, tu aplicacion no fue aprobada esta vez.',
-  withdrawn: 'Has retirado esta aplicacion.',
+  submitted: 'Tu aplicación ha sido recibida y está en cola para revisión.',
+  under_review: 'El propietario está revisando tu aplicación.',
+  pre_approved: '¡El propietario está interesado! Te contactarán pronto.',
+  approved: '¡Felicitaciones! Tu aplicación ha sido aprobada.',
+  rejected: 'Lo sentimos, tu aplicación no fue aprobada esta vez.',
+  withdrawn: 'Has retirado esta aplicación.',
 };
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ApplicationDetailProps {
@@ -88,7 +88,7 @@ export function ApplicationDetail({
       <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <SheetContent className="w-full sm:max-w-lg">
           <div className="flex h-full items-center justify-center text-muted-foreground">
-            No hay aplicacion seleccionada
+            No hay aplicación seleccionada
           </div>
         </SheetContent>
       </Sheet>
@@ -206,7 +206,7 @@ export function ApplicationDetail({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">
-                    Codigo de seguimiento
+                    Código de seguimiento
                   </p>
                   <p className="flex items-center gap-1.5 text-base font-mono font-semibold text-foreground mt-0.5">
                     <Hash className="h-4 w-4 text-muted-foreground" />
@@ -271,8 +271,8 @@ export function ApplicationDetail({
                 className="w-full"
                 onClick={handleWithdrawClick}
               >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Retirar aplicacion
+                <Warning className="h-4 w-4 mr-2" />
+                Retirar aplicación
               </Button>
             </div>
           )}
@@ -285,9 +285,9 @@ export function ApplicationDetail({
           <DialogHeader>
             <DialogTitle>Confirmar retiro</DialogTitle>
             <DialogDescription>
-              Estas seguro de que quieres retirar tu aplicacion para{' '}
+              ¿Estás seguro de que quieres retirar tu aplicación para{' '}
               <span className="font-medium text-foreground">{title}</span>?
-              Esta accion no se puede deshacer.
+              Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
@@ -298,7 +298,7 @@ export function ApplicationDetail({
               variant="destructive"
               onClick={handleWithdrawConfirm}
             >
-              Si, retirar aplicacion
+              Sí, retirar aplicación
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,30 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import {
-  ArrowLeft,
-  FileText,
-  Download,
-  Eye,
-  Search,
-  Filter,
-  Calendar,
-  CheckCircle,
-  Clock,
-  File,
-  FileCheck,
-  Home,
-  X,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, File, SealCheck, House, X, CaretLeft, CaretRight, FolderOpen, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
-import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
+import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
+import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // Mock documents data
 const mockDocuments = [
@@ -36,7 +19,7 @@ const mockDocuments = [
     date: '2024-01-15',
     size: '2.4 MB',
     status: 'signed',
-    icon: FileCheck,
+    icon: SealCheck,
     previewUrl: '/documents/contrato-arriendo.pdf',
   },
   {
@@ -80,7 +63,7 @@ const mockDocuments = [
     date: '2024-01-15',
     size: '3.1 MB',
     status: 'signed',
-    icon: FileCheck,
+    icon: SealCheck,
     previewUrl: '/documents/inventario-entrega.pdf',
   },
   {
@@ -157,32 +140,44 @@ const mockDocuments = [
     date: '2024-01-15',
     size: '8.2 MB',
     status: 'signed',
-    icon: FileCheck,
+    icon: SealCheck,
     previewUrl: '/documents/inventario-fotos.pdf',
   },
 ];
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 6;
 
-type Document = typeof mockDocuments[number];
+type Document = (typeof mockDocuments)[number];
 
-const documentTypes = [
-  { value: 'all', label: 'Todos' },
-  { value: 'contract', label: 'Contratos' },
-  { value: 'receipt', label: 'Comprobantes' },
-  { value: 'inventory', label: 'Inventarios' },
-];
+// documentTextTs moved inside component to access translations
 
+/**
+ * Tenant Documents Page - Leasefy Brand Style
+ */
 export default function DocumentosPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { t, locale } = useTranslation();
+  const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredDocuments = mockDocuments.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Only show real documents if onboarding is complete
+  const documents = isOnboardingComplete ? mockDocuments : [];
+
+  const documentTextTs = [
+    { value: 'all', label: t('documents.categories.all'), icon: FolderOpen },
+    { value: 'contract', label: t('documents.categories.contracts'), icon: SealCheck },
+    { value: 'receipt', label: t('documents.categories.receipts'), icon: FileText },
+    { value: 'inventory', label: locale === 'es' ? 'Inventarios' : 'Inventories', icon: File },
+  ];
+
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesMagnifyingGlass = doc.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'all' || doc.type === selectedType;
-    return matchesSearch && matchesType;
+    return matchesMagnifyingGlass && matchesType;
   });
 
   // Pagination calculations
@@ -192,430 +187,623 @@ export default function DocumentosPage() {
   const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
-  const handleFilterChange = (type: string) => {
+  const handleFunnelChange = (type: string) => {
     setSelectedType(type);
     setCurrentPage(1);
   };
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
+  const handleMagnifyingGlassChange = (query: string) => {
+    setMagnifyingGlassQuery(query);
     setCurrentPage(1);
   };
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'signed':
-        return { label: 'Firmado', status: 'completed' as const };
+        return {
+          label: locale === 'es' ? 'Firmado' : 'Signed',
+          bgColor: 'bg-emerald-100',
+          textColor: 'text-emerald-700',
+          icon: CheckCircle,
+        };
       case 'pending':
-        return { label: 'Pendiente', status: 'pending' as const };
+        return {
+          label: t('common.pending'),
+          bgColor: 'bg-amber-100',
+          textColor: 'text-amber-700',
+          icon: Clock,
+        };
       default:
-        return { label: 'Disponible', status: 'in_progress' as const };
+        return {
+          label: locale === 'es' ? 'Disponible' : 'Available',
+          bgColor: 'bg-indigo-100',
+          textColor: 'text-indigo-700',
+          icon: FileText,
+        };
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
   };
 
+  // Count stats
+  const signedCount = documents.filter((d) => d.status === 'signed').length;
+  const pendingCount = documents.filter(
+    (d) => d.status === 'pending'
+  ).length;
+  const availableCount = documents.filter(
+    (d) => d.status === 'available'
+  ).length;
+
+  // Loading state
+  if (isOnboardingLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show "complete profile first" if onboarding not done
+  if (!isOnboardingComplete) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <CompleteProfileFirst context="documents" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <Link href="/inquilino" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:hidden">
-          <ArrowLeft className="w-4 h-4" />
-          Dashboard
-        </Link>
-
+    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-plan-primary">Mis Documentos</h1>
-          <p className="text-plan-secondary mt-1">
-            Accede a tus contratos, comprobantes y otros documentos
+        <motion.header
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            {t('documents.title')}
+          </h1>
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            {t('documents.subtitle')}
           </p>
-        </div>
+        </motion.header>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-card  border border-plan-border p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-plan-status-blue-bg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-blue-800" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-plan-primary">{mockDocuments.length}</p>
-                <p className="text-sm text-plan-secondary">Total documentos</p>
-              </div>
+        {/* Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
+        >
+          {/* Total Documents */}
+          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+              <FolderOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
+            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Total</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {documents.length}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('nav.documents')}</p>
           </div>
-          <div className="bg-card  border border-plan-border p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-plan-status-green-bg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-800" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-plan-primary">
-                  {mockDocuments.filter(d => d.status === 'signed').length}
-                </p>
-                <p className="text-sm text-plan-secondary">Firmados</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-card  border border-plan-border p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sm bg-yellow-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-yellow-800" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-plan-primary">
-                  {mockDocuments.filter(d => d.status === 'pending').length}
-                </p>
-                <p className="text-sm text-plan-secondary">Pendientes</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Filters */}
-        <div className="bg-card  border border-plan-border p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
-              <input
-                type="text"
-                placeholder="Buscar documento..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                aria-label="Buscar documento"
-                className="w-full pl-10 pr-4 py-2 rounded-sm border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent"
-              />
+          {/* Signed */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="flex gap-2">
-              {documentTypes.map((type) => (
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Firmados' : 'Signed'}</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {signedCount}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Completos' : 'Complete'}</p>
+          </div>
+
+          {/* Pending */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {pendingCount}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Por firmar' : 'To sign'}</p>
+          </div>
+
+          {/* Available */}
+          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+              <FileText className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Disponibles' : 'Available'}</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {availableCount}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Para descargar' : 'To download'}</p>
+          </div>
+        </motion.div>
+
+        {/* Funnels */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col sm:flex-row gap-4 mb-6"
+        >
+          {/* MagnifyingGlass */}
+          <div className="relative flex-1">
+            <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <input
+              type="text"
+              placeholder={locale === 'es' ? 'Buscar documento...' : 'MagnifyingGlass document...'}
+              value={searchQuery}
+              onChange={(e) => handleMagnifyingGlassChange(e.target.value)}
+              aria-label={locale === 'es' ? 'Buscar documento' : 'MagnifyingGlass document'}
+              className="w-full pl-12 pr-4 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+            />
+          </div>
+
+          {/* Type Filter Pills */}
+          <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
+            {documentTextTs.map((type) => {
+              const IconComponent = type.icon;
+              return (
                 <button
                   key={type.value}
-                  onClick={() => handleFilterChange(type.value)}
+                  onClick={() => handleFunnelChange(type.value)}
                   className={cn(
-                    'px-4 py-2 rounded-sm text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all',
                     selectedType === type.value
-                      ? 'bg-primary text-white'
-                      : 'bg-muted text-plan-secondary hover:bg-muted'
+                      ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                   )}
                 >
-                  {type.label}
+                  <IconComponent className="w-4 h-4" />
+                  <span className="hidden sm:inline">{type.label}</span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Documents List */}
-        <div className="bg-card  border border-plan-border overflow-hidden">
-          {filteredDocuments.length > 0 ? (
-            <div className="divide-y divide-border">
-              {paginatedDocuments.map((doc) => {
-                const Icon = doc.icon;
-                const statusConfig = getStatusConfig(doc.status);
+        {/* Documents Grid */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+              {t('nav.documents')}
+            </h2>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              {filteredDocuments.length} {locale === 'es'
+                ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
+                : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
+            </span>
+          </div>
 
-                return (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between p-5 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-sm bg-muted flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-plan-secondary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-plan-primary">{doc.name}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-plan-secondary flex items-center gap-1">
-                            <Home className="w-3 h-3" />
-                            {doc.property}
-                          </span>
-                          <span className="text-xs text-plan-muted">•</span>
-                          <span className="text-xs text-plan-secondary flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(doc.date)}
-                          </span>
-                          <span className="text-xs text-plan-muted">•</span>
-                          <span className="text-xs text-plan-muted">{doc.size}</span>
+          {documents.length === 0 ? (
+            <EmptyState
+              icon={FolderOpen}
+              title="No hay documentos"
+              description="Cuando subas documentos o recibas contratos, aparecerán aquí organizados."
+              action={{ label: "Ver aplicaciones", href: "/inquilino/aplicaciones" }}
+            />
+          ) : filteredDocuments.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AnimatePresence mode="popLayout">
+                  {paginatedDocuments.map((doc, index) => {
+                    const Icon = doc.icon;
+                    const statusConfig = getStatusConfig(doc.status);
+                    const StatusIcon = statusConfig.icon;
+
+                    return (
+                      <motion.div
+                        key={doc.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                      >
+                        {/* Document Header */}
+                        <div className="p-5">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                              <Icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                            </div>
+                            <span
+                              className={cn(
+                                'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
+                                statusConfig.bgColor,
+                                statusConfig.textColor
+                              )}
+                            >
+                              <StatusIcon className="w-3 h-3" />
+                              {statusConfig.label}
+                            </span>
+                          </div>
+
+                          <h3 className="font-semibold text-neutral-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {doc.name}
+                          </h3>
+
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                              <House className="w-3 h-3" />
+                              {doc.property}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-neutral-400 flex items-center gap-1.5">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(doc.date)}
+                              </p>
+                              <span className="text-xs text-neutral-400">
+                                {doc.size}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <PlanStatusBadge
-                        status={statusConfig.status}
-                        label={statusConfig.label}
-                        size="sm"
-                      />
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setViewingDocument(doc)}
-                          className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors"
-                          title="Ver documento"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-16 text-center px-6">
-              <div className="relative mb-6 inline-block">
-                <div className="absolute inset-0 bg-black/10 rounded-sm blur-xl" />
-                <div className="relative rounded-sm bg-gradient-to-br from-black/10 to-black/5 p-5 border border-border">
-                  <FileText className="h-8 w-8 text-foreground" />
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No se encontraron documentos</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                {searchQuery || selectedType !== 'all'
-                  ? 'Intenta ajustar los filtros o el término de búsqueda'
-                  : 'Cuando tengas documentos asociados a tu arriendo aparecerán aquí'}
-              </p>
-            </div>
-          )}
 
-          {/* Pagination */}
-          {filteredDocuments.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between px-5 py-4 border-t border-plan-border">
-              <p className="text-sm text-plan-secondary">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredDocuments.length)} de {filteredDocuments.length} documentos
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className={cn(
-                    'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
-                    currentPage === 1
-                      ? 'bg-muted text-plan-muted cursor-not-allowed'
-                      : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
-                  )}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Anterior
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={cn(
-                        'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
-                        currentPage === page
-                          ? 'bg-primary text-white'
-                          : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
-                      )}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className={cn(
-                    'flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-sm transition-colors',
-                    currentPage === totalPages
-                      ? 'bg-muted text-plan-muted cursor-not-allowed'
-                      : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
-                  )}
-                >
-                  Siguiente
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                        {/* Actions */}
+                        <div className="flex items-center border-t border-neutral-100 dark:border-neutral-700">
+                          <button
+                            onClick={() => setViewingDocument(doc)}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            {t('documents.view')}
+                          </button>
+                          <div className="w-px h-8 bg-neutral-100 dark:bg-neutral-700" />
+                          <button className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                            <Download className="w-4 h-4" />
+                            {t('documents.download')}
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={cn(
+                      'p-2 rounded-full transition-all',
+                      currentPage === 1
+                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                    )}
+                  >
+                    <CaretLeft className="w-5 h-5" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={cn(
+                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                          currentPage === page
+                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className={cn(
+                      'p-2 rounded-full transition-all',
+                      currentPage === totalPages
+                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                    )}
+                  >
+                    <CaretRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* No results from search/filter */
+            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FileText className="w-8 h-8 text-neutral-400" />
+              </div>
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
+                {t('documents.noDocuments')}
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+                {locale === 'es' ? 'Intenta ajustar los filtros o el término de búsqueda' : 'Try adjusting the filters or search term'}
+              </p>
             </div>
           )}
-        </div>
+        </motion.section>
       </div>
 
       {/* Document Viewer Modal */}
-      {viewingDocument && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setViewingDocument(null)}
-          />
+      <AnimatePresence>
+        {viewingDocument && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setViewingDocument(null)}
+            />
 
-          {/* Modal */}
-          <div className="relative bg-card w-full max-w-4xl h-[90vh] mx-4 rounded-sm shadow-xl flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center">
-                  <viewingDocument.icon className="w-5 h-5 text-plan-secondary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-plan-primary">{viewingDocument.name}</h3>
-                  <p className="text-xs text-plan-secondary">
-                    {viewingDocument.property} • {formatDate(viewingDocument.date)} • {viewingDocument.size}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => {
-                    // In a real app, this would trigger file download
-                    alert('Descarga iniciada: ' + viewingDocument.name);
-                  }}
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar
-                </Button>
-                <button
-                  onClick={() => setViewingDocument(null)}
-                  className="p-2 rounded-sm hover:bg-muted text-plan-secondary hover:text-plan-primary transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Document Preview Area */}
-            <div className="flex-1 bg-muted p-6 overflow-auto">
-              <div className="bg-card h-full rounded-sm shadow-sm flex flex-col items-center justify-center p-8">
-                {/* Mock document preview - in production, use a PDF viewer like react-pdf */}
-                <div className="w-full max-w-2xl mx-auto">
-                  {/* Document Header */}
-                  <div className="text-center mb-8 pb-6 border-b border-plan-border">
-                    <h2 className="text-xl font-bold text-plan-primary mb-2">
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', duration: 0.5 }}
+              className="relative bg-white dark:bg-[#1a1a1c] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-xl flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                    <viewingDocument.icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-neutral-900 dark:text-white">
                       {viewingDocument.name}
-                    </h2>
-                    <p className="text-sm text-plan-secondary">
-                      Propiedad: {viewingDocument.property}
+                    </h3>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {viewingDocument.property} •{' '}
+                      {formatDate(viewingDocument.date)} • {viewingDocument.size}
                     </p>
                   </div>
-
-                  {/* Mock Document Content */}
-                  {viewingDocument.type === 'contract' && (
-                    <div className="space-y-4 text-sm text-foreground">
-                      <p className="font-semibold text-center mb-6">CONTRATO DE ARRENDAMIENTO</p>
-                      <p>
-                        En Santiago de Chile, a {formatDate(viewingDocument.date)}, entre el ARRENDADOR
-                        y el ARRENDATARIO, se ha convenido el siguiente contrato de arrendamiento:
-                      </p>
-                      <p>
-                        <strong>PRIMERO:</strong> El arrendador entrega en arrendamiento al arrendatario
-                        la propiedad ubicada en {viewingDocument.property}.
-                      </p>
-                      <p>
-                        <strong>SEGUNDO:</strong> El precio del arrendamiento será pagado mensualmente
-                        dentro de los primeros 5 días de cada mes.
-                      </p>
-                      <p>
-                        <strong>TERCERO:</strong> El presente contrato tendrá una duración de 12 meses,
-                        renovable de forma automática por períodos iguales.
-                      </p>
-                      <div className="pt-8 mt-8 border-t border-plan-border">
-                        <div className="grid grid-cols-2 gap-8 text-center">
-                          <div>
-                            <div className="border-t border-plan-primary pt-2 mx-8">
-                              <p className="font-medium">Arrendador</p>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="border-t border-plan-primary pt-2 mx-8">
-                              <p className="font-medium">Arrendatario</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {viewingDocument.type === 'receipt' && (
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <p className="font-semibold text-lg mb-1">COMPROBANTE DE PAGO</p>
-                        <p className="text-xs text-plan-secondary">N° {viewingDocument.id.padStart(6, '0')}</p>
-                      </div>
-                      <div className="bg-muted rounded-sm p-4 space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-plan-secondary">Propiedad:</span>
-                          <span className="font-medium">{viewingDocument.property}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-plan-secondary">Fecha de pago:</span>
-                          <span className="font-medium">{formatDate(viewingDocument.date)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-plan-secondary">Concepto:</span>
-                          <span className="font-medium">Arriendo mensual</span>
-                        </div>
-                        <div className="flex justify-between pt-3 border-t border-plan-border">
-                          <span className="font-semibold">Total pagado:</span>
-                          <span className="font-bold text-lg">$850.000</span>
-                        </div>
-                      </div>
-                      <div className="text-center pt-4">
-                        <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
-                        <p className="text-sm text-emerald-600 font-medium">Pago confirmado</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {viewingDocument.type === 'inventory' && (
-                    <div className="space-y-4 text-sm">
-                      <p className="font-semibold text-center mb-6">INVENTARIO DE ENTREGA</p>
-                      <p className="text-plan-secondary text-center mb-4">
-                        Fecha: {formatDate(viewingDocument.date)}
-                      </p>
-                      <div className="overflow-x-auto">
-                      <table className="w-full border-collapse min-w-[320px]">
-                        <thead>
-                          <tr className="bg-muted">
-                            <th className="border border-plan-border px-3 py-2 text-left">Item</th>
-                            <th className="border border-plan-border px-3 py-2 text-center">Cantidad</th>
-                            <th className="border border-plan-border px-3 py-2 text-left">Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="border border-plan-border px-3 py-2">Llaves</td>
-                            <td className="border border-plan-border px-3 py-2 text-center">3</td>
-                            <td className="border border-plan-border px-3 py-2">Buen estado</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-plan-border px-3 py-2">Control remoto portón</td>
-                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
-                            <td className="border border-plan-border px-3 py-2">Buen estado</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-plan-border px-3 py-2">Refrigerador</td>
-                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
-                            <td className="border border-plan-border px-3 py-2">Funcionando</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-plan-border px-3 py-2">Cocina</td>
-                            <td className="border border-plan-border px-3 py-2 text-center">1</td>
-                            <td className="border border-plan-border px-3 py-2">Funcionando</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      </div>
-                    </div>
-                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      alert((locale === 'es' ? 'Descarga iniciada: ' : 'Download started: ') + viewingDocument.name);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    {t('documents.download')}
+                  </button>
+                  <button
+                    onClick={() => setViewingDocument(null)}
+                    className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+              {/* Document Preview Area */}
+              <div className="flex-1 bg-stone-50 dark:bg-[#0f0f10] p-6 overflow-auto">
+                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-2xl shadow-sm p-8">
+                  <div className="w-full max-w-2xl mx-auto">
+                    {/* Document Header */}
+                    <div className="text-center mb-8 pb-6 border-b border-neutral-200 dark:border-neutral-700">
+                      <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+                        {viewingDocument.name}
+                      </h2>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        {locale === 'es' ? 'Propiedad' : 'Property'}: {viewingDocument.property}
+                      </p>
+                    </div>
+
+                    {/* Mock Document Content */}
+                    {viewingDocument.type === 'contract' && (
+                      <div className="space-y-4 text-sm text-neutral-700 dark:text-neutral-300">
+                        <p className="font-semibold text-center text-neutral-900 dark:text-white mb-6">
+                          {locale === 'es' ? 'CONTRATO DE ARRENDAMIENTO' : 'LEASE AGREEMENT'}
+                        </p>
+                        <p>
+                          {locale === 'es'
+                            ? `En Santiago de Chile, a ${formatDate(viewingDocument.date)}, entre el ARRENDADOR y el ARRENDATARIO, se ha convenido el siguiente contrato de arrendamiento:`
+                            : `In Santiago, Chile, on ${formatDate(viewingDocument.date)}, between the LANDLORD and the TENANT, the following lease agreement has been entered into:`}
+                        </p>
+                        <p>
+                          <strong>{locale === 'es' ? 'PRIMERO' : 'FIRST'}:</strong> {locale === 'es'
+                            ? `El arrendador entrega en arrendamiento al arrendatario la propiedad ubicada en ${viewingDocument.property}.`
+                            : `The landlord leases to the tenant the property located at ${viewingDocument.property}.`}
+                        </p>
+                        <p>
+                          <strong>{locale === 'es' ? 'SEGUNDO' : 'SECOND'}:</strong> {locale === 'es'
+                            ? 'El precio del arrendamiento será pagado mensualmente dentro de los primeros 5 días de cada mes.'
+                            : 'The rent shall be paid monthly within the first 5 days of each month.'}
+                        </p>
+                        <p>
+                          <strong>{locale === 'es' ? 'TERCERO' : 'THIRD'}:</strong> {locale === 'es'
+                            ? 'El presente contrato tendrá una duración de 12 meses, renovable de forma automática por períodos iguales.'
+                            : 'This contract shall have a duration of 12 months, automatically renewable for equal periods.'}
+                        </p>
+                        <div className="pt-8 mt-8 border-t border-neutral-200 dark:border-neutral-700">
+                          <div className="grid grid-cols-2 gap-8 text-center">
+                            <div>
+                              <div className="border-t border-neutral-900 dark:border-white pt-2 mx-8">
+                                <p className="font-medium text-neutral-900 dark:text-white">
+                                  {locale === 'es' ? 'Arrendador' : 'Landlord'}
+                                </p>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="border-t border-neutral-900 dark:border-white pt-2 mx-8">
+                                <p className="font-medium text-neutral-900 dark:text-white">
+                                  {locale === 'es' ? 'Arrendatario' : 'Tenant'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {viewingDocument.type === 'receipt' && (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <p className="font-semibold text-lg text-neutral-900 dark:text-white mb-1">
+                            {locale === 'es' ? 'COMPROBANTE DE PAGO' : 'PAYMENT RECEIPT'}
+                          </p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {locale === 'es' ? 'N°' : 'No.'} {viewingDocument.id.padStart(6, '0')}
+                          </p>
+                        </div>
+                        <div className="bg-stone-50 dark:bg-[#2a2a2c] rounded-2xl p-5 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Propiedad' : 'Property'}:</span>
+                            <span className="font-medium text-neutral-900 dark:text-white">
+                              {viewingDocument.property}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500 dark:text-neutral-400">
+                              {locale === 'es' ? 'Fecha de pago' : 'Payment date'}:
+                            </span>
+                            <span className="font-medium text-neutral-900 dark:text-white">
+                              {formatDate(viewingDocument.date)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Concepto' : 'Concept'}:</span>
+                            <span className="font-medium text-neutral-900 dark:text-white">
+                              {locale === 'es' ? 'Arriendo mensual' : 'Monthly rent'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                            <span className="font-semibold text-neutral-900 dark:text-white">
+                              {locale === 'es' ? 'Total pagado' : 'Total paid'}:
+                            </span>
+                            <span className="font-bold text-xl text-neutral-900 dark:text-white">
+                              $850.000
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-center pt-4">
+                          <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-2">
+                            <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {viewingDocument.type === 'inventory' && (
+                      <div className="space-y-4 text-sm">
+                        <p className="font-semibold text-center text-neutral-900 dark:text-white mb-6">
+                          {locale === 'es' ? 'INVENTARIO DE ENTREGA' : 'DELIVERY INVENTORY'}
+                        </p>
+                        <p className="text-neutral-500 dark:text-neutral-400 text-center mb-4">
+                          {locale === 'es' ? 'Fecha' : 'Date'}: {formatDate(viewingDocument.date)}
+                        </p>
+                        <div className="overflow-x-auto rounded-2xl border border-neutral-200 dark:border-neutral-700">
+                          <table className="w-full min-w-[320px]">
+                            <thead>
+                              <tr className="bg-stone-50 dark:bg-[#2a2a2c]">
+                                <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">
+                                  {locale === 'es' ? 'Item' : 'Item'}
+                                </th>
+                                <th className="px-4 py-3 text-center font-semibold text-neutral-900 dark:text-white">
+                                  {locale === 'es' ? 'Cantidad' : 'Quantity'}
+                                </th>
+                                <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">
+                                  {locale === 'es' ? 'Estado' : 'Condition'}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                              <tr>
+                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+                                  {locale === 'es' ? 'Llaves' : 'Keys'}
+                                </td>
+                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
+                                  3
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
+                                    {locale === 'es' ? 'Buen estado' : 'Good condition'}
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+                                  {locale === 'es' ? 'Control remoto portón' : 'Gate remote control'}
+                                </td>
+                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
+                                  1
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
+                                    {locale === 'es' ? 'Buen estado' : 'Good condition'}
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+                                  {locale === 'es' ? 'Refrigerador' : 'Refrigerator'}
+                                </td>
+                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
+                                  1
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
+                                    {locale === 'es' ? 'Funcionando' : 'Working'}
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+                                  {locale === 'es' ? 'Cocina' : 'Stove'}
+                                </td>
+                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
+                                  1
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
+                                    {locale === 'es' ? 'Funcionando' : 'Working'}
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

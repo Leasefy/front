@@ -1,14 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  UserCheck,
-  CreditCard,
-  Megaphone,
-  FileSignature,
-  CheckCircle2,
-  ArrowRight,
-} from "lucide-react";
+import { UserCheck, CreditCard, Megaphone, PencilLine, CheckCircle, ArrowRight, FileText } from '@phosphor-icons/react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -68,7 +61,7 @@ const features = [
     ],
   },
   {
-    icon: FileSignature,
+    icon: FileText,
     title: "Contratos digitales",
     pricing: {
       highlight: "Incluido",
@@ -103,11 +96,11 @@ function ScreeningVisual() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Score de riesgo</span>
-          <span className="text-lg font-bold text-emerald-600">92/100</span>
+          <span className="text-lg font-bold text-success-500">92/100</span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+            className="h-full bg-gradient-to-r from-success-500 to-success-500 rounded-full"
             initial={{ width: 0 }}
             whileInView={{ width: "92%" }}
             viewport={{ once: true }}
@@ -119,7 +112,7 @@ function ScreeningVisual() {
         {["Identidad ✓", "Crédito ✓", "Empleo ✓", "Referencias ✓"].map((item) => (
           <div
             key={item}
-            className="text-[10px] text-emerald-700 bg-emerald-50 rounded px-2 py-1 text-center"
+            className="text-[10px] text-success-700 bg-success-50 rounded px-2 py-1 text-center"
           >
             {item}
           </div>
@@ -136,7 +129,7 @@ function PaymentsVisual() {
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Febrero 2026
         </span>
-        <span className="text-xs text-emerald-600 font-medium">3 de 3 pagados</span>
+        <span className="text-xs text-success-500 font-medium">3 de 3 pagados</span>
       </div>
       <div className="space-y-2">
         {[
@@ -153,8 +146,8 @@ function PaymentsVisual() {
               <span
                 className={`text-[10px] px-1.5 py-0.5 rounded ${
                   payment.status === "Pagado"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-700"
+                    ? "bg-success-50 text-success-700"
+                    : "bg-warning-50 text-warning-700"
                 }`}
               >
                 {payment.status}
@@ -193,7 +186,7 @@ function MarketingVisual() {
       </div>
       <div className="flex items-center justify-between pt-1 border-t border-border">
         <span className="text-xs text-muted-foreground">12 candidatos</span>
-        <span className="text-xs text-emerald-600">3 pre-aprobados</span>
+        <span className="text-xs text-success-500">3 pre-aprobados</span>
       </div>
     </div>
   );
@@ -203,7 +196,7 @@ function ContractsVisual() {
   return (
     <div className="bg-card border border-border rounded-sm p-4 space-y-3">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <FileSignature className="w-4 h-4" />
+        <FileText className="w-4 h-4" />
         <span>Contrato de Arrendamiento</span>
       </div>
       <div className="border border-border rounded p-3 space-y-2">
@@ -214,14 +207,14 @@ function ContractsVisual() {
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="w-6 h-6 rounded-full bg-success-50 flex items-center justify-center">
+            <CheckCircle className="w-3.5 h-3.5 text-success-500" />
           </div>
           <span className="text-xs text-foreground">Propietario firmó</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="w-6 h-6 rounded-full bg-success-50 flex items-center justify-center">
+            <CheckCircle className="w-3.5 h-3.5 text-success-500" />
           </div>
           <span className="text-xs text-foreground">Inquilino firmó</span>
         </div>
@@ -240,7 +233,7 @@ const visuals: Record<string, () => JSX.Element> = {
 export function FeaturesSection() {
   return (
     <section className="py-20 md:py-28 bg-muted/30">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-12">
+      <div className="container-platform max-w-[1200px]">
         {/* Header */}
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 rounded-full px-3 py-1 mb-4">
@@ -305,7 +298,7 @@ export function FeaturesSection() {
                           key={benefit}
                           className="flex items-center gap-1.5 text-xs text-muted-foreground"
                         >
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                          <CheckCircle className="w-3 h-3 text-success-500 flex-shrink-0" />
                           {benefit}
                         </li>
                       ))}

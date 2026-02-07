@@ -3,7 +3,7 @@
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
@@ -46,6 +46,10 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   const initialName = searchParams.get('name') || '';
   const initialEmail = searchParams.get('email') || '';
 
+  // Get agent attribution from URL params (shareable links)
+  const agentCode = searchParams.get('ref') || undefined;
+  const linkCode = searchParams.get('link') || undefined;
+
   // 404 handling
   if (!property) {
     return (
@@ -77,7 +81,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
             Propiedad no disponible
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Esta propiedad ya no esta disponible para aplicaciones.
+            Esta propiedad ya no está disponible para aplicaciones.
           </p>
           <Link href="/propiedades">
             <Button className="mt-6">
@@ -95,6 +99,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       propertyId={property.id}
       initialName={initialName}
       initialEmail={initialEmail}
+      agentCode={agentCode}
+      linkCode={linkCode}
     >
       <WizardContent property={property} />
     </ApplicationProvider>

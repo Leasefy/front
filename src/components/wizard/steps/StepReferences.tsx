@@ -1,17 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import {
-  Plus,
-  Trash2,
-  Building2,
-  Briefcase,
-  User,
-  Phone,
-  MapPin,
-  Clock,
-  Users,
-} from 'lucide-react';
+import { Plus, TrashSimple, Buildings, Briefcase, User, Phone, MapPin, Clock, Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import type {
@@ -101,25 +91,25 @@ export function StepReferences() {
 
       // Name validation
       if (fieldName.includes('name') && (!value || String(value).length < 3)) {
-        return 'Minimo 3 caracteres';
+        return 'Mínimo 3 caracteres';
       }
 
       // Phone validation (Colombian)
       if (fieldName.includes('phone')) {
         const phone = String(value || '').replace(/\D/g, '');
         if (!phone || !/^3\d{9}$/.test(phone)) {
-          return 'Telefono invalido';
+          return 'Teléfono inválido';
         }
       }
 
       // Address validation
       if (fieldName.includes('address') && (!value || String(value).length < 10)) {
-        return 'Minimo 10 caracteres';
+        return 'Mínimo 10 caracteres';
       }
 
       // Duration validation
       if (fieldName.includes('duration') && (!value || Number(value) < 1)) {
-        return 'Minimo 1 mes';
+        return 'Mínimo 1 mes';
       }
 
       // Company validation
@@ -233,7 +223,7 @@ export function StepReferences() {
       {/* Previous Landlords Section */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <Building2 className="h-5 w-5 text-muted-foreground" />
+          <Buildings className="h-5 w-5 text-muted-foreground" />
           <h3 className="text-sm font-medium text-foreground">
             Arrendadores Anteriores
           </h3>
@@ -256,7 +246,7 @@ export function StepReferences() {
                     onClick={() => removeLandlord(index)}
                     className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
                   </button>
                 )}
@@ -281,7 +271,7 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Telefono"
+                  label="Teléfono"
                   htmlFor={`landlord-${index}-phone`}
                   error={getError(`landlord-${index}-phone`, landlord.phone)}
                   required
@@ -305,14 +295,14 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Direccion del inmueble"
+                  label="Dirección del inmueble"
                   htmlFor={`landlord-${index}-address`}
                   error={getError(`landlord-${index}-address`, landlord.address)}
                   required
                 >
                   <LightInput
                     id={`landlord-${index}-address`}
-                    placeholder="Direccion donde arrendaste"
+                    placeholder="Dirección donde arrendaste"
                     value={landlord.address}
                     onChange={(e) => handleLandlordChange(index, 'address', e.target.value)}
                     onBlur={() => handleBlur(`landlord-${index}-address`)}
@@ -322,7 +312,7 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Duracion (meses)"
+                  label="Duración (meses)"
                   htmlFor={`landlord-${index}-duration`}
                   error={getError(`landlord-${index}-duration`, landlord.duration)}
                   required
@@ -382,7 +372,7 @@ export function StepReferences() {
                     onClick={() => removeEmploymentRef(index)}
                     className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
                   </button>
                 )}
@@ -407,7 +397,7 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Telefono"
+                  label="Teléfono"
                   htmlFor={`employment-${index}-phone`}
                   error={getError(`employment-${index}-phone`, ref.phone)}
                   required
@@ -442,13 +432,13 @@ export function StepReferences() {
                     value={ref.company}
                     onChange={(e) => handleEmploymentChange(index, 'company', e.target.value)}
                     onBlur={() => handleBlur(`employment-${index}-company`)}
-                    icon={<Building2 className="h-4 w-4" />}
+                    icon={<Buildings className="h-4 w-4" />}
                     hasError={!!getError(`employment-${index}-company`, ref.company)}
                   />
                 </FormField>
 
                 <FormField
-                  label="Relacion"
+                  label="Relación"
                   htmlFor={`employment-${index}-relationship`}
                   error={getError(`employment-${index}-relationship`, ref.relationship)}
                   required
@@ -501,7 +491,7 @@ export function StepReferences() {
                     onClick={() => removePersonalRef(index)}
                     className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
                   </button>
                 )}
@@ -526,7 +516,7 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Telefono"
+                  label="Teléfono"
                   htmlFor={`personal-${index}-phone`}
                   error={getError(`personal-${index}-phone`, ref.phone)}
                   required
@@ -550,7 +540,7 @@ export function StepReferences() {
                 </FormField>
 
                 <FormField
-                  label="Relacion"
+                  label="Relación"
                   htmlFor={`personal-${index}-relationship`}
                   error={getError(`personal-${index}-relationship`, ref.relationship)}
                   required

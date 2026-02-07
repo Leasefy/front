@@ -3,14 +3,16 @@
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { useState } from 'react';
-import { FileText, Building2, User, Calendar, CreditCard, Shield, Lock, ChevronDown } from 'lucide-react';
+import { FileText, Buildings, User, Calendar, CreditCard, Shield, Lock, CaretDown, Download, SealCheck } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 import { getInsuranceById } from '@/lib/data/mock-insurance';
 import { maskEmail, maskPhone, maskDocument } from '@/lib/utils/mask-data';
+import { AuthenticityCertificate } from './AuthenticityCertificate';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ContractPreviewProps {
@@ -40,6 +42,7 @@ export interface ContractPreviewProps {
  */
 export function ContractPreview({ contract, template, selectedInsurance, className }: ContractPreviewProps) {
   const [showAllClauses, setShowAllClauses] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
   const INITIAL_CLAUSES = 2;
   const hasMoreClauses = template.clauses.length > INITIAL_CLAUSES;
   const visibleClauses = showAllClauses ? template.clauses : template.clauses.slice(0, INITIAL_CLAUSES);
@@ -67,13 +70,29 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Header */}
       <div className="border-b border-border px-6 py-5">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          Contrato de Arrendamiento
-        </p>
-        <h2 className="mt-1 text-lg font-semibold text-foreground">
-          {template.name}
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">ID: {contract.id}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Contrato de Arrendamiento
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-foreground">
+              {template.name}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">ID: {contract.id}</p>
+          </div>
+          {/* Certificate button - only show for active contracts */}
+          {isContractSigned && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCertificate(true)}
+              className="shrink-0"
+            >
+              <SealCheck className="mr-2 h-4 w-4 text-emerald-500" />
+              Ver Certificado
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Contract Summary */}
@@ -147,7 +166,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       {/* Property & Dates */}
       <div className="border-b border-border p-6">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <Buildings className="h-4 w-4 text-muted-foreground" />
           Inmueble y Vigencia
         </h3>
         <div className="space-y-3 text-sm">
@@ -225,7 +244,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               onClick={() => setShowAllClauses(true)}
               className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              <ChevronDown className="h-4 w-4" />
+              <CaretDown className="h-4 w-4" />
               Ver {template.clauses.length - INITIAL_CLAUSES} cláusulas más
             </button>
           )}
@@ -303,11 +322,19 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       {/* Legal Footer */}
       <div className="border-t border-border bg-muted p-4 text-center">
         <p className="text-xs text-muted-foreground">
-          Este contrato se rige por la Ley 820 de 2003 y demas normas concordantes.
+          Este contrato se rige por la Ley 820 de 2003 y demás normas concordantes.
           <br />
-          Las firmas electronicas tienen validez legal segun la Ley 527 de 1999.
+          Las firmas electrónicas tienen validez legal según la Ley 527 de 1999.
         </p>
       </div>
+
+      {/* Authenticity Certificate Modal */}
+      <AuthenticityCertificate
+        contract={contract}
+        variant="full"
+        isOpen={showCertificate}
+        onClose={() => setShowCertificate(false)}
+      />
     </div>
   );
 }

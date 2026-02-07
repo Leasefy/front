@@ -4,204 +4,295 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Settings,
-  User,
-  Bell,
-  CreditCard,
-  Shield,
-  Users,
-  Building2,
-  Mail,
-  Phone,
-  Globe,
-  Moon,
-  Sun,
-  ChevronRight,
-  Check,
-  Crown,
-  Zap,
-  X,
-  Loader2,
-  Monitor,
-  AlertTriangle,
-  Trash2,
-  Camera,
-  Copy,
-  Download,
-  PenLine,
-  Smartphone,
-  Tablet,
-  Laptop,
-  MapPin,
-  Clock,
-  Wifi,
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Bell, CreditCard, Shield, Users, Envelope, Phone, Globe, Moon, CaretRight, Check, Crown, Lightning, X, SpinnerGap, Monitor, Warning, TrashSimple, Camera, Copy, Download, DeviceMobile, DeviceTablet, Laptop, Lock, ShieldCheck, Eye, FileText, ArrowCounterClockwise, Tag, UserPlus, ArrowUpRight, PencilSimple, Bank, Wallet, Plus, House, Star } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
-import { getPlanById, MOCK_SUBSCRIPTION, PLANS } from '@/lib/data/mock-subscriptions';
+import { useI18n } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n/types';
+import { getPlanById, MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
 import { getTeamMembers } from '@/lib/data/mock-team';
+import type { TeamRole } from '@/lib/types/team';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { MOCK_LEASES } from '@/lib/data/mock-leases';
 import { getPendingVisitCount } from '@/lib/data/mock-visits';
 import { toast } from 'sonner';
+import {
+  type PaymentAccount,
+  type BankAccount,
+  type DigitalWallet,
+  type BankAccountFormData,
+  type DigitalWalletFormData,
+  type BankCode,
+  type WalletCode,
+  type AccountType,
+  COLOMBIAN_BANKS,
+  DIGITAL_WALLETS,
+  maskAccountNumber,
+  maskPhoneNumber,
+  isBankAccount,
+  isDigitalWallet,
+} from '@/lib/types/payment-accounts';
+import {
+  getPaymentAccounts,
+  getPropertyCountForAccount,
+} from '@/lib/data/mock-payment-accounts';
+import { mockProperties } from '@/lib/data/mock-properties';
 
-// Modal Component
+// ============================================================================
+// Modal Component with modern style
+// ============================================================================
+
 function Modal({
   open,
   onClose,
   title,
   children,
-  size = 'md',
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
 }) {
-  if (!open) return null;
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={cn('relative bg-white dark:bg-card w-full mx-4 shadow-xl', sizeClasses[size])}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-plan-border">
-          <h3 className="text-lg font-semibold text-plan-primary">{title}</h3>
-          <button onClick={onClose} className="text-plan-secondary hover:text-plan-primary">
-            <X className="w-5 h-5" />
-          </button>
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">{children}</div>
+          </motion.div>
         </div>
-        <div className="p-6">{children}</div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ============================================================================
+// Setting Toggle Component
+// ============================================================================
+
+function SettingToggle({
+  icon: Icon,
+  title,
+  description,
+  enabled,
+  onToggle,
+  accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  enabled: boolean;
+  onToggle: () => void;
+  accent?: 'emerald' | 'indigo';
+}) {
+  return (
+    <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+        </div>
       </div>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={enabled}
+        className={cn(
+          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
+          enabled
+            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-500'
+            : 'bg-neutral-200 dark:bg-[#2a2a2c]'
+        )}
+      >
+        <span
+          className={cn(
+            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
+            enabled ? 'translate-x-5' : 'translate-x-0'
+          )}
+        />
+      </button>
     </div>
   );
 }
 
-// Mock sessions
+// ============================================================================
+// Setting Link Component
+// ============================================================================
+
+function SettingLink({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+  badge,
+  external,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  onClick: () => void;
+  badge?: string;
+  external?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {badge && (
+          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">
+            {badge}
+          </span>
+        )}
+        <CaretRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+      </div>
+    </button>
+  );
+}
+
+// ============================================================================
+// Mock Data
+// ============================================================================
+
 const mockSessions = [
-  {
-    id: '1', device: 'Chrome en MacOS', location: 'Bogotá, Colombia', current: true,
-    lastActive: 'Ahora', ip: '190.25.134.87', browser: 'Chrome 122', os: 'macOS Sonoma',
-    deviceType: 'desktop' as const, loginDate: '2 feb 2026, 8:30 AM',
-  },
-  {
-    id: '2', device: 'App iOS', location: 'Bogotá, Colombia', current: false,
-    lastActive: 'Hace 2 horas', ip: '190.25.134.92', browser: 'PLan App 3.2', os: 'iOS 18.1',
-    deviceType: 'mobile' as const, loginDate: '2 feb 2026, 7:15 AM',
-  },
-  {
-    id: '3', device: 'Safari en iPad', location: 'Medellín, Colombia', current: false,
-    lastActive: 'Hace 1 día', ip: '181.53.22.11', browser: 'Safari 17.3', os: 'iPadOS 18',
-    deviceType: 'tablet' as const, loginDate: '1 feb 2026, 3:45 PM',
-  },
-  {
-    id: '4', device: 'Firefox en Windows', location: 'Cali, Colombia', current: false,
-    lastActive: 'Hace 3 días', ip: '200.116.45.33', browser: 'Firefox 123', os: 'Windows 11',
-    deviceType: 'desktop' as const, loginDate: '30 ene 2026, 10:20 AM',
-  },
+  { id: '1', device: 'Chrome en MacOS', location: 'Bogotá, Colombia', current: true, lastActive: 'Ahora', deviceType: 'desktop' as const },
+  { id: '2', device: 'App iOS', location: 'Bogotá, Colombia', current: false, lastActive: 'Hace 2 horas', deviceType: 'mobile' as const },
+  { id: '3', device: 'Safari en iPad', location: 'Medellín, Colombia', current: false, lastActive: 'Hace 1 día', deviceType: 'tablet' as const },
 ];
 
-type SettingsSection = 'profile' | 'notifications' | 'subscription' | 'team' | 'security' | 'preferences';
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export default function ConfiguracionPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
-  const [notifications, setNotifications] = useState({
-    email_new_application: true,
-    email_payment_received: true,
-    email_contract_reminder: true,
-    push_new_message: true,
-    push_application_status: true,
-    sms_urgent: false,
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { locale, setLocale, t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Gear state
+  const [settings, setGear] = useState({
+    emailNewApplication: true,
+    emailPaymentReceived: true,
+    emailContractReminder: true,
+    pushNewMessage: true,
+    pushApplicationStatus: true,
+    smsUrgent: false,
+    marketingEmails: false,
+    twoFactorAuth: false,
   });
 
   // Modal states
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSessionsModal, setShowSessionsModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [editingMember, setEditingMember] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Form states
-  const [isLoading, setIsLoading] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [twoFactorStep, setTwoFactorStep] = useState<'intro' | 'setup' | 'verify' | 'recovery' | 'manage'>('intro');
-  const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
-  const [verificationError, setVerificationError] = useState('');
-  const [recoveryCodes] = useState([
-    'ABCD-1234-EFGH', 'IJKL-5678-MNOP', 'QRST-9012-UVWX',
-    'YZAB-3456-CDEF', 'GHIJ-7890-KLMN', 'OPQR-1234-STUV',
-    'WXYZ-5678-ABCD', 'EFGH-9012-IJKL',
-  ]);
-  const [recoveryCodesCopied, setRecoveryCodesCopied] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
-  const [inviteForm, setInviteForm] = useState({ email: '', role: 'viewer' });
-  const [inviteEmailError, setInviteEmailError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState(mockSessions);
-  const [selectedSession, setSelectedSession] = useState<typeof mockSessions[0] | null>(null);
-  const [showCloseAllConfirm, setShowCloseAllConfirm] = useState(false);
-  const [closingSessionId, setClosingSessionId] = useState<string | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteStep, setDeleteStep] = useState<'review' | 'reason' | 'confirm' | 'processing'>('review');
-  const [deleteReason, setDeleteReason] = useState('');
-  const [deleteReasonOther, setDeleteReasonOther] = useState('');
-  const [exportRequested, setExportRequested] = useState(false);
-  const profileInitial = {
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: '+57 310 123 4567',
-    city: 'Bogotá, Colombia',
-    bio: 'Propietario con más de 5 años de experiencia en el mercado inmobiliario de Bogotá.',
-  };
-  const [profileForm, setProfileForm] = useState(profileInitial);
-  const profileDirty = JSON.stringify(profileForm) !== JSON.stringify(profileInitial);
-  const { theme: currentTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [inviteForm, setInviteForm] = useState<{ email: string; role: TeamRole }>({ email: '', role: 'viewer' });
+  const [teamMembersList, setTeamMembersList] = useState(getTeamMembers());
+  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<{ id: string; name?: string; email: string; role: TeamRole } | null>(null);
+  const [editMemberForm, setEditMemberForm] = useState<{ name: string; role: TeamRole }>({ name: '', role: 'viewer' });
 
-  const [preferences, setPreferences] = useState({
-    language: 'es-co',
-    timezone: 'America/Bogota',
-    currency: 'COP',
-    theme: 'light',
+  // Payment accounts state
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>(getPaymentAccounts());
+  const [showAddBankModal, setShowAddBankModal] = useState(false);
+  const [showAddWalletModal, setShowAddWalletModal] = useState(false);
+  const [showEditAccountModal, setShowEditAccountModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [showAssignPropertiesModal, setShowAssignPropertiesModal] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<PaymentAccount | null>(null);
+  const [bankForm, setBankForm] = useState<BankAccountFormData>({
+    bankCode: '',
+    accountType: '',
+    accountNumber: '',
+    accountHolderName: '',
+    accountHolderDocument: '',
+    isDefault: false,
   });
+  const [walletForm, setWalletForm] = useState<DigitalWalletFormData>({
+    walletCode: '',
+    phoneNumber: '',
+    holderName: '',
+    isDefault: false,
+  });
+  const [propertyAssignments, setPropertyAssignments] = useState<Record<string, string | null>>({});
+
+  // Get landlord's properties (filter by landlord-001 to match mock data)
+  const landlordProperties = mockProperties.filter(p => p.landlordId === 'landlord-001');
 
   const currentPlan = getPlanById(MOCK_SUBSCRIPTION.planId);
-  const [teamMembersList, setTeamMembersList] = useState(getTeamMembers());
 
   // Handlers
-  const handleSaveProfile = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    toast.success('Perfil actualizado correctamente');
+  const handleToggle = (key: keyof typeof settings) => {
+    if (key === 'twoFactorAuth') {
+      setShow2FAModal(true);
+      return;
+    }
+    setGear(prev => ({ ...prev, [key]: !prev[key] }));
+    toast.success(t('landlordSettings.toasts.settingsUpdated'));
   };
 
-  const handlePhotoUpload = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setShowPhotoModal(false);
-    toast.success('Foto de perfil actualizada');
+  const handleDarkModeToggle = () => {
+    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    toast.success(newTheme === 'dark' ? t('landlordSettings.toasts.darkModeEnabled') : t('landlordSettings.toasts.lightModeEnabled'));
   };
 
   const handlePasswordChange = async () => {
     if (passwordForm.new !== passwordForm.confirm) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('landlordSettings.toasts.passwordsDontMatch'));
       return;
     }
     if (passwordForm.new.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
+      toast.error(t('landlordSettings.toasts.passwordTooShort'));
       return;
     }
     setIsLoading(true);
@@ -209,98 +300,53 @@ export default function ConfiguracionPage() {
     setIsLoading(false);
     setShowPasswordModal(false);
     setPasswordForm({ current: '', new: '', confirm: '' });
-    toast.success('Contraseña actualizada correctamente');
+    toast.success(t('landlordSettings.toasts.passwordUpdated'));
   };
 
-  const handleOpen2FAModal = () => {
-    setTwoFactorStep(twoFactorEnabled ? 'manage' : 'intro');
-    setVerificationCode(['', '', '', '', '', '']);
-    setVerificationError('');
-    setRecoveryCodesCopied(false);
-    setShow2FAModal(true);
+  const handleCloseSession = (sessionId: string) => {
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    toast.success(t('landlordSettings.toasts.sessionClosed'));
   };
 
-  const handleVerify2FA = async () => {
-    const code = verificationCode.join('');
-    if (code.length < 6) {
-      setVerificationError('Ingresa el código completo de 6 dígitos');
+  const handleDownloadData = async () => {
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsLoading(false);
+    setShowDownloadModal(false);
+    toast.success(t('landlordSettings.toasts.dataRequestSent'));
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== t('landlordSettings.modals.deleteAccount.confirmWord')) {
+      toast.error(t('landlordSettings.toasts.typeToConfirm'));
       return;
     }
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsLoading(false);
+    toast.success(t('landlordSettings.toasts.accountDeleted'));
+    setTimeout(() => router.push('/'), 2000);
+  };
+
+  const handleEnable2FA = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    // Simulate: accept any 6-digit code for demo
-    if (code === '000000') {
-      setVerificationError('Código incorrecto. Intenta de nuevo.');
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(false);
-    setTwoFactorStep('recovery');
-  };
-
-  const handleComplete2FA = () => {
-    setTwoFactorEnabled(true);
+    setGear(prev => ({ ...prev, twoFactorAuth: true }));
     setShow2FAModal(false);
-    toast.success('Autenticación de dos factores activada');
+    toast.success(t('landlordSettings.toasts.twoFactorEnabled'));
   };
 
-  const handleDisable2FA = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setTwoFactorEnabled(false);
-    setShow2FAModal(false);
-    toast.success('Autenticación de dos factores desactivada');
+  const handleResetOnboarding = () => {
+    localStorage.removeItem('plan_onboarding_landlord');
+    window.dispatchEvent(new Event('onboarding-updated'));
+    toast.success(t('landlordSettings.toasts.onboardingReset'));
+    setTimeout(() => router.push('/panel'), 500);
   };
-
-  const handleCopyRecoveryCodes = () => {
-    navigator.clipboard.writeText(recoveryCodes.join('\n'));
-    setRecoveryCodesCopied(true);
-    toast.success('Códigos copiados al portapapeles');
-  };
-
-  const handleCodeInput = (index: number, value: string) => {
-    if (value.length > 1) value = value.slice(-1);
-    if (value && !/^\d$/.test(value)) return;
-    const newCode = [...verificationCode];
-    newCode[index] = value;
-    setVerificationCode(newCode);
-    setVerificationError('');
-    // Auto-focus next input
-    if (value && index < 5) {
-      const next = document.getElementById(`2fa-code-${index + 1}`);
-      next?.focus();
-    }
-  };
-
-  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
-      const prev = document.getElementById(`2fa-code-${index - 1}`);
-      prev?.focus();
-    }
-  };
-
-  const handleCodePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length > 0) {
-      const newCode = [...verificationCode];
-      for (let i = 0; i < 6; i++) newCode[i] = pasted[i] || '';
-      setVerificationCode(newCode);
-      const focusIdx = Math.min(pasted.length, 5);
-      document.getElementById(`2fa-code-${focusIdx}`)?.focus();
-    }
-  };
-
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleInviteMember = async () => {
-    if (!inviteForm.email) {
-      setInviteEmailError('Ingresa un correo electrónico');
-      return;
-    }
-    if (!isValidEmail(inviteForm.email)) {
-      setInviteEmailError('Ingresa un correo electrónico válido');
+    if (!inviteForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email)) {
+      toast.error(t('landlordSettings.toasts.invalidEmail'));
       return;
     }
     setIsLoading(true);
@@ -308,1632 +354,1402 @@ export default function ConfiguracionPage() {
     setIsLoading(false);
     setShowInviteModal(false);
     setInviteForm({ email: '', role: 'viewer' });
-    setInviteEmailError('');
-    toast.success(`Invitación enviada a ${inviteForm.email}`);
+    toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
   };
 
   const handleRemoveMember = (memberId: string) => {
     setTeamMembersList(prev => prev.filter(m => m.id !== memberId));
-    toast.success('Miembro eliminado del equipo');
+    toast.success(t('landlordSettings.toasts.memberRemoved'));
   };
 
-  const handleUpdateMemberRole = async () => {
+  const handleEditMember = async () => {
     if (!editingMember) return;
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 800));
-    setTeamMembersList(prev => prev.map(m => m.id === editingMember.id ? { ...m, role: editingMember.role as 'admin' | 'manager' | 'accountant' | 'viewer' } : m));
+    setTeamMembersList(prev => prev.map(m =>
+      m.id === editingMember.id
+        ? { ...m, name: editMemberForm.name || m.name, role: editMemberForm.role }
+        : m
+    ));
     setIsLoading(false);
+    setShowEditMemberModal(false);
     setEditingMember(null);
-    toast.success('Rol actualizado correctamente');
-  };
-
-  const handleCloseSession = async (sessionId: string) => {
-    setClosingSessionId(sessionId);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
-    setClosingSessionId(null);
-    setSelectedSession(null);
-    toast.success('Sesión cerrada correctamente');
-  };
-
-  const handleCloseAllOtherSessions = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    setSessions(prev => prev.filter(s => s.current));
-    setIsLoading(false);
-    setShowCloseAllConfirm(false);
-    toast.success('Todas las otras sesiones han sido cerradas');
+    setEditMemberForm({ name: '', role: 'viewer' });
+    toast.success(t('landlordSettings.toasts.memberUpdated'));
   };
 
   const getDeviceIcon = (type: 'desktop' | 'mobile' | 'tablet') => {
     switch (type) {
-      case 'mobile': return Smartphone;
-      case 'tablet': return Tablet;
+      case 'mobile': return DeviceMobile;
+      case 'tablet': return DeviceTablet;
       default: return Laptop;
     }
   };
 
-  const handleSavePreferences = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    toast.success('Preferencias guardadas');
+  // Payment account handlers
+  const resetBankForm = () => {
+    setBankForm({
+      bankCode: '',
+      accountType: '',
+      accountNumber: '',
+      accountHolderName: '',
+      accountHolderDocument: '',
+      isDefault: false,
+    });
   };
 
-  const handleCancelSubscription = () => {
-    toast.info('Para cancelar tu suscripción, escríbenos a soporte@arriendofacil.com', { description: 'Nuestro equipo procesará tu solicitud en 24-48 horas.' });
+  const resetWalletForm = () => {
+    setWalletForm({
+      walletCode: '',
+      phoneNumber: '',
+      holderName: '',
+      isDefault: false,
+    });
+  };
+
+  const validateBankForm = (): boolean => {
+    if (!bankForm.bankCode) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.bankRequired'));
+      return false;
+    }
+    if (!bankForm.accountType) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.accountTypeRequired'));
+      return false;
+    }
+    if (!bankForm.accountNumber) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.accountNumberRequired'));
+      return false;
+    }
+    if (bankForm.accountNumber.length < 10 || bankForm.accountNumber.length > 20) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.accountNumberInvalid'));
+      return false;
+    }
+    if (!bankForm.accountHolderName || bankForm.accountHolderName.length < 3) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.holderNameRequired'));
+      return false;
+    }
+    if (!bankForm.accountHolderDocument || bankForm.accountHolderDocument.length < 6 || bankForm.accountHolderDocument.length > 12) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.documentInvalid'));
+      return false;
+    }
+    return true;
+  };
+
+  const validateWalletForm = (): boolean => {
+    if (!walletForm.walletCode) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.walletRequired'));
+      return false;
+    }
+    if (!walletForm.phoneNumber || walletForm.phoneNumber.length !== 10) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.phoneInvalid'));
+      return false;
+    }
+    if (!walletForm.holderName || walletForm.holderName.length < 3) {
+      toast.error(t('landlordSettings.paymentAccounts.validation.holderNameRequired'));
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddBankAccount = async () => {
+    if (!validateBankForm()) return;
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const bank = COLOMBIAN_BANKS.find(b => b.code === bankForm.bankCode);
+    const newAccount: BankAccount = {
+      id: `account-${Date.now()}`,
+      type: 'bank',
+      bankCode: bankForm.bankCode as BankCode,
+      bankName: bank?.name || '',
+      accountType: bankForm.accountType as AccountType,
+      accountNumber: bankForm.accountNumber,
+      accountHolderName: bankForm.accountHolderName,
+      accountHolderDocument: bankForm.accountHolderDocument,
+      isDefault: bankForm.isDefault || paymentAccounts.length === 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (newAccount.isDefault) {
+      setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newAccount));
+    } else {
+      setPaymentAccounts(prev => [...prev, newAccount]);
+    }
+
+    setIsLoading(false);
+    setShowAddBankModal(false);
+    resetBankForm();
+    toast.success(t('landlordSettings.toasts.accountAdded'));
+  };
+
+  const handleAddWallet = async () => {
+    if (!validateWalletForm()) return;
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const wallet = DIGITAL_WALLETS.find(w => w.code === walletForm.walletCode);
+    const newWallet: DigitalWallet = {
+      id: `wallet-${Date.now()}`,
+      type: 'wallet',
+      walletCode: walletForm.walletCode as WalletCode,
+      walletName: wallet?.name || '',
+      phoneNumber: walletForm.phoneNumber,
+      holderName: walletForm.holderName,
+      isDefault: walletForm.isDefault || paymentAccounts.length === 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (newWallet.isDefault) {
+      setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newWallet));
+    } else {
+      setPaymentAccounts(prev => [...prev, newWallet]);
+    }
+
+    setIsLoading(false);
+    setShowAddWalletModal(false);
+    resetWalletForm();
+    toast.success(t('landlordSettings.toasts.accountAdded'));
+  };
+
+  const handleSetDefaultAccount = (accountId: string) => {
+    setPaymentAccounts(prev =>
+      prev.map(a => ({
+        ...a,
+        isDefault: a.id === accountId,
+      }))
+    );
+    toast.success(t('landlordSettings.toasts.accountSetDefault'));
+  };
+
+  const handleDeletePaymentAccount = async () => {
+    if (!editingAccount) return;
+    const assignedCount = getPropertyCountForAccount(editingAccount.id);
+    if (assignedCount > 0) {
+      toast.error(t('landlordSettings.toasts.cannotDeleteWithProperties'));
+      return;
+    }
+    if (editingAccount.isDefault && paymentAccounts.length > 1) {
+      toast.error(t('landlordSettings.toasts.cannotDeleteDefault'));
+      return;
+    }
+
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setPaymentAccounts(prev => prev.filter(a => a.id !== editingAccount.id));
+    setIsLoading(false);
+    setShowDeleteAccountModal(false);
+    setEditingAccount(null);
+    toast.success(t('landlordSettings.toasts.accountDeleted'));
+  };
+
+  const getAccountDisplayInfo = (account: PaymentAccount) => {
+    if (isBankAccount(account)) {
+      return {
+        icon: Bank,
+        name: account.bankName,
+        detail: `${t(`landlordSettings.paymentAccounts.accountTypes.${account.accountType}`)} ${maskAccountNumber(account.accountNumber)}`,
+        holder: account.accountHolderName,
+      };
+    } else {
+      return {
+        icon: Wallet,
+        name: account.walletName,
+        detail: maskPhoneNumber(account.phoneNumber),
+        holder: account.holderName,
+      };
+    }
   };
 
   // Account deletion blockers
   const activeLeases = MOCK_LEASES.filter(l => l.status === 'active' || l.status === 'ending_soon');
   const pendingVisits = getPendingVisitCount();
-  const teamMembers = teamMembersList.filter(m => m.role !== 'admin');
-  const hasActiveSubscription = MOCK_SUBSCRIPTION.status === 'active' && MOCK_SUBSCRIPTION.planId !== 'free';
-
-  const blockers = [
-    ...(activeLeases.length > 0 ? [{ type: 'lease' as const, count: activeLeases.length, label: `${activeLeases.length} arriendo${activeLeases.length > 1 ? 's' : ''} activo${activeLeases.length > 1 ? 's' : ''}`, description: 'Debes finalizar o transferir tus arriendos antes de eliminar la cuenta', link: '/panel/leases', action: 'Ver arriendos' }] : []),
-    ...(pendingVisits > 0 ? [{ type: 'visit' as const, count: pendingVisits, label: `${pendingVisits} visita${pendingVisits > 1 ? 's' : ''} pendiente${pendingVisits > 1 ? 's' : ''}`, description: 'Cancela o completa las visitas programadas', link: '/panel/visitas', action: 'Ver visitas' }] : []),
-    ...(teamMembers.length > 0 ? [{ type: 'team' as const, count: teamMembers.length, label: `${teamMembers.length} miembro${teamMembers.length > 1 ? 's' : ''} del equipo`, description: 'Tu equipo perderá acceso. Notifícales antes de continuar', link: undefined, action: undefined }] : []),
-    ...(hasActiveSubscription ? [{ type: 'subscription' as const, count: 1, label: 'Suscripción activa', description: 'Tu suscripción será cancelada sin reembolso del período actual', link: undefined, action: undefined }] : []),
-  ];
-
-  const criticalBlockers = blockers.filter(b => b.type === 'lease');
-  const hasCriticalBlockers = criticalBlockers.length > 0;
-
-  const handleOpenDeleteModal = () => {
-    setDeleteStep('review');
-    setDeleteConfirmText('');
-    setDeleteReason('');
-    setDeleteReasonOther('');
-    setExportRequested(false);
-    setShowDeleteModal(true);
-  };
-
-  const handleExportData = async () => {
-    setExportRequested(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast.success('Datos exportados. Revisa tu correo electrónico.');
-  };
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'ELIMINAR') {
-      toast.error('Escribe ELIMINAR para confirmar');
-      return;
-    }
-    setDeleteStep('processing');
-    // Simulate multi-step deletion
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    toast.success('Cuenta eliminada. Serás redirigido...');
-    setTimeout(() => router.push('/'), 2000);
-  };
-
-  const menuItems = [
-    { id: 'profile', label: 'Perfil', icon: User },
-    { id: 'notifications', label: 'Notificaciones', icon: Bell },
-    { id: 'subscription', label: 'Suscripción', icon: CreditCard },
-    { id: 'team', label: 'Equipo', icon: Users },
-    { id: 'security', label: 'Seguridad', icon: Shield },
-    { id: 'preferences', label: 'Preferencias', icon: Settings },
-  ];
-
-  const ToggleSwitch = ({
-    enabled,
-    onToggle,
-  }: {
-    enabled: boolean;
-    onToggle: () => void;
-  }) => (
-    <button
-      onClick={onToggle}
-      role="switch"
-      aria-checked={enabled}
-      className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer border-2 border-transparent transition-colors duration-200 ease-in-out',
-        enabled ? 'bg-primary' : 'bg-border'
-      )}
-    >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-5 w-5 transform bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
-          enabled ? 'translate-x-5' : 'translate-x-0'
-        )}
-      />
-    </button>
-  );
+  const hasCriticalBlockers = activeLeases.length > 0;
 
   return (
-    <div className="min-h-screen bg-plan-page">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0b] transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-plan-primary">Configuración</h1>
-          <p className="mt-1 text-plan-secondary">
-            Administra tu cuenta y preferencias
+        <motion.header
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            {t('landlordSettings.title')}
+          </h1>
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            {t('landlordSettings.subtitle')}
           </p>
-        </div>
+        </motion.header>
 
-        <div className="flex gap-6">
-          {/* Sidebar Menu */}
-          <div className="w-64 flex-shrink-0">
-            <nav className="bg-white dark:bg-card border border-plan-border">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveSection(item.id as SettingsSection)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-border last:border-0',
-                      activeSection === item.id
-                        ? 'bg-muted text-plan-primary font-medium'
-                        : 'text-plan-secondary hover:bg-muted hover:text-plan-primary'
-                    )}
+        <div className="space-y-6">
+          {/* Subscription Card - Landlord specific */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="rounded-3xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 overflow-hidden relative"
+          >
+            <div className="relative px-6 py-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-800/50 flex items-center justify-center">
+                    <Crown className="w-7 h-7 text-amber-500 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-indigo-600/70 dark:text-indigo-300/70 text-sm">{t('landlordSettings.subscription.currentPlan')}</p>
+                    <p className="text-xl font-semibold text-indigo-900 dark:text-indigo-100">{currentPlan.name}</p>
+                    <p className="text-indigo-600/60 dark:text-indigo-300/60 text-sm">
+                      {MOCK_SUBSCRIPTION.planId === 'free'
+                        ? t('landlordSettings.subscription.freePlan')
+                        : `${formatCurrency(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
+                      {currentPlan.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'property_listing')?.limit || 1}
+                    </p>
+                    <p className="text-xs text-indigo-600/60 dark:text-indigo-300/60">{t('landlordSettings.subscription.properties')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
+                      {currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
+                    </p>
+                    <p className="text-xs text-indigo-600/60 dark:text-indigo-300/60">{t('landlordSettings.subscription.contracts')}</p>
+                  </div>
+                </div>
+                {MOCK_SUBSCRIPTION.planId !== 'business' && (
+                  <Link
+                    href="/panel/upgrade"
+                    className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2"
                   >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                    {activeSection === item.id && (
-                      <ChevronRight className="w-4 h-4 ml-auto" />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 bg-white dark:bg-card border border-plan-border">
-            {/* Profile Section */}
-            {activeSection === 'profile' && (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-plan-primary mb-6">Información del Perfil</h2>
-
-                <div className="space-y-6">
-                  {/* Avatar */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="w-20 h-20 bg-muted flex items-center justify-center text-2xl font-semibold text-plan-secondary">
-                        {user?.name?.charAt(0) || 'U'}
-                      </div>
-                      <button
-                        onClick={() => setShowPhotoModal(true)}
-                        className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90"
-                      >
-                        <Camera className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div>
-                      <button
-                        onClick={() => setShowPhotoModal(true)}
-                        className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-                      >
-                        Cambiar foto
-                      </button>
-                      <p className="text-xs text-plan-secondary mt-1">JPG, PNG. Max 2MB</p>
-                    </div>
-                  </div>
-
-                  {/* Form Fields */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">
-                        Nombre completo
-                      </label>
-                      <input
-                        type="text"
-                        value={profileForm.name}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full h-10 px-4 bg-muted border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">
-                        Correo electrónico
-                      </label>
-                      <input
-                        type="email"
-                        value={profileForm.email}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full h-10 px-4 bg-muted border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">
-                        Teléfono
-                      </label>
-                      <input
-                        type="tel"
-                        value={profileForm.phone}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full h-10 px-4 bg-muted border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1.5">
-                        Ciudad
-                      </label>
-                      <input
-                        type="text"
-                        value={profileForm.city}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, city: e.target.value }))}
-                        className="w-full h-10 px-4 bg-muted border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">
-                      Biografía
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={profileForm.bio}
-                      onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                      className="w-full px-4 py-3 bg-muted border border-plan-border text-sm focus:outline-none focus:ring-1 focus:ring-plan-primary resize-none"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={isLoading || !profileDirty}
-                    className="px-6 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isLoading ? 'Guardando...' : 'Guardar cambios'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Notifications Section */}
-            {activeSection === 'notifications' && (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-plan-primary mb-6">Preferencias de Notificaciones</h2>
-
-                <div className="space-y-6">
-                  {/* Email Notifications */}
-                  <div>
-                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Notificaciones por correo
-                    </h3>
-                    <div className="space-y-4">
-                      {[
-                        { key: 'email_new_application', label: 'Nueva aplicación recibida', desc: 'Cuando un candidato aplica a una de tus propiedades' },
-                        { key: 'email_payment_received', label: 'Pago recibido', desc: 'Cuando recibes un pago de arriendo' },
-                        { key: 'email_contract_reminder', label: 'Recordatorios de contratos', desc: 'Alertas sobre vencimientos de contratos' },
-                      ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                          <div>
-                            <p className="text-sm font-medium text-plan-primary">{item.label}</p>
-                            <p className="text-xs text-plan-secondary">{item.desc}</p>
-                          </div>
-                          <ToggleSwitch
-                            enabled={notifications[item.key as keyof typeof notifications]}
-                            onToggle={() => setNotifications(prev => ({
-                              ...prev,
-                              [item.key]: !prev[item.key as keyof typeof notifications]
-                            }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Push Notifications */}
-                  <div>
-                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
-                      <Bell className="w-4 h-4" />
-                      Notificaciones push
-                    </h3>
-                    <div className="space-y-4">
-                      {[
-                        { key: 'push_new_message', label: 'Nuevos mensajes', desc: 'Cuando recibes un mensaje de un inquilino o candidato' },
-                        { key: 'push_application_status', label: 'Estado de aplicaciones', desc: 'Actualizaciones sobre el proceso de aplicación' },
-                      ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                          <div>
-                            <p className="text-sm font-medium text-plan-primary">{item.label}</p>
-                            <p className="text-xs text-plan-secondary">{item.desc}</p>
-                          </div>
-                          <ToggleSwitch
-                            enabled={notifications[item.key as keyof typeof notifications]}
-                            onToggle={() => setNotifications(prev => ({
-                              ...prev,
-                              [item.key]: !prev[item.key as keyof typeof notifications]
-                            }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* SMS Notifications */}
-                  <div>
-                    <h3 className="text-sm font-medium text-plan-primary mb-4 flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      Notificaciones SMS
-                    </h3>
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <p className="text-sm font-medium text-plan-primary">Alertas urgentes</p>
-                        <p className="text-xs text-plan-secondary">Solo para situaciones críticas (pagos vencidos, emergencias)</p>
-                      </div>
-                      <ToggleSwitch
-                        enabled={notifications.sms_urgent}
-                        onToggle={() => setNotifications(prev => ({ ...prev, sms_urgent: !prev.sms_urgent }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Subscription Section */}
-            {activeSection === 'subscription' && (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-plan-primary mb-6">Tu Suscripción</h2>
-
-                {/* Current Plan */}
-                <div className="p-4 border border-plan-border mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        'w-12 h-12 flex items-center justify-center',
-                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
-                      )}>
-                        {MOCK_SUBSCRIPTION.planId === 'free' ? (
-                          <Zap className="w-6 h-6 text-plan-secondary" />
-                        ) : (
-                          <Crown className="w-6 h-6 text-plan-accent" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-plan-primary">Plan {currentPlan.name}</p>
-                        <p className="text-sm text-plan-secondary">
-                          {MOCK_SUBSCRIPTION.planId === 'free'
-                            ? 'Plan gratuito'
-                            : `${formatCurrency(currentPlan.price.monthly)}/mes`}
-                        </p>
-                      </div>
-                    </div>
-                    {MOCK_SUBSCRIPTION.planId !== 'business' && (
-                      <Link
-                        href="/panel/upgrade"
-                        className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-                      >
-                        Mejorar Plan
-                      </Link>
-                    )}
-                  </div>
-
-                  {/* Features */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {currentPlan.features.map((feature) => (
-                      <div key={feature.id} className="flex items-center gap-2">
-                        <div className={cn(
-                          'w-4 h-4 flex items-center justify-center',
-                          feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-muted text-plan-muted'
-                        )}>
-                          <Check className="w-3 h-3" />
-                        </div>
-                        <span className={cn(
-                          'text-sm',
-                          feature.included ? 'text-foreground' : 'text-plan-muted line-through'
-                        )}>
-                          {feature.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Billing Info */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-plan-primary">Información de facturación</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-plan-secondary">Próximo cobro</p>
-                      <p className="font-medium text-plan-primary">1 de febrero, 2026</p>
-                    </div>
-                    <div>
-                      <p className="text-plan-secondary">Método de pago</p>
-                      <p className="font-medium text-plan-primary">•••• 4242</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setShowPaymentModal(true)}
-                      className="text-sm text-plan-primary font-medium hover:underline"
-                    >
-                      Gestionar método de pago
-                    </button>
-                    <button
-                      onClick={handleCancelSubscription}
-                      className="text-sm text-plan-secondary hover:text-destructive"
-                    >
-                      Cancelar suscripción
-                    </button>
-                  </div>
-                </div>
-
-                {/* Invoices */}
-                <div className="mt-6 pt-6 border-t border-plan-border">
-                  <h3 className="text-sm font-medium text-plan-primary mb-4">Historial de facturación</h3>
-                  <div className="space-y-2">
-                    {[
-                      { date: 'Ene 1, 2026', amount: '$99.900', status: 'Pagado' },
-                      { date: 'Dic 1, 2025', amount: '$99.900', status: 'Pagado' },
-                      { date: 'Nov 1, 2025', amount: '$99.900', status: 'Pagado' },
-                    ].map((invoice, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 text-sm">
-                        <div className="flex items-center gap-4">
-                          <span className="text-plan-secondary">{invoice.date}</span>
-                          <span className="font-medium text-plan-primary">{invoice.amount}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="px-2 py-0.5 bg-plan-status-green-bg text-green-800 text-xs">{invoice.status}</span>
-                          <button className="text-plan-secondary hover:text-plan-primary">
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Team Section */}
-            {activeSection === 'team' && (
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-plan-primary">Miembros del Equipo</h2>
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-                  >
-                    Invitar miembro
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {teamMembersList.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 border border-plan-border group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-muted flex items-center justify-center text-plan-secondary font-medium">
-                          {(member.name || member.email).charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-plan-primary">{member.name || member.email}</p>
-                          <p className="text-xs text-plan-secondary">{member.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          'px-2 py-1 text-xs font-medium',
-                          member.role === 'admin' ? 'bg-primary text-white' :
-                          member.role === 'manager' ? 'bg-plan-status-blue-bg text-blue-800' :
-                          'bg-muted text-plan-secondary'
-                        )}>
-                          {member.role === 'admin' ? 'Administrador' :
-                           member.role === 'manager' ? 'Gerente' :
-                           member.role === 'accountant' ? 'Contador' : 'Visualizador'}
-                        </span>
-                        <span className={cn(
-                          'px-2 py-1 text-xs',
-                          member.status === 'accepted' ? 'bg-plan-status-green-bg text-green-800' : 'bg-plan-status-yellow-bg text-yellow-800'
-                        )}>
-                          {member.status === 'accepted' ? 'Activo' : 'Pendiente'}
-                        </span>
-                        {member.role !== 'admin' && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button
-                              onClick={() => setEditingMember({ id: member.id, name: member.name || member.email, email: member.email, role: member.role })}
-                              className="p-1 text-plan-muted hover:text-plan-primary transition-colors"
-                              title="Editar miembro"
-                            >
-                              <PenLine className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRemoveMember(member.id)}
-                              className="p-1 text-plan-muted hover:text-destructive transition-colors"
-                              title="Eliminar miembro"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {teamMembersList.length === 0 && (
-                  <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-plan-secondary">No hay miembros en tu equipo</p>
-                    <button
-                      onClick={() => setShowInviteModal(true)}
-                      className="mt-4 text-sm text-plan-primary font-medium hover:underline"
-                    >
-                      Invitar al primer miembro
-                    </button>
-                  </div>
+                    {t('landlordSettings.subscription.upgradePlan')}
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Link>
                 )}
               </div>
-            )}
+            </div>
+          </motion.section>
 
-            {/* Security Section */}
-            {activeSection === 'security' && (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-plan-primary mb-6">Seguridad de la Cuenta</h2>
+          {/* Notifications */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+          >
+            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.notifications.title')}</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.notifications.subtitle')}</p>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+              <SettingToggle
+                icon={Envelope}
+                title={t('landlordSettings.notifications.newApplication')}
+                description={t('landlordSettings.notifications.newApplicationDesc')}
+                enabled={settings.emailNewApplication}
+                onToggle={() => handleToggle('emailNewApplication')}
+              />
+              <SettingToggle
+                icon={CreditCard}
+                title={t('landlordSettings.notifications.paymentReceived')}
+                description={t('landlordSettings.notifications.paymentReceivedDesc')}
+                enabled={settings.emailPaymentReceived}
+                onToggle={() => handleToggle('emailPaymentReceived')}
+              />
+              <SettingToggle
+                icon={FileText}
+                title={t('landlordSettings.notifications.contractReminders')}
+                description={t('landlordSettings.notifications.contractRemindersDesc')}
+                enabled={settings.emailContractReminder}
+                onToggle={() => handleToggle('emailContractReminder')}
+              />
+              <SettingToggle
+                icon={Bell}
+                title={t('landlordSettings.notifications.newMessages')}
+                description={t('landlordSettings.notifications.newMessagesDesc')}
+                enabled={settings.pushNewMessage}
+                onToggle={() => handleToggle('pushNewMessage')}
+              />
+              <SettingToggle
+                icon={Tag}
+                title={t('landlordSettings.notifications.promotionalEmails')}
+                description={t('landlordSettings.notifications.promotionalEmailsDesc')}
+                enabled={settings.marketingEmails}
+                onToggle={() => handleToggle('marketingEmails')}
+              />
+            </div>
+          </motion.section>
 
-                <div className="space-y-6">
-                  {/* Password */}
-                  <div className="p-4 border border-plan-border">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-plan-primary">Contraseña</p>
-                        <p className="text-sm text-plan-secondary">Última actualización hace 30 días</p>
-                      </div>
-                      <button
-                        onClick={() => setShowPasswordModal(true)}
-                        className="px-4 py-2 border border-plan-border text-sm font-medium text-plan-primary hover:bg-muted transition-colors"
-                      >
-                        Cambiar contraseña
-                      </button>
+          {/* Team Management - Landlord specific */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+          >
+            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.team.title')}</h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{teamMembersList.length} {teamMembersList.length !== 1 ? t('landlordSettings.team.members') : t('landlordSettings.team.member')}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {t('landlordSettings.team.invite')}
+                </button>
+              </div>
+            </div>
+            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+              {teamMembersList.map((member) => (
+                <div key={member.id} className="flex items-center justify-between px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                      <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                        {(member.name || member.email || '?').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.name || t('landlordSettings.team.pendingInvitation')}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{member.email}</p>
                     </div>
                   </div>
-
-                  {/* 2FA */}
-                  <div className="p-4 border border-plan-border">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-plan-primary">Autenticación de dos factores</p>
-                        <p className="text-sm text-plan-secondary">
-                          {twoFactorEnabled ? 'Protección activada' : 'Añade una capa extra de seguridad'}
-                        </p>
+                  <div className="flex items-center gap-3">
+                    <span className={cn(
+                      'px-2.5 py-1 rounded-full text-xs font-medium',
+                      member.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' :
+                      member.role === 'manager' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
+                      'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                    )}>
+                      {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'manager' ? t('landlordSettings.team.roles.manager') : member.role === 'accountant' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
+                    </span>
+                    {member.role !== 'admin' && (
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingMember(member);
+                            setEditMemberForm({ name: member.name || '', role: member.role });
+                            setShowEditMemberModal(true);
+                          }}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          {t('landlordSettings.team.edit')}
+                        </button>
+                        <button
+                          onClick={() => handleRemoveMember(member.id)}
+                          className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        >
+                          {t('landlordSettings.team.remove')}
+                        </button>
                       </div>
-                      {twoFactorEnabled ? (
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-1 bg-plan-status-green-bg text-green-800 text-xs font-medium">Activado</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Payment Accounts - New Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+          >
+            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.paymentAccounts.title')}</h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.paymentAccounts.subtitle')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* My Accounts List */}
+            <div className="p-6">
+              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
+                {t('landlordSettings.paymentAccounts.myAccounts')}
+              </h3>
+
+              {paymentAccounts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+                    {t('landlordSettings.paymentAccounts.noAccounts')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 mb-4">
+                  {paymentAccounts.map((account) => {
+                    const info = getAccountDisplayInfo(account);
+                    const Icon = info.icon;
+                    const assignedCount = getPropertyCountForAccount(account.id);
+                    return (
+                      <div
+                        key={account.id}
+                        className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                            <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                {info.name} {info.detail}
+                              </p>
+                              {account.isDefault && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+                                  <Star className="w-3 h-3" weight="fill" />
+                                  {t('landlordSettings.paymentAccounts.default')}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                              {info.holder} · {assignedCount > 0
+                                ? t('landlordSettings.paymentAccounts.propertiesAssigned', { count: assignedCount })
+                                : t('landlordSettings.paymentAccounts.noPropertiesAssigned')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {!account.isDefault && (
+                            <button
+                              onClick={() => handleSetDefaultAccount(account.id)}
+                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                              {t('landlordSettings.paymentAccounts.setAsDefault')}
+                            </button>
+                          )}
                           <button
-                            onClick={handleOpen2FAModal}
-                            className="px-4 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted transition-colors"
+                            onClick={() => {
+                              setEditingAccount(account);
+                              setShowDeleteAccountModal(true);
+                            }}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline"
                           >
-                            Gestionar
+                            {t('common.delete')}
                           </button>
                         </div>
-                      ) : (
-                        <button
-                          onClick={handleOpen2FAModal}
-                          className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add Account Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowAddBankModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-indigo-500 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <Bank className="w-5 h-5" />
+                  <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addBankAccount')}</span>
+                </button>
+                <button
+                  onClick={() => setShowAddWalletModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-indigo-500 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <Wallet className="w-5 h-5" />
+                  <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addDigitalWallet')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Property Assignments */}
+            {paymentAccounts.length > 0 && landlordProperties.length > 0 && (
+              <div className="px-6 pb-6">
+                <div className="border-t border-neutral-200/50 dark:border-[#2a2a2c]/50 pt-6">
+                  <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
+                    {t('landlordSettings.paymentAccounts.propertyAssignments')}
+                  </h3>
+                  <div className="space-y-2">
+                    {landlordProperties.slice(0, 4).map((property) => {
+                      const assignedAccount = paymentAccounts.find(a => a.isDefault);
+                      const accountInfo = assignedAccount ? getAccountDisplayInfo(assignedAccount) : null;
+                      return (
+                        <div
+                          key={property.id}
+                          className="flex items-center justify-between p-3 bg-white dark:bg-[#1f1f21] rounded-xl border border-neutral-100 dark:border-neutral-800"
                         >
-                          Activar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Sessions */}
-                  <div className="p-4 border border-plan-border">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="font-medium text-plan-primary">Sesiones activas</p>
-                        <p className="text-sm text-plan-secondary">{sessions.length} {sessions.length === 1 ? 'dispositivo conectado' : 'dispositivos conectados'}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {sessions.map((session) => {
-                        const DeviceIcon = getDeviceIcon(session.deviceType);
-                        return (
-                          <div
-                            key={session.id}
-                            className="flex items-center justify-between p-3 border border-plan-border hover:bg-muted/50 transition-colors cursor-pointer group"
-                            onClick={() => setSelectedSession(session)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={cn(
-                                'w-10 h-10 flex items-center justify-center flex-shrink-0',
-                                session.current ? 'bg-plan-status-green-bg' : 'bg-muted'
-                              )}>
-                                <DeviceIcon className={cn('w-5 h-5', session.current ? 'text-green-800' : 'text-plan-secondary')} />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium text-plan-primary">{session.device}</p>
-                                  {session.current && (
-                                    <span className="px-1.5 py-0.5 bg-plan-status-green-bg text-green-800 text-[10px] font-medium">Actual</span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-plan-secondary">{session.location} · {session.lastActive}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {!session.current && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleCloseSession(session.id); }}
-                                  disabled={closingSessionId === session.id}
-                                  className="opacity-0 group-hover:opacity-100 text-xs text-destructive hover:underline transition-all disabled:opacity-50 flex items-center gap-1"
-                                >
-                                  {closingSessionId === session.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                                  Cerrar
-                                </button>
-                              )}
-                              <ChevronRight className="w-4 h-4 text-plan-muted" />
-                            </div>
+                          <div className="flex items-center gap-3">
+                            <House className="w-4 h-4 text-neutral-400" />
+                            <span className="text-sm text-neutral-700 dark:text-neutral-300">{property.title}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                    {sessions.filter(s => !s.current).length > 0 && (
-                      <button
-                        onClick={() => setShowCloseAllConfirm(true)}
-                        className="mt-4 w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50 transition-colors"
-                      >
-                        Cerrar todas las otras sesiones ({sessions.filter(s => !s.current).length})
-                      </button>
-                    )}
-                    {sessions.length === 1 && sessions[0].current && (
-                      <div className="mt-4 p-3 bg-muted rounded-sm text-center">
-                        <p className="text-xs text-plan-secondary">Solo tienes esta sesión activa. No hay otros dispositivos conectados.</p>
-                      </div>
-                    )}
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                            → {accountInfo ? `${accountInfo.name} ${accountInfo.detail}` : t('landlordSettings.paymentAccounts.usesDefault')}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  {/* Danger Zone */}
-                  <div className="p-4 border border-red-200 bg-red-50/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-red-800">Eliminar cuenta</p>
-                        <p className="text-sm text-destructive">Esta acción es permanente y no se puede deshacer</p>
-                      </div>
-                      <button
-                        onClick={handleOpenDeleteModal}
-                        className="px-4 py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-plan-status-red-bg transition-colors"
-                      >
-                        Eliminar cuenta
-                      </button>
-                    </div>
-                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 italic">
+                    {t('landlordSettings.paymentAccounts.assignmentInfo')}
+                  </p>
                 </div>
               </div>
             )}
+          </motion.section>
 
-            {/* Preferences Section */}
-            {activeSection === 'preferences' && (
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-plan-primary mb-6">Preferencias</h2>
-
-                <div className="space-y-6">
-                  {/* Language */}
+          {/* Security & Preferences - 2 column grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Security */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">
-                      Idioma
-                    </label>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.security.title')}</h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.security.subtitle')}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+                <SettingToggle
+                  icon={ShieldCheck}
+                  title={t('landlordSettings.security.twoFactorAuth')}
+                  description={settings.twoFactorAuth ? t('landlordSettings.security.enabled') : t('landlordSettings.security.extraSecurity')}
+                  enabled={settings.twoFactorAuth}
+                  onToggle={() => handleToggle('twoFactorAuth')}
+                  accent={settings.twoFactorAuth ? 'emerald' : undefined}
+                />
+                <SettingLink
+                  icon={Lock}
+                  title={t('landlordSettings.security.changePassword')}
+                  description={t('landlordSettings.security.updateAccess')}
+                  onClick={() => setShowPasswordModal(true)}
+                />
+                <SettingLink
+                  icon={Monitor}
+                  title={t('landlordSettings.security.activeSessions')}
+                  description={`${sessions.length} ${sessions.length !== 1 ? t('landlordSettings.security.devices') : t('landlordSettings.security.device')}`}
+                  onClick={() => setShowSessionsModal(true)}
+                  badge={sessions.length > 1 ? `${sessions.length}` : undefined}
+                />
+              </div>
+            </motion.section>
+
+            {/* Preferences */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Globe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.preferences.title')}</h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.preferences.subtitle')}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+                <SettingToggle
+                  icon={Moon}
+                  title={t('landlordSettings.preferences.darkMode')}
+                  description={t('landlordSettings.preferences.darkModeDesc')}
+                  enabled={mounted && resolvedTheme === 'dark'}
+                  onToggle={handleDarkModeToggle}
+                />
+                <div className="flex items-center justify-between px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                      <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('landlordSettings.preferences.language')}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.preferences.languageDesc')}</p>
+                    </div>
+                  </div>
+                  <div className="relative">
                     <select
-                      value={preferences.language}
-                      onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
-                      className="w-full max-w-xs h-10 pl-4 pr-10 bg-card border border-border rounded-sm text-sm cursor-pointer appearance-none bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                      value={locale}
+                      onChange={(e) => {
+                        setLocale(e.target.value as Locale);
+                        toast.success(e.target.value === 'en' ? 'Language changed to English' : 'Idioma cambiado a Español');
+                      }}
+                      aria-label={t('landlordSettings.preferences.languageDesc')}
+                      className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all cursor-pointer"
                     >
-                      <option value="es-co">Español (Colombia)</option>
-                      <option value="es-es">Español (España)</option>
+                      <option value="es">Español</option>
                       <option value="en">English</option>
                     </select>
+                    <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
                   </div>
-
-                  {/* Timezone */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">
-                      Zona horaria
-                    </label>
-                    <select
-                      value={preferences.timezone}
-                      onChange={(e) => setPreferences(prev => ({ ...prev, timezone: e.target.value }))}
-                      className="w-full max-w-xs h-10 pl-4 pr-10 bg-card border border-border rounded-sm text-sm cursor-pointer appearance-none bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                    >
-                      <option value="America/Bogota">América/Bogotá (GMT-5)</option>
-                      <option value="America/Lima">América/Lima (GMT-5)</option>
-                      <option value="America/Mexico_City">América/Mexico_City (GMT-6)</option>
-                    </select>
-                  </div>
-
-                  {/* Currency */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">
-                      Moneda
-                    </label>
-                    <select
-                      value={preferences.currency}
-                      onChange={(e) => setPreferences(prev => ({ ...prev, currency: e.target.value }))}
-                      className="w-full max-w-xs h-10 pl-4 pr-10 bg-card border border-border rounded-sm text-sm cursor-pointer appearance-none bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                    >
-                      <option value="COP">COP - Peso Colombiano</option>
-                      <option value="USD">USD - Dólar Estadounidense</option>
-                    </select>
-                  </div>
-
-                  {/* Theme */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
-                      Tema de la aplicación
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => { setTheme('light'); setPreferences(prev => ({ ...prev, theme: 'light' })); }}
-                        className={cn(
-                          'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
-                          mounted && currentTheme === 'light'
-                            ? 'bg-primary text-white'
-                            : 'border border-plan-border text-plan-secondary hover:bg-muted'
-                        )}
-                      >
-                        <Sun className="w-4 h-4" />
-                        Claro
-                      </button>
-                      <button
-                        onClick={() => { setTheme('dark'); setPreferences(prev => ({ ...prev, theme: 'dark' })); }}
-                        className={cn(
-                          'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
-                          mounted && currentTheme === 'dark'
-                            ? 'bg-primary text-white'
-                            : 'border border-plan-border text-plan-secondary hover:bg-muted'
-                        )}
-                      >
-                        <Moon className="w-4 h-4" />
-                        Oscuro
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSavePreferences}
-                    disabled={isLoading}
-                    className="px-6 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isLoading ? 'Guardando...' : 'Guardar preferencias'}
-                  </button>
                 </div>
               </div>
-            )}
+            </motion.section>
+          </div>
+
+          {/* Data & Privacy + Danger Zone - 2 column grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Data & Privacy */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Eye className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.dataPrivacy.title')}</h2>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.dataPrivacy.subtitle')}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+                <SettingLink
+                  icon={Download}
+                  title={t('landlordSettings.dataPrivacy.downloadData')}
+                  description={t('landlordSettings.dataPrivacy.downloadDataDesc')}
+                  onClick={() => setShowDownloadModal(true)}
+                />
+                <SettingLink
+                  icon={ArrowCounterClockwise}
+                  title={t('landlordSettings.dataPrivacy.resetOnboarding')}
+                  description={t('landlordSettings.dataPrivacy.resetOnboardingDesc')}
+                  onClick={handleResetOnboarding}
+                />
+                <SettingLink
+                  icon={FileText}
+                  title={t('landlordSettings.dataPrivacy.privacyPolicy')}
+                  description={t('landlordSettings.dataPrivacy.privacyPolicyDesc')}
+                  onClick={() => window.open('/privacidad', '_blank')}
+                  external
+                />
+                <SettingLink
+                  icon={FileText}
+                  title={t('landlordSettings.dataPrivacy.termsConditions')}
+                  description={t('landlordSettings.dataPrivacy.termsConditionsDesc')}
+                  onClick={() => window.open('/terminos', '_blank')}
+                  external
+                />
+              </div>
+            </motion.section>
+
+            {/* Danger Zone */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="rounded-3xl border-2 border-red-100 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 overflow-hidden h-fit"
+            >
+              <div className="px-6 py-5 border-b border-red-100 dark:border-red-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                    <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-red-900 dark:text-red-300">{t('landlordSettings.dangerZone.title')}</h2>
+                    <p className="text-xs text-red-600 dark:text-red-400">{t('landlordSettings.dangerZone.subtitle')}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  {t('landlordSettings.dangerZone.deleteDescription')}
+                </p>
+                {hasCriticalBlockers && (
+                  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+                    <p className="text-xs text-amber-800 dark:text-amber-200">
+                      {t('landlordSettings.dangerZone.activeLeasesWarning', { count: activeLeases.length })}
+                    </p>
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={hasCriticalBlockers}
+                  className="px-5 py-2.5 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('landlordSettings.dangerZone.deleteAccount')}
+                </button>
+              </div>
+            </motion.section>
           </div>
         </div>
       </div>
 
-      {/* Photo Upload Modal */}
-      <Modal open={showPhotoModal} onClose={() => setShowPhotoModal(false)} title="Cambiar foto de perfil">
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-plan-border rounded-sm p-8 text-center">
-            <Camera className="w-12 h-12 text-plan-muted mx-auto mb-4" />
-            <p className="text-sm text-plan-secondary mb-2">Arrastra una imagen o haz clic para seleccionar</p>
-            <input type="file" accept="image/*" className="hidden" id="photo-upload" />
-            <label
-              htmlFor="photo-upload"
-              className="inline-block px-4 py-2 bg-muted text-sm font-medium text-foreground cursor-pointer hover:bg-muted"
-            >
-              Seleccionar archivo
-            </label>
-            <p className="text-xs text-plan-muted mt-2">JPG, PNG. Máximo 2MB</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowPhotoModal(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handlePhotoUpload}
-              disabled={isLoading}
-              className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {isLoading ? 'Subiendo...' : 'Guardar foto'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Password Modal */}
-      <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
+      <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title={t('landlordSettings.modals.changePassword.title')}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Contraseña actual</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.currentPassword')}</label>
             <input
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
               placeholder="••••••••"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Nueva contraseña</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.newPassword')}</label>
             <input
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
-              placeholder="Mínimo 8 caracteres"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.modals.changePassword.minChars')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Confirmar contraseña</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.confirmPassword')}</label>
             <input
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
-              placeholder="Repetir contraseña"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.modals.changePassword.repeatPassword')}
             />
           </div>
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
             >
-              Cancelar
+              {t('landlordSettings.modals.cancel')}
             </button>
             <button
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
+              {isLoading ? t('landlordSettings.modals.changePassword.updating') : t('landlordSettings.modals.changePassword.changeButton')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Sessions Modal */}
+      <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
+        <div className="space-y-3">
+          {sessions.map((session) => {
+            const DeviceIcon = getDeviceIcon(session.deviceType);
+            return (
+              <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                    <DeviceIcon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.device}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{session.location} · {session.lastActive}</p>
+                  </div>
+                </div>
+                {session.current ? (
+                  <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">{t('landlordSettings.modals.sessions.current')}</span>
+                ) : (
+                  <button
+                    onClick={() => handleCloseSession(session.id)}
+                    className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline"
+                  >
+                    {t('landlordSettings.modals.sessions.close')}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          {sessions.length > 1 && (
+            <button
+              onClick={() => {
+                setSessions(prev => prev.filter(s => s.current));
+                toast.success(t('landlordSettings.toasts.allSessionsClosed'));
+              }}
+              className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              {t('landlordSettings.modals.sessions.closeAll')}
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      {/* Download Data Modal */}
+      <Modal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title={t('landlordSettings.modals.downloadData.title')}>
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            {t('landlordSettings.modals.downloadData.description')}
+          </p>
+          <div className="p-4 bg-stone-50 dark:bg-[#1f1f21] rounded-2xl space-y-2">
+            {[
+              t('landlordSettings.modals.downloadData.profileInfo'),
+              t('landlordSettings.modals.downloadData.paymentHistory'),
+              t('landlordSettings.modals.downloadData.publishedProperties'),
+              t('landlordSettings.modals.downloadData.signedContracts')
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                {item}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            {t('landlordSettings.modals.downloadData.emailNote')}
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setShowDownloadModal(false)}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleDownloadData}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.downloadData.processing') : t('landlordSettings.modals.downloadData.requestData')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* 2FA Modal */}
-      <Modal open={show2FAModal} onClose={() => setShow2FAModal(false)} title="Autenticación de dos factores">
+      <Modal open={show2FAModal} onClose={() => setShow2FAModal(false)} title={t('landlordSettings.modals.twoFactor.title')}>
         <div className="space-y-4">
-
-          {/* Step 1: Intro */}
-          {twoFactorStep === 'intro' && (
+          {!settings.twoFactorAuth ? (
             <>
-              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-sm">
-                <p className="text-sm text-indigo-800">
-                  La autenticación de dos factores añade una capa extra de seguridad. Necesitarás una app de autenticación como Google Authenticator o Authy.
-                </p>
-              </div>
-              <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
-                  <p className="text-sm text-plan-secondary">Descarga una app de autenticación en tu teléfono</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
-                  <p className="text-sm text-plan-secondary">Escanea el código QR con la app</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
-                  <p className="text-sm text-plan-secondary">Ingresa el código de verificación generado</p>
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-emerald-900/50 flex items-center justify-center shadow-sm flex-shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                    {t('landlordSettings.modals.twoFactor.description')}
+                  </p>
                 </div>
               </div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                {t('landlordSettings.modals.twoFactor.smsNote')}
+              </p>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
+                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
                 >
-                  Cancelar
+                  {t('landlordSettings.modals.cancel')}
                 </button>
                 <button
-                  onClick={() => setTwoFactorStep('setup')}
-                  className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  Comenzar configuración
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 2: QR Code Setup */}
-          {twoFactorStep === 'setup' && (
-            <>
-              <p className="text-sm text-plan-secondary">Escanea este código QR con tu app de autenticación:</p>
-              {/* Simulated QR code */}
-              <div className="flex justify-center py-4">
-                <div className="w-48 h-48 bg-white border-2 border-plan-border p-3 relative">
-                  <div className="w-full h-full bg-[repeating-conic-gradient(hsl(var(--indigo-900))_0%_25%,hsl(var(--neutral-0))_0%_50%)] bg-[length:12px_12px] opacity-90" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white px-2 py-1">
-                      <Shield className="w-6 h-6 text-primary" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 bg-muted rounded-sm">
-                <p className="text-xs text-plan-muted mb-1">O ingresa esta clave manualmente:</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-sm font-mono text-plan-primary font-medium tracking-wider">JBSW Y3DP EHPK 3PXP</code>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText('JBSWY3DPEHPK3PXP'); toast.success('Clave copiada'); }}
-                    className="p-1 text-plan-muted hover:text-plan-primary transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setTwoFactorStep('intro')}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-                >
-                  Atrás
-                </button>
-                <button
-                  onClick={() => setTwoFactorStep('verify')}
-                  className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90"
-                >
-                  Ya escaneé el código
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Verify Code */}
-          {twoFactorStep === 'verify' && (
-            <>
-              <p className="text-sm text-plan-secondary">Ingresa el código de 6 dígitos que muestra tu app de autenticación:</p>
-              <div className="flex justify-center gap-2 py-4" onPaste={handleCodePaste}>
-                {verificationCode.map((digit, i) => (
-                  <input
-                    key={i}
-                    id={`2fa-code-${i}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleCodeInput(i, e.target.value)}
-                    onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                    className={cn(
-                      'w-11 h-14 text-center text-xl font-semibold border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors',
-                      verificationError ? 'border-red-500' : 'border-plan-border'
-                    )}
-                    autoFocus={i === 0}
-                  />
-                ))}
-              </div>
-              {verificationError && (
-                <p className="text-xs text-red-500 text-center">{verificationError}</p>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => { setTwoFactorStep('setup'); setVerificationError(''); }}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-                >
-                  Atrás
-                </button>
-                <button
-                  onClick={handleVerify2FA}
-                  disabled={isLoading || verificationCode.join('').length < 6}
-                  className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {isLoading ? 'Verificando...' : 'Verificar'}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 4: Recovery Codes */}
-          {twoFactorStep === 'recovery' && (
-            <>
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                <p className="text-sm text-amber-800 font-medium mb-1">Guarda estos códigos de recuperación</p>
-                <p className="text-xs text-amber-700">Si pierdes acceso a tu app de autenticación, puedes usar estos códigos para iniciar sesión. Cada código solo se puede usar una vez.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-sm">
-                {recoveryCodes.map((code, i) => (
-                  <code key={i} className="text-xs font-mono text-plan-primary text-center py-1">{code}</code>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCopyRecoveryCodes}
-                  className={cn(
-                    'flex-1 py-2 border text-sm font-medium flex items-center justify-center gap-2 transition-colors',
-                    recoveryCodesCopied
-                      ? 'border-green-300 text-green-800 bg-green-50'
-                      : 'border-plan-border text-plan-secondary hover:bg-muted'
-                  )}
-                >
-                  {recoveryCodesCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {recoveryCodesCopied ? 'Copiados' : 'Copiar códigos'}
-                </button>
-                <button
-                  onClick={() => {
-                    const blob = new Blob([recoveryCodes.join('\n')], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'plan-recovery-codes.txt';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar
-                </button>
-              </div>
-              <button
-                onClick={handleComplete2FA}
-                className="w-full py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Ya guardé mis códigos, finalizar
-              </button>
-            </>
-          )}
-
-          {/* Manage (when already enabled) */}
-          {twoFactorStep === 'manage' && (
-            <>
-              <div className="p-4 bg-plan-status-green-bg border border-green-200 rounded-sm flex items-center gap-3">
-                <Check className="w-5 h-5 text-green-800 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-green-800 font-medium">2FA está activado</p>
-                  <p className="text-xs text-green-700">Tu cuenta tiene protección adicional</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setTwoFactorStep('recovery');
-                  }}
-                  className="w-full p-3 border border-plan-border text-left hover:bg-muted transition-colors flex items-center gap-3"
-                >
-                  <Copy className="w-4 h-4 text-plan-muted" />
-                  <div>
-                    <p className="text-sm font-medium text-plan-primary">Ver códigos de recuperación</p>
-                    <p className="text-xs text-plan-secondary">Genera o consulta tus códigos de respaldo</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    setTwoFactorStep('intro');
-                  }}
-                  className="w-full p-3 border border-plan-border text-left hover:bg-muted transition-colors flex items-center gap-3"
-                >
-                  <Shield className="w-4 h-4 text-plan-muted" />
-                  <div>
-                    <p className="text-sm font-medium text-plan-primary">Cambiar app de autenticación</p>
-                    <p className="text-xs text-plan-secondary">Reconfigura con una nueva app o dispositivo</p>
-                  </div>
-                </button>
-              </div>
-              <div className="pt-2 border-t border-plan-border">
-                <button
-                  onClick={handleDisable2FA}
+                  onClick={handleEnable2FA}
                   disabled={isLoading}
-                  className="w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
-                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                  {isLoading ? t('landlordSettings.modals.twoFactor.enabling') : t('landlordSettings.modals.twoFactor.enable')}
                 </button>
               </div>
             </>
+          ) : (
+            <>
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">
+                  {t('landlordSettings.modals.twoFactor.enabled')}
+                </p>
+              </div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                {t('landlordSettings.modals.twoFactor.protected')}
+              </p>
+              <button
+                onClick={() => {
+                  setGear(prev => ({ ...prev, twoFactorAuth: false }));
+                  setShow2FAModal(false);
+                  toast.success(t('landlordSettings.toasts.twoFactorDisabled'));
+                }}
+                className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                {t('landlordSettings.modals.twoFactor.disable')}
+              </button>
+            </>
           )}
-
-        </div>
-      </Modal>
-
-      {/* Invite Member Modal */}
-      <Modal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar miembro">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Correo electrónico</label>
-            <input
-              type="email"
-              value={inviteForm.email}
-              onChange={(e) => { setInviteForm(prev => ({ ...prev, email: e.target.value })); setInviteEmailError(''); }}
-              onBlur={() => { if (inviteForm.email && !isValidEmail(inviteForm.email)) setInviteEmailError('Ingresa un correo electrónico válido'); }}
-              className={`w-full h-10 px-4 border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20 ${inviteEmailError ? 'border-red-500' : 'border-plan-border'}`}
-              placeholder="correo@ejemplo.com"
-            />
-            {inviteEmailError && <p className="text-xs text-red-500 mt-1">{inviteEmailError}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Rol</label>
-            <select
-              value={inviteForm.role}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
-            >
-              <option value="viewer">Visualizador - Solo puede ver información</option>
-              <option value="accountant">Contador - Acceso a finanzas</option>
-              <option value="manager">Gerente - Puede gestionar propiedades</option>
-              <option value="admin">Administrador - Acceso completo</option>
-            </select>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setShowInviteModal(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleInviteMember}
-              disabled={isLoading || !inviteForm.email || !!inviteEmailError}
-              className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-              {isLoading ? 'Enviando...' : 'Enviar invitación'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit Member Modal */}
-      <Modal open={!!editingMember} onClose={() => setEditingMember(null)} title="Editar miembro">
-        {editingMember && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Miembro</label>
-              <div className="flex items-center gap-3 px-4 py-3 bg-muted">
-                <div className="w-8 h-8 bg-plan-border flex items-center justify-center text-plan-secondary text-sm font-medium">
-                  {editingMember.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-plan-primary">{editingMember.name}</p>
-                  <p className="text-xs text-plan-secondary">{editingMember.email}</p>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Rol</label>
-              <select
-                value={editingMember.role}
-                onChange={(e) => setEditingMember(prev => prev ? { ...prev, role: e.target.value } : null)}
-                className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-plan-primary/20"
-              >
-                <option value="viewer">Visualizador - Solo puede ver información</option>
-                <option value="accountant">Contador - Acceso a finanzas</option>
-                <option value="manager">Gerente - Puede gestionar propiedades</option>
-                <option value="admin">Administrador - Acceso completo</option>
-              </select>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setEditingMember(null)}
-                className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleUpdateMemberRole}
-                disabled={isLoading}
-                className="flex-1 py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                {isLoading ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Session Detail Modal */}
-      <Modal open={!!selectedSession} onClose={() => setSelectedSession(null)} title="Detalle de sesión">
-        {selectedSession && (() => {
-          const DeviceIcon = getDeviceIcon(selectedSession.deviceType);
-          return (
-            <div className="space-y-4">
-              {/* Device header */}
-              <div className="flex items-center gap-4 p-4 bg-muted rounded-sm">
-                <div className={cn(
-                  'w-12 h-12 flex items-center justify-center flex-shrink-0',
-                  selectedSession.current ? 'bg-plan-status-green-bg' : 'bg-card border border-plan-border'
-                )}>
-                  <DeviceIcon className={cn('w-6 h-6', selectedSession.current ? 'text-green-800' : 'text-plan-secondary')} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-plan-primary">{selectedSession.device}</p>
-                    {selectedSession.current && (
-                      <span className="px-1.5 py-0.5 bg-plan-status-green-bg text-green-800 text-[10px] font-medium">Sesión actual</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-plan-secondary">{selectedSession.os}</p>
-                </div>
-              </div>
-
-              {/* Session info */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 px-1">
-                  <MapPin className="w-4 h-4 text-plan-muted flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-plan-muted">Ubicación</p>
-                    <p className="text-sm text-plan-primary">{selectedSession.location}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-1">
-                  <Wifi className="w-4 h-4 text-plan-muted flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-plan-muted">Dirección IP</p>
-                    <p className="text-sm text-plan-primary font-mono">{selectedSession.ip}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-1">
-                  <Globe className="w-4 h-4 text-plan-muted flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-plan-muted">Navegador</p>
-                    <p className="text-sm text-plan-primary">{selectedSession.browser}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-1">
-                  <Clock className="w-4 h-4 text-plan-muted flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-plan-muted">Inicio de sesión</p>
-                    <p className="text-sm text-plan-primary">{selectedSession.loginDate}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-1">
-                  <Monitor className="w-4 h-4 text-plan-muted flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-plan-muted">Última actividad</p>
-                    <p className="text-sm text-plan-primary">{selectedSession.lastActive}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              {!selectedSession.current ? (
-                <div className="pt-2 border-t border-plan-border">
-                  <button
-                    onClick={() => handleCloseSession(selectedSession.id)}
-                    disabled={closingSessionId === selectedSession.id}
-                    className="w-full py-2 border border-red-300 text-red-800 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {closingSessionId === selectedSession.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <X className="w-4 h-4" />
-                    )}
-                    {closingSessionId === selectedSession.id ? 'Cerrando sesión...' : 'Cerrar esta sesión'}
-                  </button>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-plan-border">
-                  <p className="text-xs text-plan-secondary text-center">Esta es tu sesión actual. No puedes cerrarla desde aquí.</p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </Modal>
-
-      {/* Close All Sessions Confirmation */}
-      <Modal open={showCloseAllConfirm} onClose={() => setShowCloseAllConfirm(false)} title="Cerrar todas las sesiones">
-        <div className="space-y-4">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-            <p className="text-sm text-amber-800 font-medium mb-1">¿Estás seguro?</p>
-            <p className="text-xs text-amber-700">
-              Se cerrarán {sessions.filter(s => !s.current).length} {sessions.filter(s => !s.current).length === 1 ? 'sesión' : 'sesiones'} en otros dispositivos. Deberás iniciar sesión de nuevo en esos dispositivos.
-            </p>
-          </div>
-          <div className="space-y-2">
-            {sessions.filter(s => !s.current).map(session => {
-              const DeviceIcon = getDeviceIcon(session.deviceType);
-              return (
-                <div key={session.id} className="flex items-center gap-3 px-3 py-2 bg-muted rounded-sm">
-                  <DeviceIcon className="w-4 h-4 text-plan-secondary" />
-                  <div>
-                    <p className="text-sm text-plan-primary">{session.device}</p>
-                    <p className="text-xs text-plan-muted">{session.location} · {session.lastActive}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setShowCloseAllConfirm(false)}
-              className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleCloseAllOtherSessions}
-              disabled={isLoading}
-              className="flex-1 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-              {isLoading ? 'Cerrando...' : 'Cerrar todas'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Payment Method Modal */}
-      <Modal open={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Método de pago">
-        <div className="space-y-4">
-          <div className="p-4 border border-plan-border rounded-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-6 bg-indigo-900 rounded flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">VISA</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-plan-primary">•••• •••• •••• 4242</p>
-                  <p className="text-xs text-plan-secondary">Vence 12/26</p>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 bg-plan-status-green-bg text-green-800 text-xs">Principal</span>
-            </div>
-          </div>
-
-          <button className="w-full py-3 border border-dashed border-border text-sm text-plan-secondary hover:border-plan-muted hover:text-foreground transition-colors">
-            + Agregar nuevo método de pago
-          </button>
-
-          <div className="pt-2 border-t border-plan-border">
-            <p className="text-xs text-plan-muted">
-              Los pagos son procesados de forma segura. No almacenamos tu información de tarjeta.
-            </p>
-          </div>
-
-          <button
-            onClick={() => {
-              setShowPaymentModal(false);
-              toast.success('Configuración de pago actualizada');
-            }}
-            className="w-full py-2 bg-primary text-white text-sm font-medium hover:bg-primary/90"
-          >
-            Guardar cambios
-          </button>
         </div>
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal open={showDeleteModal} onClose={() => deleteStep !== 'processing' ? setShowDeleteModal(false) : undefined} title="Eliminar cuenta">
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('landlordSettings.modals.deleteAccount.title')}>
         <div className="space-y-4">
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+              <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">{t('landlordSettings.modals.deleteAccount.warning')}</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                {t('landlordSettings.modals.deleteAccount.warningDesc')}
+              </p>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.modals.deleteAccount.typeToConfirm')} <span className="font-bold text-red-600 dark:text-red-400">{t('landlordSettings.modals.deleteAccount.confirmWord')}</span> {t('landlordSettings.modals.deleteAccount.toConfirm')}
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-300 dark:focus:border-red-500 transition-all"
+              placeholder={t('landlordSettings.modals.deleteAccount.confirmWord')}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteConfirmText('');
+              }}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isLoading || deleteConfirmText !== t('landlordSettings.modals.deleteAccount.confirmWord')}
+              className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.deleteAccount.deleting') : t('landlordSettings.modals.deleteAccount.deleteButton')}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
-          {/* Step 1: Review - show blockers and what will happen */}
-          {deleteStep === 'review' && (
-            <>
-              <div className="p-4 bg-red-50 border border-red-200 rounded-sm flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-red-800">Esta acción es permanente</p>
-                  <p className="text-xs text-destructive mt-1">
-                    Una vez eliminada, no podrás recuperar tu cuenta ni ninguno de tus datos.
-                  </p>
-                </div>
-              </div>
-
-              {/* Critical blockers */}
-              {hasCriticalBlockers && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                  <p className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    No puedes eliminar tu cuenta aún
-                  </p>
-                  <p className="text-xs text-amber-700 mb-3">
-                    Tienes obligaciones activas que debes resolver primero:
-                  </p>
-                  {criticalBlockers.map((b, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-t border-amber-200 first:border-0">
-                      <div>
-                        <p className="text-sm text-amber-900 font-medium">{b.label}</p>
-                        <p className="text-xs text-amber-700">{b.description}</p>
-                      </div>
-                      {b.link && (
-                        <Link href={b.link} onClick={() => setShowDeleteModal(false)} className="text-xs text-amber-800 font-medium hover:underline flex-shrink-0">
-                          {b.action}
-                        </Link>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Non-critical warnings */}
-              {blockers.filter(b => b.type !== 'lease').length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-plan-muted uppercase tracking-wider">Lo que sucederá</p>
-                  {blockers.filter(b => b.type !== 'lease').map((b, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 bg-muted rounded-sm">
-                      <AlertTriangle className="w-4 h-4 text-plan-muted flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-plan-primary">{b.label}</p>
-                        <p className="text-xs text-plan-secondary">{b.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* What gets deleted */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-plan-muted uppercase tracking-wider">Se eliminará permanentemente</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    'Propiedades publicadas',
-                    'Contratos y documentos',
-                    'Historial de pagos',
-                    'Mensajes y notificaciones',
-                    'Datos de candidatos',
-                    'Configuración y preferencias',
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-plan-secondary">
-                      <X className="w-3 h-3 text-destructive flex-shrink-0" />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Export data option */}
-              <div className="p-3 border border-plan-border rounded-sm flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-plan-primary">Exportar mis datos</p>
-                  <p className="text-xs text-plan-secondary">Descarga una copia antes de eliminar</p>
-                </div>
+      {/* Invite Team Member Modal */}
+      <Modal open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t('landlordSettings.modals.inviteMember.title')}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
+            <input
+              type="email"
+              value={inviteForm.email}
+              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder="email@ejemplo.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.inviteMember.role')}</label>
+            <div className="space-y-2">
+              {([
+                { value: 'admin' as TeamRole, label: t('landlordSettings.team.roles.admin'), desc: t('landlordSettings.modals.inviteMember.adminDesc') },
+                { value: 'manager' as TeamRole, label: t('landlordSettings.team.roles.manager'), desc: t('landlordSettings.modals.inviteMember.managerDesc') },
+                { value: 'accountant' as TeamRole, label: t('landlordSettings.team.roles.accountant'), desc: t('landlordSettings.modals.inviteMember.accountantDesc') },
+                { value: 'viewer' as TeamRole, label: t('landlordSettings.team.roles.viewer'), desc: t('landlordSettings.modals.inviteMember.viewerDesc') },
+              ]).map((role) => (
                 <button
-                  onClick={handleExportData}
-                  disabled={exportRequested}
+                  key={role.value}
+                  type="button"
+                  onClick={() => setInviteForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors',
-                    exportRequested
-                      ? 'bg-plan-status-green-bg text-green-800'
-                      : 'border border-plan-border text-plan-secondary hover:bg-muted'
+                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
+                    inviteForm.role === role.value
+                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
+                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                   )}
                 >
-                  {exportRequested ? <Check className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-                  {exportRequested ? 'Enviado a tu correo' : 'Exportar'}
-                </button>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => setDeleteStep('reason')}
-                  disabled={hasCriticalBlockers}
-                  className="flex-1 py-2 bg-destructive text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {hasCriticalBlockers ? 'Resuelve los bloqueos primero' : 'Continuar'}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Reason for leaving */}
-          {deleteStep === 'reason' && (
-            <>
-              <p className="text-sm text-plan-secondary">Antes de irte, ¿nos ayudas a mejorar? Tu opinión es valiosa.</p>
-              <div className="space-y-2">
-                {[
-                  { value: 'too_expensive', label: 'Es muy costoso' },
-                  { value: 'not_useful', label: 'No me resulta útil' },
-                  { value: 'switching', label: 'Voy a usar otra plataforma' },
-                  { value: 'no_properties', label: 'Ya no tengo propiedades para arrendar' },
-                  { value: 'bad_experience', label: 'Mala experiencia con el servicio' },
-                  { value: 'other', label: 'Otro motivo' },
-                ].map(opt => (
-                  <label
-                    key={opt.value}
-                    className={cn(
-                      'flex items-center gap-3 p-3 border cursor-pointer transition-colors',
-                      deleteReason === opt.value ? 'border-destructive bg-red-50/50' : 'border-plan-border hover:bg-muted'
+                  <div className={cn(
+                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                    inviteForm.role === role.value
+                      ? 'border-indigo-500'
+                      : 'border-neutral-300 dark:border-neutral-600'
+                  )}>
+                    {inviteForm.role === role.value && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
                     )}
-                  >
-                    <input
-                      type="radio"
-                      name="deleteReason"
-                      value={opt.value}
-                      checked={deleteReason === opt.value}
-                      onChange={() => setDeleteReason(opt.value)}
-                      className="accent-destructive"
-                    />
-                    <span className="text-sm text-plan-primary">{opt.label}</span>
-                  </label>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{role.label}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{role.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setShowInviteModal(false)}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleInviteMember}
+              disabled={isLoading || !inviteForm.email}
+              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Team Member Modal */}
+      <Modal open={showEditMemberModal} onClose={() => setShowEditMemberModal(false)} title={t('landlordSettings.modals.editMember.title')}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.editMember.name')}</label>
+            <input
+              type="text"
+              value={editMemberForm.name}
+              onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.editMember.role')}</label>
+            <div className="space-y-2">
+              {([
+                { value: 'admin' as TeamRole, label: t('landlordSettings.team.roles.admin'), desc: t('landlordSettings.modals.inviteMember.adminDesc') },
+                { value: 'manager' as TeamRole, label: t('landlordSettings.team.roles.manager'), desc: t('landlordSettings.modals.inviteMember.managerDesc') },
+                { value: 'accountant' as TeamRole, label: t('landlordSettings.team.roles.accountant'), desc: t('landlordSettings.modals.inviteMember.accountantDesc') },
+                { value: 'viewer' as TeamRole, label: t('landlordSettings.team.roles.viewer'), desc: t('landlordSettings.modals.inviteMember.viewerDesc') },
+              ]).map((role) => (
+                <button
+                  key={role.value}
+                  type="button"
+                  onClick={() => setEditMemberForm(prev => ({ ...prev, role: role.value }))}
+                  className={cn(
+                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
+                    editMemberForm.role === role.value
+                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
+                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
+                  )}
+                >
+                  <div className={cn(
+                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                    editMemberForm.role === role.value
+                      ? 'border-indigo-500'
+                      : 'border-neutral-300 dark:border-neutral-600'
+                  )}>
+                    {editMemberForm.role === role.value && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{role.label}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{role.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setShowEditMemberModal(false);
+                setEditingMember(null);
+              }}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleEditMember}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <PencilSimple className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Bank Account Modal */}
+      <Modal open={showAddBankModal} onClose={() => { setShowAddBankModal(false); resetBankForm(); }} title={t('landlordSettings.paymentAccounts.modals.addBankAccount.title')}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.bank')}
+            </label>
+            <div className="relative">
+              <select
+                value={bankForm.bankCode}
+                onChange={(e) => setBankForm(prev => ({ ...prev, bankCode: e.target.value as BankCode }))}
+                className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">{t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')}</option>
+                {COLOMBIAN_BANKS.map((bank) => (
+                  <option key={bank.code} value={bank.code}>{bank.name}</option>
                 ))}
+              </select>
+              <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountType')}
+            </label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setBankForm(prev => ({ ...prev, accountType: 'savings' }))}
+                className={cn(
+                  'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
+                  bankForm.accountType === 'savings'
+                    ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                    : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
+                )}
+              >
+                {t('landlordSettings.paymentAccounts.accountTypes.savings')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBankForm(prev => ({ ...prev, accountType: 'checking' }))}
+                className={cn(
+                  'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
+                  bankForm.accountType === 'checking'
+                    ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                    : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
+                )}
+              >
+                {t('landlordSettings.paymentAccounts.accountTypes.checking')}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumber')}
+            </label>
+            <input
+              type="text"
+              value={bankForm.accountNumber}
+              onChange={(e) => setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
+              maxLength={20}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolder')}
+            </label>
+            <input
+              type="text"
+              value={bankForm.accountHolderName}
+              onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.document')}
+            </label>
+            <input
+              type="text"
+              value={bankForm.accountHolderDocument}
+              onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
+              maxLength={12}
+            />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={bankForm.isDefault}
+              onChange={(e) => setBankForm(prev => ({ ...prev, isDefault: e.target.checked }))}
+              className="w-5 h-5 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-neutral-700 dark:text-neutral-300">
+              {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
+            </span>
+          </label>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => { setShowAddBankModal(false); resetBankForm(); }}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleAddBankAccount}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Bank className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.paymentAccounts.modals.addBankAccount.adding') : t('landlordSettings.paymentAccounts.modals.addBankAccount.addButton')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Digital Wallet Modal */}
+      <Modal open={showAddWalletModal} onClose={() => { setShowAddWalletModal(false); resetWalletForm(); }} title={t('landlordSettings.paymentAccounts.modals.addWallet.title')}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addWallet.wallet')}
+            </label>
+            <div className="relative">
+              <select
+                value={walletForm.walletCode}
+                onChange={(e) => setWalletForm(prev => ({ ...prev, walletCode: e.target.value as WalletCode }))}
+                className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">{t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')}</option>
+                {DIGITAL_WALLETS.map((wallet) => (
+                  <option key={wallet.code} value={wallet.code}>{wallet.name}</option>
+                ))}
+              </select>
+              <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addWallet.phoneNumber')}
+            </label>
+            <div className="flex gap-2">
+              <div className="w-16 h-12 px-3 border border-neutral-200 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-[#1f1f21] flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
+                +57
               </div>
-              {deleteReason === 'other' && (
-                <textarea
-                  value={deleteReasonOther}
-                  onChange={(e) => setDeleteReasonOther(e.target.value)}
-                  placeholder="Cuéntanos más..."
-                  rows={3}
-                  className="w-full px-4 py-3 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-destructive/20 resize-none"
-                />
+              <input
+                type="text"
+                value={walletForm.phoneNumber}
+                onChange={(e) => setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                className="flex-1 h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
+                maxLength={10}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              {t('landlordSettings.paymentAccounts.modals.addWallet.holderName')}
+            </label>
+            <input
+              type="text"
+              value={walletForm.holderName}
+              onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
+            />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={walletForm.isDefault}
+              onChange={(e) => setWalletForm(prev => ({ ...prev, isDefault: e.target.checked }))}
+              className="w-5 h-5 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-neutral-700 dark:text-neutral-300">
+              {t('landlordSettings.paymentAccounts.modals.addWallet.setDefault')}
+            </span>
+          </label>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => { setShowAddWalletModal(false); resetWalletForm(); }}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handleAddWallet}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.paymentAccounts.modals.addWallet.adding') : t('landlordSettings.paymentAccounts.modals.addWallet.addButton')}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Payment Account Modal */}
+      <Modal open={showDeleteAccountModal} onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }} title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}>
+        <div className="space-y-4">
+          {editingAccount && (
+            <>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                  <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    {isBankAccount(editingAccount)
+                      ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
+                      : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
+                  </p>
+                </div>
+              </div>
+              {getPropertyCountForAccount(editingAccount.id) > 0 && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
+                  </p>
+                </div>
+              )}
+              {editingAccount.isDefault && paymentAccounts.length > 1 && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
+                  </p>
+                </div>
               )}
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setDeleteStep('review')}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
+                  onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
+                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
                 >
-                  Atrás
+                  {t('landlordSettings.modals.cancel')}
                 </button>
                 <button
-                  onClick={() => setDeleteStep('confirm')}
-                  disabled={!deleteReason}
-                  className="flex-1 py-2 bg-destructive text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleDeletePaymentAccount}
+                  disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
+                  className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                 >
-                  Continuar
+                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
+                  {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
                 </button>
               </div>
             </>
           )}
-
-          {/* Step 3: Final confirmation */}
-          {deleteStep === 'confirm' && (
-            <>
-              <div className="p-4 bg-red-50 border border-red-200 rounded-sm">
-                <p className="text-sm font-medium text-red-800 mb-2">Última confirmación</p>
-                <p className="text-xs text-destructive">
-                  Estás a punto de eliminar permanentemente la cuenta de <strong>{user?.email || 'landlord@example.com'}</strong>.
-                  Esta acción no se puede revertir y perderás acceso a todos tus datos inmediatamente.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Escribe <span className="font-bold text-destructive">ELIMINAR</span> para confirmar
-                </label>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                  className="w-full h-10 px-4 border border-plan-border text-sm focus:outline-none focus:ring-2 focus:ring-destructive/20 font-mono tracking-widest"
-                  placeholder="ELIMINAR"
-                  autoComplete="off"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setDeleteStep('reason')}
-                  className="flex-1 py-2 border border-plan-border text-sm font-medium text-plan-secondary hover:bg-muted"
-                >
-                  Atrás
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== 'ELIMINAR'}
-                  className="flex-1 py-2 bg-destructive text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Eliminar mi cuenta
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Step 4: Processing */}
-          {deleteStep === 'processing' && (
-            <div className="py-8 text-center space-y-4">
-              <Loader2 className="w-10 h-10 animate-spin text-destructive mx-auto" />
-              <div>
-                <p className="text-sm font-medium text-plan-primary">Eliminando tu cuenta...</p>
-                <p className="text-xs text-plan-secondary mt-1">Esto puede tomar unos momentos. No cierres esta ventana.</p>
-              </div>
-              <div className="space-y-2 text-left max-w-xs mx-auto">
-                {[
-                  'Cancelando suscripción...',
-                  'Eliminando propiedades...',
-                  'Eliminando contratos y documentos...',
-                  'Eliminando datos de la cuenta...',
-                ].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs text-plan-secondary">
-                    <Check className="w-3 h-3 text-plan-muted" />
-                    {step}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
         </div>
       </Modal>
     </div>

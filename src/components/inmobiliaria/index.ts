@@ -138,3 +138,7 @@ export { ConfigPermisos } from './ConfigPermisos';
 // Configuracion - Integrations & Billing (Phase 10 - Plan 03)
 export { ConfigIntegraciones } from './ConfigIntegraciones';
 export { ConfigFacturacion } from './ConfigFacturacion';
+
+// Documentos - Templates & Manager (Phase 10 - Plan 04)
+export { DocumentoTemplates } from './DocumentoTemplates';
+export { DocumentoManager } from './DocumentoManager';

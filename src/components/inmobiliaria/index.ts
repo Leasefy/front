@@ -111,3 +111,8 @@ export type { ExportButtonProps, ExportFormat } from './ExportButton';
 
 // Operaciones - Renovaciones (Phase 9)
 export { RenovacionesTable } from './RenovacionesTable';
+
+// Operaciones - Mantenimiento (Phase 9)
+export { MantenimientoList } from './MantenimientoList';
+export { MantenimientoForm } from './MantenimientoForm';
+export type { MantenimientoFormData } from './MantenimientoForm';

@@ -65,8 +65,8 @@ const INMOBILIARIA_NAV_ITEMS: NavItem[] = [
     icon: PaperPlaneTilt,
   },
   {
-    label: 'Mantenimiento',
-    href: '/panel/inmobiliaria/mantenimiento',
+    label: 'Operaciones',
+    href: '/panel/inmobiliaria/operaciones',
     icon: Wrench,
   },
   {

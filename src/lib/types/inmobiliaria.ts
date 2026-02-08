@@ -625,3 +625,152 @@ export function getAgingBucket(daysLate: number): CarteraItem['bucket'] {
   if (daysLate <= 90) return '61-90';
   return '90+';
 }
+
+// ============================================================================
+// Report Definitions (Centro de Reportes)
+// ============================================================================
+
+export type ReportId =
+  | 'extractos-propietarios'
+  | 'cartera-edades'
+  | 'comisiones-agente'
+  | 'ocupacion-portafolio'
+  | 'vencimientos'
+  | 'rendimiento-agentes'
+  | 'flujo-caja';
+
+export type ReportFormat = 'pdf' | 'excel';
+export type ReportCategory = 'financiero' | 'operativo' | 'agentes';
+export type ReportFrequency = 'monthly' | 'weekly' | 'daily' | 'on-demand';
+
+export interface ReportDefinition {
+  id: ReportId;
+  title: string;
+  description: string;
+  icon: string; // Phosphor icon name
+  category: ReportCategory;
+  format: ReportFormat;
+  frequency: ReportFrequency;
+  lastGenerated?: string;
+  isFavorite?: boolean;
+}
+
+export interface ReportFiltersState {
+  period: {
+    start: string;
+    end: string;
+  };
+  zone?: string;
+  propietarioId?: string;
+  agenteId?: string;
+}
+
+// Specific report data types
+export interface ComisionesAgenteReport {
+  generatedAt: string;
+  period: { start: string; end: string };
+  items: {
+    agenteId: string;
+    agenteName: string;
+    closedDeals: number;
+    totalCommission: number;
+    avgCommission: number;
+    topProperty?: string;
+  }[];
+  summary: {
+    totalAgents: number;
+    totalCommissions: number;
+    avgPerAgent: number;
+  };
+}
+
+export interface OcupacionReport {
+  generatedAt: string;
+  zones: {
+    zone: string;
+    total: number;
+    occupied: number;
+    available: number;
+    inProcess: number;
+    occupancyRate: number;
+  }[];
+  overall: {
+    total: number;
+    occupied: number;
+    occupancyRate: number;
+  };
+}
+
+export interface VencimientosReport {
+  generatedAt: string;
+  items: {
+    propertyId: string;
+    propertyTitle: string;
+    tenantName: string;
+    propietarioName: string;
+    leaseEnd: string;
+    daysUntilExpiry: number;
+    renewalStatus: 'pending' | 'negotiating' | 'renewed' | 'terminating';
+  }[];
+  summary: {
+    expiring30: number;
+    expiring60: number;
+    expiring90: number;
+    total: number;
+  };
+}
+
+export interface FlujoCajaReport {
+  generatedAt: string;
+  period: { start: string; end: string };
+  months: {
+    month: string;
+    ingresos: number;
+    dispersiones: number;
+    comisiones: number;
+    balance: number;
+  }[];
+  summary: {
+    totalIngresos: number;
+    totalDispersiones: number;
+    totalComisiones: number;
+    netBalance: number;
+  };
+}
+
+// Helper functions for reports
+export function getReportCategoryColor(category: ReportCategory): string {
+  const colors: Record<ReportCategory, string> = {
+    financiero: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    operativo: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    agentes: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+  };
+  return colors[category];
+}
+
+export function getReportCategoryLabel(category: ReportCategory): string {
+  const labels: Record<ReportCategory, string> = {
+    financiero: 'Financiero',
+    operativo: 'Operativo',
+    agentes: 'Agentes',
+  };
+  return labels[category];
+}
+
+export function getReportFormatColor(format: ReportFormat): string {
+  const colors: Record<ReportFormat, string> = {
+    pdf: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    excel: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  };
+  return colors[format];
+}
+
+export function getReportFrequencyLabel(frequency: ReportFrequency): string {
+  const labels: Record<ReportFrequency, string> = {
+    monthly: 'Mensual',
+    weekly: 'Semanal',
+    daily: 'Diario',
+    'on-demand': 'Bajo demanda',
+  };
+  return labels[frequency];
+}

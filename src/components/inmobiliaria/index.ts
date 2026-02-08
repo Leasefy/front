@@ -86,3 +86,7 @@ export { DispersionCard, DispersionCardCompact } from './DispersionCard';
 export { DispersionTable } from './DispersionTable';
 export { DispersionFilters } from './DispersionFilters';
 export type { DispersionFiltersState } from './DispersionFilters';
+export { DispersionDetail } from './DispersionDetail';
+export { ComisionDesglose, ComisionDesgloseCompact } from './ComisionDesglose';
+export { ExtractoPropietario } from './ExtractoPropietario';
+export { DispersionResumen, DispersionResumenCompact } from './DispersionResumen';

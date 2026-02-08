@@ -49,3 +49,9 @@ export { AgenteCard } from './AgenteCard';
 export { AgenteTable } from './AgenteTable';
 export { AgenteFilters } from './AgenteFilters';
 export type { AgenteFiltersState } from './AgenteFilters';
+
+// Agente Detail Components
+export { AgenteProfile } from './AgenteProfile';
+export { AgenteMetrics } from './AgenteMetrics';
+export { AgentePropertyList } from './AgentePropertyList';
+export { AgentePipeline } from './AgentePipeline';

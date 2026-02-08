@@ -109,11 +109,8 @@ export default function AgentesPage() {
 
   // Handlers
   const handleView = useCallback((agente: typeof MOCK_AGENTES[0]) => {
-    // Detail page in next plan (04-02)
-    toast.info(`Ver detalle de ${agente.name}`, {
-      description: 'Pagina de detalle disponible en la proxima version',
-    });
-  }, []);
+    router.push(`/panel/inmobiliaria/agentes/${agente.id}`);
+  }, [router]);
 
   const handleEdit = useCallback((agente: typeof MOCK_AGENTES[0]) => {
     toast.info(`Editar ${agente.name}`, {

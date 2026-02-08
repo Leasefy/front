@@ -108,3 +108,6 @@ export { FlujoCajaChart } from './FlujoCajaChart';
 // Report Export Components (Phase 8 - Plan 03)
 export { ExportButton, ExportButtonCompact } from './ExportButton';
 export type { ExportButtonProps, ExportFormat } from './ExportButton';
+
+// Operaciones - Renovaciones (Phase 9)
+export { RenovacionesTable } from './RenovacionesTable';

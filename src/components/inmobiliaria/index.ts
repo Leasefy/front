@@ -126,3 +126,7 @@ export { CotizacionComparator } from './CotizacionComparator';
 export type { CotizacionComparatorProps } from './CotizacionComparator';
 export { MantenimientoViewer } from './MantenimientoViewer';
 export type { MantenimientoViewerProps } from './MantenimientoViewer';
+
+// Configuracion - Company Profile & Branding (Phase 10)
+export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
+export { ConfigBranding } from './ConfigBranding';

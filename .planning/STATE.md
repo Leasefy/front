@@ -14,12 +14,12 @@ See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-03 Consignaciones (1/3 plans complete)
-Plan: 03-01 ConsignacionCard + Lista Consignaciones (COMPLETE)
+Phase: Inmobiliaria-03 Consignaciones (2/3 plans complete)
+Plan: 03-02 ConsignacionWizard (6-Step New Consignment) (COMPLETE)
 Status: In Progress
-Last activity: 2026-02-08 — Portafolio page with ConsignacionCard grid/table, filters, pagination
+Last activity: 2026-02-08 — 6-step wizard for new consignments with propietario/agent selection
 
-Progress: ████░░░░░░░░░░░░░░░░░░░░░░░░░░ 33% (Phase 3)
+Progress: ████████░░░░░░░░░░░░░░░░░░░░░░ 67% (Phase 3)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -572,6 +572,12 @@ Minor (5):
   - ConsignacionTable with sortable columns
   - ConsignacionFilters with search, dropdowns
   - Portafolio page at `/panel/inmobiliaria/portafolio`
+- **Plan 03-02 COMPLETE**: ConsignacionWizard (6-Step New Consignment)
+  - PropietarioSelector with search, selection, and inline creation
+  - AgenteSelector with workload sorting and recommendations
+  - 6 wizard steps: Propietario, Property, Commission, Agent, Inventory, Confirm
+  - Step validation and back navigation with data persistence
+  - Nueva Consignacion page at `/panel/inmobiliaria/portafolio/nuevo`
 
 ## MVP FRONTEND COMPLETE + ENHANCED
 
@@ -592,9 +598,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 03-01-PLAN.md (ConsignacionCard + Lista Consignaciones)
-Resume file: .planning/phases/inmobiliaria-03-consignaciones/03-02-PLAN.md
-Status: Inmobiliaria Phase 3 in progress (1/3 plans complete)
+Stopped at: Completed 03-02-PLAN.md (ConsignacionWizard 6-Step)
+Resume file: .planning/phases/inmobiliaria-03-consignaciones/03-03-PLAN.md
+Status: Inmobiliaria Phase 3 in progress (2/3 plans complete)
 
 ## Backend Integration Status
 

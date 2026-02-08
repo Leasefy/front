@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (Planning)
+**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (In Progress)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-05 Pipeline (0/3 plans complete)
-Plan: 05-01 PipelineCard + PipelineColumn (PLANNED)
-Status: Plans Ready for Execution
-Last activity: 2026-02-08 — Created 3 plans for Phase 5 Pipeline de Arriendos
+Phase: Inmobiliaria-05 Pipeline (1/3 plans complete)
+Plan: 05-01 PipelineCard + PipelineColumn (COMPLETE)
+Status: Plan 05-02 Ready for Execution
+Last activity: 2026-02-08 — Completed 05-01 PipelineCard + PipelineColumn
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 5)
+Progress: ███████████░░░░░░░░░░░░░░░░░░░ 33% (Phase 5)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -185,6 +185,11 @@ Progress: ░░░░░░░░░░░░░░░░░░░░░░░�
 - **Pure CSS charts**: Workload chart uses CSS-only bars (no charting library)
 - **Workload thresholds**: 5/8/10 as low/optimal/overloaded property counts
 - **Medal icons**: Emoji medals for top 3 leaderboard performers
+- **Pipeline card width**: 280px fixed for horizontal Kanban scroll layout
+- **Days-in-stage thresholds**: Warning at 7 days (amber), critical at 14 days (red)
+- **Stage color extraction**: Parse PIPELINE_STAGES color for top border and indicator
+- **Collapsible columns**: Toggle hides cards but shows count footer
+- **Drop zone styling**: Dashed border with hint text for drag target feedback
 
 ### What's Complete (Phase 1)
 
@@ -646,9 +651,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Created Phase 5 plans (05-01, 05-02, 05-03)
-Resume file: .planning/phases/inmobiliaria-05-pipeline/05-01-PLAN.md
-Status: Phase 5 PLANNED - Ready for Execution (3 plans)
+Stopped at: Completed 05-01 PipelineCard + PipelineColumn
+Resume file: .planning/phases/inmobiliaria-05-pipeline/05-02-PLAN.md
+Status: Phase 5 IN PROGRESS - 1/3 plans complete
 
 ## Backend Integration Status
 

@@ -80,3 +80,9 @@ export { CobroResumen, CobroResumenCompact } from './CobroResumen';
 export { RecordatorioConfig } from './RecordatorioConfig';
 export type { RecordatorioConfigData } from './RecordatorioConfig';
 export { CobroDetail } from './CobroDetail';
+
+// Dispersiones (Disbursements) Components
+export { DispersionCard, DispersionCardCompact } from './DispersionCard';
+export { DispersionTable } from './DispersionTable';
+export { DispersionFilters } from './DispersionFilters';
+export type { DispersionFiltersState } from './DispersionFilters';

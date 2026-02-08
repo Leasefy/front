@@ -44,6 +44,7 @@ import {
   generateOcupacionReport,
   generateVencimientosReport,
   generateFlujoCajaReport,
+  generateCarteraReport,
 } from '@/lib/data/mock-inmobiliaria';
 
 interface ReporteViewerProps {
@@ -433,6 +434,87 @@ function FlujoCajaPreview() {
 }
 
 /**
+ * Cartera Edades Preview
+ */
+function CarteraEdadesPreview() {
+  const data = React.useMemo(() => generateCarteraReport(), []);
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
+        <p className="text-sm font-medium text-red-100">Total Cartera en Mora</p>
+        <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
+        <p className="text-xs text-red-200 mt-1">{data.items.length} cobros pendientes</p>
+      </div>
+
+      {/* Bucket Summary */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
+          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            {formatCurrency(data.summary.bucket0to30)}
+          </p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">0-30 dias</p>
+        </div>
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
+          <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+            {formatCurrency(data.summary.bucket31to60)}
+          </p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">31-60 dias</p>
+        </div>
+        <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
+          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+            {formatCurrency(data.summary.bucket61to90)}
+          </p>
+          <p className="text-xs text-orange-600 dark:text-orange-400">61-90 dias</p>
+        </div>
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-center">
+          <p className="text-lg font-bold text-red-600 dark:text-red-400">
+            {formatCurrency(data.summary.bucket90plus)}
+          </p>
+          <p className="text-xs text-red-600 dark:text-red-400">90+ dias</p>
+        </div>
+      </div>
+
+      {/* Top Deudores */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-semibold text-foreground">
+          Principales Deudores ({data.items.length})
+        </h4>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {data.items
+            .sort((a, b) => b.pendingAmount - a.pendingAmount)
+            .slice(0, 8)
+            .map((item) => (
+              <div
+                key={item.cobroId}
+                className="flex items-center justify-between p-3 rounded-lg border border-border"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {item.tenantName}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.propertyTitle}
+                  </p>
+                </div>
+                <div className="text-right ml-3">
+                  <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                    {formatCurrency(item.pendingAmount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.daysLate} dias
+                  </p>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Generic Preview Placeholder
  */
 function GenericPreview({ report }: { report: ReportDefinition }) {
@@ -482,6 +564,8 @@ export function ReporteViewer({
   // Get preview component based on report type
   const PreviewContent = () => {
     switch (report.id) {
+      case 'cartera-edades':
+        return <CarteraEdadesPreview />;
       case 'comisiones-agente':
       case 'rendimiento-agentes':
         return <ComisionesAgentePreview />;

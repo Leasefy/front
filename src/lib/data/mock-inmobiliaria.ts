@@ -18,6 +18,9 @@ import type {
   CarteraItem,
   CarteraReport,
   ExtractoPropietario,
+  Renovacion,
+  RenovacionStatus,
+  RenovacionHistoryItem,
 } from '@/lib/types/inmobiliaria';
 
 // ============================================================================
@@ -2458,3 +2461,188 @@ export function getIPCForDate(year: number, month: number): IPCRecord | undefine
 export function calculateNewRent(currentRent: number, ipcRate: number): number {
   return Math.round(currentRent * (1 + ipcRate / 100));
 }
+
+// ============================================================================
+// Renovaciones (Contract Renewals)
+// ============================================================================
+
+/**
+ * Generate mock renovaciones data from consignaciones with expiring leases
+ * Creates a realistic distribution of renewal statuses
+ */
+export function generateMockRenovaciones(): Renovacion[] {
+  const statuses: RenovacionStatus[] = [
+    'pending', 'notified', 'negotiating', 'approved', 'signed', 'completed', 'terminated'
+  ];
+
+  const renovaciones: Renovacion[] = [];
+  const today = new Date();
+
+  // Generate renovaciones for properties with leases ending soon
+  MOCK_CONSIGNACIONES
+    .filter(c => c.currentLeaseId && c.leaseEndDate && c.availability === 'rented')
+    .forEach((consignacion, index) => {
+      const leaseEnd = new Date(consignacion.leaseEndDate!);
+      const daysUntil = Math.ceil((leaseEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Only create renovacion for contracts expiring in next 90 days or recently expired
+      if (daysUntil <= 90 && daysUntil > -30) {
+        const bucket: Renovacion['urgencyBucket'] = daysUntil <= 30 ? '0-30'
+          : daysUntil <= 60 ? '31-60'
+          : daysUntil <= 90 ? '61-90'
+          : '90+';
+
+        // Distribute statuses - more urgent = more likely to be in advanced status
+        const statusIndex = bucket === '0-30'
+          ? Math.min(index % 4 + 3, 6) // More advanced statuses for critical
+          : bucket === '31-60'
+          ? (index % 5) + 1 // Middle statuses
+          : index % 3; // Earlier statuses for less urgent
+
+        const status = statuses[statusIndex];
+        const currentRent = consignacion.monthlyRent;
+        const ipcRate = getCurrentIPC().rate; // Use current IPC
+        const proposedRent = calculateNewRent(currentRent, ipcRate);
+
+        const propietario = MOCK_PROPIETARIOS.find(p => p.id === consignacion.propietarioId);
+        const agente = MOCK_AGENTES.find(a => a.id === consignacion.agenteId);
+
+        renovaciones.push({
+          id: `ren-${String(index + 1).padStart(3, '0')}`,
+          consignacionId: consignacion.id,
+          leaseId: consignacion.currentLeaseId!,
+          propertyId: consignacion.propertyId,
+          propietarioId: consignacion.propietarioId,
+          tenantId: `tenant-${index + 1}`,
+          agenteId: consignacion.agenteId,
+          propertyTitle: consignacion.propertyTitle,
+          propertyAddress: consignacion.propertyAddress,
+          tenantName: consignacion.currentTenantName || 'Inquilino No Registrado',
+          tenantPhone: `+57 3${String(index).padStart(2, '0')} ${String(100 + index * 7).padStart(3, '0')} ${String(4567 + index * 11).padStart(4, '0')}`,
+          tenantEmail: `inquilino${index + 1}@email.com`,
+          propietarioName: propietario?.name || 'Propietario',
+          currentRent,
+          leaseStartDate: new Date(leaseEnd.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          leaseEndDate: consignacion.leaseEndDate!,
+          daysUntilExpiry: Math.max(0, daysUntil),
+          urgencyBucket: bucket,
+          ipcRate,
+          proposedRent,
+          negotiatedRent: status === 'negotiating'
+            ? Math.round(proposedRent * 0.98) // 2% discount during negotiation
+            : status === 'approved' || status === 'signed' || status === 'completed'
+            ? Math.round(proposedRent * 0.99) // 1% final discount
+            : undefined,
+          status,
+          history: generateRenovacionHistory(status),
+          notifiedAt: ['notified', 'negotiating', 'approved', 'signed', 'completed'].includes(status)
+            ? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+          approvedAt: ['approved', 'signed', 'completed'].includes(status)
+            ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+          signedAt: ['signed', 'completed'].includes(status)
+            ? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+          completedAt: status === 'completed'
+            ? new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+  // Sort by urgency (most urgent first)
+  return renovaciones.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+}
+
+/**
+ * Generate workflow history for a renovacion based on status
+ */
+function generateRenovacionHistory(status: RenovacionStatus): RenovacionHistoryItem[] {
+  const history: RenovacionHistoryItem[] = [
+    {
+      date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Renovacion creada automaticamente',
+      actor: 'system',
+      notes: 'Contrato proximo a vencer detectado'
+    },
+  ];
+
+  if (['notified', 'negotiating', 'approved', 'signed', 'completed'].includes(status)) {
+    history.push({
+      date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Inquilino notificado sobre renovacion',
+      actor: 'agent',
+      notes: 'Email y mensaje enviados con propuesta de renovacion'
+    });
+  }
+
+  if (['negotiating', 'approved', 'signed', 'completed'].includes(status)) {
+    history.push({
+      date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Inquilino solicito revision del incremento',
+      actor: 'tenant',
+      notes: 'Solicita considerar un incremento menor al IPC'
+    });
+    history.push({
+      date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Propietario consultado sobre ajuste',
+      actor: 'agent',
+      notes: 'Se presento contrapropuesta del inquilino al propietario'
+    });
+  }
+
+  if (['approved', 'signed', 'completed'].includes(status)) {
+    history.push({
+      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Terminos aprobados por propietario',
+      actor: 'owner',
+      notes: 'Propietario acepta incremento del 99% del IPC'
+    });
+    history.push({
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Inquilino acepto terminos finales',
+      actor: 'tenant',
+    });
+  }
+
+  if (['signed', 'completed'].includes(status)) {
+    history.push({
+      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Contrato de renovacion firmado',
+      actor: 'agent',
+      notes: 'Firmas electronicas completadas por ambas partes'
+    });
+  }
+
+  if (status === 'completed') {
+    history.push({
+      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Renovacion completada',
+      actor: 'system',
+      notes: 'Nuevo contrato registrado y vigente'
+    });
+  }
+
+  if (status === 'terminated') {
+    history.push({
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Inquilino informo que no renovara',
+      actor: 'tenant',
+      notes: 'Se mudara a otra ciudad por motivos laborales'
+    });
+    history.push({
+      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      action: 'Propiedad marcada como disponible proxima',
+      actor: 'agent',
+      notes: 'Se iniciara proceso de busqueda de nuevo inquilino'
+    });
+  }
+
+  return history;
+}
+
+// Generate the mock data on module load
+export const MOCK_RENOVACIONES: Renovacion[] = generateMockRenovaciones();

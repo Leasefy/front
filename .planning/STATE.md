@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 6 Cobros (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 7 Dispersiones (IN PROGRESS)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-07 Dispersiones (3 plans) - PLANNED
-Plan: 07-01 PENDING, 07-02 PENDING, 07-03 PENDING
-Status: Phase 7 Planned - Ready for Execution
-Last activity: 2026-02-07 — Created 3 plans for Phase 7 Dispersiones
+Phase: Inmobiliaria-07 Dispersiones (3 plans) - IN PROGRESS
+Plan: 07-01 COMPLETE, 07-02 PENDING, 07-03 PENDING
+Status: Phase 7 In Progress - Plan 1 Complete
+Last activity: 2026-02-07 — Completed 07-01 DispersionCard + DispersionTable + DispersionFilters
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 7)
+Progress: ██████████░░░░░░░░░░░░░░░░░░░░ 33% (Phase 7)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -202,6 +202,9 @@ Progress: ░░░░░░░░░░░░░░░░░░░░░░░�
 - **Payment history timeline**: Timeline-style layout for easy payment trail
 - **Table/card view toggle**: User preference for data density in cobros list
 - **Optimistic cobro updates**: Payment registration updates state immediately
+- **Dispersion status border pattern**: Left border colors (amber/blue/emerald/red) for quick status identification
+- **Dispersion month navigation**: Prev/next arrows + dropdown for faster month switching
+- **Dispersion expandable properties**: AnimatePresence for smooth expand/collapse of property items
 
 ### What's Complete (Phase 1)
 
@@ -683,9 +686,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Created Phase 7 Dispersiones plans (3 plans)
-Resume file: None - Ready to execute Phase 7
-Status: Phase 7 Dispersiones PLANNED, 0/3 plans done
+Stopped at: Completed 07-01-PLAN.md (DispersionCard + DispersionTable + DispersionFilters)
+Resume file: None - Ready to execute Plan 07-02
+Status: Phase 7 Dispersiones IN PROGRESS, 1/3 plans done
 
 ## Backend Integration Status
 

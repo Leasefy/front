@@ -150,3 +150,7 @@ export { ActaEntregaViewer } from './ActaEntregaViewer';
 // Analytics - Dashboard & KPIs (Phase 10 - Plan 06)
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { AnalyticsKPICards } from './AnalyticsKPICards';
+
+// Analytics - Trends & Forecasting (Phase 10 - Plan 07)
+export { AnalyticsTrends } from './AnalyticsTrends';
+export { AnalyticsForecasting } from './AnalyticsForecasting';

@@ -807,3 +807,105 @@ export function getReportFrequencyLabel(frequency: ReportFrequency): string {
   };
   return labels[frequency];
 }
+
+// ============================================================================
+// Renovaciones (Contract Renewals)
+// ============================================================================
+
+export type RenovacionStatus =
+  | 'pending'        // Hasn't started yet
+  | 'notified'       // Tenant notified about renewal
+  | 'negotiating'    // In negotiation (terms, price)
+  | 'approved'       // Both parties agreed
+  | 'signed'         // New contract signed
+  | 'completed'      // Fully processed
+  | 'terminated';    // Won't renew
+
+export interface RenovacionHistoryItem {
+  date: string;
+  action: string;
+  actor: 'system' | 'agent' | 'tenant' | 'owner';
+  notes?: string;
+}
+
+export interface Renovacion {
+  id: string;
+  consignacionId: string;
+  leaseId: string;
+  propertyId: string;
+  propietarioId: string;
+  tenantId: string;
+  agenteId: string;
+
+  // Property info (denormalized)
+  propertyTitle: string;
+  propertyAddress: string;
+  tenantName: string;
+  tenantPhone: string;
+  tenantEmail: string;
+  propietarioName: string;
+
+  // Current lease
+  currentRent: number;
+  leaseStartDate: string;
+  leaseEndDate: string;
+  daysUntilExpiry: number;
+  urgencyBucket: '0-30' | '31-60' | '61-90' | '90+';
+
+  // IPC calculation
+  ipcRate?: number;        // IPC rate applied
+  proposedRent?: number;   // New rent after IPC
+  negotiatedRent?: number; // If different from proposed
+
+  // Workflow
+  status: RenovacionStatus;
+  history: RenovacionHistoryItem[];
+  notifiedAt?: string;
+  approvedAt?: string;
+  signedAt?: string;
+  completedAt?: string;
+
+  // New lease
+  newLeaseId?: string;
+  newLeaseStartDate?: string;
+  newLeaseEndDate?: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getRenovacionStatusColor(status: RenovacionStatus): string {
+  const colors: Record<RenovacionStatus, string> = {
+    pending: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    notified: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    negotiating: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    approved: 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-400',
+    signed: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    terminated: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  };
+  return colors[status];
+}
+
+export function getRenovacionStatusLabel(status: RenovacionStatus): string {
+  const labels: Record<RenovacionStatus, string> = {
+    pending: 'Pendiente',
+    notified: 'Notificado',
+    negotiating: 'Negociando',
+    approved: 'Aprobado',
+    signed: 'Firmado',
+    completed: 'Completado',
+    terminated: 'Terminado',
+  };
+  return labels[status];
+}
+
+export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): string {
+  const colors = {
+    '0-30': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    '31-60': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    '61-90': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    '90+': 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  };
+  return colors[bucket];
+}

@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 3 Consignaciones (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 4 Agentes (In Progress)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-03 Consignaciones (3/3 plans complete)
-Plan: 03-03 Detalle Consignacion + Timeline + ActaEntrega (COMPLETE)
-Status: Phase Complete
-Last activity: 2026-02-08 — Consignacion detail page with timeline, inventory, sections
+Phase: Inmobiliaria-04 Agentes (1/3 plans complete)
+Plan: 04-01 AgenteCard + Lista Agentes (COMPLETE)
+Status: In Progress
+Last activity: 2026-02-07 — AgenteCard, AgenteTable, AgenteFilters, Agentes listing page
 
-Progress: ████████████░░░░░░░░░░░░░░░░░░ 100% (Phase 3)
+Progress: ██████████████░░░░░░░░░░░░░░░░ 33% (Phase 4)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -590,6 +590,15 @@ Minor (5):
   - Detail page at `/panel/inmobiliaria/portafolio/[id]`
   - Navigation from portafolio cards and table rows
 
+### What's Complete (Inmobiliaria Phase 4) - Agentes (In Progress)
+- **Plan 04-01 COMPLETE**: AgenteCard + Lista Agentes
+  - AgenteCard with avatar, role/status badges, metrics grid, commission split
+  - AgenteTable with sortable columns, responsive layout
+  - AgenteFilters with search, role, status, sort dropdowns
+  - Agentes page at `/panel/inmobiliaria/agentes`
+  - Stats row: Total, Activos, Cierres Mes, Comisiones Mes
+  - Card/Table view toggle, pagination
+
 ## MVP FRONTEND COMPLETE + ENHANCED
 
 All 10 phases executed successfully. The frontend is fully functional with:
@@ -608,10 +617,10 @@ All 10 phases executed successfully. The frontend is fully functional with:
 
 ## Session Continuity
 
-Last session: 2026-02-08
-Stopped at: Completed 03-03-PLAN.md (Detalle Consignacion + Timeline + ActaEntrega)
-Resume file: .planning/phases/inmobiliaria-04-pipeline/04-01-PLAN.md (when created)
-Status: Inmobiliaria Phase 3 complete - Ready for Phase 4 (Pipeline de Arriendos)
+Last session: 2026-02-07
+Stopped at: Completed 04-01-PLAN.md (AgenteCard + Lista Agentes)
+Resume file: .planning/phases/inmobiliaria-04-agentes/04-02-PLAN.md
+Status: Inmobiliaria Phase 4 in progress - Ready for 04-02 (AgenteDetail)
 
 ## Backend Integration Status
 

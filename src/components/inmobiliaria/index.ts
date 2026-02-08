@@ -97,3 +97,10 @@ export { ReporteCard, ReporteCardCompact } from './ReporteCard';
 export { ReporteFilters } from './ReporteFilters';
 export type { ReporteFiltersState } from './ReporteFilters';
 export { ReporteViewer } from './ReporteViewer';
+
+// Report Visualization Components (Phase 8 - Plan 02)
+export { CarteraEdadesTable } from './CarteraEdadesTable';
+export { OcupacionChart } from './OcupacionChart';
+export { ComisionesTable } from './ComisionesTable';
+export { VencimientosTable } from './VencimientosTable';
+export { FlujoCajaChart } from './FlujoCajaChart';

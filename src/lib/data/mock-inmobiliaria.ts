@@ -3057,3 +3057,114 @@ export const MOCK_INVOICES: BillingInvoice[] = [
     pdfUrl: '#',
   },
 ];
+
+// ============================================================================
+// Agency Users
+// ============================================================================
+
+export const MOCK_AGENCY_USERS: AgencyUser[] = [
+  {
+    id: 'user-001',
+    email: 'admin@arriendospremium.co',
+    name: 'Juan Carlos Restrepo',
+    role: 'admin',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=juan',
+    phone: '+57 310 555 1234',
+    status: 'active',
+    lastLoginAt: new Date().toISOString(),
+    createdAt: '2024-01-15T10:00:00Z',
+  },
+  {
+    id: 'user-002',
+    email: 'carolina.mendoza@arriendospremium.co',
+    name: 'Carolina Mendoza Rios',
+    role: 'agente',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=carolina',
+    phone: '+57 320 111 2222',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    createdAt: '2024-02-01T10:00:00Z',
+  },
+  {
+    id: 'user-003',
+    email: 'andres.vargas@arriendospremium.co',
+    name: 'Andres Felipe Vargas Lopez',
+    role: 'agente',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=andres',
+    phone: '+57 321 222 3333',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    createdAt: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 'user-004',
+    email: 'valentina.torres@arriendospremium.co',
+    name: 'Valentina Torres Guzman',
+    role: 'agente',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=valentina',
+    phone: '+57 322 333 4444',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min ago
+    createdAt: '2024-03-01T10:00:00Z',
+  },
+  {
+    id: 'user-005',
+    email: 'contabilidad@arriendospremium.co',
+    name: 'Carlos Alberto Gomez',
+    role: 'contador',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=carlos',
+    phone: '+57 312 555 3456',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+    createdAt: '2024-03-15T10:00:00Z',
+  },
+  {
+    id: 'user-006',
+    email: 'diego.ruiz@arriendospremium.co',
+    name: 'Diego Alejandro Ruiz Pineda',
+    role: 'agente',
+    phone: '+57 323 444 5555',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    createdAt: '2024-04-01T10:00:00Z',
+  },
+  {
+    id: 'user-007',
+    email: 'nuevo.agente@arriendospremium.co',
+    name: 'Nuevo Agente',
+    role: 'agente',
+    status: 'invited',
+    invitedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'user-008',
+    email: 'asistente@arriendospremium.co',
+    name: 'Paula Andrea Martinez',
+    role: 'viewer',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=paula',
+    phone: '+57 314 666 7777',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    createdAt: '2024-05-01T10:00:00Z',
+  },
+  {
+    id: 'user-009',
+    email: 'antiguo.usuario@arriendospremium.co',
+    name: 'Usuario Inactivo',
+    role: 'agente',
+    status: 'inactive',
+    createdAt: '2023-06-01T10:00:00Z',
+  },
+  {
+    id: 'user-010',
+    email: 'natalia.gomez@arriendospremium.co',
+    name: 'Natalia Andrea Gomez Herrera',
+    role: 'agente',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=natalia',
+    phone: '+57 324 555 6666',
+    status: 'active',
+    lastLoginAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+    createdAt: '2024-06-01T10:00:00Z',
+  },
+];

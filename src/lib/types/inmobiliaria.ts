@@ -1010,3 +1010,405 @@ export const COLOMBIAN_DEPARTMENTS = [
 ] as const;
 
 export type ColombianDepartment = typeof COLOMBIAN_DEPARTMENTS[number];
+
+// ============================================================================
+// Configuracion - Integrations
+// ============================================================================
+
+export type IntegrationCategory = 'payments' | 'accounting' | 'communications' | 'storage';
+
+export type IntegrationStatus = 'active' | 'inactive' | 'pending' | 'error';
+
+export interface AgencyIntegration {
+  id: string;
+  name: string;
+  description: string;
+  category: IntegrationCategory;
+  icon: string;          // Phosphor icon name
+  status: IntegrationStatus;
+  isEnabled: boolean;
+  configUrl?: string;
+  apiKeyConfigured?: boolean;
+  lastSyncAt?: string;
+  errorMessage?: string;
+}
+
+// ============================================================================
+// Configuracion - Billing
+// ============================================================================
+
+export type BillingPlan = 'starter' | 'professional' | 'enterprise';
+
+export type BillingCycle = 'monthly' | 'annual';
+
+export interface PlanLimits {
+  maxProperties: number;
+  maxUsers: number;
+  maxAgents: number;
+  includesReports: boolean;
+  includesAnalytics: boolean;
+  includesIntegrations: boolean;
+  includesApi: boolean;
+  supportLevel: 'email' | 'priority' | 'dedicated';
+}
+
+export interface AgencyBilling {
+  plan: BillingPlan;
+  cycle: BillingCycle;
+  pricePerMonth: number;
+  nextBillingDate: string;
+  paymentMethod?: {
+    type: 'card' | 'pse' | 'transfer';
+    last4?: string;
+    brand?: string;
+    bankName?: string;
+  };
+  usage: {
+    properties: number;
+    users: number;
+    agents: number;
+  };
+  limits: PlanLimits;
+}
+
+export interface BillingInvoice {
+  id: string;
+  date: string;
+  amount: number;
+  status: 'paid' | 'pending' | 'failed';
+  pdfUrl?: string;
+}
+
+// Helper functions for Integrations & Billing
+export function getPlanLabel(plan: BillingPlan): string {
+  const labels: Record<BillingPlan, string> = {
+    starter: 'Starter',
+    professional: 'Profesional',
+    enterprise: 'Enterprise',
+  };
+  return labels[plan];
+}
+
+export function getPlanColor(plan: BillingPlan): string {
+  const colors: Record<BillingPlan, string> = {
+    starter: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    professional: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    enterprise: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  };
+  return colors[plan];
+}
+
+export function getIntegrationCategoryLabel(category: IntegrationCategory): string {
+  const labels: Record<IntegrationCategory, string> = {
+    payments: 'Pagos',
+    accounting: 'Contabilidad',
+    communications: 'Comunicaciones',
+    storage: 'Almacenamiento',
+  };
+  return labels[category];
+}
+
+export function getIntegrationStatusColor(status: IntegrationStatus): string {
+  const colors: Record<IntegrationStatus, string> = {
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    inactive: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  };
+  return colors[status];
+}
+
+export function getIntegrationStatusLabel(status: IntegrationStatus): string {
+  const labels: Record<IntegrationStatus, string> = {
+    active: 'Activo',
+    inactive: 'Inactivo',
+    pending: 'Pendiente',
+    error: 'Error',
+  };
+  return labels[status];
+}
+
+// Plan limits configuration
+export const PLAN_LIMITS: Record<BillingPlan, PlanLimits> = {
+  starter: {
+    maxProperties: 20,
+    maxUsers: 3,
+    maxAgents: 2,
+    includesReports: true,
+    includesAnalytics: false,
+    includesIntegrations: false,
+    includesApi: false,
+    supportLevel: 'email',
+  },
+  professional: {
+    maxProperties: 100,
+    maxUsers: 10,
+    maxAgents: 5,
+    includesReports: true,
+    includesAnalytics: true,
+    includesIntegrations: true,
+    includesApi: false,
+    supportLevel: 'priority',
+  },
+  enterprise: {
+    maxProperties: -1, // unlimited
+    maxUsers: -1,
+    maxAgents: -1,
+    includesReports: true,
+    includesAnalytics: true,
+    includesIntegrations: true,
+    includesApi: true,
+    supportLevel: 'dedicated',
+  },
+};
+
+// ============================================================================
+// Configuracion - Users & Permissions
+// ============================================================================
+
+export type AgencyRole = 'admin' | 'agente' | 'contador' | 'viewer';
+
+export type PermissionModule =
+  | 'dashboard'
+  | 'propietarios'
+  | 'portafolio'
+  | 'pipeline'
+  | 'agentes'
+  | 'cobros'
+  | 'dispersiones'
+  | 'operaciones'
+  | 'reportes'
+  | 'configuracion'
+  | 'documentos'
+  | 'analytics';
+
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+
+export interface RolePermission {
+  module: PermissionModule;
+  actions: PermissionAction[];
+}
+
+export interface RolePermissions {
+  role: AgencyRole;
+  permissions: RolePermission[];
+}
+
+export interface AgencyUser {
+  id: string;
+  email: string;
+  name: string;
+  role: AgencyRole;
+  avatar?: string;
+  phone?: string;
+  status: 'active' | 'invited' | 'inactive';
+  invitedAt?: string;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface UserInvite {
+  email: string;
+  name: string;
+  role: AgencyRole;
+  message?: string;
+}
+
+// Helper functions for users/roles
+export function getRoleLabel(role: AgencyRole): string {
+  const labels: Record<AgencyRole, string> = {
+    admin: 'Administrador',
+    agente: 'Agente',
+    contador: 'Contador',
+    viewer: 'Solo Lectura',
+  };
+  return labels[role];
+}
+
+export function getRoleColor(role: AgencyRole): string {
+  const colors: Record<AgencyRole, string> = {
+    admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    agente: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    contador: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    viewer: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  };
+  return colors[role];
+}
+
+export function getUserStatusColor(status: AgencyUser['status']): string {
+  const colors = {
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    invited: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    inactive: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  };
+  return colors[status];
+}
+
+export function getUserStatusLabel(status: AgencyUser['status']): string {
+  const labels = {
+    active: 'Activo',
+    invited: 'Invitado',
+    inactive: 'Inactivo',
+  };
+  return labels[status];
+}
+
+export function getModuleLabel(module: PermissionModule): string {
+  const labels: Record<PermissionModule, string> = {
+    dashboard: 'Dashboard',
+    propietarios: 'Propietarios',
+    portafolio: 'Portafolio',
+    pipeline: 'Pipeline',
+    agentes: 'Agentes',
+    cobros: 'Cobros',
+    dispersiones: 'Dispersiones',
+    operaciones: 'Operaciones',
+    reportes: 'Reportes',
+    configuracion: 'Configuracion',
+    documentos: 'Documentos',
+    analytics: 'Analitica',
+  };
+  return labels[module];
+}
+
+export function getActionLabel(action: PermissionAction): string {
+  const labels: Record<PermissionAction, string> = {
+    view: 'Ver',
+    create: 'Crear',
+    edit: 'Editar',
+    delete: 'Eliminar',
+    export: 'Exportar',
+  };
+  return labels[action];
+}
+
+// Default permissions by role
+export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
+  admin: {
+    role: 'admin',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'portafolio', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'pipeline', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'agentes', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'cobros', actions: ['view', 'create', 'edit', 'delete', 'export'] },
+      { module: 'dispersiones', actions: ['view', 'create', 'edit', 'delete', 'export'] },
+      { module: 'operaciones', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'reportes', actions: ['view', 'export'] },
+      { module: 'configuracion', actions: ['view', 'edit'] },
+      { module: 'documentos', actions: ['view', 'create', 'edit', 'delete'] },
+      { module: 'analytics', actions: ['view', 'export'] },
+    ],
+  },
+  agente: {
+    role: 'agente',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view', 'edit'] },
+      { module: 'pipeline', actions: ['view', 'create', 'edit'] },
+      { module: 'agentes', actions: ['view'] },
+      { module: 'cobros', actions: ['view'] },
+      { module: 'operaciones', actions: ['view', 'edit'] },
+      { module: 'documentos', actions: ['view'] },
+    ],
+  },
+  contador: {
+    role: 'contador',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'cobros', actions: ['view', 'create', 'edit', 'export'] },
+      { module: 'dispersiones', actions: ['view', 'create', 'edit', 'export'] },
+      { module: 'reportes', actions: ['view', 'export'] },
+      { module: 'analytics', actions: ['view', 'export'] },
+    ],
+  },
+  viewer: {
+    role: 'viewer',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view'] },
+      { module: 'cobros', actions: ['view'] },
+      { module: 'reportes', actions: ['view'] },
+    ],
+  },
+};
+
+// All modules for permission matrix
+export const ALL_PERMISSION_MODULES: PermissionModule[] = [
+  'dashboard',
+  'propietarios',
+  'portafolio',
+  'pipeline',
+  'agentes',
+  'cobros',
+  'dispersiones',
+  'operaciones',
+  'reportes',
+  'configuracion',
+  'documentos',
+  'analytics',
+];
+
+// All actions for permission matrix
+export const ALL_PERMISSION_ACTIONS: PermissionAction[] = [
+  'view',
+  'create',
+  'edit',
+  'delete',
+  'export',
+];
+
+// Helper to check if role has permission
+export function hasPermission(
+  permissions: RolePermissions,
+  module: PermissionModule,
+  action: PermissionAction
+): boolean {
+  const modulePermission = permissions.permissions.find((p) => p.module === module);
+  if (!modulePermission) return false;
+  return modulePermission.actions.includes(action);
+}
+
+// Helper to clone and update permissions
+export function updateRolePermission(
+  permissions: RolePermissions,
+  module: PermissionModule,
+  action: PermissionAction,
+  enabled: boolean
+): RolePermissions {
+  const newPermissions = { ...permissions };
+  const moduleIndex = newPermissions.permissions.findIndex((p) => p.module === module);
+
+  if (moduleIndex === -1) {
+    if (enabled) {
+      newPermissions.permissions = [
+        ...newPermissions.permissions,
+        { module, actions: [action] },
+      ];
+    }
+  } else {
+    const currentActions = newPermissions.permissions[moduleIndex].actions;
+    if (enabled && !currentActions.includes(action)) {
+      newPermissions.permissions[moduleIndex] = {
+        ...newPermissions.permissions[moduleIndex],
+        actions: [...currentActions, action],
+      };
+    } else if (!enabled && currentActions.includes(action)) {
+      const newActions = currentActions.filter((a) => a !== action);
+      if (newActions.length === 0) {
+        newPermissions.permissions = newPermissions.permissions.filter((_, i) => i !== moduleIndex);
+      } else {
+        newPermissions.permissions[moduleIndex] = {
+          ...newPermissions.permissions[moduleIndex],
+          actions: newActions,
+        };
+      }
+    }
+  }
+
+  return newPermissions;
+}

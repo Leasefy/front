@@ -22,6 +22,10 @@ import type {
   Renovacion,
   RenovacionStatus,
   RenovacionHistoryItem,
+  AgencyIntegration,
+  AgencyBilling,
+  BillingInvoice,
+  AgencyUser,
 } from '@/lib/types/inmobiliaria';
 
 // ============================================================================
@@ -2905,3 +2909,151 @@ function generateRenovacionHistory(status: RenovacionStatus): RenovacionHistoryI
 
 // Generate the mock data on module load
 export const MOCK_RENOVACIONES: Renovacion[] = generateMockRenovaciones();
+
+// ============================================================================
+// Integrations (Third-party services)
+// ============================================================================
+
+export const MOCK_INTEGRATIONS: AgencyIntegration[] = [
+  {
+    id: 'int-pse',
+    name: 'PSE',
+    description: 'Pagos en linea via debito bancario',
+    category: 'payments',
+    icon: 'Bank',
+    status: 'active',
+    isEnabled: true,
+    lastSyncAt: new Date().toISOString(),
+  },
+  {
+    id: 'int-wompi',
+    name: 'Wompi',
+    description: 'Pagos con tarjeta de credito y debito',
+    category: 'payments',
+    icon: 'CreditCard',
+    status: 'active',
+    isEnabled: true,
+    apiKeyConfigured: true,
+    lastSyncAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'int-nequi',
+    name: 'Nequi',
+    description: 'Pagos via billetera digital Nequi',
+    category: 'payments',
+    icon: 'Wallet',
+    status: 'inactive',
+    isEnabled: false,
+  },
+  {
+    id: 'int-siigo',
+    name: 'Siigo',
+    description: 'Integracion contable con Siigo',
+    category: 'accounting',
+    icon: 'Calculator',
+    status: 'pending',
+    isEnabled: true,
+    apiKeyConfigured: false,
+  },
+  {
+    id: 'int-alegra',
+    name: 'Alegra',
+    description: 'Facturacion electronica con Alegra',
+    category: 'accounting',
+    icon: 'Receipt',
+    status: 'inactive',
+    isEnabled: false,
+  },
+  {
+    id: 'int-whatsapp',
+    name: 'WhatsApp Business',
+    description: 'Notificaciones via WhatsApp',
+    category: 'communications',
+    icon: 'WhatsappLogo',
+    status: 'active',
+    isEnabled: true,
+    lastSyncAt: new Date().toISOString(),
+  },
+  {
+    id: 'int-email',
+    name: 'SendGrid',
+    description: 'Envio de emails transaccionales',
+    category: 'communications',
+    icon: 'EnvelopeSimple',
+    status: 'error',
+    isEnabled: true,
+    errorMessage: 'API key expirada',
+  },
+  {
+    id: 'int-s3',
+    name: 'AWS S3',
+    description: 'Almacenamiento de documentos',
+    category: 'storage',
+    icon: 'Cloud',
+    status: 'active',
+    isEnabled: true,
+    lastSyncAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+];
+
+// ============================================================================
+// Billing (Subscription & Invoices)
+// ============================================================================
+
+export const MOCK_BILLING: AgencyBilling = {
+  plan: 'professional',
+  cycle: 'monthly',
+  pricePerMonth: 299000,
+  nextBillingDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  paymentMethod: {
+    type: 'card',
+    last4: '4242',
+    brand: 'Visa',
+  },
+  usage: {
+    properties: 45,
+    users: 5,
+    agents: 3,
+  },
+  limits: {
+    maxProperties: 100,
+    maxUsers: 10,
+    maxAgents: 5,
+    includesReports: true,
+    includesAnalytics: true,
+    includesIntegrations: true,
+    includesApi: false,
+    supportLevel: 'priority',
+  },
+};
+
+export const MOCK_INVOICES: BillingInvoice[] = [
+  {
+    id: 'inv-001',
+    date: '2026-02-01',
+    amount: 299000,
+    status: 'paid',
+    pdfUrl: '#',
+  },
+  {
+    id: 'inv-002',
+    date: '2026-01-01',
+    amount: 299000,
+    status: 'paid',
+    pdfUrl: '#',
+  },
+  {
+    id: 'inv-003',
+    date: '2025-12-01',
+    amount: 299000,
+    status: 'paid',
+    pdfUrl: '#',
+  },
+  {
+    id: 'inv-004',
+    date: '2025-11-01',
+    amount: 199000,
+    status: 'paid',
+    pdfUrl: '#',
+  },
+];

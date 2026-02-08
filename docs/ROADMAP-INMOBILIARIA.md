@@ -451,10 +451,12 @@ Gestionar los pagos mensuales a propietarios después de descontar comisión.
 - `ComisionDesglose` - Desglose de comisiones
 
 ### Verificación Fase 7
-- [ ] Dispersiones se calculan correctamente
-- [ ] Comisiones aplican por propiedad
-- [ ] Extracto se genera en PDF
-- [ ] Estado de dispersión se actualiza
+- [x] Dispersiones se calculan correctamente
+- [x] Comisiones aplican por propiedad
+- [x] Extracto se genera en PDF
+- [x] Estado de dispersión se actualiza
+
+**Status:** ✅ Complete (2026-02-08)
 
 ---
 

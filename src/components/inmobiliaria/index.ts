@@ -104,3 +104,7 @@ export { OcupacionChart } from './OcupacionChart';
 export { ComisionesTable } from './ComisionesTable';
 export { VencimientosTable } from './VencimientosTable';
 export { FlujoCajaChart } from './FlujoCajaChart';
+
+// Report Export Components (Phase 8 - Plan 03)
+export { ExportButton, ExportButtonCompact } from './ExportButton';
+export type { ExportButtonProps, ExportFormat } from './ExportButton';

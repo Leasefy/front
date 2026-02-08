@@ -2407,3 +2407,54 @@ export function getAvailableZones(): string[] {
   });
   return Array.from(zones).sort();
 }
+
+// ============================================================================
+// IPC Historical Data (DANE Colombia)
+// ============================================================================
+
+export interface IPCRecord {
+  year: number;
+  month: number; // 1-12
+  rate: number; // Annual IPC rate as of that month
+  description: string;
+}
+
+// Historical IPC rates from DANE Colombia (mock data based on real patterns)
+export const IPC_HISTORICAL: IPCRecord[] = [
+  { year: 2024, month: 12, rate: 5.20, description: 'Diciembre 2024' },
+  { year: 2024, month: 11, rate: 5.41, description: 'Noviembre 2024' },
+  { year: 2024, month: 10, rate: 5.60, description: 'Octubre 2024' },
+  { year: 2024, month: 9, rate: 5.80, description: 'Septiembre 2024' },
+  { year: 2024, month: 8, rate: 6.12, description: 'Agosto 2024' },
+  { year: 2024, month: 7, rate: 6.86, description: 'Julio 2024' },
+  { year: 2024, month: 6, rate: 7.18, description: 'Junio 2024' },
+  { year: 2024, month: 5, rate: 7.26, description: 'Mayo 2024' },
+  { year: 2024, month: 4, rate: 7.16, description: 'Abril 2024' },
+  { year: 2024, month: 3, rate: 7.36, description: 'Marzo 2024' },
+  { year: 2024, month: 2, rate: 7.74, description: 'Febrero 2024' },
+  { year: 2024, month: 1, rate: 8.35, description: 'Enero 2024' },
+  { year: 2023, month: 12, rate: 9.28, description: 'Diciembre 2023' },
+  { year: 2023, month: 11, rate: 10.15, description: 'Noviembre 2023' },
+  { year: 2023, month: 10, rate: 10.48, description: 'Octubre 2023' },
+  { year: 2023, month: 9, rate: 10.99, description: 'Septiembre 2023' },
+  { year: 2023, month: 8, rate: 11.43, description: 'Agosto 2023' },
+  { year: 2023, month: 7, rate: 11.78, description: 'Julio 2023' },
+  { year: 2023, month: 6, rate: 12.13, description: 'Junio 2023' },
+  { year: 2023, month: 5, rate: 12.36, description: 'Mayo 2023' },
+  { year: 2023, month: 4, rate: 12.82, description: 'Abril 2023' },
+  { year: 2023, month: 3, rate: 13.12, description: 'Marzo 2023' },
+  { year: 2023, month: 2, rate: 13.28, description: 'Febrero 2023' },
+  { year: 2023, month: 1, rate: 13.25, description: 'Enero 2023' },
+];
+
+export function getCurrentIPC(): IPCRecord {
+  return IPC_HISTORICAL[0];
+}
+
+export function getIPCForDate(year: number, month: number): IPCRecord | undefined {
+  return IPC_HISTORICAL.find((r) => r.year === year && r.month === month);
+}
+
+export function calculateNewRent(currentRent: number, ipcRate: number): number {
+  return Math.round(currentRent * (1 + ipcRate / 100));
+}

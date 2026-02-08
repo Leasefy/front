@@ -538,10 +538,12 @@ Gestionar operaciones recurrentes: renovaciones, mantenimiento e incrementos IPC
 - `CotizacionComparator` - Comparar cotizaciones
 
 ### Verificación Fase 9
-- [ ] Renovaciones alertan correctamente
-- [ ] IPC calcula según DANE
-- [ ] Mantenimiento fluye hasta cierre
-- [ ] Propietario puede aprobar cotización
+- [x] Renovaciones alertan correctamente
+- [x] IPC calcula según DANE
+- [x] Mantenimiento fluye hasta cierre
+- [x] Propietario puede aprobar cotización
+
+**Status:** ✅ Complete (2026-02-08)
 
 ---
 

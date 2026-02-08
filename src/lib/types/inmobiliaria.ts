@@ -909,3 +909,104 @@ export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): str
   };
   return colors[bucket];
 }
+
+// ============================================================================
+// Configuracion - Extended Agency Config
+// ============================================================================
+
+export interface AgencyBranding {
+  primaryColor: string;    // Hex color
+  secondaryColor: string;  // Hex color
+  accentColor: string;     // Hex color
+  logoUrl?: string;
+  logoFile?: string;       // Base64 for local demo
+  favicon?: string;
+}
+
+export interface AgencyContactInfo {
+  phone: string;
+  alternatePhone?: string;
+  email: string;
+  supportEmail?: string;
+  whatsapp?: string;
+  website?: string;
+  address: string;
+  city: string;
+  department: string;
+  postalCode?: string;
+}
+
+export interface AgencyLegalInfo {
+  nit: string;
+  razonSocial: string;
+  representanteLegal: string;
+  representanteCedula: string;
+  matriculaInmobiliaria?: string;
+  registroCamara?: string;
+}
+
+export interface AgencyDefaults {
+  defaultCommissionPercent: number;
+  defaultAdminFeePercent: number;
+  defaultLateFeePercent: number;
+  paymentDueDay: number;
+  disbursementDay: number;
+  gracePeriodDays: number;
+  reminderDaysBefore: number[];
+  reminderDaysAfter: number[];
+}
+
+// Extended InmobiliariaConfig with all configuration sections
+export interface InmobiliariaConfigExtended extends InmobiliariaConfig {
+  branding: AgencyBranding;
+  contact: AgencyContactInfo;
+  legal: AgencyLegalInfo;
+  defaults: AgencyDefaults;
+}
+
+// Helper for default branding colors
+export function getDefaultBranding(): AgencyBranding {
+  return {
+    primaryColor: '#4F46E5',   // Indigo
+    secondaryColor: '#10B981', // Emerald
+    accentColor: '#F59E0B',    // Amber
+  };
+}
+
+// Colombian departments for address selection
+export const COLOMBIAN_DEPARTMENTS = [
+  'Amazonas',
+  'Antioquia',
+  'Arauca',
+  'Atlántico',
+  'Bolívar',
+  'Boyacá',
+  'Caldas',
+  'Caquetá',
+  'Casanare',
+  'Cauca',
+  'Cesar',
+  'Chocó',
+  'Córdoba',
+  'Cundinamarca',
+  'Guainía',
+  'Guaviare',
+  'Huila',
+  'La Guajira',
+  'Magdalena',
+  'Meta',
+  'Nariño',
+  'Norte de Santander',
+  'Putumayo',
+  'Quindío',
+  'Risaralda',
+  'San Andrés y Providencia',
+  'Santander',
+  'Sucre',
+  'Tolima',
+  'Valle del Cauca',
+  'Vaupés',
+  'Vichada',
+] as const;
+
+export type ColombianDepartment = typeof COLOMBIAN_DEPARTMENTS[number];

@@ -13,6 +13,7 @@ import type {
   SolicitudMantenimiento,
   InmobiliariaDashboardKPIs,
   InmobiliariaConfig,
+  InmobiliariaConfigExtended,
   CobroSummary,
   DispersionSummary,
   CarteraItem,
@@ -51,6 +52,44 @@ export const MOCK_INMOBILIARIA_CONFIG: InmobiliariaConfig = {
   reminderDaysAfter: [1, 3, 7, 15],
   createdAt: '2024-01-15T10:00:00Z',
   updatedAt: '2026-01-10T08:00:00Z',
+};
+
+// Extended configuration with all agency settings
+export const MOCK_INMOBILIARIA_CONFIG_EXTENDED: InmobiliariaConfigExtended = {
+  ...MOCK_INMOBILIARIA_CONFIG,
+  branding: {
+    primaryColor: '#4F46E5',
+    secondaryColor: '#10B981',
+    accentColor: '#F59E0B',
+    logoUrl: undefined,
+  },
+  contact: {
+    phone: MOCK_INMOBILIARIA_CONFIG.phone,
+    email: MOCK_INMOBILIARIA_CONFIG.email,
+    website: MOCK_INMOBILIARIA_CONFIG.website,
+    address: MOCK_INMOBILIARIA_CONFIG.address,
+    city: MOCK_INMOBILIARIA_CONFIG.city,
+    department: 'Cundinamarca',
+    whatsapp: '+57 310 555 1234',
+  },
+  legal: {
+    nit: MOCK_INMOBILIARIA_CONFIG.nit,
+    razonSocial: 'Premium Properties S.A.S.',
+    representanteLegal: 'Juan Carlos Restrepo',
+    representanteCedula: '80.123.456',
+    matriculaInmobiliaria: 'INM-2024-001234',
+    registroCamara: 'S0012345',
+  },
+  defaults: {
+    defaultCommissionPercent: MOCK_INMOBILIARIA_CONFIG.defaultCommissionPercent,
+    defaultAdminFeePercent: 8,
+    defaultLateFeePercent: MOCK_INMOBILIARIA_CONFIG.defaultLateFeePercent,
+    paymentDueDay: MOCK_INMOBILIARIA_CONFIG.paymentDueDay,
+    disbursementDay: MOCK_INMOBILIARIA_CONFIG.disbursementDay,
+    gracePeriodDays: 5,
+    reminderDaysBefore: MOCK_INMOBILIARIA_CONFIG.reminderDaysBefore,
+    reminderDaysAfter: MOCK_INMOBILIARIA_CONFIG.reminderDaysAfter,
+  },
 };
 
 // ============================================================================

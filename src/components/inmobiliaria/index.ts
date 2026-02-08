@@ -112,6 +112,10 @@ export type { ExportButtonProps, ExportFormat } from './ExportButton';
 // Operaciones - Renovaciones (Phase 9)
 export { RenovacionesTable } from './RenovacionesTable';
 
+// Operaciones - IPC & Workflow (Phase 9)
+export { IPCCalculator } from './IPCCalculator';
+export { RenovacionWorkflow } from './RenovacionWorkflow';
+
 // Operaciones - Mantenimiento (Phase 9)
 export { MantenimientoList } from './MantenimientoList';
 export { MantenimientoForm } from './MantenimientoForm';

@@ -15,11 +15,11 @@ See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 Milestone: v3.0 Inmobiliaria Module
 Phase: Inmobiliaria-07 Dispersiones (3 plans) - IN PROGRESS
-Plan: 07-01 COMPLETE, 07-02 PENDING, 07-03 PENDING
-Status: Phase 7 In Progress - Plan 1 Complete
-Last activity: 2026-02-07 — Completed 07-01 DispersionCard + DispersionTable + DispersionFilters
+Plan: 07-01 COMPLETE, 07-02 COMPLETE, 07-03 PENDING
+Status: Phase 7 In Progress - Plans 1-2 Complete
+Last activity: 2026-02-08 — Completed 07-02 DispersionDetail + Extracto + ComisionDesglose + DispersionResumen
 
-Progress: ██████████░░░░░░░░░░░░░░░░░░░░ 33% (Phase 7)
+Progress: ████████████████████░░░░░░░░░░ 67% (Phase 7)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -205,6 +205,9 @@ Progress: ██████████░░░░░░░░░░░░░�
 - **Dispersion status border pattern**: Left border colors (amber/blue/emerald/red) for quick status identification
 - **Dispersion month navigation**: Prev/next arrows + dropdown for faster month switching
 - **Dispersion expandable properties**: AnimatePresence for smooth expand/collapse of property items
+- **Commission ratio visualization**: Progress bar showing agency vs owner split (indigo/emerald)
+- **Extracto PDF pattern**: Professional Colombian business document format with jsPDF
+- **Status timeline events**: Vertical timeline for dispersion audit trail (created/approved/processed)
 
 ### What's Complete (Phase 1)
 
@@ -683,12 +686,26 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - Month selector, status tabs, table/card view toggle
   - Payment registration with optimistic updates
 
+### What's Complete (Inmobiliaria Phase 7) - Dispersiones (IN PROGRESS)
+- **Plan 07-01 COMPLETE**: DispersionCard + DispersionTable + DispersionFilters
+  - DispersionCard with status border, propietario info, amount summary
+  - DispersionTable with sortable columns, expandable property items
+  - DispersionFilters with month navigation, status tabs, propietario dropdown
+  - Components exported from barrel
+- **Plan 07-02 COMPLETE**: DispersionDetail + Extracto + Summary
+  - ComisionDesglose with property-level commission breakdown table
+  - DispersionResumen with monthly stats, progress bar, action buttons
+  - ExtractoPropietario with printable owner statement view
+  - PDF generation utility for extracto (jsPDF)
+  - DispersionDetail sheet with propietario info, bank account, status timeline
+  - All components exported from barrel
+
 ## Session Continuity
 
-Last session: 2026-02-07
-Stopped at: Completed 07-01-PLAN.md (DispersionCard + DispersionTable + DispersionFilters)
-Resume file: None - Ready to execute Plan 07-02
-Status: Phase 7 Dispersiones IN PROGRESS, 1/3 plans done
+Last session: 2026-02-08
+Stopped at: Completed 07-02-PLAN.md (DispersionDetail + Extracto + Summary)
+Resume file: None - Ready to execute Plan 07-03
+Status: Phase 7 Dispersiones IN PROGRESS, 2/3 plans done
 
 ## Backend Integration Status
 

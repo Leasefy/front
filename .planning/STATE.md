@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 6 Cobros (PLANNING COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 6 Cobros (IN PROGRESS)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-06 Cobros (3 plans PLANNED)
-Plan: 06-01, 06-02, 06-03 planned and ready for execution
-Status: Phase 6 Plans Created - Ready for Execution
-Last activity: 2026-02-08 — Created Phase 6 Cobros plans
+Phase: Inmobiliaria-06 Cobros (3 plans)
+Plan: 06-01 COMPLETE, 06-02 and 06-03 ready for execution
+Status: Phase 6 In Progress - Plan 01 Complete
+Last activity: 2026-02-08 — Completed Plan 06-01 (CobroCard, CobroTable, CobroFilters)
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 6)
+Progress: ██████████░░░░░░░░░░░░░░░░░░░░ 33% (Phase 6)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -653,12 +653,20 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - Pipeline page at `/panel/inmobiliaria/pipeline`
   - Optimistic stage updates with toast feedback
 
+### What's Complete (Inmobiliaria Phase 6) - Cobros (IN PROGRESS)
+- **Plan 06-01 COMPLETE**: CobroCard + CobroTable + CobroFilters
+  - CobroCard with status-colored left border, amount breakdown, tenant info
+  - CobroTable with sortable columns, summary row, action menu
+  - CobroFilters with month selector, status tabs, property/propietario dropdowns
+  - Debounced search, active filter indicator
+  - Components exported from barrel
+
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Created Inmobiliaria Phase 6 Cobros plans (3 plans)
-Resume file: None - Phase 6 ready for execution
-Status: Phase 6 Cobros planned, ready for /gsd:execute-phase 6
+Stopped at: Completed Plan 06-01 (CobroCard, CobroTable, CobroFilters)
+Resume file: None - Ready for Plan 06-02
+Status: Phase 6 Cobros in progress, 1/3 plans complete
 
 ## Backend Integration Status
 

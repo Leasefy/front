@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 3 Consignaciones (IN PROGRESS)
+**Current focus:** Inmobiliaria Module - Phase 3 Consignaciones (COMPLETE)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-03 Consignaciones (2/3 plans complete)
-Plan: 03-02 ConsignacionWizard (6-Step New Consignment) (COMPLETE)
-Status: In Progress
-Last activity: 2026-02-08 — 6-step wizard for new consignments with propietario/agent selection
+Phase: Inmobiliaria-03 Consignaciones (3/3 plans complete)
+Plan: 03-03 Detalle Consignacion + Timeline + ActaEntrega (COMPLETE)
+Status: Phase Complete
+Last activity: 2026-02-08 — Consignacion detail page with timeline, inventory, sections
 
-Progress: ████████░░░░░░░░░░░░░░░░░░░░░░ 67% (Phase 3)
+Progress: ████████████░░░░░░░░░░░░░░░░░░ 100% (Phase 3)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -178,6 +178,10 @@ Progress: ████████░░░░░░░░░░░░░░░�
 - **Property type icons**: Phosphor icons for apartment/house/studio/commercial/office/warehouse
 - **Portafolio pagination**: 12 items per page for optimal grid layout
 - **Filter state pattern**: ConsignacionFiltersState type for centralized filter management
+- **Consignacion detail layout**: Two-column (2/3 + 1/3) with sections pattern
+- **Auto-generated timeline**: Events derived from consignacion data, not stored separately
+- **Inventory condition colors**: emerald=excellent, blue=good, amber=fair, rose=poor
+- **Commission split visualization**: Progress bar showing agent vs agency percentages
 
 ### What's Complete (Phase 1)
 
@@ -566,7 +570,7 @@ Minor (5):
 - **PropietarioStats**: Statistics component
 - **Routes**: `/panel/inmobiliaria/propietarios`, `/panel/inmobiliaria/propietarios/[id]`
 
-### What's In Progress (Inmobiliaria Phase 3) - Consignaciones
+### What's Complete (Inmobiliaria Phase 3) - Consignaciones
 - **Plan 03-01 COMPLETE**: ConsignacionCard + Lista Consignaciones
   - ConsignacionCard with thumbnail, status, agent/owner info
   - ConsignacionTable with sortable columns
@@ -578,6 +582,13 @@ Minor (5):
   - 6 wizard steps: Propietario, Property, Commission, Agent, Inventory, Confirm
   - Step validation and back navigation with data persistence
   - Nueva Consignacion page at `/panel/inmobiliaria/portafolio/nuevo`
+- **Plan 03-03 COMPLETE**: Detalle Consignacion + Timeline + ActaEntrega
+  - ConsignacionHeader with property info, status badges, actions menu
+  - Detail sections: Property, Propietario, Agente, Lease, Documents
+  - ActaEntregaView with inventory table and condition badges
+  - ConsignacionTimeline with auto-generated events from consignacion data
+  - Detail page at `/panel/inmobiliaria/portafolio/[id]`
+  - Navigation from portafolio cards and table rows
 
 ## MVP FRONTEND COMPLETE + ENHANCED
 
@@ -598,9 +609,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 03-02-PLAN.md (ConsignacionWizard 6-Step)
-Resume file: .planning/phases/inmobiliaria-03-consignaciones/03-03-PLAN.md
-Status: Inmobiliaria Phase 3 in progress (2/3 plans complete)
+Stopped at: Completed 03-03-PLAN.md (Detalle Consignacion + Timeline + ActaEntrega)
+Resume file: .planning/phases/inmobiliaria-04-pipeline/04-01-PLAN.md (when created)
+Status: Inmobiliaria Phase 3 complete - Ready for Phase 4 (Pipeline de Arriendos)
 
 ## Backend Integration Status
 

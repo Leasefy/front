@@ -120,3 +120,9 @@ export { RenovacionWorkflow } from './RenovacionWorkflow';
 export { MantenimientoList } from './MantenimientoList';
 export { MantenimientoForm } from './MantenimientoForm';
 export type { MantenimientoFormData } from './MantenimientoForm';
+
+// Operaciones - Quote Comparison & Viewer (Phase 9 - Plan 04)
+export { CotizacionComparator } from './CotizacionComparator';
+export type { CotizacionComparatorProps } from './CotizacionComparator';
+export { MantenimientoViewer } from './MantenimientoViewer';
+export type { MantenimientoViewerProps } from './MantenimientoViewer';

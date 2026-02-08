@@ -483,6 +483,112 @@ export interface CarteraReport {
 }
 
 // ============================================================================
+// Ocupacion Report
+// ============================================================================
+
+export interface OcupacionZone {
+  zone: string;
+  totalProperties: number;
+  occupied: number;
+  inProcess: number;
+  available: number;
+  occupancyRate: number;
+}
+
+export interface OcupacionReport {
+  generatedAt: string;
+  totalProperties: number;
+  totalOccupied: number;
+  totalInProcess: number;
+  totalAvailable: number;
+  overallOccupancyRate: number;
+  previousMonthOccupancyRate?: number;
+  zones: OcupacionZone[];
+}
+
+// ============================================================================
+// Comisiones Agente Report
+// ============================================================================
+
+export interface ComisionAgente {
+  agenteId: string;
+  agenteName: string;
+  agenteAvatar?: string;
+  closedDeals: number;
+  totalCommission: number;
+  avgCommissionPerDeal: number;
+  topPropertyTitle?: string;
+  previousPeriodCommission?: number;
+  trend: 'up' | 'down' | 'stable';
+}
+
+export interface ComisionesAgenteReport {
+  generatedAt: string;
+  period: string; // '2026-02' or '2026-Q1'
+  totalCommissions: number;
+  avgCommissionPerAgent: number;
+  totalClosedDeals: number;
+  topAgentName: string;
+  agentes: ComisionAgente[];
+}
+
+// ============================================================================
+// Vencimientos Report
+// ============================================================================
+
+export type RenewalStatus = 'pending' | 'negotiating' | 'renewed' | 'terminating';
+
+export interface VencimientoItem {
+  consignacionId: string;
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  tenantName: string;
+  tenantPhone: string;
+  propietarioName: string;
+  contractEndDate: string;
+  daysUntilExpiry: number;
+  renewalStatus: RenewalStatus;
+  bucket: '0-30' | '31-60' | '61-90' | '90+';
+}
+
+export interface VencimientosReport {
+  generatedAt: string;
+  items: VencimientoItem[];
+  summary: {
+    totalVencimientos: number;
+    bucket0to30: number;
+    bucket31to60: number;
+    bucket61to90: number;
+    bucket90plus: number;
+  };
+}
+
+// ============================================================================
+// Flujo de Caja Report
+// ============================================================================
+
+export interface FlujoCajaMonth {
+  month: string; // '2026-02'
+  ingresos: number;
+  dispersiones: number;
+  comisiones: number;
+  balance: number;
+}
+
+export interface FlujoCajaReport {
+  generatedAt: string;
+  period: 'quarter' | 'semester' | 'year';
+  months: FlujoCajaMonth[];
+  totals: {
+    totalIngresos: number;
+    totalDispersiones: number;
+    totalComisiones: number;
+    netBalance: number;
+  };
+}
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
@@ -663,79 +769,6 @@ export interface ReportFiltersState {
   zone?: string;
   propietarioId?: string;
   agenteId?: string;
-}
-
-// Specific report data types
-export interface ComisionesAgenteReport {
-  generatedAt: string;
-  period: { start: string; end: string };
-  items: {
-    agenteId: string;
-    agenteName: string;
-    closedDeals: number;
-    totalCommission: number;
-    avgCommission: number;
-    topProperty?: string;
-  }[];
-  summary: {
-    totalAgents: number;
-    totalCommissions: number;
-    avgPerAgent: number;
-  };
-}
-
-export interface OcupacionReport {
-  generatedAt: string;
-  zones: {
-    zone: string;
-    total: number;
-    occupied: number;
-    available: number;
-    inProcess: number;
-    occupancyRate: number;
-  }[];
-  overall: {
-    total: number;
-    occupied: number;
-    occupancyRate: number;
-  };
-}
-
-export interface VencimientosReport {
-  generatedAt: string;
-  items: {
-    propertyId: string;
-    propertyTitle: string;
-    tenantName: string;
-    propietarioName: string;
-    leaseEnd: string;
-    daysUntilExpiry: number;
-    renewalStatus: 'pending' | 'negotiating' | 'renewed' | 'terminating';
-  }[];
-  summary: {
-    expiring30: number;
-    expiring60: number;
-    expiring90: number;
-    total: number;
-  };
-}
-
-export interface FlujoCajaReport {
-  generatedAt: string;
-  period: { start: string; end: string };
-  months: {
-    month: string;
-    ingresos: number;
-    dispersiones: number;
-    comisiones: number;
-    balance: number;
-  }[];
-  summary: {
-    totalIngresos: number;
-    totalDispersiones: number;
-    totalComisiones: number;
-    netBalance: number;
-  };
 }
 
 // Helper functions for reports

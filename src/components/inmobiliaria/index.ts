@@ -64,3 +64,6 @@ export { AsignacionModal } from './AsignacionModal';
 // Pipeline (Rental Pipeline) Components
 export { PipelineCard } from './PipelineCard';
 export { PipelineColumn } from './PipelineColumn';
+export { PipelineFilters } from './PipelineFilters';
+export type { PipelineFiltersState } from './PipelineFilters';
+export { PipelineDetail } from './PipelineDetail';

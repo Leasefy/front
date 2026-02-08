@@ -15,3 +15,19 @@ export { ConsignacionCard } from './ConsignacionCard';
 export { ConsignacionTable } from './ConsignacionTable';
 export { ConsignacionFilters } from './ConsignacionFilters';
 export type { ConsignacionFiltersState } from './ConsignacionFilters';
+
+// Consignacion Wizard Components
+export { ConsignacionWizard } from './ConsignacionWizard';
+export {
+  StepSelectPropietario,
+  StepPropertyData,
+  StepCommissionTerms,
+  StepAssignAgent,
+  StepActaEntrega,
+  StepConfirmation,
+} from './ConsignacionWizardSteps';
+export type { WizardFormData, StepProps } from './ConsignacionWizardSteps';
+
+// Selector Components
+export { PropietarioSelector } from './PropietarioSelector';
+export { AgenteSelector } from './AgenteSelector';

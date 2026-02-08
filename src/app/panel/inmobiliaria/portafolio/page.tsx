@@ -144,8 +144,7 @@ export default function PortafolioPage() {
   }, []);
 
   const handleNuevaConsignacion = useCallback(() => {
-    // TODO: Navigate to nueva consignacion wizard
-    router.push('/panel/inmobiliaria/consignaciones/nueva');
+    router.push('/panel/inmobiliaria/portafolio/nuevo');
   }, [router]);
 
   return (

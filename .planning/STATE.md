@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (In Progress)
+**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (COMPLETE)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-05 Pipeline (2/3 plans complete)
-Plan: 05-02 PipelineFilters + PipelineDetail (COMPLETE)
-Status: Plan 05-03 Ready for Execution
-Last activity: 2026-02-08 — Completed 05-02 PipelineFilters + PipelineDetail
+Phase: Inmobiliaria-05 Pipeline (3/3 plans COMPLETE)
+Plan: 05-03 PipelineBoard + Pipeline Page (COMPLETE)
+Status: Phase 5 Complete - Ready for Phase 6
+Last activity: 2026-02-08 — Completed 05-03 PipelineBoard + Pipeline Page
 
-Progress: █████████████████████░░░░░░░░░ 67% (Phase 5)
+Progress: ██████████████████████████████ 100% (Phase 5)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -190,6 +190,10 @@ Progress: █████████████████████░░�
 - **Stage color extraction**: Parse PIPELINE_STAGES color for top border and indicator
 - **Collapsible columns**: Toggle hides cards but shows count footer
 - **Drop zone styling**: Dashed border with hint text for drag target feedback
+- **@dnd-kit over alternatives**: Modern, accessible, actively maintained drag-and-drop
+- **DragOverlay pattern**: Shows card preview during drag for better UX
+- **Optimistic stage updates**: Stage changes update local state immediately, toast confirms
+- **Lost column collapsed**: De-emphasize failed leads, keep focus on active pipeline
 
 ### What's Complete (Phase 1)
 
@@ -634,26 +638,27 @@ All 10 phases executed successfully. The frontend is fully functional with:
 
 **Ready for backend integration and production deployment.**
 
-### What's Planned (Inmobiliaria Phase 5) - Pipeline de Arriendos
-- **Plan 05-01**: PipelineCard + PipelineColumn
+### What's Complete (Inmobiliaria Phase 5) - Pipeline de Arriendos (COMPLETE)
+- **Plan 05-01 COMPLETE**: PipelineCard + PipelineColumn
   - PipelineCard with property, candidate, agente info
   - Days in stage with warning for overdue
   - Stage-colored header from PIPELINE_STAGES
   - PipelineColumn with header, count, drop zone
-- **Plan 05-02**: PipelineFilters + PipelineDetail
+- **Plan 05-02 COMPLETE**: PipelineFilters + PipelineDetail
   - Filters by agente, property, date range
   - PipelineDetail modal with timeline, notes, actions
-- **Plan 05-03**: PipelineBoard + Pipeline Page
+- **Plan 05-03 COMPLETE**: PipelineBoard + Pipeline Page
   - @dnd-kit drag-and-drop integration
   - Full Kanban board with all 10 stages
   - Pipeline page at `/panel/inmobiliaria/pipeline`
+  - Optimistic stage updates with toast feedback
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 05-02 PipelineFilters + PipelineDetail
-Resume file: .planning/phases/inmobiliaria-05-pipeline/05-03-PLAN.md
-Status: Phase 5 IN PROGRESS - 2/3 plans complete
+Stopped at: Completed Inmobiliaria Phase 5 Pipeline (3/3 plans)
+Resume file: None - Phase 5 complete
+Status: Ready for Inmobiliaria Phase 6 Cobros
 
 ## Backend Integration Status
 

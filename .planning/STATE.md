@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 8 Reportes (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 9 Operaciones (PLANNED)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-08 Reportes (3 plans) - COMPLETE
-Plan: 08-01 COMPLETE, 08-02 COMPLETE, 08-03 COMPLETE
-Status: Phase 8 Complete
-Last activity: 2026-02-08 — Completed 08-03 (Reportes Page & Export)
+Phase: Inmobiliaria-09 Operaciones (4 plans) - PLANNED
+Plan: 09-01, 09-02, 09-03, 09-04 ready to execute
+Status: Phase 9 Planned - Ready for execution
+Last activity: 2026-02-08 — Created 4 plans for Phase 9 (Operaciones)
 
-Progress: ██████████████████████████████ 100% (Phase 8)
+Progress: ██████████████████████████████ 100% (Phase 8) | ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 9)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -731,12 +731,35 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - CarteraEdades preview integrated in ReporteViewer
   - All components exported from barrel
 
+### What's Planned (Inmobiliaria Phase 9) - Operaciones
+- **Plan 09-01**: RenovacionesTable + Renovacion types + mock data
+  - Renovacion types with status workflow (pending → completed)
+  - Urgency buckets (0-30, 31-60, 61-90, 90+)
+  - Table with filters and actions
+- **Plan 09-02**: IPCCalculator + RenovacionWorkflow
+  - IPC historical data from DANE
+  - Rent calculation based on IPC rate
+  - 6-step workflow for renewals
+- **Plan 09-03**: MantenimientoList + MantenimientoForm
+  - Maintenance request list with filters
+  - Form for new requests with photo upload
+  - Mock maintenance data
+- **Plan 09-04**: CotizacionComparator + MantenimientoViewer + Operaciones Page
+  - Quote comparison component
+  - Detailed maintenance viewer
+  - Operaciones page with tabs at `/panel/inmobiliaria/operaciones`
+  - Navigation integration
+
+**Wave structure:**
+- Wave 1 (parallel): 09-01, 09-02, 09-03 (independent components)
+- Wave 2 (sequential): 09-04 (depends on Wave 1)
+
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 08-03-PLAN.md (Reportes Page & Export)
-Resume file: None - Phase 8 complete
-Status: Phase 8 Reportes COMPLETE (all 3 plans finished)
+Stopped at: Created 4 plans for Phase 9 (Operaciones)
+Resume file: None - Ready for `/gsd:execute-phase 9`
+Status: Phase 9 Operaciones PLANNED (4 plans ready)
 
 ## Backend Integration Status
 

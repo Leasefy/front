@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Phase 16 - Contract UX & Platform QA (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 3 Consignaciones (IN PROGRESS)
 
 ## Current Position
 
-Milestone: v2.1 Contract UX & Platform QA
-Phase: 16 of 16 (Contract UX & Platform QA)
-Plan: Informal session (no numbered plans)
-Status: Phase 16 COMPLETE
-Last activity: 2026-02-02 — Contract redesign, Colombian law templates, PDF generation, QA audit (66 fixes)
+Milestone: v3.0 Inmobiliaria Module
+Phase: Inmobiliaria-03 Consignaciones (1/3 plans complete)
+Plan: 03-01 ConsignacionCard + Lista Consignaciones (COMPLETE)
+Status: In Progress
+Last activity: 2026-02-08 — Portafolio page with ConsignacionCard grid/table, filters, pagination
 
-Progress: ██████████████████████████████ 100%
+Progress: ████░░░░░░░░░░░░░░░░░░░░░░░░░░ 33% (Phase 3)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -174,6 +174,10 @@ Progress: ███████████████████████�
 - **Auto-redirect**: 5-second countdown after successful publish to /panel/propiedades
 - **Contract fresh start**: Approving candidate always starts from step 1 (contract type selection)
 - **Navbar styling**: "Publicar Inmueble" with bg-black/5, others as plain text
+- **Consignacion availability colors**: emerald=available, indigo=rented, amber=in_process, rose=maintenance
+- **Property type icons**: Phosphor icons for apartment/house/studio/commercial/office/warehouse
+- **Portafolio pagination**: 12 items per page for optimal grid layout
+- **Filter state pattern**: ConsignacionFiltersState type for centralized filter management
 
 ### What's Complete (Phase 1)
 
@@ -548,6 +552,27 @@ Minor (5):
 **Dependencies Added:**
 - jspdf (PDF generation)
 
+### What's Complete (Inmobiliaria Phase 1) - Dashboard KPIs
+- **Route**: `/panel/inmobiliaria` with KPI cards
+- **Types**: `src/lib/types/inmobiliaria.ts` - Full type system
+- **Mock data**: `src/lib/data/mock-inmobiliaria.ts` - Comprehensive data
+- **Dashboard**: Inmobiliaria main page with metrics
+
+### What's Complete (Inmobiliaria Phase 2) - Propietarios
+- **PropietarioCard**: Card with owner info, properties, balance
+- **PropietarioTable**: Sortable table with search, filters
+- **PropietarioForm**: Form for creating/editing owners
+- **PropietarioBankInfo**: Bank account display components
+- **PropietarioStats**: Statistics component
+- **Routes**: `/panel/inmobiliaria/propietarios`, `/panel/inmobiliaria/propietarios/[id]`
+
+### What's In Progress (Inmobiliaria Phase 3) - Consignaciones
+- **Plan 03-01 COMPLETE**: ConsignacionCard + Lista Consignaciones
+  - ConsignacionCard with thumbnail, status, agent/owner info
+  - ConsignacionTable with sortable columns
+  - ConsignacionFilters with search, dropdowns
+  - Portafolio page at `/panel/inmobiliaria/portafolio`
+
 ## MVP FRONTEND COMPLETE + ENHANCED
 
 All 10 phases executed successfully. The frontend is fully functional with:
@@ -566,10 +591,10 @@ All 10 phases executed successfully. The frontend is fully functional with:
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Completed Phase 16 (Contract UX & Platform QA)
-Resume file: None
-Status: ALL PHASES COMPLETE (through Phase 16)
+Last session: 2026-02-08
+Stopped at: Completed 03-01-PLAN.md (ConsignacionCard + Lista Consignaciones)
+Resume file: .planning/phases/inmobiliaria-03-consignaciones/03-02-PLAN.md
+Status: Inmobiliaria Phase 3 in progress (1/3 plans complete)
 
 ## Backend Integration Status
 

@@ -69,7 +69,11 @@ export type { PipelineFiltersState } from './PipelineFilters';
 export { PipelineDetail } from './PipelineDetail';
 export { PipelineBoard } from './PipelineBoard';
 
-// Cobros (Collections) Components
+// Cobro (Collections) Components
+export { CobroCard } from './CobroCard';
+export { CobroTable } from './CobroTable';
+export { CobroFilters } from './CobroFilters';
+export type { CobroFiltersState } from './CobroFilters';
 export { RegistrarPagoModal } from './RegistrarPagoModal';
 export { MoraAlert, MoraAlertCompact } from './MoraAlert';
 export { CobroResumen, CobroResumenCompact } from './CobroResumen';

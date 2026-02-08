@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 6 Cobros (PLANNING COMPLETE)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-05 Pipeline (3/3 plans COMPLETE)
-Plan: 05-03 PipelineBoard + Pipeline Page (COMPLETE)
-Status: Phase 5 Complete - Ready for Phase 6
-Last activity: 2026-02-08 — Completed 05-03 PipelineBoard + Pipeline Page
+Phase: Inmobiliaria-06 Cobros (3 plans PLANNED)
+Plan: 06-01, 06-02, 06-03 planned and ready for execution
+Status: Phase 6 Plans Created - Ready for Execution
+Last activity: 2026-02-08 — Created Phase 6 Cobros plans
 
-Progress: ██████████████████████████████ 100% (Phase 5)
+Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 6)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -656,9 +656,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed Inmobiliaria Phase 5 Pipeline (3/3 plans)
-Resume file: None - Phase 5 complete
-Status: Ready for Inmobiliaria Phase 6 Cobros
+Stopped at: Created Inmobiliaria Phase 6 Cobros plans (3 plans)
+Resume file: None - Phase 6 ready for execution
+Status: Phase 6 Cobros planned, ready for /gsd:execute-phase 6
 
 ## Backend Integration Status
 

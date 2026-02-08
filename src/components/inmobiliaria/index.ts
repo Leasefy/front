@@ -43,3 +43,9 @@ export {
 } from './ConsignacionDetailSections';
 export { ActaEntregaView } from './ActaEntregaView';
 export { ConsignacionTimeline } from './ConsignacionTimeline';
+
+// Agente (Real Estate Agent) Components
+export { AgenteCard } from './AgenteCard';
+export { AgenteTable } from './AgenteTable';
+export { AgenteFilters } from './AgenteFilters';
+export type { AgenteFiltersState } from './AgenteFilters';

@@ -14,12 +14,12 @@ See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-05 Pipeline (1/3 plans complete)
-Plan: 05-01 PipelineCard + PipelineColumn (COMPLETE)
-Status: Plan 05-02 Ready for Execution
-Last activity: 2026-02-08 — Completed 05-01 PipelineCard + PipelineColumn
+Phase: Inmobiliaria-05 Pipeline (2/3 plans complete)
+Plan: 05-02 PipelineFilters + PipelineDetail (COMPLETE)
+Status: Plan 05-03 Ready for Execution
+Last activity: 2026-02-08 — Completed 05-02 PipelineFilters + PipelineDetail
 
-Progress: ███████████░░░░░░░░░░░░░░░░░░░ 33% (Phase 5)
+Progress: █████████████████████░░░░░░░░░ 67% (Phase 5)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -651,9 +651,9 @@ All 10 phases executed successfully. The frontend is fully functional with:
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 05-01 PipelineCard + PipelineColumn
-Resume file: .planning/phases/inmobiliaria-05-pipeline/05-02-PLAN.md
-Status: Phase 5 IN PROGRESS - 1/3 plans complete
+Stopped at: Completed 05-02 PipelineFilters + PipelineDetail
+Resume file: .planning/phases/inmobiliaria-05-pipeline/05-03-PLAN.md
+Status: Phase 5 IN PROGRESS - 2/3 plans complete
 
 ## Backend Integration Status
 

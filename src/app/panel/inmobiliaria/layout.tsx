@@ -12,6 +12,7 @@ import {
   CurrencyDollar,
   Kanban,
   ChartLine,
+  ChartLineUp,
   Wrench,
   UserCircle,
   PaperPlaneTilt,
@@ -70,9 +71,24 @@ const INMOBILIARIA_NAV_ITEMS: NavItem[] = [
     icon: Wrench,
   },
   {
+    label: 'Documentos',
+    href: '/panel/inmobiliaria/documentos',
+    icon: FileText,
+  },
+  {
     label: 'Reportes',
     href: '/panel/inmobiliaria/reportes',
     icon: ChartLine,
+  },
+  {
+    label: 'Analitica',
+    href: '/panel/inmobiliaria/analytics',
+    icon: ChartLineUp,
+  },
+  {
+    label: 'Configuracion',
+    href: '/panel/inmobiliaria/configuracion',
+    icon: Gear,
   },
   {
     label: 'Mensajes',

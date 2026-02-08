@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 4 Agentes (In Progress)
+**Current focus:** Inmobiliaria Module - Phase 5 Pipeline (Planning)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-04 Agentes (3/3 plans complete)
-Plan: 04-03 Leaderboard, Workload, Asignacion (COMPLETE)
-Status: Phase Complete
-Last activity: 2026-02-08 — AgenteLeaderboard, AgenteWorkloadChart, AsignacionModal, Tabs
+Phase: Inmobiliaria-05 Pipeline (0/3 plans complete)
+Plan: 05-01 PipelineCard + PipelineColumn (PLANNED)
+Status: Plans Ready for Execution
+Last activity: 2026-02-08 — Created 3 plans for Phase 5 Pipeline de Arriendos
 
-Progress: ██████████████████████████████ 100% (Phase 4)
+Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 5)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -629,12 +629,26 @@ All 10 phases executed successfully. The frontend is fully functional with:
 
 **Ready for backend integration and production deployment.**
 
+### What's Planned (Inmobiliaria Phase 5) - Pipeline de Arriendos
+- **Plan 05-01**: PipelineCard + PipelineColumn
+  - PipelineCard with property, candidate, agente info
+  - Days in stage with warning for overdue
+  - Stage-colored header from PIPELINE_STAGES
+  - PipelineColumn with header, count, drop zone
+- **Plan 05-02**: PipelineFilters + PipelineDetail
+  - Filters by agente, property, date range
+  - PipelineDetail modal with timeline, notes, actions
+- **Plan 05-03**: PipelineBoard + Pipeline Page
+  - @dnd-kit drag-and-drop integration
+  - Full Kanban board with all 10 stages
+  - Pipeline page at `/panel/inmobiliaria/pipeline`
+
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 04-03-PLAN.md (Leaderboard, Workload y Asignacion)
-Resume file: .planning/phases/inmobiliaria-05-pipeline/05-01-PLAN.md (if exists)
-Status: Inmobiliaria Phase 4 COMPLETE - Ready for Phase 5 (Pipeline)
+Stopped at: Created Phase 5 plans (05-01, 05-02, 05-03)
+Resume file: .planning/phases/inmobiliaria-05-pipeline/05-01-PLAN.md
+Status: Phase 5 PLANNED - Ready for Execution (3 plans)
 
 ## Backend Integration Status
 

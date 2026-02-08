@@ -1362,6 +1362,132 @@ export const ALL_PERMISSION_ACTIONS: PermissionAction[] = [
   'export',
 ];
 
+// ============================================================================
+// Documentos - Templates & Documents
+// ============================================================================
+
+export type DocumentCategory =
+  | 'contrato'
+  | 'acta'
+  | 'inventario'
+  | 'poliza'
+  | 'carta'
+  | 'otro';
+
+export type DocumentStatus =
+  | 'draft'
+  | 'pending_signature'
+  | 'signed'
+  | 'expired'
+  | 'cancelled';
+
+export interface DocumentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: DocumentCategory;
+  icon: string;
+  version: string;
+  lastUpdated: string;
+  usageCount: number;
+  isDefault: boolean;
+  previewUrl?: string;
+  variables: string[];  // e.g., ['{{tenant_name}}', '{{property_address}}']
+}
+
+export interface PropertyDocument {
+  id: string;
+  templateId?: string;
+  propertyId: string;
+  propertyTitle: string;
+  consignacionId?: string;
+  tenantId?: string;
+  tenantName?: string;
+  propietarioId: string;
+  propietarioName: string;
+
+  name: string;
+  category: DocumentCategory;
+  status: DocumentStatus;
+
+  fileUrl?: string;
+  fileSize?: number;        // in bytes
+  mimeType?: string;
+
+  signatures?: {
+    signerName: string;
+    signerEmail: string;
+    signedAt?: string;
+    status: 'pending' | 'signed' | 'rejected';
+  }[];
+
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface DocumentGenerateRequest {
+  templateId: string;
+  propertyId: string;
+  consignacionId?: string;
+  tenantId?: string;
+  variables: Record<string, string>;
+}
+
+// Helper functions for documents
+export function getDocumentCategoryLabel(category: DocumentCategory): string {
+  const labels: Record<DocumentCategory, string> = {
+    contrato: 'Contrato',
+    acta: 'Acta',
+    inventario: 'Inventario',
+    poliza: 'Poliza',
+    carta: 'Carta',
+    otro: 'Otro',
+  };
+  return labels[category];
+}
+
+export function getDocumentCategoryColor(category: DocumentCategory): string {
+  const colors: Record<DocumentCategory, string> = {
+    contrato: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    acta: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    inventario: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    poliza: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    carta: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    otro: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  };
+  return colors[category];
+}
+
+export function getDocumentStatusLabel(status: DocumentStatus): string {
+  const labels: Record<DocumentStatus, string> = {
+    draft: 'Borrador',
+    pending_signature: 'Pendiente Firma',
+    signed: 'Firmado',
+    expired: 'Vencido',
+    cancelled: 'Cancelado',
+  };
+  return labels[status];
+}
+
+export function getDocumentStatusColor(status: DocumentStatus): string {
+  const colors: Record<DocumentStatus, string> = {
+    draft: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+    pending_signature: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    signed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    cancelled: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+  };
+  return colors[status];
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 // Helper to check if role has permission
 export function hasPermission(
   permissions: RolePermissions,
@@ -1412,3 +1538,242 @@ export function updateRolePermission(
 
   return newPermissions;
 }
+
+// ============================================================================
+// Documentos - Actas de Entrega
+// ============================================================================
+
+export type ActaType = 'entrega' | 'devolucion';
+
+export type ItemCondition = 'excelente' | 'bueno' | 'regular' | 'malo' | 'no_aplica';
+
+export type RoomType =
+  | 'sala'
+  | 'comedor'
+  | 'cocina'
+  | 'habitacion_principal'
+  | 'habitacion_2'
+  | 'habitacion_3'
+  | 'bano_principal'
+  | 'bano_2'
+  | 'estudio'
+  | 'balcon'
+  | 'terraza'
+  | 'garaje'
+  | 'cuarto_util'
+  | 'otro';
+
+export interface ActaInventoryItem {
+  id: string;
+  room: RoomType;
+  name: string;
+  description?: string;
+  quantity: number;
+  condition: ItemCondition;
+  conditionNotes?: string;
+  photos?: string[];        // Base64 or URLs
+  hasDefects: boolean;
+  defectDescription?: string;
+}
+
+export interface MeterReading {
+  type: 'agua' | 'luz' | 'gas';
+  reading: string;
+  unit: string;
+  photoUrl?: string;
+}
+
+export interface KeyDelivered {
+  type: string;         // "Llave principal", "Control garaje", etc.
+  quantity: number;
+  notes?: string;
+}
+
+export interface ActaSignature {
+  party: 'tenant' | 'owner' | 'agent';
+  name: string;
+  cedula: string;
+  signatureData?: string;  // Base64 signature image
+  signedAt?: string;
+  ipAddress?: string;
+}
+
+export interface ActaDeduction {
+  concept: string;
+  amount: number;
+  notes?: string;
+}
+
+export interface ActaEntrega {
+  id: string;
+  type: ActaType;
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  consignacionId: string;
+  leaseId: string;
+
+  // Parties
+  tenantId: string;
+  tenantName: string;
+  tenantCedula: string;
+  tenantPhone: string;
+  tenantEmail: string;
+  propietarioId: string;
+  propietarioName: string;
+  agenteId: string;
+  agenteName: string;
+
+  // Delivery info
+  deliveryDate: string;
+  deliveryTime?: string;
+
+  // Inventory
+  rooms: RoomType[];
+  items: ActaInventoryItem[];
+
+  // Meters
+  meterReadings: MeterReading[];
+
+  // Keys
+  keysDelivered: KeyDelivered[];
+
+  // General observations
+  generalCondition: ItemCondition;
+  generalObservations?: string;
+
+  // Signatures
+  signatures: ActaSignature[];
+
+  // For devolucion type
+  depositAmount?: number;
+  deductions?: ActaDeduction[];
+  depositToReturn?: number;
+
+  status: 'draft' | 'in_progress' | 'pending_signatures' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  pdfUrl?: string;
+}
+
+// Helper functions for Acta de Entrega
+export function getRoomLabel(room: RoomType): string {
+  const labels: Record<RoomType, string> = {
+    sala: 'Sala',
+    comedor: 'Comedor',
+    cocina: 'Cocina',
+    habitacion_principal: 'Habitacion Principal',
+    habitacion_2: 'Habitacion 2',
+    habitacion_3: 'Habitacion 3',
+    bano_principal: 'Bano Principal',
+    bano_2: 'Bano 2',
+    estudio: 'Estudio',
+    balcon: 'Balcon',
+    terraza: 'Terraza',
+    garaje: 'Garaje',
+    cuarto_util: 'Cuarto Util',
+    otro: 'Otro',
+  };
+  return labels[room];
+}
+
+export function getConditionLabel(condition: ItemCondition): string {
+  const labels: Record<ItemCondition, string> = {
+    excelente: 'Excelente',
+    bueno: 'Bueno',
+    regular: 'Regular',
+    malo: 'Malo',
+    no_aplica: 'No Aplica',
+  };
+  return labels[condition];
+}
+
+export function getConditionColor(condition: ItemCondition): string {
+  const colors: Record<ItemCondition, string> = {
+    excelente: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    bueno: 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-400',
+    regular: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    malo: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    no_aplica: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  };
+  return colors[condition];
+}
+
+export function getActaTypeLabel(type: ActaType): string {
+  return type === 'entrega' ? 'Acta de Entrega' : 'Acta de Devolucion';
+}
+
+export function getActaStatusLabel(status: ActaEntrega['status']): string {
+  const labels: Record<ActaEntrega['status'], string> = {
+    draft: 'Borrador',
+    in_progress: 'En Progreso',
+    pending_signatures: 'Pendiente Firmas',
+    completed: 'Completado',
+  };
+  return labels[status];
+}
+
+export function getActaStatusColor(status: ActaEntrega['status']): string {
+  const colors: Record<ActaEntrega['status'], string> = {
+    draft: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+    in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    pending_signatures: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  };
+  return colors[status];
+}
+
+// Default rooms for a typical apartment
+export const DEFAULT_ROOMS: RoomType[] = [
+  'sala',
+  'comedor',
+  'cocina',
+  'habitacion_principal',
+  'bano_principal',
+];
+
+// All available room types
+export const ALL_ROOM_TYPES: RoomType[] = [
+  'sala',
+  'comedor',
+  'cocina',
+  'habitacion_principal',
+  'habitacion_2',
+  'habitacion_3',
+  'bano_principal',
+  'bano_2',
+  'estudio',
+  'balcon',
+  'terraza',
+  'garaje',
+  'cuarto_util',
+  'otro',
+];
+
+// Common inventory items per room
+export const COMMON_ITEMS_BY_ROOM: Record<RoomType, string[]> = {
+  sala: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Puertas', 'Tomas electricos', 'Interruptores'],
+  comedor: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Lampara'],
+  cocina: ['Piso', 'Paredes', 'Meson', 'Lavaplatos', 'Estufa', 'Horno', 'Campana extractora', 'Gabinetes', 'Grifo'],
+  habitacion_principal: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Closet', 'Puertas', 'Tomas electricos'],
+  habitacion_2: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Closet', 'Puertas'],
+  habitacion_3: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Closet', 'Puertas'],
+  bano_principal: ['Piso', 'Paredes', 'Sanitario', 'Lavamanos', 'Ducha', 'Grifo', 'Espejo', 'Gabinete'],
+  bano_2: ['Piso', 'Paredes', 'Sanitario', 'Lavamanos', 'Ducha', 'Grifo'],
+  estudio: ['Piso', 'Paredes', 'Techo', 'Ventanas', 'Tomas electricos'],
+  balcon: ['Piso', 'Barandas', 'Techo'],
+  terraza: ['Piso', 'Barandas', 'Drenaje'],
+  garaje: ['Piso', 'Paredes', 'Puerta', 'Iluminacion'],
+  cuarto_util: ['Piso', 'Paredes', 'Conexiones lavadora', 'Lavadero'],
+  otro: ['Piso', 'Paredes', 'Techo'],
+};
+
+// All item conditions
+export const ALL_ITEM_CONDITIONS: ItemCondition[] = [
+  'excelente',
+  'bueno',
+  'regular',
+  'malo',
+  'no_aplica',
+];

@@ -31,3 +31,15 @@ export type { WizardFormData, StepProps } from './ConsignacionWizardSteps';
 // Selector Components
 export { PropietarioSelector } from './PropietarioSelector';
 export { AgenteSelector } from './AgenteSelector';
+
+// Consignacion Detail Components
+export { ConsignacionHeader } from './ConsignacionHeader';
+export {
+  PropertyInfoSection,
+  PropietarioSection,
+  AgenteSection,
+  CurrentLeaseSection,
+  DocumentsSection,
+} from './ConsignacionDetailSections';
+export { ActaEntregaView } from './ActaEntregaView';
+export { ConsignacionTimeline } from './ConsignacionTimeline';

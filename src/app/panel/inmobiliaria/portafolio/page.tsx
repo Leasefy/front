@@ -134,14 +134,13 @@ export default function PortafolioPage() {
 
   // Handlers
   const handleView = useCallback((consignacion: typeof MOCK_CONSIGNACIONES[0]) => {
-    // TODO: Navigate to consignacion detail page
-    console.log('View consignacion:', consignacion.id);
-  }, []);
+    router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
+  }, [router]);
 
   const handleEdit = useCallback((consignacion: typeof MOCK_CONSIGNACIONES[0]) => {
-    // TODO: Navigate to consignacion edit page
-    console.log('Edit consignacion:', consignacion.id);
-  }, []);
+    // Navigate to detail page where edit actions are available
+    router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
+  }, [router]);
 
   const handleNuevaConsignacion = useCallback(() => {
     router.push('/panel/inmobiliaria/portafolio/nuevo');

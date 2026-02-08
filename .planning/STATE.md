@@ -15,11 +15,11 @@ See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 Milestone: v3.0 Inmobiliaria Module
 Phase: Inmobiliaria-06 Cobros (3 plans)
-Plan: 06-01 COMPLETE, 06-02 and 06-03 ready for execution
-Status: Phase 6 In Progress - Plan 01 Complete
-Last activity: 2026-02-08 — Completed Plan 06-01 (CobroCard, CobroTable, CobroFilters)
+Plan: 06-01 COMPLETE, 06-02 COMPLETE, 06-03 ready for execution
+Status: Phase 6 In Progress - Plan 02 Complete
+Last activity: 2026-02-08 — Completed Plan 06-02 (RegistrarPagoModal, MoraAlert, CobroResumen)
 
-Progress: ██████████░░░░░░░░░░░░░░░░░░░░ 33% (Phase 6)
+Progress: ████████████████████░░░░░░░░░░ 67% (Phase 6)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -660,13 +660,18 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - CobroFilters with month selector, status tabs, property/propietario dropdowns
   - Debounced search, active filter indicator
   - Components exported from barrel
+- **Plan 06-02 COMPLETE**: RegistrarPagoModal + MoraAlert + CobroResumen
+  - RegistrarPagoModal with full/partial payment support, 6 payment methods
+  - MoraAlert with severity levels (warning/critical/severe), pulse animations
+  - CobroResumen with stats grid, collection rate progress bar, animated counters
+  - Compact variants for tables/dashboards
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed Plan 06-01 (CobroCard, CobroTable, CobroFilters)
-Resume file: None - Ready for Plan 06-02
-Status: Phase 6 Cobros in progress, 1/3 plans complete
+Stopped at: Completed Plan 06-02 (RegistrarPagoModal, MoraAlert, CobroResumen)
+Resume file: None - Ready for Plan 06-03
+Status: Phase 6 Cobros in progress, 2/3 plans complete
 
 ## Backend Integration Status
 

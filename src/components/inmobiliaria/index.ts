@@ -60,3 +60,7 @@ export { AgentePipeline } from './AgentePipeline';
 export { AgenteLeaderboard } from './AgenteLeaderboard';
 export { AgenteWorkloadChart } from './AgenteWorkloadChart';
 export { AsignacionModal } from './AsignacionModal';
+
+// Pipeline (Rental Pipeline) Components
+export { PipelineCard } from './PipelineCard';
+export { PipelineColumn } from './PipelineColumn';

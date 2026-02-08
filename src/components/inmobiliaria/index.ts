@@ -146,3 +146,7 @@ export { DocumentoManager } from './DocumentoManager';
 // Documentos - Actas de Entrega (Phase 10 - Plan 05)
 export { ActaEntregaForm } from './ActaEntregaForm';
 export { ActaEntregaViewer } from './ActaEntregaViewer';
+
+// Analytics - Dashboard & KPIs (Phase 10 - Plan 06)
+export { AnalyticsDashboard } from './AnalyticsDashboard';
+export { AnalyticsKPICards } from './AnalyticsKPICards';

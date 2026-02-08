@@ -1777,3 +1777,301 @@ export const ALL_ITEM_CONDITIONS: ItemCondition[] = [
   'malo',
   'no_aplica',
 ];
+
+// ============================================================================
+// Analytics - Trends & Forecasting
+// ============================================================================
+
+export type TrendDirection = 'up' | 'down' | 'stable';
+export type ComparisonPeriod = 'previous_period' | 'previous_year' | 'custom';
+
+export interface PeriodComparison {
+  current: {
+    label: string;
+    startDate: string;
+    endDate: string;
+    value: number;
+  };
+  previous: {
+    label: string;
+    startDate: string;
+    endDate: string;
+    value: number;
+  };
+  change: {
+    absolute: number;
+    percentage: number;
+    direction: TrendDirection;
+  };
+}
+
+export interface TrendDataPoint {
+  date: string;
+  value: number;
+  label?: string;
+  isProjected?: boolean;
+}
+
+export interface SeasonalPattern {
+  month: number;
+  monthName: string;
+  averageValue: number;
+  deviation: number;
+  isHighSeason: boolean;
+  notes?: string;
+}
+
+export interface TrendAnomaly {
+  date: string;
+  value: number;
+  expectedValue: number;
+  deviationPercent: number;
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+}
+
+export interface TrendAnalysis {
+  metricId: string;
+  metricLabel: string;
+  data: TrendDataPoint[];
+  comparison: PeriodComparison;
+  seasonalPatterns: SeasonalPattern[];
+  anomalies: TrendAnomaly[];
+  trendLine: {
+    slope: number;
+    direction: TrendDirection;
+    confidence: number;
+  };
+  insights: string[];
+}
+
+export interface ForecastDataPoint {
+  date: string;
+  predicted: number;
+  lowerBound: number;
+  upperBound: number;
+  confidence: number;
+}
+
+export interface ForecastScenario {
+  id: string;
+  name: string;
+  description: string;
+  assumptions: string[];
+  data: ForecastDataPoint[];
+  probability: number;
+}
+
+export interface ForecastData {
+  metricId: string;
+  metricLabel: string;
+  unit: string;
+  historical: TrendDataPoint[];
+  baseline: ForecastDataPoint[];
+  scenarios: ForecastScenario[];
+  factors: {
+    name: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    weight: number;
+  }[];
+  lastUpdated: string;
+}
+
+// Helper functions for trends & forecasting
+export function getAnomalySeverityColor(severity: TrendAnomaly['severity']): string {
+  const colors = {
+    low: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    medium: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  };
+  return colors[severity];
+}
+
+export function formatConfidence(confidence: number): string {
+  return `${(confidence * 100).toFixed(0)}% confianza`;
+}
+
+export function getSeasonColor(isHighSeason: boolean): string {
+  return isHighSeason
+    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+    : 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400';
+}
+
+export function getMonthName(month: number): string {
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  return months[month - 1] || '';
+}
+
+export function getTrendDirectionColor(direction: TrendDirection): string {
+  const colors = {
+    up: 'text-emerald-600 dark:text-emerald-400',
+    down: 'text-red-600 dark:text-red-400',
+    stable: 'text-neutral-600 dark:text-neutral-400',
+  };
+  return colors[direction];
+}
+
+export function getImpactColor(impact: 'positive' | 'negative' | 'neutral'): string {
+  const colors = {
+    positive: 'text-emerald-600 dark:text-emerald-400',
+    negative: 'text-red-600 dark:text-red-400',
+    neutral: 'text-neutral-600 dark:text-neutral-400',
+  };
+  return colors[impact];
+}
+
+export function getScenarioColor(id: string): string {
+  const colors: Record<string, string> = {
+    optimistic: 'bg-emerald-500 dark:bg-emerald-400',
+    conservative: 'bg-blue-500 dark:bg-blue-400',
+    pessimistic: 'bg-red-500 dark:bg-red-400',
+    baseline: 'bg-neutral-500 dark:bg-neutral-400',
+  };
+  return colors[id] || colors.baseline;
+}
+
+// ============================================================================
+// Analytics - Advanced KPIs & Dashboard
+// ============================================================================
+
+export type AnalyticsPeriod = 'week' | 'month' | 'quarter' | 'year' | 'custom';
+
+export interface TrendData {
+  direction: TrendDirection;
+  percentage: number;
+  previousValue: number;
+  currentValue: number;
+}
+
+export interface SparklinePoint {
+  date: string;
+  value: number;
+}
+
+export interface AdvancedKPI {
+  id: string;
+  label: string;
+  value: number;
+  formattedValue: string;
+  unit?: string;
+  trend: TrendData;
+  sparkline: SparklinePoint[];
+  target?: number;
+  targetLabel?: string;
+  category: 'financial' | 'operational' | 'performance';
+  description?: string;
+}
+
+export interface TimeSeriesData {
+  date: string;
+  [key: string]: string | number;
+}
+
+export interface ChartDataset {
+  label: string;
+  data: number[];
+  color: string;
+  type?: 'line' | 'bar' | 'area';
+}
+
+export interface AnalyticsChart {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'line' | 'bar' | 'area' | 'pie' | 'donut';
+  labels: string[];
+  datasets: ChartDataset[];
+  period: AnalyticsPeriod;
+}
+
+export interface AnalyticsFilters {
+  period: AnalyticsPeriod;
+  startDate?: string;
+  endDate?: string;
+  propertyType?: string;
+  zone?: string;
+  agentId?: string;
+}
+
+export interface AnalyticsData {
+  kpis: AdvancedKPI[];
+  charts: AnalyticsChart[];
+  lastUpdated: string;
+}
+
+// Analytics helper functions
+export function getTrendColor(direction: TrendDirection, isPositiveGood: boolean = true): string {
+  if (direction === 'stable') return 'text-slate-500 dark:text-slate-400';
+  const isGood = isPositiveGood ? direction === 'up' : direction === 'down';
+  return isGood ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+}
+
+export function getTrendBgColor(direction: TrendDirection, isPositiveGood: boolean = true): string {
+  if (direction === 'stable') return 'bg-slate-100 dark:bg-slate-800';
+  const isGood = isPositiveGood ? direction === 'up' : direction === 'down';
+  return isGood ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30';
+}
+
+export function getTrendIcon(direction: TrendDirection): string {
+  const icons = {
+    up: 'TrendUp',
+    down: 'TrendDown',
+    stable: 'Minus',
+  };
+  return icons[direction];
+}
+
+export function formatPercentageChange(percentage: number): string {
+  const prefix = percentage > 0 ? '+' : '';
+  return `${prefix}${percentage.toFixed(1)}%`;
+}
+
+export function getCategoryColor(category: AdvancedKPI['category']): string {
+  const colors = {
+    financial: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800',
+    operational: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
+    performance: 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800',
+  };
+  return colors[category];
+}
+
+export function getCategoryIconColor(category: AdvancedKPI['category']): string {
+  const colors = {
+    financial: 'text-emerald-600 dark:text-emerald-400',
+    operational: 'text-blue-600 dark:text-blue-400',
+    performance: 'text-purple-600 dark:text-purple-400',
+  };
+  return colors[category];
+}
+
+export function getCategoryBgColor(category: AdvancedKPI['category']): string {
+  const colors = {
+    financial: 'bg-emerald-100 dark:bg-emerald-900/30',
+    operational: 'bg-blue-100 dark:bg-blue-900/30',
+    performance: 'bg-purple-100 dark:bg-purple-900/30',
+  };
+  return colors[category];
+}
+
+export function getCategoryLabel(category: AdvancedKPI['category']): string {
+  const labels = {
+    financial: 'Financiero',
+    operational: 'Operacional',
+    performance: 'Rendimiento',
+  };
+  return labels[category];
+}
+
+export function getPeriodLabel(period: AnalyticsPeriod): string {
+  const labels: Record<AnalyticsPeriod, string> = {
+    week: 'Semana',
+    month: 'Mes',
+    quarter: 'Trimestre',
+    year: 'Ano',
+    custom: 'Personalizado',
+  };
+  return labels[period];
+}

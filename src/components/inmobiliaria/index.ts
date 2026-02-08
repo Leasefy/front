@@ -55,3 +55,8 @@ export { AgenteProfile } from './AgenteProfile';
 export { AgenteMetrics } from './AgenteMetrics';
 export { AgentePropertyList } from './AgentePropertyList';
 export { AgentePipeline } from './AgentePipeline';
+
+// Agente Management Components
+export { AgenteLeaderboard } from './AgenteLeaderboard';
+export { AgenteWorkloadChart } from './AgenteWorkloadChart';
+export { AsignacionModal } from './AsignacionModal';

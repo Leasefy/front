@@ -10,11 +10,13 @@ import {
   List,
   Plus,
   CheckCircle,
-  Clock,
   ChartLineUp,
   CurrencyDollar,
   CaretLeft,
   CaretRight,
+  Trophy,
+  ChartBar,
+  UsersThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
@@ -22,10 +24,19 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
 import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/AgenteFilters';
+import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
+import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 
 type ViewMode = 'grid' | 'table';
+type TabType = 'equipo' | 'ranking' | 'workload';
 
 const ITEMS_PER_PAGE = 12;
+
+const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
+  { id: 'equipo', label: 'Equipo', icon: UsersThree },
+  { id: 'ranking', label: 'Ranking', icon: Trophy },
+  { id: 'workload', label: 'Carga de Trabajo', icon: ChartBar },
+];
 
 /**
  * Agentes Page - Main view for managing all real estate agents
@@ -33,6 +44,7 @@ const ITEMS_PER_PAGE = 12;
  */
 export default function AgentesPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>('equipo');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<AgenteFiltersState>({
@@ -218,134 +230,191 @@ export default function AgentesPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <AgenteFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        agentes={MOCK_AGENTES}
-      />
-
-      {/* View Toggle and Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {filteredAgentes.length} de {MOCK_AGENTES.length} agentes
-        </p>
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              viewMode === 'grid'
-                ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-            title="Vista de cuadricula"
-          >
-            <SquaresFour className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              viewMode === 'table'
-                ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-            title="Vista de tabla"
-          >
-            <List className="w-5 h-5" />
-          </button>
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 w-fit">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+              )}
+            >
+              <Icon className="w-4 h-4" weight={activeTab === tab.id ? 'fill' : 'regular'} />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Content */}
+      {/* Tab Content */}
       <AnimatePresence mode="wait">
-        {viewMode === 'grid' ? (
+        {activeTab === 'equipo' && (
           <motion.div
-            key="grid"
+            key="equipo"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
           >
-            {paginatedAgentes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedAgentes.map((agente) => (
-                  <AgenteCard
-                    key={agente.id}
-                    agente={agente}
-                    onClick={() => handleView(agente)}
-                    onView={() => handleView(agente)}
-                    onEdit={() => handleEdit(agente)}
-                  />
-                ))}
+            {/* Filters */}
+            <AgenteFilters
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              agentes={MOCK_AGENTES}
+            />
+
+            {/* View Toggle and Results Count */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {filteredAgentes.length} de {MOCK_AGENTES.length} agentes
+              </p>
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    'p-2 rounded-lg transition-all',
+                    viewMode === 'grid'
+                      ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                  )}
+                  title="Vista de cuadricula"
+                >
+                  <SquaresFour className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={cn(
+                    'p-2 rounded-lg transition-all',
+                    viewMode === 'table'
+                      ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                  )}
+                  title="Vista de tabla"
+                >
+                  <List className="w-5 h-5" />
+                </button>
               </div>
-            ) : (
-              <EmptyState />
+            </div>
+
+            {/* Content */}
+            <AnimatePresence mode="wait">
+              {viewMode === 'grid' ? (
+                <motion.div
+                  key="grid"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  {paginatedAgentes.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {paginatedAgentes.map((agente) => (
+                        <AgenteCard
+                          key={agente.id}
+                          agente={agente}
+                          onClick={() => handleView(agente)}
+                          onView={() => handleView(agente)}
+                          onEdit={() => handleEdit(agente)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState />
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="table"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <AgenteTable
+                    agentes={paginatedAgentes}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={cn(
+                    'p-2 rounded-lg transition-all',
+                    currentPage === 1
+                      ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  )}
+                >
+                  <CaretLeft className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        'w-9 h-9 rounded-lg text-sm font-medium transition-all',
+                        page === currentPage
+                          ? 'bg-indigo-500 text-white'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className={cn(
+                    'p-2 rounded-lg transition-all',
+                    currentPage === totalPages
+                      ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  )}
+                >
+                  <CaretRight className="w-5 h-5" />
+                </button>
+              </div>
             )}
           </motion.div>
-        ) : (
+        )}
+
+        {activeTab === 'ranking' && (
           <motion.div
-            key="table"
+            key="ranking"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <AgenteTable
-              agentes={paginatedAgentes}
-              onView={handleView}
-              onEdit={handleEdit}
-            />
+            <AgenteLeaderboard agentes={MOCK_AGENTES} />
+          </motion.div>
+        )}
+
+        {activeTab === 'workload' && (
+          <motion.div
+            key="workload"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <AgenteWorkloadChart agentes={MOCK_AGENTES} />
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              currentPage === 1
-                ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            )}
-          >
-            <CaretLeft className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={cn(
-                  'w-9 h-9 rounded-lg text-sm font-medium transition-all',
-                  page === currentPage
-                    ? 'bg-indigo-500 text-white'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                )}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              currentPage === totalPages
-                ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            )}
-          >
-            <CaretRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 7 Dispersiones (COMPLETE)
+**Current focus:** Inmobiliaria Module - Phase 8 Reportes (IN PROGRESS)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-08 Reportes (3 plans) - PLANNED
-Plan: 08-01 PENDING, 08-02 PENDING, 08-03 PENDING
-Status: Phase 8 Planned - Ready for execution
-Last activity: 2026-02-08 — Created Phase 8 plans (Centro de Reportes)
+Phase: Inmobiliaria-08 Reportes (3 plans) - IN PROGRESS
+Plan: 08-01 COMPLETE, 08-02 PENDING, 08-03 PENDING
+Status: Phase 8 In Progress - Plan 01 Complete
+Last activity: 2026-02-08 — Completed 08-01 (Report Base Components)
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0% (Phase 8)
+Progress: ██████████░░░░░░░░░░░░░░░░░░░░ 33% (Phase 8)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -44,9 +44,9 @@ Progress: ░░░░░░░░░░░░░░░░░░░░░░░�
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 34
 - Average duration: 6.1 min
-- Total execution time: 3.4 hours
+- Total execution time: 3.5 hours
 
 **By Phase:**
 
@@ -706,12 +706,22 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - Month-based cobro grouping by propietario with commission calculation
   - Selection-based approval for batch or individual processing
 
+### What's Complete (Inmobiliaria Phase 8) - Reportes (IN PROGRESS)
+- **Plan 08-01 COMPLETE**: Report Base Components
+  - Report types: ReportId, ReportFormat, ReportCategory, ReportFrequency, ReportDefinition
+  - Mock reports: MOCK_REPORTS array with 7 report definitions
+  - Report generators: generateComisionesAgenteReport, generateOcupacionReport, generateVencimientosReport, generateFlujoCajaReport
+  - ReporteFilters with period/zone/category/search/favorites filtering
+  - ReporteCard with category colors, format badges, actions (generate/preview/download)
+  - ReporteViewer Sheet drawer with specialized preview components
+  - All components exported from barrel
+
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Created Phase 8 plans (Centro de Reportes)
-Resume file: .planning/phases/inmobiliaria-08-reportes/08-01-PLAN.md
-Status: Phase 8 Reportes PLANNED, ready for execution
+Stopped at: Completed 08-01-PLAN.md (Report Base Components)
+Resume file: .planning/phases/inmobiliaria-08-reportes/08-02-PLAN.md
+Status: Phase 8 Reportes IN PROGRESS, 08-01 complete, 08-02 pending
 
 ## Backend Integration Status
 

@@ -9,17 +9,17 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 See: docs/CHANGELOG.md (created 2026-01-29) - **All Changes**
 
 **Core value:** Propietarios toman decisiones informadas sobre inquilinos en minutos con explicabilidad conversacional del scoring AI.
-**Current focus:** Inmobiliaria Module - Phase 6 Cobros (IN PROGRESS)
+**Current focus:** Inmobiliaria Module - Phase 6 Cobros (COMPLETE)
 
 ## Current Position
 
 Milestone: v3.0 Inmobiliaria Module
-Phase: Inmobiliaria-06 Cobros (3 plans)
-Plan: 06-01 COMPLETE, 06-02 COMPLETE, 06-03 ready for execution
-Status: Phase 6 In Progress - Plan 02 Complete
-Last activity: 2026-02-08 — Completed Plan 06-02 (RegistrarPagoModal, MoraAlert, CobroResumen)
+Phase: Inmobiliaria-06 Cobros (3 plans) - COMPLETE
+Plan: 06-01 COMPLETE, 06-02 COMPLETE, 06-03 COMPLETE
+Status: Phase 6 Complete - Ready for Phase 7 Dispersiones
+Last activity: 2026-02-07 — Completed Plan 06-03 (RecordatorioConfig, CobroDetail, Cobros page)
 
-Progress: ████████████████████░░░░░░░░░░ 67% (Phase 6)
+Progress: ██████████████████████████████ 100% (Phase 6)
 
 ## Roadmap Reorganization (2026-01-18)
 
@@ -194,6 +194,14 @@ Progress: ████████████████████░░░�
 - **DragOverlay pattern**: Shows card preview during drag for better UX
 - **Optimistic stage updates**: Stage changes update local state immediately, toast confirms
 - **Lost column collapsed**: De-emphasize failed leads, keep focus on active pipeline
+- **Reminder config sheet**: Sheet drawer for reminder settings (consistent with other configs)
+- **Day selector multi-select**: Badge buttons with toggle for visual clarity
+- **Channel toggles**: Switch components with icon boxes for clear on/off state
+- **Template previews**: Highlighted variables in message templates for user visibility
+- **Cobro detail sections**: Grouped sections (property/tenant/amounts) for logical organization
+- **Payment history timeline**: Timeline-style layout for easy payment trail
+- **Table/card view toggle**: User preference for data density in cobros list
+- **Optimistic cobro updates**: Payment registration updates state immediately
 
 ### What's Complete (Phase 1)
 
@@ -653,7 +661,7 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - Pipeline page at `/panel/inmobiliaria/pipeline`
   - Optimistic stage updates with toast feedback
 
-### What's Complete (Inmobiliaria Phase 6) - Cobros (IN PROGRESS)
+### What's Complete (Inmobiliaria Phase 6) - Cobros (COMPLETE)
 - **Plan 06-01 COMPLETE**: CobroCard + CobroTable + CobroFilters
   - CobroCard with status-colored left border, amount breakdown, tenant info
   - CobroTable with sortable columns, summary row, action menu
@@ -665,13 +673,19 @@ All 10 phases executed successfully. The frontend is fully functional with:
   - MoraAlert with severity levels (warning/critical/severe), pulse animations
   - CobroResumen with stats grid, collection rate progress bar, animated counters
   - Compact variants for tables/dashboards
+- **Plan 06-03 COMPLETE**: RecordatorioConfig + CobroDetail + Cobros Page
+  - RecordatorioConfig with day selectors, channel toggles, template previews
+  - CobroDetail sheet with property/tenant/propietario sections
+  - Full Cobros page at `/panel/inmobiliaria/cobros`
+  - Month selector, status tabs, table/card view toggle
+  - Payment registration with optimistic updates
 
 ## Session Continuity
 
-Last session: 2026-02-08
-Stopped at: Completed Plan 06-02 (RegistrarPagoModal, MoraAlert, CobroResumen)
-Resume file: None - Ready for Plan 06-03
-Status: Phase 6 Cobros in progress, 2/3 plans complete
+Last session: 2026-02-07
+Stopped at: Completed Plan 06-03 (RecordatorioConfig, CobroDetail, Cobros page)
+Resume file: None - Ready for Phase 7 Dispersiones
+Status: Phase 6 Cobros COMPLETE, 3/3 plans done
 
 ## Backend Integration Status
 

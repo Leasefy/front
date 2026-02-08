@@ -91,3 +91,9 @@ export { ComisionDesglose, ComisionDesgloseCompact } from './ComisionDesglose';
 export { ExtractoPropietario } from './ExtractoPropietario';
 export { DispersionResumen, DispersionResumenCompact } from './DispersionResumen';
 export { DispersionWizard } from './DispersionWizard';
+
+// Reportes (Reports - Phase 8) Components
+export { ReporteCard, ReporteCardCompact } from './ReporteCard';
+export { ReporteFilters } from './ReporteFilters';
+export type { ReporteFiltersState } from './ReporteFilters';
+export { ReporteViewer } from './ReporteViewer';

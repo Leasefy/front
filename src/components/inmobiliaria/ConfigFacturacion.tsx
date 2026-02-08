@@ -1,0 +1,768 @@
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  CreditCard,
+  Bank,
+  Receipt,
+  Calendar,
+  Check,
+  X,
+  Crown,
+  Sparkle,
+  CaretRight,
+  Download,
+  SpinnerGap,
+  Info,
+  ChartLineUp,
+  Users,
+  Buildings,
+  Headset,
+  FileText,
+  Lightning,
+  Plugs,
+  Code,
+  ArrowUp,
+  Rocket,
+  ShieldCheck,
+} from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import type {
+  AgencyBilling,
+  BillingInvoice,
+  BillingPlan,
+} from '@/lib/types/inmobiliaria';
+import {
+  getPlanLabel,
+  getPlanColor,
+  PLAN_LIMITS,
+} from '@/lib/types/inmobiliaria';
+
+interface ConfigFacturacionProps {
+  billing: AgencyBilling;
+  invoices: BillingInvoice[];
+  onUpgrade?: (plan: BillingPlan) => void;
+  onUpdatePaymentMethod?: () => void;
+  isLoading?: boolean;
+}
+
+// Plan display configuration
+const PLAN_CONFIG: Record<BillingPlan, {
+  icon: React.ElementType;
+  price: number;
+  description: string;
+  highlight?: boolean;
+}> = {
+  starter: {
+    icon: Rocket,
+    price: 99000,
+    description: 'Para agencias pequenas que estan comenzando',
+  },
+  professional: {
+    icon: Crown,
+    price: 299000,
+    description: 'Para agencias en crecimiento con multiples agentes',
+    highlight: true,
+  },
+  enterprise: {
+    icon: ShieldCheck,
+    price: 599000,
+    description: 'Para grandes agencias con necesidades avanzadas',
+  },
+};
+
+// Feature list for plan comparison
+const PLAN_FEATURES = [
+  {
+    key: 'properties',
+    label: 'Propiedades',
+    icon: Buildings,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.maxProperties === -1 ? 'Ilimitadas' : `Hasta ${limits.maxProperties}`,
+  },
+  {
+    key: 'users',
+    label: 'Usuarios',
+    icon: Users,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.maxUsers === -1 ? 'Ilimitados' : `Hasta ${limits.maxUsers}`,
+  },
+  {
+    key: 'agents',
+    label: 'Agentes',
+    icon: Users,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.maxAgents === -1 ? 'Ilimitados' : `Hasta ${limits.maxAgents}`,
+  },
+  {
+    key: 'reports',
+    label: 'Reportes',
+    icon: FileText,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.includesReports ? 'Incluido' : null,
+  },
+  {
+    key: 'analytics',
+    label: 'Analitica avanzada',
+    icon: ChartLineUp,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.includesAnalytics ? 'Incluido' : null,
+  },
+  {
+    key: 'integrations',
+    label: 'Integraciones',
+    icon: Plugs,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.includesIntegrations ? 'Incluido' : null,
+  },
+  {
+    key: 'api',
+    label: 'Acceso API',
+    icon: Code,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+      limits.includesApi ? 'Incluido' : null,
+  },
+  {
+    key: 'support',
+    label: 'Soporte',
+    icon: Headset,
+    getValue: (limits: typeof PLAN_LIMITS['starter']) => {
+      const labels = {
+        email: 'Email',
+        priority: 'Prioritario',
+        dedicated: 'Dedicado',
+      };
+      return labels[limits.supportLevel];
+    },
+  },
+];
+
+/**
+ * ConfigFacturacion - Billing and subscription management
+ *
+ * Features:
+ * - Current plan display with badge
+ * - Usage meters with progress bars
+ * - Payment method card
+ * - Plan features list
+ * - Invoice history table
+ * - Upgrade modal with plan comparison
+ */
+export function ConfigFacturacion({
+  billing,
+  invoices,
+  onUpgrade,
+  onUpdatePaymentMethod,
+  isLoading = false,
+}: ConfigFacturacionProps) {
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<BillingPlan | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  // Calculate usage percentages
+  const usagePercentages = useMemo(() => {
+    const { usage, limits } = billing;
+    return {
+      properties:
+        limits.maxProperties === -1
+          ? 0
+          : Math.round((usage.properties / limits.maxProperties) * 100),
+      users:
+        limits.maxUsers === -1
+          ? 0
+          : Math.round((usage.users / limits.maxUsers) * 100),
+      agents:
+        limits.maxAgents === -1
+          ? 0
+          : Math.round((usage.agents / limits.maxAgents) * 100),
+    };
+  }, [billing]);
+
+  // Get usage variant based on percentage
+  const getUsageVariant = (percentage: number): 'success' | 'warning' | 'error' => {
+    if (percentage >= 90) return 'error';
+    if (percentage >= 70) return 'warning';
+    return 'success';
+  };
+
+  // Get invoice status color
+  const getInvoiceStatusColor = (status: BillingInvoice['status']) => {
+    const colors = {
+      paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+      pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+      failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    };
+    return colors[status];
+  };
+
+  const getInvoiceStatusLabel = (status: BillingInvoice['status']) => {
+    const labels = { paid: 'Pagado', pending: 'Pendiente', failed: 'Fallido' };
+    return labels[status];
+  };
+
+  // Handle plan upgrade
+  const handleUpgrade = useCallback(
+    async (plan: BillingPlan) => {
+      if (plan === billing.plan) return;
+
+      setIsUpgrading(true);
+      try {
+        // Simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+
+        onUpgrade?.(plan);
+        toast.success(`Plan actualizado a ${getPlanLabel(plan)}`);
+        setIsUpgradeDialogOpen(false);
+      } catch (err) {
+        toast.error('Error al actualizar el plan');
+      } finally {
+        setIsUpgrading(false);
+      }
+    },
+    [billing.plan, onUpgrade]
+  );
+
+  // Handle payment method update
+  const handleUpdatePaymentMethod = useCallback(() => {
+    onUpdatePaymentMethod?.();
+    toast.info('Abriendo formulario de pago...');
+  }, [onUpdatePaymentMethod]);
+
+  // Handle invoice download
+  const handleDownloadInvoice = useCallback((invoice: BillingInvoice) => {
+    toast.success(`Descargando factura ${invoice.id}...`);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-8 bg-muted rounded-lg w-1/3" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-48 bg-muted rounded-xl" />
+          <div className="h-48 bg-muted rounded-xl" />
+        </div>
+        <div className="h-64 bg-muted rounded-xl" />
+      </div>
+    );
+  }
+
+  const PlanIcon = PLAN_CONFIG[billing.plan].icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <div>
+        <h2 className="text-xl font-bold text-foreground">Facturacion</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gestiona tu plan y metodo de pago
+        </p>
+      </div>
+
+      {/* Plan & Usage Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Current Plan Card */}
+        <div className="p-5 rounded-xl bg-card border border-border">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  'w-12 h-12 rounded-xl flex items-center justify-center',
+                  billing.plan === 'professional'
+                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+                    : billing.plan === 'enterprise'
+                    ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                )}
+              >
+                <PlanIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">
+                    Plan {getPlanLabel(billing.plan)}
+                  </h3>
+                  <Badge className={getPlanColor(billing.plan)}>
+                    {billing.cycle === 'monthly' ? 'Mensual' : 'Anual'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {PLAN_CONFIG[billing.plan].description}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Price */}
+          <div className="p-4 rounded-lg bg-muted/50 mb-4">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-foreground">
+                {formatCOP(billing.pricePerMonth)}
+              </span>
+              <span className="text-muted-foreground">/mes</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Proximo cobro: {formatDate(billing.nextBillingDate)}
+            </p>
+          </div>
+
+          {/* Upgrade Button */}
+          {billing.plan !== 'enterprise' && (
+            <button
+              onClick={() => setIsUpgradeDialogOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
+            >
+              <ArrowUp className="w-4 h-4" />
+              Mejorar plan
+            </button>
+          )}
+        </div>
+
+        {/* Usage Meters Card */}
+        <div className="p-5 rounded-xl bg-card border border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <ChartLineUp className="w-5 h-5 text-emerald-500" />
+            <h3 className="font-semibold text-foreground">Uso del plan</h3>
+          </div>
+
+          <div className="space-y-5">
+            {/* Properties Usage */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Buildings className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Propiedades</span>
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {billing.usage.properties}
+                  {billing.limits.maxProperties === -1
+                    ? ''
+                    : ` / ${billing.limits.maxProperties}`}
+                </span>
+              </div>
+              {billing.limits.maxProperties !== -1 && (
+                <Progress
+                  value={usagePercentages.properties}
+                  className="h-2"
+                  variant={getUsageVariant(usagePercentages.properties)}
+                />
+              )}
+              {billing.limits.maxProperties === -1 && (
+                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  <Lightning className="w-3 h-3" />
+                  Ilimitado
+                </div>
+              )}
+            </div>
+
+            {/* Users Usage */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Usuarios</span>
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {billing.usage.users}
+                  {billing.limits.maxUsers === -1
+                    ? ''
+                    : ` / ${billing.limits.maxUsers}`}
+                </span>
+              </div>
+              {billing.limits.maxUsers !== -1 && (
+                <Progress
+                  value={usagePercentages.users}
+                  className="h-2"
+                  variant={getUsageVariant(usagePercentages.users)}
+                />
+              )}
+              {billing.limits.maxUsers === -1 && (
+                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  <Lightning className="w-3 h-3" />
+                  Ilimitado
+                </div>
+              )}
+            </div>
+
+            {/* Agents Usage */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Agentes</span>
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {billing.usage.agents}
+                  {billing.limits.maxAgents === -1
+                    ? ''
+                    : ` / ${billing.limits.maxAgents}`}
+                </span>
+              </div>
+              {billing.limits.maxAgents !== -1 && (
+                <Progress
+                  value={usagePercentages.agents}
+                  className="h-2"
+                  variant={getUsageVariant(usagePercentages.agents)}
+                />
+              )}
+              {billing.limits.maxAgents === -1 && (
+                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  <Lightning className="w-3 h-3" />
+                  Ilimitado
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Method & Features Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Payment Method Card */}
+        <div className="p-5 rounded-xl bg-card border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-500" />
+              <h3 className="font-semibold text-foreground">Metodo de pago</h3>
+            </div>
+            <button
+              onClick={handleUpdatePaymentMethod}
+              className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              Actualizar
+            </button>
+          </div>
+
+          {billing.paymentMethod ? (
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+              <div className="w-12 h-8 rounded-md bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+                {billing.paymentMethod.type === 'card' ? (
+                  <CreditCard className="w-5 h-5 text-white" />
+                ) : (
+                  <Bank className="w-5 h-5 text-white" />
+                )}
+              </div>
+              <div>
+                {billing.paymentMethod.type === 'card' && (
+                  <>
+                    <p className="font-medium text-foreground">
+                      {billing.paymentMethod.brand} **** {billing.paymentMethod.last4}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Tarjeta de credito/debito
+                    </p>
+                  </>
+                )}
+                {billing.paymentMethod.type === 'pse' && (
+                  <>
+                    <p className="font-medium text-foreground">PSE</p>
+                    <p className="text-xs text-muted-foreground">
+                      {billing.paymentMethod.bankName}
+                    </p>
+                  </>
+                )}
+                {billing.paymentMethod.type === 'transfer' && (
+                  <>
+                    <p className="font-medium text-foreground">Transferencia</p>
+                    <p className="text-xs text-muted-foreground">
+                      {billing.paymentMethod.bankName}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-amber-500" />
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  No tienes un metodo de pago configurado
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Plan Features Card */}
+        <div className="p-5 rounded-xl bg-card border border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkle className="w-5 h-5 text-purple-500" />
+            <h3 className="font-semibold text-foreground">Tu plan incluye</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {PLAN_FEATURES.map((feature) => {
+              const value = feature.getValue(billing.limits);
+              const FeatureIcon = feature.icon;
+              const isIncluded = value !== null;
+
+              return (
+                <div
+                  key={feature.key}
+                  className="flex items-center gap-2"
+                >
+                  {isIncluded ? (
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : (
+                    <X className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                  )}
+                  <span
+                    className={cn(
+                      'text-sm',
+                      isIncluded ? 'text-foreground' : 'text-muted-foreground/60'
+                    )}
+                  >
+                    {feature.label}
+                    {isIncluded && value !== 'Incluido' && (
+                      <span className="text-muted-foreground"> ({value})</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Invoice History */}
+      <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="flex items-center gap-2 mb-4">
+          <Receipt className="w-5 h-5 text-amber-500" />
+          <h3 className="font-semibold text-foreground">Historial de facturas</h3>
+        </div>
+
+        {invoices.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Fecha
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Monto
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((invoice) => (
+                  <tr
+                    key={invoice.id}
+                    className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
+                  >
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">
+                          {formatDate(invoice.date)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-foreground">
+                        {formatCOP(invoice.amount)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge
+                        variant="secondary"
+                        className={getInvoiceStatusColor(invoice.status)}
+                      >
+                        {getInvoiceStatusLabel(invoice.status)}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {invoice.pdfUrl && invoice.status === 'paid' && (
+                        <button
+                          onClick={() => handleDownloadInvoice(invoice)}
+                          className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          Descargar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="py-8 text-center">
+            <Receipt className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No hay facturas disponibles
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Upgrade Dialog */}
+      <Dialog open={isUpgradeDialogOpen} onOpenChange={setIsUpgradeDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Cambiar plan</DialogTitle>
+            <DialogDescription>
+              Selecciona el plan que mejor se adapte a tus necesidades
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+            {(Object.keys(PLAN_CONFIG) as BillingPlan[]).map((plan) => {
+              const config = PLAN_CONFIG[plan];
+              const limits = PLAN_LIMITS[plan];
+              const PlanIconComponent = config.icon;
+              const isCurrentPlan = plan === billing.plan;
+              const isSelected = selectedPlan === plan;
+
+              return (
+                <motion.button
+                  key={plan}
+                  onClick={() => setSelectedPlan(isCurrentPlan ? null : plan)}
+                  disabled={isCurrentPlan || isUpgrading}
+                  className={cn(
+                    'relative p-4 rounded-xl border-2 text-left transition-all',
+                    isCurrentPlan
+                      ? 'border-slate-200 dark:border-slate-700 bg-muted/50 cursor-default'
+                      : isSelected
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-border hover:border-indigo-300 dark:hover:border-indigo-700',
+                    config.highlight && !isCurrentPlan && 'ring-2 ring-indigo-500/20'
+                  )}
+                >
+                  {config.highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge variant="default" className="bg-indigo-500 text-white">
+                        <Sparkle className="w-3 h-3 mr-1" />
+                        Popular
+                      </Badge>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 mb-3 mt-1">
+                    <PlanIconComponent
+                      className={cn(
+                        'w-5 h-5',
+                        plan === 'professional'
+                          ? 'text-indigo-500'
+                          : plan === 'enterprise'
+                          ? 'text-purple-500'
+                          : 'text-slate-500'
+                      )}
+                    />
+                    <span className="font-semibold text-foreground">
+                      {getPlanLabel(plan)}
+                    </span>
+                    {isCurrentPlan && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        Actual
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="mb-3">
+                    <span className="text-2xl font-bold text-foreground">
+                      {formatCOP(config.price)}
+                    </span>
+                    <span className="text-muted-foreground">/mes</span>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {config.description}
+                  </p>
+
+                  <div className="space-y-1.5">
+                    {PLAN_FEATURES.slice(0, 4).map((feature) => {
+                      const value = feature.getValue(limits);
+                      const isIncluded = value !== null;
+
+                      return (
+                        <div
+                          key={feature.key}
+                          className="flex items-center gap-1.5 text-xs"
+                        >
+                          {isIncluded ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <X className="w-3 h-3 text-muted-foreground/50" />
+                          )}
+                          <span
+                            className={
+                              isIncluded
+                                ? 'text-foreground'
+                                : 'text-muted-foreground/60'
+                            }
+                          >
+                            {feature.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+            <button
+              onClick={() => {
+                setIsUpgradeDialogOpen(false);
+                setSelectedPlan(null);
+              }}
+              disabled={isUpgrading}
+              className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => selectedPlan && handleUpgrade(selectedPlan)}
+              disabled={!selectedPlan || isUpgrading}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                !selectedPlan || isUpgrading
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+              )}
+            >
+              {isUpgrading ? (
+                <>
+                  <SpinnerGap className="w-4 h-4 animate-spin" />
+                  Actualizando...
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="w-4 h-4" />
+                  Cambiar a {selectedPlan ? getPlanLabel(selectedPlan) : 'plan'}
+                </>
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  );
+}
+
+export default ConfigFacturacion;

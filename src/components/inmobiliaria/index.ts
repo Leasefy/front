@@ -43,6 +43,7 @@ export {
 } from './ConsignacionDetailSections';
 export { ActaEntregaView } from './ActaEntregaView';
 export { ConsignacionTimeline } from './ConsignacionTimeline';
+export { ConsignacionEditForm } from './ConsignacionEditForm';
 
 // Agente (Real Estate Agent) Components
 export { AgenteCard } from './AgenteCard';
@@ -60,6 +61,7 @@ export { AgentePipeline } from './AgentePipeline';
 export { AgenteLeaderboard } from './AgenteLeaderboard';
 export { AgenteWorkloadChart } from './AgenteWorkloadChart';
 export { AsignacionModal } from './AsignacionModal';
+export { AgenteFormModal } from './AgenteFormModal';
 
 // Pipeline (Rental Pipeline) Components
 export { PipelineCard } from './PipelineCard';
@@ -118,6 +120,7 @@ export { RenovacionWorkflow } from './RenovacionWorkflow';
 
 // Operaciones - Mantenimiento (Phase 9)
 export { MantenimientoList } from './MantenimientoList';
+export { MantenimientoKanban } from './MantenimientoKanban';
 export { MantenimientoForm } from './MantenimientoForm';
 export type { MantenimientoFormData } from './MantenimientoForm';
 

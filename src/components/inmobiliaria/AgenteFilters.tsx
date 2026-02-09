@@ -98,25 +98,25 @@ export function AgenteFilters({
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* Search and Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por nombre o email..."
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           />
           {filters.search && (
             <button
               onClick={() => updateFilter('search', '')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
             >
-              <X className="w-4 h-4 text-neutral-400" />
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
           )}
         </div>
@@ -128,7 +128,7 @@ export function AgenteFilters({
             'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all',
             showFilters || activeFiltersCount > 0
               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-              : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+              : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
           )}
         >
           <Funnel className="w-4 h-4" />
@@ -148,13 +148,13 @@ export function AgenteFilters({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            className="overflow-hidden border-b border-border"
           >
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416]">
+            <div className="p-4 bg-muted/30">
               <div className="flex flex-wrap gap-4">
                 {/* Role Filter */}
                 <div className="relative">
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">
                     Rol
                   </label>
                   <button
@@ -163,7 +163,7 @@ export function AgenteFilters({
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.role !== 'all'
                         ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                        : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
                     <span>{getRoleLabel()}</span>
@@ -175,7 +175,7 @@ export function AgenteFilters({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20"
+                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
                       >
                         {ROLE_OPTIONS.map((option) => (
                           <button
@@ -185,7 +185,7 @@ export function AgenteFilters({
                               'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
                               filters.role === option.value
                                 ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                                : 'text-foreground hover:bg-muted'
                             )}
                           >
                             {option.label}
@@ -198,7 +198,7 @@ export function AgenteFilters({
 
                 {/* Status Filter */}
                 <div className="relative">
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">
                     Estado
                   </label>
                   <button
@@ -207,7 +207,7 @@ export function AgenteFilters({
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.status !== 'all'
                         ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                        : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
                     <span>{getStatusLabel()}</span>
@@ -219,7 +219,7 @@ export function AgenteFilters({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20"
+                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
                       >
                         {STATUS_OPTIONS.map((option) => (
                           <button
@@ -229,7 +229,7 @@ export function AgenteFilters({
                               'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
                               filters.status === option.value
                                 ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                                : 'text-foreground hover:bg-muted'
                             )}
                           >
                             {option.label}
@@ -242,7 +242,7 @@ export function AgenteFilters({
 
                 {/* Sort Filter */}
                 <div className="relative">
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">
                     Ordenar por
                   </label>
                   <button
@@ -251,7 +251,7 @@ export function AgenteFilters({
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.sortBy !== 'name'
                         ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                        : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
                     <span>{getSortLabel()}</span>
@@ -263,7 +263,7 @@ export function AgenteFilters({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20"
+                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
                       >
                         {SORT_OPTIONS.map((option) => (
                           <button
@@ -273,7 +273,7 @@ export function AgenteFilters({
                               'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
                               filters.sortBy === option.value
                                 ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                                : 'text-foreground hover:bg-muted'
                             )}
                           >
                             {option.label}

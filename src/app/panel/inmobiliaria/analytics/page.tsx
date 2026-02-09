@@ -7,19 +7,23 @@ import {
   ChartLineUp,
   ChartBar,
   TrendUp,
-  ArrowsClockwise,
+  TrendDown,
+  Minus,
   Export,
   CalendarBlank,
   CaretDown,
+  CaretRight,
   Buildings,
   CurrencyDollar,
-  Users,
   Percent,
+  Lightning,
+  Target,
+  WarningCircle,
+  CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   AnalyticsDashboard,
-  AnalyticsKPICards,
   AnalyticsTrends,
   AnalyticsForecasting,
 } from '@/components/inmobiliaria';
@@ -34,21 +38,18 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { AdvancedKPI } from '@/lib/types/inmobiliaria';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 type AnalyticsView = 'dashboard' | 'trends' | 'forecasting';
-type ExportFormat = 'pdf' | 'excel';
 type DateRange = '7d' | '30d' | '90d' | '1y';
 
 interface ViewConfig {
   id: AnalyticsView;
   label: string;
   icon: React.ElementType;
-  description: string;
 }
 
 // ============================================================================
@@ -56,24 +57,9 @@ interface ViewConfig {
 // ============================================================================
 
 const VIEWS: ViewConfig[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: ChartBar,
-    description: 'Metricas clave y KPIs',
-  },
-  {
-    id: 'trends',
-    label: 'Tendencias',
-    icon: ChartLineUp,
-    description: 'Analisis de tendencias',
-  },
-  {
-    id: 'forecasting',
-    label: 'Proyecciones',
-    icon: TrendUp,
-    description: 'Proyecciones futuras',
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: ChartBar },
+  { id: 'trends', label: 'Tendencias', icon: ChartLineUp },
+  { id: 'forecasting', label: 'Proyecciones', icon: TrendUp },
 ];
 
 const DATE_RANGES = [
@@ -84,41 +70,211 @@ const DATE_RANGES = [
 ] as const;
 
 // ============================================================================
-// Stat Card Component
+// Hero KPI Card Component
 // ============================================================================
 
-interface QuickStatProps {
+interface HeroKPIProps {
   icon: React.ElementType;
   label: string;
   value: string;
-  trend?: number;
-  bgColor: string;
-  iconColor: string;
+  trend?: { direction: 'up' | 'down' | 'stable'; percentage: number };
+  target?: { value: number; current: number; label: string };
+  sparkline?: number[];
+  accentColor: 'indigo' | 'emerald' | 'amber' | 'violet';
+  onClick?: () => void;
 }
 
-function QuickStat({ icon: Icon, label, value, trend, bgColor, iconColor }: QuickStatProps) {
+function HeroKPICard({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  target,
+  sparkline,
+  accentColor,
+  onClick,
+}: HeroKPIProps) {
+  const colorConfig = {
+    indigo: {
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      icon: 'text-indigo-600 dark:text-indigo-400',
+      border: 'border-indigo-100 dark:border-indigo-800/50',
+      progress: 'bg-indigo-500',
+      progressBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+    },
+    emerald: {
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      icon: 'text-emerald-600 dark:text-emerald-400',
+      border: 'border-emerald-100 dark:border-emerald-800/50',
+      progress: 'bg-emerald-500',
+      progressBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    },
+    amber: {
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      icon: 'text-amber-600 dark:text-amber-400',
+      border: 'border-amber-100 dark:border-amber-800/50',
+      progress: 'bg-amber-500',
+      progressBg: 'bg-amber-100 dark:bg-amber-900/40',
+    },
+    violet: {
+      bg: 'bg-violet-50 dark:bg-violet-900/20',
+      icon: 'text-violet-600 dark:text-violet-400',
+      border: 'border-violet-100 dark:border-violet-800/50',
+      progress: 'bg-violet-500',
+      progressBg: 'bg-violet-100 dark:bg-violet-900/40',
+    },
+  };
+
+  const colors = colorConfig[accentColor];
+
+  // Generate sparkline path
+  const sparklinePath = useMemo(() => {
+    if (!sparkline || sparkline.length < 2) return null;
+    const width = 80;
+    const height = 24;
+    const padding = 2;
+    const min = Math.min(...sparkline);
+    const max = Math.max(...sparkline);
+    const range = max - min || 1;
+
+    const points = sparkline.map((val, i) => {
+      const x = padding + (i / (sparkline.length - 1)) * (width - padding * 2);
+      const y = height - padding - ((val - min) / range) * (height - padding * 2);
+      return `${x},${y}`;
+    });
+
+    return `M ${points.join(' L ')}`;
+  }, [sparkline]);
+
+  const trendIsPositive = trend?.direction === 'up';
+  const trendIsNegative = trend?.direction === 'down';
+
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-3">
-        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', bgColor)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
+    <motion.button
+      onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className={cn(
+        'w-full p-5 rounded-2xl border bg-card text-left transition-all hover:shadow-lg',
+        colors.border
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', colors.bg)}>
+          <Icon className={cn('w-5 h-5', colors.icon)} weight="duotone" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            {trend !== undefined && (
-              <span
-                className={cn(
-                  'text-xs font-medium',
-                  trend >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                )}
-              >
-                {trend >= 0 ? '+' : ''}
-                {trend.toFixed(1)}%
-              </span>
+        {sparkline && sparklinePath && (
+          <svg width={80} height={24} className="opacity-60">
+            <path
+              d={sparklinePath}
+              fill="none"
+              stroke={trendIsPositive ? '#10B981' : trendIsNegative ? '#EF4444' : '#6B7280'}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </div>
+
+      {/* Value */}
+      <p className="text-2xl font-bold text-foreground mb-1">{value}</p>
+      <p className="text-sm text-muted-foreground mb-3">{label}</p>
+
+      {/* Trend & Target */}
+      <div className="flex items-center justify-between">
+        {trend && (
+          <div
+            className={cn(
+              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
+              trendIsPositive && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+              trendIsNegative && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+              !trendIsPositive && !trendIsNegative && 'bg-muted text-muted-foreground'
             )}
+          >
+            {trendIsPositive && <TrendUp className="w-3 h-3" weight="bold" />}
+            {trendIsNegative && <TrendDown className="w-3 h-3" weight="bold" />}
+            {!trendIsPositive && !trendIsNegative && <Minus className="w-3 h-3" />}
+            <span>{trend.percentage > 0 ? '+' : ''}{trend.percentage.toFixed(1)}%</span>
           </div>
+        )}
+        {target && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Target className="w-3.5 h-3.5" />
+            <span>{Math.round((target.current / target.value) * 100)}% meta</span>
+          </div>
+        )}
+      </div>
+
+      {/* Target Progress Bar */}
+      {target && (
+        <div className="mt-3">
+          <div className={cn('h-1.5 rounded-full overflow-hidden', colors.progressBg)}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(100, (target.current / target.value) * 100)}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className={cn('h-full rounded-full', colors.progress)}
+            />
+          </div>
+        </div>
+      )}
+    </motion.button>
+  );
+}
+
+// ============================================================================
+// Quick Insight Card
+// ============================================================================
+
+interface InsightProps {
+  type: 'success' | 'warning' | 'info';
+  title: string;
+  description: string;
+  action?: { label: string; onClick: () => void };
+}
+
+function InsightCard({ type, title, description, action }: InsightProps) {
+  const config = {
+    success: {
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      border: 'border-emerald-200 dark:border-emerald-800/50',
+      icon: CheckCircle,
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    warning: {
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      border: 'border-amber-200 dark:border-amber-800/50',
+      icon: WarningCircle,
+      iconColor: 'text-amber-600 dark:text-amber-400',
+    },
+    info: {
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      border: 'border-indigo-200 dark:border-indigo-800/50',
+      icon: Lightning,
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+    },
+  };
+
+  const { bg, border, icon: Icon, iconColor } = config[type];
+
+  return (
+    <div className={cn('p-4 rounded-xl border', bg, border)}>
+      <div className="flex items-start gap-3">
+        <Icon className={cn('w-5 h-5 shrink-0 mt-0.5', iconColor)} weight="fill" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-foreground text-sm">{title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          {action && (
+            <button
+              onClick={action.onClick}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              {action.label}
+              <CaretRight className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -129,90 +285,78 @@ function QuickStat({ icon: Icon, label, value, trend, bgColor, iconColor }: Quic
 // Main Component
 // ============================================================================
 
-/**
- * AnalyticsPage - Advanced analytics hub
- * Route: /panel/inmobiliaria/analytics
- */
-export default function AnalyticsPage() {
-  // State
-  const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>('30d');
-  const [isExporting, setIsExporting] = useState(false);
+// TODO: Backend - Implementar actualizaciones en tiempo real via WebSocket o SSE
+// Las métricas deben actualizarse automáticamente sin necesidad de refresh manual
 
-  // Quick stats from analytics data
-  const quickStats = useMemo(() => {
+export default function AnalyticsPage() {
+  const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
+  const [dateRange, setDateRange] = useState<DateRange>('30d');
+
+  // Hero KPI data
+  const heroKPIs = useMemo(() => {
     const data = MOCK_ANALYTICS_DATA;
-    const getKpiValue = (id: string) => data.kpis.find((k) => k.id === id)?.value || 0;
-    const getKpiTrendPercent = (id: string) => {
-      const kpi = data.kpis.find((k) => k.id === id);
-      return kpi?.trend?.percentage || 0;
-    };
+    const getKpi = (id: string) => data.kpis.find((k) => k.id === id);
+
+    const revenue = getKpi('kpi-revenue');
+    const occupancy = getKpi('kpi-occupancy');
+    const collection = getKpi('kpi-collection-rate');
+    const properties = getKpi('kpi-properties');
 
     return {
-      totalProperties: getKpiValue('total_properties'),
-      occupancyRate: getKpiValue('occupancy_rate'),
-      monthlyRevenue: getKpiValue('monthly_revenue'),
-      activeAgents: getKpiValue('active_agents'),
-      revenueTrend: getKpiTrendPercent('monthly_revenue'),
-      occupancyTrend: getKpiTrendPercent('occupancy_rate'),
+      revenue: {
+        value: revenue?.formattedValue || '$0',
+        trend: revenue?.trend,
+        sparkline: revenue?.sparkline?.map((s) => s.value) || [],
+      },
+      occupancy: {
+        value: occupancy?.formattedValue || '0%',
+        trend: occupancy?.trend,
+        target: occupancy?.target ? { value: occupancy.target, current: occupancy.value, label: 'Meta' } : undefined,
+        sparkline: occupancy?.sparkline?.map((s) => s.value) || [],
+      },
+      collection: {
+        value: collection?.formattedValue || '0%',
+        trend: collection?.trend,
+        target: collection?.target ? { value: collection.target, current: collection.value, label: 'Meta' } : undefined,
+      },
+      properties: {
+        value: properties?.formattedValue || '0',
+        trend: properties?.trend,
+      },
     };
   }, []);
 
-  // -------------------------------------------------------------------------
+  // Insights
+  const insights = useMemo(() => [
+    {
+      type: 'success' as const,
+      title: 'Ocupacion en alza',
+      description: 'La ocupacion subio 2.1% respecto al mes anterior',
+    },
+    {
+      type: 'warning' as const,
+      title: '3 propiedades sin arrendar',
+      description: 'Llevan mas de 45 dias disponibles',
+      action: { label: 'Ver propiedades', onClick: () => toast.info('Ver propiedades') },
+    },
+    {
+      type: 'info' as const,
+      title: 'Meta de recaudo cerca',
+      description: 'Estas al 94% de tu meta mensual de recaudo',
+    },
+  ], []);
+
   // Handlers
-  // -------------------------------------------------------------------------
-
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsRefreshing(false);
-    toast.success('Datos actualizados', {
-      description: 'La informacion ha sido actualizada',
-    });
-  }, []);
-
-  const handleExport = useCallback(async (format: ExportFormat) => {
-    setIsExporting(true);
-    // Simulate export
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsExporting(false);
-
-    const formatLabels = {
-      pdf: 'PDF',
-      excel: 'Excel',
-    };
-
-    toast.success(`Exportando a ${formatLabels[format]}`, {
-      description: 'El archivo se descargara en breve',
-    });
+  const handleExport = useCallback(async (format: 'pdf' | 'excel') => {
+    toast.success(`Exportando a ${format.toUpperCase()}`);
   }, []);
 
   const handleDateRangeChange = useCallback((range: DateRange) => {
     setDateRange(range);
-    toast.info('Rango actualizado', {
+    toast.info('Periodo actualizado', {
       description: DATE_RANGES.find((r) => r.id === range)?.label,
     });
   }, []);
-
-  const handleKPIClick = useCallback((kpi: AdvancedKPI) => {
-    toast.info('Detalle de metrica', {
-      description: `Abriendo analisis detallado de ${kpi.label}`,
-    });
-  }, []);
-
-  const handleExportDashboard = useCallback((format: 'pdf' | 'excel') => {
-    toast.success(`Exportando dashboard a ${format.toUpperCase()}`);
-  }, []);
-
-  const handleForecastExport = useCallback(() => {
-    toast.success('Exportando proyecciones');
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -220,32 +364,34 @@ export default function AnalyticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             Analitica
           </h1>
           <p className="text-muted-foreground mt-2">
-            Metricas avanzadas, tendencias y proyecciones
+            Metricas clave, tendencias y proyecciones de tu portafolio
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
-          {/* Date Range Selector */}
+        <div className="flex items-center gap-2">
+          {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
-                <CalendarBlank className="w-4 h-4" />
-                {DATE_RANGES.find((r) => r.id === dateRange)?.label}
-                <CaretDown className="w-4 h-4 text-muted-foreground" />
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+                <CalendarBlank className="w-4 h-4 text-muted-foreground" />
+                <span className="hidden sm:inline">
+                  {DATE_RANGES.find((r) => r.id === dateRange)?.label}
+                </span>
+                <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-48">
+            <DropdownListContent align="end" className="w-44">
               {DATE_RANGES.map((range) => (
                 <DropdownListItem
                   key={range.id}
-                  onClick={() => handleDateRangeChange(range.id)}
+                  onSelect={() => handleDateRangeChange(range.id)}
                   className={cn(dateRange === range.id && 'bg-muted')}
                 >
                   {range.label}
@@ -254,142 +400,138 @@ export default function AnalyticsPage() {
             </DropdownListContent>
           </DropdownList>
 
-          {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-sm font-medium transition-colors',
-              isRefreshing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted'
-            )}
-          >
-            <ArrowsClockwise className={cn('w-4 h-4', isRefreshing && 'animate-spin')} />
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
-
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button
-                disabled={isExporting}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 font-medium shadow-lg shadow-indigo-500/20 transition-colors disabled:opacity-50"
-              >
-                <Export className="w-5 h-5" />
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium shadow-lg shadow-indigo-500/20 transition-colors">
+                <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">Exportar</span>
               </button>
             </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-48">
-              <DropdownListItem onClick={() => handleExport('pdf')}>
-                Exportar como PDF
+            <DropdownListContent align="end" className="w-44">
+              <DropdownListItem onSelect={() => handleExport('pdf')}>
+                Exportar PDF
               </DropdownListItem>
-              <DropdownListItem onClick={() => handleExport('excel')}>
-                Exportar como Excel
+              <DropdownListItem onSelect={() => handleExport('excel')}>
+                Exportar Excel
               </DropdownListItem>
             </DropdownListContent>
           </DropdownList>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Hero KPIs - Executive Summary */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <QuickStat
-          icon={Buildings}
-          label="Propiedades"
-          value={String(quickStats.totalProperties)}
-          bgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconColor="text-blue-600 dark:text-blue-400"
-        />
-        <QuickStat
-          icon={Percent}
-          label="Ocupacion"
-          value={`${quickStats.occupancyRate}%`}
-          trend={quickStats.occupancyTrend}
-          bgColor="bg-emerald-100 dark:bg-emerald-900/30"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-        />
-        <QuickStat
+        <HeroKPICard
           icon={CurrencyDollar}
-          label="Ingresos/mes"
-          value={`$${(quickStats.monthlyRevenue / 1000000).toFixed(1)}M`}
-          trend={quickStats.revenueTrend}
-          bgColor="bg-amber-100 dark:bg-amber-900/30"
-          iconColor="text-amber-600 dark:text-amber-400"
+          label="Ingresos del Mes"
+          value={heroKPIs.revenue.value}
+          trend={heroKPIs.revenue.trend}
+          sparkline={heroKPIs.revenue.sparkline}
+          accentColor="indigo"
         />
-        <QuickStat
-          icon={Users}
-          label="Agentes activos"
-          value={String(quickStats.activeAgents)}
-          bgColor="bg-violet-100 dark:bg-violet-900/30"
-          iconColor="text-violet-600 dark:text-violet-400"
+        <HeroKPICard
+          icon={Percent}
+          label="Tasa de Ocupacion"
+          value={heroKPIs.occupancy.value}
+          trend={heroKPIs.occupancy.trend}
+          target={heroKPIs.occupancy.target}
+          sparkline={heroKPIs.occupancy.sparkline}
+          accentColor="emerald"
+        />
+        <HeroKPICard
+          icon={CurrencyDollar}
+          label="Tasa de Recaudo"
+          value={heroKPIs.collection.value}
+          trend={heroKPIs.collection.trend}
+          target={heroKPIs.collection.target}
+          accentColor="amber"
+        />
+        <HeroKPICard
+          icon={Buildings}
+          label="Propiedades Activas"
+          value={heroKPIs.properties.value}
+          trend={heroKPIs.properties.trend}
+          accentColor="violet"
         />
       </motion.div>
 
-      {/* View Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-4">
-        {VIEWS.map((view) => {
-          const Icon = view.icon;
-          const isActive = activeView === view.id;
-          return (
-            <button
-              key={view.id}
-              onClick={() => setActiveView(view.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
+      {/* Quick Insights */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
+        {insights.map((insight, i) => (
+          <InsightCard key={i} {...insight} />
+        ))}
+      </motion.div>
+
+      {/* Main Content Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-xl border border-border bg-card overflow-hidden"
+      >
+        {/* View Tabs */}
+        <div className="flex items-center gap-1 p-1.5 m-4 mb-0 rounded-xl bg-muted w-fit">
+          {VIEWS.map((view) => {
+            const Icon = view.icon;
+            const isActive = activeView === view.id;
+            return (
+              <button
+                key={view.id}
+                onClick={() => setActiveView(view.id)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {view.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* View Content */}
+        <div className="p-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
-              <Icon className={cn('w-4 h-4', isActive && 'text-emerald-600 dark:text-emerald-400')} />
-              {view.label}
-            </button>
-          );
-        })}
-      </div>
+              {activeView === 'dashboard' && (
+                <AnalyticsDashboard
+                  data={MOCK_ANALYTICS_DATA}
+                />
+              )}
 
-      {/* View Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeView}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="min-h-[500px]"
-        >
-          {/* Dashboard View */}
-          {activeView === 'dashboard' && (
-            <div className="space-y-6">
-              <AnalyticsKPICards
-                kpis={MOCK_ANALYTICS_DATA.kpis}
-                onKPIClick={handleKPIClick}
-              />
-              <AnalyticsDashboard
-                data={MOCK_ANALYTICS_DATA}
-                onExport={handleExportDashboard}
-                isLoading={isRefreshing}
-              />
-            </div>
-          )}
+              {activeView === 'trends' && (
+                <AnalyticsTrends data={MOCK_TREND_ANALYSIS} />
+              )}
 
-          {/* Trends View */}
-          {activeView === 'trends' && (
-            <AnalyticsTrends data={MOCK_TREND_ANALYSIS} />
-          )}
-
-          {/* Forecasting View */}
-          {activeView === 'forecasting' && (
-            <AnalyticsForecasting
-              data={MOCK_FORECAST_DATA}
-              onExport={handleForecastExport}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+              {activeView === 'forecasting' && (
+                <AnalyticsForecasting
+                  data={MOCK_FORECAST_DATA}
+                  onExport={() => toast.success('Exportando proyecciones')}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ChartLine,
-  ArrowsClockwise,
   Lightning,
   Star,
   Clock,
@@ -376,20 +375,6 @@ export default function ReportesPage() {
     setTimeout(() => setSelectedReport(null), 300);
   }, []);
 
-  // Handle refresh all
-  const handleRefreshAll = useCallback(async () => {
-    toast.loading('Actualizando reportes...', { id: 'refresh-all' });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const now = new Date().toISOString();
-    setReports((prev) =>
-      prev.map((r) => ({ ...r, lastGenerated: now }))
-    );
-
-    toast.success('Reportes actualizados', { id: 'refresh-all' });
-  }, []);
-
   // Handle generate all
   const handleGenerateAll = useCallback(async () => {
     const pendingReports = filteredReports.filter(
@@ -428,29 +413,26 @@ export default function ReportesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
             Centro de Reportes
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-2">
             Genera, visualiza y exporta reportes del portafolio
           </p>
         </div>
+        {/* TODO Backend: Los reportes deben actualizarse en tiempo real via subscriptions/websockets */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleRefreshAll}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
-          >
-            <ArrowsClockwise className="w-5 h-5" />
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
           <button
             onClick={handleGenerateAll}
             disabled={generatingReports.size > 0}
             className={cn(
               'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg',
               generatingReports.size > 0
-                ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/25'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
+                : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/20'
             )}
           >
             <Lightning className="w-5 h-5" weight="fill" />
@@ -510,68 +492,59 @@ export default function ReportesPage() {
         </div>
       </motion.div>
 
-      {/* Filters */}
+      {/* Main Content Card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card overflow-hidden"
       >
-        <ReporteFilters
-          filters={filters}
-          onFiltersChange={handleFilterChange}
-          reportCounts={reportCounts}
-          zones={zones}
-        />
-      </motion.div>
-
-      {/* View Toggle & Count */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="flex items-center justify-between"
-      >
-        <p className="text-sm text-muted-foreground">
-          {filteredReports.length} reporte
-          {filteredReports.length !== 1 ? 's' : ''}
-          {filters.favoritesOnly && ' favoritos'}
-          {filters.category !== 'all' && ` de ${filters.category}`}
-        </p>
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'grid'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de cuadricula"
-          >
-            <SquaresFour className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'list'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de lista"
-          >
-            <Table className="w-4 h-4" />
-          </button>
+        {/* Header: View Toggle & Count */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'grid'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <SquaresFour className="w-4 h-4" />
+              Tarjetas
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'list'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Table className="w-4 h-4" />
+              Lista
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {filteredReports.length} reporte{filteredReports.length !== 1 ? 's' : ''}
+          </p>
         </div>
-      </motion.div>
 
-      {/* Reports Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="space-y-8"
-      >
+        {/* Filters */}
+        <div className="p-4 border-b border-border">
+          <ReporteFilters
+            filters={filters}
+            onFiltersChange={handleFilterChange}
+            reportCounts={reportCounts}
+            zones={zones}
+            minimal
+          />
+        </div>
+
+        {/* Reports Content */}
+        <div className="p-4 space-y-8">
         {/* Favorites Section */}
         {favoriteReports.length > 0 && !filters.favoritesOnly && (
           <div className="space-y-4">
@@ -666,7 +639,7 @@ export default function ReportesPage() {
 
         {/* Empty State */}
         {filteredReports.length === 0 && (
-          <div className="p-12 text-center rounded-2xl border border-dashed border-border">
+          <div className="p-12 text-center rounded-xl border border-dashed border-border">
             <MagnifyingGlass className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
               Sin reportes
@@ -686,6 +659,7 @@ export default function ReportesPage() {
             )}
           </div>
         )}
+        </div>
       </motion.div>
 
       {/* Report Viewer Modal */}

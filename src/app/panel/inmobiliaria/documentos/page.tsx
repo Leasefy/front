@@ -168,6 +168,7 @@ export default function DocumentosPage() {
   const [selectedActa, setSelectedActa] = useState<ActaEntrega | null>(null);
   const [isActaFormOpen, setIsActaFormOpen] = useState(false);
   const [isActaViewerOpen, setIsActaViewerOpen] = useState(false);
+  const [actaFormType, setActaFormType] = useState<'entrega' | 'devolucion'>('entrega');
   const [documents] = useState<PropertyDocument[]>(MOCK_PROPERTY_DOCUMENTS);
   const [templates] = useState<DocumentTemplate[]>(MOCK_DOCUMENT_TEMPLATES);
   const [actas] = useState<ActaEntrega[]>(MOCK_ACTAS_ENTREGA);
@@ -214,14 +215,43 @@ export default function DocumentosPage() {
   // -------------------------------------------------------------------------
 
   const handleViewDocument = (doc: PropertyDocument) => {
-    toast.info('Abriendo documento', {
-      description: doc.name,
-    });
+    if (doc.fileUrl) {
+      window.open(doc.fileUrl, '_blank');
+    } else {
+      toast.info('Vista previa no disponible', {
+        description: 'Este documento no tiene archivo asociado',
+      });
+    }
   };
 
   const handleDownloadDocument = (doc: PropertyDocument) => {
-    toast.success('Descargando', {
-      description: doc.name,
+    if (doc.fileUrl) {
+      const link = document.createElement('a');
+      link.href = doc.fileUrl;
+      link.download = doc.name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Descarga iniciada', {
+        description: doc.name,
+      });
+    } else {
+      toast.error('No se puede descargar', {
+        description: 'Este documento no tiene archivo asociado',
+      });
+    }
+  };
+
+  const handleSendForSignature = (doc: PropertyDocument) => {
+    toast.success('Documento enviado para firma', {
+      description: `"${doc.name}" ha sido enviado a los firmantes`,
+    });
+  };
+
+  const handleDuplicateDocument = (doc: PropertyDocument) => {
+    toast.success('Documento duplicado', {
+      description: `Copia de "${doc.name}" creada`,
     });
   };
 
@@ -230,6 +260,38 @@ export default function DocumentosPage() {
     toast.success('Documento eliminado', {
       description: doc?.name || documentId,
     });
+  };
+
+  const handleGenerateNew = (templateId: string, _propertyId: string) => {
+    switch (templateId) {
+      case 'tpl-acta-entrega':
+        setActaFormType('entrega');
+        setIsActaFormOpen(true);
+        break;
+      case 'tpl-acta-devolucion':
+        setActaFormType('devolucion');
+        setIsActaFormOpen(true);
+        break;
+      case 'tpl-contrato-arrendamiento':
+        toast.info('Contrato de Arrendamiento', {
+          description: 'Esta funcionalidad estara disponible proximamente',
+        });
+        break;
+      case 'tpl-inventario':
+        toast.info('Inventario', {
+          description: 'Esta funcionalidad estara disponible proximamente',
+        });
+        break;
+      case 'tpl-carta-incremento':
+        toast.info('Carta de Incremento', {
+          description: 'Esta funcionalidad estara disponible proximamente',
+        });
+        break;
+      default:
+        toast.info('Documento', {
+          description: 'Esta funcionalidad estara disponible proximamente',
+        });
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -248,7 +310,7 @@ export default function DocumentosPage() {
   const handleSaveActa = (data: ActaEntrega) => {
     setIsActaFormOpen(false);
     toast.success('Acta creada', {
-      description: 'El acta de entrega ha sido guardada',
+      description: `El acta de ${data.type === 'entrega' ? 'entrega' : 'devolucion'} ha sido guardada`,
     });
   };
 
@@ -320,113 +382,126 @@ export default function DocumentosPage() {
         />
       </motion.div>
 
-      {/* Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div className="flex flex-wrap gap-2">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span
-                    className={cn(
-                      'px-1.5 py-0.5 text-xs rounded-full',
-                      isActive
-                        ? 'bg-indigo-200/50 dark:bg-indigo-800/50'
-                        : 'bg-muted'
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search (for actas tab) */}
-        {activeTab === 'actas' && (
-          <div className="relative">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar actas..."
-              className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            />
+      {/* Main Content Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card overflow-hidden"
+      >
+        {/* Tabs Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    isActive
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                  {tab.count !== undefined && (
+                    <span
+                      className={cn(
+                        'px-1.5 py-0.5 text-xs rounded-full',
+                        isActive
+                          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
+                          : 'bg-muted-foreground/20'
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-        >
-          {/* Documentos Tab */}
-          {activeTab === 'documentos' && (
-            <DocumentoManager
-              documents={documents}
-              onView={handleViewDocument}
-              onDownload={handleDownloadDocument}
-              onDelete={handleDeleteDocument}
-            />
-          )}
-
-          {/* Plantillas Tab */}
-          {activeTab === 'plantillas' && (
-            <DocumentoTemplates
-              templates={templates}
-              onPreview={handlePreviewTemplate}
-              onUseTemplate={handleUseTemplate}
-            />
-          )}
-
-          {/* Actas Tab */}
+          {/* Search (for actas tab) */}
           {activeTab === 'actas' && (
-            <div className="space-y-4">
-              {filteredActas.length === 0 ? (
-                <div className="text-center py-12 rounded-xl border border-dashed border-border">
-                  <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">
-                    {searchQuery ? 'No se encontraron actas' : 'No hay actas de entrega'}
-                  </p>
-                  <button
-                    onClick={handleCreateActa}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 text-sm font-medium transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Crear primera acta
-                  </button>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredActas.map((acta) => (
-                    <ActaCard key={acta.id} acta={acta} onClick={() => handleViewActa(acta)} />
-                  ))}
-                </div>
-              )}
+            <div className="relative">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar actas..."
+                className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              />
             </div>
           )}
-        </motion.div>
-      </AnimatePresence>
+        </div>
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="p-4"
+          >
+            {/* Documentos Tab */}
+            {activeTab === 'documentos' && (
+              <DocumentoManager
+                documents={documents}
+                onView={handleViewDocument}
+                onDownload={handleDownloadDocument}
+                onSendForSignature={handleSendForSignature}
+                onDuplicate={handleDuplicateDocument}
+                onDelete={handleDeleteDocument}
+                onGenerateNew={handleGenerateNew}
+                minimal
+              />
+            )}
+
+            {/* Plantillas Tab */}
+            {activeTab === 'plantillas' && (
+              <DocumentoTemplates
+                templates={templates}
+                onPreview={handlePreviewTemplate}
+                onUseTemplate={handleUseTemplate}
+              />
+            )}
+
+            {/* Actas Tab */}
+            {activeTab === 'actas' && (
+              <div className="space-y-4">
+                {filteredActas.length === 0 ? (
+                  <div className="text-center py-12 rounded-xl border border-dashed border-border">
+                    <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">
+                      {searchQuery ? 'No se encontraron actas' : 'No hay actas de entrega'}
+                    </p>
+                    <button
+                      onClick={handleCreateActa}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Crear primera acta
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredActas.map((acta) => (
+                      <ActaCard key={acta.id} acta={acta} onClick={() => handleViewActa(acta)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
 
       {/* Acta Form Sheet */}
       <Sheet open={isActaFormOpen} onOpenChange={setIsActaFormOpen}>
@@ -434,11 +509,12 @@ export default function DocumentosPage() {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <ClipboardText className="w-5 h-5 text-indigo-600" />
-              Nueva Acta de Entrega
+              Nueva Acta de {actaFormType === 'entrega' ? 'Entrega' : 'Devolucion'}
             </SheetTitle>
           </SheetHeader>
           <div className="mt-6">
             <ActaEntregaForm
+              initialData={{ type: actaFormType }}
               consignaciones={MOCK_CONSIGNACIONES.filter((c) => c.availability === 'rented')}
               onSave={handleSaveActa}
               onCancel={handleCancelActa}

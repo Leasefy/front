@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, FileText, Clock, CheckCircle, WarningCircle, SpinnerGap, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
+import { FileText, Clock, CheckCircle, WarningCircle, SpinnerGap, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
@@ -324,13 +325,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <Link
-            href={`/panel/${propertyId}`}
-            className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a candidatos
-          </Link>
+          <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
           <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto">
               <WarningCircle className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
@@ -377,13 +372,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Back link */}
-        <Link
-          href={`/panel/${propertyId}`}
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver a candidatos
-        </Link>
+        <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
 
         {/* Page Header with Info Cards */}
         <div className="mt-6 mb-8">

@@ -343,32 +343,34 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
       </div>
 
       <div className="space-y-6">
-        {/* Commission Slider */}
+        {/* Commission Input */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Porcentaje de comision
-            </label>
-            <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-              {commissionPercent}%
+          <label className="text-sm font-medium text-muted-foreground">
+            Porcentaje de comisión
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={commissionPercent}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value) && value >= 0 && value <= 100) {
+                  updateFormData({ commissionPercent: value });
+                }
+              }}
+              className="w-full px-4 py-3 pr-12 rounded-xl border border-border bg-background text-foreground text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all tabular-nums"
+              placeholder="10"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">
+              %
             </span>
           </div>
-
-          <input
-            type="range"
-            min="8"
-            max="15"
-            step="0.5"
-            value={commissionPercent}
-            onChange={(e) => updateFormData({ commissionPercent: parseFloat(e.target.value) })}
-            className="w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-          />
-
-          <div className="flex justify-between text-xs text-neutral-500">
-            <span>8%</span>
-            <span>10% (estandar)</span>
-            <span>15%</span>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Ingresa el porcentaje de comisión que cobrará la agencia
+          </p>
         </div>
 
         {/* Commission Summary */}
@@ -461,18 +463,19 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-foreground mb-1">
           Asignar Agente
         </h2>
-        <p className="text-neutral-500 dark:text-neutral-400">
-          Selecciona el agente responsable de esta propiedad
+        <p className="text-muted-foreground">
+          Selecciona el agente responsable de esta propiedad (opcional)
         </p>
       </div>
 
       <AgenteSelector
         agentes={agentes}
-        value={formData.agenteId || null}
-        onChange={(id) => updateFormData({ agenteId: id })}
+        value={formData.agenteId ?? null}
+        onChange={(id) => updateFormData({ agenteId: id || undefined })}
+        allowNoAgent
       />
     </div>
   );

@@ -150,7 +150,7 @@ export function CobroTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -159,10 +159,10 @@ export function CobroTable({
   );
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-[1000px]">
         <thead>
-          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+          <tr className="border-b border-border">
             <SortableHeader field="propertyTitle">Propiedad</SortableHeader>
             <SortableHeader field="tenantName">Inquilino</SortableHeader>
             <SortableHeader field="month">Mes</SortableHeader>
@@ -186,7 +186,7 @@ export function CobroTable({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onCobroClick?.(cobro)}
-                className="border-b border-neutral-50 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-[#141416] cursor-pointer transition-colors"
+                className="hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Property */}
                 <td className="p-4">
@@ -195,10 +195,10 @@ export function CobroTable({
                       <HouseLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[180px]">
+                      <p className="font-medium text-foreground truncate max-w-[180px]">
                         {cobro.propertyTitle}
                       </p>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[180px]">
+                      <p className="text-sm text-muted-foreground truncate max-w-[180px]">
                         {cobro.propertyAddress}
                       </p>
                     </div>
@@ -212,17 +212,17 @@ export function CobroTable({
                       <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[140px]">
+                      <p className="font-medium text-foreground truncate max-w-[140px]">
                         {cobro.tenantName}
                       </p>
                       <div className="flex items-center gap-2">
                         <a
                           href={`mailto:${cobro.tenantEmail}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          className="p-1 rounded hover:bg-muted transition-colors"
                           title="Enviar email"
                         >
-                          <Envelope className="w-3.5 h-3.5 text-neutral-400" />
+                          <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
                         </a>
                         <a
                           href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
@@ -241,14 +241,14 @@ export function CobroTable({
 
                 {/* Month */}
                 <td className="p-4">
-                  <span className="text-neutral-700 dark:text-neutral-300 capitalize">
+                  <span className="text-foreground capitalize">
                     {formatMonth(cobro.month)}
                   </span>
                 </td>
 
                 {/* Total */}
                 <td className="p-4">
-                  <span className="font-semibold text-neutral-900 dark:text-white">
+                  <span className="font-semibold text-foreground">
                     {formatCurrency(cobro.totalAmount)}
                   </span>
                 </td>
@@ -261,7 +261,7 @@ export function CobroTable({
                       ? 'text-emerald-600 dark:text-emerald-400'
                       : cobro.paidAmount > 0
                       ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-neutral-400 dark:text-neutral-500'
+                      : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
                   </span>
@@ -275,7 +275,7 @@ export function CobroTable({
                       ? 'text-red-600 dark:text-red-400'
                       : cobro.pendingAmount > 0
                       ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-neutral-400 dark:text-neutral-500'
+                      : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
                   </span>
@@ -300,7 +300,7 @@ export function CobroTable({
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">—</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
 
@@ -312,9 +312,9 @@ export function CobroTable({
                         e.stopPropagation();
                         setOpenMenuId(openMenuId === cobro.id ? null : cobro.id);
                       }}
-                      className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                      className="p-2 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
+                      <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
                     </button>
 
                     <AnimatePresence>
@@ -323,7 +323,7 @@ export function CobroTable({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-44 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                          className="absolute right-0 top-full mt-1 w-44 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
                         >
                           <button
                             onClick={(e) => {
@@ -331,7 +331,7 @@ export function CobroTable({
                               onCobroClick?.(cobro);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">Ver detalle</span>
@@ -362,14 +362,14 @@ export function CobroTable({
         {/* Summary Row */}
         {showSummary && cobros.length > 0 && (
           <tfoot>
-            <tr className="bg-neutral-50 dark:bg-[#141416] border-t-2 border-neutral-200 dark:border-neutral-700">
+            <tr className="bg-muted/30 border-t border-border">
               <td colSpan={3} className="p-4">
-                <span className="font-semibold text-neutral-900 dark:text-white">
+                <span className="font-semibold text-foreground">
                   Total ({cobros.length} cobros)
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-neutral-900 dark:text-white">
+                <span className="font-bold text-foreground">
                   {formatCurrency(summary.totalExpected)}
                 </span>
               </td>
@@ -392,13 +392,13 @@ export function CobroTable({
       {/* Empty State */}
       {sortedCobros.length === 0 && (
         <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <CurrencyCircleDollar className="w-8 h-8 text-neutral-400" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <CurrencyCircleDollar className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+          <h3 className="text-lg font-semibold text-foreground mb-1">
             No hay cobros para mostrar
           </h3>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-muted-foreground">
             Ajusta los filtros o selecciona otro mes
           </p>
         </div>

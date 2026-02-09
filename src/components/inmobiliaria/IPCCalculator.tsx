@@ -1,20 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Tooltip,
   TooltipContent,
@@ -28,11 +20,8 @@ import {
   ArrowRight,
   Calendar,
   Info,
-  CheckCircle,
-  Buildings,
   CurrencyDollar,
   Percent,
-  ArrowsClockwise,
   Link as LinkIcon,
 } from '@phosphor-icons/react';
 import { IPC_HISTORICAL, getCurrentIPC, calculateNewRent, type IPCRecord } from '@/lib/data/mock-inmobiliaria';
@@ -50,9 +39,6 @@ interface IPCCalculatorProps {
     ipcRate: number;
     increase: number;
   }) => void;
-  mode?: 'single' | 'bulk';
-  properties?: Array<{ id: string; title: string; currentRent: number }>;
-  onBulkApply?: (updates: Array<{ id: string; newRent: number }>) => void;
 }
 
 // ============================================================================
@@ -66,42 +52,42 @@ function IPCTrendChart({ data }: { data: IPCRecord[] }) {
   const range = maxRate - minRate || 1;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Tendencia IPC (12 meses)</span>
-        <span className="flex items-center gap-1">
-          <TrendDown className="h-3 w-3 text-emerald-600" />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-foreground">Tendencia IPC (12 meses)</span>
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          <TrendDown className="h-3.5 w-3.5" weight="bold" />
           <span>En descenso</span>
         </span>
       </div>
-      <div className="relative h-24 flex items-end gap-1">
+      <div className="relative h-28 flex items-end gap-2 p-3 rounded-xl bg-muted/30">
         <TooltipProvider>
           {last12Months.map((record, index) => {
-            const height = ((record.rate - minRate) / range) * 80 + 20;
+            const height = ((record.rate - minRate) / range) * 75 + 25;
             const isCurrentMonth = index === last12Months.length - 1;
 
             return (
               <Tooltip key={`${record.year}-${record.month}`}>
                 <TooltipTrigger asChild>
                   <div
-                    className={`flex-1 rounded-t-sm transition-colors cursor-pointer ${
+                    className={`flex-1 rounded-full transition-all cursor-pointer hover:scale-105 ${
                       isCurrentMonth
-                        ? 'bg-emerald-500'
-                        : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600'
+                        ? 'bg-indigo-500'
+                        : 'bg-indigo-200 hover:bg-indigo-300 dark:bg-indigo-800 dark:hover:bg-indigo-700'
                     }`}
                     style={{ height: `${height}%` }}
                   />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="font-medium">{record.description}</p>
-                  <p className="text-sm text-muted-foreground">{record.rate.toFixed(2)}%</p>
+                  <p className="font-semibold">{record.description}</p>
+                  <p className="text-sm text-indigo-600 dark:text-indigo-400">{record.rate.toFixed(2)}%</p>
                 </TooltipContent>
               </Tooltip>
             );
           })}
         </TooltipProvider>
       </div>
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs font-medium text-muted-foreground px-1">
         <span>{last12Months[0]?.description.split(' ')[0] || ''}</span>
         <span>{last12Months[last12Months.length - 1]?.description.split(' ')[0] || ''}</span>
       </div>
@@ -119,15 +105,20 @@ function CurrentIPCDisplay({ ipc }: { ipc: IPCRecord }) {
   const isDown = change < 0;
 
   return (
-    <div className="flex items-center gap-4">
-      <div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-4xl font-bold text-foreground">{ipc.rate.toFixed(2)}</span>
-          <span className="text-xl text-muted-foreground">%</span>
+    <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <Percent className="h-7 w-7 text-indigo-600 dark:text-indigo-400" weight="bold" />
         </div>
-        <p className="text-sm text-muted-foreground">{ipc.description}</p>
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-4xl font-bold text-foreground tracking-tight">{ipc.rate.toFixed(2)}</span>
+            <span className="text-xl font-semibold text-muted-foreground">%</span>
+          </div>
+          <p className="text-sm text-muted-foreground">{ipc.description}</p>
+        </div>
       </div>
-      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${
+      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
         isDown
           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
           : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -202,64 +193,75 @@ function CalculatorForm({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Current Rent Input */}
-      <div className="space-y-2">
-        <Label htmlFor="currentRent" className="flex items-center gap-2">
-          <CurrencyDollar className="h-4 w-4 text-muted-foreground" />
+      <div className="space-y-2.5">
+        <Label htmlFor="currentRent" className="flex items-center gap-2 text-sm font-medium">
+          <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <CurrencyDollar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          </div>
           Canon actual
         </Label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
           <Input
             id="currentRent"
             value={currentRent}
             onChange={(e) => handleCurrentRentChange(e.target.value)}
             placeholder="2.500.000"
-            className="pl-8"
+            className="pl-10 h-12 text-lg font-medium"
           />
         </div>
       </div>
 
       {/* IPC Rate */}
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="ipcRate" className="flex items-center gap-2">
-            <Percent className="h-4 w-4 text-muted-foreground" />
+          <Label className="flex items-center gap-2 text-sm font-medium">
+            <div className="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <Percent className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+            </div>
             Tasa IPC
           </Label>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="customRate" className="text-xs text-muted-foreground">
-              Personalizar
-            </Label>
-            <Switch
-              id="customRate"
-              checked={useCustomRate}
-              onCheckedChange={setUseCustomRate}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setUseCustomRate(!useCustomRate)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+              useCustomRate
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            {useCustomRate ? 'Usar oficial' : 'Personalizar'}
+          </button>
         </div>
-        <Input
-          id="ipcRate"
-          type="number"
-          step="0.01"
-          value={useCustomRate ? customRate : ipcRate.toFixed(2)}
-          onChange={(e) => setCustomRate(e.target.value)}
-          disabled={!useCustomRate}
-          className={!useCustomRate ? 'bg-muted' : ''}
-        />
-        {!useCustomRate && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Info className="h-3 w-3" />
-            IPC vigente DANE Colombia
-          </p>
+        {useCustomRate ? (
+          <Input
+            id="ipcRate"
+            type="number"
+            step="0.01"
+            value={customRate}
+            onChange={(e) => setCustomRate(e.target.value)}
+            className="h-12 text-lg font-medium"
+            placeholder="Ej: 5.20"
+          />
+        ) : (
+          <div className="h-12 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
+            <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{ipcRate.toFixed(2)}%</span>
+            <span className="text-xs font-medium text-indigo-600/70 dark:text-indigo-400/70 flex items-center gap-1.5">
+              <Info className="h-3.5 w-3.5" />
+              DANE Colombia
+            </span>
+          </div>
         )}
       </div>
 
       {/* Effective Date */}
-      <div className="space-y-2">
-        <Label htmlFor="effectiveDate" className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+      <div className="space-y-2.5">
+        <Label htmlFor="effectiveDate" className="flex items-center gap-2 text-sm font-medium">
+          <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+          </div>
           Fecha efectiva
         </Label>
         <Input
@@ -267,172 +269,44 @@ function CalculatorForm({
           type="date"
           value={effectiveDate}
           onChange={(e) => setEffectiveDate(e.target.value)}
+          className="h-12"
         />
       </div>
 
       {/* Calculate Button */}
-      <Button onClick={handleCalculate} className="w-full" size="lg">
-        <Calculator className="h-4 w-4 mr-2" />
+      <Button onClick={handleCalculate} className="w-full h-12 text-base font-medium bg-indigo-600 hover:bg-indigo-700" size="lg">
+        <Calculator className="h-5 w-5 mr-2" />
         Calcular incremento
       </Button>
 
       {/* Result Display */}
       {result && (
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">Canon actual</p>
-                <p className="text-lg font-semibold">{formatCurrency(result.currentRent)}</p>
-              </div>
-              <ArrowRight className="h-6 w-6 text-emerald-600" weight="bold" />
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">Nuevo canon</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(result.newRent)}</p>
-              </div>
+        <div className="p-5 rounded-xl border border-border bg-muted/20">
+          <div className="flex items-center justify-center gap-4 mb-5">
+            <div className="text-center p-4 rounded-xl bg-card border border-border flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Canon actual</p>
+              <p className="text-xl font-bold text-foreground">{formatCurrency(result.currentRent)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-emerald-200 dark:border-emerald-800">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Incremento</p>
-                <p className="text-lg font-semibold text-emerald-600">+{formatCurrency(result.increase)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Porcentaje</p>
-                <p className="text-lg font-semibold text-emerald-600">+{result.ipcRate.toFixed(2)}%</p>
-              </div>
+            <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
+              <ArrowRight className="h-5 w-5 text-white" weight="bold" />
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Bulk Calculator
-// ============================================================================
-
-function BulkCalculator({
-  properties,
-  ipcRate,
-  onBulkApply,
-}: {
-  properties: Array<{ id: string; title: string; currentRent: number }>;
-  ipcRate: number;
-  onBulkApply?: (updates: Array<{ id: string; newRent: number }>) => void;
-}) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(properties.map((p) => p.id)));
-
-  const calculations = useMemo(() => {
-    return properties.map((property) => ({
-      ...property,
-      newRent: calculateNewRent(property.currentRent, ipcRate),
-      increase: calculateNewRent(property.currentRent, ipcRate) - property.currentRent,
-    }));
-  }, [properties, ipcRate]);
-
-  const selectedCalculations = calculations.filter((c) => selectedIds.has(c.id));
-  const totalCurrentRent = selectedCalculations.reduce((sum, c) => sum + c.currentRent, 0);
-  const totalNewRent = selectedCalculations.reduce((sum, c) => sum + c.newRent, 0);
-  const totalIncrease = totalNewRent - totalCurrentRent;
-
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setSelectedIds(newSet);
-  };
-
-  const toggleAll = () => {
-    if (selectedIds.size === properties.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(properties.map((p) => p.id)));
-    }
-  };
-
-  const handleApply = () => {
-    const updates = selectedCalculations.map((c) => ({
-      id: c.id,
-      newRent: c.newRent,
-    }));
-    onBulkApply?.(updates);
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Summary */}
-      <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
-        <CardContent className="pt-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">
-                {selectedIds.size} inmuebles seleccionados
-              </p>
-              <p className="text-lg font-semibold">{formatCurrency(totalCurrentRent)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Total incremento</p>
-              <p className="text-lg font-semibold text-emerald-600">+{formatCurrency(totalIncrease)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Nuevo total</p>
-              <p className="text-lg font-bold text-emerald-600">{formatCurrency(totalNewRent)}</p>
+            <div className="text-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex-1 border border-indigo-200 dark:border-indigo-800">
+              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1">Nuevo canon</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(result.newRent)}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <div className="rounded-md border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.size === properties.length}
-                  onChange={toggleAll}
-                  className="rounded"
-                />
-              </TableHead>
-              <TableHead>Inmueble</TableHead>
-              <TableHead className="text-right">Canon actual</TableHead>
-              <TableHead className="text-right">Incremento</TableHead>
-              <TableHead className="text-right">Nuevo canon</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {calculations.map((calc) => (
-              <TableRow key={calc.id}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(calc.id)}
-                    onChange={() => toggleSelect(calc.id)}
-                    className="rounded"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{calc.title}</TableCell>
-                <TableCell className="text-right">{formatCurrency(calc.currentRent)}</TableCell>
-                <TableCell className="text-right text-emerald-600">
-                  +{formatCurrency(calc.increase)}
-                </TableCell>
-                <TableCell className="text-right font-semibold">{formatCurrency(calc.newRent)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Apply Button */}
-      <Button onClick={handleApply} className="w-full" size="lg" disabled={selectedIds.size === 0}>
-        <ArrowsClockwise className="h-4 w-4 mr-2" />
-        Aplicar a {selectedIds.size} inmueble{selectedIds.size !== 1 ? 's' : ''}
-      </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 rounded-xl bg-card border border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Incremento</p>
+              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">+{formatCurrency(result.increase)}</p>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-card border border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Porcentaje</p>
+              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">+{result.ipcRate.toFixed(2)}%</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -443,31 +317,30 @@ function BulkCalculator({
 
 function InfoSection() {
   return (
-    <Card className="bg-slate-50 dark:bg-slate-900/50">
-      <CardContent className="pt-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Incremento de arrendamiento</h4>
-            <p className="text-sm text-muted-foreground">
-              Segun la Ley 820 de 2003, el canon de arrendamiento de vivienda urbana puede
-              incrementarse anualmente en un porcentaje que no supere el IPC del ano inmediatamente anterior.
-            </p>
-            <div className="flex items-center gap-2 pt-2">
-              <a
-                href="https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-              >
-                <LinkIcon className="h-3 w-3" />
-                Ver IPC oficial (DANE)
-              </a>
-            </div>
-          </div>
+    <div className="p-5 rounded-xl border border-border bg-muted/20">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+          <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
         </div>
-      </CardContent>
-    </Card>
+        <div className="space-y-2">
+          <h4 className="font-semibold text-foreground">Incremento de arrendamiento</h4>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Segun la Ley 820 de 2003, el canon de arrendamiento de vivienda urbana puede
+            incrementarse anualmente en un porcentaje que no supere el IPC del ano inmediatamente anterior.
+          </p>
+          <a
+            href="https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+          >
+            <LinkIcon className="h-4 w-4" />
+            Ver IPC oficial (DANE)
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -478,19 +351,13 @@ function InfoSection() {
 export function IPCCalculator({
   currentRent,
   onCalculate,
-  mode = 'single',
-  properties = [],
-  onBulkApply,
 }: IPCCalculatorProps) {
-  const [activeMode, setActiveMode] = useState<'single' | 'bulk'>(
-    mode === 'bulk' && properties.length > 0 ? 'bulk' : 'single'
-  );
   const currentIPC = getCurrentIPC();
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -515,61 +382,33 @@ export function IPCCalculator({
       </Card>
 
       {/* IPC Trend */}
-      <Card>
+      <Card className="rounded-xl">
         <CardContent className="pt-4">
           <IPCTrendChart data={IPC_HISTORICAL} />
         </CardContent>
       </Card>
 
-      {/* Mode Toggle (if bulk mode is available) */}
-      {properties.length > 0 && (
-        <div className="flex rounded-lg border p-1 bg-muted/50">
-          <button
-            onClick={() => setActiveMode('single')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeMode === 'single'
-                ? 'bg-background shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Calculator className="h-4 w-4" />
-            Individual
-          </button>
-          <button
-            onClick={() => setActiveMode('bulk')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeMode === 'bulk'
-                ? 'bg-background shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Buildings className="h-4 w-4" />
-            Masivo ({properties.length})
-          </button>
-        </div>
-      )}
-
       {/* Calculator */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {activeMode === 'single' ? 'Calcular incremento' : 'Aplicacion masiva'}
-          </CardTitle>
+      <Card className="rounded-xl">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30">
+              <Calculator className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Calcular incremento</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Calcula el nuevo canon para un inmueble
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {activeMode === 'single' ? (
-            <CalculatorForm
-              initialRent={currentRent}
-              ipcRate={currentIPC.rate}
-              onCalculate={onCalculate}
-            />
-          ) : (
-            <BulkCalculator
-              properties={properties}
-              ipcRate={currentIPC.rate}
-              onBulkApply={onBulkApply}
-            />
-          )}
+          <CalculatorForm
+            initialRent={currentRent}
+            ipcRate={currentIPC.rate}
+            onCalculate={onCalculate}
+          />
         </CardContent>
       </Card>
 

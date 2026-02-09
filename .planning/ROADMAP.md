@@ -10,6 +10,7 @@ Frontend experience para marketplace de arriendos en Colombia con Risk Score AI.
 - ✅ **v1.1 Post-Approval Flow** - Phases 10-11 (complete)
 - ✅ **v2.0 Design System & QA Audit** - Phases 12-15 (complete)
 - ✅ **v2.1 Contract UX & Platform QA** - Phase 16 (complete)
+- ✅ **v3.0 Inmobiliaria Module** - Inmobiliaria Phases 1-10 (complete)
 
 ## Phases
 
@@ -285,6 +286,21 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 15. QA Responsive & A11y | 3/3 | Complete | 2026-02-02 |
 | 16. Contract UX & Platform QA | — | Complete | 2026-02-02 |
 
+### v3.0 Inmobiliaria Module
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| Inmobiliaria-01. Dashboard KPIs | 1/1 | Complete | 2026-02-03 |
+| Inmobiliaria-02. Propietarios | 2/2 | Complete | 2026-02-03 |
+| Inmobiliaria-03. Consignaciones | 3/3 | Complete | 2026-02-04 |
+| Inmobiliaria-04. Agentes | 3/3 | Complete | 2026-02-05 |
+| Inmobiliaria-05. Pipeline | 3/3 | Complete | 2026-02-05 |
+| Inmobiliaria-06. Cobros | 3/3 | Complete | 2026-02-06 |
+| Inmobiliaria-07. Dispersiones | 3/3 | Complete | 2026-02-06 |
+| Inmobiliaria-08. Reportes | 3/3 | Complete | 2026-02-07 |
+| Inmobiliaria-09. Operaciones | 4/4 | Complete | 2026-02-07 |
+| Inmobiliaria-10. Configuracion, Docs & Analytics | 8/8 | Complete | 2026-02-08 |
+
 ## Notes
 
 ### What's NOT in scope (backend responsibility)
@@ -313,6 +329,6 @@ When backend is ready, these need API connections:
 
 ---
 *Roadmap created: 2026-01-18*
-*Last updated: 2026-02-02 (v2.1 Contract UX & Platform QA complete)*
+*Last updated: 2026-02-08 (v3.0 Inmobiliaria Module complete)*
 *Vision: FRONTEND-VISION.md*
 

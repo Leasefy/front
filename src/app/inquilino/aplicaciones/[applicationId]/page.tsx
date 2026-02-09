@@ -4,9 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, WarningCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, House, Bed, Bathtub, ArrowsOut, Buildings, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, WarningCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, House, Bed, Bathtub, ArrowsOut, Buildings, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti } from '@phosphor-icons/react';
 import { useState } from 'react';
 
+import { BackButton } from '@/components/ui/back-button';
 import { getTenantApplicationById } from '@/lib/data/mock-tenant-applications';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
@@ -141,15 +142,13 @@ export default function ApplicationDetailPage() {
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back Button */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6"
+          className="mb-6"
         >
-          <ArrowLeft className="w-4 h-4" />
-          {locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'}
-        </motion.button>
+          <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />
+        </motion.div>
 
         {/* Hero Card - Property with Status */}
         <motion.div

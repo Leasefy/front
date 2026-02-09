@@ -2031,27 +2031,27 @@ export function formatPercentageChange(percentage: number): string {
 
 export function getCategoryColor(category: AdvancedKPI['category']): string {
   const colors = {
-    financial: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800',
-    operational: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
-    performance: 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800',
+    financial: 'bg-white border-indigo-100 dark:bg-[#1a1a1c] dark:border-indigo-900/50',
+    operational: 'bg-white border-indigo-100 dark:bg-[#1a1a1c] dark:border-indigo-900/50',
+    performance: 'bg-white border-indigo-100 dark:bg-[#1a1a1c] dark:border-indigo-900/50',
   };
   return colors[category];
 }
 
 export function getCategoryIconColor(category: AdvancedKPI['category']): string {
   const colors = {
-    financial: 'text-emerald-600 dark:text-emerald-400',
-    operational: 'text-blue-600 dark:text-blue-400',
-    performance: 'text-purple-600 dark:text-purple-400',
+    financial: 'text-indigo-600 dark:text-indigo-400',
+    operational: 'text-indigo-600 dark:text-indigo-400',
+    performance: 'text-indigo-600 dark:text-indigo-400',
   };
   return colors[category];
 }
 
 export function getCategoryBgColor(category: AdvancedKPI['category']): string {
   const colors = {
-    financial: 'bg-emerald-100 dark:bg-emerald-900/30',
-    operational: 'bg-blue-100 dark:bg-blue-900/30',
-    performance: 'bg-purple-100 dark:bg-purple-900/30',
+    financial: 'bg-indigo-100 dark:bg-indigo-900/30',
+    operational: 'bg-indigo-100 dark:bg-indigo-900/30',
+    performance: 'bg-indigo-100 dark:bg-indigo-900/30',
   };
   return colors[category];
 }

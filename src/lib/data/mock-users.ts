@@ -6,6 +6,7 @@ import type { MockUser } from '@/lib/auth/types'
  * These users can be used to test login functionality:
  * - Landlord: landlord@example.com / password123
  * - Tenant: tenant@example.com / password123
+ * - Agency: agency@example.com / password123
  */
 
 export const mockUsers: MockUser[] = [
@@ -13,7 +14,7 @@ export const mockUsers: MockUser[] = [
     id: 'user-1',
     email: 'landlord@example.com',
     password: 'password123',
-    name: 'Nicolás García',
+    name: 'Nicolas Garcia',
     role: 'landlord',
     avatar: undefined,
   },
@@ -39,6 +40,22 @@ export const mockUsers: MockUser[] = [
     password: 'demo2024',
     name: 'Sofia Martinez',
     role: 'tenant',
+    avatar: undefined,
+  },
+  {
+    id: 'user-5',
+    email: 'agency@example.com',
+    password: 'password123',
+    name: 'Inmobiliaria ABC',
+    role: 'agency',
+    avatar: undefined,
+  },
+  {
+    id: 'user-6',
+    email: 'inmobiliaria@arriendo.co',
+    password: 'demo2024',
+    name: 'Inversiones Inmobiliarias S.A.S',
+    role: 'agency',
     avatar: undefined,
   },
 ]

@@ -8,9 +8,10 @@ import {
   Clock,
   Warning,
   ArrowClockwise,
-  ArrowRight,
+  CaretRight,
   TrendUp,
   TrendDown,
+  ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
@@ -25,38 +26,35 @@ interface CobroResumenProps {
 }
 
 /**
- * Get collection rate color based on percentage
- * Green: > 90%
- * Amber: 70-90%
- * Red: < 70%
+ * Get collection rate info based on percentage
  */
-function getCollectionRateColor(rate: number): {
-  bg: string;
+function getCollectionRateInfo(rate: number): {
   fill: string;
   text: string;
   label: string;
+  trend: 'up' | 'down' | 'neutral';
 } {
   if (rate >= 90) {
     return {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
       fill: 'bg-emerald-500',
       text: 'text-emerald-600 dark:text-emerald-400',
       label: 'Excelente',
+      trend: 'up',
     };
   }
   if (rate >= 70) {
     return {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
       fill: 'bg-amber-500',
       text: 'text-amber-600 dark:text-amber-400',
       label: 'Aceptable',
+      trend: 'neutral',
     };
   }
   return {
-    bg: 'bg-red-100 dark:bg-red-900/30',
     fill: 'bg-red-500',
     text: 'text-red-600 dark:text-red-400',
     label: 'Bajo',
+    trend: 'down',
   };
 }
 
@@ -82,12 +80,8 @@ function AnimatedNumber({
     const updateValue = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / (duration * 1000), 1);
-
-      // Easing function: easeOutExpo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-
       setDisplayValue(Math.round(startValue + diff * eased));
-
       if (progress < 1) {
         requestAnimationFrame(updateValue);
       }
@@ -101,7 +95,7 @@ function AnimatedNumber({
 
 /**
  * CobroResumen - Monthly summary card with collection stats
- * Shows totals, collection rate, and quick actions
+ * Clean, unified design following design token system
  */
 export function CobroResumen({
   summary,
@@ -110,7 +104,7 @@ export function CobroResumen({
   onRefresh,
   className,
 }: CobroResumenProps) {
-  const rateColors = getCollectionRateColor(summary.collectionRate);
+  const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
   // Format month for display
   const monthDisplay = new Date(summary.month + '-01').toLocaleDateString('es-CO', {
@@ -118,60 +112,29 @@ export function CobroResumen({
     year: 'numeric',
   });
 
-  // Stats configuration
-  const stats = [
-    {
-      key: 'expected',
-      label: 'Por cobrar',
-      value: summary.totalExpected,
-      icon: CurrencyCircleDollar,
-      color: 'text-muted-foreground',
-      bg: 'bg-muted/50',
-    },
-    {
-      key: 'collected',
-      label: 'Cobrado',
-      value: summary.totalCollected,
-      icon: CheckCircle,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    },
-    {
-      key: 'pending',
-      label: 'Pendiente',
-      value: summary.totalPending,
-      icon: Clock,
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-    },
-    {
-      key: 'late',
-      label: 'En mora',
-      value: summary.totalLate,
-      icon: Warning,
-      color: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-900/20',
-    },
-  ];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'p-6 rounded-2xl border border-border bg-card',
+        'rounded-xl border border-border bg-card overflow-hidden',
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground capitalize">
-            {monthDisplay}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Resumen de cobros del mes
-          </p>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+            <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="bold" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground capitalize">
+              {monthDisplay}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Resumen de cobros
+            </p>
+          </div>
         </div>
         {onRefresh && (
           <button
@@ -184,127 +147,128 @@ export function CobroResumen({
         )}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
-                'p-4 rounded-xl',
-                stat.bg
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={cn('w-4 h-4', stat.color)} weight="fill" />
-                <span className="text-xs font-medium text-muted-foreground">
-                  {stat.label}
-                </span>
-              </div>
-              <AnimatedNumber
-                value={stat.value}
-                className={cn('text-xl font-bold', stat.color)}
-              />
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Collection Rate */}
-      <div className="p-4 rounded-xl bg-muted/30 mb-6">
-        <div className="flex items-center justify-between mb-3">
+      {/* Main Content */}
+      <div className="p-5">
+        {/* Collection Rate - Hero Section */}
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <span className="text-sm font-medium text-foreground">
-              Tasa de recaudo
-            </span>
-            <span className={cn('ml-2 text-xs font-medium', rateColors.text)}>
-              {rateColors.label}
-            </span>
+            <p className="text-sm text-muted-foreground mb-1">Tasa de recaudo</p>
+            <div className="flex items-baseline gap-2">
+              <motion.span
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring' }}
+                className="text-4xl font-bold text-foreground"
+              >
+                {summary.collectionRate.toFixed(1)}%
+              </motion.span>
+              <span className={cn('text-sm font-medium', rateInfo.text)}>
+                {rateInfo.label}
+              </span>
+              {rateInfo.trend === 'up' && (
+                <TrendUp className={cn('w-5 h-5', rateInfo.text)} weight="bold" />
+              )}
+              {rateInfo.trend === 'down' && (
+                <TrendDown className={cn('w-5 h-5', rateInfo.text)} weight="bold" />
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <motion.span
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, type: 'spring' }}
-              className={cn('text-3xl font-bold', rateColors.text)}
-            >
-              {summary.collectionRate.toFixed(1)}%
-            </motion.span>
-            {summary.collectionRate >= 90 ? (
-              <TrendUp className={cn('w-5 h-5', rateColors.text)} weight="bold" />
-            ) : summary.collectionRate < 70 ? (
-              <TrendDown className={cn('w-5 h-5', rateColors.text)} weight="bold" />
-            ) : null}
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground mb-1">Por cobrar</p>
+            <p className="text-2xl font-bold text-foreground">
+              {formatCurrency(summary.totalExpected)}
+            </p>
           </div>
         </div>
+
         {/* Progress Bar */}
-        <div className={cn('h-3 rounded-full overflow-hidden', rateColors.bg)}>
+        <div className="h-2 rounded-full overflow-hidden bg-muted mb-5">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(summary.collectionRate, 100)}%` }}
             transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-            className={cn('h-full rounded-full', rateColors.fill)}
+            className={cn('h-full rounded-full', rateInfo.fill)}
           />
         </div>
-      </div>
 
-      {/* Counts Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-          <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {summary.cobrosPaid}
-          </span>
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
-            Pagados
-          </p>
-        </div>
-        <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-          <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-            {summary.cobrosPending}
-          </span>
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-            Pendientes
-          </p>
-        </div>
-        <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-          <span className="text-2xl font-bold text-red-600 dark:text-red-400">
-            {summary.cobrosLate}
-          </span>
-          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-            En mora
-          </p>
-        </div>
-      </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          {/* Cobrado */}
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
+              <span className="text-xs font-medium text-muted-foreground">Cobrado</span>
+            </div>
+            <AnimatedNumber
+              value={summary.totalCollected}
+              className="text-lg font-bold text-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {summary.cobrosPaid} pagos
+            </p>
+          </div>
 
-      {/* Quick Actions */}
-      {(onViewPending || onViewLate) && (
-        <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
-          {onViewPending && summary.cobrosPending > 0 && (
-            <button
-              onClick={onViewPending}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-            >
-              <Clock className="w-4 h-4" />
-              Ver pendientes
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-          {onViewLate && summary.cobrosLate > 0 && (
-            <button
-              onClick={onViewLate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            >
-              <Warning className="w-4 h-4" />
-              Ver morosos
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
+          {/* Pendiente */}
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-amber-500" weight="fill" />
+              <span className="text-xs font-medium text-muted-foreground">Pendiente</span>
+            </div>
+            <AnimatedNumber
+              value={summary.totalPending}
+              className="text-lg font-bold text-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {summary.cobrosPending} cobros
+            </p>
+          </div>
+
+          {/* En mora */}
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <Warning className="w-4 h-4 text-red-500" weight="fill" />
+              <span className="text-xs font-medium text-muted-foreground">En mora</span>
+            </div>
+            <AnimatedNumber
+              value={summary.totalLate}
+              className="text-lg font-bold text-foreground"
+            />
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {summary.cobrosLate} cobros
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* Quick Actions */}
+        {(onViewPending || onViewLate) && (
+          <div className="flex gap-3 pt-4 border-t border-border">
+            {onViewPending && summary.cobrosPending > 0 && (
+              <button
+                onClick={onViewPending}
+                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+              >
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" weight="fill" />
+                  Ver pendientes
+                </span>
+                <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </button>
+            )}
+            {onViewLate && summary.cobrosLate > 0 && (
+              <button
+                onClick={onViewLate}
+                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+              >
+                <span className="flex items-center gap-2">
+                  <Warning className="w-4 h-4 text-red-500" weight="fill" />
+                  Ver morosos
+                </span>
+                <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -319,28 +283,36 @@ export function CobroResumenCompact({
   summary: CobroSummary;
   className?: string;
 }) {
-  const rateColors = getCollectionRateColor(summary.collectionRate);
+  const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
   return (
     <div className={cn('p-4 rounded-xl border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">Recaudo</span>
-        <span className={cn('text-xl font-bold', rateColors.text)}>
-          {summary.collectionRate.toFixed(0)}%
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xl font-bold text-foreground">
+            {summary.collectionRate.toFixed(0)}%
+          </span>
+          {rateInfo.trend === 'up' && (
+            <TrendUp className={cn('w-4 h-4', rateInfo.text)} weight="bold" />
+          )}
+          {rateInfo.trend === 'down' && (
+            <TrendDown className={cn('w-4 h-4', rateInfo.text)} weight="bold" />
+          )}
+        </div>
       </div>
-      <div className={cn('h-2 rounded-full overflow-hidden mb-3', rateColors.bg)}>
+      <div className="h-2 rounded-full overflow-hidden bg-muted mb-3">
         <div
-          className={cn('h-full rounded-full transition-all duration-500', rateColors.fill)}
+          className={cn('h-full rounded-full transition-all duration-500', rateInfo.fill)}
           style={{ width: `${Math.min(summary.collectionRate, 100)}%` }}
         />
       </div>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-emerald-600 dark:text-emerald-400">
+        <span className="text-foreground font-medium">
           {formatCurrency(summary.totalCollected)}
         </span>
         <span className="text-muted-foreground">de</span>
-        <span className="text-foreground font-medium">
+        <span className="text-muted-foreground">
           {formatCurrency(summary.totalExpected)}
         </span>
       </div>

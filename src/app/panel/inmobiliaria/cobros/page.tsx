@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
 import {
   CurrencyCircleDollar,
   Gear,
-  ArrowsClockwise,
   Table,
   SquaresFour,
-  Funnel,
-  CheckCircle,
-  Clock,
-  Warning,
+  CaretLeft,
+  CaretRight,
+  Plus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -38,6 +36,9 @@ import { type RecordatorioConfigData } from '@/components/inmobiliaria/Recordato
 // View modes
 type ViewMode = 'table' | 'cards';
 
+// Pagination
+const ITEMS_PER_PAGE = 6;
+
 // Get current month in YYYY-MM format
 function getCurrentMonth(): string {
   const now = new Date();
@@ -49,6 +50,8 @@ function getCurrentMonth(): string {
  * Route: /panel/inmobiliaria/cobros
  */
 export default function CobrosPage() {
+  const searchParams = useSearchParams();
+
   // State for cobros (local copy for optimistic updates)
   const [cobros, setCobros] = useState<Cobro[]>(MOCK_COBROS);
 
@@ -64,6 +67,9 @@ export default function CobrosPage() {
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
+  // State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   // State for modals
   const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -77,6 +83,14 @@ export default function CobrosPage() {
     daysAfter: MOCK_INMOBILIARIA_CONFIG.reminderDaysAfter,
     channels: ['email', 'whatsapp'],
   });
+
+  // Read status from URL query params
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && ['pending', 'paid', 'partial', 'late', 'defaulted'].includes(statusParam)) {
+      setFilters((prev) => ({ ...prev, status: statusParam as CobroStatus }));
+    }
+  }, [searchParams]);
 
   // Filter cobros based on current filters
   const filteredCobros = useMemo(() => {
@@ -110,6 +124,14 @@ export default function CobrosPage() {
 
     return result;
   }, [cobros, filters]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCobros.length / ITEMS_PER_PAGE);
+  const paginatedCobros = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return filteredCobros.slice(start, end);
+  }, [filteredCobros, currentPage]);
 
   // Calculate summary for selected month
   const summary: CobroSummary = useMemo(() => {
@@ -169,21 +191,23 @@ export default function CobrosPage() {
       date: string;
       reference?: string;
       notes?: string;
-    }) => {
-      if (!paymentCobro) return;
+    }, cobroId: string) => {
+      // Find the cobro to update
+      const targetCobro = cobros.find((c) => c.id === cobroId);
+      if (!targetCobro) return;
 
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate new amounts
-      const newPaidAmount = paymentCobro.paidAmount + data.amount;
-      const newPendingAmount = paymentCobro.totalWithFees - newPaidAmount;
+      const newPaidAmount = targetCobro.paidAmount + data.amount;
+      const newPendingAmount = targetCobro.totalWithFees - newPaidAmount;
       const isFullyPaid = newPendingAmount <= 0;
 
       // Update cobro in state
       setCobros((prev) =>
         prev.map((c) =>
-          c.id === paymentCobro.id
+          c.id === cobroId
             ? {
                 ...c,
                 paidAmount: newPaidAmount,
@@ -201,7 +225,7 @@ export default function CobrosPage() {
       setIsPaymentModalOpen(false);
       setPaymentCobro(null);
     },
-    [paymentCobro]
+    [cobros]
   );
 
   // Handle send reminder
@@ -224,6 +248,7 @@ export default function CobrosPage() {
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: CobroFiltersState) => {
     setFilters(newFilters);
+    setCurrentPage(1); // Reset page when filters change
   }, []);
 
   // Handle reminder config save
@@ -253,11 +278,6 @@ export default function CobrosPage() {
     setFilters((prev) => ({ ...prev, status: 'late' }));
   }, []);
 
-  // Refresh data (mock - resets to original)
-  const handleRefresh = useCallback(() => {
-    setCobros([...MOCK_COBROS]);
-    toast.success('Datos actualizados');
-  }, []);
 
   // Format month for display
   const monthDisplay = new Date(filters.month + '-01').toLocaleDateString('es-CO', {
@@ -281,14 +301,17 @@ export default function CobrosPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
           >
             <Gear className="w-5 h-5" />
-            <span className="hidden sm:inline">Configurar recordatorios</span>
+            <span className="hidden sm:inline">Configurar</span>
           </button>
           <button
-            onClick={handleRefresh}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
+            onClick={() => {
+              setPaymentCobro(null);
+              setIsPaymentModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors shadow-lg shadow-indigo-500/20"
           >
-            <ArrowsClockwise className="w-5 h-5" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <Plus className="w-5 h-5" />
+            Registrar Pago
           </button>
         </div>
       </div>
@@ -303,16 +326,50 @@ export default function CobrosPage() {
           summary={summary}
           onViewPending={handleViewPending}
           onViewLate={handleViewLate}
-          onRefresh={handleRefresh}
         />
       </motion.div>
 
-      {/* Filters Section */}
+      {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="rounded-xl border border-border bg-card"
       >
+        {/* View Toggle Header - FIRST (Primary hierarchy) */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'table'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Table className="w-4 h-4" />
+              Tabla
+            </button>
+            <button
+              onClick={() => setViewMode('cards')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'cards'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <SquaresFour className="w-4 h-4" />
+              Cards
+            </button>
+          </div>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {filteredCobros.length} cobros
+          </span>
+        </div>
+
+        {/* Filters Section - SECOND (Search + collapsible filters) */}
         <CobroFilters
           consignaciones={MOCK_CONSIGNACIONES}
           propietarios={MOCK_PROPIETARIOS}
@@ -320,91 +377,96 @@ export default function CobrosPage() {
           onFilterChange={handleFilterChange}
           cobroCountByStatus={cobroCountByStatus}
         />
-      </motion.div>
 
-      {/* View Toggle & Results Count */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center justify-between"
-      >
-        <p className="text-sm text-muted-foreground">
-          Mostrando {filteredCobros.length} cobros
-          {filters.status !== 'all' && ` (${filters.status})`}
-        </p>
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
-          <button
-            onClick={() => setViewMode('table')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'table'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de tabla"
-          >
-            <Table className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('cards')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'cards'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de tarjetas"
-          >
-            <SquaresFour className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Cobros List/Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        {filteredCobros.length > 0 ? (
-          viewMode === 'table' ? (
-            <CobroTable
-              cobros={filteredCobros}
-              onCobroClick={handleCobroClick}
-              onRegisterPayment={handleRegisterPaymentClick}
-              showSummary
-            />
+        {/* Content */}
+        <div>
+          {paginatedCobros.length > 0 ? (
+            viewMode === 'table' ? (
+              <CobroTable
+                cobros={paginatedCobros}
+                onCobroClick={handleCobroClick}
+                onRegisterPayment={handleRegisterPaymentClick}
+                showSummary
+              />
+            ) : (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedCobros.map((cobro) => (
+                  <CobroCard
+                    key={cobro.id}
+                    cobro={cobro}
+                    onClick={handleCobroClick}
+                    onRegisterPayment={handleRegisterPaymentClick}
+                  />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCobros.map((cobro) => (
-                <CobroCard
-                  key={cobro.id}
-                  cobro={cobro}
-                  onClick={handleCobroClick}
-                  onRegisterPayment={handleRegisterPaymentClick}
-                />
+            <div className="p-12 text-center">
+              <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Sin cobros
+              </h3>
+              <p className="text-muted-foreground max-w-sm mx-auto">
+                No hay cobros que coincidan con los filtros seleccionados para{' '}
+                <span className="capitalize">{monthDisplay}</span>.
+              </p>
+              {filters.status !== 'all' && (
+                <button
+                  onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
+                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Ver todos los cobros
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === 1
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <CaretLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-1 px-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                    page === currentPage
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {page}
+                </button>
               ))}
             </div>
-          )
-        ) : (
-          <div className="p-12 text-center rounded-2xl border border-dashed border-border">
-            <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Sin cobros
-            </h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-              No hay cobros que coincidan con los filtros seleccionados para{' '}
-              <span className="capitalize">{monthDisplay}</span>.
-            </p>
-            {filters.status !== 'all' && (
-              <button
-                onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                Ver todos los cobros
-              </button>
-            )}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === totalPages
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <CaretRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </motion.div>
@@ -423,6 +485,7 @@ export default function CobrosPage() {
         isOpen={isPaymentModalOpen}
         onClose={handlePaymentModalClose}
         cobro={paymentCobro}
+        cobrosList={filteredCobros}
         onSubmit={handlePaymentSubmit}
       />
 

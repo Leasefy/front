@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, CreditCard, CheckCircle, WarningCircle, Shield, Sparkle, Lightning, Lock, ArrowRight, Crown, Buildings, ChartBarHorizontal, ChartBar } from '@phosphor-icons/react';
+import { CreditCard, CheckCircle, WarningCircle, Shield, Sparkle, Lightning, Lock, ArrowRight, Crown, Buildings, ChartBarHorizontal, ChartBar } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,13 +57,9 @@ export default function UpgradePage() {
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back link */}
-        <Link
-          href="/panel"
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al panel
-        </Link>
+        <div className="mb-6">
+          <BackButton href="/panel" label="Volver al panel" />
+        </div>
 
         {/* Premium Header */}
         <div className="relative rounded-2xl overflow-hidden mb-8">

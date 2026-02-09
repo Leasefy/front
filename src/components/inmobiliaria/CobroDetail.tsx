@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { MOCK_PROPIETARIOS, MOCK_CONSIGNACIONES } from '@/lib/data/mock-inmobiliaria';
+import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface CobroDetailProps {
   isOpen: boolean;
@@ -229,6 +230,17 @@ export function CobroDetail({
   onSendReminder,
 }: CobroDetailProps) {
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
+  const { stop: stopLenis, start: startLenis } = useLenis();
+
+  // Stop Lenis smooth scroll when sheet is open to allow native scroll
+  React.useEffect(() => {
+    if (isOpen) {
+      stopLenis();
+      return () => {
+        startLenis();
+      };
+    }
+  }, [isOpen, stopLenis, startLenis]);
 
   // Get related data
   const propietario = React.useMemo(() => {
@@ -297,7 +309,7 @@ export function CobroDetail({
           </div>
         </SheetHeader>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6" onWheel={(e) => e.stopPropagation()}>
           {/* Property Section */}
           <motion.section
             initial={{ opacity: 0, y: 10 }}
@@ -329,6 +341,7 @@ export function CobroDetail({
                 {consignacion && (
                   <Link
                     href={`/panel/inmobiliaria/portafolio/${consignacion.id}`}
+                    onClick={onClose}
                     className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2"
                   >
                     Ver consignacion

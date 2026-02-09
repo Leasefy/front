@@ -98,9 +98,12 @@ interface DocumentoManagerProps {
   onView?: (document: PropertyDocument) => void;
   onDownload?: (document: PropertyDocument) => void;
   onSendForSignature?: (document: PropertyDocument) => void;
+  onDuplicate?: (document: PropertyDocument) => void;
   onDelete?: (documentId: string) => void;
   onGenerateNew?: (templateId: string, propertyId: string) => void;
   isLoading?: boolean;
+  /** Hide header and summary stats when embedded in a page with its own header */
+  minimal?: boolean;
 }
 
 /**
@@ -112,9 +115,11 @@ export function DocumentoManager({
   onView,
   onDownload,
   onSendForSignature,
+  onDuplicate,
   onDelete,
   onGenerateNew,
   isLoading = false,
+  minimal = false,
 }: DocumentoManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -197,204 +202,251 @@ export function DocumentoManager({
   const statusOptions: DocumentStatus[] = ['draft', 'pending_signature', 'signed', 'expired', 'cancelled'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Documentos</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {filteredDocuments.length} de {documents.length} documentos
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex border rounded-lg p-1">
+        {!minimal ? (
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Documentos</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredDocuments.length} de {documents.length} documentos
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'p-1.5 rounded',
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                 viewMode === 'list'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <List className="w-4 h-4" />
+              Lista
             </button>
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'p-1.5 rounded',
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <GridFour className="w-4 h-4" />
+              Tarjetas
             </button>
           </div>
+        )}
+        <div className="flex items-center gap-2">
+          {/* View Toggle - only in non-minimal mode */}
+          {!minimal && (
+            <div className="flex border rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-1.5 rounded',
+                  viewMode === 'list'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'p-1.5 rounded',
+                  viewMode === 'grid'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <GridFour className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Generate Document Dropdown */}
-          <DropdownList>
-            <DropdownListTrigger asChild>
-              <Button className="gap-2">
-                <FilePlus className="w-4 h-4" />
-                Generar Documento
-                <CaretDown className="w-4 h-4" />
-              </Button>
-            </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-48">
-              <DropdownListItem onClick={() => onGenerateNew?.('tpl-contrato-arrendamiento', '')}>
-                Contrato de Arrendamiento
-              </DropdownListItem>
-              <DropdownListItem onClick={() => onGenerateNew?.('tpl-acta-entrega', '')}>
-                Acta de Entrega
-              </DropdownListItem>
-              <DropdownListItem onClick={() => onGenerateNew?.('tpl-acta-devolucion', '')}>
-                Acta de Devolucion
-              </DropdownListItem>
-              <DropdownListSeparator />
-              <DropdownListItem onClick={() => onGenerateNew?.('tpl-inventario', '')}>
-                Inventario
-              </DropdownListItem>
-              <DropdownListItem onClick={() => onGenerateNew?.('tpl-carta-incremento', '')}>
-                Carta de Incremento
-              </DropdownListItem>
-            </DropdownListContent>
-          </DropdownList>
+          {onGenerateNew && (
+            <DropdownList>
+              <DropdownListTrigger asChild>
+                <Button className={cn("gap-2", minimal && "bg-indigo-600 hover:bg-indigo-700")} hideArrow>
+                  <FilePlus className="w-4 h-4" />
+                  Generar Documento
+                  <CaretDown className="w-4 h-4" />
+                </Button>
+              </DropdownListTrigger>
+              <DropdownListContent align="end" className="w-48">
+                <DropdownListItem onSelect={() => onGenerateNew('tpl-contrato-arrendamiento', '')}>
+                  Contrato de Arrendamiento
+                </DropdownListItem>
+                <DropdownListItem onSelect={() => onGenerateNew('tpl-acta-entrega', '')}>
+                  Acta de Entrega
+                </DropdownListItem>
+                <DropdownListItem onSelect={() => onGenerateNew('tpl-acta-devolucion', '')}>
+                  Acta de Devolucion
+                </DropdownListItem>
+                <DropdownListSeparator />
+                <DropdownListItem onSelect={() => onGenerateNew('tpl-inventario', '')}>
+                  Inventario
+                </DropdownListItem>
+                <DropdownListItem onSelect={() => onGenerateNew('tpl-carta-incremento', '')}>
+                  Carta de Incremento
+                </DropdownListItem>
+              </DropdownListContent>
+            </DropdownList>
+          )}
         </div>
       </div>
 
       {/* Filters Row */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, inmueble o inquilino..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <div className="relative">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar documento..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Category Filter */}
-          <Select
-            value={selectedCategories.length === 1 ? selectedCategories[0] : 'all'}
-            onValueChange={(v) => {
-              if (v === 'all') {
-                setSelectedCategories([]);
-              } else {
-                setSelectedCategories([v as DocumentCategory]);
-              }
-            }}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              {categoryOptions.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {getDocumentCategoryLabel(cat)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+            <Select
+              value={selectedCategories.length === 1 ? selectedCategories[0] : 'all'}
+              onValueChange={(v) => {
+                if (v === 'all') {
+                  setSelectedCategories([]);
+                } else {
+                  setSelectedCategories([v as DocumentCategory]);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {categoryOptions.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {getDocumentCategoryLabel(cat)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Status Filter */}
-          <Select
-            value={selectedStatuses.length === 1 ? selectedStatuses[0] : 'all'}
-            onValueChange={(v) => {
-              if (v === 'all') {
-                setSelectedStatuses([]);
-              } else {
-                setSelectedStatuses([v as DocumentStatus]);
-              }
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {statusOptions.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {getDocumentStatusLabel(status)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Estado</label>
+            <Select
+              value={selectedStatuses.length === 1 ? selectedStatuses[0] : 'all'}
+              onValueChange={(v) => {
+                if (v === 'all') {
+                  setSelectedStatuses([]);
+                } else {
+                  setSelectedStatuses([v as DocumentStatus]);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {getDocumentStatusLabel(status)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Clear Filters */}
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 mb-0.5">
               <X className="w-4 h-4" />
               Limpiar
             </Button>
           )}
         </div>
 
-        {/* Summary Stats */}
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium">{stats.total}</span>
+        {/* Summary Stats - hidden in minimal mode */}
+        {!minimal && (
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-medium">{stats.total}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-muted-foreground">Pendientes firma:</span>
+              <span className="font-medium text-amber-600">{stats.pendingSignature}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-muted-foreground">Firmados:</span>
+              <span className="font-medium text-emerald-600">{stats.signed}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-muted-foreground">Vencidos:</span>
+              <span className="font-medium text-red-600">{stats.expired}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-muted-foreground">Pendientes firma:</span>
-            <span className="font-medium text-amber-600">{stats.pendingSignature}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-muted-foreground">Firmados:</span>
-            <span className="font-medium text-emerald-600">{stats.signed}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-muted-foreground">Vencidos:</span>
-            <span className="font-medium text-red-600">{stats.expired}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Bulk Actions */}
-      {selectedDocIds.length > 0 && (
+      {selectedDocIds.length > 0 && (onDownload || onDelete) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20"
+          className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800/50"
         >
           <span className="text-sm font-medium">
             {selectedDocIds.length} seleccionado{selectedDocIds.length > 1 ? 's' : ''}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => {
-              selectedDocIds.forEach((id) => {
-                const doc = documents.find((d) => d.id === id);
-                if (doc) onDownload?.(doc);
-              });
-            }}
-          >
-            <DownloadSimple className="w-4 h-4" />
-            Descargar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 text-destructive hover:text-destructive"
-            onClick={() => {
-              selectedDocIds.forEach((id) => onDelete?.(id));
-              setSelectedDocIds([]);
-            }}
-          >
-            <Trash className="w-4 h-4" />
-            Eliminar
-          </Button>
+          {onDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                selectedDocIds.forEach((id) => {
+                  const doc = documents.find((d) => d.id === id);
+                  if (doc) onDownload(doc);
+                });
+              }}
+            >
+              <DownloadSimple className="w-4 h-4" />
+              Descargar
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-destructive hover:text-destructive"
+              onClick={() => {
+                selectedDocIds.forEach((id) => onDelete(id));
+                setSelectedDocIds([]);
+              }}
+            >
+              <Trash className="w-4 h-4" />
+              Eliminar
+            </Button>
+          )}
         </motion.div>
       )}
 
@@ -429,7 +481,7 @@ export function DocumentoManager({
         </div>
       ) : viewMode === 'list' ? (
         // Table View
-        <div className="border rounded-lg overflow-hidden">
+        <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -530,39 +582,51 @@ export function DocumentoManager({
                           </button>
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-48">
-                          <DropdownListItem onClick={() => onView?.(doc)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver documento
-                          </DropdownListItem>
-                          <DropdownListItem onClick={() => onDownload?.(doc)}>
-                            <DownloadSimple className="w-4 h-4 mr-2" />
-                            Descargar PDF
-                          </DropdownListItem>
-                          <DropdownListSeparator />
-                          {doc.status === 'draft' && (
-                            <DropdownListItem onClick={() => onSendForSignature?.(doc)}>
+                          {onView && (
+                            <DropdownListItem onSelect={() => onView(doc)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver documento
+                            </DropdownListItem>
+                          )}
+                          {onDownload && (
+                            <DropdownListItem onSelect={() => onDownload(doc)}>
+                              <DownloadSimple className="w-4 h-4 mr-2" />
+                              Descargar PDF
+                            </DropdownListItem>
+                          )}
+                          {(onView || onDownload) && (onSendForSignature || onDuplicate || onDelete) && (
+                            <DropdownListSeparator />
+                          )}
+                          {doc.status === 'draft' && onSendForSignature && (
+                            <DropdownListItem onSelect={() => onSendForSignature(doc)}>
                               <PaperPlaneTilt className="w-4 h-4 mr-2" />
                               Enviar para firma
                             </DropdownListItem>
                           )}
-                          {doc.status === 'pending_signature' && (
-                            <DropdownListItem onClick={() => onView?.(doc)}>
+                          {doc.status === 'pending_signature' && onView && (
+                            <DropdownListItem onSelect={() => onView(doc)}>
                               <SignIn className="w-4 h-4 mr-2" />
                               Ver firmas
                             </DropdownListItem>
                           )}
-                          <DropdownListItem>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Duplicar
-                          </DropdownListItem>
-                          <DropdownListSeparator />
-                          <DropdownListItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete?.(doc.id)}
-                          >
-                            <Trash className="w-4 h-4 mr-2" />
-                            Eliminar
-                          </DropdownListItem>
+                          {onDuplicate && (
+                            <DropdownListItem onSelect={() => onDuplicate(doc)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Duplicar
+                            </DropdownListItem>
+                          )}
+                          {onDelete && (onSendForSignature || onDuplicate) && (
+                            <DropdownListSeparator />
+                          )}
+                          {onDelete && (
+                            <DropdownListItem
+                              className="text-destructive focus:text-destructive"
+                              onSelect={() => onDelete(doc.id)}
+                            >
+                              <Trash className="w-4 h-4 mr-2" />
+                              Eliminar
+                            </DropdownListItem>
+                          )}
                         </DropdownListContent>
                       </DropdownList>
                     </TableCell>
@@ -628,22 +692,45 @@ export function DocumentoManager({
                           </button>
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-48">
-                          <DropdownListItem onClick={() => onView?.(doc)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver documento
-                          </DropdownListItem>
-                          <DropdownListItem onClick={() => onDownload?.(doc)}>
-                            <DownloadSimple className="w-4 h-4 mr-2" />
-                            Descargar PDF
-                          </DropdownListItem>
-                          <DropdownListSeparator />
-                          <DropdownListItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete?.(doc.id)}
-                          >
-                            <Trash className="w-4 h-4 mr-2" />
-                            Eliminar
-                          </DropdownListItem>
+                          {onView && (
+                            <DropdownListItem onSelect={() => onView(doc)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver documento
+                            </DropdownListItem>
+                          )}
+                          {onDownload && (
+                            <DropdownListItem onSelect={() => onDownload(doc)}>
+                              <DownloadSimple className="w-4 h-4 mr-2" />
+                              Descargar PDF
+                            </DropdownListItem>
+                          )}
+                          {doc.status === 'draft' && onSendForSignature && (
+                            <>
+                              <DropdownListSeparator />
+                              <DropdownListItem onSelect={() => onSendForSignature(doc)}>
+                                <PaperPlaneTilt className="w-4 h-4 mr-2" />
+                                Enviar para firma
+                              </DropdownListItem>
+                            </>
+                          )}
+                          {onDuplicate && (
+                            <DropdownListItem onSelect={() => onDuplicate(doc)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Duplicar
+                            </DropdownListItem>
+                          )}
+                          {onDelete && (
+                            <>
+                              <DropdownListSeparator />
+                              <DropdownListItem
+                                className="text-destructive focus:text-destructive"
+                                onSelect={() => onDelete(doc.id)}
+                              >
+                                <Trash className="w-4 h-4 mr-2" />
+                                Eliminar
+                              </DropdownListItem>
+                            </>
+                          )}
                         </DropdownListContent>
                       </DropdownList>
                     </div>

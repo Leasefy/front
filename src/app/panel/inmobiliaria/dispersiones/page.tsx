@@ -1,25 +1,22 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   PaperPlaneTilt,
-  ArrowsClockwise,
   Table,
   SquaresFour,
   Lightning,
-  CheckCircle,
-  FileText,
   DownloadSimple,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   MOCK_DISPERSIONES,
   MOCK_PROPIETARIOS,
-  calculateDispersionSummary,
   generateExtractoPropietario,
 } from '@/lib/data/mock-inmobiliaria';
 import type { Dispersion, DispersionStatus, DispersionSummary } from '@/lib/types/inmobiliaria';
@@ -45,6 +42,9 @@ import { Button } from '@/components/ui/button';
 // View modes
 type ViewMode = 'table' | 'cards';
 
+// Pagination
+const ITEMS_PER_PAGE = 6;
+
 /**
  * Get current month in YYYY-MM format
  */
@@ -56,10 +56,15 @@ function getCurrentMonth(): string {
 /**
  * DispersionesPage - Main page for managing disbursements to property owners
  * Route: /panel/inmobiliaria/dispersiones
+ *
+ * TODO [BACKEND]: Las dispersiones deben actualizarse en tiempo real.
+ * Implementar WebSocket o Server-Sent Events para:
+ * - Cambios de estado de dispersiones (pending → processing → completed)
+ * - Nuevas dispersiones generadas
+ * - Actualizaciones de montos o datos de propietarios
+ * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
 export default function DispersionesPage() {
-  const router = useRouter();
-
   // State for dispersiones (local copy for optimistic updates)
   const [dispersiones, setDispersiones] = useState<Dispersion[]>(MOCK_DISPERSIONES);
 
@@ -73,6 +78,9 @@ export default function DispersionesPage() {
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+
+  // State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   // State for modals
   const [selectedDispersion, setSelectedDispersion] = useState<Dispersion | null>(null);
@@ -104,6 +112,14 @@ export default function DispersionesPage() {
 
     return result;
   }, [dispersiones, filters]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredDispersiones.length / ITEMS_PER_PAGE);
+  const paginatedDispersiones = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return filteredDispersiones.slice(start, end);
+  }, [filteredDispersiones, currentPage]);
 
   // Calculate summary for selected month
   const summary: DispersionSummary = useMemo(() => {
@@ -266,25 +282,16 @@ export default function DispersionesPage() {
     }
   }, []);
 
-  // Handle generate dispersiones - navigate to wizard
-  const handleGenerateDispersiones = useCallback(() => {
-    router.push('/panel/inmobiliaria/dispersiones/generar');
-  }, [router]);
-
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {
     setFilters(newFilters);
+    setCurrentPage(1); // Reset page when filters change
   }, []);
 
   // Handle view pending filter
   const handleViewPending = useCallback(() => {
     setFilters((prev) => ({ ...prev, status: 'pending' }));
-  }, []);
-
-  // Refresh data (mock - resets to original)
-  const handleRefresh = useCallback(() => {
-    setDispersiones([...MOCK_DISPERSIONES]);
-    toast.success('Datos actualizados');
+    setCurrentPage(1);
   }, []);
 
   // Handle detail modal close
@@ -325,22 +332,13 @@ export default function DispersionesPage() {
             Gestiona los pagos mensuales a los propietarios
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
-          >
-            <ArrowsClockwise className="w-5 h-5" />
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
-          <Link
-            href="/panel/inmobiliaria/dispersiones/generar"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
-          >
-            <Lightning className="w-5 h-5" weight="fill" />
-            Generar Dispersiones
-          </Link>
-        </div>
+        <Link
+          href="/panel/inmobiliaria/dispersiones/generar"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
+        >
+          <Lightning className="w-5 h-5" weight="fill" />
+          Generar Dispersiones
+        </Link>
       </div>
 
       {/* Summary Section */}
@@ -351,139 +349,165 @@ export default function DispersionesPage() {
       >
         <DispersionResumen
           summary={summary}
-          onGenerateDispersiones={handleGenerateDispersiones}
           onViewPending={handleViewPending}
           onProcessAll={hasPendingDispersiones ? handleProcessAll : undefined}
-          onRefresh={handleRefresh}
         />
       </motion.div>
 
-      {/* Filters Section */}
+      {/* Unified Card - View Toggle + Filters + Content + Pagination */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="rounded-xl border border-border bg-card"
       >
+        {/* View Toggle Header - FIRST (Primary hierarchy) */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'table'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Table className="w-4 h-4" />
+              Tabla
+            </button>
+            <button
+              onClick={() => setViewMode('cards')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'cards'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <SquaresFour className="w-4 h-4" />
+              Cards
+            </button>
+          </div>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {filteredDispersiones.length} dispersion{filteredDispersiones.length !== 1 ? 'es' : ''}
+          </span>
+        </div>
+
+        {/* Filters Section - SECOND */}
         <DispersionFilters
           filters={filters}
           onFiltersChange={handleFilterChange}
           propietarios={propietarioOptions}
           statusCounts={statusCounts}
-          onGenerateDispersiones={handleGenerateDispersiones}
         />
-      </motion.div>
 
-      {/* View Toggle & Results Count */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center justify-between"
-      >
-        <p className="text-sm text-muted-foreground">
-          Mostrando {filteredDispersiones.length} dispersion
-          {filteredDispersiones.length !== 1 ? 'es' : ''}
-          {filters.status !== 'all' && (
-            <span className="ml-1">
-              ({filters.status === 'pending'
-                ? 'pendientes'
-                : filters.status === 'completed'
-                  ? 'completadas'
-                  : filters.status === 'processing'
-                    ? 'procesando'
-                    : 'fallidas'})
-            </span>
-          )}
-        </p>
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
-          <button
-            onClick={() => setViewMode('table')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'table'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de tabla"
-          >
-            <Table className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('cards')}
-            className={cn(
-              'p-2 rounded-md transition-colors',
-              viewMode === 'cards'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            title="Vista de tarjetas"
-          >
-            <SquaresFour className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Dispersiones List/Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        {filteredDispersiones.length > 0 ? (
-          viewMode === 'table' ? (
-            <DispersionTable
-              dispersiones={filteredDispersiones}
-              onViewDetail={handleDispersionClick}
-              onProcess={handleProcessDispersion}
-              onDownloadExtracto={handleDownloadExtracto}
-              showSummary
-            />
+        {/* Dispersiones List/Table */}
+        <div>
+          {filteredDispersiones.length > 0 ? (
+            viewMode === 'table' ? (
+              <DispersionTable
+                dispersiones={paginatedDispersiones}
+                onViewDetail={handleDispersionClick}
+                onProcess={handleProcessDispersion}
+                onDownloadExtracto={handleDownloadExtracto}
+                showSummary
+              />
+            ) : (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedDispersiones.map((dispersion) => (
+                  <DispersionCard
+                    key={dispersion.id}
+                    dispersion={dispersion}
+                    onViewDetail={handleDispersionClick}
+                    onProcess={
+                      dispersion.status === 'pending'
+                        ? () => handleProcessDispersion(dispersion)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDispersiones.map((dispersion) => (
-                <DispersionCard
-                  key={dispersion.id}
-                  dispersion={dispersion}
-                  onViewDetail={handleDispersionClick}
-                  onProcess={
-                    dispersion.status === 'pending'
-                      ? () => handleProcessDispersion(dispersion)
-                      : undefined
-                  }
-                />
+            <div className="p-12 text-center">
+              <PaperPlaneTilt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Sin dispersiones
+              </h3>
+              <p className="text-muted-foreground max-w-sm mx-auto">
+                No hay dispersiones que coincidan con los filtros para{' '}
+                <span className="capitalize">{monthDisplay}</span>.
+              </p>
+              {filters.status !== 'all' && (
+                <button
+                  onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
+                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Ver todas las dispersiones
+                </button>
+              )}
+              {filteredDispersiones.length === 0 &&
+                dispersiones.filter((d) => d.month === filters.month).length === 0 && (
+                  <div className="mt-6">
+                    <Link
+                      href="/panel/inmobiliaria/dispersiones/generar"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+                    >
+                      <Lightning className="w-4 h-4" weight="fill" />
+                      Generar Dispersiones
+                    </Link>
+                  </div>
+                )}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === 1
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <CaretLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-1 px-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                    page === currentPage
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {page}
+                </button>
               ))}
             </div>
-          )
-        ) : (
-          <div className="p-12 text-center rounded-2xl border border-dashed border-border">
-            <PaperPlaneTilt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Sin dispersiones
-            </h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-              No hay dispersiones que coincidan con los filtros para{' '}
-              <span className="capitalize">{monthDisplay}</span>.
-            </p>
-            {filters.status !== 'all' && (
-              <button
-                onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                Ver todas las dispersiones
-              </button>
-            )}
-            {filteredDispersiones.length === 0 &&
-              dispersiones.filter((d) => d.month === filters.month).length === 0 && (
-                <div className="mt-6">
-                  <Link
-                    href="/panel/inmobiliaria/dispersiones/generar"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
-                  >
-                    <Lightning className="w-4 h-4" weight="fill" />
-                    Generar Dispersiones
-                  </Link>
-                </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === totalPages
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
               )}
+            >
+              <CaretRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </motion.div>

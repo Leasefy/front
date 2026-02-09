@@ -270,48 +270,47 @@ export default function OnboardingPropietarioPage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Teléfono <span className="text-neutral-400 font-normal">(opcional)</span>
+                    Celular <span className="text-neutral-400 font-normal">(opcional)</span>
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={data.phone}
-                    onChange={(e) => updateData({ phone: e.target.value })}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, '')
+                      // Limit to 10 digits
+                      if (value.length <= 10) {
+                        // Format: 300 123 4567
+                        let formatted = value
+                        if (value.length > 3) {
+                          formatted = value.slice(0, 3) + ' ' + value.slice(3)
+                        }
+                        if (value.length > 6) {
+                          formatted = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6)
+                        }
+                        updateData({ phone: formatted })
+                      }
+                    }}
                     placeholder="300 123 4567"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
+                    maxLength={12}
+                    className={cn(
+                      "w-full px-4 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 transition-all",
+                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10
+                        ? "border-amber-300 focus:border-amber-400"
+                        : "border-neutral-200 focus:border-neutral-400"
+                    )}
                   />
                   <p className="text-xs text-neutral-400 mt-1.5">
                     Solo para notificaciones importantes de tu propiedad
                   </p>
+                  {data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      El número debe tener 10 dígitos
+                    </p>
+                  )}
                 </div>
 
-                {/* Preferred Contact */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-3">
-                    ¿Cómo prefieres que te contactemos?
-                  </label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 'whatsapp' as const, label: 'WhatsApp', icon: ChatCircle },
-                      { value: 'email' as const, label: 'Email', icon: Envelope },
-                      { value: 'phone' as const, label: 'Llamada', icon: Phone },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => updateData({ preferredContact: option.value })}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all",
-                          data.preferredContact === option.value
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
-                        )}
-                      >
-                        <option.icon className="w-4 h-4" />
-                        <span className="text-sm font-medium">{option.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Continue Button */}
@@ -322,7 +321,7 @@ export default function OnboardingPropietarioPage() {
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid
-                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
@@ -456,7 +455,7 @@ export default function OnboardingPropietarioPage() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid && !isSubmitting
-                      ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >

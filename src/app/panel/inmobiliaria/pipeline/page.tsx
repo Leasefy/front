@@ -8,7 +8,6 @@ import {
   CalendarCheck,
   CheckCircle,
   ChartLineUp,
-  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -158,30 +157,16 @@ export default function PipelinePage() {
     setTimeout(() => setSelectedItem(null), 300);
   }, []);
 
-  // Refresh data (mock - just resets to original)
-  const handleRefresh = useCallback(() => {
-    setItems([...MOCK_PIPELINE_ITEMS]);
-  }, []);
-
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-            Pipeline de Arriendos
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Gestiona el proceso de arriendo de principio a fin
-          </p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium"
-        >
-          <ArrowsClockwise className="w-5 h-5" />
-          Actualizar
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          Pipeline de Arriendos
+        </h1>
+        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+          Gestiona el proceso de arriendo de principio a fin
+        </p>
       </div>
 
       {/* Stats Row */}
@@ -275,46 +260,39 @@ export default function PipelinePage() {
         </motion.div>
       </div>
 
-      {/* Filters */}
-      <PipelineFilters
-        agentes={MOCK_AGENTES}
-        consignaciones={MOCK_CONSIGNACIONES}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-      />
-
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Mostrando {filteredItems.length} de {items.length} leads
-        </p>
-        {filteredItems.length !== items.length && (
-          <button
-            onClick={() => setFilters({
-              agenteId: undefined,
-              consignacionId: undefined,
-              dateFrom: undefined,
-              dateTo: undefined,
-              search: undefined,
-            })}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
-
-      {/* Pipeline Board */}
+      {/* Unified Data Card - Filters + Content */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
+        className="rounded-xl border border-border bg-card overflow-hidden"
       >
-        <PipelineBoard
-          items={filteredItems}
-          onItemClick={handleCardClick}
-          onStageChange={handleStageChange}
+        {/* Header with count */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+          <span className="text-sm font-medium text-foreground">
+            Pipeline de Leads
+          </span>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {filteredItems.length} de {items.length} leads
+          </span>
+        </div>
+
+        {/* Filters */}
+        <PipelineFilters
+          agentes={MOCK_AGENTES}
+          consignaciones={MOCK_CONSIGNACIONES}
+          filters={filters}
+          onFilterChange={handleFilterChange}
         />
+
+        {/* Pipeline Board */}
+        <div className="p-4">
+          <PipelineBoard
+            items={filteredItems}
+            onItemClick={handleCardClick}
+            onStageChange={handleStageChange}
+          />
+        </div>
       </motion.div>
 
       {/* Detail Modal */}

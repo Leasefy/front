@@ -2,8 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, CreditCard, Lock, Check, Buildings } from '@phosphor-icons/react';
+import { CreditCard, Lock, Check, Buildings } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { CouponInput, PriceSummary } from '@/components/pricing';
 import { getPlanById } from '@/lib/data/mock-subscriptions';
@@ -54,13 +54,9 @@ function CheckoutContent() {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Back link */}
-        <Link
-          href="/panel/upgrade"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a planes
-        </Link>
+        <div className="mb-6">
+          <BackButton href="/panel/upgrade" label="Volver a planes" />
+        </div>
 
         {/* Header */}
         <div className="mb-8">

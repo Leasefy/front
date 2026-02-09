@@ -344,7 +344,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
-                    ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/25'
+                    ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                 )}
               >
@@ -356,7 +356,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />
-                    Confirmar Consignacion
+                    Confirmar Consignación
                   </>
                 )}
               </button>

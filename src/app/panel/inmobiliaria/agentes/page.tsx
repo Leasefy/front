@@ -26,11 +26,13 @@ import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
 import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/AgenteFilters';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
+import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
+import type { AgenteFormData } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 6;
 
 const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
   { id: 'equipo', label: 'Equipo', icon: UsersThree },
@@ -45,7 +47,7 @@ const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
 export default function AgentesPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('equipo');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<AgenteFiltersState>({
     search: '',
@@ -53,6 +55,7 @@ export default function AgentesPage() {
     status: 'all',
     sortBy: 'name',
   });
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Filter agentes
   const filteredAgentes = useMemo(() => {
@@ -131,9 +134,19 @@ export default function AgentesPage() {
   }, []);
 
   const handleNuevoAgente = useCallback(() => {
-    toast.info('Nuevo Agente', {
-      description: 'Formulario de creacion disponible en la proxima version',
+    setShowAddModal(true);
+  }, []);
+
+  const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
+    // TODO Backend: Create agent via API
+    // For now, just show success toast
+    toast.success('Agente creado', {
+      description: `${data.name} ha sido agregado al equipo`,
     });
+    // In production, this would:
+    // 1. POST to /api/agentes
+    // 2. Refresh the agentes list
+    // 3. Show success/error toast
   }, []);
 
   return (
@@ -150,9 +163,7 @@ export default function AgentesPage() {
         </div>
         <button
           onClick={handleNuevoAgente}
-          disabled
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 font-medium cursor-not-allowed opacity-60"
-          title="Disponible proximamente"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
         >
           <Plus className="w-5 h-5" />
           Nuevo Agente
@@ -230,191 +241,210 @@ export default function AgentesPage() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 w-fit">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-              )}
+      {/* Tab Content - Tabs integrated into card */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Tab Navigation - Inside the card */}
+        <div className="px-4 py-3 border-b border-border bg-muted/20">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                    activeTab === tab.id
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-4 h-4" weight={activeTab === tab.id ? 'fill' : 'regular'} />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'equipo' && (
+            <motion.div
+              key="equipo"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <Icon className="w-4 h-4" weight={activeTab === tab.id ? 'fill' : 'regular'} />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          );
-        })}
+              {/* View Toggle Header */}
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                      viewMode === 'table'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    Tabla
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                      viewMode === 'grid'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <SquaresFour className="w-4 h-4" />
+                    Cards
+                  </button>
+                </div>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {filteredAgentes.length} agentes
+                </span>
+              </div>
+
+              {/* Filters - Second */}
+              <AgenteFilters
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                agentes={MOCK_AGENTES}
+              />
+
+              {/* Content */}
+              <div>
+                <AnimatePresence mode="wait">
+                  {viewMode === 'grid' ? (
+                    <motion.div
+                      key="grid"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      {paginatedAgentes.length > 0 ? (
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {paginatedAgentes.map((agente) => (
+                            <AgenteCard
+                              key={agente.id}
+                              agente={agente}
+                              onClick={() => handleView(agente)}
+                              onView={() => handleView(agente)}
+                              onEdit={() => handleEdit(agente)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyState />
+                      )}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="table"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                    >
+                      {paginatedAgentes.length > 0 ? (
+                        <AgenteTable
+                          agentes={paginatedAgentes}
+                          onView={handleView}
+                          onEdit={handleEdit}
+                        />
+                      ) : (
+                        <EmptyState />
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Pagination Footer */}
+              {totalPages > 1 && (
+                <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={cn(
+                      'p-2 rounded-md border border-border transition-all',
+                      currentPage === 1
+                        ? 'text-muted-foreground/40 cursor-not-allowed'
+                        : 'text-muted-foreground hover:bg-muted'
+                    )}
+                  >
+                    <CaretLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1 px-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={cn(
+                          'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                          page === currentPage
+                            ? 'bg-foreground text-background'
+                            : 'text-muted-foreground hover:bg-muted'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className={cn(
+                      'p-2 rounded-md border border-border transition-all',
+                      currentPage === totalPages
+                        ? 'text-muted-foreground/40 cursor-not-allowed'
+                        : 'text-muted-foreground hover:bg-muted'
+                    )}
+                  >
+                    <CaretRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'ranking' && (
+            <motion.div
+              key="ranking"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="p-4"
+            >
+              <AgenteLeaderboard agentes={MOCK_AGENTES} />
+            </motion.div>
+          )}
+
+          {activeTab === 'workload' && (
+            <motion.div
+              key="workload"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="p-4"
+            >
+              <AgenteWorkloadChart agentes={MOCK_AGENTES} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        {activeTab === 'equipo' && (
-          <motion.div
-            key="equipo"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* Filters */}
-            <AgenteFilters
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              agentes={MOCK_AGENTES}
-            />
-
-            {/* View Toggle and Results Count */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                {filteredAgentes.length} de {MOCK_AGENTES.length} agentes
-              </p>
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    'p-2 rounded-lg transition-all',
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                  )}
-                  title="Vista de cuadricula"
-                >
-                  <SquaresFour className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={cn(
-                    'p-2 rounded-lg transition-all',
-                    viewMode === 'table'
-                      ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                  )}
-                  title="Vista de tabla"
-                >
-                  <List className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <AnimatePresence mode="wait">
-              {viewMode === 'grid' ? (
-                <motion.div
-                  key="grid"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  {paginatedAgentes.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {paginatedAgentes.map((agente) => (
-                        <AgenteCard
-                          key={agente.id}
-                          agente={agente}
-                          onClick={() => handleView(agente)}
-                          onView={() => handleView(agente)}
-                          onEdit={() => handleEdit(agente)}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState />
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="table"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <AgenteTable
-                    agentes={paginatedAgentes}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className={cn(
-                    'p-2 rounded-lg transition-all',
-                    currentPage === 1
-                      ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                  )}
-                >
-                  <CaretLeft className="w-5 h-5" />
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={cn(
-                        'w-9 h-9 rounded-lg text-sm font-medium transition-all',
-                        page === currentPage
-                          ? 'bg-indigo-500 text-white'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                      )}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className={cn(
-                    'p-2 rounded-lg transition-all',
-                    currentPage === totalPages
-                      ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                  )}
-                >
-                  <CaretRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === 'ranking' && (
-          <motion.div
-            key="ranking"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <AgenteLeaderboard agentes={MOCK_AGENTES} />
-          </motion.div>
-        )}
-
-        {activeTab === 'workload' && (
-          <motion.div
-            key="workload"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <AgenteWorkloadChart agentes={MOCK_AGENTES} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Add Agent Modal */}
+      <AgenteFormModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleCreateAgente}
+      />
     </div>
   );
 }
@@ -422,14 +452,14 @@ export default function AgentesPage() {
 // Empty State Component
 function EmptyState() {
   return (
-    <div className="p-12 text-center rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-        <Users className="w-8 h-8 text-neutral-400" />
+    <div className="p-12 text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+        <Users className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+      <h3 className="text-lg font-semibold text-foreground mb-1">
         No se encontraron agentes
       </h3>
-      <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+      <p className="text-muted-foreground max-w-md mx-auto">
         Ajusta los filtros de busqueda o agrega un nuevo agente para comenzar
       </p>
     </div>

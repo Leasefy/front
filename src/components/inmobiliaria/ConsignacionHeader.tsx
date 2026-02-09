@@ -136,10 +136,10 @@ export function ConsignacionHeader({
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-      <div className="flex flex-col lg:flex-row">
+    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="flex flex-col lg:flex-row rounded-2xl">
         {/* Image/Thumbnail Section */}
-        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-800">
+        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-800 overflow-hidden rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -265,7 +265,7 @@ export function ConsignacionHeader({
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full left-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-10"
+                  className="absolute top-full left-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-[100]"
                 >
                   {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
                     const Icon = style.icon;
@@ -306,7 +306,7 @@ export function ConsignacionHeader({
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full right-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-10"
+                  className="absolute top-full right-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-[100]"
                 >
                   <button
                     onClick={() => {
@@ -338,7 +338,7 @@ export function ConsignacionHeader({
       {/* Click outside handlers */}
       {(showStatusDropdown || showMoreMenu) && (
         <div
-          className="fixed inset-0 z-0"
+          className="fixed inset-0 z-[99]"
           onClick={() => {
             setShowStatusDropdown(false);
             setShowMoreMenu(false);

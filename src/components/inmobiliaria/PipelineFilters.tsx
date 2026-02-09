@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
-  Funnel,
   X,
   CaretDown,
-  Calendar,
-  User,
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -31,13 +28,13 @@ interface PipelineFiltersProps {
 
 const DATE_PRESETS = [
   { label: 'Hoy', value: 'today' },
-  { label: 'Esta semana', value: 'week' },
-  { label: 'Este mes', value: 'month' },
+  { label: 'Semana', value: 'week' },
+  { label: 'Mes', value: 'month' },
 ] as const;
 
 /**
- * PipelineFilters - Filter bar for the rental pipeline Kanban board
- * Includes filters for agente, property, date range, and search
+ * PipelineFilters - Inline filter bar for the rental pipeline Kanban board
+ * Uses pill-style date presets and compact dropdowns
  */
 export function PipelineFilters({
   agentes,
@@ -45,8 +42,19 @@ export function PipelineFilters({
   filters,
   onFilterChange,
 }: PipelineFiltersProps) {
-  const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Get unique properties from consignaciones
   const uniqueProperties = useMemo(() => {
@@ -58,14 +66,25 @@ export function PipelineFilters({
     });
   }, [consignaciones]);
 
-  // Count active filters
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.agenteId) count++;
-    if (filters.consignacionId) count++;
-    if (filters.dateFrom || filters.dateTo) count++;
-    return count;
-  }, [filters]);
+  // Check if any filter is active
+  const hasAnyFilter = filters.agenteId || filters.consignacionId || filters.dateFrom || filters.dateTo || filters.search;
+
+  // Check which date preset is active
+  const activeDatePreset = useMemo(() => {
+    if (!filters.dateFrom || !filters.dateTo) return null;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    if (filters.dateTo === todayStr) {
+      const fromDate = new Date(filters.dateFrom);
+      const daysDiff = Math.round((today.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff === 0) return 'today';
+      if (daysDiff === 7) return 'week';
+      if (daysDiff >= 28 && daysDiff <= 31) return 'month';
+    }
+    return null;
+  }, [filters.dateFrom, filters.dateTo]);
 
   // Update a specific filter
   const updateFilter = useCallback(
@@ -115,16 +134,16 @@ export function PipelineFilters({
 
   // Get label for agente dropdown
   const getAgenteLabel = () => {
-    if (!filters.agenteId) return 'Todos los agentes';
+    if (!filters.agenteId) return 'Agente';
     const agente = agentes.find((a) => a.id === filters.agenteId);
-    return agente?.name || 'Todos los agentes';
+    return agente?.name || 'Agente';
   };
 
   // Get label for property dropdown
   const getPropertyLabel = () => {
-    if (!filters.consignacionId) return 'Todas las propiedades';
+    if (!filters.consignacionId) return 'Propiedad';
     const consignacion = uniqueProperties.find((c) => c.id === filters.consignacionId);
-    return consignacion?.propertyTitle || 'Todas las propiedades';
+    return consignacion?.propertyTitle || 'Propiedad';
   };
 
   // Get initials for avatar fallback
@@ -138,280 +157,231 @@ export function PipelineFilters({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Search and Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Buscar por candidato..."
-            value={filters.search || ''}
-            onChange={(e) => updateFilter('search', e.target.value || undefined)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-          />
-          {filters.search && (
-            <button
-              onClick={() => updateFilter('search', undefined)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-            >
-              <X className="w-4 h-4 text-neutral-400" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Toggle */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all',
-            showFilters || activeFiltersCount > 0
-              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-              : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
-          )}
-        >
-          <Funnel className="w-4 h-4" />
-          <span className="text-sm font-medium">Filtros</span>
-          {activeFiltersCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
+    <div className="p-4 space-y-4 border-b border-border" ref={dropdownRef}>
+      {/* Row 1: Search */}
+      <div className="relative max-w-md">
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Buscar por candidato, email o propiedad..."
+          value={filters.search || ''}
+          onChange={(e) => updateFilter('search', e.target.value || undefined)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+        />
+        {filters.search && (
+          <button
+            onClick={() => updateFilter('search', undefined)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
-      {/* Filters Panel */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+      {/* Row 2: Dropdowns + Date Presets */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Agente Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'agente' ? null : 'agente')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              filters.agenteId
+                ? 'bg-indigo-500 text-white border-indigo-500'
+                : 'bg-background text-muted-foreground border-border hover:bg-muted'
+            )}
           >
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416]">
-              <div className="flex flex-wrap gap-4">
-                {/* Agente Dropdown */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
-                    <User className="w-3.5 h-3.5 inline mr-1" />
-                    Agente
-                  </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'agente' ? null : 'agente')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[180px] justify-between',
-                      filters.agenteId
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                    )}
-                  >
-                    <span className="truncate max-w-[140px]">{getAgenteLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'agente' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-64 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20 max-h-60 overflow-y-auto"
-                      >
-                        <button
-                          onClick={() => {
-                            updateFilter('agenteId', undefined);
-                            setOpenDropdown(null);
-                          }}
-                          className={cn(
-                            'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                            !filters.agenteId
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                          )}
-                        >
-                          Todos los agentes
-                        </button>
-                        {agentes
-                          .filter((a) => a.status === 'active')
-                          .map((agente) => (
-                            <button
-                              key={agente.id}
-                              onClick={() => {
-                                updateFilter('agenteId', agente.id);
-                                setOpenDropdown(null);
-                              }}
-                              className={cn(
-                                'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                                filters.agenteId === agente.id
-                                  ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                              )}
-                            >
-                              {agente.avatar ? (
-                                <img
-                                  src={agente.avatar}
-                                  alt={agente.name}
-                                  className="w-6 h-6 rounded-full"
-                                />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                                  {getInitials(agente.name)}
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <span className="truncate block">{agente.name}</span>
-                                <span className="text-xs text-neutral-400">{agente.zone}</span>
-                              </div>
-                            </button>
-                          ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Property Dropdown */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
-                    <Buildings className="w-3.5 h-3.5 inline mr-1" />
-                    Propiedad
-                  </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'property' ? null : 'property')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[200px] justify-between',
-                      filters.consignacionId
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                    )}
-                  >
-                    <span className="truncate max-w-[160px]">{getPropertyLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'property' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-72 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20 max-h-60 overflow-y-auto"
-                      >
-                        <button
-                          onClick={() => {
-                            updateFilter('consignacionId', undefined);
-                            setOpenDropdown(null);
-                          }}
-                          className={cn(
-                            'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                            !filters.consignacionId
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                          )}
-                        >
-                          Todas las propiedades
-                        </button>
-                        {uniqueProperties.map((consignacion) => (
-                          <button
-                            key={consignacion.id}
-                            onClick={() => {
-                              updateFilter('consignacionId', consignacion.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                              filters.consignacionId === consignacion.id
-                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                            )}
-                          >
-                            {consignacion.propertyThumbnail ? (
-                              <img
-                                src={consignacion.propertyThumbnail}
-                                alt={consignacion.propertyTitle}
-                                className="w-8 h-8 rounded-lg object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
-                                <Buildings className="w-4 h-4 text-neutral-400" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <span className="truncate block font-medium">
-                                {consignacion.propertyTitle}
-                              </span>
-                              <span className="text-xs text-neutral-400 truncate block">
-                                {consignacion.propertyZone}, {consignacion.propertyCity}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Date Range */}
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
-                    <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                    Rango de fechas
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="date"
-                      value={filters.dateFrom || ''}
-                      onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-                      className="px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Desde"
-                    />
-                    <span className="text-neutral-400">-</span>
-                    <input
-                      type="date"
-                      value={filters.dateTo || ''}
-                      onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-                      className="px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Hasta"
-                    />
-                  </div>
-                </div>
-
-                {/* Date Presets */}
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
-                    Atajos
-                  </label>
-                  <div className="flex gap-2">
-                    {DATE_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        onClick={() => applyDatePreset(preset.value)}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors border border-neutral-200 dark:border-neutral-700"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {activeFiltersCount > 0 && (
+            <span className="truncate max-w-[100px]">{getAgenteLabel()}</span>
+            <CaretDown className={cn('w-4 h-4 shrink-0 transition-transform', openDropdown === 'agente' && 'rotate-180')} />
+          </button>
+          <AnimatePresence>
+            {openDropdown === 'agente' && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute top-full left-0 mt-2 w-64 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+              >
                 <button
-                  onClick={clearAllFilters}
-                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                  onClick={() => {
+                    updateFilter('agenteId', undefined);
+                    setOpenDropdown(null);
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    !filters.agenteId
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      : 'text-foreground hover:bg-muted'
+                  )}
                 >
-                  Limpiar filtros
+                  Todos los agentes
                 </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {agentes
+                  .filter((a) => a.status === 'active')
+                  .map((agente) => (
+                    <button
+                      key={agente.id}
+                      onClick={() => {
+                        updateFilter('agenteId', agente.id);
+                        setOpenDropdown(null);
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                        filters.agenteId === agente.id
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                          : 'text-foreground hover:bg-muted'
+                      )}
+                    >
+                      {agente.avatar ? (
+                        <img
+                          src={agente.avatar}
+                          alt={agente.name}
+                          className="w-6 h-6 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                          {getInitials(agente.name)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="truncate block">{agente.name}</span>
+                        <span className="text-xs text-muted-foreground">{agente.zone}</span>
+                      </div>
+                    </button>
+                  ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* Close dropdown on click outside */}
-      {openDropdown && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)} />
-      )}
+        {/* Property Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'property' ? null : 'property')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              filters.consignacionId
+                ? 'bg-indigo-500 text-white border-indigo-500'
+                : 'bg-background text-muted-foreground border-border hover:bg-muted'
+            )}
+          >
+            <span className="truncate max-w-[120px]">{getPropertyLabel()}</span>
+            <CaretDown className={cn('w-4 h-4 shrink-0 transition-transform', openDropdown === 'property' && 'rotate-180')} />
+          </button>
+          <AnimatePresence>
+            {openDropdown === 'property' && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute top-full left-0 mt-2 w-72 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+              >
+                <button
+                  onClick={() => {
+                    updateFilter('consignacionId', undefined);
+                    setOpenDropdown(null);
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    !filters.consignacionId
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      : 'text-foreground hover:bg-muted'
+                  )}
+                >
+                  Todas las propiedades
+                </button>
+                {uniqueProperties.map((consignacion) => (
+                  <button
+                    key={consignacion.id}
+                    onClick={() => {
+                      updateFilter('consignacionId', consignacion.id);
+                      setOpenDropdown(null);
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      filters.consignacionId === consignacion.id
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        : 'text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {consignacion.propertyThumbnail ? (
+                      <img
+                        src={consignacion.propertyThumbnail}
+                        alt={consignacion.propertyTitle}
+                        className="w-8 h-8 rounded-lg object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Buildings className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate block font-medium">
+                        {consignacion.propertyTitle}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate block">
+                        {consignacion.propertyZone}, {consignacion.propertyCity}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Separator */}
+        <div className="hidden sm:block w-px h-6 bg-border" />
+
+        {/* Date Presets - Pill Style */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
+          {DATE_PRESETS.map((preset) => (
+            <button
+              key={preset.value}
+              onClick={() => applyDatePreset(preset.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                activeDatePreset === preset.value
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom Date Range */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={filters.dateFrom || ''}
+            onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
+            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+          />
+          <span className="text-muted-foreground text-sm">a</span>
+          <input
+            type="date"
+            value={filters.dateTo || ''}
+            onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
+            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+          />
+        </div>
+
+        {/* Clear Filters */}
+        {hasAnyFilter && (
+          <>
+            <div className="hidden sm:block w-px h-6 bg-border" />
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Limpiar
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

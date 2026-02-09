@@ -138,49 +138,47 @@ export function ComisionDesglose({
   // Compact variant - just show summary with expand option
   if (variant === 'compact' && !isExpanded) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn('p-4 rounded-xl border border-border bg-card', className)}
+      <button
+        onClick={() => setIsExpanded(true)}
+        className={cn(
+          'w-full flex items-center justify-between p-4 text-left group hover:bg-muted/30 transition-colors',
+          className
+        )}
       >
-        <button
-          onClick={() => setIsExpanded(true)}
-          className="w-full flex items-center justify-between text-left group"
-        >
-          <div>
-            <h4 className="text-sm font-medium text-foreground">Desglose de Comisiones</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                {formatCurrency(totals.totalCommission)}
-              </p>
-              <p className="text-xs text-muted-foreground">en comisiones</p>
-            </div>
-            <CaretDown className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </div>
-        </button>
-      </motion.div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-foreground tabular-nums">
+            {formatCurrency(totals.totalCommission)}
+          </span>
+          <CaretDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </div>
+      </button>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn('rounded-xl border border-border bg-card overflow-hidden', className)}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={cn(
+        variant === 'full' && 'rounded-xl border border-border bg-card overflow-hidden',
+        className
+      )}
     >
       {/* Header (only in compact expanded mode) */}
       {variant === 'compact' && isExpanded && (
         <button
           onClick={() => setIsExpanded(false)}
-          className="w-full p-4 flex items-center justify-between text-left border-b border-border hover:bg-muted/30 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-muted/30 transition-colors"
         >
-          <h4 className="text-sm font-medium text-foreground">Desglose de Comisiones</h4>
-          <CaretDown className="w-5 h-5 text-muted-foreground rotate-180" />
+          <span className="text-sm text-muted-foreground">
+            {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
+          </span>
+          <CaretDown className="w-4 h-4 text-muted-foreground rotate-180" />
         </button>
       )}
 
@@ -257,10 +255,12 @@ export function ComisionDesglose({
         </Table>
       </div>
 
-      {/* Commission Ratio Visualization */}
-      <div className="p-4 border-t border-border bg-muted/30">
-        <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} />
-      </div>
+      {/* Commission Ratio Visualization - only for full variant */}
+      {variant === 'full' && (
+        <div className="p-4 border-t border-border bg-muted/30">
+          <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} />
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -1,10 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Bed, CornersOut, Users, CheckCircle, ArrowsOut } from '@phosphor-icons/react';
+import { MapPin, Bed, CornersOut, Users, CheckCircle, ArrowsOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/ui/back-button';
 import { formatCurrency } from '@/lib/format';
 import { RiskGauge } from './RiskGauge';
 import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
@@ -54,15 +54,9 @@ export function PropertyHeader({
 
   return (
     <div className={cn('bg-card rounded-sm border border-border overflow-hidden', className)}>
-      {/* Back Compass */}
+      {/* Back Navigation */}
       <div className="px-4 sm:px-6 py-3 border-b border-border">
-        <Link
-          href="/panel"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a mis propiedades
-        </Link>
+        <BackButton href="/panel" label="Volver a mis propiedades" />
       </div>
 
       {/* Content */}

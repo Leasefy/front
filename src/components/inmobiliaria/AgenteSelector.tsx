@@ -18,8 +18,9 @@ import type { Agente } from '@/lib/types/inmobiliaria';
 interface AgenteSelectorProps {
   agentes: Agente[];
   value: string | null;
-  onChange: (id: string) => void;
+  onChange: (id: string | null) => void;
   className?: string;
+  allowNoAgent?: boolean;
 }
 
 type SortOption = 'recommended' | 'name' | 'workload' | 'performance';
@@ -45,6 +46,7 @@ export function AgenteSelector({
   value,
   onChange,
   className,
+  allowNoAgent = true,
 }: AgenteSelectorProps) {
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [zoneFilter, setZoneFilter] = useState<string>('all');
@@ -154,8 +156,58 @@ export function AgenteSelector({
       </div>
 
       {/* Agents Grid */}
-      {sortedAgentes.length > 0 ? (
+      {sortedAgentes.length > 0 || allowNoAgent ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* No Agent Option */}
+          {allowNoAgent && (
+            <motion.button
+              onClick={() => onChange(null)}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.99 }}
+              className={cn(
+                'relative p-4 rounded-xl border text-left transition-all duration-200',
+                value === null
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500/20'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md'
+              )}
+            >
+              {/* Selected Indicator */}
+              {value === null && (
+                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                  <motion.svg
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </motion.svg>
+                </div>
+              )}
+
+              {/* No Agent Content */}
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <User className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground text-sm">
+                    Sin agente asignado
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    La propiedad no tendrá un agente responsable
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Puedes asignar un agente más adelante desde el detalle de la propiedad.
+              </p>
+            </motion.button>
+          )}
+
           {sortedAgentes.map((agente) => (
             <motion.button
               key={agente.id}
@@ -289,9 +341,19 @@ export function AgenteSelector({
       )}
 
       {/* Selected Confirmation */}
-      {value && (
-        <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+      {(value !== undefined) && (
+        <p className={cn(
+          "text-sm flex items-center gap-2",
+          value === null
+            ? "text-muted-foreground"
+            : "text-emerald-600 dark:text-emerald-400"
+        )}>
+          <span className={cn(
+            "w-5 h-5 rounded-full flex items-center justify-center",
+            value === null
+              ? "bg-muted"
+              : "bg-emerald-100 dark:bg-emerald-900/30"
+          )}>
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -303,7 +365,10 @@ export function AgenteSelector({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </motion.svg>
           </span>
-          Agente asignado: {activeAgentes.find((a) => a.id === value)?.name}
+          {value === null
+            ? "Sin agente asignado"
+            : `Agente asignado: ${activeAgentes.find((a) => a.id === value)?.name}`
+          }
         </p>
       )}
     </div>

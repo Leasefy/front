@@ -32,6 +32,8 @@ interface ReporteFiltersProps {
     agentes: number;
   };
   zones: string[];
+  /** Minimal mode for embedded use in unified cards */
+  minimal?: boolean;
 }
 
 // Category tabs configuration
@@ -130,6 +132,7 @@ export function ReporteFilters({
   onFiltersChange,
   reportCounts,
   zones,
+  minimal = false,
 }: ReporteFiltersProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
@@ -190,210 +193,201 @@ export function ReporteFilters({
 
   return (
     <div className="space-y-4">
-      {/* Top Row: Period and Favorites */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+      {/* Row 1: Search */}
+      <div className="relative">
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Buscar reportes..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+        />
+        {searchInput && (
+          <button
+            onClick={() => {
+              setSearchInput('');
+              updateFilter('search', '');
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+
+      {/* Row 2: All Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Category Tabs */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto">
+          {CATEGORY_TABS.map((tab) => {
+            const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
+            const isActive = filters.category === tab.value;
+
+            return (
+              <button
+                key={tab.value}
+                onClick={() => updateFilter('category', tab.value)}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                  isActive
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'px-1.5 py-0.5 rounded-full text-xs min-w-[18px] text-center',
+                      isActive
+                        ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400'
+                        : 'bg-muted-foreground/20'
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Separator */}
+        <div className="hidden sm:block w-px h-6 bg-border" />
+
         {/* Period Selector */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <button
-              onClick={() =>
-                setOpenDropdown(openDropdown === 'period' ? null : 'period')
-              }
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white hover:border-neutral-300 dark:hover:border-neutral-600 transition-all min-w-[240px] justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <CalendarBlank className="w-5 h-5 text-neutral-400" />
-                <span className="font-medium text-sm">
-                  {formatPeriodDisplay(filters.period)}
-                </span>
-              </div>
-              <CaretDown className="w-4 h-4 text-neutral-400" />
-            </button>
-            <AnimatePresence>
-              {openDropdown === 'period' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20"
+        <div className="relative">
+          <button
+            onClick={() =>
+              setOpenDropdown(openDropdown === 'period' ? null : 'period')
+            }
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:bg-muted transition-all"
+          >
+            <CalendarBlank className="w-4 h-4 text-muted-foreground" />
+            <span className="text-foreground">
+              {formatPeriodDisplay(filters.period)}
+            </span>
+            <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <AnimatePresence>
+            {openDropdown === 'period' && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute top-full left-0 mt-1 w-52 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
+              >
+                {PERIOD_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handlePeriodSelect(option.value)}
+                    className={cn(
+                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      selectedPeriodOption === option.value
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Zone Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() =>
+              setOpenDropdown(openDropdown === 'zone' ? null : 'zone')
+            }
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              filters.zone
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <MapPin className="w-4 h-4" />
+            <span className="max-w-[100px] truncate">
+              {filters.zone || 'Zona'}
+            </span>
+            <CaretDown className="w-3.5 h-3.5" />
+          </button>
+          <AnimatePresence>
+            {openDropdown === 'zone' && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute left-0 top-full mt-1 w-52 p-2 rounded-xl border border-border bg-card shadow-xl z-20 max-h-64 overflow-y-auto"
+              >
+                <button
+                  onClick={() => {
+                    updateFilter('zone', null);
+                    setOpenDropdown(null);
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    !filters.zone
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
                 >
-                  {PERIOD_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handlePeriodSelect(option.value)}
-                      className={cn(
-                        'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                        selectedPeriodOption === option.value
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  Todas las zonas
+                </button>
+                {zones.map((zone) => (
+                  <button
+                    key={zone}
+                    onClick={() => {
+                      updateFilter('zone', zone);
+                      setOpenDropdown(null);
+                    }}
+                    className={cn(
+                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      filters.zone === zone
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    {zone}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Favorites Toggle */}
         <button
           onClick={() => updateFilter('favoritesOnly', !filters.favoritesOnly)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border',
+            'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
             filters.favoritesOnly
               ? 'bg-amber-500 text-white border-amber-500'
-              : 'bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
+              : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
           )}
         >
           <Star
             className="w-4 h-4"
             weight={filters.favoritesOnly ? 'fill' : 'regular'}
           />
-          Solo favoritos
+          Favoritos
         </button>
-      </div>
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 overflow-x-auto">
-        {CATEGORY_TABS.map((tab) => {
-          const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
-          const isActive = filters.category === tab.value;
-
-          return (
-            <button
-              key={tab.value}
-              onClick={() => updateFilter('category', tab.value)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                isActive
-                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              )}
-            >
-              {tab.label}
-              {count > 0 && (
-                <span
-                  className={cn(
-                    'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
-                    isActive
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                      : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                  )}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search and Zone Filter */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Buscar reportes..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-          />
-          {searchInput && (
-            <button
-              onClick={() => {
-                setSearchInput('');
-                updateFilter('search', '');
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-            >
-              <X className="w-4 h-4 text-neutral-400" />
-            </button>
-          )}
-        </div>
-
-        {/* Zone Filter + Active Filters */}
-        <div className="flex items-center gap-3">
-          {/* Zone Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() =>
-                setOpenDropdown(openDropdown === 'zone' ? null : 'zone')
-              }
-              className={cn(
-                'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-w-[160px] justify-between border',
-                filters.zone
-                  ? 'bg-indigo-500 text-white border-indigo-500'
-                  : 'bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 shrink-0" />
-                <span className="truncate max-w-[100px]">
-                  {filters.zone || 'Todas las zonas'}
-                </span>
-              </div>
-              <CaretDown className="w-4 h-4 shrink-0" />
-            </button>
-            <AnimatePresence>
-              {openDropdown === 'zone' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="absolute right-0 top-full mt-1 w-56 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20 max-h-64 overflow-y-auto"
-                >
-                  <button
-                    onClick={() => {
-                      updateFilter('zone', null);
-                      setOpenDropdown(null);
-                    }}
-                    className={cn(
-                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                      !filters.zone
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                    )}
-                  >
-                    Todas las zonas
-                  </button>
-                  {zones.map((zone) => (
-                    <button
-                      key={zone}
-                      onClick={() => {
-                        updateFilter('zone', zone);
-                        setOpenDropdown(null);
-                      }}
-                      className={cn(
-                        'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                        filters.zone === zone
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                      )}
-                    >
-                      {zone}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Active Filters Indicator */}
-          {activeFiltersCount > 0 && (
-            <button
-              onClick={clearAllFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
-            >
-              <Funnel className="w-4 h-4" weight="fill" />
-              {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''}
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        {/* Clear Filters */}
+        {activeFiltersCount > 0 && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            <Funnel className="w-4 h-4" weight="fill" />
+            Limpiar
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Close dropdowns on click outside */}

@@ -48,6 +48,8 @@ interface MantenimientoListProps {
   onApproveQuote?: (solicitud: SolicitudMantenimiento, quoteId: string) => void;
   onComplete?: (solicitud: SolicitudMantenimiento) => void;
   onCancel?: (solicitud: SolicitudMantenimiento) => void;
+  /** Hide the summary cards and filters - useful when embedded in a parent with its own UI */
+  minimal?: boolean;
 }
 
 type SortField = 'priority' | 'createdAt' | 'status';
@@ -316,19 +318,8 @@ function MantenimientoCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="relative p-5 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all"
+      className="p-5 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all"
     >
-      {/* Priority indicator */}
-      <div
-        className={cn(
-          'absolute top-0 left-0 w-1 h-full rounded-l-xl',
-          solicitud.priority === 'emergency' && 'bg-red-500',
-          solicitud.priority === 'high' && 'bg-amber-500',
-          solicitud.priority === 'medium' && 'bg-blue-500',
-          solicitud.priority === 'low' && 'bg-slate-400'
-        )}
-      />
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
@@ -346,10 +337,10 @@ function MantenimientoCard({
             />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white line-clamp-1">
+            <h3 className="font-semibold text-foreground line-clamp-1">
               {solicitud.title}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-muted-foreground">
               {typeInfo?.labelEs || solicitud.type}
             </p>
           </div>
@@ -359,9 +350,9 @@ function MantenimientoCard({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
           >
-            <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
+            <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
           </button>
 
           <AnimatePresence>
@@ -371,14 +362,14 @@ function MantenimientoCard({
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-20"
+                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
                 >
                   <button
                     onClick={() => {
                       onViewDetails?.();
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                   >
                     <Eye className="w-4 h-4" />
                     <span className="text-sm">Ver detalle</span>
@@ -444,18 +435,18 @@ function MantenimientoCard({
       </div>
 
       {/* Property Info */}
-      <div className="mb-4 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+      <div className="mb-4 p-3 rounded-lg bg-muted/50">
         <div className="flex items-center gap-2 mb-1">
-          <HouseLine className="w-4 h-4 text-neutral-400" />
-          <span className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-1">
+          <HouseLine className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground line-clamp-1">
             {solicitud.propertyTitle}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="w-3 h-3" />
           <span className="line-clamp-1">{solicitud.propertyAddress}</span>
         </div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
           <User className="w-3 h-3" />
           <span>{solicitud.tenantName}</span>
         </div>
@@ -477,7 +468,7 @@ function MantenimientoCard({
       </div>
 
       {/* Footer Info */}
-      <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400 border-t border-neutral-100 dark:border-neutral-800 pt-4">
+      <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
         <div className="flex items-center gap-4">
           {/* Days since created */}
           <div className="flex items-center gap-1">
@@ -526,6 +517,7 @@ export function MantenimientoList({
   onApproveQuote,
   onComplete,
   onCancel,
+  minimal = false,
 }: MantenimientoListProps) {
   // Filter State
   const [typeFilter, setTypeFilter] = useState<MantenimientoType | 'all'>('all');
@@ -599,47 +591,51 @@ export function MantenimientoList({
   const hasFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all' || searchQuery.trim() !== '';
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <SummaryCards data={data} />
+    <div className={minimal ? 'p-5' : 'space-y-6'}>
+      {/* Summary Cards - only show in full mode */}
+      {!minimal && <SummaryCards data={data} />}
 
-      {/* Filters */}
-      <FilterBar
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        priorityFilter={priorityFilter}
-        setPriorityFilter={setPriorityFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        sortField={sortField}
-        setSortField={setSortField}
-        sortDirection={sortDirection}
-        setSortDirection={setSortDirection}
-      />
+      {/* Filters - only show in full mode */}
+      {!minimal && (
+        <FilterBar
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          sortField={sortField}
+          setSortField={setSortField}
+          sortDirection={sortDirection}
+          setSortDirection={setSortDirection}
+        />
+      )}
 
-      {/* Results count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {filteredData.length} de {data.length} solicitudes
-          {hasFilters && ' (filtradas)'}
-        </p>
+      {/* Results count - only show in full mode */}
+      {!minimal && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {filteredData.length} de {data.length} solicitudes
+            {hasFilters && ' (filtradas)'}
+          </p>
 
-        {hasFilters && (
-          <button
-            onClick={() => {
-              setTypeFilter('all');
-              setPriorityFilter('all');
-              setStatusFilter('all');
-              setSearchQuery('');
-            }}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+          {hasFilters && (
+            <button
+              onClick={() => {
+                setTypeFilter('all');
+                setPriorityFilter('all');
+                setStatusFilter('all');
+                setSearchQuery('');
+              }}
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Cards Grid */}
       {filteredData.length > 0 ? (
@@ -659,14 +655,14 @@ export function MantenimientoList({
           </AnimatePresence>
         </div>
       ) : (
-        <div className="p-12 text-center rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Wrench className="w-8 h-8 text-neutral-400" />
+        <div className="p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <Wrench className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+          <h3 className="text-lg font-semibold text-foreground mb-1">
             No hay solicitudes para mostrar
           </h3>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-muted-foreground">
             {hasFilters ? 'Ajusta los filtros para ver más resultados' : 'No hay solicitudes de mantenimiento registradas'}
           </p>
         </div>

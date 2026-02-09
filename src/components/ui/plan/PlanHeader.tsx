@@ -700,28 +700,14 @@ export function PlanHeader({
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
                 <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">{t('header.notifications')}</h3>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      setNotificationsOpen(false);
-                      router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
-                    }}
-                    className="text-plan-muted hover:text-plan-secondary"
-                    title="Ver todas las notificaciones"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setNotificationsOpen(false)}
-                    className="text-plan-muted hover:text-plan-secondary"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="text-plan-muted hover:text-plan-secondary"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
               {/* Tabs */}
@@ -850,33 +836,28 @@ export function PlanHeader({
             </PopoverContent>
           </Popover>
 
-          {/* Separator */}
-          <div className="w-px h-6 bg-neutral-200 dark:bg-white/10 mx-2" />
-
-          {/* User List */}
+          {/* User Account Container */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="flex items-center gap-2 p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors outline-none">
-                {/* Avatar with subscription badge */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                  {/* Subscription badge */}
-                  {isLandlord ? (
-                    <AvatarSubscriptionIndicator
-                      variant="landlord"
-                      planId={MOCK_SUBSCRIPTION.planId}
-                    />
-                  ) : tenantSubscription ? (
-                    <AvatarSubscriptionIndicator
-                      variant="tenant"
-                      tenantSubscription={tenantSubscription}
-                    />
-                  ) : null}
+              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-full bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors outline-none">
+                {/* Avatar */}
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
                 </div>
+                {/* Subscription badge */}
+                {isLandlord ? (
+                  <AvatarSubscriptionIndicator
+                    variant="landlord"
+                    planId={MOCK_SUBSCRIPTION.planId}
+                  />
+                ) : tenantSubscription ? (
+                  <AvatarSubscriptionIndicator
+                    variant="tenant"
+                    tenantSubscription={tenantSubscription}
+                  />
+                ) : null}
                 <CaretDown className="w-4 h-4 text-neutral-400" />
               </button>
             </DropdownListTrigger>

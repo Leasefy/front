@@ -7,22 +7,25 @@ import {
   SortDescending,
   DotsThree,
   Eye,
-  Phone,
   ArrowsClockwise,
   CheckSquare,
   Warning,
   HouseLine,
   User,
-  CalendarBlank,
   Funnel,
-  EnvelopeSimple,
   Bell,
   Calculator,
   ClockCounterClockwise,
-  CurrencyCircleDollar,
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListSeparator,
+} from '@/components/ui/dropdown-menu';
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
   getRenovacionStatusColor,
@@ -85,19 +88,6 @@ export function RenovacionesTable({
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  // Calculate summary stats
-  const stats = useMemo(() => {
-    const total = data.length;
-    const critical = data.filter(r => r.urgencyBucket === '0-30').length;
-    const urgent = data.filter(r => r.urgencyBucket === '31-60').length;
-    const upcoming = data.filter(r => r.urgencyBucket === '61-90').length;
-    const completed = data.filter(r => r.status === 'completed').length;
-    const inProgress = data.filter(r => ['notified', 'negotiating', 'approved', 'signed'].includes(r.status)).length;
-
-    return { total, critical, urgent, upcoming, completed, inProgress };
-  }, [data]);
 
   // Count items by bucket
   const bucketCounts = useMemo(() => {
@@ -225,138 +215,87 @@ export function RenovacionesTable({
   const hasSelection = selectedItems.size > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Total */}
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowsClockwise className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-            <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Total
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.total}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Renovaciones</p>
-        </div>
-
-        {/* Criticas (0-30 dias) */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
-          <div className="flex items-center gap-2 mb-1">
-            <Warning className="w-5 h-5 text-red-200" weight="fill" />
-            <span className="text-sm font-medium text-red-100">Criticas</span>
-          </div>
-          <p className="text-2xl font-bold">{stats.critical}</p>
-          <p className="text-xs text-red-200 mt-1">0-30 dias</p>
-        </div>
-
-        {/* Urgentes (31-60 dias) */}
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-          <div className="flex items-center gap-2 mb-1">
-            <CalendarBlank className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
-              Urgentes
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">{stats.urgent}</p>
-          <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">31-60 dias</p>
-        </div>
-
-        {/* Proximas (61-90 dias) */}
-        <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-          <div className="flex items-center gap-2 mb-1">
-            <CalendarBlank className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-              Proximas
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{stats.upcoming}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">61-90 dias</p>
-        </div>
-
-        {/* Completadas */}
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" weight="fill" />
-            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-              Completadas
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{stats.completed}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">Este mes</p>
-        </div>
-      </div>
-
+    <div>
+      <div className="p-5 space-y-5">
       {/* Filter Tabs and Status Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Bucket Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
           <button
             onClick={() => setBucketFilter('all')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
               bucketFilter === 'all'
-                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Funnel className="w-4 h-4" />
             Todos
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
+            <span className="px-1.5 py-0.5 rounded text-xs tabular-nums bg-muted">
               {bucketCounts.all}
             </span>
           </button>
           <button
             onClick={() => setBucketFilter('0-30')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
               bucketFilter === '0-30'
-                ? 'bg-white dark:bg-[#1a1a1c] text-red-700 dark:text-red-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Criticas
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+            <span className={cn(
+              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              bucketFilter === '0-30' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-muted'
+            )}>
               {bucketCounts['0-30']}
             </span>
           </button>
           <button
             onClick={() => setBucketFilter('31-60')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
               bucketFilter === '31-60'
-                ? 'bg-white dark:bg-[#1a1a1c] text-amber-700 dark:text-amber-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Urgentes
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+            <span className={cn(
+              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              bucketFilter === '31-60' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-muted'
+            )}>
               {bucketCounts['31-60']}
             </span>
           </button>
           <button
             onClick={() => setBucketFilter('61-90')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
               bucketFilter === '61-90'
-                ? 'bg-white dark:bg-[#1a1a1c] text-blue-700 dark:text-blue-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Proximas
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+            <span className={cn(
+              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              bucketFilter === '61-90' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-muted'
+            )}>
               {bucketCounts['61-90']}
             </span>
           </button>
         </div>
 
         {/* Status Filter Dropdown */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-neutral-500 dark:text-neutral-400">Estado:</label>
+        <div className="flex items-center gap-2">
+          <Funnel className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Estado:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="pl-3 pr-8 py-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
           >
             <option value="all">Todos los estados</option>
             <option value="pending">Pendiente</option>
@@ -377,9 +316,9 @@ export function RenovacionesTable({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
           >
-            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+            <span className="text-sm font-medium text-foreground">
               {selectedItems.size} seleccionados
             </span>
             <div className="flex items-center gap-2 ml-auto">
@@ -392,7 +331,7 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
                 >
                   <Bell className="w-4 h-4" />
                   Notificar
@@ -407,7 +346,7 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   Iniciar renovacion
@@ -419,7 +358,7 @@ export function RenovacionesTable({
       </AnimatePresence>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="overflow-x-auto -mx-5 mt-5 border-t border-border">
         <table className="w-full min-w-[1100px]">
           <thead>
             <tr className="border-b border-neutral-100 dark:border-neutral-800">
@@ -592,94 +531,66 @@ export function RenovacionesTable({
 
                   {/* Actions */}
                   <td className="p-4">
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === item.id ? null : item.id);
-                        }}
-                        className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                      >
-                        <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
-                      </button>
-
-                      <AnimatePresence>
-                        {openMenuId === item.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-52 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                    <DropdownList>
+                      <DropdownListTrigger asChild>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                        >
+                          <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
+                        </button>
+                      </DropdownListTrigger>
+                      <DropdownListContent align="end" className="w-52">
+                        {onViewDetails && (
+                          <DropdownListItem
+                            onSelect={() => onViewDetails(item)}
+                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                           >
-                            {onViewDetails && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onViewDetails(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span className="text-sm">Ver detalles</span>
-                              </button>
-                            )}
-                            {onNotifyTenant && item.status === 'pending' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNotifyTenant(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Bell className="w-4 h-4" />
-                                <span className="text-sm">Notificar inquilino</span>
-                              </button>
-                            )}
-                            {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onStartRenewal(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                              >
-                                <ArrowsClockwise className="w-4 h-4" />
-                                <span className="text-sm">Iniciar negociacion</span>
-                              </button>
-                            )}
-                            {onCalculateIPC && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onCalculateIPC(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Calculator className="w-4 h-4" />
-                                <span className="text-sm">Calcular IPC</span>
-                              </button>
-                            )}
-                            {onViewHistory && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onViewHistory(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <ClockCounterClockwise className="w-4 h-4" />
-                                <span className="text-sm">Ver historial</span>
-                              </button>
-                            )}
-                          </motion.div>
+                            <Eye className="w-4 h-4" />
+                            <span>Ver detalles</span>
+                          </DropdownListItem>
                         )}
-                      </AnimatePresence>
-                    </div>
+                        {onNotifyTenant && item.status === 'pending' && (
+                          <DropdownListItem
+                            onSelect={() => onNotifyTenant(item)}
+                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                          >
+                            <Bell className="w-4 h-4" />
+                            <span>Notificar inquilino</span>
+                          </DropdownListItem>
+                        )}
+                        {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
+                          <>
+                            <DropdownListSeparator />
+                            <DropdownListItem
+                              onSelect={() => onStartRenewal(item)}
+                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-indigo-600 dark:text-indigo-400 focus:text-indigo-600 dark:focus:text-indigo-400"
+                            >
+                              <ArrowsClockwise className="w-4 h-4" />
+                              <span>Iniciar negociacion</span>
+                            </DropdownListItem>
+                          </>
+                        )}
+                        {onCalculateIPC && (
+                          <DropdownListItem
+                            onSelect={() => onCalculateIPC(item)}
+                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                          >
+                            <Calculator className="w-4 h-4" />
+                            <span>Calcular IPC</span>
+                          </DropdownListItem>
+                        )}
+                        {onViewHistory && (
+                          <DropdownListItem
+                            onSelect={() => onViewHistory(item)}
+                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                          >
+                            <ClockCounterClockwise className="w-4 h-4" />
+                            <span>Ver historial</span>
+                          </DropdownListItem>
+                        )}
+                      </DropdownListContent>
+                    </DropdownList>
                   </td>
                 </motion.tr>
               );
@@ -703,11 +614,7 @@ export function RenovacionesTable({
             </p>
           </div>
         )}
-
-        {/* Close dropdown on click outside */}
-        {openMenuId && (
-          <div className="fixed inset-0 z-[5]" onClick={() => setOpenMenuId(null)} />
-        )}
+      </div>
       </div>
     </div>
   );

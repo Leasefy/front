@@ -7,7 +7,6 @@ import {
   Buildings,
   Warning,
   CheckCircle,
-  Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Agente } from '@/lib/types/inmobiliaria';
@@ -23,49 +22,27 @@ const RECOMMENDED_MAX = 8;
 const OVERLOADED_THRESHOLD = 10;
 
 /**
- * Get workload color based on property count
+ * Get workload status based on property count
  */
-function getWorkloadColor(count: number): {
-  bar: string;
-  bg: string;
-  text: string;
+function getWorkloadStatus(count: number): {
   label: string;
+  color: string;
 } {
   if (count <= 5) {
-    return {
-      bar: 'bg-emerald-500 dark:bg-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      text: 'text-emerald-600 dark:text-emerald-400',
-      label: 'Baja',
-    };
+    return { label: 'Baja', color: 'text-emerald-600 dark:text-emerald-400' };
   }
   if (count <= RECOMMENDED_MAX) {
-    return {
-      bar: 'bg-blue-500 dark:bg-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      text: 'text-blue-600 dark:text-blue-400',
-      label: 'Optima',
-    };
+    return { label: 'Optima', color: 'text-indigo-600 dark:text-indigo-400' };
   }
   if (count <= OVERLOADED_THRESHOLD) {
-    return {
-      bar: 'bg-amber-500 dark:bg-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      text: 'text-amber-600 dark:text-amber-400',
-      label: 'Alta',
-    };
+    return { label: 'Alta', color: 'text-amber-600 dark:text-amber-400' };
   }
-  return {
-    bar: 'bg-rose-500 dark:bg-rose-400',
-    bg: 'bg-rose-50 dark:bg-rose-900/20',
-    text: 'text-rose-600 dark:text-rose-400',
-    label: 'Sobrecargado',
-  };
+  return { label: 'Sobrecargado', color: 'text-red-600 dark:text-red-400' };
 }
 
 /**
  * AgenteWorkloadChart - Horizontal bar chart showing workload distribution
- * Pure CSS implementation without charting libraries
+ * Clean design following design token system
  */
 export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartProps) {
   // Filter to active agentes and sort by workload (highest first)
@@ -105,221 +82,179 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       .toUpperCase();
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-  };
-
-  const barVariants = {
-    hidden: { width: 0, opacity: 0 },
-    visible: { width: '100%', opacity: 1 },
-  };
-
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('rounded-xl border border-border bg-card overflow-hidden', className)}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+      <div className="px-5 py-4 border-b border-border bg-muted/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <ChartBar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Carga de Trabajo
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Distribucion de propiedades por agente
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Carga de Trabajo
-            </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Distribucion de propiedades por agente
-            </p>
-          </div>
-        </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-emerald-500" />
-            <span className="text-neutral-600 dark:text-neutral-400">Baja (0-5)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-blue-500" />
-            <span className="text-neutral-600 dark:text-neutral-400">Optima (6-8)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-amber-500" />
-            <span className="text-neutral-600 dark:text-neutral-400">Alta (9-10)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-rose-500" />
-            <span className="text-neutral-600 dark:text-neutral-400">Sobrecargado (+10)</span>
-          </div>
+          {/* Status Indicator */}
+          {sortedAgentes.length > 0 && (
+            <div className="flex items-center gap-2">
+              {stats.overloaded > 0 ? (
+                <>
+                  <Warning className="w-4 h-4 text-amber-500" weight="fill" />
+                  <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                    {stats.overloaded} sobrecargado{stats.overloaded > 1 ? 's' : ''}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
+                  <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    Balanceado
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">Agentes Activos</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">{sortedAgentes.length}</p>
+      {/* Stats Row */}
+      <div className="px-5 py-3 border-b border-border bg-muted/10 grid grid-cols-4 gap-4">
+        <div>
+          <p className="text-xs text-muted-foreground">Agentes</p>
+          <p className="text-lg font-bold text-foreground">{sortedAgentes.length}</p>
         </div>
-        <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">Total Propiedades</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">{stats.total}</p>
+        <div>
+          <p className="text-xs text-muted-foreground">Propiedades</p>
+          <p className="text-lg font-bold text-foreground">{stats.total}</p>
         </div>
-        <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">Promedio</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">{stats.avg.toFixed(1)}</p>
+        <div>
+          <p className="text-xs text-muted-foreground">Promedio</p>
+          <p className="text-lg font-bold text-foreground">{stats.avg.toFixed(1)}</p>
         </div>
-        <div className={cn(
-          'p-3 rounded-xl border',
-          stats.overloaded > 0
-            ? 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20'
-            : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]'
-        )}>
-          <p className={cn(
-            'text-xs',
-            stats.overloaded > 0
-              ? 'text-rose-600 dark:text-rose-400'
-              : 'text-neutral-500 dark:text-neutral-400'
-          )}>
-            Sobrecargados
-          </p>
-          <p className={cn(
-            'text-xl font-bold',
-            stats.overloaded > 0
-              ? 'text-rose-600 dark:text-rose-400'
-              : 'text-neutral-900 dark:text-white'
-          )}>
-            {stats.overloaded}
-          </p>
+        <div>
+          <p className="text-xs text-muted-foreground">Max recomendado</p>
+          <p className="text-lg font-bold text-foreground">{RECOMMENDED_MAX}</p>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="divide-y divide-neutral-100 dark:divide-neutral-800"
-        >
-          {sortedAgentes.length > 0 ? (
-            sortedAgentes.map((agente) => {
+      <div>
+        {sortedAgentes.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="divide-y divide-border"
+          >
+            {sortedAgentes.map((agente, index) => {
               const propertyCount = agente.assignedPropertyIds.length;
               const percentage = scaleMax > 0 ? (propertyCount / scaleMax) * 100 : 0;
-              const colors = getWorkloadColor(propertyCount);
+              const status = getWorkloadStatus(propertyCount);
 
               return (
-                <div
+                <motion.div
                   key={agente.id}
-                  className="p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="px-5 py-3 hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-4 mb-2">
                     {/* Avatar */}
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
-                      {agente.avatar ? (
-                        <img
-                          src={agente.avatar}
-                          alt={agente.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(agente.name)
-                      )}
-                    </div>
+                    {agente.avatar ? (
+                      <img
+                        src={agente.avatar}
+                        alt={agente.name}
+                        className="w-8 h-8 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          {getInitials(agente.name)}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Name and Zone */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">
+                      <p className="font-medium text-foreground text-sm truncate">
                         {agente.name}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                        {agente.zone || 'Sin zona asignada'}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {agente.zone || 'Todas'}
                       </p>
                     </div>
 
                     {/* Property Count */}
                     <div className="flex items-center gap-2 shrink-0">
-                      <Buildings className="w-4 h-4 text-neutral-400" />
-                      <span className={cn('font-bold text-sm', colors.text)}>
+                      <Buildings className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-bold text-sm text-foreground tabular-nums">
                         {propertyCount}
                       </span>
-                      <span className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                        colors.bg,
-                        colors.text
-                      )}>
-                        {colors.label}
+                      <span className={cn('text-xs font-medium', status.color)}>
+                        {status.label}
                       </span>
                     </div>
                   </div>
 
                   {/* Bar */}
-                  <div className="relative h-3 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                     {/* Recommended Max Line */}
                     <div
-                      className="absolute top-0 bottom-0 w-px bg-neutral-300 dark:bg-neutral-600 z-10"
+                      className="absolute top-0 bottom-0 w-px bg-border z-10"
                       style={{ left: `${(RECOMMENDED_MAX / scaleMax) * 100}%` }}
-                    >
-                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-neutral-400">
-                        Max recomendado
-                      </div>
-                    </div>
+                    />
 
                     {/* Progress Bar */}
                     <motion.div
-                      variants={barVariants}
-                      className={cn('h-full rounded-full', colors.bar)}
-                      style={{ width: `${percentage}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.05 }}
+                      className={cn(
+                        'h-full rounded-full',
+                        propertyCount > OVERLOADED_THRESHOLD
+                          ? 'bg-red-500'
+                          : propertyCount > RECOMMENDED_MAX
+                          ? 'bg-amber-500'
+                          : 'bg-indigo-500'
+                      )}
                     />
                   </div>
-                </div>
+                </motion.div>
               );
-            })
-          ) : (
-            <div className="px-4 py-12 text-center">
-              <ChartBar className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-              <p className="text-neutral-500 dark:text-neutral-400">
-                No hay agentes activos para mostrar
-              </p>
-            </div>
-          )}
-        </motion.div>
+            })}
+          </motion.div>
+        ) : (
+          <div className="px-5 py-12 text-center">
+            <ChartBar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-muted-foreground">
+              No hay agentes activos para mostrar
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Recommendations */}
-      {stats.overloaded > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-          <Warning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-amber-700 dark:text-amber-400 text-sm">
-              {stats.overloaded} agente{stats.overloaded > 1 ? 's' : ''} con carga alta
-            </p>
-            <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-              Considera redistribuir propiedades para mejorar el servicio al cliente.
-              La carga optima es de 6-8 propiedades por agente.
-            </p>
-          </div>
+      {/* Legend Footer */}
+      <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+          <span className="text-muted-foreground">Normal (0-8)</span>
         </div>
-      )}
-
-      {stats.overloaded === 0 && sortedAgentes.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-          <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" weight="fill" />
-          <div>
-            <p className="font-medium text-emerald-700 dark:text-emerald-400 text-sm">
-              Carga de trabajo balanceada
-            </p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
-              Todos los agentes tienen una carga de trabajo dentro del rango optimo.
-            </p>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="text-muted-foreground">Alta (9-10)</span>
         </div>
-      )}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="text-muted-foreground">Sobrecargado (+10)</span>
+        </div>
+      </div>
     </div>
   );
 }

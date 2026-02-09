@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -21,8 +21,12 @@ import {
   CaretDown,
   CaretUp,
   DotsSixVertical,
+  ArrowsOutSimple,
+  X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { createPortal } from 'react-dom';
+import { useLenis } from '@/components/providers/SmoothScroll';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
@@ -96,6 +100,7 @@ interface DroppableColumnProps {
   isOver: boolean;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
+  maxVisibleCards?: number;
 }
 
 function DroppableColumn({
@@ -105,18 +110,56 @@ function DroppableColumn({
   isOver,
   collapsible = true,
   defaultCollapsed = false,
+  maxVisibleCards = 3,
 }: DroppableColumnProps) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { setNodeRef } = useDroppable({
     id: stage,
     data: { stage },
   });
+  const { stop: stopLenis, start: startLenis } = useLenis();
 
   const stageInfo = getPipelineStageInfo(stage);
+
+  // Track client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Stop Lenis and lock body scroll when sidebar is open
+  useEffect(() => {
+    if (isSidebarOpen) {
+      // Stop Lenis smooth scroll to allow native scroll in sidebar
+      stopLenis();
+
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+        // Restart Lenis
+        startLenis();
+      };
+    }
+  }, [isSidebarOpen, stopLenis, startLenis]);
 
   // Extract background and text color classes from stageInfo
   const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-neutral-100';
   const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-neutral-700';
+
+  // Calculate if we need to show "Ver todo" button (show when 3+ items)
+  const showExpandButton = items.length >= maxVisibleCards;
 
   return (
     <div
@@ -243,6 +286,25 @@ function DroppableColumn({
                 </motion.div>
               )}
             </div>
+
+            {/* Ver todo button */}
+            {showExpandButton && (
+              <div className="px-2.5 pb-2.5">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all',
+                    'border border-neutral-200 dark:border-neutral-700',
+                    'text-neutral-600 dark:text-neutral-400',
+                    'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                    'hover:text-neutral-900 dark:hover:text-white'
+                  )}
+                >
+                  <ArrowsOutSimple className="w-4 h-4" />
+                  Ver todo ({items.length})
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -258,6 +320,79 @@ function DroppableColumn({
             {items.length} {items.length === 1 ? 'lead' : 'leads'}
           </p>
         </motion.div>
+      )}
+
+      {/* Ver Todo - Custom Portal Sidebar */}
+      {isMounted && isSidebarOpen && createPortal(
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 z-[9998]"
+            onClick={() => setIsSidebarOpen(false)}
+            style={{ touchAction: 'none' }}
+          />
+
+          {/* Sidebar */}
+          <div
+            className="fixed top-0 right-0 w-full sm:w-[420px] bg-white dark:bg-[#1a1a1c] shadow-2xl z-[9999]"
+            style={{ height: '100dvh' }}
+          >
+            {/* Header - Fixed height */}
+            <div
+              className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]"
+              style={{ height: '73px' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    'w-3 h-3 rounded-full',
+                    bgColorClass.replace('-100', '-500')
+                  )}
+                />
+                <div>
+                  <h2 className="font-semibold text-lg text-neutral-900 dark:text-white">
+                    {stageInfo?.labelEs || stage}
+                  </h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {items.length} {items.length === 1 ? 'lead' : 'leads'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content - Absolute positioned */}
+            <div
+              className="absolute left-0 right-0 p-4 space-y-3"
+              style={{
+                top: '73px',
+                bottom: '0px',
+                overflowY: 'scroll',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+              }}
+              onWheel={(e) => e.stopPropagation()}
+            >
+              {items.map((item) => (
+                <PipelineCard
+                  key={item.id}
+                  item={item}
+                  onClick={(clickedItem) => {
+                    setIsSidebarOpen(false);
+                    onCardClick(clickedItem);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );

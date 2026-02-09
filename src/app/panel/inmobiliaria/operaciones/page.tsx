@@ -21,6 +21,8 @@ import {
   CalendarBlank,
   CaretDown,
   MagnifyingGlass,
+  SquaresFour,
+  Kanban,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,6 +49,7 @@ import {
   RenovacionWorkflow,
   IPCCalculator,
   MantenimientoList,
+  MantenimientoKanban,
   MantenimientoForm,
   MantenimientoViewer,
   type MantenimientoFormData,
@@ -57,6 +60,7 @@ import {
 // ============================================================================
 
 type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc';
+type MantenimientoViewMode = 'cards' | 'kanban';
 
 // ============================================================================
 // Helper Functions
@@ -102,21 +106,28 @@ interface StatCardProps {
   label: string;
   value: string | number;
   subValue?: string;
+  subValueColor?: 'warning' | 'info' | 'default';
   bgColor: string;
   iconColor: string;
-  onClick?: () => void;
 }
 
-function StatCard({ icon: Icon, label, value, subValue, bgColor, iconColor, onClick }: StatCardProps) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  subValue,
+  subValueColor = 'default',
+  bgColor,
+  iconColor,
+}: StatCardProps) {
+  const subValueColors = {
+    warning: 'text-amber-600 dark:text-amber-400 font-medium',
+    info: 'text-blue-600 dark:text-blue-400',
+    default: 'text-muted-foreground',
+  };
+
   return (
-    <button
-      onClick={onClick}
-      disabled={!onClick}
-      className={cn(
-        'p-4 rounded-xl border border-border bg-card transition-all text-left',
-        onClick && 'hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800 cursor-pointer'
-      )}
-    >
+    <div className="p-4 rounded-xl border border-border bg-card">
       <div className="flex items-center gap-3">
         <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', bgColor)}>
           <Icon className={cn('w-5 h-5', iconColor)} />
@@ -125,11 +136,13 @@ function StatCard({ icon: Icon, label, value, subValue, bgColor, iconColor, onCl
           <p className="text-2xl font-bold text-foreground">{value}</p>
           <p className="text-xs text-muted-foreground">{label}</p>
           {subValue && (
-            <p className="text-xs text-muted-foreground mt-0.5">{subValue}</p>
+            <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
+              {subValue}
+            </p>
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -146,6 +159,7 @@ export default function OperacionesPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
   const [renovaciones, setRenovaciones] = useState<Renovacion[]>(MOCK_RENOVACIONES);
   const [mantenimientos, setMantenimientos] = useState<SolicitudMantenimiento[]>(MOCK_MANTENIMIENTOS);
+  const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
 
   // Modal states
   const [selectedRenovacion, setSelectedRenovacion] = useState<Renovacion | null>(null);
@@ -337,7 +351,7 @@ export default function OperacionesPage() {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Informational Only */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -352,9 +366,9 @@ export default function OperacionesPage() {
               ? `${stats.renovaciones.critical} criticas`
               : undefined
           }
+          subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
           bgColor="bg-amber-100 dark:bg-amber-900/30"
           iconColor="text-amber-600 dark:text-amber-400"
-          onClick={() => setActiveTab('renovaciones')}
         />
         <StatCard
           icon={Wrench}
@@ -365,9 +379,9 @@ export default function OperacionesPage() {
               ? `${stats.mantenimiento.quoted} por aprobar`
               : undefined
           }
+          subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
           bgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
-          onClick={() => setActiveTab('mantenimiento')}
         />
         <StatCard
           icon={CurrencyDollar}
@@ -375,7 +389,6 @@ export default function OperacionesPage() {
           value={stats.mantenimiento.quoted}
           bgColor="bg-violet-100 dark:bg-violet-900/30"
           iconColor="text-violet-600 dark:text-violet-400"
-          onClick={() => setActiveTab('mantenimiento')}
         />
         <StatCard
           icon={TrendUp}
@@ -384,46 +397,47 @@ export default function OperacionesPage() {
           subValue={stats.ipc.description}
           bgColor="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
-          onClick={() => setActiveTab('ipc')}
         />
       </motion.div>
 
-      {/* Tabs */}
+      {/* Unified Tabs Container */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card"
       >
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <TabsList className="bg-muted/50 p-1 rounded-xl">
+          {/* Tab Header */}
+          <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
+            <TabsList className="bg-muted/50 p-1 rounded-lg">
               <TabsTrigger
                 value="renovaciones"
-                className="rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <ClockCounterClockwise className="w-4 h-4 mr-2" />
                 Renovaciones
                 {stats.renovaciones.pending > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                     {stats.renovaciones.pending}
                   </span>
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="mantenimiento"
-                className="rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Wrench className="w-4 h-4 mr-2" />
                 Mantenimiento
                 {stats.mantenimiento.active > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
                     {stats.mantenimiento.active}
                   </span>
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="ipc"
-                className="rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Calculator className="w-4 h-4 mr-2" />
                 Calculadora IPC
@@ -439,9 +453,9 @@ export default function OperacionesPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   onClick={handleNewMantenimiento}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   Nueva solicitud
                 </motion.button>
               )}
@@ -450,61 +464,104 @@ export default function OperacionesPage() {
 
           {/* Renovaciones Tab */}
           <TabsContent value="renovaciones" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-border bg-card overflow-hidden"
-            >
-              <RenovacionesTable
-                data={renovaciones}
-                onStartRenewal={handleStartRenewal}
-                onNotifyTenant={handleNotifyTenant}
-                onViewDetails={handleViewRenovacionDetails}
-                onCalculateIPC={handleCalculateIPC}
-                onViewHistory={handleViewRenovacionHistory}
-              />
-            </motion.div>
+            <RenovacionesTable
+              data={renovaciones}
+              onStartRenewal={handleStartRenewal}
+              onNotifyTenant={handleNotifyTenant}
+              onViewDetails={handleViewRenovacionDetails}
+              onCalculateIPC={handleCalculateIPC}
+              onViewHistory={handleViewRenovacionHistory}
+            />
           </TabsContent>
 
           {/* Mantenimiento Tab */}
           <TabsContent value="mantenimiento" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-border bg-card overflow-hidden"
-            >
-              <MantenimientoList
-                data={mantenimientos}
-                onViewDetails={handleViewMantenimiento}
-                onComplete={(s) => handleMantenimientoStatusChange(s.id, 'completed')}
-                onCancel={(s) => handleMantenimientoStatusChange(s.id, 'cancelled')}
-              />
-            </motion.div>
+            {/* View Toggle */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
+                  </span>
+                  {' '}solicitudes activas
+                  {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
+                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                      ({mantenimientos.filter((m) => m.status === 'quoted').length} por aprobar)
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+                <button
+                  onClick={() => setMantenimientoView('kanban')}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                    mantenimientoView === 'kanban'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Kanban className="w-4 h-4" />
+                  Pipeline
+                </button>
+                <button
+                  onClick={() => setMantenimientoView('cards')}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                    mantenimientoView === 'cards'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <SquaresFour className="w-4 h-4" />
+                  Tarjetas
+                </button>
+              </div>
+            </div>
+
+            {/* Content based on view mode */}
+            <AnimatePresence mode="wait">
+              {mantenimientoView === 'kanban' ? (
+                <motion.div
+                  key="kanban"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="p-5"
+                >
+                  <MantenimientoKanban
+                    data={mantenimientos}
+                    onViewDetails={handleViewMantenimiento}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="cards"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <MantenimientoList
+                    data={mantenimientos}
+                    onViewDetails={handleViewMantenimiento}
+                    onComplete={(s) => handleMantenimientoStatusChange(s.id, 'completed')}
+                    onCancel={(s) => handleMantenimientoStatusChange(s.id, 'cancelled')}
+                    minimal
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </TabsContent>
 
           {/* IPC Tab */}
-          <TabsContent value="ipc" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <IPCCalculator
-                mode="single"
-                properties={renovaciones.map((r) => ({
-                  id: r.id,
-                  title: r.propertyTitle,
-                  currentRent: r.currentRent,
-                }))}
-                onCalculate={(result) => {
-                  toast.success('Calculo completado', {
-                    description: `Nuevo arriendo: ${formatCurrency(result.newRent)}`,
-                  });
-                }}
-                onBulkApply={(updates) => {
-                  toast.success(`${updates.length} arriendos actualizados`);
-                }}
-              />
-            </motion.div>
+          <TabsContent value="ipc" className="mt-0 p-5">
+            <IPCCalculator
+              onCalculate={(result) => {
+                toast.success('Calculo completado', {
+                  description: `Nuevo arriendo: ${formatCurrency(result.newRent)}`,
+                });
+              }}
+            />
           </TabsContent>
         </Tabs>
       </motion.div>

@@ -5,7 +5,7 @@
  * compatible with real auth backends (Clerk, Auth.js, etc.).
  */
 
-export type UserRole = 'tenant' | 'landlord'
+export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 export type PaymentMethod = 'bank_transfer' | 'pse' | 'nequi' | 'daviplata' | 'credit_card'
 export type RiskLevel = 'A' | 'B' | 'C' | 'D'
@@ -73,6 +73,30 @@ export interface OnboardingData {
   preferredPaymentDay?: number
 }
 
+export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
+export type AgencyService = 'arriendos' | 'ventas' | 'administracion' | 'avaluos'
+
+export interface AgencyOnboardingData {
+  // Step 1 - Agency Info
+  agencyName?: string
+  nit?: string
+  contactPerson?: string
+  phone?: string
+  email?: string
+  preferredContact?: PreferredContact
+
+  // Step 2 - Business Details
+  city?: string
+  portfolioSize?: AgencySize
+  yearsInBusiness?: number
+  website?: string
+
+  // Step 3 - Services
+  services?: AgencyService[]
+  hasPropertyManagement?: boolean
+  hasTenantScreening?: boolean
+}
+
 export interface User {
   id: string
   email: string
@@ -84,6 +108,7 @@ export interface User {
   onboardingStep?: number
   onboardingData?: OnboardingData
   tenantOnboardingData?: TenantOnboardingData
+  agencyOnboardingData?: AgencyOnboardingData
   onboardingStatus?: OnboardingStatus
 }
 

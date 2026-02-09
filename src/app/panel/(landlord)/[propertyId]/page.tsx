@@ -4,8 +4,9 @@ import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
+import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/ui/back-button';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
 import { getCandidateById } from '@/lib/data/mock-candidates';
 import { getVisitsForProperty } from '@/lib/data/mock-visits';
@@ -641,13 +642,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <p className="text-neutral-500 dark:text-neutral-400 mb-6">
               La propiedad que buscas no existe o no tienes acceso.
             </p>
-            <Link
-              href="/panel"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Volver al panel
-            </Link>
+            <BackButton href="/panel" label="Volver al panel" variant="pill" />
           </div>
         </div>
       </div>
@@ -659,13 +654,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Back Link */}
-        <Link
-          href="/panel/propiedades"
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a mis propiedades
-        </Link>
+        <div className="mb-6">
+          <BackButton href="/panel/propiedades" label="Volver a mis propiedades" />
+        </div>
 
         {/* Property Header - Premium Glass Style */}
         <header className="relative rounded-2xl overflow-hidden mb-8">

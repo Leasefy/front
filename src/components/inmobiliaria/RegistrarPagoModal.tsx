@@ -14,7 +14,6 @@ import {
   Receipt,
   Note,
   Warning,
-  CheckCircle,
   CreditCard,
   Bank,
   Money,
@@ -56,27 +55,46 @@ interface RegistrarPagoModalProps {
   isOpen: boolean;
   onClose: () => void;
   cobro: Cobro | null;
+  /** Optional list of cobros to select from when no cobro is pre-selected */
+  cobrosList?: Cobro[];
   onSubmit: (data: {
     amount: number;
     method: string;
     date: string;
     reference?: string;
     notes?: string;
-  }) => Promise<void> | void;
+  }, cobroId: string) => Promise<void> | void;
 }
 
 /**
  * RegistrarPagoModal - Dialog to register a payment for a cobro
  * Handles full and partial payments with validation
+ * Supports cobro selection when cobrosList is provided
  */
 export function RegistrarPagoModal({
   isOpen,
   onClose,
-  cobro,
+  cobro: preselectedCobro,
+  cobrosList,
   onSubmit,
 }: RegistrarPagoModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmation, setShowConfirmation] = React.useState(false);
+  const [selectedCobroId, setSelectedCobroId] = React.useState<string | null>(
+    preselectedCobro?.id || null
+  );
+
+  // Determine the active cobro (preselected or selected from list)
+  const cobro = preselectedCobro || cobrosList?.find((c) => c.id === selectedCobroId) || null;
+
+  // Filter pending cobros for selection
+  const pendingCobros = React.useMemo(() => {
+    if (!cobrosList) return [];
+    return cobrosList.filter((c) => c.status === 'pending' || c.status === 'late' || c.status === 'partial');
+  }, [cobrosList]);
+
+  // Show cobro selector when no preselected cobro and list is provided
+  const showCobroSelector = !preselectedCobro && cobrosList && cobrosList.length > 0;
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
@@ -145,6 +163,8 @@ export function RegistrarPagoModal({
 
   // Handle form submission
   const handleFormSubmit = async (data: PaymentFormData) => {
+    if (!cobro) return;
+
     if (isPartialPayment && !showConfirmation) {
       setShowConfirmation(true);
       return;
@@ -159,7 +179,7 @@ export function RegistrarPagoModal({
         date: data.date,
         reference: data.reference || undefined,
         notes: data.notes || undefined,
-      });
+      }, cobro.id);
 
       toast.success('Pago registrado', {
         description: `Se registro un pago de ${formatCurrency(parseAmount(data.amount))}`,
@@ -167,6 +187,7 @@ export function RegistrarPagoModal({
 
       reset();
       setShowConfirmation(false);
+      setSelectedCobroId(null);
       onClose();
     } catch (error) {
       toast.error('Error al registrar pago', {
@@ -181,6 +202,7 @@ export function RegistrarPagoModal({
   const handleClose = () => {
     reset();
     setShowConfirmation(false);
+    setSelectedCobroId(null);
     onClose();
   };
 
@@ -189,21 +211,78 @@ export function RegistrarPagoModal({
     setShowConfirmation(false);
   };
 
-  if (!cobro) return null;
+  // Show nothing if no cobro and no list
+  if (!cobro && !showCobroSelector) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-foreground">
-            <CurrencyCircleDollar className="w-5 h-5 text-emerald-600" />
+            <CurrencyCircleDollar className="w-5 h-5 text-indigo-600" />
             Registrar Pago
           </DialogTitle>
           <DialogDescription>
-            {cobro.propertyTitle} - {cobro.tenantName}
+            {cobro ? `${cobro.propertyTitle} - ${cobro.tenantName}` : 'Selecciona un cobro pendiente'}
           </DialogDescription>
         </DialogHeader>
 
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-6 pt-4">
+        {/* Cobro Selector - shown when no preselected cobro */}
+        {showCobroSelector && !cobro && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Selecciona el cobro para registrar el pago:
+            </p>
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {pendingCobros.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground text-sm rounded-xl border border-dashed border-border">
+                  No hay cobros pendientes
+                </div>
+              ) : (
+                pendingCobros.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCobroId(c.id)}
+                    className={cn(
+                      'w-full p-3 rounded-xl border text-left transition-all',
+                      selectedCobroId === c.id
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                        : 'border-border hover:border-foreground/30 bg-background'
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {c.propertyTitle}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {c.tenantName}
+                        </p>
+                      </div>
+                      <div className="text-right ml-3">
+                        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                          {formatCurrency(c.pendingAmount)}
+                        </p>
+                        <p className={cn(
+                          'text-xs',
+                          c.status === 'late' ? 'text-red-500' : 'text-muted-foreground'
+                        )}>
+                          {c.status === 'late' ? 'Vencido' : c.status === 'partial' ? 'Parcial' : 'Pendiente'}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Payment Form - shown when cobro is selected */}
+        {cobro && (
         <AnimatePresence mode="wait">
           {showConfirmation ? (
             // Partial Payment Confirmation
@@ -248,7 +327,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                   onClick={handleSubmit(handleFormSubmit)}
                   disabled={isSubmitting}
                 >
@@ -331,7 +410,7 @@ export function RegistrarPagoModal({
                   {cobro.paidAmount > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground">Abonado</p>
-                      <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                         {formatCurrency(cobro.paidAmount)}
                       </p>
                     </div>
@@ -364,7 +443,7 @@ export function RegistrarPagoModal({
                     <button
                       type="button"
                       onClick={handleFullPayment}
-                      className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                      className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
                     >
                       Pago total
                     </button>
@@ -388,7 +467,7 @@ export function RegistrarPagoModal({
                       placeholder="0"
                       className={cn(
                         'w-full h-12 pl-8 pr-4 rounded-xl border bg-background text-foreground text-lg font-semibold',
-                        'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent',
+                        'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
                         errors.amount
                           ? 'border-destructive'
                           : isPartialPayment
@@ -425,7 +504,7 @@ export function RegistrarPagoModal({
                           className={cn(
                             'flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all',
                             isSelected
-                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                               : 'border-border hover:border-foreground/30 bg-background'
                           )}
                         >
@@ -433,7 +512,7 @@ export function RegistrarPagoModal({
                             className={cn(
                               'w-5 h-5',
                               isSelected
-                                ? 'text-emerald-600 dark:text-emerald-400'
+                                ? 'text-indigo-600 dark:text-indigo-400'
                                 : 'text-muted-foreground'
                             )}
                           />
@@ -441,7 +520,7 @@ export function RegistrarPagoModal({
                             className={cn(
                               'text-xs font-medium',
                               isSelected
-                                ? 'text-emerald-600 dark:text-emerald-400'
+                                ? 'text-indigo-600 dark:text-indigo-400'
                                 : 'text-muted-foreground'
                             )}
                           >
@@ -472,7 +551,7 @@ export function RegistrarPagoModal({
                     max={today}
                     className={cn(
                       'w-full h-11 px-4 rounded-xl border bg-background text-foreground',
-                      'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent',
+                      'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
                       errors.date ? 'border-destructive' : 'border-border'
                     )}
                   />
@@ -492,7 +571,7 @@ export function RegistrarPagoModal({
                     {...register('reference')}
                     type="text"
                     placeholder="Ej: TRF-123456"
-                    className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
 
@@ -507,7 +586,7 @@ export function RegistrarPagoModal({
                     {...register('notes')}
                     rows={2}
                     placeholder="Notas adicionales sobre este pago..."
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
                   />
                 </div>
               </div>
@@ -525,7 +604,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                   disabled={isSubmitting || !isValid}
                 >
                   {isSubmitting ? (
@@ -537,16 +616,15 @@ export function RegistrarPagoModal({
                       Registrando...
                     </span>
                   ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Registrar Pago
-                    </>
+                    'Registrar Pago'
                   )}
                 </Button>
               </div>
             </motion.form>
           )}
         </AnimatePresence>
+        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -615,10 +615,22 @@ export function DispersionDetail({
           className="sticky bottom-0 p-6 border-t border-border bg-background space-y-3"
         >
           <div className="flex gap-3">
-            {/* Process button (pending) */}
+            {/* View extracto button (secondary - left) */}
+            {onViewExtracto && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleViewExtracto}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Ver Extracto
+              </Button>
+            )}
+
+            {/* Process button (primary - right) */}
             {isPending && onProcess && (
               <Button
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                 onClick={handleProcess}
                 disabled={isProcessing}
               >
@@ -651,7 +663,7 @@ export function DispersionDetail({
               </Button>
             )}
 
-            {/* Retry button (failed) */}
+            {/* Retry button (failed - right) */}
             {isFailed && onRetry && (
               <Button
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
@@ -686,24 +698,12 @@ export function DispersionDetail({
                 )}
               </Button>
             )}
-
-            {/* View extracto button */}
-            {onViewExtracto && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleViewExtracto}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Ver Extracto
-              </Button>
-            )}
           </div>
 
           {/* Download PDF button */}
           <Button
             variant="ghost"
-            className="w-full"
+            className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             onClick={handleDownloadPDF}
             disabled={isDownloadingPDF}
           >

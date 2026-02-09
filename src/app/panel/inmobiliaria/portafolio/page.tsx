@@ -36,7 +36,7 @@ const ITEMS_PER_PAGE = 12;
  */
 export default function PortafolioPage() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
@@ -255,141 +255,155 @@ export default function PortafolioPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <ConsignacionFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        consignaciones={MOCK_CONSIGNACIONES}
-        propietarios={MOCK_PROPIETARIOS}
-        agentes={MOCK_AGENTES}
-      />
-
-      {/* View Toggle and Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {filteredConsignaciones.length} de {MOCK_CONSIGNACIONES.length} propiedades
-        </p>
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              viewMode === 'grid'
-                ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-            title="Vista de cuadrícula"
-          >
-            <SquaresFour className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              viewMode === 'table'
-                ? 'bg-white dark:bg-[#1a1a1c] text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-            title="Vista de tabla"
-          >
-            <List className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <AnimatePresence mode="wait">
-        {viewMode === 'grid' ? (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            {paginatedConsignaciones.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedConsignaciones.map((consignacion) => (
-                  <ConsignacionCard
-                    key={consignacion.id}
-                    consignacion={consignacion}
-                    propietarioName={propietariosMap[consignacion.propietarioId]}
-                    agenteName={agentesMap[consignacion.agenteId]?.name}
-                    agenteAvatar={agentesMap[consignacion.agenteId]?.avatar}
-                    onClick={() => handleView(consignacion)}
-                    onView={() => handleView(consignacion)}
-                    onEdit={() => handleEdit(consignacion)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState />
-            )}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <ConsignacionTable
-              consignaciones={paginatedConsignaciones}
-              propietariosMap={propietariosMap}
-              agentesMap={agentesMap}
-              onView={handleView}
-              onEdit={handleEdit}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              currentPage === 1
-                ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            )}
-          >
-            <CaretLeft className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={cn(
-                  'w-9 h-9 rounded-lg text-sm font-medium transition-all',
-                  page === currentPage
-                    ? 'bg-indigo-500 text-white'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                )}
-              >
-                {page}
-              </button>
-            ))}
+      {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card overflow-hidden"
+      >
+        {/* View Toggle Header - First */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'table'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <List className="w-4 h-4" />
+              Tabla
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                viewMode === 'grid'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <SquaresFour className="w-4 h-4" />
+              Cards
+            </button>
           </div>
-
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className={cn(
-              'p-2 rounded-lg transition-all',
-              currentPage === totalPages
-                ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            )}
-          >
-            <CaretRight className="w-5 h-5" />
-          </button>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {filteredConsignaciones.length} propiedades
+          </span>
         </div>
-      )}
+
+        {/* Filters - Second */}
+        <ConsignacionFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          consignaciones={MOCK_CONSIGNACIONES}
+          propietarios={MOCK_PROPIETARIOS}
+          agentes={MOCK_AGENTES}
+        />
+
+        {/* Content */}
+        <div>
+          <AnimatePresence mode="wait">
+            {viewMode === 'grid' ? (
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {paginatedConsignaciones.length > 0 ? (
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {paginatedConsignaciones.map((consignacion) => (
+                      <ConsignacionCard
+                        key={consignacion.id}
+                        consignacion={consignacion}
+                        propietarioName={propietariosMap[consignacion.propietarioId]}
+                        agenteName={agentesMap[consignacion.agenteId]?.name}
+                        agenteAvatar={agentesMap[consignacion.agenteId]?.avatar}
+                        onClick={() => handleView(consignacion)}
+                        onView={() => handleView(consignacion)}
+                        onEdit={() => handleEdit(consignacion)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState />
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="table"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {paginatedConsignaciones.length > 0 ? (
+                  <ConsignacionTable
+                    consignaciones={paginatedConsignaciones}
+                    propietariosMap={propietariosMap}
+                    agentesMap={agentesMap}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                  />
+                ) : (
+                  <EmptyState />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === 1
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <CaretLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-1 px-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                    page === currentPage
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                'p-2 rounded-md border border-border transition-all',
+                currentPage === totalPages
+                  ? 'text-muted-foreground/40 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <CaretRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
@@ -397,15 +411,15 @@ export default function PortafolioPage() {
 // Empty State Component
 function EmptyState() {
   return (
-    <div className="p-12 text-center rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-        <Buildings className="w-8 h-8 text-neutral-400" />
+    <div className="p-12 text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+        <Buildings className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+      <h3 className="text-lg font-semibold text-foreground mb-1">
         No se encontraron propiedades
       </h3>
-      <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
-        Ajusta los filtros de búsqueda o agrega una nueva consignacion para comenzar
+      <p className="text-muted-foreground max-w-md mx-auto">
+        Ajusta los filtros de búsqueda o agrega una nueva consignación para comenzar
       </p>
     </div>
   );

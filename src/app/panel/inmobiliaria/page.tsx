@@ -50,9 +50,9 @@ interface KPICardProps {
 
 function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-indigo-600', href }: KPICardProps) {
   const content = (
-    <div className="group relative rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+    <div className="group relative h-full rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
+      <div className="flex items-start justify-between h-full">
+        <div className="flex-1 flex flex-col">
           <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">{title}</p>
           <p className="mt-2 text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {value}
@@ -60,7 +60,9 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-
           {subtitle && (
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>
           )}
-          {trend && (
+          {/* Spacer to push trend to bottom or maintain consistent spacing */}
+          <div className="flex-1 min-h-[8px]" />
+          {trend ? (
             <div className="mt-2 flex items-center gap-1">
               {trend.isPositive ? (
                 <TrendUp weight="bold" className="h-4 w-4 text-emerald-500" />
@@ -72,9 +74,11 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-
               </span>
               <span className="text-sm text-neutral-400">vs mes anterior</span>
             </div>
+          ) : (
+            <div className="h-6" />
           )}
         </div>
-        <div className={cn('rounded-xl p-3 bg-neutral-100 dark:bg-neutral-800', iconColor)}>
+        <div className={cn('rounded-xl p-3 bg-neutral-100 dark:bg-[#1f1f21]', iconColor)}>
           <Icon weight="duotone" className="h-5 w-5" />
         </div>
       </div>
@@ -105,7 +109,7 @@ function QuickAction({ title, description, href, icon: Icon, iconBg = 'bg-indigo
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-md transition-all"
+      className="group flex items-center gap-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all"
     >
       <div className={cn('rounded-lg p-2.5', iconBg)}>
         <Icon weight="duotone" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -126,8 +130,8 @@ function PipelineMiniCard({ item }: { item: typeof MOCK_PIPELINE_ITEMS[0] }) {
   const stageInfo = getPipelineStageInfo(item.stage);
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-3">
-      <div className="h-10 w-10 rounded-lg bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+    <div className="flex items-center gap-3 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-[#1f1f21] p-3">
+      <div className="h-10 w-10 rounded-lg bg-neutral-200 dark:bg-[#2a2a2c] overflow-hidden">
         {item.propertyThumbnail && (
           <img
             src={item.propertyThumbnail}
@@ -248,7 +252,7 @@ export default function InmobiliariaDashboardPage() {
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2 bg-blue-100 dark:bg-blue-900/30">
               <Kanban weight="duotone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -259,7 +263,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2 bg-amber-100 dark:bg-amber-900/30">
               <Clock weight="duotone" className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -270,7 +274,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2 bg-purple-100 dark:bg-purple-900/30">
               <FileText weight="duotone" className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -281,7 +285,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2 bg-red-100 dark:bg-red-900/30">
               <Warning weight="duotone" className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -297,7 +301,7 @@ export default function InmobiliariaDashboardPage() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pipeline Activity */}
-        <div className="lg:col-span-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
+        <div className="lg:col-span-2 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Pipeline Activo</h2>
@@ -327,7 +331,7 @@ export default function InmobiliariaDashboardPage() {
         </div>
 
         {/* Team Performance */}
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
+        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Equipo</h2>
@@ -348,7 +352,7 @@ export default function InmobiliariaDashboardPage() {
             ))}
           </div>
 
-          <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700">
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500 dark:text-neutral-400">Cerrados este mes</span>
               <span className="font-semibold text-neutral-900 dark:text-white">{kpis.closedThisMonth}</span>
@@ -368,7 +372,7 @@ export default function InmobiliariaDashboardPage() {
           <QuickAction
             title="Nuevo Propietario"
             description="Registrar propietario"
-            href="/panel/inmobiliaria/propietarios/nuevo"
+            href="/panel/inmobiliaria/propietarios?nuevo=true"
             icon={UserCircle}
           />
           <QuickAction
@@ -381,7 +385,7 @@ export default function InmobiliariaDashboardPage() {
           <QuickAction
             title="Registrar Cobro"
             description="Recibir pago"
-            href="/panel/inmobiliaria/cobros/registrar"
+            href="/panel/inmobiliaria/cobros?status=pending"
             icon={CurrencyDollar}
             iconBg="bg-purple-100 dark:bg-purple-900/30"
           />
@@ -445,7 +449,7 @@ export default function InmobiliariaDashboardPage() {
       )}
 
       {/* Financial Summary */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
+      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Resumen Financiero</h2>
@@ -494,12 +498,12 @@ export default function InmobiliariaDashboardPage() {
         </div>
 
         {/* Collection Rate Progress */}
-        <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-neutral-500 dark:text-neutral-400">Tasa de recaudo</span>
             <span className="font-medium text-neutral-900 dark:text-white">{kpis.collectionRate.toFixed(1)}%</span>
           </div>
-          <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+          <div className="h-2 rounded-full bg-neutral-100 dark:bg-[#1f1f21] overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
               style={{ width: `${kpis.collectionRate}%` }}

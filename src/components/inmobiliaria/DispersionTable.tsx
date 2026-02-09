@@ -54,8 +54,9 @@ function formatMonth(month: string): string {
 }
 
 /**
- * DispersionTable - Full-featured data table for dispersiones (disbursements)
- * Includes sorting, row actions, and optional summary row
+ * DispersionTable - Data table for dispersiones (disbursements)
+ * Pure display component with sorting and row actions
+ * Filtering and pagination handled by parent
  */
 export function DispersionTable({
   dispersiones,
@@ -176,7 +177,7 @@ export function DispersionTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -185,15 +186,15 @@ export function DispersionTable({
   );
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-[1000px]">
         <thead>
-          <tr className="border-b border-neutral-100 dark:border-neutral-800">
+          <tr className="border-b border-border">
             <SortableHeader field="propietarioName">Propietario</SortableHeader>
             <SortableHeader field="month">Mes</SortableHeader>
             <SortableHeader field="properties">Propiedades</SortableHeader>
             <SortableHeader field="totalCollected">Recaudado</SortableHeader>
-            <SortableHeader field="totalCommission">Comision</SortableHeader>
+            <SortableHeader field="totalCommission">Comisión</SortableHeader>
             <SortableHeader field="netToPropietario">Neto</SortableHeader>
             <SortableHeader field="status">Estado</SortableHeader>
             <SortableHeader field="processedAt">Fecha Pago</SortableHeader>
@@ -213,21 +214,21 @@ export function DispersionTable({
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onViewDetail?.(dispersion)}
                 className={cn(
-                  'border-b border-neutral-50 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-[#141416] cursor-pointer transition-colors',
+                  'border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors',
                   dispersion.status === 'completed' && 'opacity-75'
                 )}
               >
                 {/* Propietario */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
                       <User className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[180px]">
+                      <p className="font-medium text-foreground truncate max-w-[180px]">
                         {dispersion.propietarioName}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-[180px]">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
                         <Bank className="w-3 h-3" />
                         <span>
                           {dispersion.propietarioBankAccount.accountNumber}
@@ -239,35 +240,35 @@ export function DispersionTable({
 
                 {/* Month */}
                 <td className="p-4">
-                  <span className="text-neutral-700 dark:text-neutral-300 capitalize">
+                  <span className="text-foreground capitalize">
                     {formatMonth(dispersion.month)}
                   </span>
                 </td>
 
                 {/* Properties Count */}
                 <td className="p-4">
-                  <span className="inline-flex items-center px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-sm font-medium">
+                  <span className="inline-flex items-center px-2 py-1 rounded-lg bg-muted text-foreground text-sm font-medium tabular-nums">
                     {dispersion.items.length}
                   </span>
                 </td>
 
                 {/* Total Collected */}
                 <td className="p-4">
-                  <span className="font-semibold text-neutral-900 dark:text-white">
+                  <span className="font-semibold text-foreground tabular-nums">
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
                 </td>
 
                 {/* Commission */}
                 <td className="p-4">
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                  <span className="font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">
                     {formatCurrency(dispersion.totalCommission)}
                   </span>
                 </td>
 
                 {/* Net Amount */}
                 <td className="p-4">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="font-bold text-foreground tabular-nums">
                     {formatCurrency(dispersion.netToPropietario)}
                   </span>
                 </td>
@@ -290,9 +291,9 @@ export function DispersionTable({
                 {/* Payment Date */}
                 <td className="p-4">
                   {dispersion.status === 'completed' && dispersion.processedAt ? (
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center gap-1.5 text-foreground">
                       <CheckCircle className="w-4 h-4" weight="fill" />
-                      <span className="text-sm">
+                      <span className="text-sm tabular-nums">
                         {new Date(dispersion.processedAt).toLocaleDateString(
                           'es-CO',
                           {
@@ -308,7 +309,7 @@ export function DispersionTable({
                       <span className="text-sm">Error</span>
                     </div>
                   ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">
+                    <span className="text-muted-foreground">
                       —
                     </span>
                   )}
@@ -324,10 +325,10 @@ export function DispersionTable({
                           openMenuId === dispersion.id ? null : dispersion.id
                         );
                       }}
-                      className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                      className="p-2 rounded-lg hover:bg-muted transition-colors"
                     >
                       <DotsThree
-                        className="w-5 h-5 text-neutral-500"
+                        className="w-5 h-5 text-muted-foreground"
                         weight="bold"
                       />
                     </button>
@@ -338,7 +339,7 @@ export function DispersionTable({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                          className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
                         >
                           <button
                             onClick={(e) => {
@@ -346,7 +347,7 @@ export function DispersionTable({
                               onViewDetail?.(dispersion);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">Ver detalle</span>
@@ -388,7 +389,7 @@ export function DispersionTable({
                                   onDownloadExtracto(dispersion);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                               >
                                 <DownloadSimple className="w-4 h-4" />
                                 <span className="text-sm">Descargar extracto</span>
@@ -407,30 +408,30 @@ export function DispersionTable({
         {/* Summary Row */}
         {showSummary && dispersiones.length > 0 && (
           <tfoot>
-            <tr className="bg-neutral-50 dark:bg-[#141416] border-t-2 border-neutral-200 dark:border-neutral-700">
+            <tr className="bg-muted/30 border-t-2 border-border">
               <td colSpan={3} className="p-4">
                 <div className="flex items-center gap-4">
-                  <span className="font-semibold text-neutral-900 dark:text-white">
+                  <span className="font-semibold text-foreground">
                     Total ({dispersiones.length} dispersiones)
                   </span>
                   <div className="flex items-center gap-3 text-xs">
                     {summary.pending > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 tabular-nums">
                         {summary.pending} pend.
                       </span>
                     )}
                     {summary.processing > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 tabular-nums">
                         {summary.processing} proc.
                       </span>
                     )}
                     {summary.completed > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-foreground tabular-nums">
                         {summary.completed} comp.
                       </span>
                     )}
                     {summary.failed > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                      <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 tabular-nums">
                         {summary.failed} fall.
                       </span>
                     )}
@@ -438,17 +439,17 @@ export function DispersionTable({
                 </div>
               </td>
               <td className="p-4">
-                <span className="font-bold text-neutral-900 dark:text-white">
+                <span className="font-bold text-foreground tabular-nums">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-amber-600 dark:text-amber-400">
+                <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
                   {formatCurrency(summary.totalCommissions)}
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="font-bold text-foreground tabular-nums">
                   {formatCurrency(summary.totalToDisburse)}
                 </span>
               </td>
@@ -461,13 +462,13 @@ export function DispersionTable({
       {/* Empty State */}
       {sortedDispersiones.length === 0 && (
         <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <PaperPlaneTilt className="w-8 h-8 text-neutral-400" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <PaperPlaneTilt className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+          <h3 className="text-lg font-semibold text-foreground mb-1">
             No hay dispersiones para mostrar
           </h3>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-muted-foreground">
             Genera las dispersiones del mes para enviar pagos a los propietarios
           </p>
         </div>

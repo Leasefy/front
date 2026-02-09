@@ -154,7 +154,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
  */
 export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps) {
   return (
-    <ProtectedRoute allowedRoles={['landlord']}>
+    <ProtectedRoute allowedRoles={['agency']}>
       <I18nProvider>
         <SidebarProvider>
           <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>

@@ -584,11 +584,20 @@ export function ReporteViewer({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
         {/* Header */}
-        <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
-          <div className="flex items-start gap-4">
+        <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-sm z-10">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 p-2 rounded-lg hover:bg-muted transition-colors group"
+            aria-label="Cerrar"
+          >
+            <X className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" weight="bold" />
+          </button>
+
+          <div className="flex items-start gap-4 pr-10">
             <div
               className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
                 bgColor
               )}
             >
@@ -601,10 +610,10 @@ export function ReporteViewer({
               <p className="text-sm text-muted-foreground mt-0.5">
                 {report.description}
               </p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-3">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
                     getReportCategoryColor(report.category)
                   )}
                 >
@@ -612,7 +621,7 @@ export function ReporteViewer({
                 </span>
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
                     getReportFormatColor(report.format)
                   )}
                 >
@@ -628,33 +637,37 @@ export function ReporteViewer({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-muted/50 border-b border-border"
+          className="px-6 py-4 bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/30"
         >
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <h4 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3">
             Filtros Aplicados
           </h4>
           <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background border border-border">
-              <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-foreground">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-background border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+              <CalendarBlank className="w-4 h-4 text-indigo-500 dark:text-indigo-400" weight="duotone" />
+              <span className="text-sm font-medium text-foreground">
                 {formatPeriodDisplay(filters.period)}
               </span>
             </div>
             {filters.zone && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background border border-border">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-foreground">{filters.zone}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-background border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+                <MapPin className="w-4 h-4 text-indigo-500 dark:text-indigo-400" weight="duotone" />
+                <span className="text-sm font-medium text-foreground">{filters.zone}</span>
               </div>
             )}
           </div>
         </motion.div>
 
         {/* Preview Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-4">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Vista Previa
+          </h4>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="rounded-xl border border-border bg-card p-4"
           >
             <PreviewContent />
           </motion.div>
@@ -665,22 +678,19 @@ export function ReporteViewer({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="sticky bottom-0 p-6 border-t border-border bg-background"
+          className="sticky bottom-0 p-6 border-t border-border bg-gradient-to-t from-background via-background to-background/95 backdrop-blur-sm"
         >
           <div className="flex gap-3">
-            {/* Export Primary */}
+            {/* Export Primary - Always indigo */}
             <Button
-              className={cn(
-                'flex-1',
-                report.format === 'pdf'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              )}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
               onClick={() => handleExport(report.format)}
               disabled={isExporting}
             >
               {isExporting ? (
-                'Exportando...'
+                <>
+                  <span className="animate-pulse">Exportando...</span>
+                </>
               ) : (
                 <>
                   <DownloadSimple className="w-4 h-4 mr-2" />
@@ -693,22 +703,18 @@ export function ReporteViewer({
             {report.format === 'pdf' && (
               <Button
                 variant="outline"
-                className="px-4"
+                className="px-4 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
                 onClick={() => window.print()}
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </Button>
             )}
           </div>
 
           {/* Scheduled Export - Future Feature */}
-          <Button
-            variant="ghost"
-            className="w-full mt-2 text-muted-foreground"
-            disabled
-          >
+          <p className="text-center text-xs text-muted-foreground mt-4">
             Programar envio automatico (proximamente)
-          </Button>
+          </p>
         </motion.div>
       </SheetContent>
     </Sheet>

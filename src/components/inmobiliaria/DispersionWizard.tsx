@@ -452,7 +452,7 @@ export function DispersionWizard({
                       {month.label}
                     </p>
                     {hasExisting && (
-                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-foreground" />
                     )}
                   </button>
                 );
@@ -499,21 +499,17 @@ export function DispersionWizard({
               </p>
             </div>
 
-            {/* Summary */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">
-                  Total Cobros
-                </p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+            {/* Summary Stats */}
+            <div className="flex items-center gap-8 pb-4 border-b border-border">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Cobros</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
                   {state.cobrosRecibidos.length}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">
-                  Total Recaudado
-                </p>
-                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Recaudado</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>
               </div>
@@ -539,7 +535,7 @@ export function DispersionWizard({
                         {draft.items.length > 1 ? 'es' : ''}
                       </p>
                     </div>
-                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                    <p className="font-semibold text-foreground tabular-nums">
                       {formatCurrency(draft.totalCollected)}
                     </p>
                   </div>
@@ -592,49 +588,45 @@ export function DispersionWizard({
               </p>
             </div>
 
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Recaudado</p>
-                <p className="text-xl font-bold text-foreground">
+            {/* Summary Stats */}
+            <div className="flex items-center gap-8 pb-4 border-b border-border">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Recaudado</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-center">
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">
-                  Comisiones
-                </p>
-                <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Comisiones</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCommission)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-center">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">
-                  Neto
-                </p>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Neto</p>
+                <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalNet)}
                 </p>
               </div>
             </div>
 
             {/* Commission breakdown by propietario */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {state.dispersionDrafts.map((draft) => (
                 <div
                   key={draft.propietarioId}
                   className="rounded-xl border border-border bg-card overflow-hidden"
                 >
-                  <div className="p-4 border-b border-border bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-foreground">
-                        {draft.propietarioName}
-                      </p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400">
-                        -{formatCurrency(draft.totalCommission)}
-                      </p>
-                    </div>
+                  {/* Propietario Header */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+                    <p className="font-medium text-foreground">
+                      {draft.propietarioName}
+                    </p>
+                    <p className="font-semibold text-foreground tabular-nums">
+                      -{formatCurrency(draft.totalCommission)}
+                    </p>
                   </div>
+                  {/* Expandable Detail */}
                   <ComisionDesglose
                     items={draft.items.map((i) => ({
                       cobroId: i.cobroId,
@@ -666,14 +658,14 @@ export function DispersionWizard({
             </div>
 
             {/* Total Card */}
-            <div className="p-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-              <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-2">
+            <div className="p-6 rounded-xl bg-muted/30 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">
                 Total a Dispersar
               </p>
-              <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
+              <p className="text-3xl font-bold text-foreground tabular-nums">
                 {formatCurrency(totals.totalNet)}
               </p>
-              <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 {state.dispersionDrafts.length} propietario
                 {state.dispersionDrafts.length > 1 ? 's' : ''}
               </p>
@@ -717,7 +709,7 @@ export function DispersionWizard({
                     </div>
                     <div className="pt-2 border-t border-border flex items-center justify-between">
                       <span className="font-medium text-foreground">Neto</span>
-                      <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="text-lg font-semibold text-foreground tabular-nums">
                         {formatCurrency(draft.netToPropietario)}
                       </span>
                     </div>
@@ -809,7 +801,7 @@ export function DispersionWizard({
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                        <p className="font-semibold text-foreground tabular-nums">
                           {formatCurrency(dispersion.netToPropietario)}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -831,10 +823,10 @@ export function DispersionWizard({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4"
               >
                 <CheckCircle
-                  className="w-10 h-10 text-emerald-600 dark:text-emerald-400"
+                  className="w-8 h-8 text-foreground"
                   weight="fill"
                 />
               </motion.div>
@@ -847,29 +839,27 @@ export function DispersionWizard({
               </p>
             </div>
 
-            {/* Summary Card */}
-            <div className="p-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">
-                    Dispersiones
-                  </p>
-                  <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {state.selectedForApproval.length}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">
-                    Total a Dispersar
-                  </p>
-                  <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {formatCurrency(
-                      state.generatedDispersiones
-                        .filter((d) => state.selectedForApproval.includes(d.id))
-                        .reduce((sum, d) => sum + d.netToPropietario, 0)
-                    )}
-                  </p>
-                </div>
+            {/* Summary Stats */}
+            <div className="flex items-center justify-center gap-12 py-6 border-y border-border">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">
+                  Dispersiones
+                </p>
+                <p className="text-3xl font-bold text-foreground tabular-nums">
+                  {state.selectedForApproval.length}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">
+                  Total a Dispersar
+                </p>
+                <p className="text-3xl font-bold text-foreground tabular-nums">
+                  {formatCurrency(
+                    state.generatedDispersiones
+                      .filter((d) => state.selectedForApproval.includes(d.id))
+                      .reduce((sum, d) => sum + d.netToPropietario, 0)
+                  )}
+                </p>
               </div>
             </div>
 
@@ -914,10 +904,10 @@ export function DispersionWizard({
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                       status === 'completed'
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-foreground text-background'
                         : status === 'current'
-                          ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20'
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                          ? 'bg-foreground text-background ring-4 ring-foreground/20'
+                          : 'bg-muted text-muted-foreground'
                     )}
                   >
                     {status === 'completed' ? (
@@ -945,8 +935,8 @@ export function DispersionWizard({
                     className={cn(
                       'flex-1 h-0.5 mx-2',
                       step.id < currentStep
-                        ? 'bg-emerald-500'
-                        : 'bg-neutral-200 dark:bg-neutral-700'
+                        ? 'bg-foreground'
+                        : 'bg-border'
                     )}
                   />
                 )}
@@ -1022,12 +1012,8 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
                   isStepValid
-                    ? currentStep === 4
-                      ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/25'
-                      : currentStep === 5
-                        ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
-                        : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
                 {currentStep === 4 ? (
@@ -1055,8 +1041,8 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
-                    ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/25'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
                 {isSubmitting ? (

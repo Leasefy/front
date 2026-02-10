@@ -1,14 +1,34 @@
-# Arriendo Fácil - Marketplace de Arriendos con Risk Score AI
+# Leasefy — Plataforma AI-Agent de Administración de Arriendos
 
 ## What This Is
 
-Una plataforma de arriendos sin intermediarios para el mercado colombiano que permite a propietarios publicar inmuebles y a arrendatarios postularse en minutos, mientras un Risk Score AI entrega al propietario una calificación explicable, confiable y accionable del candidato (A/B/C/D + recomendaciones + condiciones sugeridas).
+Una plataforma de administración de arriendos para el mercado colombiano donde propietarios e inmobiliarias hablan con un orquestador AI que despacha agentes especializados para cobrar arriendos, evaluar candidatos, coordinar mantenimiento, generar documentos y gestionar propiedades — todo a través de conversación natural. El dashboard web existe como vista de lo que los agentes hicieron, no como herramienta principal.
 
 ## Core Value
 
-**Propietarios toman decisiones informadas sobre inquilinos en minutos, no días, con explicabilidad total del scoring AI.**
+**El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.**
 
-Si todo lo demás falla, el flujo completo Catálogo → Postulación → Risk Score → Decisión debe funcionar con transparencia absoluta en la evaluación.
+Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Agentes → Resultado debe funcionar con autonomía inteligente y escalamiento a humano cuando se requiera una decisión.
+
+## Current Milestone: v4.0 — AI Agent Platform Beta
+
+**Goal:** Agregar una interfaz conversacional AI ("Beta") a los dashboards existentes donde el usuario habla con un orquestador que despacha agentes especializados para gestionar propiedades, cobrar arriendos, evaluar candidatos y coordinar mantenimiento.
+
+**Principio clave:** No romper nada existente. Los dashboards de propietarios e inmobiliarias siguen funcionando igual. La experiencia AI vive en una nueva sección "Beta" del sidebar, y eventualmente puede reemplazar el resto de la plataforma.
+
+**Target features:**
+- [ ] Chat UI en sección "Beta" del sidebar (propietarios + inmobiliarias)
+- [ ] Orquestador AI usando Claude API con tool use
+- [ ] Agente de consulta de datos (propiedades, inquilinos, pagos, contratos)
+- [ ] Agente de documentos (generar cartas, certificados, contratos)
+- [ ] Agente de cobranza (recordatorios, verificar comprobantes, estado cobros)
+- [ ] Agente de pipeline (scoring candidatos, mover por etapas)
+- [ ] Sistema de memoria (conversaciones + preferencias aprendidas)
+- [ ] Sistema de decisiones pendientes (AI presenta opciones, usuario decide)
+- [ ] Briefing proactivo (resumen diario/semanal automático)
+- [ ] Integración WhatsApp via Twilio (inquilinos envían comprobantes, reciben recordatorios)
+
+**Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md`
 
 ## Requirements
 
@@ -30,117 +50,96 @@ Si todo lo demás falla, el flujo completo Catálogo → Postulación → Risk S
 
 ### Active
 
-## Current Milestone: v2.0 Design System & QA Audit
+#### v4.0 — AI Agent Platform Beta
 
-**Goal:** Establecer un sistema de diseño formal con tokens y componentes base rediseñados, y ejecutar una auditoría QA exhaustiva del frontend para encontrar y corregir todos los problemas de UX.
+**Chat UI & Orquestador:**
+- [ ] Sección "Beta" en sidebar de propietarios e inmobiliarias
+- [ ] Chat UI con streaming de respuestas del orquestador
+- [ ] Orquestador AI con Claude API + tool use (loop de agentes)
+- [ ] Context loading: inyectar datos del usuario en system prompt
+- [ ] Historial de conversaciones persistente
+- [ ] Sistema de decisiones pendientes (opciones A/B/C con recomendación)
+- [ ] Indicadores visuales de agentes ejecutándose
 
-**Target features:**
+**Agentes Especializados:**
+- [ ] Agente de consulta de datos (propiedades, inquilinos, pagos, contratos)
+- [ ] Agente de documentos (generar cartas, certificados, contratos, paz y salvos)
+- [ ] Agente de cobranza (recordatorios, verificar comprobantes OCR, estado de cobros)
+- [ ] Agente de pipeline (scoring de candidatos, mover por etapas, agendar visitas)
+- [ ] Agente de mantenimiento (crear tickets, asignar proveedores, tracking)
+- [ ] Agente de comunicación (enviar mensajes por canal apropiado)
 
-#### Design System
-- [ ] Design tokens formales: colores, tipografía, spacing, radios, sombras como variables CSS documentadas
-- [ ] Guía de estilos documentada con ejemplos de uso
-- [ ] Componentes base rediseñados: Button, Input, Card, Badge, Select, Dialog, Sheet, Skeleton
-- [ ] Consistencia visual aplicada en todas las páginas existentes
+**Memoria & Aprendizaje:**
+- [ ] Memoria de corto plazo (conversaciones activas)
+- [ ] Memoria de mediano plazo (resúmenes de decisiones, preferencias)
+- [ ] Preferencias aprendidas del usuario (umbrales, políticas, tonos)
+- [ ] Patrones de inquilinos (timing de pagos, canal preferido)
 
-#### QA Audit Frontend
-- [ ] Auditoría página por página: CTAs desconectados, secciones sin acciones, links rotos
-- [ ] Flujos incompletos: botones que no llevan a ningún lado, estados sin salida
-- [ ] Inconsistencias visuales: spacing, colores, tipografía fuera del sistema
-- [ ] Empty states y error states verificados en cada vista
-- [ ] Responsividad verificada en cada página (mobile/tablet/desktop)
-- [ ] Accesibilidad verificada (contraste, touch targets, keyboard nav)
+**Proactividad:**
+- [ ] Briefing diario/semanal automático
+- [ ] Detección de anomalías (mora creciente, propiedad vacía mucho tiempo)
+- [ ] Sugerencias proactivas (renovaciones, ajuste de precios, mantenimiento preventivo)
 
-### Previously Active (v1.0)
+**Integración WhatsApp:**
+- [ ] Gateway de mensajes (normalizar WhatsApp → orquestador)
+- [ ] Inquilinos envían comprobantes de pago por WhatsApp
+- [ ] Recordatorios automáticos por WhatsApp
+- [ ] Respuestas 24/7 a consultas de inquilinos
 
-#### Flujo End-to-End
-- [ ] Catálogo de inmuebles con cards premium (Airbnb-level)
-- [ ] Filtros: ciudad, barrio, precio, habitaciones, pet friendly, amoblado, parqueadero
-- [ ] Wishlist (Guardados) sin necesidad de cuenta
-- [ ] Detalle inmueble con galería carousel, mapa placeholder, reglas, CTA sticky "Postularme"
-- [ ] Registro/Login con OTP email (magic link)
-- [ ] Wizard de postulación 8-12 min con autosave y progreso visual
-- [ ] Upload de documentos con preview
-- [ ] Risk Score AI ejecutado al submit
+### Previously Active (v1.0-v3.0)
 
-#### Risk Score AI (Core)
-- [ ] FeatureBuilder: extracción de features de postulación
-- [ ] IntegrityEngine: detección de fraude/inconsistencias
-- [ ] FinancialModel: ratio canon/ingreso + deudas + buffer
-- [ ] StabilityModel: tenure laboral, tipo contrato, domicilio
-- [ ] HistoryModel: moras, referencias
-- [ ] Aggregator: pesos configurables → score 0-100
-- [ ] Niveles A/B/C/D con recomendación textual
-- [ ] Drivers explicativos (3-6 por candidato)
-- [ ] Flags de riesgo (chips visuales)
-- [ ] Condiciones sugeridas (codeudor, depósito, póliza)
-- [ ] Persistencia para ML futuro (features + outcomes)
+- ✓ Catálogo de inmuebles con búsqueda AI — v1.0
+- ✓ Risk Score AI con explicación conversacional — v1.0
+- ✓ Dashboard propietario + inquilino — v1.0
+- ✓ Contratos, pricing, mapas, auth — v1.0
+- ✓ Design system, QA, dark mode, i18n — v2.0
+- ✓ Módulo inmobiliaria completo (10 fases) — v3.0
+- ✓ SEO, OG images, JSON-LD — v3.1
+- ✓ Pricing page rediseñada — v3.1
 
-#### Experiencia Arrendatario
-- [ ] Mis Solicitudes: lista con estados y timeline
-- [ ] Detalle solicitud: eventos, mensajes, checklist verificación
-- [ ] Responder solicitud de información
-- [ ] Retirar postulación
+### Out of Scope (v4.0)
 
-#### Experiencia Propietario (Arrendador)
-- [ ] Mis Inmuebles: lista + crear/editar básico
-- [ ] Subir fotos de inmueble
-- [ ] Mis Candidatos: ranking por inmueble ordenado por fit
-- [ ] Cards candidato: nivel, score, ratio canon/ingreso, checks, flags
-- [ ] Acciones: pedir info, preaprobar, aprobar, rechazar
-- [ ] Detalle candidato: resumen AI, subscores, drivers, documentos, referencias, notas, timeline
-
-#### State Machine Solicitudes
-- [ ] Estados: DRAFT, SUBMITTED, UNDER_REVIEW, NEEDS_INFO, PREAPPROVED, APPROVED, REJECTED, WITHDRAWN
-- [ ] Timeline de eventos obligatorio
-- [ ] Actualización automática visible para arrendatario
-
-#### UX Premium
-- [ ] Skeleton loaders en todas las listas
-- [ ] Empty states con CTA
-- [ ] Cards grandes con fotos optimizadas
-- [ ] Micro-interacciones (hover, transitions)
-- [ ] Badges de verificación
-
-### Out of Scope
-
-- **Pagos/contratos/pólizas reales** — MVP valida el flujo, no la transacción
-- **Chat real-time** — Mensajes asíncronos por ahora
-- **Integraciones buró reales** — Solo hooks preparados, scoring con reglas internas
+- **Reemplazar dashboards existentes** — Beta vive en sección separada, dashboards siguen funcionando
+- **ML real para scoring** — Reglas cuantitativas por ahora, datos se guardan para futuro ML
+- **Llamadas AI (Bland.ai)** — Fase 4 del roadmap, no beta
+- **Negociación automática de renovaciones** — Requiere confianza validada del sistema
 - **Multi-país** — Solo Colombia (COP, ciudades colombianas)
-- **SMS/WhatsApp OTP** — Solo email magic link para MVP
-- **Verificación de identidad real** — Simulación con upload de docs
-- **ML real para scoring** — Reglas cuantitativas, guardar datos para futuro ML
+- **White-label para inmobiliarias** — Post-validación
+- **Pagos reales (PSE/Nequi)** — Backend independiente, frontend muestra mock
 
 ## Context
 
 ### Mercado
 - **País**: Colombia
 - **Moneda**: COP (pesos colombianos)
-- **Usuarios**: Propietarios de inmuebles (1-5 propiedades típico) y arrendatarios buscando vivienda
+- **Usuarios**: Propietarios (1-5 propiedades), inmobiliarias (20-300+ propiedades), arrendatarios
 
 ### Dolor Real
-- **Propietarios**: Evaluar inquilinos toma días/semanas, alta incertidumbre, miedo a mora/fraude
-- **Arrendatarios**: Proceso opaco, documentos repetitivos, sin feedback del estado
+- **Propietarios**: Administrar arriendos es un trabajo de tiempo completo — cobrar, mantener, renovar, buscar inquilinos
+- **Inmobiliarias**: Operación manual que escala linealmente con humanos — más propiedades = más gente
+- **Arrendatarios**: Proceso opaco, comunicación lenta, reportes ignorados
 
-### Competencia Implícita
-- Metrocuadrado, Fincaraiz (catálogos sin scoring)
-- Agentes inmobiliarios (intermediarios costosos)
-- Airbnb (referencia UX premium)
+### Diferenciador Competitivo
+- **Competencia (Metrocuadrado, Fincaraiz, inmobiliarias)**: "Excel con UI bonita"
+- **Leasefy**: "Tu equipo de administración de arriendos. Hablas, ellos ejecutan."
+- **Moat real**: Grafo de agentes coordinados + memoria compartida + personalización aprendida + loop de feedback
 
-### Filosofía de Scoring
-- **MVP sin ML**: No hay datos históricos de mora
-- **Híbrido**: Reglas cuantitativas + penalizaciones duras + LLM solo para extracción/redacción
-- **Evolución**: Guardar features + outcomes para entrenar ML real con mora 30/60/90
+### Filosofía AI
+- **Conversación > Dashboard**: El chat es la interfaz principal, el dashboard es la vista de lo que hicieron los agentes
+- **Autonomía con escalamiento**: Los agentes ejecutan dentro de reglas, escalan a humano para decisiones
+- **Aprendizaje continuo**: Cada interacción mejora las preferencias y patrones
 
 ## Constraints
 
-- **Stack**: Next.js 14 App Router + React 18 + TypeScript + Tailwind CSS + shadcn/ui
-- **DB**: Prisma + PostgreSQL (SQLite local dev)
-- **Auth**: NextAuth con email OTP/magic link
-- **Storage**: Local dev + adaptador para S3 futuro
-- **Validación**: Zod
-- **Deploy**: Vercel
-- **Timeline**: MVP funcional para validación de mercado
+- **Frontend Stack**: Next.js 14 App Router + React 18 + TypeScript + Tailwind CSS + shadcn/ui
+- **AI Stack**: Claude API (Anthropic) con tool use para orquestador
+- **Backend**: FastAPI o NestJS (desarrollador backend independiente)
+- **DB**: PostgreSQL + pgvector (embeddings para memoria)
+- **Cache/Queue**: Redis (conversaciones, jobs)
+- **Comunicación**: Twilio (WhatsApp/SMS), SendGrid (email)
+- **OCR**: Claude Vision (comprobantes de pago, documentos)
+- **Deploy**: Vercel (frontend), separado para backend
+- **Arquitectura ref**: `docs/AI-AGENT-ARCHITECTURE.md`
 
 ## Data Model (Entidades Core)
 
@@ -252,12 +251,16 @@ applicationId, hostId, note, createdAt
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Solo Colombia para MVP | Foco en un mercado, validar antes de expandir | — Pending |
-| Scoring híbrido sin ML | No hay datos históricos, reglas cuantitativas son verificables | — Pending |
-| Email OTP únicamente | Reducir complejidad, SMS añade costos/integraciones | — Pending |
-| Simulación de verificación | MVP valida flujo UX, integraciones reales son fase 2 | — Pending |
-| Vercel deploy | Zero-config, preview deploys, edge functions | — Pending |
-| shadcn/ui + Tailwind | Componentes accesibles, fácil customización, consistencia | — Pending |
+| Solo Colombia para MVP | Foco en un mercado, validar antes de expandir | ✓ Good |
+| Scoring híbrido sin ML | No hay datos históricos, reglas cuantitativas son verificables | ✓ Good |
+| shadcn/ui + Tailwind | Componentes accesibles, fácil customización, consistencia | ✓ Good |
+| Vercel deploy (frontend) | Zero-config, preview deploys, edge functions | ✓ Good |
+| Claude API como orquestador | Tool use nativo, contexto largo, razonamiento superior | — Pending |
+| Beta en sección separada del sidebar | No rompe dashboards existentes, permite iteración rápida | — Pending |
+| Agentes como funciones (no LLMs separados) | Los agentes son tools del orquestador, no instancias de Claude independientes | — Pending |
+| pgvector para memoria largo plazo | Embeddings en PostgreSQL, evita servicio externo adicional | — Pending |
+| WhatsApp via Twilio | Canal dominante en Colombia, API madura | — Pending |
+| Conversación > Dashboard | El chat es la interfaz principal, dashboard es vista pasiva | — Pending |
 
 ---
-*Last updated: 2026-02-02 after milestone v2.0 initialization*
+*Last updated: 2026-02-10 after milestone v4.0 initialization*

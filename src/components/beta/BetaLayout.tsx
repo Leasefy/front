@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { List, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { BetaSidebar, BetaTab } from './BetaSidebar';
-import { BetaChatProvider } from '@/lib/context/BetaChatContext';
+import { BetaChatProvider, useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { PreferencesPanel } from './PreferencesPanel';
+import { MobileSidebarDrawer } from './MobileSidebarDrawer';
 
 interface BetaLayoutProps {
   children: React.ReactNode;
@@ -20,14 +22,19 @@ interface BetaLayoutProps {
  * Uses fixed inset-0 z-50 to create the "separate universe" experience.
  * The AppSwitcher in BetaSidebar navigates back to the classic dashboard.
  *
+ * Mobile: sidebar becomes a slide-out drawer, a header bar provides
+ * hamburger menu, title, and new-chat button.
+ *
  * BetaChatProvider wraps all children so chat state persists across
  * tab switches and page navigation within the Beta section.
  */
 export function BetaLayout({ children, basePath }: BetaLayoutProps) {
   const [activeTab, setActiveTab] = useState<BetaTab>('conversations');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleTabChange = useCallback((tab: BetaTab) => {
     setActiveTab(tab);
+    setDrawerOpen(false); // Close drawer when navigating on mobile
   }, []);
 
   return (
@@ -35,11 +42,47 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
       <div
         className={cn(
           'fixed inset-0 z-50',
-          'flex',
+          'flex flex-col md:flex-row',
           'bg-plan-page'
         )}
       >
-        {/* Mission Control Sidebar - hidden on mobile for now */}
+        {/* Mobile header - visible only on mobile */}
+        <div
+          className={cn(
+            'md:hidden flex items-center justify-between',
+            'h-12 px-3 flex-shrink-0',
+            'border-b border-neutral-200 dark:border-border',
+            'bg-white dark:bg-card'
+          )}
+        >
+          {/* Hamburger button */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className={cn(
+              'w-9 h-9 rounded-lg',
+              'flex items-center justify-center',
+              'text-muted-foreground hover:text-foreground',
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+              'transition-colors duration-150'
+            )}
+            aria-label="Abrir menu"
+          >
+            <List className="w-5 h-5" weight="regular" />
+          </button>
+
+          {/* Title */}
+          <div className="flex items-center gap-1.5">
+            <Sparkle className="w-4 h-4 text-indigo-500" weight="fill" />
+            <span className="text-[14px] font-semibold text-foreground">
+              Leasefy AI
+            </span>
+          </div>
+
+          {/* New chat button - wired via context inside provider */}
+          <MobileNewChatButton />
+        </div>
+
+        {/* Desktop sidebar - hidden on mobile */}
         <div className="hidden md:flex">
           <BetaSidebar
             basePath={basePath}
@@ -48,11 +91,47 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           />
         </div>
 
+        {/* Mobile drawer */}
+        <MobileSidebarDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        >
+          <BetaSidebar
+            basePath={basePath}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+        </MobileSidebarDrawer>
+
         {/* Main content area — settings panel or page content */}
         <main className="flex-1 overflow-y-auto">
           {activeTab === 'settings' ? <PreferencesPanel /> : children}
         </main>
       </div>
     </BetaChatProvider>
+  );
+}
+
+/**
+ * MobileNewChatButton - Uses BetaChatContext to create a new conversation.
+ * Separate component because it needs to be inside BetaChatProvider.
+ */
+function MobileNewChatButton() {
+  const { createConversation } = useBetaChatContext();
+
+  return (
+    <button
+      onClick={createConversation}
+      className={cn(
+        'w-9 h-9 rounded-lg',
+        'flex items-center justify-center',
+        'text-indigo-500 hover:text-indigo-600',
+        'hover:bg-indigo-50 dark:hover:bg-indigo-500/10',
+        'transition-colors duration-150'
+      )}
+      aria-label="Nueva conversacion"
+    >
+      <Plus className="w-5 h-5" weight="bold" />
+    </button>
   );
 }

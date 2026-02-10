@@ -12,9 +12,11 @@ import type {
   AgentExecutionStatus,
   PendingDecision,
 } from '@/lib/types/beta-chat';
+import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { getMockResponse } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
 import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
+import { getTodayBriefing } from '@/lib/data/mock-briefings';
 
 // ============================================================================
 // Constants
@@ -180,6 +182,10 @@ export interface UseBetaChatReturn {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   filteredSummaries: ConversationSummary[];
+
+  // Briefing
+  currentBriefing: DailyBriefing | null;
+  sendBriefingAction: (sectionId: string, context: string) => void;
 }
 
 // ============================================================================
@@ -209,6 +215,9 @@ export function useBetaChat(): UseBetaChatReturn {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Briefing state
+  const [currentBriefing] = useState<DailyBriefing | null>(() => getTodayBriefing());
 
   // Timeout refs
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -770,6 +779,22 @@ export function useBetaChat(): UseBetaChatReturn {
       messageCount: c.messages.length,
     }));
 
+  // ========================================================================
+  // Briefing action — sends context message and switches to conversations tab
+  // ========================================================================
+
+  const sendBriefingAction = useCallback(
+    (sectionId: string, context: string) => {
+      // Ensure there's an active conversation
+      if (!activeConversationId) {
+        createConversation();
+      }
+      // Send the context message as if the user typed it
+      sendMessage(context);
+    },
+    [activeConversationId, createConversation, sendMessage]
+  );
+
   return {
     // Current conversation
     messages,
@@ -799,5 +824,9 @@ export function useBetaChat(): UseBetaChatReturn {
     searchQuery,
     setSearchQuery,
     filteredSummaries,
+
+    // Briefing
+    currentBriefing,
+    sendBriefingAction,
   };
 }

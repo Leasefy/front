@@ -1109,97 +1109,85 @@ CREATE TABLE ai_briefings (
 
 ## 9. API del Orquestador
 
-### 9.1 Endpoints principales
+> **Especificacion completa**: Ver `docs/BACKEND-API-V4.md` para documentacion estilo OpenAPI
+> con schemas, ejemplos JSON, comandos curl, y protocolo SSE completo.
 
-```
-POST   /api/v1/ai/message              # Enviar mensaje al orquestador
-GET    /api/v1/ai/conversations         # Listar conversaciones
-GET    /api/v1/ai/conversations/:id     # Historial de una conversación
-POST   /api/v1/ai/decision              # Responder a una decisión pendiente
-GET    /api/v1/ai/briefing/latest       # Último briefing generado
-GET    /api/v1/ai/memory/preferences    # Preferencias aprendidas del usuario
+### 9.1 Contrato Frontend
 
-# Webhooks entrantes (canales externos)
-POST   /api/v1/webhooks/twilio          # WhatsApp / SMS entrante
-POST   /api/v1/webhooks/email           # Email entrante (SendGrid inbound parse)
-```
+El frontend consume estos endpoints (todos bajo `/api/v1/ai`):
 
-### 9.2 Contrato: Enviar mensaje
+| Metodo | Path | Proposito | Respuesta |
+|--------|------|-----------|-----------|
+| POST | `/api/v1/ai/message` | Enviar mensaje al orquestador | SSE stream |
+| GET | `/api/v1/ai/conversations` | Listar conversaciones | JSON |
+| GET | `/api/v1/ai/conversations/:id` | Detalle de conversacion | JSON |
+| POST | `/api/v1/ai/conversations` | Crear conversacion | JSON |
+| DELETE | `/api/v1/ai/conversations/:id` | Eliminar conversacion | 204 |
+| GET | `/api/v1/ai/decisions` | Listar decisiones | JSON |
+| POST | `/api/v1/ai/decisions/:id/select` | Seleccionar opcion | JSON |
+| GET | `/api/v1/ai/briefings` | Listar briefings | JSON |
+| GET | `/api/v1/ai/briefings/latest` | Ultimo briefing | JSON |
+| GET | `/api/v1/ai/preferences` | Obtener preferencias | JSON |
+| PUT | `/api/v1/ai/preferences` | Actualizar preferencias | JSON |
 
-```typescript
-// POST /api/v1/ai/message
-// Request
-{
-    "message": "¿Cómo va la propiedad de Usaquén?",
-    "channel": "web",
-    "conversation_id": "conv-uuid-123", // opcional, para continuar conversación
-    "attachments": [] // opcional, URLs de archivos
-}
+Webhooks externos (no consumidos por frontend):
 
-// Response (streaming recomendado para UX)
-{
-    "conversation_id": "conv-uuid-123",
-    "message_id": "msg-uuid-456",
-    "response": "El contrato de Laura vence en 45 días...",
-    "agents_executed": [
-        {
-            "agent": "query_data",
-            "action": "contratos",
-            "duration_ms": 120
-        },
-        {
-            "agent": "precio_agent",
-            "action": "benchmark_zona",
-            "duration_ms": 850
-        }
-    ],
-    "pending_decisions": [
-        {
-            "id": "dec-789",
-            "description": "¿Renovar contrato de Laura?",
-            "options": [
-                {"id": "A", "label": "Mismo precio", "detail": "Retención segura"},
-                {"id": "B", "label": "+5%", "detail": "Probable aceptación"},
-                {"id": "C", "label": "+8% (mercado)", "detail": "Riesgo de salida"}
-            ],
-            "recommendation": "B",
-            "recommendation_reason": "Laura paga puntual hace 2 años..."
-        }
-    ]
-}
-```
+| Metodo | Path | Proposito |
+|--------|------|-----------|
+| POST | `/api/v1/webhooks/twilio` | WhatsApp / SMS entrante |
+| POST | `/api/v1/webhooks/email` | Email entrante (SendGrid inbound parse) |
 
-### 9.3 Contrato: Webhook WhatsApp
+### 9.2 Contrato SSE Streaming
 
-```typescript
-// POST /api/v1/webhooks/twilio
-// Twilio envía el mensaje del usuario
-// El backend:
-// 1. Identifica usuario por número de teléfono
-// 2. Determina tipo (propietario/inquilino)
-// 3. Pasa al orquestador con contexto
-// 4. Responde por WhatsApp con la respuesta del orquestador
-```
+El endpoint de chat (`POST /api/v1/ai/message`) usa Server-Sent Events para streaming:
 
-### 9.4 Contrato: Decisión pendiente
+- **Tipos de evento**: `message_start`, `agent_dispatch`, `agent_status`, `content_delta`, `decision`, `message_complete`, `error`
+- **Terminacion**: `data: [DONE]\n\n`
+- **Secuencia**: `message_start` → `agent_dispatch` → `agent_status` (N) → `content_delta` (N) → `decision`? → `message_complete` → `[DONE]`
 
-```typescript
-// POST /api/v1/ai/decision
-{
-    "decision_id": "dec-789",
-    "selected_option": "B",
-    "additional_context": "Pero dile que el parqueadero sube $50K" // opcional
-}
+Ver `docs/BACKEND-API-V4.md` seccion "SSE Streaming Protocol" para schemas completos, ejemplos, y reglas de secuencia.
 
-// Response
-{
-    "status": "executing",
-    "actions_triggered": [
-        "Generando contrato con +5% y parqueadero +$50K",
-        "Enviando propuesta a Laura por WhatsApp"
-    ]
-}
-```
+### 9.3 Configuracion de Entorno
+
+| Variable | Default | Proposito |
+|----------|---------|-----------|
+| `NEXT_PUBLIC_USE_MOCK_API` | `true` | Usar capa mock en vez de API real |
+| `NEXT_PUBLIC_AI_API_URL` | `/api/v1/ai` | URL base del backend AI |
+| `NEXT_PUBLIC_MOCK_DELAY_MS` | `800` | Delay de respuestas mock (ms) |
+
+### 9.4 Tipos TypeScript
+
+Las definiciones de tipos del frontend estan en:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `src/lib/api/types.ts` | Tipos request/response para todos los endpoints |
+| `src/lib/api/client.ts` | Clase `LeasefyAIClient` con metodos tipados |
+| `src/lib/api/config.ts` | Configuracion de entorno (`getApiConfig`, `isMockMode`) |
+| `src/lib/types/beta-chat.ts` | Tipos de dominio compartidos (`AgentType`, `PendingDecision`, `BetaPreferences`, etc.) |
+
+**El backend debe implementar respuestas que coincidan exactamente con estos tipos.** Los tipos en `types.ts` son la fuente de verdad del contrato.
+
+### 9.5 Integracion Frontend
+
+#### Arquitectura mock-to-real
+
+El frontend tiene una capa de mock que simula todas las respuestas del backend:
+
+1. **Modo mock** (default): `NEXT_PUBLIC_USE_MOCK_API=true` — El frontend usa datos simulados con delays configurables. No requiere backend.
+2. **Modo real**: `NEXT_PUBLIC_USE_MOCK_API=false` — El frontend llama al backend real via `LeasefyAIClient`.
+
+#### Orden de implementacion recomendado
+
+Para el backend, el MVP requiere implementar en este orden:
+
+1. **`POST /api/v1/ai/message`** — Endpoint critico. SSE streaming con agent events.
+2. **`GET/POST/DELETE /api/v1/ai/conversations`** — CRUD de conversaciones.
+3. **`GET/POST /api/v1/ai/decisions`** — Sistema de decisiones.
+4. **`GET /api/v1/ai/briefings`** — Briefings proactivos.
+5. **`GET/PUT /api/v1/ai/preferences`** — Preferencias de usuario.
+
+Cada endpoint puede activarse independientemente — el frontend puede usar mock para unos endpoints y real para otros (solo hay que extender la capa mock para soportar granularidad por endpoint).
 
 ---
 

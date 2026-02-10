@@ -3,6 +3,7 @@
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/lib/types/beta-chat';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface AssistantBubbleProps {
   message: ChatMessage;
@@ -15,6 +16,7 @@ interface AssistantBubbleProps {
  * AssistantBubble - Left-aligned assistant message bubble with Leasefy AI branding.
  *
  * Card background with border, Sparkle icon avatar, "Leasefy AI" label.
+ * Renders markdown content via MarkdownRenderer.
  * During streaming status, shows streamingContent with a blinking cursor.
  */
 export function AssistantBubble({ message, streamingContent, className }: AssistantBubbleProps) {
@@ -57,7 +59,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
             'border border-neutral-200 dark:border-border',
             'rounded-2xl rounded-bl-sm',
             'text-[14px] leading-relaxed text-foreground',
-            'whitespace-pre-wrap break-words'
+            'break-words'
           )}
         >
           {isSending ? (
@@ -68,12 +70,10 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
               <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
             </span>
           ) : (
-            <>
-              {displayContent}
-              {isStreaming && (
-                <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
-              )}
-            </>
+            <MarkdownRenderer
+              content={displayContent}
+              isStreaming={isStreaming}
+            />
           )}
         </div>
 

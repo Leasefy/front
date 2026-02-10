@@ -98,29 +98,29 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Decision System (DCSN)
 
-- [ ] **DCSN-01**: Pending decision cards embedded in conversation with 2-4 options
-- [ ] **DCSN-02**: Each option shows AI recommendation indicator (recommended/neutral/not recommended)
-- [ ] **DCSN-03**: User can select an option which sends it as their response
-- [ ] **DCSN-04**: Decision cards become read-only after selection (shows what was chosen)
-- [ ] **DCSN-05**: Pending decisions counter in Beta sidebar nav item
-- [ ] **DCSN-06**: Decision history accessible (what was decided and when)
+- [x] **DCSN-01**: Pending decision cards embedded in conversation with 2-4 options
+- [x] **DCSN-02**: Each option shows AI recommendation indicator (recommended/neutral/not recommended)
+- [x] **DCSN-03**: User can select an option which sends it as their response
+- [x] **DCSN-04**: Decision cards become read-only after selection (shows what was chosen)
+- [x] **DCSN-05**: Pending decisions counter in Beta sidebar nav item
+- [x] **DCSN-06**: Decision history accessible (what was decided and when)
 
 ### Briefing Display (BRFG)
 
-- [ ] **BRFG-01**: Daily briefing card displayed at top of Beta section
-- [ ] **BRFG-02**: Briefing sections: cobros summary, pipeline updates, mantenimiento, decisiones pendientes
-- [ ] **BRFG-03**: Each briefing section expandable/collapsible
-- [ ] **BRFG-04**: Briefing actions: "Cuéntame más sobre cobros" → opens chat with context
-- [ ] **BRFG-05**: New briefing notification badge in sidebar
-- [ ] **BRFG-06**: Historical briefings browsable by date
+- [x] **BRFG-01**: Daily briefing card displayed at top of Beta section
+- [x] **BRFG-02**: Briefing sections: cobros summary, pipeline updates, mantenimiento, decisiones pendientes
+- [x] **BRFG-03**: Each briefing section expandable/collapsible
+- [x] **BRFG-04**: Briefing actions: "Cuéntame más sobre cobros" → opens chat with context
+- [x] **BRFG-05**: New briefing notification badge in sidebar
+- [x] **BRFG-06**: Historical briefings browsable by date
 
 ### Preferences & Autonomy (PREF)
 
-- [ ] **PREF-01**: Settings page for AI autonomy levels per category (cobranza, mantenimiento, comunicación)
-- [ ] **PREF-02**: Autonomy toggles: auto/ask-first/manual for each agent type
-- [ ] **PREF-03**: Notification preferences: what AI notifies about and via which channel
-- [ ] **PREF-04**: Communication tone preference (formal/casual/professional)
-- [ ] **PREF-05**: Threshold settings (mora tolerance, maintenance budget limits)
+- [x] **PREF-01**: Settings page for AI autonomy levels per category (cobranza, mantenimiento, comunicación)
+- [x] **PREF-02**: Autonomy toggles: auto/ask-first/manual for each agent type
+- [x] **PREF-03**: Notification preferences: what AI notifies about and via which channel
+- [x] **PREF-04**: Communication tone preference (formal/casual/professional)
+- [x] **PREF-05**: Threshold settings (mora tolerance, maintenance budget limits)
 
 ### API Client & Mock Layer (APIC)
 
@@ -144,13 +144,13 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Polish & QA (PLSH)
 
-- [ ] **PLSH-01**: Dark mode compatible across all Beta UI
-- [ ] **PLSH-02**: Responsive design: mobile chat experience (full-screen chat)
-- [ ] **PLSH-03**: i18n support (ES/EN) for all Beta strings
-- [ ] **PLSH-04**: Keyboard shortcuts (Cmd+K for new chat, Esc to close)
-- [ ] **PLSH-05**: Accessibility: screen reader support, focus management
-- [ ] **PLSH-06**: Loading states and error boundaries for all Beta pages
-- [ ] **PLSH-07**: TypeScript strict mode, zero build warnings
+- [x] **PLSH-01**: Dark mode compatible across all Beta UI
+- [x] **PLSH-02**: Responsive design: mobile chat experience (full-screen chat)
+- [x] **PLSH-03**: i18n support (ES/EN) for all Beta strings
+- [x] **PLSH-04**: Keyboard shortcuts (Cmd+K for new chat, Esc to close)
+- [x] **PLSH-05**: Accessibility: screen reader support, focus management
+- [x] **PLSH-06**: Loading states and error boundaries for all Beta pages
+- [x] **PLSH-07**: TypeScript strict mode, zero build warnings
 
 ## Out of Scope (v4.0)
 
@@ -187,18 +187,18 @@ Which phases cover which requirements. Updated by create-roadmap.
 | CHAT-08 | Phase 18 | Complete |
 | CHAT-09 | Phase 18 | Complete |
 | CHAT-10 | Phase 18 | Complete |
-| CONV-01 | Phase 19 | Pending |
-| CONV-02 | Phase 19 | Pending |
-| CONV-03 | Phase 19 | Pending |
-| CONV-04 | Phase 19 | Pending |
-| CONV-05 | Phase 19 | Pending |
-| CONV-06 | Phase 19 | Pending |
-| AGNT-01 | Phase 20 | Pending |
-| AGNT-02 | Phase 20 | Pending |
-| AGNT-03 | Phase 20 | Pending |
-| AGNT-04 | Phase 20 | Pending |
-| AGNT-05 | Phase 20 | Pending |
-| AGNT-06 | Phase 20 | Pending |
+| CONV-01 | Phase 19 | Complete |
+| CONV-02 | Phase 19 | Complete |
+| CONV-03 | Phase 19 | Complete |
+| CONV-04 | Phase 19 | Complete |
+| CONV-05 | Phase 19 | Complete |
+| CONV-06 | Phase 19 | Complete |
+| AGNT-01 | Phase 20 | Complete |
+| AGNT-02 | Phase 20 | Complete |
+| AGNT-03 | Phase 20 | Complete |
+| AGNT-04 | Phase 20 | Complete |
+| AGNT-05 | Phase 20 | Complete |
+| AGNT-06 | Phase 20 | Complete |
 | DCSN-01 | Phase 21 | Complete |
 | DCSN-02 | Phase 21 | Complete |
 | DCSN-03 | Phase 21 | Complete |
@@ -230,13 +230,13 @@ Which phases cover which requirements. Updated by create-roadmap.
 | DOCS-06 | Phase 24 | Complete |
 | DOCS-07 | Phase 24 | Complete |
 | DOCS-08 | Phase 24 | Complete |
-| PLSH-01 | Phase 25 | Pending |
-| PLSH-02 | Phase 25 | Pending |
-| PLSH-03 | Phase 25 | Pending |
-| PLSH-04 | Phase 25 | Pending |
-| PLSH-05 | Phase 25 | Pending |
-| PLSH-06 | Phase 25 | Pending |
-| PLSH-07 | Phase 25 | Pending |
+| PLSH-01 | Phase 25 | Complete |
+| PLSH-02 | Phase 25 | Complete |
+| PLSH-03 | Phase 25 | Complete |
+| PLSH-04 | Phase 25 | Complete |
+| PLSH-05 | Phase 25 | Complete |
+| PLSH-06 | Phase 25 | Complete |
+| PLSH-07 | Phase 25 | Complete |
 
 **Coverage:**
 - v4.0 requirements: 63 total

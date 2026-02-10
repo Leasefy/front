@@ -10,7 +10,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v2.0 Design System & QA** - Phases 12-16 (shipped 2026-02-02)
 - ✅ **v3.0 Inmobiliaria Module** - Inmobiliaria 1-10 (shipped 2026-02-08)
 - ✅ **v3.1 Landing & SEO** - i18n, pricing, SEO (shipped 2026-02-10)
-- 🚧 **v4.0 AI Agent Platform Beta** - Phases 17-25 (in progress)
+- ✅ **v4.0 AI Agent Platform Beta** - Phases 17-25 (shipped 2026-02-10)
 
 ## Phases
 
@@ -29,7 +29,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
 - [x] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
 - [x] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
-- [ ] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
+- [x] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
 
 ## Phase Details
 
@@ -64,7 +64,7 @@ i18n across entire codebase (ES/EN), pricing page redesign, SEO optimization (OG
 
 </details>
 
-### 🚧 v4.0 AI Agent Platform Beta
+### ✅ v4.0 AI Agent Platform Beta
 
 **Milestone Goal:** Interfaz conversacional AI en sección "Beta" de los dashboards existentes. El usuario habla con un orquestador que despacha agentes especializados. Frontend completo con mock data; documentación completa para que el backend developer implemente el orquestador y agentes con Claude API.
 
@@ -236,9 +236,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 25-01: Dark mode + responsive mobile chat
-- [ ] 25-02: i18n strings + keyboard shortcuts + accessibility
-- [ ] 25-03: Loading states, error boundaries, TypeScript strict, build validation
+- [x] 25-01: Dark mode + responsive mobile chat
+- [x] 25-02: i18n strings + keyboard shortcuts + accessibility
+- [x] 25-03: Loading states, error boundaries, TypeScript strict, build validation
 
 ## Progress
 
@@ -255,7 +255,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | 22. Briefing Display | 2/2 | Complete | 2026-02-10 |
 | 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
 | 24. API Client & Backend Docs | 3/3 | Complete | 2026-02-10 |
-| 25. Polish & QA | 0/3 | Not started | - |
+| 25. Polish & QA | 3/3 | Complete | 2026-02-10 |
 
 ## Notes
 

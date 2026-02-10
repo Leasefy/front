@@ -70,7 +70,7 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
     <div
       className={cn(
         'flex items-end gap-2',
-        'px-4 py-3',
+        'px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]',
         'border-t border-neutral-200 dark:border-border',
         'bg-white dark:bg-card',
         className

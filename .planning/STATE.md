@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 23 planned — Preferences & Autonomy (2 plans ready)
+**Current focus:** Phase 23 in progress — Preferences & Autonomy (1/2 plans complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 23 of 25 (Preferences & Autonomy)
-Plan: 0 of 2 in phase 23
-Status: Plans written, ready to execute
-Last activity: 2026-02-10 — Planned 23-01 and 23-02
+Plan: 1 of 2 in phase 23
+Status: In progress
+Last activity: 2026-02-10 — Completed 23-01-PLAN.md
 
-Progress: █████████████░░░░░░░░░░░░░░░░░ ~52%
+Progress: ██████████████░░░░░░░░░░░░░░░░ ~54%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 3.8 min
-- Total execution time: 0.83 hours
+- Total execution time: 0.90 hours
 
 **By Phase:**
 
@@ -37,9 +37,10 @@ Progress: █████████████░░░░░░░░░░�
 | 20-agent-activity-display | 2/2 | 6min | 3min |
 | 21-decision-system | 2/2 | 7min | 3.5min |
 | 22-briefing-display | 2/2 | 8min | 4min |
+| 23-preferences-autonomy | 1/2 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 20-02 (4min), 21-01 (4min), 21-02 (3min), 22-01 (4min), 22-02 (4min)
+- Last 5 plans: 21-01 (4min), 21-02 (3min), 22-01 (4min), 22-02 (4min), 23-01 (4min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -109,6 +110,10 @@ Recent decisions affecting current work:
 - 22-02: onTabChange via ref in useBetaChat for stable callback identity (avoids re-render cascades)
 - 22-02: BriefingHistory replaces direct BriefingCard rendering for date navigation
 - 22-02: Amber 6px dot badge for briefing notification (distinct from indigo decision counter)
+- 23-01: Indigo-600 background for active autonomy level in segmented control
+- 23-01: PreferencesPanel renders in main content area via BetaLayout conditional (not sidebar)
+- 23-01: Deep merge in updatePreferences to avoid replacing nested objects
+- 23-01: All agents default to ask_first (safest conservative default for rental management)
 
 ### Pending Todos
 
@@ -121,5 +126,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Planned Phase 23 (2 plans written)
-Resume file: None — ready to execute Phase 23
+Stopped at: Completed 23-01-PLAN.md
+Resume file: None — ready to execute 23-02-PLAN.md

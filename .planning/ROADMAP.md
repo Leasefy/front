@@ -23,7 +23,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Inmobiliaria 1-10**: v3.0 complete
 - [x] **Phase 17: Beta Sidebar Integration** - Add Beta section to both dashboards with AI-optimized layout
 - [x] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
-- [ ] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
+- [x] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
 - [ ] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
 - [ ] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
 - [ ] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
@@ -124,8 +124,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 19-01: Conversation list panel with date grouping and search
-- [ ] 19-02: New conversation, delete, title generation
+- [x] 19-01: Conversation list panel with date grouping and search
+- [x] 19-02: New conversation, delete, title generation
 
 #### Phase 20: Agent Activity Display
 **Goal**: Visualización clara de qué agentes están ejecutando y sus resultados
@@ -249,8 +249,8 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 |-------|----------------|--------|-----------|
 | 17. Beta Sidebar Integration | 2/2 | Complete | 2026-02-10 |
 | 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
-| 19. Conversation Management | 0/2 | Not started | - |
-| 20. Agent Activity Display | 0/2 | Not started | - |
+| 19. Conversation Management | 2/2 | Complete | 2026-02-10 |
+| 20. Agent Activity Display | 1/2 | In progress | - |
 | 21. Decision System | 0/2 | Not started | - |
 | 22. Briefing Display | 0/2 | Not started | - |
 | 23. Preferences & Autonomy | 0/2 | Not started | - |

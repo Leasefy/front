@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 22 in progress — Briefing Display (plan 01 complete)
+**Current focus:** Phase 22 complete — Briefing Display (all plans done)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 22 of 25 (Briefing Display)
-Plan: 1 of 2 in phase 22
-Status: In progress
-Last activity: 2026-02-10 — Completed 22-01-PLAN.md
+Plan: 2 of 2 in phase 22
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 22-02-PLAN.md
 
-Progress: ████████████░░░░░░░░░░░░░░░░░░ ~48%
+Progress: █████████████░░░░░░░░░░░░░░░░░ ~52%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 3.8 min
-- Total execution time: 0.78 hours
+- Total execution time: 0.83 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: ████████████░░░░░░░░░░░�
 | 19-conversation-management | 2/2 | 8min | 4min |
 | 20-agent-activity-display | 2/2 | 6min | 3min |
 | 21-decision-system | 2/2 | 7min | 3.5min |
-| 22-briefing-display | 1/2 | 4min | 4min |
+| 22-briefing-display | 2/2 | 8min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 20-01 (2min), 20-02 (4min), 21-01 (4min), 21-02 (3min), 22-01 (4min)
+- Last 5 plans: 20-02 (4min), 21-01 (4min), 21-02 (3min), 22-01 (4min), 22-02 (4min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -106,6 +106,9 @@ Recent decisions affecting current work:
 - 22-01: sendBriefingAction switches to conversations tab via onTabChange callback
 - 22-01: Briefing loaded from mock data, no localStorage persistence yet
 - 22-01: Action button color-coded per section matching AGENT_METADATA tokens
+- 22-02: onTabChange via ref in useBetaChat for stable callback identity (avoids re-render cascades)
+- 22-02: BriefingHistory replaces direct BriefingCard rendering for date navigation
+- 22-02: Amber 6px dot badge for briefing notification (distinct from indigo decision counter)
 
 ### Pending Todos
 
@@ -118,5 +121,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 22-01-PLAN.md
-Resume file: None — ready for 22-02 execution
+Stopped at: Completed 22-02-PLAN.md (Phase 22 complete)
+Resume file: None — ready for Phase 23

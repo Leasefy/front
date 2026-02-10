@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 25 (Polish & QA) — Plan 01 complete, plans 02-03 in progress
+**Current focus:** Phase 25 plan 03 complete — Phase 25 (Polish & QA) nearing completion
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 25 of 25 (Polish & QA)
-Plan: 1 of 3 in phase 25
-Status: In progress
-Last activity: 2026-02-10 — Completed 25-01-PLAN.md (Dark Mode + Mobile)
+Plan: 3 of 3 in phase 25
+Status: Plan 25-03 complete (loading states, error boundaries, TypeScript strict)
+Last activity: 2026-02-10 — Completed 25-03-PLAN.md
 
-Progress: █████████████████████████████░ ~97%
+Progress: ██████████████████████████████ ~99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: 3.8 min
-- Total execution time: 1.2 hours
+- Total plans completed: 21
+- Average duration: 3.9 min
+- Total execution time: 1.3 hours
 
 **By Phase:**
 
@@ -39,11 +39,11 @@ Progress: ███████████████████████�
 | 22-briefing-display | 2/2 | 8min | 4min |
 | 23-preferences-autonomy | 2/2 | 7min | 3.5min |
 | 24-api-client | 3/3 | 9min | 3min |
-| 25-polish-qa | 1/3 | 8min | 8min |
+| 25-polish-qa | 3/3 | 23min | 7.7min |
 
 **Recent Trend:**
-- Last 5 plans: 23-02 (3min), 24-01 (2min), 24-02 (3min), 24-03 (4min), 25-01 (8min)
-- Trend: QA plans take longer due to full audit scope
+- Last 5 plans: 24-03 (4min), 25-01 (8min), 25-02 (8min), 25-03 (7min)
+- Trend: QA plans take ~7-8min (more validation steps)
 
 ## Previous Milestones
 
@@ -135,6 +135,9 @@ Recent decisions affecting current work:
 - 25-01: MobileNewChatButton as separate component inside BetaChatProvider to access context
 - 25-01: Drawer auto-closes on tab change for natural mobile navigation
 - 25-01: safe-area-inset-bottom uses max() function for graceful fallback on non-notch devices
+- 25-03: isLoading always false in mock mode, ready for real API latency
+- 25-03: BriefingCard isLoading check placed after hooks to avoid rules-of-hooks violation
+- 25-03: Pre-existing build errors (Server Components prerender) not addressed - outside Beta scope
 
 ### Pending Todos
 
@@ -143,9 +146,10 @@ None yet.
 ### Blockers/Concerns
 
 - Aggressive linter/auto-import tool keeps injecting useI18n into Beta components (Beta routes lack I18nProvider). Watch for this in future edits to Beta components.
+- Pre-existing build errors on non-Beta routes (/, /auth, /pricing) due to Server Components prerender issues. Not blocking Beta functionality.
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 25-01-PLAN.md (Dark Mode + Mobile)
-Resume file: None — plans 25-02 and 25-03 next
+Stopped at: Completed 25-03-PLAN.md (loading states, error boundaries, TypeScript strict)
+Resume file: None — all 3 plans in Phase 25 complete

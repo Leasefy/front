@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { AutonomySettings } from './AutonomySettings';
 import { NotificationSettings } from './NotificationSettings';
+import { ToneSelector } from './ToneSelector';
 
 interface PreferencesPanelProps {
   className?: string;
@@ -42,6 +43,12 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
 
         {/* Notification settings */}
         <NotificationSettings />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-200 dark:border-border" />
+
+        {/* Tone selector */}
+        <ToneSelector />
       </div>
     </div>
   );

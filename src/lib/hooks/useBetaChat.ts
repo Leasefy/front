@@ -16,7 +16,7 @@ import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { getMockResponse } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
 import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
-import { getTodayBriefing } from '@/lib/data/mock-briefings';
+import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
 
 // ============================================================================
 // Constants
@@ -186,6 +186,11 @@ export interface UseBetaChatReturn {
   // Briefing
   currentBriefing: DailyBriefing | null;
   sendBriefingAction: (sectionId: string, context: string) => void;
+  hasNewBriefing: boolean;
+  markBriefingSeen: () => void;
+  briefings: DailyBriefing[];
+  selectedBriefing: DailyBriefing | null;
+  selectBriefing: (id: string) => void;
 }
 
 // ============================================================================
@@ -218,6 +223,9 @@ export function useBetaChat(): UseBetaChatReturn {
 
   // Briefing state
   const [currentBriefing] = useState<DailyBriefing | null>(() => getTodayBriefing());
+  const [hasNewBriefing, setHasNewBriefing] = useState(true);
+  const [briefings] = useState<DailyBriefing[]>(() => getMockBriefings());
+  const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
 
   // Timeout refs
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -795,6 +803,23 @@ export function useBetaChat(): UseBetaChatReturn {
     [activeConversationId, createConversation, sendMessage]
   );
 
+  // ========================================================================
+  // Briefing notification & history
+  // ========================================================================
+
+  const markBriefingSeen = useCallback(() => {
+    setHasNewBriefing(false);
+  }, []);
+
+  const selectBriefing = useCallback((id: string) => {
+    setSelectedBriefingId(id);
+  }, []);
+
+  // Computed: selected briefing defaults to today (first in array)
+  const selectedBriefing = selectedBriefingId
+    ? briefings.find((b) => b.id === selectedBriefingId) ?? briefings[0] ?? null
+    : briefings[0] ?? null;
+
   return {
     // Current conversation
     messages,
@@ -828,5 +853,10 @@ export function useBetaChat(): UseBetaChatReturn {
     // Briefing
     currentBriefing,
     sendBriefingAction,
+    hasNewBriefing,
+    markBriefingSeen,
+    briefings,
+    selectedBriefing,
+    selectBriefing,
   };
 }

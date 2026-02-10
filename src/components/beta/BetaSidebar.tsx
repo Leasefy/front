@@ -37,9 +37,12 @@ interface BetaSidebarProps {
  * Other tabs show placeholder content (future phases).
  */
 export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange, className }: BetaSidebarProps) {
-  const { createConversation, pendingDecisionsCount, currentBriefing, sendBriefingAction } = useBetaChatContext();
+  const { createConversation, pendingDecisionsCount, currentBriefing, sendBriefingAction, hasNewBriefing, markBriefingSeen } = useBetaChatContext();
 
   const handleTabChange = (tab: BetaTab) => {
+    if (tab === 'briefing') {
+      markBriefingSeen();
+    }
     onTabChange?.(tab);
   };
 
@@ -98,6 +101,16 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
                   >
                     {pendingDecisionsCount}
                   </span>
+                )}
+                {tab.id === 'briefing' && hasNewBriefing && (
+                  <span
+                    className={cn(
+                      'w-[6px] h-[6px] rounded-full',
+                      'bg-amber-500',
+                      'transition-all duration-200',
+                      'animate-in fade-in zoom-in-75'
+                    )}
+                  />
                 )}
               </button>
             );

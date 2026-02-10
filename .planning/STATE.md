@@ -8,34 +8,34 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.
-**Current focus:** Phase 17 — Beta Sidebar Integration
+**Current focus:** Phase 17 complete -- Beta Sidebar Integration done
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 17 of 25 (Beta Sidebar Integration)
-Plan: 1 of 2 in phase 17
-Status: In progress
-Last activity: 2026-02-10 — Completed 17-01-PLAN.md (Beta nav items + AppSwitcher)
+Plan: 2 of 2 in phase 17
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 17-02-PLAN.md (Beta Mission Control layout)
 
-Progress: █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ~3%
+Progress: ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ~6%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 5 min
-- Total execution time: 0.08 hours
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 17-beta-sidebar | 1/2 | 5min | 5min |
+| 17-beta-sidebar | 2/2 | 10min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 17-01 (5min)
-- Trend: Starting
+- Last 5 plans: 17-01 (5min), 17-02 (5min)
+- Trend: Consistent
 
 ## Previous Milestones
 
@@ -59,6 +59,10 @@ Recent decisions affecting current work:
 - 17-01: "AI Beta" as nav item label (NavItem.badge only supports numbers, not string badges)
 - 17-01: AppSwitcher auto-detects workspace from pathname, no manual props required
 - 17-01: Beta components live in src/components/beta/, routes at /panel/beta and /panel/inmobiliaria/beta
+- 17-02: Full-screen fixed overlay (z-50) for "separate universe" — beta route is outside (landlord) group
+- 17-02: Sidebar hidden on mobile (hidden md:flex) — mobile chat deferred to Phase 18
+- 17-02: Tab state managed locally (useState), no routing per tab yet
+- 17-02: Layout files are Server Components exporting Metadata, importing client BetaLayout
 
 ### Pending Todos
 
@@ -71,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 17-01-PLAN.md (Beta nav items + AppSwitcher)
-Resume file: .planning/phases/17-beta-sidebar-integration/17-02-PLAN.md
+Stopped at: Completed 17-02-PLAN.md (Phase 17 complete)
+Resume file: None (phase complete, ready for Phase 18)

@@ -8,15 +8,15 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 20 complete — Agent Activity Display fully implemented
+**Current focus:** Phase 21 planned — Decision System ready for execution
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
-Phase: 20 of 25 (Agent Activity Display)
-Plan: 2 of 2 in phase 20
-Status: Phase complete
-Last activity: 2026-02-10 — Completed 20-02-PLAN.md
+Phase: 21 of 25 (Decision System)
+Plan: 0 of 2 in phase 21
+Status: Plans written, ready for execution
+Last activity: 2026-02-10 — Created 21-01-PLAN.md and 21-02-PLAN.md
 
 Progress: ██████████░░░░░░░░░░░░░░░░░░░░ ~38%
 
@@ -104,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 20-02-PLAN.md (Phase 20 complete)
-Resume file: None — ready for Phase 21 planning
+Stopped at: Phase 21 plans written
+Resume file: None — ready for Phase 21 execution

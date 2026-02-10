@@ -720,6 +720,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setIsAgentsRunning(false);
       pendingStreamRef.current = null;
       setActiveConversationId(id);
+      // Switch to conversations tab so the user sees the conversation
+      onTabChangeRef.current?.('conversations');
     },
     [activeConversationId, clearTimeouts]
   );

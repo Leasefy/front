@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 24 executing — API Client & Backend Docs (1/3 plans complete)
+**Current focus:** Phase 24 executing — API Client & Backend Docs (2/3 plans complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 24 of 25 (API Client & Backend Docs)
-Plan: 1 of 3 in phase 24
+Plan: 2 of 3 in phase 24
 Status: In progress
-Last activity: 2026-02-10 — Completed 24-01-PLAN.md
+Last activity: 2026-02-10 — Completed 24-02-PLAN.md
 
-Progress: ████████████████████░░░░░░░░░░ ~70%
+Progress: █████████████████████░░░░░░░░░ ~73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: 3.6 min
-- Total execution time: 0.99 hours
+- Total execution time: 1.04 hours
 
 **By Phase:**
 
@@ -38,10 +38,10 @@ Progress: ████████████████████░░░�
 | 21-decision-system | 2/2 | 7min | 3.5min |
 | 22-briefing-display | 2/2 | 8min | 4min |
 | 23-preferences-autonomy | 2/2 | 7min | 3.5min |
-| 24-api-client | 1/3 | 2min | 2min |
+| 24-api-client | 2/3 | 5min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 22-01 (4min), 22-02 (4min), 23-01 (4min), 23-02 (3min), 24-01 (2min)
+- Last 5 plans: 22-02 (4min), 23-01 (4min), 23-02 (3min), 24-01 (2min), 24-02 (3min)
 - Trend: Consistent ~3min per plan, accelerating
 
 ## Previous Milestones
@@ -122,6 +122,10 @@ Recent decisions affecting current work:
 - 24-01: AsyncGenerator<ChatStreamEvent> for sendMessage (not EventSource) — more idiomatic for async iteration
 - 24-01: Underscore-prefixed params for stub methods to suppress unused variable warnings
 - 24-01: Mock mode defaults true when NEXT_PUBLIC_USE_MOCK_API env var is unset
+- 24-02: reader.releaseLock() in finally block for SSE parser cleanup
+- 24-02: mockApi returns static data; hooks manage their own localStorage persistence
+- 24-02: toApiBriefing helper converts DailyBriefing Date to ISO string for API shape
+- 24-02: Private fetch() helper on LeasefyAIClient for JSON endpoints with auth headers
 
 ### Pending Todos
 
@@ -134,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 24-01-PLAN.md
-Resume file: None — ready for 24-02
+Stopped at: Completed 24-02-PLAN.md
+Resume file: None — ready for 24-03

@@ -5,7 +5,7 @@ import {
   useContext,
   type ReactNode,
 } from 'react';
-import { useBetaChat, type UseBetaChatReturn } from '@/lib/hooks/useBetaChat';
+import { useBetaChat, type UseBetaChatReturn, type UseBetaChatOptions } from '@/lib/hooks/useBetaChat';
 
 // ============================================================================
 // Context
@@ -19,6 +19,7 @@ const BetaChatContext = createContext<UseBetaChatReturn | null>(null);
 
 interface BetaChatProviderProps {
   children: ReactNode;
+  onTabChange?: (tab: string) => void;
 }
 
 /**
@@ -34,8 +35,8 @@ interface BetaChatProviderProps {
  * or refreshing the page resets the conversation. Persistent storage
  * is deferred to Phase 19 (Conversation Management).
  */
-export function BetaChatProvider({ children }: BetaChatProviderProps) {
-  const chat = useBetaChat();
+export function BetaChatProvider({ children, onTabChange }: BetaChatProviderProps) {
+  const chat = useBetaChat({ onTabChange });
 
   return (
     <BetaChatContext.Provider value={chat}>

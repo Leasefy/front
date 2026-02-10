@@ -30,7 +30,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
   }, []);
 
   return (
-    <BetaChatProvider>
+    <BetaChatProvider onTabChange={(tab) => setActiveTab(tab as BetaTab)}>
       <div
         className={cn(
           'fixed inset-0 z-50',

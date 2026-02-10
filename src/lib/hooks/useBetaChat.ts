@@ -197,7 +197,15 @@ export interface UseBetaChatReturn {
 // Hook
 // ============================================================================
 
-export function useBetaChat(): UseBetaChatReturn {
+export interface UseBetaChatOptions {
+  onTabChange?: (tab: string) => void;
+}
+
+export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
+  // Stable ref for onTabChange callback to avoid re-render cascades
+  const onTabChangeRef = useRef(options?.onTabChange);
+  onTabChangeRef.current = options?.onTabChange;
+
   // Initialize from localStorage (only on client)
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const stored = loadFromStorage();
@@ -793,6 +801,8 @@ export function useBetaChat(): UseBetaChatReturn {
 
   const sendBriefingAction = useCallback(
     (sectionId: string, context: string) => {
+      // Switch to conversations tab so the user sees the response
+      onTabChangeRef.current?.('conversations');
       // Ensure there's an active conversation
       if (!activeConversationId) {
         createConversation();

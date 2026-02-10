@@ -14,28 +14,28 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 17 of 25 (Beta Sidebar Integration)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-10 — Roadmap created (9 phases, 63 requirements)
+Plan: 1 of 2 in phase 17
+Status: In progress
+Last activity: 2026-02-10 — Completed 17-01-PLAN.md (Beta nav items + AppSwitcher)
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
+Progress: █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ~3%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 5 min
+- Total execution time: 0.08 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| — | — | — | — |
+| 17-beta-sidebar | 1/2 | 5min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: 17-01 (5min)
+- Trend: Starting
 
 ## Previous Milestones
 
@@ -56,6 +56,9 @@ Recent decisions affecting current work:
 - v4.0: Frontend builds UI + mock layer, backend dev builds real AI using our docs
 - v4.0: Memory 3 levels (short/medium/long term)
 - v4.0: WhatsApp via Twilio as primary communication channel
+- 17-01: "AI Beta" as nav item label (NavItem.badge only supports numbers, not string badges)
+- 17-01: AppSwitcher auto-detects workspace from pathname, no manual props required
+- 17-01: Beta components live in src/components/beta/, routes at /panel/beta and /panel/inmobiliaria/beta
 
 ### Pending Todos
 
@@ -68,5 +71,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Roadmap created with 9 phases (17-25), 63 requirements mapped
-Resume: Run `/gsd:plan-phase 17` to plan first phase
+Stopped at: Completed 17-01-PLAN.md (Beta nav items + AppSwitcher)
+Resume file: .planning/phases/17-beta-sidebar-integration/17-02-PLAN.md

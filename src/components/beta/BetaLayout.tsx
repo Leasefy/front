@@ -51,6 +51,13 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           'bg-plan-page'
         )}
       >
+        {/* Skip to chat link - visible only on focus for screen readers */}
+        <a
+          href="#beta-chat-main"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-500 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+        >
+          {t('beta.a11y.skipToChat')}
+        </a>
         {/* Mobile header - visible only on mobile */}
         <div
           className={cn(
@@ -112,7 +119,12 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
 
         {/* Main content area — error-isolated from sidebar */}
         <BetaErrorBoundary>
-          <main className="flex-1 overflow-y-auto">
+          <main
+            id="beta-chat-main"
+            className="flex-1 overflow-y-auto"
+            role="main"
+            aria-label={t('beta.a11y.mainChat')}
+          >
             {activeTab === 'settings' ? <PreferencesPanel /> : children}
           </main>
         </BetaErrorBoundary>

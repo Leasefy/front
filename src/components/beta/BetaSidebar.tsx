@@ -51,6 +51,8 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
 
   return (
     <aside
+      role="navigation"
+      aria-label={t('beta.a11y.sidebarNav')}
       className={cn(
         'flex flex-col w-[260px] h-full',
         'bg-white dark:bg-card',

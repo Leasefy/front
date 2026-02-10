@@ -140,6 +140,8 @@ export function AgentResultCard({
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
+        aria-expanded={isExpanded}
+        aria-label={`${meta.label}: ${isExpanded ? t('beta.agents.hideDetails') : t('beta.agents.showDetails')}`}
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2',
           'text-left text-xs',

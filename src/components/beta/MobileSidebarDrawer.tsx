@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import { X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 interface MobileSidebarDrawerProps {
   open: boolean;
@@ -19,6 +20,8 @@ interface MobileSidebarDrawerProps {
  * Portal-free: uses fixed positioning at z-60 directly.
  */
 export function MobileSidebarDrawer({ open, onClose, children }: MobileSidebarDrawerProps) {
+  const { t } = useI18n();
+
   // Close on Escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -54,6 +57,9 @@ export function MobileSidebarDrawer({ open, onClose, children }: MobileSidebarDr
 
       {/* Drawer panel */}
       <div
+        role="dialog"
+        aria-modal={open}
+        aria-label={t('beta.a11y.sidebarNav')}
         className={cn(
           'fixed inset-y-0 left-0 z-[61]',
           'w-[280px]',
@@ -72,7 +78,7 @@ export function MobileSidebarDrawer({ open, onClose, children }: MobileSidebarDr
             'text-muted-foreground hover:text-foreground',
             'transition-colors duration-150'
           )}
-          aria-label="Cerrar menu"
+          aria-label={t('beta.mobile.closeMenu')}
         >
           <X className="w-3.5 h-3.5" weight="bold" />
         </button>

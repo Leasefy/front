@@ -127,6 +127,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
               type="button"
               disabled={isResolved}
               onClick={() => onSelect?.(option.id)}
+              aria-label={`${t('beta.decisions.select')}: ${option.label}`}
               className={cn(
                 'w-full text-left rounded-md border px-3 py-2',
                 'transition-all duration-200',

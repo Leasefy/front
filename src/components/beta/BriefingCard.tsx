@@ -115,6 +115,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={isExpanded}
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2.5',
           'text-left text-xs',

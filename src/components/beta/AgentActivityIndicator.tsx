@@ -49,7 +49,7 @@ export function AgentActivityIndicator({ activity, className }: AgentActivityInd
       : t('beta.agents.running');
 
   return (
-    <div className={cn('flex items-end gap-2', className)}>
+    <div className={cn('flex items-end gap-2', className)} aria-live="polite">
       {/* AI avatar (matches AssistantBubble layout) */}
       <div
         className={cn(

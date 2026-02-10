@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { ChatMessageSkeleton } from './BetaSkeletons';
 import { BetaWelcome } from './BetaWelcome';
@@ -45,6 +46,7 @@ function formatDuration(ms: number): string {
  *   - ChatInput (sticky at bottom)
  */
 export function ChatContainer({ className }: ChatContainerProps) {
+  const { t } = useI18n();
   const {
     isLoading,
     messages,
@@ -93,6 +95,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <div
             ref={messagesAreaRef}
             className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+            aria-live="polite"
+            aria-label={t('beta.a11y.newMessageRegion')}
           >
             {messages.map((message, index) => {
               const isLastAssistant =

@@ -1,11 +1,11 @@
 'use client';
 
-import { BetaWelcome } from '@/components/beta/BetaWelcome';
+import { ChatContainer } from '@/components/beta/ChatContainer';
 
 /**
  * Beta entry page for propietarios.
- * Shows the welcome state with Leasefy AI branding and suggested prompts.
+ * Shows ChatContainer: welcome state when empty, full chat when messages exist.
  */
 export default function BetaPage() {
-  return <BetaWelcome />;
+  return <ChatContainer />;
 }

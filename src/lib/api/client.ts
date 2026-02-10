@@ -2,16 +2,19 @@
  * Leasefy AI API client.
  *
  * Class-based client with typed methods for all AI orchestrator endpoints.
- * Currently all methods throw "not implemented" errors — the mock layer
- * (Plan 24-02) wraps this client to intercept calls in mock mode.
+ * Each method checks isMockMode() and routes to either the mock layer
+ * or real fetch-based API calls.
  *
- * When the real backend is ready, these methods will use fetch() with
- * proper auth headers. The sendMessage method will use SSE for streaming.
+ * - sendMessage returns AsyncGenerator<ChatStreamEvent> in both paths
+ * - Mock path uses mockChatStream / mockApi from ./mock
+ * - Real path uses connectChatStream + parseSSEStream from ./streaming
  *
  * See: docs/AI-AGENT-ARCHITECTURE.md Section 9
  */
 
-import { getApiConfig } from './config';
+import { getApiConfig, isMockMode } from './config';
+import { mockChatStream, mockApi } from './mock';
+import { parseSSEStream, connectChatStream } from './streaming';
 import type {
   SendMessageRequest,
   ChatStreamEvent,
@@ -44,10 +47,32 @@ export class LeasefyAIClient {
   // --------------------------------------------------------------------------
 
   private getAuthHeaders(): Record<string, string> {
-    // TODO(24-02): Wire up real auth token from Clerk session
+    // TODO: Wire up real auth token from Clerk session
     return {
       'Content-Type': 'application/json',
     };
+  }
+
+  /**
+   * Fetch helper for JSON endpoints (non-streaming).
+   * Attaches auth headers and handles error responses.
+   */
+  private async fetch(path: string, init?: RequestInit): Promise<Response> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        ...this.getAuthHeaders(),
+        ...init?.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return response;
   }
 
   // --------------------------------------------------------------------------
@@ -58,18 +83,19 @@ export class LeasefyAIClient {
    * Send a message to the AI orchestrator.
    * Returns an async generator that yields ChatStreamEvent objects.
    *
-   * In mock mode (Plan 24-02), this will be intercepted by the mock layer.
-   * In production, this will open an SSE connection to the backend.
+   * In mock mode: delegates to mockChatStream (simulated delays + events).
+   * In production: opens SSE connection via connectChatStream + parseSSEStream.
    */
   async *sendMessage(
-    _req: SendMessageRequest
+    req: SendMessageRequest
   ): AsyncGenerator<ChatStreamEvent, void, unknown> {
-    throw new Error(
-      'LeasefyAIClient.sendMessage not implemented — use mock API (set NEXT_PUBLIC_USE_MOCK_API=true). See Plan 24-02.'
-    );
-    // TypeScript requires a yield to recognize this as a generator.
-    // The throw above prevents reaching this line at runtime.
-    yield undefined as never;
+    if (isMockMode()) {
+      yield* mockChatStream(req);
+      return;
+    }
+
+    const response = await connectChatStream(this.baseUrl, req);
+    yield* parseSSEStream(response);
   }
 
   // --------------------------------------------------------------------------
@@ -78,30 +104,29 @@ export class LeasefyAIClient {
 
   /** GET /api/v1/ai/conversations */
   async listConversations(): Promise<ConversationsListResponse> {
-    throw new Error(
-      'LeasefyAIClient.listConversations not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.listConversations();
+    const res = await this.fetch('/conversations');
+    return res.json();
   }
 
   /** GET /api/v1/ai/conversations/:id */
-  async getConversation(_id: string): Promise<ConversationDetailResponse> {
-    throw new Error(
-      'LeasefyAIClient.getConversation not implemented — use mock API. See Plan 24-02.'
-    );
+  async getConversation(id: string): Promise<ConversationDetailResponse> {
+    if (isMockMode()) return mockApi.getConversation(id);
+    const res = await this.fetch(`/conversations/${id}`);
+    return res.json();
   }
 
   /** POST /api/v1/ai/conversations */
   async createConversation(): Promise<CreateConversationResponse> {
-    throw new Error(
-      'LeasefyAIClient.createConversation not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.createConversation();
+    const res = await this.fetch('/conversations', { method: 'POST' });
+    return res.json();
   }
 
   /** DELETE /api/v1/ai/conversations/:id */
-  async deleteConversation(_id: string): Promise<void> {
-    throw new Error(
-      'LeasefyAIClient.deleteConversation not implemented — use mock API. See Plan 24-02.'
-    );
+  async deleteConversation(id: string): Promise<void> {
+    if (isMockMode()) return mockApi.deleteConversation(id);
+    await this.fetch(`/conversations/${id}`, { method: 'DELETE' });
   }
 
   // --------------------------------------------------------------------------
@@ -110,19 +135,22 @@ export class LeasefyAIClient {
 
   /** GET /api/v1/ai/decisions */
   async listDecisions(): Promise<DecisionsListResponse> {
-    throw new Error(
-      'LeasefyAIClient.listDecisions not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.listDecisions();
+    const res = await this.fetch('/decisions');
+    return res.json();
   }
 
   /** POST /api/v1/ai/decisions/:id/select */
   async selectDecision(
-    _id: string,
-    _req: SelectDecisionRequest
+    id: string,
+    req: SelectDecisionRequest
   ): Promise<SelectDecisionResponse> {
-    throw new Error(
-      'LeasefyAIClient.selectDecision not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.selectDecision(id, req);
+    const res = await this.fetch(`/decisions/${id}/select`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+    return res.json();
   }
 
   // --------------------------------------------------------------------------
@@ -131,16 +159,16 @@ export class LeasefyAIClient {
 
   /** GET /api/v1/ai/briefings */
   async listBriefings(): Promise<BriefingsListResponse> {
-    throw new Error(
-      'LeasefyAIClient.listBriefings not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.listBriefings();
+    const res = await this.fetch('/briefings');
+    return res.json();
   }
 
   /** GET /api/v1/ai/briefings/latest */
   async getLatestBriefing(): Promise<LatestBriefingResponse> {
-    throw new Error(
-      'LeasefyAIClient.getLatestBriefing not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.getLatestBriefing();
+    const res = await this.fetch('/briefings/latest');
+    return res.json();
   }
 
   // --------------------------------------------------------------------------
@@ -149,18 +177,21 @@ export class LeasefyAIClient {
 
   /** GET /api/v1/ai/preferences */
   async getPreferences(): Promise<PreferencesResponse> {
-    throw new Error(
-      'LeasefyAIClient.getPreferences not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.getPreferences();
+    const res = await this.fetch('/preferences');
+    return res.json();
   }
 
   /** PUT /api/v1/ai/preferences */
   async updatePreferences(
-    _req: UpdatePreferencesRequest
+    req: UpdatePreferencesRequest
   ): Promise<UpdatePreferencesResponse> {
-    throw new Error(
-      'LeasefyAIClient.updatePreferences not implemented — use mock API. See Plan 24-02.'
-    );
+    if (isMockMode()) return mockApi.updatePreferences(req);
+    const res = await this.fetch('/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    });
+    return res.json();
   }
 }
 

@@ -9,6 +9,7 @@ import { BetaChatProvider, useBetaChatContext } from '@/lib/context/BetaChatCont
 import { BetaErrorBoundary } from './BetaErrorBoundary';
 import { PreferencesPanel } from './PreferencesPanel';
 import { MobileSidebarDrawer } from './MobileSidebarDrawer';
+import { useBetaKeyboardShortcuts } from '@/lib/hooks/useBetaKeyboardShortcuts';
 
 interface BetaLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
 
   return (
     <BetaChatProvider onTabChange={(tab) => setActiveTab(tab as BetaTab)}>
+      <BetaKeyboardShortcuts onCloseDrawer={() => setDrawerOpen(false)} drawerOpen={drawerOpen} />
       <div
         className={cn(
           'fixed inset-0 z-50',
@@ -117,6 +119,21 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
       </div>
     </BetaChatProvider>
   );
+}
+
+/**
+ * BetaKeyboardShortcuts - Wires global keyboard shortcuts inside BetaChatProvider.
+ * Separate component because it needs access to useBetaChatContext.
+ */
+function BetaKeyboardShortcuts({ onCloseDrawer, drawerOpen }: { onCloseDrawer: () => void; drawerOpen: boolean }) {
+  const { createConversation } = useBetaChatContext();
+
+  useBetaKeyboardShortcuts({
+    onNewConversation: createConversation,
+    onClose: drawerOpen ? onCloseDrawer : undefined,
+  });
+
+  return null;
 }
 
 /**

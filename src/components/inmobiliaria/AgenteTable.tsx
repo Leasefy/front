@@ -12,6 +12,7 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -24,41 +25,35 @@ interface AgenteTableProps {
   onEdit: (agente: Agente) => void;
 }
 
-// Role badge colors
-const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = {
+// Role badge colors (labels moved inside component for i18n)
+const ROLE_STYLES: Record<AgenteRole, { bg: string; text: string }> = {
   agent: {
     bg: 'bg-blue-100 dark:bg-blue-900/30',
     text: 'text-blue-700 dark:text-blue-400',
-    label: 'Agente',
   },
   coordinator: {
     bg: 'bg-purple-100 dark:bg-purple-900/30',
     text: 'text-purple-700 dark:text-purple-400',
-    label: 'Coordinador',
   },
   director: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'Director',
   },
 };
 
-// Status badge colors
-const STATUS_COLORS: Record<AgenteStatus, { bg: string; text: string; label: string }> = {
+// Status badge colors (labels moved inside component for i18n)
+const STATUS_STYLES: Record<AgenteStatus, { bg: string; text: string }> = {
   active: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Activo',
   },
   inactive: {
     bg: 'bg-neutral-100 dark:bg-neutral-800',
     text: 'text-neutral-600 dark:text-neutral-400',
-    label: 'Inactivo',
   },
   on_leave: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'Licencia',
   },
 };
 
@@ -85,9 +80,22 @@ export function AgenteTable({
   onView,
   onEdit,
 }: AgenteTableProps) {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const ROLE_LABELS: Record<AgenteRole, string> = {
+    agent: t('inmobiliaria.agente.roleAgent'),
+    coordinator: t('inmobiliaria.agente.roleCoordinator'),
+    director: t('inmobiliaria.agente.roleDirector'),
+  };
+
+  const STATUS_LABELS: Record<AgenteStatus, string> = {
+    active: t('inmobiliaria.agente.statusActive'),
+    inactive: t('inmobiliaria.agente.statusInactive'),
+    on_leave: t('inmobiliaria.agente.statusOnLeaveShort'),
+  };
 
   // Sort agentes
   const sortedAgentes = useMemo(() => {
@@ -167,7 +175,7 @@ export function AgenteTable({
                 onClick={() => handleSort('name')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Agente
+                {t('inmobiliaria.agente.agentLabel')}
                 {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -176,7 +184,7 @@ export function AgenteTable({
                 onClick={() => handleSort('role')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Rol
+                {t('inmobiliaria.agente.role')}
                 {sortField === 'role' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -185,13 +193,13 @@ export function AgenteTable({
                 onClick={() => handleSort('status')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Estado
+                {t('inmobiliaria.agente.status')}
                 {sortField === 'status' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
             <th className="text-left p-4 hidden lg:table-cell">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Zona
+                {t('inmobiliaria.agente.zone')}
               </span>
             </th>
             <th className="text-left p-4">
@@ -199,7 +207,7 @@ export function AgenteTable({
                 onClick={() => handleSort('assignedProperties')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Props.
+                {t('inmobiliaria.agente.propsShort')}
                 {sortField === 'assignedProperties' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -208,7 +216,7 @@ export function AgenteTable({
                 onClick={() => handleSort('closedThisMonth')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Cierres
+                {t('inmobiliaria.agente.closings')}
                 {sortField === 'closedThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -217,7 +225,7 @@ export function AgenteTable({
                 onClick={() => handleSort('commissionsThisMonth')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Comisiones
+                {t('inmobiliaria.agente.commissions')}
                 {sortField === 'commissionsThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -235,8 +243,8 @@ export function AgenteTable({
         </thead>
         <tbody>
           {sortedAgentes.map((agente, index) => {
-            const role = ROLE_COLORS[agente.role];
-            const status = STATUS_COLORS[agente.status];
+            const roleStyle = ROLE_STYLES[agente.role];
+            const statusStyle = STATUS_STYLES[agente.status];
             const initials = getInitials(agente.name);
 
             return (
@@ -260,9 +268,9 @@ export function AgenteTable({
                     ) : (
                       <div className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
-                        role.bg
+                        roleStyle.bg
                       )}>
-                        <span className={cn('text-sm font-semibold', role.text)}>
+                        <span className={cn('text-sm font-semibold', roleStyle.text)}>
                           {initials}
                         </span>
                       </div>
@@ -280,15 +288,15 @@ export function AgenteTable({
 
                 {/* Role */}
                 <td className="p-4">
-                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', role.bg, role.text)}>
-                    {role.label}
+                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', roleStyle.bg, roleStyle.text)}>
+                    {ROLE_LABELS[agente.role]}
                   </span>
                 </td>
 
                 {/* Status */}
                 <td className="p-4">
-                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', status.bg, status.text)}>
-                    {status.label}
+                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusStyle.bg, statusStyle.text)}>
+                    {STATUS_LABELS[agente.status]}
                   </span>
                 </td>
 
@@ -364,7 +372,7 @@ export function AgenteTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            <span className="text-sm">Ver detalle</span>
+                            <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
                           </button>
                           <button
                             onClick={(e) => {
@@ -375,7 +383,7 @@ export function AgenteTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <PencilSimple className="w-4 h-4" />
-                            <span className="text-sm">Editar</span>
+                            <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>
                           </button>
                         </motion.div>
                       )}
@@ -395,10 +403,10 @@ export function AgenteTable({
             <Users className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No se encontraron agentes
+            {t('inmobiliaria.agente.noAgentsFound')}
           </h3>
           <p className="text-muted-foreground">
-            Ajusta los filtros o agrega un nuevo agente
+            {t('inmobiliaria.agente.adjustFiltersOrAdd')}
           </p>
         </div>
       )}

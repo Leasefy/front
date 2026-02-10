@@ -19,6 +19,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -42,13 +43,13 @@ interface ExtractoPropietarioProps {
   className?: string;
 }
 
-// Status labels in Spanish
-const STATUS_LABELS: Record<CobroStatus, string> = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  partial: 'Parcial',
-  late: 'En mora',
-  defaulted: 'Incobrable',
+// Status label keys for i18n
+const STATUS_LABEL_KEYS: Record<CobroStatus, string> = {
+  pending: 'inmobiliaria.propietario.extracto.statusPending',
+  paid: 'inmobiliaria.propietario.extracto.statusPaid',
+  partial: 'inmobiliaria.propietario.extracto.statusPartial',
+  late: 'inmobiliaria.propietario.extracto.statusLate',
+  defaulted: 'inmobiliaria.propietario.extracto.statusDefaulted',
 };
 
 /**
@@ -72,8 +73,8 @@ function getStatusIcon(status: CobroStatus) {
 /**
  * Format month for display
  */
-function formatMonthYear(monthStr: string): string {
-  return new Date(monthStr + '-01').toLocaleDateString('es-CO', {
+function formatMonthYear(monthStr: string, loc: string): string {
+  return new Date(monthStr + '-01').toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -82,8 +83,8 @@ function formatMonthYear(monthStr: string): string {
 /**
  * Format date for display
  */
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-CO', {
+function formatDate(dateStr: string, loc: string): string {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -93,9 +94,9 @@ function formatDate(dateStr: string): string {
 /**
  * Format date short
  */
-function formatDateShort(dateStr?: string): string {
+function formatDateShort(dateStr: string | undefined, loc: string): string {
   if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('es-CO', {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'short',
   });
@@ -112,6 +113,7 @@ export function ExtractoPropietario({
   onEmail,
   className,
 }: ExtractoPropietarioProps) {
+  const { t, locale } = useTranslation();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
 
@@ -126,11 +128,11 @@ export function ExtractoPropietario({
       setIsDownloading(true);
       try {
         onDownloadPDF();
-        toast.success('PDF descargado', {
-          description: `Extracto de ${extracto.propietarioName} - ${formatMonthYear(extracto.month)}`,
+        toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
+          description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
         });
       } catch {
-        toast.error('Error al descargar PDF');
+        toast.error(t('inmobiliaria.propietario.extracto.pdfError'));
       } finally {
         setIsDownloading(false);
       }
@@ -153,11 +155,11 @@ export function ExtractoPropietario({
       try {
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
         onEmail();
-        toast.success('Extracto enviado', {
-          description: `Se envio el extracto a ${propietario?.email || extracto.propietarioName}`,
+        toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
+          description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
         });
       } catch {
-        toast.error('Error al enviar email');
+        toast.error(t('inmobiliaria.propietario.extracto.emailError'));
       } finally {
         setIsSendingEmail(false);
       }
@@ -169,7 +171,7 @@ export function ExtractoPropietario({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-white dark:bg-card rounded-2xl border border-border overflow-hidden print:shadow-none print:border-0',
+        'bg-white dark:bg-card rounded-xl border border-border overflow-hidden print:shadow-none print:border-0',
         className
       )}
     >
@@ -195,7 +197,7 @@ export function ExtractoPropietario({
           <div className="text-right">
             <Badge variant="outline" className="text-indigo-600 border-indigo-300 dark:border-indigo-800">
               <FileText className="w-3.5 h-3.5 mr-1.5" />
-              Extracto
+              {t('inmobiliaria.propietario.extracto.statement')}
             </Badge>
           </div>
         </div>
@@ -206,15 +208,15 @@ export function ExtractoPropietario({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Extracto del Propietario
+              {t('inmobiliaria.propietario.extracto.ownerStatement')}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Periodo: <span className="font-medium text-foreground capitalize">{formatMonthYear(extracto.month)}</span>
+              {t('inmobiliaria.propietario.extracto.period')}: <span className="font-medium text-foreground capitalize">{formatMonthYear(extracto.month, locale)}</span>
             </p>
           </div>
           <div className="text-sm text-muted-foreground">
-            <p>Generado: {formatDate(extracto.generatedAt)}</p>
+            <p>{t('inmobiliaria.propietario.extracto.generated')}: {formatDate(extracto.generatedAt, locale)}</p>
           </div>
         </div>
       </div>
@@ -226,7 +228,7 @@ export function ExtractoPropietario({
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <User className="w-4 h-4 text-indigo-600" />
-              Informacion del Propietario
+              {t('inmobiliaria.propietario.extracto.ownerInfo')}
             </div>
             <div className="pl-6 space-y-2">
               <p className="text-foreground font-medium">{extracto.propietarioName}</p>
@@ -247,14 +249,14 @@ export function ExtractoPropietario({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Bank className="w-4 h-4 text-indigo-600" />
-                Cuenta Bancaria
+                {t('inmobiliaria.propietario.extracto.bankAccount')}
               </div>
               <div className="pl-6 space-y-2">
                 <p className="text-foreground font-medium capitalize">
                   {propietario.bankAccount.bank.replace(/_/g, ' ')}
                 </p>
                 <p className="text-sm text-muted-foreground capitalize">
-                  {propietario.bankAccount.accountType === 'savings' ? 'Ahorros' : 'Corriente'}: {propietario.bankAccount.accountNumber}
+                  {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.extracto.savings') : t('inmobiliaria.propietario.extracto.checking')}: {propietario.bankAccount.accountNumber}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {propietario.bankAccount.accountHolder}
@@ -269,21 +271,21 @@ export function ExtractoPropietario({
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
           <Receipt className="w-4 h-4 text-indigo-600" />
-          Detalle por Propiedad
+          {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
         <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent bg-muted/50">
-                <TableHead className="w-[25%]">Propiedad</TableHead>
-                <TableHead>Inquilino</TableHead>
-                <TableHead className="text-right">Arriendo</TableHead>
-                <TableHead className="text-right">Admin</TableHead>
-                <TableHead className="text-right">Recaudado</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="text-center">Com. %</TableHead>
-                <TableHead className="text-right">Comision</TableHead>
-                <TableHead className="text-right font-semibold">Neto</TableHead>
+                <TableHead className="w-[25%]">{t('inmobiliaria.propietario.extracto.thProperty')}</TableHead>
+                <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
+                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
+                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
+                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCollected')}</TableHead>
+                <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
+                <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
+                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
+                <TableHead className="text-right font-semibold">{t('inmobiliaria.propietario.extracto.thNet')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -325,7 +327,7 @@ export function ExtractoPropietario({
                         getCobroStatusColor(prop.paymentStatus)
                       )}>
                         <StatusIcon className="w-3 h-3" weight="fill" />
-                        {STATUS_LABELS[prop.paymentStatus]}
+                        {t(STATUS_LABEL_KEYS[prop.paymentStatus])}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
@@ -346,7 +348,7 @@ export function ExtractoPropietario({
             <TableFooter>
               <TableRow className="bg-muted/50 font-semibold">
                 <TableCell colSpan={4} className="text-foreground">
-                  Total ({extracto.summary.totalProperties} propiedades)
+                  {t('inmobiliaria.propietario.extracto.total')} ({extracto.summary.totalProperties} {t('inmobiliaria.propietario.extracto.properties')})
                 </TableCell>
                 <TableCell className="text-right text-foreground">
                   {formatCurrency(extracto.summary.totalCollected)}
@@ -372,14 +374,14 @@ export function ExtractoPropietario({
           <div className="p-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
             <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 mb-2">
               <CurrencyCircleDollar className="w-5 h-5" weight="fill" />
-              Neto a Recibir
+              {t('inmobiliaria.propietario.extracto.netToReceive')}
             </div>
             <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
               {formatCurrency(extracto.summary.netToPropietario)}
             </p>
             {extracto.summary.paymentReference && (
               <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-2">
-                Referencia: {extracto.summary.paymentReference}
+                {t('inmobiliaria.propietario.extracto.reference')}: {extracto.summary.paymentReference}
               </p>
             )}
           </div>
@@ -388,20 +390,20 @@ export function ExtractoPropietario({
           <div className="p-6 rounded-xl bg-muted/50 border border-border">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total recaudado</span>
+                <span className="text-sm text-muted-foreground">{t('inmobiliaria.propietario.extracto.totalCollected')}</span>
                 <span className="text-sm font-medium text-foreground">
                   {formatCurrency(extracto.summary.totalCollected)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Comisiones agencia</span>
+                <span className="text-sm text-muted-foreground">{t('inmobiliaria.propietario.extracto.agencyCommissions')}</span>
                 <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                   -{formatCurrency(extracto.summary.totalCommissions)}
                 </span>
               </div>
               <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">Total neto</span>
+                  <span className="text-sm font-semibold text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
                   <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(extracto.summary.netToPropietario)}
                   </span>
@@ -409,8 +411,8 @@ export function ExtractoPropietario({
               </div>
               {extracto.summary.paymentDate && (
                 <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
-                  <span>Fecha de pago</span>
-                  <span>{formatDate(extracto.summary.paymentDate)}</span>
+                  <span>{t('inmobiliaria.propietario.extracto.paymentDate')}</span>
+                  <span>{formatDate(extracto.summary.paymentDate, locale)}</span>
                 </div>
               )}
             </div>
@@ -427,7 +429,7 @@ export function ExtractoPropietario({
             className="gap-2"
           >
             <Printer className="w-4 h-4" />
-            Imprimir
+            {t('inmobiliaria.propietario.extracto.print')}
           </Button>
           <Button
             variant="outline"
@@ -453,12 +455,12 @@ export function ExtractoPropietario({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Enviando...
+                {t('inmobiliaria.propietario.extracto.sending')}
               </>
             ) : (
               <>
                 <Envelope className="w-4 h-4" />
-                Enviar por Email
+                {t('inmobiliaria.propietario.extracto.sendEmail')}
               </>
             )}
           </Button>
@@ -485,12 +487,12 @@ export function ExtractoPropietario({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Descargando...
+                {t('inmobiliaria.propietario.extracto.downloading')}
               </>
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Descargar PDF
+                {t('inmobiliaria.propietario.extracto.downloadPDF')}
               </>
             )}
           </Button>
@@ -501,7 +503,7 @@ export function ExtractoPropietario({
       <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
         <p>{MOCK_INMOBILIARIA_CONFIG.name} - NIT {MOCK_INMOBILIARIA_CONFIG.nit}</p>
         <p>{MOCK_INMOBILIARIA_CONFIG.address}, {MOCK_INMOBILIARIA_CONFIG.city}</p>
-        <p className="mt-2">Documento generado el {formatDate(extracto.generatedAt)}</p>
+        <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
       </div>
     </motion.div>
   );

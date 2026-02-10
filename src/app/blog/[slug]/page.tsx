@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Leasefy",
       images: [{ url: post.image, width: 1200, height: 630, alt: post.title }],
       type: "article",
-      locale: "es_CO",
+      locale: "es_CL",
       publishedTime: post.date,
       section: post.category,
       tags: post.tags,

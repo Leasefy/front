@@ -25,6 +25,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
@@ -34,7 +35,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency, getDispersionStatusColor } from '@/lib/types/inmobiliaria';
+import { getDispersionStatusColor } from '@/lib/types/inmobiliaria';
 import { MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
 import { ComisionDesglose } from './ComisionDesglose';
 import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
@@ -49,14 +50,6 @@ interface DispersionDetailProps {
   onRetry?: (dispersion: Dispersion) => void;
 }
 
-// Status labels in Spanish
-const STATUS_LABELS: Record<DispersionStatus, string> = {
-  pending: 'Pendiente',
-  processing: 'Procesando',
-  completed: 'Completada',
-  failed: 'Fallida',
-};
-
 // Status icons
 const STATUS_ICONS: Record<DispersionStatus, React.ElementType> = {
   pending: Clock,
@@ -66,55 +59,19 @@ const STATUS_ICONS: Record<DispersionStatus, React.ElementType> = {
 };
 
 /**
- * Format date for display
- */
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-/**
- * Format datetime for display
- */
-function formatDateTime(dateStr?: string): string {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-/**
- * Format month/year for display
- */
-function formatMonth(monthStr: string): string {
-  return new Date(monthStr + '-01').toLocaleDateString('es-CO', {
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-/**
  * CopyButton - Button that copies text to clipboard
  */
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, toastLabel, tooltip }: { text: string; toastLabel: string; tooltip: string }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
-    toast.success('Copiado al portapapeles');
+    toast.success(toastLabel);
   };
 
   return (
     <button
       onClick={handleCopy}
       className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-      title="Copiar"
+      title={tooltip}
     >
       <Copy className="w-4 h-4" />
     </button>
@@ -154,12 +111,12 @@ function ContactAction({
 /**
  * StatusBadge - Badge showing dispersion status with appropriate color
  */
-function StatusBadge({ status }: { status: DispersionStatus }) {
+function StatusBadge({ status, label }: { status: DispersionStatus; label: string }) {
   const Icon = STATUS_ICONS[status];
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium', getDispersionStatusColor(status))}>
       <Icon className="w-4 h-4" weight="fill" />
-      {STATUS_LABELS[status]}
+      {label}
     </span>
   );
 }
@@ -171,6 +128,7 @@ function TimelineEvent({
   icon: Icon,
   title,
   date,
+  formattedDate,
   description,
   isLast,
   isActive,
@@ -179,6 +137,7 @@ function TimelineEvent({
   icon: React.ElementType;
   title: string;
   date?: string;
+  formattedDate?: string;
   description?: string;
   isLast?: boolean;
   isActive?: boolean;
@@ -240,7 +199,7 @@ function TimelineEvent({
         </p>
         {date && (
           <p className="text-xs text-muted-foreground mt-0.5">
-            {formatDateTime(date)}
+            {formattedDate || date}
           </p>
         )}
         {description && (
@@ -265,6 +224,7 @@ export function DispersionDetail({
 }: DispersionDetailProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
+  const { t, formatDate, formatCurrency } = useTranslation();
 
   // Get propietario details
   const propietario = React.useMemo(() => {
@@ -279,8 +239,8 @@ export function DispersionDetail({
     setIsProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     onProcess(dispersion);
-    toast.success('Dispersion procesada', {
-      description: `Se realizo la transferencia a ${dispersion.propietarioName}`,
+    toast.success(t('inmobiliaria.dispersiones.toasts.dispersionProcessed'), {
+      description: t('inmobiliaria.dispersiones.toasts.transferTo', { name: dispersion.propietarioName }),
     });
     setIsProcessing(false);
   };
@@ -292,8 +252,8 @@ export function DispersionDetail({
     setIsProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     onRetry(dispersion);
-    toast.success('Reintento iniciado', {
-      description: `Procesando dispersion para ${dispersion.propietarioName}`,
+    toast.success(t('inmobiliaria.dispersiones.toasts.retryStarted'), {
+      description: t('inmobiliaria.dispersiones.toasts.processingFor', { name: dispersion.propietarioName }),
     });
     setIsProcessing(false);
   };
@@ -308,14 +268,14 @@ export function DispersionDetail({
       const extracto = generateExtractoPropietario(dispersion.propietarioId, dispersion.month);
       if (extracto) {
         downloadExtractoPDF(extracto);
-        toast.success('PDF descargado', {
-          description: `Extracto de ${dispersion.propietarioName}`,
+        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+          description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
         });
       } else {
-        toast.error('No se pudo generar el extracto');
+        toast.error(t('inmobiliaria.dispersiones.toasts.couldNotGenerate'));
       }
     } catch {
-      toast.error('Error al descargar PDF');
+      toast.error(t('inmobiliaria.dispersiones.toasts.downloadError'));
     } finally {
       setIsDownloadingPDF(false);
     }
@@ -345,10 +305,10 @@ export function DispersionDetail({
               </SheetTitle>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 capitalize">
                 <Calendar className="w-4 h-4" />
-                {formatMonth(dispersion.month)}
+                {formatDate(dispersion.month + '-01', { month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <StatusBadge status={dispersion.status} />
+            <StatusBadge status={dispersion.status} label={t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`)} />
           </div>
         </SheetHeader>
 
@@ -361,7 +321,7 @@ export function DispersionDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <User className="w-4 h-4 text-indigo-600" />
-              Propietario
+              {t('inmobiliaria.dispersiones.detailView.propietario')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
@@ -374,7 +334,7 @@ export function DispersionDetail({
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Envelope className="w-3.5 h-3.5" />
                       <span>{propietario.email}</span>
-                      <CopyButton text={propietario.email} />
+                      <CopyButton text={propietario.email} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
                     </div>
                   )}
                 </div>
@@ -384,7 +344,7 @@ export function DispersionDetail({
                   <ContactAction
                     icon={Phone}
                     href={`tel:${propietario.phone}`}
-                    label="Llamar"
+                    label={t('inmobiliaria.dispersiones.detailView.call')}
                     className="bg-muted hover:bg-muted/80 text-foreground"
                   />
                   <ContactAction
@@ -396,7 +356,7 @@ export function DispersionDetail({
                   <ContactAction
                     icon={Envelope}
                     href={`mailto:${propietario.email}`}
-                    label="Email"
+                    label={t('inmobiliaria.dispersiones.detailView.email')}
                     className="bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400"
                   />
                 </div>
@@ -413,33 +373,33 @@ export function DispersionDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Bank className="w-4 h-4 text-indigo-600" />
-              Cuenta Bancaria
+              {t('inmobiliaria.dispersiones.detailView.bankAccount')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Banco</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
                   <p className="text-sm font-medium text-foreground capitalize">
                     {dispersion.propietarioBankAccount.bank.replace(/_/g, ' ')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tipo</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
                   <p className="text-sm font-medium text-foreground capitalize">
-                    {dispersion.propietarioBankAccount.accountType === 'savings' ? 'Ahorros' : 'Corriente'}
+                    {dispersion.propietarioBankAccount.accountType === 'savings' ? t('inmobiliaria.dispersiones.detailView.savings') : t('inmobiliaria.dispersiones.detailView.checking')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Numero</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountNumber')}</p>
                   <div className="flex items-center gap-1">
                     <p className="text-sm font-medium text-foreground font-mono">
                       {dispersion.propietarioBankAccount.accountNumber}
                     </p>
-                    <CopyButton text={dispersion.propietarioBankAccount.accountNumber} />
+                    <CopyButton text={dispersion.propietarioBankAccount.accountNumber} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Titular</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
                   <p className="text-sm font-medium text-foreground truncate">
                     {dispersion.propietarioBankAccount.accountHolder}
                   </p>
@@ -457,23 +417,23 @@ export function DispersionDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <CurrencyCircleDollar className="w-4 h-4 text-indigo-600" />
-              Resumen
+              {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
             </h3>
             <div className="grid grid-cols-3 gap-3">
               <div className="p-4 rounded-xl bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Recaudado</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
                 <p className="text-lg font-bold text-foreground">
                   {formatCurrency(dispersion.totalCollected)}
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-center">
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Comision</p>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
                 <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                   {formatCurrency(dispersion.totalCommission)}
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-center">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Neto</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
                 <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(dispersion.netToPropietario)}
                 </p>
@@ -490,7 +450,7 @@ export function DispersionDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Receipt className="w-4 h-4 text-indigo-600" />
-              Desglose por Propiedad
+              {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
             </h3>
             <ComisionDesglose
               items={dispersion.items}
@@ -508,37 +468,41 @@ export function DispersionDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Clock className="w-4 h-4 text-indigo-600" />
-              Historial
+              {t('inmobiliaria.dispersiones.detailView.history')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
               <TimelineEvent
                 icon={Calendar}
-                title="Dispersion creada"
+                title={t('inmobiliaria.dispersiones.detailView.created')}
                 date={dispersion.createdAt}
+                formattedDate={dispersion.createdAt ? formatDate(dispersion.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
               />
               {dispersion.approvedAt && (
                 <TimelineEvent
                   icon={Check}
-                  title="Aprobada"
+                  title={t('inmobiliaria.dispersiones.detailView.approved')}
                   date={dispersion.approvedAt}
-                  description={dispersion.approvedBy ? `Por: ${dispersion.approvedBy}` : undefined}
+                  formattedDate={dispersion.approvedAt ? formatDate(dispersion.approvedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                  description={dispersion.approvedBy ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: dispersion.approvedBy }) : undefined}
                 />
               )}
               {dispersion.processedAt && (
                 <TimelineEvent
                   icon={CheckCircle}
-                  title="Procesada"
+                  title={t('inmobiliaria.dispersiones.detailView.processed')}
                   date={dispersion.processedAt}
-                  description={dispersion.transferReference ? `Ref: ${dispersion.transferReference}` : undefined}
+                  formattedDate={dispersion.processedAt ? formatDate(dispersion.processedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                  description={dispersion.transferReference ? t('inmobiliaria.dispersiones.detailView.transferRef', { ref: dispersion.transferReference }) : undefined}
                   isActive={isCompleted}
                 />
               )}
               {isFailed && (
                 <TimelineEvent
                   icon={XCircle}
-                  title="Fallida"
+                  title={t('inmobiliaria.dispersiones.detailView.failedEvent')}
                   date={dispersion.updatedAt}
-                  description={dispersion.failureReason || 'Error al procesar la transferencia'}
+                  formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                  description={dispersion.failureReason || t('inmobiliaria.dispersiones.detailView.defaultFailureReason')}
                   isLast
                   isError
                 />
@@ -546,15 +510,16 @@ export function DispersionDetail({
               {isPending && (
                 <TimelineEvent
                   icon={Clock}
-                  title="Pendiente de procesamiento"
+                  title={t('inmobiliaria.dispersiones.detailView.pendingProcessing')}
                   isLast
                 />
               )}
               {isCompleted && !dispersion.processedAt && (
                 <TimelineEvent
                   icon={CheckCircle}
-                  title="Completada"
+                  title={t('inmobiliaria.dispersiones.detailView.completedEvent')}
                   date={dispersion.updatedAt}
+                  formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
                   isLast
                   isActive
                 />
@@ -573,13 +538,13 @@ export function DispersionDetail({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    Referencia de Transferencia
+                    {t('inmobiliaria.dispersiones.detailView.transferReference')}
                   </p>
                   <p className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-300 mt-0.5">
                     {dispersion.transferReference}
                   </p>
                 </div>
-                <CopyButton text={dispersion.transferReference} />
+                <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
               </div>
             </motion.section>
           )}
@@ -596,7 +561,7 @@ export function DispersionDetail({
                 <Warning className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" weight="fill" />
                 <div>
                   <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                    Error en la transferencia
+                    {t('inmobiliaria.dispersiones.detailView.transferError')}
                   </p>
                   <p className="text-sm text-red-600 dark:text-red-300 mt-1">
                     {dispersion.failureReason}
@@ -623,7 +588,7 @@ export function DispersionDetail({
                 onClick={handleViewExtracto}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Ver Extracto
+                {t('inmobiliaria.dispersiones.detailView.viewExtracto')}
               </Button>
             )}
 
@@ -652,12 +617,12 @@ export function DispersionDetail({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Procesando...
+                    {t('inmobiliaria.dispersiones.detailView.processingAction')}
                   </span>
                 ) : (
                   <>
                     <Lightning className="w-4 h-4 mr-2" weight="fill" />
-                    Procesar Dispersion
+                    {t('inmobiliaria.dispersiones.detailView.processDispersion')}
                   </>
                 )}
               </Button>
@@ -688,12 +653,12 @@ export function DispersionDetail({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Reintentando...
+                    {t('inmobiliaria.dispersiones.detailView.retrying')}
                   </span>
                 ) : (
                   <>
                     <ArrowClockwise className="w-4 h-4 mr-2" />
-                    Reintentar
+                    {t('inmobiliaria.dispersiones.detailView.retry')}
                   </>
                 )}
               </Button>
@@ -725,12 +690,12 @@ export function DispersionDetail({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Descargando...
+                {t('inmobiliaria.dispersiones.detailView.downloading')}
               </span>
             ) : (
               <>
                 <CurrencyCircleDollar className="w-4 h-4 mr-2" />
-                Descargar PDF Extracto
+                {t('inmobiliaria.dispersiones.detailView.downloadPdfExtracto')}
               </>
             )}
           </Button>

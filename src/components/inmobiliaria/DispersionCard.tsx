@@ -45,7 +45,7 @@ const STATUS_BORDER_COLORS: Record<DispersionStatus, string> = {
 function formatMonth(month: string): string {
   const [year, monthNum] = month.split('-');
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
 }
 
 /**
@@ -145,7 +145,7 @@ export function DispersionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-2xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
+        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onViewDetail && 'cursor-pointer'
@@ -290,7 +290,7 @@ export function DispersionCard({
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 <span>
                   Procesado el{' '}
-                  {new Date(dispersion.processedAt).toLocaleDateString('es-CO', {
+                  {new Date(dispersion.processedAt).toLocaleDateString('es-CL', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',

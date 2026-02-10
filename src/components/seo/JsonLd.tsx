@@ -66,7 +66,7 @@ export function WebsiteJsonLd() {
     url: siteUrl,
     description:
       "Marketplace de arriendos en Colombia con verificación de inquilinos y contratos digitales.",
-    inLanguage: "es-CO",
+    inLanguage: "es-CL",
     potentialAction: {
       "@type": "MagnifyingGlassAction",
       target: {
@@ -252,7 +252,7 @@ export function ArticleJsonLd({
     },
     articleSection: section,
     keywords: tags.join(", "),
-    inLanguage: "es-CO",
+    inLanguage: "es-CL",
   };
 
   return (

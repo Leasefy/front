@@ -14,13 +14,32 @@ import {
   VERIFICATION_OPTIONS,
 } from '@/lib/types/publish';
 import { formatCurrency } from '@/lib/format';
+import { formatCurrency as formatCurrencyCOP } from '@/lib/data/mock-dashboard';
+import { PLANS, AGENCY_PLANS } from '@/lib/data/mock-subscriptions';
 import { cn } from '@/lib/utils';
 
-const PLAN_INFO = {
-  free: { name: 'Plan Gratis', icon: Lightning, price: '$0', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100' },
-  pro: { name: 'Plan Propietario', icon: Sparkle, price: '$149.900/mes', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100' },
-  business: { name: 'Plan Inmobiliaria', icon: Buildings, price: '$499.900/mes', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100' },
-};
+const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, growth: Sparkle, 'agency-business': Buildings, enterprise: Buildings } as const;
+
+const PLAN_INFO = Object.fromEntries([
+  ...PLANS.map((plan) => [
+    plan.id,
+    {
+      name: `Plan ${plan.name}`,
+      icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
+      price: plan.price.monthly === 0 ? '$0' : `${formatCurrencyCOP(plan.price.monthly)}/mes`,
+      color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100',
+    },
+  ]),
+  ...AGENCY_PLANS.map((plan) => [
+    plan.id,
+    {
+      name: `Plan ${plan.name}`,
+      icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
+      price: plan.price.monthly != null ? `${formatCurrencyCOP(plan.price.monthly)}/mes` : 'Personalizado',
+      color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100',
+    },
+  ]),
+]) as Record<string, { name: string; icon: typeof Lightning; price: string; color: string }>;
 
 interface SectionProps {
   title: string;

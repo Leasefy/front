@@ -19,6 +19,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,7 @@ interface InviteModalProps {
 }
 
 function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<AgencyRole>('agente');
@@ -103,20 +105,20 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Invitar Usuario</DialogTitle>
+          <DialogTitle>{t('inmobiliaria.config.users.inviteModal.title')}</DialogTitle>
           <DialogDescription>
-            Enviar una invitacion por correo para unirse al equipo
+            {t('inmobiliaria.config.users.inviteModal.description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electronico *</Label>
+            <Label htmlFor="email">{t('inmobiliaria.config.users.inviteModal.emailLabel')} *</Label>
             <Input
               id="email"
               type="email"
-              placeholder="usuario@ejemplo.com"
+              placeholder={t('inmobiliaria.config.users.inviteModal.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -125,10 +127,10 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre completo *</Label>
+            <Label htmlFor="name">{t('inmobiliaria.config.users.inviteModal.nameLabel')} *</Label>
             <Input
               id="name"
-              placeholder="Juan Perez"
+              placeholder={t('inmobiliaria.config.users.inviteModal.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -137,26 +139,26 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
 
           {/* Role */}
           <div className="space-y-2">
-            <Label htmlFor="role">Rol *</Label>
+            <Label htmlFor="role">{t('inmobiliaria.config.users.inviteModal.roleLabel')} *</Label>
             <Select value={role} onValueChange={(v) => setRole(v as AgencyRole)}>
               <SelectTrigger id="role">
-                <SelectValue placeholder="Seleccionar rol" />
+                <SelectValue placeholder={t('inmobiliaria.config.users.inviteModal.selectRole')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="agente">Agente</SelectItem>
-                <SelectItem value="contador">Contador</SelectItem>
-                <SelectItem value="viewer">Solo Lectura</SelectItem>
+                <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
+                <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
+                <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
+                <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Custom Message (optional) */}
           <div className="space-y-2">
-            <Label htmlFor="message">Mensaje personalizado (opcional)</Label>
+            <Label htmlFor="message">{t('inmobiliaria.config.users.inviteModal.customMessage')}</Label>
             <Textarea
               id="message"
-              placeholder="Hola, te invitamos a unirte a nuestro equipo..."
+              placeholder={t('inmobiliaria.config.users.inviteModal.messagePlaceholder')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
@@ -169,18 +171,18 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancelar
+              {t('inmobiliaria.common.cancel')}
             </Button>
             <Button type="submit" disabled={!isValid || isLoading}>
               {isLoading ? (
                 <>
                   <ArrowClockwise className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
+                  {t('inmobiliaria.config.users.inviteModal.sending')}
                 </>
               ) : (
                 <>
                   <PaperPlaneTilt className="w-4 h-4 mr-2" />
-                  Enviar invitacion
+                  {t('inmobiliaria.config.users.inviteModal.send')}
                 </>
               )}
             </Button>
@@ -204,6 +206,7 @@ interface EditRoleModalProps {
 }
 
 function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRoleModalProps) {
+  const { t } = useTranslation();
   const [selectedRole, setSelectedRole] = useState<AgencyRole>(user?.role || 'agente');
 
   // Update selected role when user changes
@@ -223,15 +226,15 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cambiar Rol</DialogTitle>
+          <DialogTitle>{t('inmobiliaria.config.users.editRoleModal.title')}</DialogTitle>
           <DialogDescription>
-            {user?.name && `Cambiar el rol de ${user.name}`}
+            {user?.name && t('inmobiliaria.config.users.editRoleModal.description', { name: user.name })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Rol actual</Label>
+            <Label>{t('inmobiliaria.config.users.editRoleModal.currentRole')}</Label>
             <div className="flex items-center gap-2">
               <span className={cn('px-3 py-1.5 rounded-full text-sm font-medium', user && getRoleColor(user.role))}>
                 {user && getRoleLabel(user.role)}
@@ -240,26 +243,26 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-role">Nuevo rol</Label>
+            <Label htmlFor="new-role">{t('inmobiliaria.config.users.editRoleModal.newRole')}</Label>
             <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AgencyRole)}>
               <SelectTrigger id="new-role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="agente">Agente</SelectItem>
-                <SelectItem value="contador">Contador</SelectItem>
-                <SelectItem value="viewer">Solo Lectura</SelectItem>
+                <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
+                <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
+                <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
+                <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t('inmobiliaria.common.cancel')}
             </Button>
             <Button type="submit" disabled={!user || selectedRole === user?.role || isLoading}>
-              Guardar cambio
+              {t('inmobiliaria.config.users.editRoleModal.saveChange')}
             </Button>
           </DialogFooter>
         </form>
@@ -281,6 +284,8 @@ interface DeleteModalProps {
 }
 
 function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteModalProps) {
+  const { t } = useTranslation();
+
   const handleConfirm = () => {
     if (user) {
       onConfirm(user.id);
@@ -292,16 +297,16 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-red-600 dark:text-red-400">Eliminar Usuario</DialogTitle>
+          <DialogTitle className="text-red-600 dark:text-red-400">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
           <DialogDescription>
-            Esta accion no se puede deshacer. El usuario perdera acceso permanentemente.
+            {t('inmobiliaria.config.users.deleteModal.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
           <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p className="text-sm text-red-700 dark:text-red-300">
-              Estas seguro que deseas eliminar a <strong>{user?.name}</strong>?
+              {t('inmobiliaria.config.users.deleteModal.confirmMessage', { name: user?.name ?? '' })}
             </p>
             {user?.email && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -313,7 +318,7 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('inmobiliaria.common.cancel')}
           </Button>
           <Button
             type="button"
@@ -321,7 +326,7 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
             onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? 'Eliminando...' : 'Eliminar usuario'}
+            {isLoading ? t('inmobiliaria.config.users.deleteModal.deleting') : t('inmobiliaria.config.users.deleteUser')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -342,6 +347,8 @@ export function ConfigUsuarios({
   onDelete,
   isLoading = false,
 }: ConfigUsuariosProps) {
+  const { t } = useTranslation();
+
   // Filter state
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<FilterRole>('all');
@@ -430,15 +437,15 @@ export function ConfigUsuarios({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-            Equipo
+            {t('inmobiliaria.config.users.title')}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-            {userCounts.total} usuarios ({userCounts.active} activos, {userCounts.invited} invitados)
+            {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}
           </p>
         </div>
         <Button onClick={() => setInviteModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Invitar Usuario
+          {t('inmobiliaria.config.users.invite')}
         </Button>
       </div>
 
@@ -449,7 +456,7 @@ export function ConfigUsuarios({
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <Input
             type="search"
-            placeholder="Buscar por nombre o email..."
+            placeholder={t('inmobiliaria.config.users.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -459,27 +466,27 @@ export function ConfigUsuarios({
         {/* Role Filter */}
         <Select value={filterRole} onValueChange={(v) => setFilterRole(v as FilterRole)}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Todos los roles" />
+            <SelectValue placeholder={t('inmobiliaria.config.users.allRoles')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los roles</SelectItem>
-            <SelectItem value="admin">Administrador</SelectItem>
-            <SelectItem value="agente">Agente</SelectItem>
-            <SelectItem value="contador">Contador</SelectItem>
-            <SelectItem value="viewer">Solo Lectura</SelectItem>
+            <SelectItem value="all">{t('inmobiliaria.config.users.allRoles')}</SelectItem>
+            <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
+            <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
+            <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
+            <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
           </SelectContent>
         </Select>
 
         {/* Status Filter */}
         <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Todos los estados" />
+            <SelectValue placeholder={t('inmobiliaria.config.users.allStatuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="active">Activos</SelectItem>
-            <SelectItem value="invited">Invitados</SelectItem>
-            <SelectItem value="inactive">Inactivos</SelectItem>
+            <SelectItem value="all">{t('inmobiliaria.config.users.allStatuses')}</SelectItem>
+            <SelectItem value="active">{t('inmobiliaria.config.users.active')}</SelectItem>
+            <SelectItem value="invited">{t('inmobiliaria.config.users.invited')}</SelectItem>
+            <SelectItem value="inactive">{t('inmobiliaria.config.users.inactive')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -491,22 +498,22 @@ export function ConfigUsuarios({
             <tr className="border-b border-neutral-100 dark:border-neutral-800">
               <th className="text-left p-4">
                 <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Usuario
+                  {t('inmobiliaria.config.users.tableUser')}
                 </span>
               </th>
               <th className="text-left p-4">
                 <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Rol
+                  {t('inmobiliaria.config.users.role')}
                 </span>
               </th>
               <th className="text-left p-4">
                 <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Estado
+                  {t('inmobiliaria.config.users.status')}
                 </span>
               </th>
               <th className="text-left p-4 hidden md:table-cell">
                 <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  Ultimo acceso
+                  {t('inmobiliaria.config.users.lastAccess')}
                 </span>
               </th>
               <th className="w-12 p-4"></th>
@@ -589,7 +596,7 @@ export function ConfigUsuarios({
                       ) : user.status === 'invited' && user.invitedAt ? (
                         <div className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
                           <EnvelopeSimple className="w-4 h-4 shrink-0" />
-                          <span>Invitado {formatRelativeTime(user.invitedAt)}</span>
+                          <span>{t('inmobiliaria.config.users.invitedOn')} {formatRelativeTime(user.invitedAt)}</span>
                         </div>
                       ) : (
                         <span className="text-neutral-400">-</span>
@@ -624,7 +631,7 @@ export function ConfigUsuarios({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <PencilSimple className="w-4 h-4" />
-                                <span className="text-sm">Editar rol</span>
+                                <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
                               </button>
 
                               {/* Resend Invite (if invited) */}
@@ -637,7 +644,7 @@ export function ConfigUsuarios({
                                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                                 >
                                   <ArrowClockwise className="w-4 h-4" />
-                                  <span className="text-sm">Reenviar invitacion</span>
+                                  <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
                                 </button>
                               )}
 
@@ -652,12 +659,12 @@ export function ConfigUsuarios({
                                 {user.status === 'active' ? (
                                   <>
                                     <UserMinus className="w-4 h-4" />
-                                    <span className="text-sm">Desactivar</span>
+                                    <span className="text-sm">{t('inmobiliaria.config.users.deactivate')}</span>
                                   </>
                                 ) : (
                                   <>
                                     <UserCheck className="w-4 h-4" />
-                                    <span className="text-sm">Reactivar</span>
+                                    <span className="text-sm">{t('inmobiliaria.config.users.activate')}</span>
                                   </>
                                 )}
                               </button>
@@ -675,7 +682,7 @@ export function ConfigUsuarios({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               >
                                 <Trash className="w-4 h-4" />
-                                <span className="text-sm">Eliminar</span>
+                                <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
                               </button>
                             </motion.div>
                           )}
@@ -696,17 +703,17 @@ export function ConfigUsuarios({
               <Users className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              No se encontraron usuarios
+              {t('inmobiliaria.config.users.noUsersFound')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400 mb-4">
               {search || filterRole !== 'all' || filterStatus !== 'all'
-                ? 'Ajusta los filtros de busqueda'
-                : 'Invita al primer miembro del equipo'}
+                ? t('inmobiliaria.config.users.adjustFilters')
+                : t('inmobiliaria.config.users.inviteFirst')}
             </p>
             {!search && filterRole === 'all' && filterStatus === 'all' && (
               <Button onClick={() => setInviteModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Invitar Usuario
+                {t('inmobiliaria.config.users.invite')}
               </Button>
             )}
           </div>

@@ -52,7 +52,7 @@ export function calculateQualification(
     return {
       qualifies: false,
       score: Math.max(0, Math.round(100 - (affordabilityRatio - AFFORDABILITY_THRESHOLD) * 200)),
-      reason: `Supera tu presupuesto en $${exceedAmount.toLocaleString('es-CO')}`,
+      reason: `Supera tu presupuesto en $${exceedAmount.toLocaleString('es-CL')}`,
     };
   }
 

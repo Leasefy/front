@@ -16,6 +16,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   MOCK_CONSIGNACIONES,
   MOCK_PROPIETARIOS,
@@ -35,6 +36,7 @@ const ITEMS_PER_PAGE = 12;
  * Route: /panel/inmobiliaria/portafolio
  */
 export default function PortafolioPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
@@ -152,10 +154,10 @@ export default function PortafolioPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-            Portafolio
+            {t('inmobiliaria.portafolio.title')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Gestiona todas las propiedades consignadas
+            {t('inmobiliaria.portafolio.subtitle')}
           </p>
         </div>
         <button
@@ -163,7 +165,7 @@ export default function PortafolioPage() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
         >
           <Plus className="w-5 h-5" />
-          Nueva Consignacion
+          {t('inmobiliaria.portafolio.addProperty')}
         </button>
       </div>
 
@@ -180,7 +182,7 @@ export default function PortafolioPage() {
                 {stats.total}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Total
+                {t('inmobiliaria.portafolio.summary.totalProperties')}
               </p>
             </div>
           </div>
@@ -197,7 +199,7 @@ export default function PortafolioPage() {
                 {stats.available}
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-500">
-                Disponibles
+                {t('inmobiliaria.portafolio.summary.available')}
               </p>
             </div>
           </div>
@@ -214,7 +216,7 @@ export default function PortafolioPage() {
                 {stats.rented}
               </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-500">
-                Arrendadas
+                {t('inmobiliaria.portafolio.summary.rented')}
               </p>
             </div>
           </div>
@@ -231,7 +233,7 @@ export default function PortafolioPage() {
                 {stats.inProcess}
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                En proceso
+                {t('inmobiliaria.portafolio.stats.inProcess')}
               </p>
             </div>
           </div>
@@ -248,7 +250,7 @@ export default function PortafolioPage() {
                 {stats.maintenance}
               </p>
               <p className="text-xs text-rose-600 dark:text-rose-500">
-                Mantenimiento
+                {t('inmobiliaria.portafolio.stats.maintenance')}
               </p>
             </div>
           </div>
@@ -275,7 +277,7 @@ export default function PortafolioPage() {
               )}
             >
               <List className="w-4 h-4" />
-              Tabla
+              {t('inmobiliaria.portafolio.views.table')}
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -287,11 +289,11 @@ export default function PortafolioPage() {
               )}
             >
               <SquaresFour className="w-4 h-4" />
-              Cards
+              {t('inmobiliaria.portafolio.views.cards')}
             </button>
           </div>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {filteredConsignaciones.length} propiedades
+            {t('inmobiliaria.portafolio.stats.propertyCount', { count: filteredConsignaciones.length })}
           </span>
         </div>
 
@@ -410,16 +412,17 @@ export default function PortafolioPage() {
 
 // Empty State Component
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="p-12 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
         <Buildings className="w-8 h-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-1">
-        No se encontraron propiedades
+        {t('inmobiliaria.portafolio.noProperties')}
       </h3>
       <p className="text-muted-foreground max-w-md mx-auto">
-        Ajusta los filtros de búsqueda o agrega una nueva consignación para comenzar
+        {t('inmobiliaria.portafolio.noPropertiesDesc')}
       </p>
     </div>
   );

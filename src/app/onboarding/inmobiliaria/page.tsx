@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
+import { useTranslation } from '@/lib/i18n'
 
 // ============================================================================
 // Types & Constants
@@ -35,39 +36,44 @@ interface OnboardingData {
   confirmPassword: string
 }
 
-const PORTFOLIO_SIZES: { value: PortfolioSize; label: string; description: string }[] = [
-  { value: 'small', label: '1-20 propiedades', description: 'Agencia pequeña' },
-  { value: 'medium', label: '21-50 propiedades', description: 'Agencia mediana' },
-  { value: 'large', label: '51-200 propiedades', description: 'Agencia grande' },
-  { value: 'enterprise', label: '+200 propiedades', description: 'Empresa' },
-]
-
-const SERVICES: { value: AgencyService; label: string; icon: typeof House }[] = [
-  { value: 'arriendos', label: 'Arriendos', icon: House },
-  { value: 'ventas', label: 'Ventas', icon: Buildings },
-  { value: 'administracion', label: 'Administración', icon: Wrench },
-  { value: 'avaluos', label: 'Avalúos', icon: Scales },
-]
-
-const CITIES = [
-  'Bogotá',
-  'Medellín',
-  'Cali',
-  'Barranquilla',
-  'Cartagena',
-  'Bucaramanga',
-  'Pereira',
-  'Santa Marta',
-  'Otra ciudad',
-]
-
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export default function OnboardingInmobiliariaPage() {
+function OnboardingInmobiliariaContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const { t } = useTranslation()
+  const returnUrl = searchParams.get('returnUrl')
+
+  const PORTFOLIO_SIZES: { value: PortfolioSize; label: string; description: string }[] = useMemo(() => [
+    { value: 'small', label: t('inmobiliaria.onboarding.register.portfolioSizes.smallLabel'), description: t('inmobiliaria.onboarding.register.portfolioSizes.smallDesc') },
+    { value: 'medium', label: t('inmobiliaria.onboarding.register.portfolioSizes.mediumLabel'), description: t('inmobiliaria.onboarding.register.portfolioSizes.mediumDesc') },
+    { value: 'large', label: t('inmobiliaria.onboarding.register.portfolioSizes.largeLabel'), description: t('inmobiliaria.onboarding.register.portfolioSizes.largeDesc') },
+    { value: 'enterprise', label: t('inmobiliaria.onboarding.register.portfolioSizes.enterpriseLabel'), description: t('inmobiliaria.onboarding.register.portfolioSizes.enterpriseDesc') },
+  ], [t])
+
+  const SERVICES: { value: AgencyService; label: string; icon: typeof House }[] = useMemo(() => [
+    { value: 'arriendos', label: t('inmobiliaria.onboarding.register.services.arriendos'), icon: House },
+    { value: 'ventas', label: t('inmobiliaria.onboarding.register.services.ventas'), icon: Buildings },
+    { value: 'administracion', label: t('inmobiliaria.onboarding.register.services.administracion'), icon: Wrench },
+    { value: 'avaluos', label: t('inmobiliaria.onboarding.register.services.avaluos'), icon: Scales },
+  ], [t])
+
+  const CITIES = useMemo(() => [
+    t('inmobiliaria.onboarding.register.cities.bogota'),
+    t('inmobiliaria.onboarding.register.cities.medellin'),
+    t('inmobiliaria.onboarding.register.cities.cali'),
+    t('inmobiliaria.onboarding.register.cities.barranquilla'),
+    t('inmobiliaria.onboarding.register.cities.cartagena'),
+    t('inmobiliaria.onboarding.register.cities.bucaramanga'),
+    t('inmobiliaria.onboarding.register.cities.pereira'),
+    t('inmobiliaria.onboarding.register.cities.santaMarta'),
+    t('inmobiliaria.onboarding.register.cities.other'),
+  ], [t])
+  // When coming from publish wizard (returnUrl present), skip business details + services
+  const fromPublish = !!returnUrl
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -140,7 +146,8 @@ export default function OnboardingInmobiliariaPage() {
 
   const handleNext = () => {
     if (step === 1 && isStep1Valid) {
-      setStep(2)
+      // Skip steps 2 & 3 when coming from publish wizard
+      setStep(fromPublish ? 4 : 2)
     } else if (step === 2 && isStep2Valid) {
       setStep(3)
     } else if (step === 3 && isStep3Valid) {
@@ -149,7 +156,9 @@ export default function OnboardingInmobiliariaPage() {
   }
 
   const handleBack = () => {
-    if (step > 1) {
+    if (step === 4 && fromPublish) {
+      setStep(1)
+    } else if (step > 1) {
       setStep(step - 1)
     }
   }
@@ -165,7 +174,7 @@ export default function OnboardingInmobiliariaPage() {
       const result = await register(data.contactPerson, data.email, data.password, 'agency')
 
       if (!result.success) {
-        setAuthError(result.error || 'Error al crear la cuenta')
+        setAuthError(result.error || t('inmobiliaria.onboarding.register.errors.createAccount'))
         setIsSubmitting(false)
         return
       }
@@ -178,12 +187,14 @@ export default function OnboardingInmobiliariaPage() {
           contactPerson: data.contactPerson,
           phone: data.phone,
           preferredContact: data.preferredContact,
-          city: data.city,
-          portfolioSize: data.portfolioSize,
-          yearsInBusiness: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null,
-          services: data.services,
+          ...(fromPublish ? {} : {
+            city: data.city,
+            portfolioSize: data.portfolioSize,
+            yearsInBusiness: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null,
+            services: data.services,
+          }),
         },
-        completedSteps: [1, 2, 3, 4],
+        completedSteps: fromPublish ? [1, 4] : [1, 2, 3, 4],
         isComplete: true,
         completedAt: new Date().toISOString(),
       }
@@ -194,20 +205,20 @@ export default function OnboardingInmobiliariaPage() {
       setIsComplete(true)
     } catch (error) {
       console.error('Error:', error)
-      setAuthError('Error inesperado. Inténtalo de nuevo.')
+      setAuthError(t('inmobiliaria.onboarding.register.errors.unexpected'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleSkip = () => {
-    router.push('/panel/inmobiliaria')
+    router.push(isAuthenticated ? '/panel/inmobiliaria' : '/')
   }
 
   // Navigate to dashboard - uses window.location to ensure full page load
   const goToDashboard = () => {
     setIsNavigating(true)
-    window.location.href = '/panel/inmobiliaria'
+    window.location.href = returnUrl || '/panel/inmobiliaria'
   }
 
   // Success Screen
@@ -223,10 +234,10 @@ export default function OnboardingInmobiliariaPage() {
             <Check className="w-10 h-10 text-indigo-600" strokeWidth={2.5} />
           </div>
           <h1 className="text-3xl font-bold text-neutral-900 mb-3">
-            ¡Bienvenido, {data.agencyName}!
+            {t('inmobiliaria.onboarding.register.success.welcome', { agencyName: data.agencyName })}
           </h1>
           <p className="text-neutral-600 mb-8">
-            Tu cuenta de inmobiliaria está configurada. Ahora puedes gestionar propiedades, propietarios y mucho más.
+            {t('inmobiliaria.onboarding.register.success.description')}
           </p>
           <button
             onClick={goToDashboard}
@@ -236,11 +247,11 @@ export default function OnboardingInmobiliariaPage() {
             {isNavigating ? (
               <>
                 <SpinnerGap className="w-4 h-4 animate-spin" />
-                Cargando...
+                {t('common.loading')}
               </>
             ) : (
               <>
-                Ir al panel de inmobiliaria
+                {t('inmobiliaria.onboarding.register.success.goToPanel')}
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -248,31 +259,31 @@ export default function OnboardingInmobiliariaPage() {
 
           {/* Quick stats preview */}
           <div className="mt-8 p-4 bg-white rounded-xl border border-neutral-200">
-            <p className="text-sm font-medium text-neutral-900 mb-3">Tu plan incluye:</p>
+            <p className="text-sm font-medium text-neutral-900 mb-3">{t('inmobiliaria.onboarding.register.success.planIncludes')}</p>
             <div className="grid grid-cols-2 gap-3 text-left">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
                   <Users className="w-4 h-4 text-indigo-600" />
                 </div>
-                <span className="text-xs text-neutral-600">Gestión de propietarios</span>
+                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.ownerManagement')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
                   <Buildings className="w-4 h-4 text-emerald-600" />
                 </div>
-                <span className="text-xs text-neutral-600">Portafolio ilimitado</span>
+                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.unlimitedPortfolio')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
                   <ChartLineUp className="w-4 h-4 text-amber-600" />
                 </div>
-                <span className="text-xs text-neutral-600">Reportes y analítica</span>
+                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.reportsAnalytics')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
                   <Shield className="w-4 h-4 text-rose-600" />
                 </div>
-                <span className="text-xs text-neutral-600">Verificación de inquilinos</span>
+                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.tenantVerification')}</span>
               </div>
             </div>
           </div>
@@ -297,16 +308,16 @@ export default function OnboardingInmobiliariaPage() {
             {/* Progress */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                {[1, 2, 3, 4].map((s) => (
+                {(fromPublish ? [1, 4] : [1, 2, 3, 4]).map((s, idx, arr) => (
                   <div key={s} className="flex items-center gap-2">
                     <div className={cn(
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
                       step > s ? "bg-indigo-600 text-white" :
                       step === s ? "bg-indigo-600 text-white" : "bg-neutral-100 text-neutral-400"
                     )}>
-                      {step > s ? <Check className="w-3.5 h-3.5" /> : s}
+                      {step > s ? <Check className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
-                    {s < 4 && (
+                    {idx < arr.length - 1 && (
                       <div className={cn(
                         "w-6 h-0.5 transition-colors",
                         step > s ? "bg-indigo-600" : "bg-neutral-200"
@@ -320,7 +331,7 @@ export default function OnboardingInmobiliariaPage() {
                 onClick={handleSkip}
                 className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
-                Saltar
+                {t('inmobiliaria.onboarding.register.skip')}
               </button>
             </div>
           </div>
@@ -342,13 +353,13 @@ export default function OnboardingInmobiliariaPage() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium mb-4">
                   <Storefront className="w-4 h-4" />
-                  Información de la inmobiliaria
+                  {t('inmobiliaria.onboarding.register.step1.badge')}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  Bienvenido a Leasefy
+                  {t('inmobiliaria.onboarding.register.step1.title')}
                 </h1>
                 <p className="text-neutral-500">
-                  Cuéntanos sobre tu inmobiliaria para personalizar tu experiencia
+                  {t('inmobiliaria.onboarding.register.step1.subtitle')}
                 </p>
               </div>
 
@@ -356,13 +367,13 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Agency Name */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Nombre de la inmobiliaria <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step1.agencyName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={data.agencyName}
                     onChange={(e) => updateData({ agencyName: e.target.value })}
-                    placeholder="Inmobiliaria ABC S.A.S"
+                    placeholder={t('inmobiliaria.onboarding.register.step1.agencyNamePlaceholder')}
                     className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                   />
                 </div>
@@ -370,7 +381,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* NIT */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    NIT <span className="text-neutral-400 font-normal">(opcional)</span>
+                    {t('inmobiliaria.onboarding.register.step1.nit')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
                     type="text"
@@ -384,13 +395,13 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Contact Person */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Persona de contacto <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step1.contactPerson')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={data.contactPerson}
                     onChange={(e) => updateData({ contactPerson: e.target.value })}
-                    placeholder="Tu nombre completo"
+                    placeholder={t('inmobiliaria.onboarding.register.step1.contactPersonPlaceholder')}
                     className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                   />
                 </div>
@@ -398,7 +409,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Celular de contacto <span className="text-neutral-400 font-normal">(opcional)</span>
+                    {t('inmobiliaria.onboarding.register.step1.phone')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
                     type="tel"
@@ -430,11 +441,11 @@ export default function OnboardingInmobiliariaPage() {
                     )}
                   />
                   <p className="mt-1.5 text-xs text-neutral-400">
-                    Número de celular de la persona de contacto para notificaciones
+                    {t('inmobiliaria.onboarding.register.step1.phoneHint')}
                   </p>
                   {data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && (
                     <p className="mt-1 text-xs text-amber-600">
-                      El número debe tener 10 dígitos
+                      {t('inmobiliaria.onboarding.register.step1.phoneValidation')}
                     </p>
                   )}
                 </div>
@@ -453,7 +464,7 @@ export default function OnboardingInmobiliariaPage() {
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
-                Continuar
+                {t('inmobiliaria.onboarding.register.continue')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </motion.div>
@@ -471,13 +482,13 @@ export default function OnboardingInmobiliariaPage() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-sm font-medium mb-4">
                   <Briefcase className="w-4 h-4" />
-                  Detalles del negocio
+                  {t('inmobiliaria.onboarding.register.step2.badge')}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  Cuéntanos sobre tu operación
+                  {t('inmobiliaria.onboarding.register.step2.title')}
                 </h1>
                 <p className="text-neutral-500">
-                  Esta información nos ayuda a personalizar las herramientas para ti
+                  {t('inmobiliaria.onboarding.register.step2.subtitle')}
                 </p>
               </div>
 
@@ -485,7 +496,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* City */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Ciudad principal <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step2.city')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={data.city}
@@ -493,7 +504,7 @@ export default function OnboardingInmobiliariaPage() {
                     className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
                   >
-                    <option value="">Selecciona una ciudad</option>
+                    <option value="">{t('inmobiliaria.onboarding.register.step2.cityPlaceholder')}</option>
                     {CITIES.map((city) => (
                       <option key={city} value={city}>{city}</option>
                     ))}
@@ -503,7 +514,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Portfolio Size */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-3">
-                    Tamano del portafolio <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step2.portfolioSize')} <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {PORTFOLIO_SIZES.map((size) => (
@@ -533,7 +544,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Years in Business */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Años en el mercado <span className="text-neutral-400 font-normal">(opcional)</span>
+                    {t('inmobiliaria.onboarding.register.step2.yearsInBusiness')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
                     type="number"
@@ -555,7 +566,7 @@ export default function OnboardingInmobiliariaPage() {
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Atrás
+                  {t('inmobiliaria.onboarding.register.back')}
                 </button>
                 <button
                   type="button"
@@ -568,7 +579,7 @@ export default function OnboardingInmobiliariaPage() {
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
-                  Continuar
+                  {t('inmobiliaria.onboarding.register.continue')}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -587,13 +598,13 @@ export default function OnboardingInmobiliariaPage() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full text-sm font-medium mb-4">
                   <ChartLineUp className="w-4 h-4" />
-                  Servicios
+                  {t('inmobiliaria.onboarding.register.step3.badge')}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  ¿Qué servicios ofreces?
+                  {t('inmobiliaria.onboarding.register.step3.title')}
                 </h1>
                 <p className="text-neutral-500">
-                  Selecciona los servicios que ofrece tu inmobiliaria
+                  {t('inmobiliaria.onboarding.register.step3.subtitle')}
                 </p>
               </div>
 
@@ -601,7 +612,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Services Selection */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-3">
-                    Servicios principales <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step3.mainServices')} <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {SERVICES.map((service) => {
@@ -656,9 +667,9 @@ export default function OnboardingInmobiliariaPage() {
                       <Shield className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900">Herramientas profesionales</p>
+                      <p className="text-sm font-medium text-neutral-900">{t('inmobiliaria.onboarding.register.step3.trustBadgeTitle')}</p>
                       <p className="text-xs text-neutral-600 mt-0.5">
-                        Accede a verificación de inquilinos, reportes avanzados, gestión de cobros y dispersiones automáticas
+                        {t('inmobiliaria.onboarding.register.step3.trustBadgeDescription')}
                       </p>
                     </div>
                   </div>
@@ -673,7 +684,7 @@ export default function OnboardingInmobiliariaPage() {
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Atrás
+                  {t('inmobiliaria.onboarding.register.back')}
                 </button>
                 <button
                   type="button"
@@ -686,7 +697,7 @@ export default function OnboardingInmobiliariaPage() {
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
-                  Continuar
+                  {t('inmobiliaria.onboarding.register.continue')}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -705,13 +716,13 @@ export default function OnboardingInmobiliariaPage() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium mb-4">
                   <Lock className="w-4 h-4" />
-                  Crear cuenta
+                  {t('inmobiliaria.onboarding.register.step4.badge')}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  Último paso
+                  {t('inmobiliaria.onboarding.register.step4.title')}
                 </h1>
                 <p className="text-neutral-500">
-                  Crea tu cuenta para acceder al panel de inmobiliaria
+                  {t('inmobiliaria.onboarding.register.step4.subtitle')}
                 </p>
               </div>
 
@@ -719,7 +730,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Correo electrónico <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step4.email')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -727,7 +738,7 @@ export default function OnboardingInmobiliariaPage() {
                       type="email"
                       value={data.email}
                       onChange={(e) => updateData({ email: e.target.value })}
-                      placeholder="correo@inmobiliaria.com"
+                      placeholder={t('inmobiliaria.onboarding.register.step4.emailPlaceholder')}
                       className="w-full pl-12 pr-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     />
                   </div>
@@ -736,7 +747,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Password */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Contraseña <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step4.password')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -744,7 +755,7 @@ export default function OnboardingInmobiliariaPage() {
                       type={showPassword ? 'text' : 'password'}
                       value={data.password}
                       onChange={(e) => updateData({ password: e.target.value })}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder={t('inmobiliaria.onboarding.register.step4.passwordPlaceholder')}
                       className="w-full pl-12 pr-12 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     />
                     <button
@@ -757,7 +768,7 @@ export default function OnboardingInmobiliariaPage() {
                   </div>
                   {data.password.length > 0 && data.password.length < 8 && (
                     <p className="mt-1.5 text-xs text-amber-600">
-                      La contraseña debe tener al menos 8 caracteres
+                      {t('validation.password')}
                     </p>
                   )}
                 </div>
@@ -765,7 +776,7 @@ export default function OnboardingInmobiliariaPage() {
                 {/* Confirm Password */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Confirmar contraseña <span className="text-red-500">*</span>
+                    {t('inmobiliaria.onboarding.register.step4.confirmPassword')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -773,7 +784,7 @@ export default function OnboardingInmobiliariaPage() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={data.confirmPassword}
                       onChange={(e) => updateData({ confirmPassword: e.target.value })}
-                      placeholder="Repite tu contraseña"
+                      placeholder={t('inmobiliaria.onboarding.register.step4.confirmPasswordPlaceholder')}
                       className={cn(
                         "w-full pl-12 pr-12 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all",
                         data.confirmPassword.length > 0 && data.password !== data.confirmPassword
@@ -791,7 +802,7 @@ export default function OnboardingInmobiliariaPage() {
                   </div>
                   {data.confirmPassword.length > 0 && data.password !== data.confirmPassword && (
                     <p className="mt-1.5 text-xs text-red-500">
-                      Las contraseñas no coinciden
+                      {t('validation.passwordMatch')}
                     </p>
                   )}
                 </div>
@@ -805,13 +816,13 @@ export default function OnboardingInmobiliariaPage() {
 
                 {/* Terms notice */}
                 <p className="text-xs text-neutral-400 text-center">
-                  Al crear tu cuenta, aceptas nuestros{' '}
+                  {t('inmobiliaria.onboarding.register.step4.termsPrefix')}{' '}
                   <Link href="/terminos" className="text-indigo-600 hover:underline">
-                    Términos de servicio
+                    {t('inmobiliaria.onboarding.register.step4.termsOfService')}
                   </Link>{' '}
-                  y{' '}
+                  {t('common.and')}{' '}
                   <Link href="/privacidad" className="text-indigo-600 hover:underline">
-                    Política de privacidad
+                    {t('inmobiliaria.onboarding.register.step4.privacyPolicy')}
                   </Link>
                 </p>
               </div>
@@ -824,7 +835,7 @@ export default function OnboardingInmobiliariaPage() {
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Atrás
+                  {t('inmobiliaria.onboarding.register.back')}
                 </button>
                 <button
                   type="button"
@@ -840,11 +851,11 @@ export default function OnboardingInmobiliariaPage() {
                   {isSubmitting ? (
                     <>
                       <SpinnerGap className="w-4 h-4 animate-spin" />
-                      Creando cuenta...
+                      {t('inmobiliaria.onboarding.register.step4.creatingAccount')}
                     </>
                   ) : (
                     <>
-                      Crear cuenta
+                      {t('inmobiliaria.onboarding.register.step4.createAccount')}
                       <Rocket className="w-4 h-4" />
                     </>
                   )}
@@ -855,5 +866,13 @@ export default function OnboardingInmobiliariaPage() {
         </AnimatePresence>
       </main>
     </div>
+  )
+}
+
+export default function OnboardingInmobiliariaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <OnboardingInmobiliariaContent />
+    </Suspense>
   )
 }

@@ -18,6 +18,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -42,27 +43,27 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   warehouse: Warehouse,
 };
 
-// Availability status colors
-const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = {
+// Availability status colors (labels resolved via i18n in component)
+const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; labelKey: string }> = {
   available: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Disponible',
+    labelKey: 'inmobiliaria.consignaciones.availability.available',
   },
   rented: {
     bg: 'bg-indigo-100 dark:bg-indigo-900/30',
     text: 'text-indigo-700 dark:text-indigo-400',
-    label: 'Arrendado',
+    labelKey: 'inmobiliaria.consignaciones.availability.rented',
   },
   in_process: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'En proceso',
+    labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
   },
   maintenance: {
     bg: 'bg-rose-100 dark:bg-rose-900/30',
     text: 'text-rose-700 dark:text-rose-400',
-    label: 'Mantenimiento',
+    labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
   },
 };
 
@@ -77,6 +78,7 @@ export function ConsignacionTable({
   onView,
   onEdit,
 }: ConsignacionTableProps) {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export function ConsignacionTable({
                 onClick={() => handleSort('propertyTitle')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Propiedad
+                {t('inmobiliaria.consignaciones.table.property')}
                 {sortField === 'propertyTitle' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -150,7 +152,7 @@ export function ConsignacionTable({
                 onClick={() => handleSort('propertyZone')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Zona
+                {t('inmobiliaria.consignaciones.table.zone')}
                 {sortField === 'propertyZone' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -159,7 +161,7 @@ export function ConsignacionTable({
                 onClick={() => handleSort('monthlyRent')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Canon
+                {t('inmobiliaria.consignaciones.table.rent')}
                 {sortField === 'monthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -168,18 +170,18 @@ export function ConsignacionTable({
                 onClick={() => handleSort('commissionPercent')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Comisión
+                {t('inmobiliaria.consignaciones.table.commission')}
                 {sortField === 'commissionPercent' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
             <th className="text-left p-4 hidden lg:table-cell">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Propietario
+                {t('inmobiliaria.consignaciones.table.owner')}
               </span>
             </th>
             <th className="text-left p-4 hidden md:table-cell">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Agente
+                {t('inmobiliaria.consignaciones.table.agent')}
               </span>
             </th>
             <th className="text-left p-4">
@@ -187,7 +189,7 @@ export function ConsignacionTable({
                 onClick={() => handleSort('availability')}
                 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
               >
-                Estado
+                {t('inmobiliaria.consignaciones.table.status')}
                 {sortField === 'availability' && <SortIcon className="w-3.5 h-3.5" />}
               </button>
             </th>
@@ -260,7 +262,7 @@ export function ConsignacionTable({
                     </p>
                     {consignacion.adminFee && consignacion.adminFee > 0 && (
                       <p className="text-xs text-muted-foreground tabular-nums">
-                        + {formatCurrency(consignacion.adminFee)} admin
+                        {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(consignacion.adminFee) })}
                       </p>
                     )}
                   </div>
@@ -319,7 +321,7 @@ export function ConsignacionTable({
                 {/* Status */}
                 <td className="p-4">
                   <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', availability.bg, availability.text)}>
-                    {availability.label}
+                    {t(availability.labelKey)}
                   </span>
                 </td>
 
@@ -353,7 +355,7 @@ export function ConsignacionTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            <span className="text-sm">Ver detalle</span>
+                            <span className="text-sm">{t('inmobiliaria.consignaciones.table.viewDetail')}</span>
                           </button>
                           <button
                             onClick={(e) => {
@@ -364,7 +366,7 @@ export function ConsignacionTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <PencilSimple className="w-4 h-4" />
-                            <span className="text-sm">Editar</span>
+                            <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
                           </button>
                         </motion.div>
                       )}
@@ -384,10 +386,10 @@ export function ConsignacionTable({
             <Buildings className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No se encontraron propiedades
+            {t('inmobiliaria.consignaciones.table.emptyTitle')}
           </h3>
           <p className="text-muted-foreground">
-            Ajusta los filtros o agrega una nueva consignación
+            {t('inmobiliaria.consignaciones.table.emptyDescription')}
           </p>
         </div>
       )}

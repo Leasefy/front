@@ -23,6 +23,7 @@ import {
   Pencil,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Propietario, Agente, PropietarioFormData, ConsignacionFormData, InventoryItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
@@ -50,27 +51,27 @@ export interface StepProps {
 // Property Type Options
 // ============================================================================
 
-const PROPERTY_TYPES: { value: Consignacion['propertyType']; label: string; icon: string }[] = [
-  { value: 'apartment', label: 'Apartamento', icon: '🏢' },
-  { value: 'house', label: 'Casa', icon: '🏠' },
-  { value: 'studio', label: 'Estudio', icon: '🛋️' },
-  { value: 'commercial', label: 'Local comercial', icon: '🏪' },
-  { value: 'office', label: 'Oficina', icon: '🏬' },
-  { value: 'warehouse', label: 'Bodega', icon: '🏭' },
+const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; icon: string }[] = [
+  { value: 'apartment', labelKey: 'inmobiliaria.consignaciones.propertyType.apartment', icon: '🏢' },
+  { value: 'house', labelKey: 'inmobiliaria.consignaciones.propertyType.house', icon: '🏠' },
+  { value: 'studio', labelKey: 'inmobiliaria.consignaciones.propertyType.studio', icon: '🛋️' },
+  { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: '🏪' },
+  { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: '🏬' },
+  { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: '🏭' },
 ];
 
-const MINIMUM_TERMS: { value: number; label: string }[] = [
-  { value: 6, label: '6 meses' },
-  { value: 12, label: '12 meses (recomendado)' },
-  { value: 18, label: '18 meses' },
-  { value: 24, label: '24 meses' },
+const MINIMUM_TERMS: { value: number; labelKey: string }[] = [
+  { value: 6, labelKey: 'inmobiliaria.consignaciones.wizard.step3.months6' },
+  { value: 12, labelKey: 'inmobiliaria.consignaciones.wizard.step3.months12' },
+  { value: 18, labelKey: 'inmobiliaria.consignaciones.wizard.step3.months18' },
+  { value: 24, labelKey: 'inmobiliaria.consignaciones.wizard.step3.months24' },
 ];
 
-const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; label: string; color: string }[] = [
-  { value: 'excellent', label: 'Excelente', color: 'text-emerald-600 dark:text-emerald-400' },
-  { value: 'good', label: 'Bueno', color: 'text-blue-600 dark:text-blue-400' },
-  { value: 'fair', label: 'Regular', color: 'text-amber-600 dark:text-amber-400' },
-  { value: 'poor', label: 'Malo', color: 'text-red-600 dark:text-red-400' },
+const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; labelKey: string; color: string }[] = [
+  { value: 'excellent', labelKey: 'inmobiliaria.consignaciones.wizard.step5.conditionExcellent', color: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'good', labelKey: 'inmobiliaria.consignaciones.wizard.step5.conditionGood', color: 'text-blue-600 dark:text-blue-400' },
+  { value: 'fair', labelKey: 'inmobiliaria.consignaciones.wizard.step5.conditionFair', color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'poor', labelKey: 'inmobiliaria.consignaciones.wizard.step5.conditionPoor', color: 'text-red-600 dark:text-red-400' },
 ];
 
 // ============================================================================
@@ -78,14 +79,16 @@ const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; label: string; 
 // ============================================================================
 
 export function StepSelectPropietario({ formData, updateFormData, propietarios }: StepProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-          Seleccionar Propietario
+          {t('inmobiliaria.consignaciones.wizard.step1.title')}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Elige un propietario existente o crea uno nuevo
+          {t('inmobiliaria.consignaciones.wizard.step1.subtitle')}
         </p>
       </div>
 
@@ -109,6 +112,7 @@ export function StepSelectPropietario({ formData, updateFormData, propietarios }
 // ============================================================================
 
 export function StepPropertyData({ formData, updateFormData }: StepProps) {
+  const { t, locale } = useTranslation();
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleBlur = (field: string) => {
@@ -116,20 +120,20 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
   };
 
   const errors: Record<string, string> = {};
-  if (touched.propertyTitle && !formData.propertyTitle) errors.propertyTitle = 'El titulo es requerido';
-  if (touched.propertyAddress && !formData.propertyAddress) errors.propertyAddress = 'La direccion es requerida';
-  if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = 'La ciudad es requerida';
-  if (touched.propertyZone && !formData.propertyZone) errors.propertyZone = 'La zona es requerida';
-  if (touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = 'El canon es requerido';
+  if (touched.propertyTitle && !formData.propertyTitle) errors.propertyTitle = t('inmobiliaria.consignaciones.wizard.step2.validation.titleRequired');
+  if (touched.propertyAddress && !formData.propertyAddress) errors.propertyAddress = t('inmobiliaria.consignaciones.wizard.step2.validation.addressRequired');
+  if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = t('inmobiliaria.consignaciones.wizard.step2.validation.cityRequired');
+  if (touched.propertyZone && !formData.propertyZone) errors.propertyZone = t('inmobiliaria.consignaciones.wizard.step2.validation.zoneRequired');
+  if (touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-          Datos de la Propiedad
+          {t('inmobiliaria.consignaciones.wizard.step2.title')}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Ingresa la informacion basica del inmueble
+          {t('inmobiliaria.consignaciones.wizard.step2.subtitle')}
         </p>
       </div>
 
@@ -137,7 +141,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         {/* Property Type */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Tipo de inmueble <span className="text-red-500">*</span>
+            {t('inmobiliaria.consignaciones.wizard.step2.propertyTypeLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {PROPERTY_TYPES.map((type) => (
@@ -159,7 +163,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
                     ? 'text-indigo-600 dark:text-indigo-400'
                     : 'text-neutral-600 dark:text-neutral-400'
                 )}>
-                  {type.label}
+                  {t(type.labelKey)}
                 </span>
               </button>
             ))}
@@ -169,14 +173,14 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         {/* Property Title */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Titulo del inmueble <span className="text-red-500">*</span>
+            {t('inmobiliaria.consignaciones.wizard.step2.propertyTitleLabel')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={formData.propertyTitle || ''}
             onChange={(e) => updateFormData({ propertyTitle: e.target.value })}
             onBlur={() => handleBlur('propertyTitle')}
-            placeholder="Ej: Apartamento moderno en Chapinero Alto"
+            placeholder={t('inmobiliaria.consignaciones.wizard.step2.propertyTitlePlaceholder')}
             className={cn(
               'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
               errors.propertyTitle ? 'border-red-500' : 'border-neutral-200 dark:border-neutral-700'
@@ -193,7 +197,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         {/* Address */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Direccion <span className="text-red-500">*</span>
+            {t('inmobiliaria.consignaciones.wizard.step2.addressLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -202,7 +206,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               value={formData.propertyAddress || ''}
               onChange={(e) => updateFormData({ propertyAddress: e.target.value })}
               onBlur={() => handleBlur('propertyAddress')}
-              placeholder="Cra 15 #93-45, Apto 802"
+              placeholder={t('inmobiliaria.consignaciones.wizard.step2.addressPlaceholder')}
               className={cn(
                 'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                 errors.propertyAddress ? 'border-red-500' : 'border-neutral-200 dark:border-neutral-700'
@@ -221,14 +225,14 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Ciudad <span className="text-red-500">*</span>
+              {t('inmobiliaria.consignaciones.wizard.step2.cityLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.propertyCity || ''}
               onChange={(e) => updateFormData({ propertyCity: e.target.value })}
               onBlur={() => handleBlur('propertyCity')}
-              placeholder="Bogota"
+              placeholder={t('inmobiliaria.consignaciones.wizard.step2.cityPlaceholder')}
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                 errors.propertyCity ? 'border-red-500' : 'border-neutral-200 dark:border-neutral-700'
@@ -244,14 +248,14 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Zona/Barrio <span className="text-red-500">*</span>
+              {t('inmobiliaria.consignaciones.wizard.step2.zoneLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.propertyZone || ''}
               onChange={(e) => updateFormData({ propertyZone: e.target.value })}
               onBlur={() => handleBlur('propertyZone')}
-              placeholder="Chapinero Alto"
+              placeholder={t('inmobiliaria.consignaciones.wizard.step2.zonePlaceholder')}
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                 errors.propertyZone ? 'border-red-500' : 'border-neutral-200 dark:border-neutral-700'
@@ -270,19 +274,19 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Canon mensual <span className="text-red-500">*</span>
+              {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
               <input
                 type="text"
-                value={formData.monthlyRent ? formData.monthlyRent.toLocaleString('es-CO') : ''}
+                value={formData.monthlyRent ? formData.monthlyRent.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
                   updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
                 }}
                 onBlur={() => handleBlur('monthlyRent')}
-                placeholder="2.500.000"
+                placeholder={t('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')}
                 className={cn(
                   'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                   errors.monthlyRent ? 'border-red-500' : 'border-neutral-200 dark:border-neutral-700'
@@ -299,18 +303,18 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Administracion (opcional)
+              {t('inmobiliaria.consignaciones.wizard.step2.adminFeeLabel')}
             </label>
             <div className="relative">
               <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
               <input
                 type="text"
-                value={formData.adminFee ? formData.adminFee.toLocaleString('es-CO') : ''}
+                value={formData.adminFee ? formData.adminFee.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
                   updateFormData({ adminFee: value ? parseInt(value) : undefined });
                 }}
-                placeholder="450.000"
+                placeholder={t('inmobiliaria.consignaciones.wizard.step2.adminFeePlaceholder')}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
@@ -326,6 +330,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 // ============================================================================
 
 export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
+  const { t } = useTranslation();
   const commissionPercent = formData.commissionPercent ?? 10;
   const monthlyRent = formData.monthlyRent || 0;
   const agencyCommission = Math.round(monthlyRent * (commissionPercent / 100));
@@ -335,10 +340,10 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-          Terminos de Comision
+          {t('inmobiliaria.consignaciones.wizard.step3.title')}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Define las condiciones del contrato de consignacion
+          {t('inmobiliaria.consignaciones.wizard.step3.subtitle')}
         </p>
       </div>
 
@@ -346,7 +351,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
         {/* Commission Input */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-muted-foreground">
-            Porcentaje de comisión
+            {t('inmobiliaria.consignaciones.wizard.step3.commissionLabel')}
           </label>
           <div className="relative">
             <input
@@ -369,7 +374,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Ingresa el porcentaje de comisión que cobrará la agencia
+            {t('inmobiliaria.consignaciones.wizard.step3.commissionHelper')}
           </p>
         </div>
 
@@ -377,25 +382,25 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
         {monthlyRent > 0 && (
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800">
             <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
-              Resumen mensual
+              {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
             </h4>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-600 dark:text-neutral-400">Canon mensual</span>
+                <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.consignaciones.wizard.step3.monthlyRent')}</span>
                 <span className="font-medium text-neutral-900 dark:text-white">
                   {formatCurrency(monthlyRent)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">
-                  Comision agencia ({commissionPercent}%)
+                  {t('inmobiliaria.consignaciones.wizard.step3.agencyCommission', { percent: commissionPercent })}
                 </span>
                 <span className="font-medium text-indigo-600 dark:text-indigo-400">
                   -{formatCurrency(agencyCommission)}
                 </span>
               </div>
               <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 flex justify-between text-sm">
-                <span className="font-medium text-neutral-900 dark:text-white">Neto propietario</span>
+                <span className="font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(ownerNet)}
                 </span>
@@ -407,7 +412,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
         {/* Minimum Term */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Termino minimo de arrendamiento
+            {t('inmobiliaria.consignaciones.wizard.step3.minimumTermLabel')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {MINIMUM_TERMS.map((term) => (
@@ -428,7 +433,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                     ? 'text-indigo-600 dark:text-indigo-400'
                     : 'text-neutral-600 dark:text-neutral-400'
                 )}>
-                  {term.label}
+                  {t(term.labelKey)}
                 </span>
               </button>
             ))}
@@ -438,7 +443,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
         {/* Contract Start Date */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Fecha de inicio del contrato
+            {t('inmobiliaria.consignaciones.wizard.step3.contractStartLabel')}
           </label>
           <div className="relative">
             <CalendarBlank className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -460,14 +465,16 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 // ============================================================================
 
 export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-foreground mb-1">
-          Asignar Agente
+          {t('inmobiliaria.consignaciones.wizard.step4.title')}
         </h2>
         <p className="text-muted-foreground">
-          Selecciona el agente responsable de esta propiedad (opcional)
+          {t('inmobiliaria.consignaciones.wizard.step4.subtitle')}
         </p>
       </div>
 
@@ -486,6 +493,7 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
 // ============================================================================
 
 export function StepActaEntrega({ formData, updateFormData }: StepProps) {
+  const { t } = useTranslation();
   const inventoryItems = formData.inventoryItems || [];
 
   const addItem = () => {
@@ -518,10 +526,10 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-          Acta de Entrega
+          {t('inmobiliaria.consignaciones.wizard.step5.title')}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Registra el inventario y estado del inmueble
+          {t('inmobiliaria.consignaciones.wizard.step5.subtitle')}
         </p>
       </div>
 
@@ -529,7 +537,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Inventario de bienes
+            {t('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')}
           </h3>
           <button
             type="button"
@@ -537,7 +545,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Agregar item
+            {t('inmobiliaria.consignaciones.wizard.step5.addItem')}
           </button>
         </div>
 
@@ -563,7 +571,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         type="text"
                         value={item.name}
                         onChange={(e) => updateItem(item.id, { name: e.target.value })}
-                        placeholder="Nombre del item (ej: Estufa 4 puestos)"
+                        placeholder={t('inmobiliaria.consignaciones.wizard.step5.itemNamePlaceholder')}
                         className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder-neutral-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       />
                     </div>
@@ -577,7 +585,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         onChange={(e) => updateItem(item.id, { quantity: parseInt(e.target.value) || 1 })}
                         className="w-20 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       />
-                      <span className="text-sm text-neutral-500 dark:text-neutral-400">unid.</span>
+                      <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.consignaciones.wizard.step5.units')}</span>
                     </div>
 
                     {/* Condition */}
@@ -589,7 +597,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       >
                         {INVENTORY_CONDITIONS.map((cond) => (
                           <option key={cond.value} value={cond.value}>
-                            {cond.label}
+                            {t(cond.labelKey)}
                           </option>
                         ))}
                       </select>
@@ -601,7 +609,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       type="text"
                       value={item.notes || ''}
                       onChange={(e) => updateItem(item.id, { notes: e.target.value })}
-                      placeholder="Notas adicionales..."
+                      placeholder={t('inmobiliaria.consignaciones.wizard.step5.additionalNotes')}
                       className="sm:col-span-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder-neutral-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                   </div>
@@ -621,7 +629,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
           <div className="p-8 text-center rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-[#141416]">
             <Package className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
             <p className="text-neutral-500 dark:text-neutral-400 mb-3">
-              No hay items en el inventario
+              {t('inmobiliaria.consignaciones.wizard.step5.emptyInventory')}
             </p>
             <button
               type="button"
@@ -629,7 +637,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Agregar primer item
+              {t('inmobiliaria.consignaciones.wizard.step5.addFirstItem')}
             </button>
           </div>
         )}
@@ -638,15 +646,15 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
       {/* Photo Upload Placeholder */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Fotografias del inmueble
+          {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
         </h3>
         <div className="p-8 text-center rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-[#141416]">
           <Camera className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
           <p className="text-neutral-500 dark:text-neutral-400 mb-1">
-            Arrastra fotos aqui o haz clic para seleccionar
+            {t('inmobiliaria.consignaciones.wizard.step5.photosDropzone')}
           </p>
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            JPG, PNG hasta 10MB cada una
+            {t('inmobiliaria.consignaciones.wizard.step5.photosFormats')}
           </p>
           <button
             type="button"
@@ -654,7 +662,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-400 dark:text-neutral-500 font-medium cursor-not-allowed"
           >
             <Camera className="w-4 h-4" />
-            Proximamente
+            {t('inmobiliaria.consignaciones.wizard.step5.photosSoon')}
           </button>
         </div>
       </div>
@@ -662,12 +670,12 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
       {/* General Notes */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Observaciones generales
+          {t('inmobiliaria.consignaciones.wizard.step5.generalNotes')}
         </label>
         <textarea
           value={formData.inventoryNotes || ''}
           onChange={(e) => updateFormData({ inventoryNotes: e.target.value })}
-          placeholder="Estado general del inmueble, detalles adicionales..."
+          placeholder={t('inmobiliaria.consignaciones.wizard.step5.generalNotesPlaceholder')}
           rows={4}
           className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
         />
@@ -686,6 +694,7 @@ export function StepConfirmation({
   agentes,
   onGoToStep,
 }: StepProps & { onGoToStep: (step: number) => void }) {
+  const { t } = useTranslation();
   const inventoryItems = formData.inventoryItems || [];
 
   // Find propietario info
@@ -715,7 +724,7 @@ export function StepConfirmation({
         className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
       >
         <Pencil className="w-3 h-3" />
-        Editar
+        {t('inmobiliaria.consignaciones.wizard.step6.edit')}
       </button>
     </div>
   );
@@ -724,17 +733,17 @@ export function StepConfirmation({
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-          Confirmar Consignacion
+          {t('inmobiliaria.consignaciones.wizard.step6.title')}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Revisa la informacion antes de crear la consignacion
+          {t('inmobiliaria.consignaciones.wizard.step6.subtitle')}
         </p>
       </div>
 
       <div className="space-y-4">
         {/* Propietario Section */}
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <SectionHeader title="Propietario" step={1} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
           <div className="flex items-center gap-3">
             <div className={cn(
               'w-10 h-10 rounded-lg flex items-center justify-center',
@@ -751,11 +760,11 @@ export function StepConfirmation({
             <div>
               {newPropietario && (
                 <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 mb-1">
-                  Nuevo
+                  {t('inmobiliaria.consignaciones.wizard.step6.new')}
                 </span>
               )}
               <p className="font-medium text-neutral-900 dark:text-white">
-                {newPropietario?.name || propietario?.name || 'No seleccionado'}
+                {newPropietario?.name || propietario?.name || t('inmobiliaria.consignaciones.wizard.step6.notSelected')}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {newPropietario?.email || propietario?.email}
@@ -766,14 +775,14 @@ export function StepConfirmation({
 
         {/* Property Section */}
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <SectionHeader title="Propiedad" step={2} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-2xl">
               {propertyType?.icon || '🏠'}
             </div>
             <div className="flex-1">
               <p className="font-medium text-neutral-900 dark:text-white">
-                {formData.propertyTitle || 'Sin titulo'}
+                {formData.propertyTitle || t('inmobiliaria.consignaciones.wizard.step6.noTitle')}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {formData.propertyAddress}
@@ -784,11 +793,11 @@ export function StepConfirmation({
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-lg font-bold text-neutral-900 dark:text-white">
                   {formatCurrency(monthlyRent)}
-                  <span className="text-sm font-normal text-neutral-500">/mes</span>
+                  <span className="text-sm font-normal text-neutral-500">{t('inmobiliaria.consignaciones.wizard.step6.perMonth')}</span>
                 </span>
                 {formData.adminFee && (
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                    + {formatCurrency(formData.adminFee)} admin
+                    + {formatCurrency(formData.adminFee)} {t('inmobiliaria.consignaciones.wizard.step6.admin')}
                   </span>
                 )}
               </div>
@@ -798,26 +807,26 @@ export function StepConfirmation({
 
         {/* Terms Section */}
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <SectionHeader title="Terminos" step={3} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Comision</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('inmobiliaria.consignaciones.wizard.step6.commission')}</p>
               <p className="font-medium text-neutral-900 dark:text-white">{commissionPercent}%</p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Termino minimo</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('inmobiliaria.consignaciones.wizard.step6.minimumTerm')}</p>
               <p className="font-medium text-neutral-900 dark:text-white">
-                {formData.minimumTerm || 12} meses
+                {formData.minimumTerm || 12} {t('inmobiliaria.consignaciones.wizard.step6.months')}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Comision mensual</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')}</p>
               <p className="font-medium text-indigo-600 dark:text-indigo-400">
                 {formatCurrency(agencyCommission)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Neto propietario</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('inmobiliaria.consignaciones.wizard.step6.ownerNetLabel')}</p>
               <p className="font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(ownerNet)}
               </p>
@@ -827,7 +836,7 @@ export function StepConfirmation({
 
         {/* Agent Section */}
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <SectionHeader title="Agente Asignado" step={4} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
           {agente ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
@@ -836,22 +845,24 @@ export function StepConfirmation({
               <div>
                 <p className="font-medium text-neutral-900 dark:text-white">{agente.name}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {agente.zone} - {agente.commissionSplit}% comision
+                  {agente.zone} - {agente.commissionSplit}% {t('inmobiliaria.consignaciones.wizard.step6.agentCommission')}
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-neutral-500 dark:text-neutral-400">No asignado</p>
+            <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.consignaciones.wizard.step6.notAssigned')}</p>
           )}
         </div>
 
         {/* Inventory Section */}
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <SectionHeader title="Inventario" step={5} />
+          <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
           {inventoryItems.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {inventoryItems.length} item{inventoryItems.length !== 1 ? 's' : ''} registrado{inventoryItems.length !== 1 ? 's' : ''}
+                {inventoryItems.length === 1
+                  ? t('inmobiliaria.consignaciones.wizard.step6.itemsRegistered', { count: inventoryItems.length })
+                  : t('inmobiliaria.consignaciones.wizard.step6.itemsRegisteredPlural', { count: inventoryItems.length })}
               </p>
               <div className="flex flex-wrap gap-2">
                 {inventoryItems.slice(0, 5).map((item) => (
@@ -859,18 +870,18 @@ export function StepConfirmation({
                     key={item.id}
                     className="px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs text-neutral-600 dark:text-neutral-400"
                   >
-                    {item.name || 'Sin nombre'} ({item.quantity})
+                    {item.name || t('inmobiliaria.consignaciones.wizard.step6.noName')} ({item.quantity})
                   </span>
                 ))}
                 {inventoryItems.length > 5 && (
                   <span className="px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs text-neutral-500">
-                    +{inventoryItems.length - 5} mas
+                    {t('inmobiliaria.consignaciones.wizard.step6.moreItems', { count: inventoryItems.length - 5 })}
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Sin inventario registrado</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.consignaciones.wizard.step6.noInventory')}</p>
           )}
           {formData.inventoryNotes && (
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">

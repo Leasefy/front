@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { PropietarioBankAccount } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 
@@ -32,11 +33,12 @@ export function PropietarioBankInfo({
   showFullDetails = false,
   className,
 }: PropietarioBankInfoProps) {
+  const { t } = useTranslation();
   const [showAccount, setShowAccount] = useState(showFullDetails);
   const [copied, setCopied] = useState(false);
 
   const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
-  const accountTypeLabel = bankAccount.accountType === 'savings' ? 'Ahorros' : 'Corriente';
+  const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {
     // If already masked (starts with ****)
@@ -75,10 +77,10 @@ export function PropietarioBankInfo({
           </div>
           <div>
             <h4 className="font-semibold text-neutral-900 dark:text-white">
-              Cuenta bancaria
+              {t('inmobiliaria.propietario.bankInfo.bankAccount')}
             </h4>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Para dispersiones de canon
+              {t('inmobiliaria.propietario.bankInfo.forDispersions')}
             </p>
           </div>
         </div>
@@ -96,7 +98,7 @@ export function PropietarioBankInfo({
       <div className="space-y-3">
         {/* Bank */}
         <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Banco</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
           <span className="font-medium text-neutral-900 dark:text-white">
             {bank?.name || bankAccount.bank}
           </span>
@@ -104,7 +106,7 @@ export function PropietarioBankInfo({
 
         {/* Account Type */}
         <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Tipo</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.type')}</span>
           <span className="font-medium text-neutral-900 dark:text-white">
             {accountTypeLabel}
           </span>
@@ -112,7 +114,7 @@ export function PropietarioBankInfo({
 
         {/* Account Number */}
         <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Número</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.number')}</span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-medium text-neutral-900 dark:text-white">
               {showAccount ? bankAccount.accountNumber : maskAccount(bankAccount.accountNumber)}
@@ -121,7 +123,7 @@ export function PropietarioBankInfo({
               <button
                 onClick={() => setShowAccount(!showAccount)}
                 className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                title={showAccount ? 'Ocultar' : 'Mostrar'}
+                title={showAccount ? t('inmobiliaria.propietario.bankInfo.hide') : t('inmobiliaria.propietario.bankInfo.show')}
               >
                 {showAccount ? (
                   <EyeSlash className="w-4 h-4" />
@@ -133,7 +135,7 @@ export function PropietarioBankInfo({
                 <button
                   onClick={handleCopy}
                   className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                  title="Copiar"
+                  title={t('inmobiliaria.propietario.bankInfo.copy')}
                 >
                   {copied ? (
                     <Check className="w-4 h-4 text-emerald-500" />
@@ -148,7 +150,7 @@ export function PropietarioBankInfo({
 
         {/* Account Holder */}
         <div className="flex items-center justify-between py-2">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Titular</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.holder')}</span>
           <span className="font-medium text-neutral-900 dark:text-white">
             {bankAccount.accountHolder}
           </span>
@@ -159,7 +161,7 @@ export function PropietarioBankInfo({
       <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
           <ShieldCheck className="w-4 h-4" />
-          <span className="text-xs font-medium">Datos verificados</span>
+          <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>
         </div>
       </div>
     </div>
@@ -176,8 +178,9 @@ export function PropietarioBankInfoCompact({
   bankAccount: PropietarioBankAccount;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
-  const accountTypeLabel = bankAccount.accountType === 'savings' ? 'Ahorros' : 'Corriente';
+  const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {
     if (account.startsWith('****')) return account;

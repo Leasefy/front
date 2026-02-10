@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AgenteSelector } from './AgenteSelector';
 import type { Consignacion, Agente } from '@/lib/types/inmobiliaria';
@@ -36,6 +37,7 @@ export function AsignacionModal({
   agentes,
   onConfirm,
 }: AsignacionModalProps) {
+  const { t } = useTranslation();
   const [selectedAgenteId, setSelectedAgenteId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,8 +86,8 @@ export function AsignacionModal({
       onConfirm(consignacion.id, selectedAgenteId, reason || undefined);
     }
 
-    toast.success('Propiedad reasignada', {
-      description: `${consignacion.propertyTitle} ahora esta asignada a ${selectedAgente?.name}`,
+    toast.success(t('inmobiliaria.agente.propertyReassigned'), {
+      description: t('inmobiliaria.agente.propertyReassignedDesc', { property: consignacion.propertyTitle, agent: selectedAgente?.name || '' }),
     });
 
     // Reset and close
@@ -110,7 +112,7 @@ export function AsignacionModal({
         <SheetHeader className="pb-4 border-b border-neutral-200 dark:border-neutral-700">
           <SheetTitle className="flex items-center gap-2 text-neutral-900 dark:text-white">
             <User className="w-5 h-5 text-indigo-500" />
-            Reasignar Propiedad
+            {t('inmobiliaria.agente.reassignProperty')}
           </SheetTitle>
         </SheetHeader>
 
@@ -140,7 +142,7 @@ export function AsignacionModal({
                   <span className="truncate">{consignacion.propertyAddress}</span>
                 </div>
                 <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mt-2">
-                  {formatCurrency(consignacion.monthlyRent)}/mes
+                  {formatCurrency(consignacion.monthlyRent)}{t('inmobiliaria.agente.perMonth')}
                 </p>
               </div>
             </div>
@@ -149,7 +151,7 @@ export function AsignacionModal({
           {/* Current Agent */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Agente Actual
+              {t('inmobiliaria.agente.currentAgent')}
             </label>
             {currentAgente ? (
               <div className="flex items-center gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
@@ -169,13 +171,13 @@ export function AsignacionModal({
                     {currentAgente.name}
                   </p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {currentAgente.zone || 'Sin zona'} · {currentAgente.assignedPropertyIds.length} propiedades
+                    {currentAgente.zone || t('inmobiliaria.agente.noZone')} · {currentAgente.assignedPropertyIds.length} {t('inmobiliaria.agente.propertiesLabel')}
                   </p>
                 </div>
               </div>
             ) : (
               <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-sm text-neutral-500 dark:text-neutral-400">
-                Sin agente asignado
+                {t('inmobiliaria.agente.noAgentAssigned')}
               </div>
             )}
           </div>
@@ -190,7 +192,7 @@ export function AsignacionModal({
           {/* New Agent Selection */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Nuevo Agente
+              {t('inmobiliaria.agente.newAgent')}
             </label>
             <AgenteSelector
               agentes={availableAgentes}
@@ -202,13 +204,13 @@ export function AsignacionModal({
           {/* Reason (Optional) */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Razon del cambio{' '}
-              <span className="text-neutral-400 font-normal">(opcional)</span>
+              {t('inmobiliaria.agente.changeReason')}{' '}
+              <span className="text-neutral-400 font-normal">({t('inmobiliaria.agente.optional')})</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Ej: Redistribucion de carga de trabajo, cambio de zona, etc."
+              placeholder={t('inmobiliaria.agente.changeReasonPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
             />
@@ -219,23 +221,23 @@ export function AsignacionModal({
             <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
               <h4 className="font-medium text-indigo-700 dark:text-indigo-400 text-sm mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" weight="fill" />
-                Resumen de la reasignacion
+                {t('inmobiliaria.agente.reassignmentSummary')}
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">Propiedad:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryProperty')}:</span>
                   <span className="font-medium text-indigo-900 dark:text-indigo-200 truncate ml-2 max-w-[200px]">
                     {consignacion.propertyTitle}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">De:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryFrom')}:</span>
                   <span className="font-medium text-indigo-900 dark:text-indigo-200">
                     {currentAgente.name}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">A:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryTo')}:</span>
                   <span className="font-medium text-indigo-900 dark:text-indigo-200">
                     {selectedAgente.name}
                   </span>
@@ -249,7 +251,7 @@ export function AsignacionModal({
             <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
               <Warning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                El agente seleccionado es el mismo agente actual. Selecciona un agente diferente para reasignar.
+                {t('inmobiliaria.agente.sameAgentWarning')}
               </p>
             </div>
           )}
@@ -262,7 +264,7 @@ export function AsignacionModal({
             disabled={isSubmitting}
             className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
           >
-            Cancelar
+            {t('inmobiliaria.agente.cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -292,10 +294,10 @@ export function AsignacionModal({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Reasignando...
+                {t('inmobiliaria.agente.reassigning')}
               </span>
             ) : (
-              'Confirmar Reasignacion'
+              t('inmobiliaria.agente.confirmReassignment')
             )}
           </button>
         </div>

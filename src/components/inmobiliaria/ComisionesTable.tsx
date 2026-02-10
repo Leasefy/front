@@ -15,6 +15,7 @@ import {
   SortDescending,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { ComisionesAgenteReport, ComisionAgente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -87,6 +88,7 @@ export function ComisionesTable({
   showComparison = false,
   onAgentClick,
 }: ComisionesTableProps) {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -194,7 +196,7 @@ export function ComisionesTable({
         <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
           <div className="flex items-center gap-2 mb-2">
             <CurrencyDollar className="w-5 h-5 text-emerald-200" />
-            <span className="text-sm font-medium text-emerald-100">Total Comisiones</span>
+            <span className="text-sm font-medium text-emerald-100">{t('inmobiliaria.finance.commissionsTable.totalCommissions')}</span>
           </div>
           <p className="text-2xl font-bold">{formatCurrency(data.totalCommissions)}</p>
         </div>
@@ -204,7 +206,7 @@ export function ComisionesTable({
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5 text-blue-500" />
             <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Promedio / Agente
+              {t('inmobiliaria.finance.commissionsTable.avgPerAgent')}
             </span>
           </div>
           <p className="text-xl font-bold text-neutral-900 dark:text-white">
@@ -217,7 +219,7 @@ export function ComisionesTable({
           <div className="flex items-center gap-2 mb-2">
             <Medal className="w-5 h-5 text-amber-500" weight="fill" />
             <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
-              Mejor Agente
+              {t('inmobiliaria.finance.commissionsTable.topAgent')}
             </span>
           </div>
           <p className="text-lg font-bold text-amber-800 dark:text-amber-300 truncate">
@@ -230,7 +232,7 @@ export function ComisionesTable({
           <div className="flex items-center gap-2 mb-2">
             <ChartLineUp className="w-5 h-5 text-indigo-500" />
             <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Cierres Totales
+              {t('inmobiliaria.finance.commissionsTable.totalDeals')}
             </span>
           </div>
           <p className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -246,10 +248,10 @@ export function ComisionesTable({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-            Comisiones por Agente
+            {t('inmobiliaria.finance.commissionsTable.commissionsByAgent')}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Periodo: {data.period}
+            {t('inmobiliaria.finance.commissionsTable.period')}: {data.period}
           </p>
         </div>
       </div>
@@ -262,18 +264,18 @@ export function ComisionesTable({
               <SortableHeader field="rank" align="center" className="w-16">
                 #
               </SortableHeader>
-              <SortableHeader field="agenteName">Agente</SortableHeader>
+              <SortableHeader field="agenteName">{t('inmobiliaria.finance.commissionsTable.agent')}</SortableHeader>
               <SortableHeader field="closedDeals" align="center">
-                Cierres
+                {t('inmobiliaria.finance.commissionsTable.deals')}
               </SortableHeader>
               <SortableHeader field="totalCommission" align="right">
-                Comision Total
+                {t('inmobiliaria.finance.commissionsTable.totalCommission')}
               </SortableHeader>
               <SortableHeader field="avgCommissionPerDeal" align="right">
-                Prom. / Cierre
+                {t('inmobiliaria.finance.commissionsTable.avgPerDeal')}
               </SortableHeader>
-              {showComparison && <th className="p-4 text-center w-20">Trend</th>}
-              <th className="p-4 text-right w-40">vs Lider</th>
+              {showComparison && <th className="p-4 text-center w-20">{t('inmobiliaria.finance.commissionsTable.trend')}</th>}
+              <th className="p-4 text-right w-40">{t('inmobiliaria.finance.commissionsTable.vsLeader')}</th>
             </tr>
           </thead>
           <tbody>
@@ -436,10 +438,10 @@ export function ComisionesTable({
               <Trophy className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              Sin datos de comisiones
+              {t('inmobiliaria.finance.commissionsTable.noData')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400">
-              No hay comisiones registradas para este periodo
+              {t('inmobiliaria.finance.commissionsTable.noDataDesc')}
             </p>
           </div>
         )}

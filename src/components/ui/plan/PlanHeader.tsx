@@ -869,11 +869,14 @@ export function PlanHeader({
               <DropdownListLabel className="px-3 py-2">
                 <p className="text-[14px] font-medium text-neutral-900 dark:text-white">{user?.name || 'Usuario'}</p>
                 <p className="text-[12px] text-neutral-500 dark:text-neutral-400">{user?.email}</p>
+                <span className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                  {user?.role === 'agency' ? 'Inmobiliaria' : user?.role === 'landlord' ? 'Propietario' : 'Inquilino'}
+                </span>
               </DropdownListLabel>
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem asChild>
                 <Link
-                  href={isLandlord ? "/panel/configuracion" : "/inquilino/perfil"}
+                  href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
                   className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
@@ -882,7 +885,7 @@ export function PlanHeader({
               </DropdownListItem>
               <DropdownListItem asChild>
                 <Link
-                  href={isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
+                  href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
                   className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
                   <Gear className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />

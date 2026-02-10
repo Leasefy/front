@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   HouseLine,
@@ -15,6 +16,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 
@@ -24,15 +26,6 @@ interface CobroCardProps {
   onRegisterPayment?: (cobro: Cobro) => void;
   compact?: boolean;
 }
-
-// Status labels in Spanish
-const STATUS_LABELS: Record<CobroStatus, string> = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  partial: 'Parcial',
-  late: 'En mora',
-  defaulted: 'Incobrable',
-};
 
 // Status border colors for left accent
 const STATUS_BORDER_COLORS: Record<CobroStatus, string> = {
@@ -49,7 +42,7 @@ const STATUS_BORDER_COLORS: Record<CobroStatus, string> = {
 function formatMonth(month: string): string {
   const [year, monthNum] = month.split('-');
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
 }
 
 /**
@@ -62,6 +55,16 @@ export function CobroCard({
   onRegisterPayment,
   compact = false,
 }: CobroCardProps) {
+  const { t, locale } = useTranslation();
+
+  const STATUS_LABELS: Record<CobroStatus, string> = useMemo(() => ({
+    pending: t('inmobiliaria.cobros.card.statusLabels.pending'),
+    paid: t('inmobiliaria.cobros.card.statusLabels.paid'),
+    partial: t('inmobiliaria.cobros.card.statusLabels.partial'),
+    late: t('inmobiliaria.cobros.card.statusLabels.late'),
+    defaulted: t('inmobiliaria.cobros.card.statusLabels.defaulted'),
+  }), [t]);
+
   const statusColor = getCobroStatusColor(cobro.status);
   const statusLabel = STATUS_LABELS[cobro.status];
   const borderColor = STATUS_BORDER_COLORS[cobro.status];
@@ -95,7 +98,7 @@ export function CobroCard({
           </p>
           {cobro.status === 'partial' && (
             <p className="text-xs text-blue-600 dark:text-blue-400">
-              {formatCurrency(cobro.paidAmount)} pagado
+              {formatCurrency(cobro.paidAmount)} {t('inmobiliaria.cobros.card.paid')}
             </p>
           )}
         </div>
@@ -121,7 +124,7 @@ export function CobroCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-2xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
+        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onClick && 'cursor-pointer'
@@ -194,23 +197,23 @@ export function CobroCard({
         {/* Breakdown */}
         <div className="space-y-1.5 text-sm">
           <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-            <span>Canon + Admin</span>
+            <span>{t('inmobiliaria.cobros.card.canonAdmin')}</span>
             <span>{formatCurrency(cobro.totalAmount)}</span>
           </div>
           {cobro.lateFee > 0 && (
             <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
-              <span>Interés mora</span>
+              <span>{t('inmobiliaria.cobros.card.lateFee')}</span>
               <span>+ {formatCurrency(cobro.lateFee)}</span>
             </div>
           )}
           {cobro.status === 'partial' && (
             <>
               <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
-                <span>Pagado</span>
+                <span>{t('inmobiliaria.cobros.card.paidLabel')}</span>
                 <span>- {formatCurrency(cobro.paidAmount)}</span>
               </div>
               <div className="flex items-center justify-between font-semibold text-neutral-900 dark:text-white pt-1 border-t border-neutral-100 dark:border-neutral-800">
-                <span>Pendiente</span>
+                <span>{t('inmobiliaria.cobros.card.pendingLabel')}</span>
                 <span>{formatCurrency(cobro.pendingAmount)}</span>
               </div>
             </>
@@ -223,9 +226,9 @@ export function CobroCard({
         {/* Due Date */}
         <div className="flex items-center gap-2 text-sm">
           <CalendarBlank className="w-4 h-4 text-neutral-400" />
-          <span className="text-neutral-500 dark:text-neutral-400">Vence:</span>
+          <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.cobros.card.dueDate')}</span>
           <span className="text-neutral-700 dark:text-neutral-300">
-            {new Date(cobro.dueDate).toLocaleDateString('es-CO', {
+            {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
@@ -237,7 +240,7 @@ export function CobroCard({
         {cobro.daysLate > 0 && (
           <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
             <Warning className="w-4 h-4" weight="fill" />
-            <span className="font-medium">{cobro.daysLate} días de mora</span>
+            <span className="font-medium">{t('inmobiliaria.cobros.card.daysLate', { count: cobro.daysLate })}</span>
           </div>
         )}
 
@@ -245,10 +248,10 @@ export function CobroCard({
         {cobro.status === 'paid' && cobro.paidDate && (
           <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>Pagado el {new Date(cobro.paidDate).toLocaleDateString('es-CO', {
+            <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
               day: 'numeric',
               month: 'short',
-            })}</span>
+            }) })}</span>
           </div>
         )}
 
@@ -256,7 +259,7 @@ export function CobroCard({
         {cobro.remindersSent > 0 && (
           <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
             <Bell className="w-4 h-4" />
-            <span>{cobro.remindersSent} recordatorio{cobro.remindersSent > 1 ? 's' : ''} enviado{cobro.remindersSent > 1 ? 's' : ''}</span>
+            <span>{cobro.remindersSent > 1 ? t('inmobiliaria.cobros.card.remindersSentPlural', { count: cobro.remindersSent }) : t('inmobiliaria.cobros.card.remindersSent', { count: cobro.remindersSent })}</span>
           </div>
         )}
       </div>
@@ -272,18 +275,18 @@ export function CobroCard({
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-colors"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
-            Registrar pago
+            {t('inmobiliaria.cobros.card.registerPayment')}
           </button>
         )}
         {cobro.status === 'paid' && (
           <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>Pago completo</span>
+            <span>{t('inmobiliaria.cobros.card.paymentComplete')}</span>
           </div>
         )}
         {onClick && (
           <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors ml-auto">
-            Ver detalle
+            {t('inmobiliaria.cobros.card.viewDetail')}
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>
         )}

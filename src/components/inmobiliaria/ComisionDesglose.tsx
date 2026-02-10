@@ -13,6 +13,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import {
   Table,
   TableBody,
@@ -86,10 +87,12 @@ function CommissionRatioBar({
   commission,
   net,
   className,
+  t,
 }: {
   commission: number;
   net: number;
   className?: string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const total = commission + net;
   const commissionPercent = total > 0 ? (commission / total) * 100 : 0;
@@ -98,10 +101,10 @@ function CommissionRatioBar({
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-center justify-between text-xs">
         <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-          Comision: {formatCurrency(commission)}
+          {t('inmobiliaria.finance.commBreakdown.commission')}: {formatCurrency(commission)}
         </span>
         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-          Neto: {formatCurrency(net)}
+          {t('inmobiliaria.finance.commBreakdown.net')}: {formatCurrency(net)}
         </span>
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden flex">
@@ -132,6 +135,7 @@ export function ComisionDesglose({
   showPercentages = true,
   className,
 }: ComisionDesgloseProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = React.useState(variant === 'full');
   const totals = React.useMemo(() => calculateTotals(items), [items]);
 
@@ -147,7 +151,7 @@ export function ComisionDesglose({
       >
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
+            {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -176,7 +180,7 @@ export function ComisionDesglose({
           className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-muted/30 transition-colors"
         >
           <span className="text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
+            {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
           </span>
           <CaretDown className="w-4 h-4 text-muted-foreground rotate-180" />
         </button>
@@ -187,11 +191,11 @@ export function ComisionDesglose({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[40%]">Propiedad</TableHead>
-              <TableHead className="text-right">Recaudado</TableHead>
-              {showPercentages && <TableHead className="text-center">Comision</TableHead>}
-              <TableHead className="text-right">Monto Com.</TableHead>
-              <TableHead className="text-right">Neto</TableHead>
+              <TableHead className="w-[40%]">{t('inmobiliaria.finance.commBreakdown.propertyHeader')}</TableHead>
+              <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.collected')}</TableHead>
+              {showPercentages && <TableHead className="text-center">{t('inmobiliaria.finance.commBreakdown.commission')}</TableHead>}
+              <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.commAmount')}</TableHead>
+              <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.net')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -238,7 +242,7 @@ export function ComisionDesglose({
           <TableFooter>
             <TableRow className="bg-muted/50 font-semibold">
               <TableCell>
-                <span className="text-foreground">Total ({items.length} propiedades)</span>
+                <span className="text-foreground">{t('inmobiliaria.finance.commBreakdown.total')} ({items.length} {t('inmobiliaria.finance.commBreakdown.properties')})</span>
               </TableCell>
               <TableCell className="text-right text-foreground">
                 {formatCurrency(totals.totalCollected)}
@@ -258,7 +262,7 @@ export function ComisionDesglose({
       {/* Commission Ratio Visualization - only for full variant */}
       {variant === 'full' && (
         <div className="p-4 border-t border-border bg-muted/30">
-          <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} />
+          <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} t={t} />
         </div>
       )}
     </motion.div>
@@ -275,19 +279,20 @@ export function ComisionDesgloseCompact({
   items: DispersionItem[];
   className?: string;
 }) {
+  const { t } = useTranslation();
   const totals = React.useMemo(() => calculateTotals(items), [items]);
 
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">
-          {items.length} {items.length === 1 ? 'propiedad' : 'propiedades'}
+          {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
         </span>
         <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-          {formatCurrency(totals.totalCommission)} en comisiones
+          {formatCurrency(totals.totalCommission)} {t('inmobiliaria.finance.commBreakdown.inCommissions')}
         </span>
       </div>
-      <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} />
+      <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} t={t} />
     </div>
   );
 }

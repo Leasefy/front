@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, Briefcase, House, Shield, Clock, Lightning, CheckCircle, Info, Lock, Eye, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -76,6 +77,7 @@ const STEP_WHY_CONTENT = {
 
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
   const { locale } = useTranslation()
   const {
     currentStep,
@@ -154,7 +156,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
   }
 
   const handleSkip = () => {
-    router.push('/inquilino')
+    router.push(isAuthenticated ? '/inquilino' : '/')
   }
 
   return (

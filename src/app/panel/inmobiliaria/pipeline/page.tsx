@@ -10,6 +10,7 @@ import {
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   MOCK_PIPELINE_ITEMS,
   MOCK_AGENTES,
@@ -28,6 +29,8 @@ import {
  * Route: /panel/inmobiliaria/pipeline
  */
 export default function PipelinePage() {
+  const { t } = useTranslation();
+
   // State for pipeline items (local copy for optimistic updates)
   const [items, setItems] = useState<PipelineItem[]>(MOCK_PIPELINE_ITEMS);
 
@@ -162,10 +165,10 @@ export default function PipelinePage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-          Pipeline de Arriendos
+          {t('inmobiliaria.pipeline.title')}
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-          Gestiona el proceso de arriendo de principio a fin
+          {t('inmobiliaria.pipeline.subtitle')}
         </p>
       </div>
 
@@ -187,7 +190,7 @@ export default function PipelinePage() {
                 {stats.total}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Total leads
+                {t('inmobiliaria.pipeline.stats.totalLeads')}
               </p>
             </div>
           </div>
@@ -209,7 +212,7 @@ export default function PipelinePage() {
                 {stats.inProcess}
               </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-500">
-                En proceso
+                {t('inmobiliaria.pipeline.stats.inProcess')}
               </p>
             </div>
           </div>
@@ -231,7 +234,7 @@ export default function PipelinePage() {
                 {stats.completedThisMonth}
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-500">
-                Cerrados este mes
+                {t('inmobiliaria.pipeline.stats.closedThisMonth')}
               </p>
             </div>
           </div>
@@ -253,7 +256,7 @@ export default function PipelinePage() {
                 {stats.conversionRate}%
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                Tasa de conversion
+                {t('inmobiliaria.pipeline.stats.conversionRate')}
               </p>
             </div>
           </div>
@@ -270,10 +273,10 @@ export default function PipelinePage() {
         {/* Header with count */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <span className="text-sm font-medium text-foreground">
-            Pipeline de Leads
+            {t('inmobiliaria.pipeline.board.title')}
           </span>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {filteredItems.length} de {items.length} leads
+            {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
           </span>
         </div>
 

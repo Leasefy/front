@@ -9,6 +9,7 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteWorkloadChartProps {
@@ -24,20 +25,19 @@ const OVERLOADED_THRESHOLD = 10;
 /**
  * Get workload status based on property count
  */
-function getWorkloadStatus(count: number): {
-  label: string;
-  color: string;
-} {
+type WorkloadLevel = 'low' | 'optimal' | 'high' | 'overloaded';
+
+function getWorkloadLevel(count: number): { level: WorkloadLevel; color: string } {
   if (count <= 5) {
-    return { label: 'Baja', color: 'text-emerald-600 dark:text-emerald-400' };
+    return { level: 'low', color: 'text-emerald-600 dark:text-emerald-400' };
   }
   if (count <= RECOMMENDED_MAX) {
-    return { label: 'Optima', color: 'text-indigo-600 dark:text-indigo-400' };
+    return { level: 'optimal', color: 'text-indigo-600 dark:text-indigo-400' };
   }
   if (count <= OVERLOADED_THRESHOLD) {
-    return { label: 'Alta', color: 'text-amber-600 dark:text-amber-400' };
+    return { level: 'high', color: 'text-amber-600 dark:text-amber-400' };
   }
-  return { label: 'Sobrecargado', color: 'text-red-600 dark:text-red-400' };
+  return { level: 'overloaded', color: 'text-red-600 dark:text-red-400' };
 }
 
 /**
@@ -45,6 +45,7 @@ function getWorkloadStatus(count: number): {
  * Clean design following design token system
  */
 export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartProps) {
+  const { t } = useTranslation();
   // Filter to active agentes and sort by workload (highest first)
   const sortedAgentes = useMemo(() => {
     return [...agentes]
@@ -93,10 +94,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
             </div>
             <div>
               <h2 className="text-base font-semibold text-foreground">
-                Carga de Trabajo
+                {t('inmobiliaria.agente.workload')}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Distribucion de propiedades por agente
+                {t('inmobiliaria.agente.workloadDescription')}
               </p>
             </div>
           </div>
@@ -108,14 +109,14 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                 <>
                   <Warning className="w-4 h-4 text-amber-500" weight="fill" />
                   <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                    {stats.overloaded} sobrecargado{stats.overloaded > 1 ? 's' : ''}
+                    {stats.overloaded} {t('inmobiliaria.agente.overloaded')}
                   </span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
                   <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                    Balanceado
+                    {t('inmobiliaria.agente.balanced')}
                   </span>
                 </>
               )}
@@ -127,19 +128,19 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       {/* Stats Row */}
       <div className="px-5 py-3 border-b border-border bg-muted/10 grid grid-cols-4 gap-4">
         <div>
-          <p className="text-xs text-muted-foreground">Agentes</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.agentsLabel')}</p>
           <p className="text-lg font-bold text-foreground">{sortedAgentes.length}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Propiedades</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.propertiesLabel')}</p>
           <p className="text-lg font-bold text-foreground">{stats.total}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Promedio</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
           <p className="text-lg font-bold text-foreground">{stats.avg.toFixed(1)}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Max recomendado</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>
           <p className="text-lg font-bold text-foreground">{RECOMMENDED_MAX}</p>
         </div>
       </div>
@@ -155,7 +156,13 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
             {sortedAgentes.map((agente, index) => {
               const propertyCount = agente.assignedPropertyIds.length;
               const percentage = scaleMax > 0 ? (propertyCount / scaleMax) * 100 : 0;
-              const status = getWorkloadStatus(propertyCount);
+              const { level, color } = getWorkloadLevel(propertyCount);
+              const workloadLabels: Record<WorkloadLevel, string> = {
+                low: t('inmobiliaria.agente.workloadLow'),
+                optimal: t('inmobiliaria.agente.workloadOptimal'),
+                high: t('inmobiliaria.agente.workloadHigh'),
+                overloaded: t('inmobiliaria.agente.workloadOverloaded'),
+              };
 
               return (
                 <motion.div
@@ -187,7 +194,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                         {agente.name}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {agente.zone || 'Todas'}
+                        {agente.zone || t('inmobiliaria.agente.allZones')}
                       </p>
                     </div>
 
@@ -197,8 +204,8 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                       <span className="font-bold text-sm text-foreground tabular-nums">
                         {propertyCount}
                       </span>
-                      <span className={cn('text-xs font-medium', status.color)}>
-                        {status.label}
+                      <span className={cn('text-xs font-medium', color)}>
+                        {workloadLabels[level]}
                       </span>
                     </div>
                   </div>
@@ -234,7 +241,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
           <div className="px-5 py-12 text-center">
             <ChartBar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
             <p className="text-muted-foreground">
-              No hay agentes activos para mostrar
+              {t('inmobiliaria.agente.noActiveAgentsToShow')}
             </p>
           </div>
         )}
@@ -244,15 +251,15 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-          <span className="text-muted-foreground">Normal (0-8)</span>
+          <span className="text-muted-foreground">{t('inmobiliaria.agente.legendNormal')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-          <span className="text-muted-foreground">Alta (9-10)</span>
+          <span className="text-muted-foreground">{t('inmobiliaria.agente.legendHigh')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <span className="text-muted-foreground">Sobrecargado (+10)</span>
+          <span className="text-muted-foreground">{t('inmobiliaria.agente.legendOverloaded')}</span>
         </div>
       </div>
     </div>

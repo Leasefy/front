@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   getConsignacionById,
@@ -145,6 +146,7 @@ function Modal({
  * Route: /panel/inmobiliaria/portafolio/[id]
  */
 export default function ConsignacionDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const inventoryRef = useRef<HTMLDivElement>(null);
@@ -199,45 +201,45 @@ export default function ConsignacionDetailPage() {
 
     setConsignacionData(updatedConsignacion);
     setShowEditModal(false);
-    toast.success('Inmueble actualizado correctamente', {
-      description: 'Los cambios se han guardado exitosamente',
+    toast.success(t('inmobiliaria.portafolio.detail.toasts.propertyUpdated'), {
+      description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
     });
   }, [consignacion]);
 
   const handleViewPortal = useCallback(() => {
-    toast.info('Ver en portal próximamente', {
-      description: 'Esta propiedad se mostrará en el portal público',
+    toast.info(t('inmobiliaria.portafolio.detail.toasts.viewPortalSoon'), {
+      description: t('inmobiliaria.portafolio.detail.toasts.viewPortalDesc'),
     });
   }, []);
 
   const handleChangeStatus = useCallback((newStatus: PropertyAvailability) => {
     const statusLabels: Record<PropertyAvailability, string> = {
-      available: 'Disponible',
-      rented: 'Arrendado',
-      in_process: 'En proceso',
-      maintenance: 'Mantenimiento',
+      available: t('inmobiliaria.portafolio.status.available'),
+      rented: t('inmobiliaria.portafolio.status.rented'),
+      in_process: t('inmobiliaria.portafolio.detail.statusLabels.inProcess'),
+      maintenance: t('inmobiliaria.portafolio.status.maintenance'),
     };
-    toast.success(`Estado cambiado a: ${statusLabels[newStatus]}`, {
-      description: 'Los cambios se guardarán automáticamente',
+    toast.success(t('inmobiliaria.portafolio.detail.toasts.statusChanged', { status: statusLabels[newStatus] }), {
+      description: t('inmobiliaria.portafolio.detail.toasts.autoSave'),
     });
     console.log('Change status to:', newStatus);
   }, []);
 
   const handleTerminate = useCallback(() => {
-    toast.error('Terminar consignación', {
-      description: 'Esta acción requiere confirmación adicional',
+    toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateConsignment'), {
+      description: t('inmobiliaria.portafolio.detail.toasts.requiresConfirmation'),
     });
   }, []);
 
   const handleRenew = useCallback(() => {
-    toast.info('Renovar consignación próximamente', {
-      description: 'Podrás extender el contrato de consignación',
+    toast.info(t('inmobiliaria.portafolio.detail.toasts.renewSoon'), {
+      description: t('inmobiliaria.portafolio.detail.toasts.renewDesc'),
     });
   }, []);
 
   const handleReassignAgent = useCallback(() => {
-    toast.info('Reasignar agente próximamente', {
-      description: 'Podrás cambiar el agente asignado',
+    toast.info(t('inmobiliaria.portafolio.detail.toasts.reassignSoon'), {
+      description: t('inmobiliaria.portafolio.detail.toasts.reassignDesc'),
     });
   }, []);
 
@@ -254,17 +256,17 @@ export default function ConsignacionDetailPage() {
             <Buildings className="w-8 h-8 text-neutral-400" />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            Consignación no encontrada
+            {t('inmobiliaria.portafolio.detail.notFound')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            La consignación que buscas no existe o ha sido eliminada
+            {t('inmobiliaria.portafolio.detail.notFoundDesc')}
           </p>
           <Link
             href="/panel/inmobiliaria/portafolio"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
-            Volver al portafolio
+            {t('inmobiliaria.portafolio.detail.backToPortfolio')}
           </Link>
         </div>
       </div>
@@ -280,7 +282,7 @@ export default function ConsignacionDetailPage() {
           className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
-          Portafolio
+          {t('inmobiliaria.portafolio.title')}
         </Link>
         <span className="text-neutral-300 dark:text-neutral-600">/</span>
         <span className="text-neutral-900 dark:text-white font-medium truncate max-w-[200px]">
@@ -386,7 +388,7 @@ export default function ConsignacionDetailPage() {
       <Modal
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Editar inmueble"
+        title={t('inmobiliaria.portafolio.detail.editProperty')}
         size="lg"
       >
         <ConsignacionEditForm

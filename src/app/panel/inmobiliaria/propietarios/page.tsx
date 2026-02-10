@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -161,6 +162,7 @@ function Modal({
  * Main CRM view for managing property owners
  */
 export default function PropietariosPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [propietarios, setPropietarios] = useState<Propietario[]>(MOCK_PROPIETARIOS);
@@ -234,7 +236,7 @@ export default function PropietariosPage() {
   const handleConfirmDelete = () => {
     if (deletingPropietario) {
       setPropietarios((prev) => prev.filter((p) => p.id !== deletingPropietario.id));
-      toast.success(`${deletingPropietario.name} eliminado correctamente`);
+      toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     }
   };
@@ -261,7 +263,7 @@ export default function PropietariosPage() {
     };
 
     setPropietarios((prev) => [newPropietario, ...prev]);
-    toast.success(`${data.name} agregado correctamente`);
+    toast.success(t('inmobiliaria.propietarios.toasts.created', { name: data.name }));
     setShowAddModal(false);
     setCurrentPage(1); // Reset to first page to show new item
   };
@@ -289,12 +291,12 @@ export default function PropietariosPage() {
           : p
       )
     );
-    toast.success('Propietario actualizado correctamente');
+    toast.success(t('inmobiliaria.propietarios.toasts.updated'));
     setEditingPropietario(null);
   };
 
   const handleExport = () => {
-    toast.info('Exportando propietarios a Excel...');
+    toast.info(t('inmobiliaria.propietarios.toasts.exporting'));
     // TODO: Implement export functionality
   };
 
@@ -304,15 +306,15 @@ export default function PropietariosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
-            <span>Inmobiliaria</span>
+            <span>{t('inmobiliaria.common.title')}</span>
             <CaretRight className="w-3 h-3" />
-            <span className="text-neutral-900 dark:text-white">Propietarios</span>
+            <span className="text-neutral-900 dark:text-white">{t('inmobiliaria.propietarios.title')}</span>
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-            CRM de Propietarios
+            {t('inmobiliaria.propietarios.crmTitle')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Gestiona los dueños de inmuebles que consignan propiedades
+            {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>
 
@@ -321,7 +323,7 @@ export default function PropietariosPage() {
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors shadow-lg shadow-indigo-500/25"
         >
           <UserPlus className="w-5 h-5" />
-          Nuevo propietario
+          {t('inmobiliaria.propietarios.addOwner')}
         </button>
       </div>
 
@@ -336,7 +338,7 @@ export default function PropietariosPage() {
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
                 {stats.totalPropietarios}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Propietarios</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.title')}</p>
             </div>
           </div>
         </div>
@@ -350,7 +352,7 @@ export default function PropietariosPage() {
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
                 {stats.totalProperties}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Propiedades</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.properties')}</p>
             </div>
           </div>
         </div>
@@ -364,7 +366,7 @@ export default function PropietariosPage() {
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
                 {formatCurrency(stats.totalMonthlyRent)}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Canon mensual</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.monthlyRevenue')}</p>
             </div>
           </div>
         </div>
@@ -396,10 +398,10 @@ export default function PropietariosPage() {
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-emerald-600 dark:text-emerald-400'
               )}>
-                {stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : 'Al día'}
+                {stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate')}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                {stats.pendingCount > 0 ? `${stats.pendingCount} con saldo` : 'Sin pendientes'}
+                {stats.pendingCount > 0 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount }) : t('inmobiliaria.propietarios.noPending')}
               </p>
             </div>
           </div>
@@ -426,7 +428,7 @@ export default function PropietariosPage() {
               )}
             >
               <List className="w-4 h-4" />
-              Tabla
+              {t('inmobiliaria.propietarios.viewTable')}
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -438,11 +440,11 @@ export default function PropietariosPage() {
               )}
             >
               <GridFour className="w-4 h-4" />
-              Cards
+              {t('inmobiliaria.propietarios.viewCards')}
             </button>
           </div>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {paginationData.totalItems} propietarios
+            {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
           </span>
         </div>
 
@@ -473,7 +475,7 @@ export default function PropietariosPage() {
         {paginationData.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Mostrando</span>
+              <span>{t('inmobiliaria.propietarios.showing')}</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => {
@@ -487,7 +489,7 @@ export default function PropietariosPage() {
                 <option value={20}>20</option>
                 <option value={50}>50</option>
               </select>
-              <span>de {paginationData.totalItems} propietarios</span>
+              <span>{t('inmobiliaria.propietarios.ofTotal', { total: paginationData.totalItems })}</span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -558,7 +560,7 @@ export default function PropietariosPage() {
       <Modal
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Nuevo propietario"
+        title={t('inmobiliaria.propietarios.addOwner')}
         size="lg"
       >
         <PropietarioForm
@@ -572,7 +574,7 @@ export default function PropietariosPage() {
       <Modal
         open={!!editingPropietario}
         onClose={() => setEditingPropietario(null)}
-        title="Editar propietario"
+        title={t('inmobiliaria.propietarios.editOwner')}
         size="lg"
       >
         {editingPropietario && (
@@ -589,20 +591,20 @@ export default function PropietariosPage() {
       <Modal
         open={!!deletingPropietario}
         onClose={() => setDeletingPropietario(null)}
-        title="Eliminar propietario"
+        title={t('inmobiliaria.propietarios.deleteOwner')}
         size="sm"
       >
         {deletingPropietario && (
           <div className="space-y-4">
             <p className="text-neutral-600 dark:text-neutral-400">
-              ¿Estás seguro de eliminar a <strong className="text-neutral-900 dark:text-white">{deletingPropietario.name}</strong>?
+              {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
             {deletingPropietario.propertyCount > 0 && (
               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                   <Warning className="w-4 h-4" />
                   <p className="text-sm">
-                    Este propietario tiene {deletingPropietario.propertyCount} propiedad(es) consignadas.
+                    {t('inmobiliaria.propietarios.deleteWarningProperties', { count: deletingPropietario.propertyCount })}
                   </p>
                 </div>
               </div>
@@ -612,13 +614,13 @@ export default function PropietariosPage() {
                 onClick={() => setDeletingPropietario(null)}
                 className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
-                Cancelar
+                {t('inmobiliaria.common.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
               >
-                Eliminar
+                {t('inmobiliaria.common.delete')}
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Buildings,
@@ -12,6 +13,7 @@ import {
   MapPin,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -23,44 +25,6 @@ interface AgenteCardProps {
   selected?: boolean;
   variant?: 'default' | 'compact';
 }
-
-// Role badge colors
-const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = {
-  agent: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-700 dark:text-blue-400',
-    label: 'Agente',
-  },
-  coordinator: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-700 dark:text-purple-400',
-    label: 'Coordinador',
-  },
-  director: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    label: 'Director',
-  },
-};
-
-// Status badge colors
-const STATUS_COLORS: Record<AgenteStatus, { bg: string; text: string; label: string }> = {
-  active: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Activo',
-  },
-  inactive: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
-    label: 'Inactivo',
-  },
-  on_leave: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    label: 'Licencia',
-  },
-};
 
 /**
  * AgenteCard - Card for displaying agent info with metrics
@@ -74,6 +38,46 @@ export function AgenteCard({
   selected,
   variant = 'default',
 }: AgenteCardProps) {
+  const { t } = useTranslation();
+
+  // Role badge colors
+  const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = useMemo(() => ({
+    agent: {
+      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      text: 'text-blue-700 dark:text-blue-400',
+      label: t('inmobiliaria.agentes.card.role.agent'),
+    },
+    coordinator: {
+      bg: 'bg-purple-100 dark:bg-purple-900/30',
+      text: 'text-purple-700 dark:text-purple-400',
+      label: t('inmobiliaria.agentes.card.role.coordinator'),
+    },
+    director: {
+      bg: 'bg-amber-100 dark:bg-amber-900/30',
+      text: 'text-amber-700 dark:text-amber-400',
+      label: t('inmobiliaria.agentes.card.role.director'),
+    },
+  }), [t]);
+
+  // Status badge colors
+  const STATUS_COLORS: Record<AgenteStatus, { bg: string; text: string; label: string }> = useMemo(() => ({
+    active: {
+      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+      text: 'text-emerald-700 dark:text-emerald-400',
+      label: t('inmobiliaria.agentes.card.status.active'),
+    },
+    inactive: {
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      text: 'text-neutral-600 dark:text-neutral-400',
+      label: t('inmobiliaria.agentes.card.status.inactive'),
+    },
+    on_leave: {
+      bg: 'bg-amber-100 dark:bg-amber-900/30',
+      text: 'text-amber-700 dark:text-amber-400',
+      label: t('inmobiliaria.agentes.card.status.onLeave'),
+    },
+  }), [t]);
+
   const role = ROLE_COLORS[agente.role];
   const status = STATUS_COLORS[agente.status];
 
@@ -230,7 +234,7 @@ export function AgenteCard({
           <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
             <div className="flex items-center gap-2 mb-1">
               <Buildings className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Propiedades</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.properties')}</span>
             </div>
             <p className="text-lg font-bold text-neutral-900 dark:text-white">
               {agente.metrics.assignedProperties}
@@ -241,7 +245,7 @@ export function AgenteCard({
           <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
             <div className="flex items-center gap-2 mb-1">
               <Handshake className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Arriendos</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.leases')}</span>
             </div>
             <p className="text-lg font-bold text-neutral-900 dark:text-white">
               {agente.metrics.activeLeases}
@@ -252,7 +256,7 @@ export function AgenteCard({
           <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
             <div className="flex items-center gap-2 mb-1">
               <ChartLineUp className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Cierres mes</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.closingsMonth')}</span>
             </div>
             <p className="text-lg font-bold text-neutral-900 dark:text-white">
               {agente.metrics.closedThisMonth}
@@ -263,7 +267,7 @@ export function AgenteCard({
           <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
             <div className="flex items-center gap-2 mb-1">
               <CurrencyDollar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Comisiones</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.commissions')}</span>
             </div>
             <p className="text-base font-bold text-neutral-900 dark:text-white truncate">
               {formatCurrency(agente.metrics.commissionsThisMonth)}
@@ -275,7 +279,7 @@ export function AgenteCard({
       {/* Commission Split Pill */}
       <div className="px-5 pb-4">
         <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-          <span className="text-sm text-indigo-600 dark:text-indigo-400">Split comisión</span>
+          <span className="text-sm text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
           <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
             {agente.commissionSplit}%
           </span>
@@ -290,7 +294,7 @@ export function AgenteCard({
               <button
                 onClick={(e) => { e.stopPropagation(); onView(); }}
                 className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                title="Ver detalle"
+                title={t('inmobiliaria.agentes.card.viewDetailTitle')}
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -299,7 +303,7 @@ export function AgenteCard({
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                 className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                title="Editar"
+                title={t('inmobiliaria.agentes.card.editTitle')}
               >
                 <PencilSimple className="w-4 h-4" />
               </button>
@@ -307,7 +311,7 @@ export function AgenteCard({
           </div>
           {onClick && (
             <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors">
-              Ver detalle
+              {t('inmobiliaria.agentes.card.viewDetail')}
               <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
           )}

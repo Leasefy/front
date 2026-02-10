@@ -21,6 +21,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -49,11 +50,11 @@ const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
   low: 'border-l-slate-400',
 };
 
-const PRIORITY_LABELS: Record<MantenimientoPriority, string> = {
-  emergency: 'Emergencia',
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
+const PRIORITY_LABEL_KEYS: Record<MantenimientoPriority, string> = {
+  emergency: 'inmobiliaria.mantenimiento.priorityEmergency',
+  high: 'inmobiliaria.mantenimiento.priorityHigh',
+  medium: 'inmobiliaria.mantenimiento.priorityMedium',
+  low: 'inmobiliaria.mantenimiento.priorityLow',
 };
 
 const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
@@ -68,7 +69,7 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
 
 interface KanbanColumn {
   id: MantenimientoStatus;
-  title: string;
+  titleKey: string;
   icon: React.ElementType;
   color: string;
   bgColor: string;
@@ -77,35 +78,35 @@ interface KanbanColumn {
 const KANBAN_COLUMNS: KanbanColumn[] = [
   {
     id: 'reported',
-    title: 'Reportadas',
+    titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
     color: 'text-slate-600 dark:text-slate-400',
     bgColor: 'bg-slate-100 dark:bg-slate-800/50',
   },
   {
     id: 'quoted',
-    title: 'Cotizadas',
+    titleKey: 'inmobiliaria.mantenimiento.colQuoted',
     icon: CurrencyCircleDollar,
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
   },
   {
     id: 'approved',
-    title: 'Aprobadas',
+    titleKey: 'inmobiliaria.mantenimiento.colApproved',
     icon: Check,
     color: 'text-lime-600 dark:text-lime-400',
     bgColor: 'bg-lime-50 dark:bg-lime-900/20',
   },
   {
     id: 'in_progress',
-    title: 'En Progreso',
+    titleKey: 'inmobiliaria.mantenimiento.colInProgress',
     icon: Clock,
     color: 'text-amber-600 dark:text-amber-400',
     bgColor: 'bg-amber-50 dark:bg-amber-900/20',
   },
   {
     id: 'completed',
-    title: 'Completadas',
+    titleKey: 'inmobiliaria.mantenimiento.colCompleted',
     icon: CheckCircle,
     color: 'text-emerald-600 dark:text-emerald-400',
     bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
@@ -130,9 +131,10 @@ function getDaysSinceCreated(createdAt: string): number {
 interface KanbanCardProps {
   solicitud: SolicitudMantenimiento;
   onClick?: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function KanbanCard({ solicitud, onClick }: KanbanCardProps) {
+function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
   const typeInfo = getMantenimientoTypeInfo(solicitud.type);
   const TypeIcon = TYPE_ICONS[solicitud.type];
   const daysSince = getDaysSinceCreated(solicitud.createdAt);
@@ -213,7 +215,7 @@ function KanbanCard({ solicitud, onClick }: KanbanCardProps) {
             )}
           >
             {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 inline mr-0.5" weight="fill" />}
-            {PRIORITY_LABELS[solicitud.priority]}
+            {t(PRIORITY_LABEL_KEYS[solicitud.priority])}
           </span>
         )}
 
@@ -236,9 +238,10 @@ interface KanbanColumnProps {
   column: KanbanColumn;
   items: SolicitudMantenimiento[];
   onViewDetails?: (solicitud: SolicitudMantenimiento) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function KanbanColumnComponent({ column, items, onViewDetails }: KanbanColumnProps) {
+function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumnProps) {
   const Icon = column.icon;
 
   return (
@@ -252,7 +255,7 @@ function KanbanColumnComponent({ column, items, onViewDetails }: KanbanColumnPro
         )}
       >
         <Icon className={cn('w-4 h-4', column.color)} />
-        <span className={cn('font-semibold text-sm', column.color)}>{column.title}</span>
+        <span className={cn('font-semibold text-sm', column.color)}>{t(column.titleKey)}</span>
         <span
           className={cn(
             'ml-auto px-2 py-0.5 rounded-full text-xs font-medium',
@@ -280,6 +283,7 @@ function KanbanColumnComponent({ column, items, onViewDetails }: KanbanColumnPro
                 key={item.id}
                 solicitud={item}
                 onClick={() => onViewDetails?.(item)}
+                t={t}
               />
             ))
           ) : (
@@ -289,7 +293,7 @@ function KanbanColumnComponent({ column, items, onViewDetails }: KanbanColumnPro
               className="flex flex-col items-center justify-center h-full py-8 text-neutral-400"
             >
               <Icon className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-xs">Sin solicitudes</p>
+              <p className="text-xs">{t('inmobiliaria.mantenimiento.noRequests')}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -303,6 +307,7 @@ function KanbanColumnComponent({ column, items, onViewDetails }: KanbanColumnPro
 // ============================================================================
 
 export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanbanProps) {
+  const { t } = useTranslation();
   // Group data by status
   const groupedData = useMemo(() => {
     const groups: Record<MantenimientoStatus, SolicitudMantenimiento[]> = {
@@ -343,6 +348,7 @@ export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanban
             column={column}
             items={groupedData[column.id]}
             onViewDetails={onViewDetails}
+            t={t}
           />
         ))}
       </div>
@@ -353,7 +359,7 @@ export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanban
           <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
             <XCircle className="w-4 h-4" />
             <span>
-              {groupedData.cancelled.length} solicitud(es) cancelada(s) no se muestra(n) en el tablero
+              {t('inmobiliaria.mantenimiento.cancelledNotice', { count: groupedData.cancelled.length })}
             </span>
           </div>
         </div>

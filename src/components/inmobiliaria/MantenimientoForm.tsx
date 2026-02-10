@@ -23,6 +23,7 @@ import {
   Wallet,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   Consignacion,
   MantenimientoType,
@@ -68,38 +69,38 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
   other: DotsThreeCircle,
 };
 
-const PRIORITY_OPTIONS: { value: MantenimientoPriority; label: string; description: string; color: string }[] = [
+const PRIORITY_OPTIONS: { value: MantenimientoPriority; labelKey: string; descKey: string; color: string }[] = [
   {
     value: 'low',
-    label: 'Baja',
-    description: 'Puede esperar varios dias',
+    labelKey: 'inmobiliaria.mantenimiento.priorityLow',
+    descKey: 'inmobiliaria.mantenimiento.priorityLowDesc',
     color: 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30',
   },
   {
     value: 'medium',
-    label: 'Media',
-    description: 'Atender en los proximos dias',
+    labelKey: 'inmobiliaria.mantenimiento.priorityMedium',
+    descKey: 'inmobiliaria.mantenimiento.priorityMediumDesc',
     color: 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30',
   },
   {
     value: 'high',
-    label: 'Alta',
-    description: 'Requiere atencion pronto',
+    labelKey: 'inmobiliaria.mantenimiento.priorityHigh',
+    descKey: 'inmobiliaria.mantenimiento.priorityHighDesc',
     color: 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30',
   },
   {
     value: 'emergency',
-    label: 'Emergencia',
-    description: 'Atencion inmediata requerida',
+    labelKey: 'inmobiliaria.mantenimiento.priorityEmergency',
+    descKey: 'inmobiliaria.mantenimiento.priorityEmergencyDesc',
     color: 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30',
   },
 ];
 
-const PAID_BY_OPTIONS: { value: MantenimientoPaidBy; label: string; description: string }[] = [
-  { value: 'owner', label: 'Propietario', description: 'El propietario asume el costo' },
-  { value: 'tenant', label: 'Inquilino', description: 'El inquilino asume el costo' },
-  { value: 'split', label: 'Compartido', description: '50% cada parte' },
-  { value: 'agency', label: 'Inmobiliaria', description: 'Asumido por la agencia' },
+const PAID_BY_OPTIONS: { value: MantenimientoPaidBy; labelKey: string; descKey: string }[] = [
+  { value: 'owner', labelKey: 'inmobiliaria.mantenimiento.paidByOwner', descKey: 'inmobiliaria.mantenimiento.paidByOwnerDesc' },
+  { value: 'tenant', labelKey: 'inmobiliaria.mantenimiento.paidByTenant', descKey: 'inmobiliaria.mantenimiento.paidByTenantDesc' },
+  { value: 'split', labelKey: 'inmobiliaria.mantenimiento.paidBySplit', descKey: 'inmobiliaria.mantenimiento.paidBySplitDesc' },
+  { value: 'agency', labelKey: 'inmobiliaria.mantenimiento.paidByAgency', descKey: 'inmobiliaria.mantenimiento.paidByAgencyDesc' },
 ];
 
 // ============================================================================
@@ -110,9 +111,10 @@ interface PropertySelectorProps {
   consignaciones: Consignacion[];
   selectedId: string;
   onSelect: (id: string) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySelectorProps) {
+function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertySelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -132,7 +134,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySele
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Propiedad <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.property')} <span className="text-red-500">*</span>
       </label>
 
       {selectedConsignacion ? (
@@ -173,7 +175,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySele
               }}
               className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
             >
-              Cambiar
+              {t('inmobiliaria.mantenimiento.change')}
             </button>
           </div>
         </div>
@@ -183,7 +185,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySele
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
               type="text"
-              placeholder="Buscar propiedad por nombre o direccion..."
+              placeholder={t('inmobiliaria.mantenimiento.searchProperty')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
@@ -234,7 +236,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySele
                   ))
                 ) : (
                   <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
-                    No se encontraron propiedades
+                    {t('inmobiliaria.mantenimiento.noPropertiesFound')}
                   </div>
                 )}
               </motion.div>
@@ -255,13 +257,14 @@ function PropertySelector({ consignaciones, selectedId, onSelect }: PropertySele
 interface TypeSelectorProps {
   selected: MantenimientoType | '';
   onSelect: (type: MantenimientoType) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function TypeSelector({ selected, onSelect }: TypeSelectorProps) {
+function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Tipo de mantenimiento <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {MANTENIMIENTO_TYPES.map((type) => {
@@ -315,13 +318,14 @@ function TypeSelector({ selected, onSelect }: TypeSelectorProps) {
 interface PrioritySelectorProps {
   selected: MantenimientoPriority | '';
   onSelect: (priority: MantenimientoPriority) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function PrioritySelector({ selected, onSelect }: PrioritySelectorProps) {
+function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Prioridad <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {PRIORITY_OPTIONS.map((priority) => {
@@ -350,13 +354,13 @@ function PrioritySelector({ selected, onSelect }: PrioritySelectorProps) {
                     priority.value === 'low' && 'text-slate-600 dark:text-slate-400'
                   )}
                 >
-                  {priority.label}
+                  {t(priority.labelKey)}
                 </span>
                 {priority.value === 'emergency' && (
                   <Warning className="w-5 h-5 text-red-500" weight="fill" />
                 )}
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{priority.description}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(priority.descKey)}</p>
             </button>
           );
         })}
@@ -373,9 +377,10 @@ interface PhotoUploadProps {
   photos: string[];
   onAdd: (url: string) => void;
   onRemove: (index: number) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function PhotoUpload({ photos, onAdd, onRemove }: PhotoUploadProps) {
+function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -390,10 +395,10 @@ function PhotoUpload({ photos, onAdd, onRemove }: PhotoUploadProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Fotos (opcional)
+        {t('inmobiliaria.mantenimiento.photosOptional')}
       </label>
       <p className="text-xs text-neutral-500 dark:text-neutral-400">
-        Adjunta hasta 5 fotos del problema para facilitar el diagnostico
+        {t('inmobiliaria.mantenimiento.photosHint')}
       </p>
 
       <div className="flex flex-wrap gap-3 mt-3">
@@ -415,7 +420,7 @@ function PhotoUpload({ photos, onAdd, onRemove }: PhotoUploadProps) {
         {photos.length < 5 && (
           <label className="w-24 h-24 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
             <Camera className="w-6 h-6 text-neutral-400" />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Agregar</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -436,21 +441,21 @@ function PhotoUpload({ photos, onAdd, onRemove }: PhotoUploadProps) {
 interface PaidBySelectorProps {
   selected: MantenimientoPaidBy;
   onSelect: (paidBy: MantenimientoPaidBy) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-function PaidBySelector({ selected, onSelect }: PaidBySelectorProps) {
+function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        Responsable del pago <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-red-500">*</span>
       </label>
 
       <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 mb-4">
         <div className="flex gap-3">
           <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Segun el contrato, el propietario es responsable de danos estructurales y el inquilino de
-            danos por mal uso.
+            {t('inmobiliaria.mantenimiento.paymentInfo')}
           </p>
         </div>
       </div>
@@ -486,10 +491,10 @@ function PaidBySelector({ selected, onSelect }: PaidBySelectorProps) {
                       : 'text-neutral-700 dark:text-neutral-300'
                   )}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{option.description}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(option.descKey)}</p>
             </button>
           );
         })}
@@ -509,6 +514,7 @@ export function MantenimientoForm({
   onCancel,
   isSubmitting = false,
 }: MantenimientoFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<{
     consignacionId: string;
     type: MantenimientoType | '';
@@ -548,23 +554,23 @@ export function MantenimientoForm({
     const newErrors: Record<string, string> = {};
 
     if (!formData.consignacionId) {
-      newErrors.consignacionId = 'Selecciona una propiedad';
+      newErrors.consignacionId = t('inmobiliaria.mantenimiento.errSelectProperty');
     }
     if (!formData.type) {
-      newErrors.type = 'Selecciona el tipo de mantenimiento';
+      newErrors.type = t('inmobiliaria.mantenimiento.errSelectType');
     }
     if (!formData.priority) {
-      newErrors.priority = 'Selecciona la prioridad';
+      newErrors.priority = t('inmobiliaria.mantenimiento.errSelectPriority');
     }
     if (!formData.title.trim()) {
-      newErrors.title = 'El titulo es requerido';
+      newErrors.title = t('inmobiliaria.mantenimiento.errTitleRequired');
     } else if (formData.title.length < 5) {
-      newErrors.title = 'El titulo debe tener al menos 5 caracteres';
+      newErrors.title = t('inmobiliaria.mantenimiento.errTitleMinLength');
     }
     if (!formData.description.trim()) {
-      newErrors.description = 'La descripcion es requerida';
+      newErrors.description = t('inmobiliaria.mantenimiento.errDescRequired');
     } else if (formData.description.length < 20) {
-      newErrors.description = 'La descripcion debe tener al menos 20 caracteres';
+      newErrors.description = t('inmobiliaria.mantenimiento.errDescMinLength');
     }
 
     setErrors(newErrors);
@@ -604,12 +610,13 @@ export function MantenimientoForm({
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
           <HouseLine className="w-5 h-5 text-indigo-500" />
-          Propiedad
+          {t('inmobiliaria.mantenimiento.property')}
         </h3>
         <PropertySelector
           consignaciones={consignaciones}
           selectedId={formData.consignacionId}
           onSelect={(id) => updateField('consignacionId', id)}
+          t={t}
         />
         {touched.consignacionId && errors.consignacionId && (
           <p className="text-sm text-red-500 flex items-center gap-1">
@@ -623,13 +630,14 @@ export function MantenimientoForm({
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
           <Wrench className="w-5 h-5 text-indigo-500" />
-          Detalle de la solicitud
+          {t('inmobiliaria.mantenimiento.requestDetail')}
         </h3>
 
         {/* Type */}
         <TypeSelector
           selected={formData.type}
           onSelect={(type) => updateField('type', type)}
+          t={t}
         />
         {touched.type && errors.type && (
           <p className="text-sm text-red-500 flex items-center gap-1">
@@ -642,6 +650,7 @@ export function MantenimientoForm({
         <PrioritySelector
           selected={formData.priority}
           onSelect={(priority) => updateField('priority', priority)}
+          t={t}
         />
         {touched.priority && errors.priority && (
           <p className="text-sm text-red-500 flex items-center gap-1">
@@ -662,8 +671,8 @@ export function MantenimientoForm({
               <Warning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-700 dark:text-amber-300">
                 {formData.priority === 'emergency'
-                  ? 'Las solicitudes de emergencia se atienden en las proximas 24 horas. Asegurate de que la situacion realmente lo requiera.'
-                  : 'Las solicitudes de alta prioridad se atienden en los proximos 3 dias.'}
+                  ? t('inmobiliaria.mantenimiento.emergencyWarning')
+                  : t('inmobiliaria.mantenimiento.highPriorityWarning')}
               </p>
             </div>
           </motion.div>
@@ -672,14 +681,14 @@ export function MantenimientoForm({
         {/* Title */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Titulo de la solicitud <span className="text-red-500">*</span>
+            {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={formData.title}
             onChange={(e) => updateField('title', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, title: true }))}
-            placeholder="Ej: Fuga de agua en bano principal"
+            placeholder={t('inmobiliaria.mantenimiento.titlePlaceholder')}
             className={cn(
               'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
               touched.title && errors.title
@@ -698,14 +707,14 @@ export function MantenimientoForm({
         {/* Description */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Descripcion del problema <span className="text-red-500">*</span>
+            {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-red-500">*</span>
           </label>
           <textarea
             value={formData.description}
             onChange={(e) => updateField('description', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, description: true }))}
             rows={4}
-            placeholder="Describe detalladamente el problema, cuando inicio y cualquier informacion relevante..."
+            placeholder={t('inmobiliaria.mantenimiento.descriptionPlaceholder')}
             className={cn(
               'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none',
               touched.description && errors.description
@@ -731,6 +740,7 @@ export function MantenimientoForm({
               formData.photoUrls.filter((_, i) => i !== index)
             )
           }
+          t={t}
         />
       </div>
 
@@ -738,12 +748,13 @@ export function MantenimientoForm({
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
           <Wallet className="w-5 h-5 text-indigo-500" />
-          Responsabilidad
+          {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
         <PaidBySelector
           selected={formData.paidBy}
           onSelect={(paidBy) => updateField('paidBy', paidBy)}
+          t={t}
         />
       </div>
 
@@ -751,18 +762,18 @@ export function MantenimientoForm({
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
           <Info className="w-5 h-5 text-indigo-500" />
-          Informacion adicional
+          {t('inmobiliaria.mantenimiento.additionalInfo')}
         </h3>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Instrucciones de acceso (opcional)
+            {t('inmobiliaria.mantenimiento.accessInstructions')}
           </label>
           <textarea
             value={formData.accessNotes}
             onChange={(e) => updateField('accessNotes', e.target.value)}
             rows={3}
-            placeholder="Indicaciones para el tecnico: horarios de acceso, codigo porteria, mascotas, etc."
+            placeholder={t('inmobiliaria.mantenimiento.accessPlaceholder')}
             className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
           />
         </div>
@@ -776,7 +787,7 @@ export function MantenimientoForm({
           disabled={isSubmitting}
           className="px-6 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
         >
-          Cancelar
+          {t('inmobiliaria.mantenimiento.cancel')}
         </button>
         <button
           type="submit"
@@ -786,12 +797,12 @@ export function MantenimientoForm({
           {isSubmitting ? (
             <>
               <SpinnerGap className="w-5 h-5 animate-spin" />
-              Creando...
+              {t('inmobiliaria.mantenimiento.creating')}
             </>
           ) : (
             <>
               <Check className="w-5 h-5" />
-              Crear solicitud
+              {t('inmobiliaria.mantenimiento.createRequest')}
             </>
           )}
         </button>

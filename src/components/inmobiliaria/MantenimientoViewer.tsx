@@ -52,6 +52,7 @@ import {
   Eye,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -101,20 +102,20 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
   other: DotsThreeCircle,
 };
 
-const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; label: string }> = {
-  low: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', label: 'Baja' },
-  medium: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'Media' },
-  high: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', label: 'Alta' },
-  emergency: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'Emergencia' },
+const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
+  low: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  medium: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  high: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
+  emergency: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
-const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; label: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', label: 'Reportada', icon: Note },
-  quoted: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'Cotizada', icon: CurrencyDollar },
-  approved: { bg: 'bg-lime-100 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', label: 'Aprobada', icon: Check },
-  in_progress: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', label: 'En progreso', icon: Play },
-  completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', label: 'Completada', icon: CheckCircle },
-  cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'Cancelada', icon: XCircle },
+const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
+  reported: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
+  quoted: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyDollar },
+  approved: { bg: 'bg-lime-100 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
+  in_progress: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Play },
+  completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
+  cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
 };
 
 const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', 'in_progress', 'completed'];
@@ -123,34 +124,19 @@ const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', '
 // Helper Functions
 // ============================================================================
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+// formatDate and formatDateTime are replaced by fmtDate from useTranslation
 
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
+function generateTimelineFn(
+  solicitud: SolicitudMantenimiento,
+  t: (key: string, params?: Record<string, string | number>) => string
+): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   // Reported event
   events.push({
     id: 'event-reported',
     status: 'reported',
-    title: 'Solicitud reportada',
+    title: t('inmobiliaria.mantenimiento.tlReported'),
     description: solicitud.title,
     date: solicitud.createdAt,
     actor: solicitud.tenantName,
@@ -158,11 +144,11 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
   });
 
   // Quote events
-  solicitud.quotes.forEach((quote, idx) => {
+  solicitud.quotes.forEach((quote) => {
     events.push({
       id: `quote-${quote.id}`,
       status: 'quote_received',
-      title: `Cotizacion recibida`,
+      title: t('inmobiliaria.mantenimiento.tlQuoteReceived'),
       description: `${quote.providerName} - ${formatCurrency(quote.amount)}`,
       date: quote.createdAt,
       isCurrent: false,
@@ -175,10 +161,10 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
       events.push({
         id: 'event-quoted',
         status: 'quoted',
-        title: 'En espera de aprobacion',
+        title: t('inmobiliaria.mantenimiento.tlWaitingApproval'),
         description: solicitud.selectedQuoteId
-          ? `Cotizacion seleccionada: ${solicitud.quotes.find((q) => q.id === solicitud.selectedQuoteId)?.providerName}`
-          : 'Pendiente seleccion de cotizacion',
+          ? `${t('inmobiliaria.mantenimiento.tlSelectedQuote')}: ${solicitud.quotes.find((q) => q.id === solicitud.selectedQuoteId)?.providerName}`
+          : t('inmobiliaria.mantenimiento.tlPendingQuoteSelection'),
         date: solicitud.updatedAt,
         isCurrent: solicitud.status === 'quoted',
       });
@@ -189,8 +175,8 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
     events.push({
       id: 'event-approved',
       status: 'approved',
-      title: 'Cotizacion aprobada',
-      description: solicitud.approvedAmount ? `Monto: ${formatCurrency(solicitud.approvedAmount)}` : undefined,
+      title: t('inmobiliaria.mantenimiento.tlQuoteApproved'),
+      description: solicitud.approvedAmount ? `${t('inmobiliaria.mantenimiento.tlAmount')}: ${formatCurrency(solicitud.approvedAmount)}` : undefined,
       date: solicitud.updatedAt,
       actor: solicitud.propietarioName,
       isCurrent: solicitud.status === 'approved',
@@ -201,8 +187,8 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
     events.push({
       id: 'event-in_progress',
       status: 'in_progress',
-      title: 'Trabajo en progreso',
-      description: 'El proveedor esta ejecutando el trabajo',
+      title: t('inmobiliaria.mantenimiento.tlWorkInProgress'),
+      description: t('inmobiliaria.mantenimiento.tlProviderExecuting'),
       date: solicitud.updatedAt,
       isCurrent: solicitud.status === 'in_progress',
     });
@@ -212,7 +198,7 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
     events.push({
       id: 'event-completed',
       status: 'completed',
-      title: 'Trabajo completado',
+      title: t('inmobiliaria.mantenimiento.tlWorkCompleted'),
       description: solicitud.completionNotes,
       date: solicitud.completedAt || solicitud.updatedAt,
       isCurrent: true,
@@ -223,7 +209,7 @@ function generateTimeline(solicitud: SolicitudMantenimiento): TimelineEvent[] {
     events.push({
       id: 'event-cancelled',
       status: 'cancelled',
-      title: 'Solicitud cancelada',
+      title: t('inmobiliaria.mantenimiento.tlRequestCancelled'),
       date: solicitud.updatedAt,
       isCurrent: true,
     });
@@ -242,11 +228,13 @@ function PhotoGallery({
   label,
   emptyLabel,
   onUpload,
+  t,
 }: {
   photos?: string[];
   label: string;
   emptyLabel: string;
   onUpload?: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
@@ -261,7 +249,7 @@ function PhotoGallery({
             className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
           >
             <Upload className="w-4 h-4" />
-            Subir fotos
+            {t('inmobiliaria.mantenimiento.uploadPhotos')}
           </button>
         )}
       </div>
@@ -303,7 +291,7 @@ function PhotoGallery({
 // Timeline Component
 // ============================================================================
 
-function Timeline({ events }: { events: TimelineEvent[] }) {
+function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: string) => string }) {
   return (
     <div className="space-y-1">
       {events.map((event, idx) => {
@@ -359,7 +347,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
                 <p className="text-sm text-muted-foreground mt-0.5">{event.description}</p>
               )}
               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                <span>{formatDateTime(event.date)}</span>
+                <span>{fmtDate(event.date)}</span>
                 {event.actor && (
                   <>
                     <span>·</span>
@@ -393,6 +381,7 @@ export function MantenimientoViewer({
   onUploadPhoto,
   onRequestQuote,
 }: MantenimientoViewerProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -405,8 +394,8 @@ export function MantenimientoViewer({
   const priorityStyle = solicitud ? PRIORITY_STYLES[solicitud.priority] : PRIORITY_STYLES.medium;
   const statusStyle = solicitud ? STATUS_STYLES[solicitud.status] : STATUS_STYLES.reported;
   const timeline = useMemo(
-    () => (solicitud ? generateTimeline(solicitud) : []),
-    [solicitud]
+    () => (solicitud ? generateTimelineFn(solicitud, t) : []),
+    [solicitud, t]
   );
 
   // Initialize selected quote from solicitud
@@ -474,7 +463,7 @@ export function MantenimientoViewer({
                   <div>
                     <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {typeInfo?.labelEs} · {formatDate(solicitud.createdAt)}
+                      {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -496,7 +485,7 @@ export function MantenimientoViewer({
                   )}
                 >
                   <statusStyle.icon className="w-3.5 h-3.5" />
-                  {statusStyle.label}
+                  {t(statusStyle.labelKey)}
                 </span>
                 <span
                   className={cn(
@@ -506,7 +495,7 @@ export function MantenimientoViewer({
                   )}
                 >
                   <Warning className="w-3.5 h-3.5" />
-                  Prioridad: {priorityStyle.label}
+                  {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
                 </span>
               </div>
             </SheetHeader>
@@ -518,7 +507,7 @@ export function MantenimientoViewer({
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Buildings className="w-4 h-4" />
-                Propiedad y personas
+                {t('inmobiliaria.mantenimiento.propertyAndPeople')}
               </h4>
               <div className="p-4 rounded-xl border border-border bg-card space-y-3">
                 <div>
@@ -530,11 +519,11 @@ export function MantenimientoViewer({
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Inquilino</p>
+                    <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.tenant')}</p>
                     <p className="font-medium text-foreground">{solicitud.tenantName}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Propietario</p>
+                    <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.owner')}</p>
                     <p className="font-medium text-foreground">{solicitud.propietarioName}</p>
                   </div>
                 </div>
@@ -545,7 +534,7 @@ export function MantenimientoViewer({
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                Descripcion
+                {t('inmobiliaria.mantenimiento.descriptionLabel')}
               </h4>
               <p className="text-sm text-muted-foreground">{solicitud.description}</p>
             </div>
@@ -554,12 +543,13 @@ export function MantenimientoViewer({
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Camera className="w-4 h-4" />
-                Fotos (antes)
+                {t('inmobiliaria.mantenimiento.photosBefore')}
               </h4>
               <PhotoGallery
                 photos={solicitud.photoUrls}
                 label=""
-                emptyLabel="Sin fotos del problema"
+                emptyLabel={t('inmobiliaria.mantenimiento.noPhotosProblem')}
+                t={t}
                 onUpload={
                   onUploadPhoto
                     ? () => onUploadPhoto(solicitud.id, 'before', [])
@@ -575,7 +565,7 @@ export function MantenimientoViewer({
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <CurrencyDollar className="w-4 h-4" />
-                  Cotizaciones
+                  {t('inmobiliaria.mantenimiento.quotations')}
                 </h4>
                 <CotizacionComparator
                   solicitud={solicitud}
@@ -593,12 +583,13 @@ export function MantenimientoViewer({
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" />
-                  Fotos (despues)
+                  {t('inmobiliaria.mantenimiento.photosAfter')}
                 </h4>
                 <PhotoGallery
                   photos={solicitud.completionPhotoUrls}
                   label=""
-                  emptyLabel="Sin fotos del trabajo completado"
+                  emptyLabel={t('inmobiliaria.mantenimiento.noPhotosCompleted')}
+                  t={t}
                   onUpload={
                     solicitud.status === 'in_progress' && onUploadPhoto
                       ? () => onUploadPhoto(solicitud.id, 'after', [])
@@ -613,7 +604,7 @@ export function MantenimientoViewer({
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Note className="w-4 h-4" />
-                  Notas de finalizacion
+                  {t('inmobiliaria.mantenimiento.completionNotes')}
                 </h4>
                 <p className="text-sm text-muted-foreground p-3 rounded-lg bg-muted">
                   {solicitud.completionNotes}
@@ -625,9 +616,9 @@ export function MantenimientoViewer({
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                Historial
+                {t('inmobiliaria.mantenimiento.history')}
               </h4>
-              <Timeline events={timeline} />
+              <Timeline events={timeline} fmtDate={fmtDate} />
             </div>
 
             {/* Who Pays */}
@@ -635,7 +626,7 @@ export function MantenimientoViewer({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CurrencyDollar className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Quien paga</span>
+                  <span className="text-sm font-medium text-foreground">{t('inmobiliaria.mantenimiento.whoPays')}</span>
                 </div>
                 <span
                   className={cn(
@@ -650,12 +641,12 @@ export function MantenimientoViewer({
                   )}
                 >
                   {solicitud.paidBy === 'owner'
-                    ? 'Propietario'
+                    ? t('inmobiliaria.mantenimiento.paidByOwner')
                     : solicitud.paidBy === 'tenant'
-                    ? 'Inquilino'
+                    ? t('inmobiliaria.mantenimiento.paidByTenant')
                     : solicitud.paidBy === 'split'
-                    ? 'Compartido'
-                    : 'Inmobiliaria'}
+                    ? t('inmobiliaria.mantenimiento.paidBySplit')
+                    : t('inmobiliaria.mantenimiento.paidByAgency')}
                 </span>
               </div>
             </div>
@@ -671,7 +662,7 @@ export function MantenimientoViewer({
                   className="w-full py-3 px-4 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
                 >
                   <Play className="w-5 h-5" weight="fill" />
-                  Iniciar trabajo
+                  {t('inmobiliaria.mantenimiento.startWork')}
                 </button>
               )}
 
@@ -681,7 +672,7 @@ export function MantenimientoViewer({
                   className="w-full py-3 px-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" weight="fill" />
-                  Marcar completado
+                  {t('inmobiliaria.mantenimiento.markCompleted')}
                 </button>
               )}
 
@@ -692,7 +683,7 @@ export function MantenimientoViewer({
                   className="flex-1 py-2.5 px-4 rounded-lg border border-border hover:bg-muted transition-colors font-medium text-foreground flex items-center justify-center gap-2"
                 >
                   <ChatCircle className="w-4 h-4" />
-                  Agregar nota
+                  {t('inmobiliaria.mantenimiento.addNote')}
                 </button>
                 <button
                   onClick={() => setShowCancelDialog(true)}
@@ -710,15 +701,15 @@ export function MantenimientoViewer({
       <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar nota</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.mantenimiento.addNote')}</DialogTitle>
             <DialogDescription>
-              Agrega una nota o comentario sobre esta solicitud.
+              {t('inmobiliaria.mantenimiento.addNoteDesc')}
             </DialogDescription>
           </DialogHeader>
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Escribe tu nota aqui..."
+            placeholder={t('inmobiliaria.mantenimiento.notePlaceholder')}
             className="w-full min-h-[100px] p-3 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <DialogFooter>
@@ -726,14 +717,14 @@ export function MantenimientoViewer({
               onClick={() => setShowNoteDialog(false)}
               className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors font-medium"
             >
-              Cancelar
+              {t('inmobiliaria.mantenimiento.cancel')}
             </button>
             <button
               onClick={handleAddNote}
               disabled={!noteText.trim()}
               className="px-4 py-2 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Guardar nota
+              {t('inmobiliaria.mantenimiento.saveNote')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -743,10 +734,9 @@ export function MantenimientoViewer({
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancelar solicitud</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.mantenimiento.cancelRequest')}</DialogTitle>
             <DialogDescription>
-              ¿Estas seguro de que deseas cancelar esta solicitud de mantenimiento?
-              Esta accion no se puede deshacer.
+              {t('inmobiliaria.mantenimiento.cancelConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -754,13 +744,13 @@ export function MantenimientoViewer({
               onClick={() => setShowCancelDialog(false)}
               className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors font-medium"
             >
-              No, mantener
+              {t('inmobiliaria.mantenimiento.noKeep')}
             </button>
             <button
               onClick={handleCancel}
               className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
             >
-              Si, cancelar
+              {t('inmobiliaria.mantenimiento.yesCancel')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -770,15 +760,15 @@ export function MantenimientoViewer({
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Marcar como completado</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.mantenimiento.markAsCompleted')}</DialogTitle>
             <DialogDescription>
-              Confirma que el trabajo ha sido completado satisfactoriamente.
+              {t('inmobiliaria.mantenimiento.completeConfirm')}
             </DialogDescription>
           </DialogHeader>
           <textarea
             value={completionNotes}
             onChange={(e) => setCompletionNotes(e.target.value)}
-            placeholder="Notas de finalizacion (opcional)..."
+            placeholder={t('inmobiliaria.mantenimiento.completionNotesPlaceholder')}
             className="w-full min-h-[100px] p-3 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <DialogFooter>
@@ -786,13 +776,13 @@ export function MantenimientoViewer({
               onClick={() => setShowCompleteDialog(false)}
               className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors font-medium"
             >
-              Cancelar
+              {t('inmobiliaria.mantenimiento.cancel')}
             </button>
             <button
               onClick={handleComplete}
               className="px-4 py-2 rounded-lg bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
             >
-              Confirmar completado
+              {t('inmobiliaria.mantenimiento.confirmCompleted')}
             </button>
           </DialogFooter>
         </DialogContent>

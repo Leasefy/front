@@ -18,6 +18,7 @@ import {
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import {
   COLOMBIAN_BANKS,
@@ -32,17 +33,26 @@ interface PropietarioFormProps {
   mode: 'create' | 'edit';
 }
 
-const DOCUMENT_TYPES: { value: DocumentType; label: string; hint: string }[] = [
-  { value: 'CC', label: 'Cédula de Ciudadanía', hint: 'Ej: 80.123.456' },
-  { value: 'CE', label: 'Cédula de Extranjería', hint: 'Ej: 123456' },
-  { value: 'NIT', label: 'NIT (Empresas)', hint: 'Ej: 900.456.789-1' },
-  { value: 'PASSPORT', label: 'Pasaporte', hint: 'Ej: AB123456' },
+const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
+  { value: 'CC', hint: 'Ej: 80.123.456' },
+  { value: 'CE', hint: 'Ej: 123456' },
+  { value: 'NIT', hint: 'Ej: 900.456.789-1' },
+  { value: 'PASSPORT', hint: 'Ej: AB123456' },
 ];
 
-const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'savings', label: 'Ahorros' },
-  { value: 'checking', label: 'Corriente' },
-];
+const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
+  CC: 'inmobiliaria.propietario.form.docCC',
+  CE: 'inmobiliaria.propietario.form.docCE',
+  NIT: 'inmobiliaria.propietario.form.docNIT',
+  PASSPORT: 'inmobiliaria.propietario.form.docPassport',
+};
+
+const ACCOUNT_TYPE_VALUES: AccountType[] = ['savings', 'checking'];
+
+const ACCOUNT_TYPE_LABEL_KEYS: Record<AccountType, string> = {
+  savings: 'inmobiliaria.propietario.form.savings',
+  checking: 'inmobiliaria.propietario.form.checking',
+};
 
 /**
  * InputWrapper - Reusable wrapper for form fields
@@ -90,6 +100,7 @@ export function PropietarioForm({
   onCancel,
   mode,
 }: PropietarioFormProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -132,49 +143,49 @@ export function PropietarioForm({
 
     // Required fields
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
+      newErrors.name = t('inmobiliaria.propietario.form.errNameRequired');
     } else if (formData.name.length < 3) {
-      newErrors.name = 'El nombre debe tener al menos 3 caracteres';
+      newErrors.name = t('inmobiliaria.propietario.form.errNameMin');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido';
+      newErrors.email = t('inmobiliaria.propietario.form.errEmailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = t('inmobiliaria.propietario.form.errEmailInvalid');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'El teléfono es requerido';
+      newErrors.phone = t('inmobiliaria.propietario.form.errPhoneRequired');
     } else if (!/^\+?[0-9\s-]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Teléfono inválido';
+      newErrors.phone = t('inmobiliaria.propietario.form.errPhoneInvalid');
     }
 
     if (!formData.documentNumber.trim()) {
-      newErrors.documentNumber = 'El documento es requerido';
+      newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
     } else {
       // Document-specific validation
       if (formData.documentType === 'CC' && !/^[0-9.]{6,12}$/.test(formData.documentNumber.replace(/\./g, ''))) {
-        newErrors.documentNumber = 'Cédula inválida (6-12 dígitos)';
+        newErrors.documentNumber = t('inmobiliaria.propietario.form.errCCInvalid');
       }
       if (formData.documentType === 'NIT' && !/^[0-9.-]{9,15}$/.test(formData.documentNumber)) {
-        newErrors.documentNumber = 'NIT inválido';
+        newErrors.documentNumber = t('inmobiliaria.propietario.form.errNITInvalid');
       }
     }
 
     // Bank account validation
     if (!formData.bankCode) {
-      newErrors.bankCode = 'Selecciona un banco';
+      newErrors.bankCode = t('inmobiliaria.propietario.form.errBankRequired');
     }
     if (!formData.accountType) {
-      newErrors.accountType = 'Selecciona tipo de cuenta';
+      newErrors.accountType = t('inmobiliaria.propietario.form.errAccountTypeRequired');
     }
     if (!formData.accountNumber.trim()) {
-      newErrors.accountNumber = 'Número de cuenta requerido';
+      newErrors.accountNumber = t('inmobiliaria.propietario.form.errAccountNumRequired');
     } else if (!/^[0-9]{10,20}$/.test(formData.accountNumber.replace(/[.\s-]/g, ''))) {
-      newErrors.accountNumber = 'Número de cuenta inválido (10-20 dígitos)';
+      newErrors.accountNumber = t('inmobiliaria.propietario.form.errAccountNumInvalid');
     }
     if (!formData.accountHolder.trim()) {
-      newErrors.accountHolder = 'Nombre del titular requerido';
+      newErrors.accountHolder = t('inmobiliaria.propietario.form.errHolderRequired');
     }
 
     setErrors(newErrors);
@@ -215,22 +226,22 @@ export function PropietarioForm({
             <User className="w-5 h-5 text-indigo-500" />
           )}
           <h3 className="font-semibold">
-            {isCompany ? 'Información de la empresa' : 'Información personal'}
+            {isCompany ? t('inmobiliaria.propietario.form.companyInfo') : t('inmobiliaria.propietario.form.personalInfo')}
           </h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type */}
-          <InputWrapper label="Tipo de documento" required>
+          <InputWrapper label={t('inmobiliaria.propietario.form.documentType')} required>
             <div className="relative">
               <select
                 value={formData.documentType}
                 onChange={(e) => updateField('documentType', e.target.value as DocumentType)}
                 className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               >
-                {DOCUMENT_TYPES.map((type) => (
+                {DOCUMENT_TYPE_VALUES.map((type) => (
                   <option key={type.value} value={type.value}>
-                    {type.label}
+                    {t(DOCUMENT_TYPE_LABEL_KEYS[type.value])}
                   </option>
                 ))}
               </select>
@@ -240,10 +251,10 @@ export function PropietarioForm({
 
           {/* Document Number */}
           <InputWrapper
-            label={formData.documentType === 'NIT' ? 'NIT' : 'Número de documento'}
+            label={formData.documentType === 'NIT' ? 'NIT' : t('inmobiliaria.propietario.form.documentNumber')}
             required
             error={touched.documentNumber ? errors.documentNumber : undefined}
-            hint={DOCUMENT_TYPES.find((t) => t.value === formData.documentType)?.hint}
+            hint={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
           >
             <div className="relative">
               <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -252,7 +263,7 @@ export function PropietarioForm({
                 value={formData.documentNumber}
                 onChange={(e) => updateField('documentNumber', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, documentNumber: true }))}
-                placeholder={DOCUMENT_TYPES.find((t) => t.value === formData.documentType)?.hint}
+                placeholder={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
                 className={cn(
                   'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                   touched.documentNumber && errors.documentNumber
@@ -266,7 +277,7 @@ export function PropietarioForm({
 
         {/* Name */}
         <InputWrapper
-          label={isCompany ? 'Razón social' : 'Nombre completo'}
+          label={isCompany ? t('inmobiliaria.propietario.form.businessName') : t('inmobiliaria.propietario.form.fullName')}
           required
           error={touched.name ? errors.name : undefined}
         >
@@ -319,7 +330,7 @@ export function PropietarioForm({
 
           {/* Phone */}
           <InputWrapper
-            label="Teléfono"
+            label={t('inmobiliaria.propietario.form.phone')}
             required
             error={touched.phone ? errors.phone : undefined}
           >
@@ -344,7 +355,7 @@ export function PropietarioForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Address */}
-          <InputWrapper label="Dirección" hint="Opcional">
+          <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
               <input
@@ -358,7 +369,7 @@ export function PropietarioForm({
           </InputWrapper>
 
           {/* City */}
-          <InputWrapper label="Ciudad" hint="Opcional">
+          <InputWrapper label={t('inmobiliaria.propietario.form.city')} hint={t('inmobiliaria.propietario.form.optional')}>
             <input
               type="text"
               value={formData.city}
@@ -374,14 +385,14 @@ export function PropietarioForm({
       <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
           <Bank className="w-5 h-5 text-emerald-500" />
-          <h3 className="font-semibold">Datos bancarios para dispersiones</h3>
+          <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>
 
         <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
           <div className="flex gap-3">
             <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              Estos datos se usarán para transferir el canon mensual al propietario, después de descontar la comisión de administración.
+              {t('inmobiliaria.propietario.form.bankDataInfo')}
             </p>
           </div>
         </div>
@@ -389,7 +400,7 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Bank */}
           <InputWrapper
-            label="Banco"
+            label={t('inmobiliaria.propietario.form.bank')}
             required
             error={touched.bankCode ? errors.bankCode : undefined}
           >
@@ -406,7 +417,7 @@ export function PropietarioForm({
                     : 'border-neutral-200 dark:border-neutral-700'
                 )}
               >
-                <option value="">Seleccionar banco...</option>
+                <option value="">{t('inmobiliaria.propietario.form.selectBank')}</option>
                 {COLOMBIAN_BANKS.map((bank) => (
                   <option key={bank.code} value={bank.code}>
                     {bank.name}
@@ -419,24 +430,24 @@ export function PropietarioForm({
 
           {/* Account Type */}
           <InputWrapper
-            label="Tipo de cuenta"
+            label={t('inmobiliaria.propietario.form.accountType')}
             required
             error={touched.accountType ? errors.accountType : undefined}
           >
             <div className="flex gap-3">
-              {ACCOUNT_TYPES.map((type) => (
+              {ACCOUNT_TYPE_VALUES.map((accType) => (
                 <button
-                  key={type.value}
+                  key={accType}
                   type="button"
-                  onClick={() => updateField('accountType', type.value)}
+                  onClick={() => updateField('accountType', accType)}
                   className={cn(
                     'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all',
-                    formData.accountType === type.value
+                    formData.accountType === accType
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
                       : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
                   )}
                 >
-                  {type.label}
+                  {t(ACCOUNT_TYPE_LABEL_KEYS[accType])}
                 </button>
               ))}
             </div>
@@ -445,10 +456,10 @@ export function PropietarioForm({
 
         {/* Account Number */}
         <InputWrapper
-          label="Número de cuenta"
+          label={t('inmobiliaria.propietario.form.accountNumber')}
           required
           error={touched.accountNumber ? errors.accountNumber : undefined}
-          hint="Solo dígitos, sin puntos ni guiones"
+          hint={t('inmobiliaria.propietario.form.hintDigitsOnly')}
         >
           <input
             type="text"
@@ -468,10 +479,10 @@ export function PropietarioForm({
 
         {/* Account Holder */}
         <InputWrapper
-          label="Titular de la cuenta"
+          label={t('inmobiliaria.propietario.form.accountHolder')}
           required
           error={touched.accountHolder ? errors.accountHolder : undefined}
-          hint="Debe coincidir con el nombre registrado en el banco"
+          hint={t('inmobiliaria.propietario.form.hintMatchBank')}
         >
           <input
             type="text"
@@ -491,7 +502,7 @@ export function PropietarioForm({
 
       {/* Notes */}
       <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <InputWrapper label="Notas internas" hint="Solo visible para el equipo">
+        <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
           <textarea
             value={formData.notes}
             onChange={(e) => updateField('notes', e.target.value)}
@@ -510,7 +521,7 @@ export function PropietarioForm({
           disabled={isSubmitting}
           className="px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
         >
-          Cancelar
+          {t('inmobiliaria.propietario.form.cancel')}
         </button>
         <button
           type="submit"
@@ -520,12 +531,12 @@ export function PropietarioForm({
           {isSubmitting ? (
             <>
               <SpinnerGap className="w-4 h-4 animate-spin" />
-              Guardando...
+              {t('inmobiliaria.propietario.form.saving')}
             </>
           ) : (
             <>
               <Check className="w-4 h-4" />
-              {mode === 'create' ? 'Crear propietario' : 'Guardar cambios'}
+              {mode === 'create' ? t('inmobiliaria.propietario.form.createOwner') : t('inmobiliaria.propietario.form.saveChanges')}
             </>
           )}
         </button>

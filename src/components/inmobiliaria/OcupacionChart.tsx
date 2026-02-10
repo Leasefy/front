@@ -14,6 +14,7 @@ import {
   ListBullets,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { OcupacionReport, OcupacionZone } from '@/lib/types/inmobiliaria';
 
 interface OcupacionChartProps {
@@ -29,10 +30,12 @@ function DonutChart({
   percentage,
   size = 180,
   strokeWidth = 18,
+  label,
 }: {
   percentage: number;
   size?: number;
   strokeWidth?: number;
+  label: string;
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -77,7 +80,7 @@ function DonutChart({
         <span className="text-3xl font-bold text-neutral-900 dark:text-white">
           {Math.round(percentage)}%
         </span>
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">Ocupacion</span>
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">{label}</span>
       </div>
     </div>
   );
@@ -86,7 +89,7 @@ function DonutChart({
 /**
  * Horizontal stacked bar for zone breakdown
  */
-function ZoneBar({ zone }: { zone: OcupacionZone }) {
+function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string }) {
   const occupiedPercent = (zone.occupied / zone.totalProperties) * 100;
   const inProcessPercent = (zone.inProcess / zone.totalProperties) * 100;
   const availablePercent = (zone.available / zone.totalProperties) * 100;
@@ -96,7 +99,7 @@ function ZoneBar({ zone }: { zone: OcupacionZone }) {
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-neutral-900 dark:text-white">{zone.zone}</span>
         <span className="text-sm text-neutral-500 dark:text-neutral-400">
-          {Math.round(zone.occupancyRate)}% ocupado
+          {Math.round(zone.occupancyRate)}% {t('inmobiliaria.finance.occupancy.occupied')}
         </span>
       </div>
       <div className="h-3 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex">
@@ -128,15 +131,15 @@ function ZoneBar({ zone }: { zone: OcupacionZone }) {
       <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
         <span>
           <span className="font-medium text-emerald-600 dark:text-emerald-400">{zone.occupied}</span>{' '}
-          ocupadas
+          {t('inmobiliaria.finance.occupancy.occupiedPlural')}
         </span>
         <span>
           <span className="font-medium text-blue-600 dark:text-blue-400">{zone.inProcess}</span>{' '}
-          en proceso
+          {t('inmobiliaria.finance.occupancy.inProcess')}
         </span>
         <span>
           <span className="font-medium text-neutral-600 dark:text-neutral-300">{zone.available}</span>{' '}
-          disponibles
+          {t('inmobiliaria.finance.occupancy.available')}
         </span>
       </div>
     </div>
@@ -146,7 +149,7 @@ function ZoneBar({ zone }: { zone: OcupacionZone }) {
 /**
  * Zone card for card view
  */
-function ZoneCard({ zone }: { zone: OcupacionZone }) {
+function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -185,15 +188,15 @@ function ZoneCard({ zone }: { zone: OcupacionZone }) {
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div>
           <p className="font-bold text-emerald-600 dark:text-emerald-400">{zone.occupied}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">Ocupadas</p>
+          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
         </div>
         <div>
           <p className="font-bold text-blue-600 dark:text-blue-400">{zone.inProcess}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">En proceso</p>
+          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
         </div>
         <div>
           <p className="font-bold text-neutral-600 dark:text-neutral-300">{zone.available}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">Disponibles</p>
+          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</p>
         </div>
       </div>
     </motion.div>
@@ -205,6 +208,7 @@ function ZoneCard({ zone }: { zone: OcupacionZone }) {
  * Shows overall occupancy donut chart and zone breakdown
  */
 export function OcupacionChart({ data, variant = 'chart', className }: OcupacionChartProps) {
+  const { t } = useTranslation();
   const [viewVariant, setViewVariant] = useState<'chart' | 'cards'>(variant);
 
   // Calculate trend
@@ -226,10 +230,10 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Ocupacion por Zona
+              {t('inmobiliaria.finance.occupancy.occupancyByZone')}
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Distribucion de propiedades en el portafolio
+              {t('inmobiliaria.finance.occupancy.portfolioDistribution')}
             </p>
           </div>
         </div>
@@ -246,7 +250,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             )}
           >
             <ListBullets className="w-4 h-4" />
-            Barras
+            {t('inmobiliaria.finance.occupancy.bars')}
           </button>
           <button
             onClick={() => setViewVariant('cards')}
@@ -258,7 +262,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             )}
           >
             <SquaresFour className="w-4 h-4" />
-            Tarjetas
+            {t('inmobiliaria.finance.occupancy.cards')}
           </button>
         </div>
       </div>
@@ -267,7 +271,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Donut Chart */}
         <div className="lg:col-span-1 flex flex-col items-center justify-center p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <DonutChart percentage={data.overallOccupancyRate} />
+          <DonutChart percentage={data.overallOccupancyRate} label={t('inmobiliaria.finance.occupancy.occupancy')} />
 
           {/* Trend indicator */}
           {trend && (
@@ -282,9 +286,9 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               {trend.type === 'up' && <TrendUp className="w-4 h-4" weight="bold" />}
               {trend.type === 'down' && <TrendDown className="w-4 h-4" weight="bold" />}
               {trend.type === 'stable' && <Minus className="w-4 h-4" weight="bold" />}
-              {trend.type === 'up' && `+${trend.diff}% vs mes anterior`}
-              {trend.type === 'down' && `-${trend.diff}% vs mes anterior`}
-              {trend.type === 'stable' && 'Sin cambio vs mes anterior'}
+              {trend.type === 'up' && `+${trend.diff}% ${t('inmobiliaria.finance.occupancy.vsPrevMonth')}`}
+              {trend.type === 'down' && `-${trend.diff}% ${t('inmobiliaria.finance.occupancy.vsPrevMonth')}`}
+              {trend.type === 'stable' && t('inmobiliaria.finance.occupancy.noChange')}
             </div>
           )}
 
@@ -292,12 +296,12 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
           <div className="flex items-center justify-center gap-6 mt-4 text-sm">
             <div className="text-center">
               <p className="font-bold text-emerald-600 dark:text-emerald-400">{data.totalOccupied}</p>
-              <p className="text-neutral-500 dark:text-neutral-400">Ocupadas</p>
+              <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
             </div>
             <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-700" />
             <div className="text-center">
               <p className="font-bold text-neutral-900 dark:text-white">{data.totalProperties}</p>
-              <p className="text-neutral-500 dark:text-neutral-400">Total</p>
+              <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.total')}</p>
             </div>
           </div>
         </div>
@@ -309,7 +313,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               <Buildings className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{data.totalProperties}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Total Propiedades</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.totalProperties')}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
@@ -317,7 +321,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               <HouseLine className="w-5 h-5 text-emerald-600 dark:text-emerald-400" weight="fill" />
             </div>
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{data.totalOccupied}</p>
-            <p className="text-sm text-emerald-600 dark:text-emerald-500">Ocupadas</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-500">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
@@ -325,7 +329,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               <Hourglass className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{data.totalInProcess}</p>
-            <p className="text-sm text-blue-600 dark:text-blue-500">En Proceso</p>
+            <p className="text-sm text-blue-600 dark:text-blue-500">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
@@ -333,7 +337,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               <Buildings className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
             </div>
             <p className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">{data.totalAvailable}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Disponibles</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</p>
           </div>
         </div>
       </div>
@@ -342,22 +346,22 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
       <div className="flex flex-wrap items-center gap-6 text-sm">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-          <span className="text-neutral-600 dark:text-neutral-400">Ocupado</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupied')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400" />
-          <span className="text-neutral-600 dark:text-neutral-400">En proceso</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.inProcess')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-          <span className="text-neutral-600 dark:text-neutral-400">Disponible</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</span>
         </div>
       </div>
 
       {/* Zone Breakdown */}
       {viewVariant === 'chart' ? (
         <div className="space-y-6 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Desglose por Zona</h3>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.finance.occupancy.breakdownByZone')}</h3>
           <div className="space-y-6">
             {data.zones.map((zone, index) => (
               <motion.div
@@ -366,7 +370,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <ZoneBar zone={zone} />
+                <ZoneBar zone={zone} t={t} />
               </motion.div>
             ))}
           </div>
@@ -380,7 +384,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <ZoneCard zone={zone} />
+              <ZoneCard zone={zone} t={t} />
             </motion.div>
           ))}
         </div>

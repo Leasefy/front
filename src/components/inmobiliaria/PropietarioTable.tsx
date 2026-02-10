@@ -21,6 +21,7 @@ import {
   Export,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -46,6 +47,7 @@ export function PropietarioTable({
   onDelete,
   onExport,
 }: PropietarioTableProps) {
+  const { t, locale } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -124,7 +126,7 @@ export function PropietarioTable({
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Buscar por nombre, email, documento..."
+              placeholder={t('inmobiliaria.propietario.table.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -146,7 +148,7 @@ export function PropietarioTable({
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-all font-medium"
             >
               <Export className="w-4 h-4" />
-              <span className="text-sm">Exportar</span>
+              <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
             </button>
           )}
         </div>
@@ -156,9 +158,9 @@ export function PropietarioTable({
           {/* Type Filter Tabs */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
             {[
-              { value: 'all', label: 'Todos' },
-              { value: 'person', label: 'Persona' },
-              { value: 'company', label: 'Empresa' },
+              { value: 'all', label: t('inmobiliaria.propietario.table.all') },
+              { value: 'person', label: t('inmobiliaria.propietario.table.person') },
+              { value: 'company', label: t('inmobiliaria.propietario.table.company') },
             ].map((option) => (
               <button
                 key={option.value}
@@ -189,7 +191,7 @@ export function PropietarioTable({
             )}
           >
             <Warning className="w-4 h-4" />
-            Con saldo pendiente
+            {t('inmobiliaria.propietario.table.withPendingBalance')}
           </button>
 
           {/* Clear Filters */}
@@ -202,14 +204,14 @@ export function PropietarioTable({
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
             >
               <Funnel className="w-4 h-4" weight="fill" />
-              Limpiar
+              {t('inmobiliaria.propietario.table.clear')}
               <X className="w-3.5 h-3.5" />
             </button>
           )}
 
           {/* Results Count */}
           <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-            {filteredPropietarios.length} de {propietarios.length}
+            {filteredPropietarios.length} {t('inmobiliaria.propietario.table.of')} {propietarios.length}
           </span>
         </div>
       </div>
@@ -224,7 +226,7 @@ export function PropietarioTable({
                   onClick={() => handleSort('name')}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
                 >
-                  Propietario
+                  {t('inmobiliaria.propietario.table.owner')}
                   {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
                 </button>
               </th>
@@ -233,7 +235,7 @@ export function PropietarioTable({
                   onClick={() => handleSort('propertyCount')}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
                 >
-                  Propiedades
+                  {t('inmobiliaria.propietario.table.properties')}
                   {sortField === 'propertyCount' && <SortIcon className="w-3.5 h-3.5" />}
                 </button>
               </th>
@@ -242,7 +244,7 @@ export function PropietarioTable({
                   onClick={() => handleSort('totalMonthlyRent')}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
                 >
-                  Canon mensual
+                  {t('inmobiliaria.propietario.table.monthlyRent')}
                   {sortField === 'totalMonthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
                 </button>
               </th>
@@ -251,7 +253,7 @@ export function PropietarioTable({
                   onClick={() => handleSort('pendingBalance')}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
                 >
-                  Pendiente
+                  {t('inmobiliaria.propietario.table.pending')}
                   {sortField === 'pendingBalance' && <SortIcon className="w-3.5 h-3.5" />}
                 </button>
               </th>
@@ -260,7 +262,7 @@ export function PropietarioTable({
                   onClick={() => handleSort('lastPaymentDate')}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
                 >
-                  Último pago
+                  {t('inmobiliaria.propietario.table.lastPayment')}
                   {sortField === 'lastPaymentDate' && <SortIcon className="w-3.5 h-3.5" />}
                 </button>
               </th>
@@ -312,7 +314,7 @@ export function PropietarioTable({
                         {propietario.propertyCount}
                       </span>
                       <span className="text-muted-foreground ml-1">
-                        ({propietario.activeLeases} arrendadas)
+                        ({propietario.activeLeases} {t('inmobiliaria.propietario.table.rented')})
                       </span>
                     </div>
                   </td>
@@ -333,7 +335,7 @@ export function PropietarioTable({
                       </span>
                     ) : (
                       <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">
-                        Al día
+                        {t('inmobiliaria.propietario.table.upToDate')}
                       </span>
                     )}
                   </td>
@@ -342,7 +344,7 @@ export function PropietarioTable({
                   <td className="p-4">
                     <span className="text-muted-foreground text-sm tabular-nums">
                       {propietario.lastPaymentDate
-                        ? new Date(propietario.lastPaymentDate).toLocaleDateString('es-CO', {
+                        ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',
@@ -381,7 +383,7 @@ export function PropietarioTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Eye className="w-4 h-4" />
-                              <span className="text-sm">Ver detalle</span>
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -392,7 +394,7 @@ export function PropietarioTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <PencilSimple className="w-4 h-4" />
-                              <span className="text-sm">Editar</span>
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
                             </button>
                             <a
                               href={`mailto:${propietario.email}`}
@@ -400,7 +402,7 @@ export function PropietarioTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Envelope className="w-4 h-4" />
-                              <span className="text-sm">Enviar email</span>
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
                             </a>
                             <a
                               href={`tel:${propietario.phone}`}
@@ -408,7 +410,7 @@ export function PropietarioTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Phone className="w-4 h-4" />
-                              <span className="text-sm">Llamar</span>
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
                             </a>
                             <div className="h-px bg-border my-1" />
                             <button
@@ -420,7 +422,7 @@ export function PropietarioTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             >
                               <TrashSimple className="w-4 h-4" />
-                              <span className="text-sm">Eliminar</span>
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>
                             </button>
                           </motion.div>
                         )}
@@ -440,12 +442,12 @@ export function PropietarioTable({
               <User className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-1">
-              No se encontraron propietarios
+              {t('inmobiliaria.propietario.table.noResults')}
             </h3>
             <p className="text-muted-foreground">
               {searchQuery
-                ? 'Intenta con otros términos de búsqueda'
-                : 'Agrega tu primer propietario para comenzar'}
+                ? t('inmobiliaria.propietario.table.tryOtherTerms')
+                : t('inmobiliaria.propietario.table.addFirstOwner')}
             </p>
           </div>
         )}

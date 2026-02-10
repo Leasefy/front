@@ -10,8 +10,8 @@ import {
   getPaymentsForLease,
   getLandlordStats,
 } from '@/lib/data/mock-leases';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs
@@ -38,7 +38,7 @@ interface StatsCardProps {
 
 function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorClass }: StatsCardProps) {
   return (
-    <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+    <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
       <div className="flex items-start gap-4">
         <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', iconBgClass)}>
           <Icon className={cn('w-5 h-5', iconColorClass)} />
@@ -87,6 +87,7 @@ export default function LandlordLeasesPage() {
   const landlordId = 'landlord-001';
   const leases = getLeasesForLandlord(landlordId);
   const stats = getLandlordStats(landlordId);
+  const { t, formatCurrency } = useTranslation();
 
   const [activeTab, setActiveTab] = useState('all');
 
@@ -123,11 +124,11 @@ export default function LandlordLeasesPage() {
   }), [leases, leasePaymentStatus]);
 
   const tabs: TabConfig[] = [
-    { id: 'all', label: 'Todos', count: counts.all },
-    { id: 'active', label: 'Activos', count: counts.active },
-    { id: 'ending_soon', label: 'Vencen pronto', count: counts.endingSoon },
-    { id: 'pending', label: 'Pagos pendientes', count: counts.pending },
-    { id: 'late', label: 'Pagos atrasados', count: counts.late },
+    { id: 'all', label: t('landlord.leases.tabAll'), count: counts.all },
+    { id: 'active', label: t('landlord.leases.tabActive'), count: counts.active },
+    { id: 'ending_soon', label: t('landlord.leases.tabEndingSoon'), count: counts.endingSoon },
+    { id: 'pending', label: t('landlord.leases.tabPendingPayments'), count: counts.pending },
+    { id: 'late', label: t('landlord.leases.tabLatePayments'), count: counts.late },
   ];
 
   // Calculate collection rate
@@ -142,43 +143,43 @@ export default function LandlordLeasesPage() {
         {/* Header */}
         <header className="mb-8">
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-            Arriendos Activos
+            {t('landlord.leases.title')}
           </h1>
           <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-            Gestiona tus propiedades arrendadas y seguimiento de pagos
+            {t('landlord.leases.subtitle')}
           </p>
         </header>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatsCard
-            label="Arriendos activos"
+            label={t('landlord.leases.activeLeases')}
             value={stats.activeLeases}
-            sublabel="Propiedades arrendadas"
+            sublabel={t('landlord.leases.activeLeasesSubLabel')}
             icon={House}
             iconBgClass="bg-neutral-100 dark:bg-neutral-800"
             iconColorClass="text-neutral-600 dark:text-neutral-300"
           />
           <StatsCard
-            label="Ingresos mensuales"
+            label={t('landlord.leases.monthlyIncome')}
             value={formatCurrency(stats.totalMonthlyIncome)}
-            sublabel="Total esperado"
+            sublabel={t('landlord.leases.monthlyIncomeSubLabel')}
             icon={CurrencyDollar}
             iconBgClass="bg-emerald-100 dark:bg-emerald-900/30"
             iconColorClass="text-emerald-600 dark:text-emerald-400"
           />
           <StatsCard
-            label="Pagos pendientes"
+            label={t('landlord.leases.pendingPayments')}
             value={stats.pendingPayments}
-            sublabel="Por recibir"
+            sublabel={t('landlord.leases.pendingPaymentsSubLabel')}
             icon={Clock}
             iconBgClass="bg-amber-100 dark:bg-amber-900/30"
             iconColorClass="text-amber-600 dark:text-amber-400"
           />
           <StatsCard
-            label="Pagos atrasados"
+            label={t('landlord.leases.latePayments')}
             value={stats.latePayments}
-            sublabel={stats.latePayments > 0 ? 'Requieren atención' : 'Todo al día'}
+            sublabel={stats.latePayments > 0 ? t('landlord.leases.latePaymentsSubLabel') : t('landlord.leases.latePaymentsAllGood')}
             icon={WarningCircle}
             iconBgClass={stats.latePayments > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-neutral-100 dark:bg-neutral-800'}
             iconColorClass={stats.latePayments > 0 ? 'text-red-600 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}
@@ -186,25 +187,25 @@ export default function LandlordLeasesPage() {
         </div>
 
         {/* Financial Summary Card */}
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-2xl p-6 mb-8">
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
                   <TrendUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">Resumen financiero</span>
+                <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
               </div>
               <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
                 {formatCurrency(stats.totalMonthlyIncome)}
               </p>
               <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
-                Ingresos mensuales esperados
+                {t('landlord.leases.expectedMonthlyIncome')}
               </p>
             </div>
             <div className="flex-1 max-w-xs">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-neutral-600 dark:text-neutral-400 text-sm">Tasa de cobranza</span>
+                <span className="text-neutral-600 dark:text-neutral-400 text-sm">{t('landlord.leases.collectionRate')}</span>
                 <span className="text-neutral-900 dark:text-white font-semibold">{collectionRate}%</span>
               </div>
               <ProgressBar
@@ -217,17 +218,19 @@ export default function LandlordLeasesPage() {
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl">
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
                 <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  {stats.endingSoon} contrato{stats.endingSoon > 1 ? 's' : ''} próximo{stats.endingSoon > 1 ? 's' : ''} a vencer
+                  {stats.endingSoon > 1
+                    ? t('landlord.leases.endingSoonWarningPlural', { count: stats.endingSoon })
+                    : t('landlord.leases.endingSoonWarning', { count: stats.endingSoon })}
                 </p>
                 <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
-                  Revisa los contratos que terminan pronto para renovar o buscar nuevos inquilinos
+                  {t('landlord.leases.endingSoonDescription')}
                 </p>
               </div>
             </div>
@@ -268,12 +271,12 @@ export default function LandlordLeasesPage() {
         {leases.length === 0 ? (
           <EmptyState
             icon={House}
-            title="No hay arriendos activos"
-            description="Cuando firmes contratos con inquilinos, los arriendos aparecerán aquí."
-            action={{ label: "Ver contratos", href: "/panel/contratos" }}
+            title={t('landlord.leases.emptyTitle')}
+            description={t('landlord.leases.emptyDescription')}
+            action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}
           />
         ) : (
-          <section className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          <section className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
             {filteredLeases.length > 0 ? (
               <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
                 {filteredLeases.map((lease) => (
@@ -290,16 +293,16 @@ export default function LandlordLeasesPage() {
                   <House className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <h3 className="font-medium text-neutral-900 dark:text-white mb-2">
-                  No hay arriendos {tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}
+                  {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
                 </h3>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
-                  No se encontraron arriendos con este filtro
+                  {t('landlord.leases.noFilteredDescription')}
                 </p>
                 <button
                   onClick={() => setActiveTab('all')}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
                 >
-                  Ver todos los arriendos
+                  {t('landlord.leases.viewAllLeases')}
                 </button>
               </div>
             )}

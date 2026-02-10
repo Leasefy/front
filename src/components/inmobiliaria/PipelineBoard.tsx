@@ -27,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
@@ -112,6 +113,7 @@ function DroppableColumn({
   defaultCollapsed = false,
   maxVisibleCards = 3,
 }: DroppableColumnProps) {
+  const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -212,7 +214,7 @@ function DroppableColumn({
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label={isCollapsed ? 'Expandir columna' : 'Colapsar columna'}
+            aria-label={isCollapsed ? t('inmobiliaria.pipeline.expandColumn') : t('inmobiliaria.pipeline.collapseColumn')}
           >
             {isCollapsed ? (
               <CaretDown className="w-4 h-4" />
@@ -253,10 +255,10 @@ function DroppableColumn({
                 >
                   <DotsSixVertical className="w-6 h-6 text-neutral-300 dark:text-neutral-600 mb-2" />
                   <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center">
-                    Sin leads
+                    {t('inmobiliaria.pipeline.noLeads')}
                   </p>
                   <p className="text-[10px] text-neutral-300 dark:text-neutral-600 text-center mt-1">
-                    Arrastra aqui
+                    {t('inmobiliaria.pipeline.dragHere')}
                   </p>
                 </motion.div>
               ) : (
@@ -281,7 +283,7 @@ function DroppableColumn({
                   )}
                 >
                   <p className="text-xs text-indigo-500 dark:text-indigo-400">
-                    Soltar aqui
+                    {t('inmobiliaria.pipeline.dropHere')}
                   </p>
                 </motion.div>
               )}
@@ -301,7 +303,7 @@ function DroppableColumn({
                   )}
                 >
                   <ArrowsOutSimple className="w-4 h-4" />
-                  Ver todo ({items.length})
+                  {t('inmobiliaria.pipeline.viewAll')} ({items.length})
                 </button>
               </div>
             )}
@@ -317,7 +319,7 @@ function DroppableColumn({
           className="p-3 text-center"
         >
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {items.length} {items.length === 1 ? 'lead' : 'leads'}
+            {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
           </p>
         </motion.div>
       )}
@@ -354,14 +356,14 @@ function DroppableColumn({
                     {stageInfo?.labelEs || stage}
                   </h2>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {items.length} {items.length === 1 ? 'lead' : 'leads'}
+                    {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                aria-label="Cerrar"
+                aria-label={t('inmobiliaria.pipeline.close')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -411,6 +413,7 @@ export function PipelineBoard({
   onItemClick,
   onStageChange,
 }: PipelineBoardProps) {
+  const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
@@ -493,7 +496,7 @@ export function PipelineBoard({
       onStageChange(itemId, newStage);
 
       // Show success toast
-      toast.success('Etapa actualizada', {
+      toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
         description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
       });
     },

@@ -10,6 +10,7 @@ import {
 } from '@/lib/data/mock-contracts';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs
@@ -36,7 +37,7 @@ interface StatsCardProps {
 
 function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorClass }: StatsCardProps) {
   return (
-    <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+    <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
       <div className="flex items-start gap-4">
         <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', iconBgClass)}>
           <Icon className={cn('w-5 h-5', iconColorClass)} />
@@ -56,6 +57,7 @@ function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorC
 // ============================================================================
 
 export default function ContratosPage() {
+  const { t } = useTranslation();
   const landlordId = 'landlord-001';
   const allContracts = getContractsForLandlord(landlordId);
   const pendingContracts = getPendingContracts(landlordId);
@@ -77,10 +79,10 @@ export default function ContratosPage() {
 
   // Tabs configuration
   const tabs: TabConfig[] = [
-    { id: 'all', label: 'Todos', count: allContracts.length },
-    { id: 'needs_action', label: 'Requieren firma', count: needsAction.length },
-    { id: 'awaiting', label: 'Esperando inquilino', count: awaitingTenant.length },
-    { id: 'active', label: 'Activos', count: activeContracts.length },
+    { id: 'all', label: t('landlord.contracts.tabAll'), count: allContracts.length },
+    { id: 'needs_action', label: t('landlord.contracts.tabNeedsAction'), count: needsAction.length },
+    { id: 'awaiting', label: t('landlord.contracts.tabAwaiting'), count: awaitingTenant.length },
+    { id: 'active', label: t('landlord.contracts.tabActive'), count: activeContracts.length },
   ];
 
   return (
@@ -90,43 +92,43 @@ export default function ContratosPage() {
         {/* Header */}
         <header className="mb-8">
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-            Contratos
+            {t('landlord.contracts.title')}
           </h1>
           <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-            Gestiona los contratos de tus propiedades
+            {t('landlord.contracts.subtitle')}
           </p>
         </header>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatsCard
-            label="Total contratos"
+            label={t('landlord.contracts.totalContracts')}
             value={allContracts.length}
-            sublabel="En el sistema"
+            sublabel={t('landlord.contracts.inSystem')}
             icon={FileText}
             iconBgClass="bg-neutral-100 dark:bg-neutral-800"
             iconColorClass="text-neutral-600 dark:text-neutral-300"
           />
           <StatsCard
-            label="Por firmar"
+            label={t('landlord.contracts.toSign')}
             value={needsAction.length}
-            sublabel="Requieren tu firma"
+            sublabel={t('landlord.contracts.requireYourSignature')}
             icon={Pen}
             iconBgClass={needsAction.length > 0 ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-neutral-100 dark:bg-neutral-800'}
             iconColorClass={needsAction.length > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-300'}
           />
           <StatsCard
-            label="Esperando"
+            label={t('landlord.contracts.waiting')}
             value={awaitingTenant.length}
-            sublabel="Firma del inquilino"
+            sublabel={t('landlord.contracts.tenantSignature')}
             icon={Clock}
             iconBgClass="bg-amber-100 dark:bg-amber-900/30"
             iconColorClass="text-amber-600 dark:text-amber-400"
           />
           <StatsCard
-            label="Activos"
+            label={t('landlord.contracts.active')}
             value={activeContracts.length}
-            sublabel="Contratos vigentes"
+            sublabel={t('landlord.contracts.currentContracts')}
             icon={CheckCircle}
             iconBgClass="bg-emerald-100 dark:bg-emerald-900/30"
             iconColorClass="text-emerald-600 dark:text-emerald-400"
@@ -135,17 +137,19 @@ export default function ContratosPage() {
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl">
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
                 <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  {needsAction.length} contrato{needsAction.length > 1 ? 's' : ''} requiere{needsAction.length > 1 ? 'n' : ''} tu firma
+                  {needsAction.length > 1
+                    ? t('landlord.contracts.urgentBannerPlural', { count: needsAction.length })
+                    : t('landlord.contracts.urgentBannerSingular', { count: needsAction.length })}
                 </p>
                 <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
-                  Haz clic en un contrato para revisar y firmar
+                  {t('landlord.contracts.urgentBannerHint')}
                 </p>
               </div>
             </div>
@@ -183,7 +187,7 @@ export default function ContratosPage() {
         </div>
 
         {/* Contracts List */}
-        <section className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+        <section className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           {filteredContracts.length > 0 ? (
             <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
               {filteredContracts.map((contract) => (
@@ -194,9 +198,9 @@ export default function ContratosPage() {
             <div className="p-6">
               <EmptyState
                 icon={FileText}
-                title="No hay contratos"
-                description="Cuando apruebes candidatos y generes contratos, aparecerán aquí."
-                action={{ label: "Ver candidatos", href: "/panel/candidatos" }}
+                title={t('landlord.contracts.emptyTitle')}
+                description={t('landlord.contracts.emptyDescription')}
+                action={{ label: t('landlord.contracts.emptyAction'), href: "/panel/candidatos" }}
               />
             </div>
           )}

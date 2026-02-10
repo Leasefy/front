@@ -17,11 +17,10 @@ import {
   DownloadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import {
-  formatCurrency,
   getDispersionStatusColor,
-  getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
 
 type SortField =
@@ -44,14 +43,7 @@ interface DispersionTableProps {
   showSummary?: boolean;
 }
 
-/**
- * Format month string (2026-02) to Spanish display (Feb 2026)
- */
-function formatMonth(month: string): string {
-  const [year, monthNum] = month.split('-');
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
-}
+// formatMonth removed - now uses i18n formatDate
 
 /**
  * DispersionTable - Data table for dispersiones (disbursements)
@@ -66,6 +58,7 @@ export function DispersionTable({
   onDownloadExtracto,
   showSummary = false,
 }: DispersionTableProps) {
+  const { t, formatDate, formatCurrency } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -190,21 +183,21 @@ export function DispersionTable({
       <table className="w-full min-w-[1000px]">
         <thead>
           <tr className="border-b border-border">
-            <SortableHeader field="propietarioName">Propietario</SortableHeader>
-            <SortableHeader field="month">Mes</SortableHeader>
-            <SortableHeader field="properties">Propiedades</SortableHeader>
-            <SortableHeader field="totalCollected">Recaudado</SortableHeader>
-            <SortableHeader field="totalCommission">Comisión</SortableHeader>
-            <SortableHeader field="netToPropietario">Neto</SortableHeader>
-            <SortableHeader field="status">Estado</SortableHeader>
-            <SortableHeader field="processedAt">Fecha Pago</SortableHeader>
+            <SortableHeader field="propietarioName">{t('inmobiliaria.dispersiones.tableView.propietario')}</SortableHeader>
+            <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>
+            <SortableHeader field="properties">{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
+            <SortableHeader field="totalCollected">{t('inmobiliaria.dispersiones.tableView.collected')}</SortableHeader>
+            <SortableHeader field="totalCommission">{t('inmobiliaria.dispersiones.tableView.commission')}</SortableHeader>
+            <SortableHeader field="netToPropietario">{t('inmobiliaria.dispersiones.tableView.net')}</SortableHeader>
+            <SortableHeader field="status">{t('inmobiliaria.dispersiones.tableView.status')}</SortableHeader>
+            <SortableHeader field="processedAt">{t('inmobiliaria.dispersiones.tableView.paymentDate')}</SortableHeader>
             <th className="w-12 p-4"></th>
           </tr>
         </thead>
         <tbody>
           {sortedDispersiones.map((dispersion, index) => {
             const statusColor = getDispersionStatusColor(dispersion.status);
-            const statusLabel = getDispersionStatusLabel(dispersion.status);
+            const statusLabel = t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`);
 
             return (
               <motion.tr
@@ -241,7 +234,7 @@ export function DispersionTable({
                 {/* Month */}
                 <td className="p-4">
                   <span className="text-foreground capitalize">
-                    {formatMonth(dispersion.month)}
+                    {formatDate(dispersion.month + '-01', { month: 'short', year: 'numeric' })}
                   </span>
                 </td>
 
@@ -294,19 +287,16 @@ export function DispersionTable({
                     <div className="flex items-center gap-1.5 text-foreground">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                       <span className="text-sm tabular-nums">
-                        {new Date(dispersion.processedAt).toLocaleDateString(
-                          'es-CO',
-                          {
-                            day: 'numeric',
-                            month: 'short',
-                          }
-                        )}
+                        {formatDate(dispersion.processedAt, {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
                       </span>
                     </div>
                   ) : dispersion.status === 'failed' ? (
                     <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
                       <Warning className="w-4 h-4" weight="fill" />
-                      <span className="text-sm">Error</span>
+                      <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.error')}</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground">
@@ -350,7 +340,7 @@ export function DispersionTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            <span className="text-sm">Ver detalle</span>
+                            <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.viewDetail')}</span>
                           </button>
 
                           {dispersion.status === 'pending' && onProcess && (
@@ -363,7 +353,7 @@ export function DispersionTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                             >
                               <PaperPlaneTilt className="w-4 h-4" />
-                              <span className="text-sm">Procesar</span>
+                              <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.process')}</span>
                             </button>
                           )}
 
@@ -377,7 +367,7 @@ export function DispersionTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                             >
                               <ArrowsClockwise className="w-4 h-4" />
-                              <span className="text-sm">Reintentar</span>
+                              <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.retry')}</span>
                             </button>
                           )}
 
@@ -392,7 +382,7 @@ export function DispersionTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                               >
                                 <DownloadSimple className="w-4 h-4" />
-                                <span className="text-sm">Descargar extracto</span>
+                                <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.downloadExtracto')}</span>
                               </button>
                             )}
                         </motion.div>
@@ -412,27 +402,27 @@ export function DispersionTable({
               <td colSpan={3} className="p-4">
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-foreground">
-                    Total ({dispersiones.length} dispersiones)
+                    {t('inmobiliaria.dispersiones.tableView.totalCount', { count: dispersiones.length })}
                   </span>
                   <div className="flex items-center gap-3 text-xs">
                     {summary.pending > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 tabular-nums">
-                        {summary.pending} pend.
+                        {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
                       </span>
                     )}
                     {summary.processing > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 tabular-nums">
-                        {summary.processing} proc.
+                        {t('inmobiliaria.dispersiones.tableView.processingAbbr', { count: summary.processing })}
                       </span>
                     )}
                     {summary.completed > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-muted text-foreground tabular-nums">
-                        {summary.completed} comp.
+                        {t('inmobiliaria.dispersiones.tableView.completedAbbr', { count: summary.completed })}
                       </span>
                     )}
                     {summary.failed > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 tabular-nums">
-                        {summary.failed} fall.
+                        {t('inmobiliaria.dispersiones.tableView.failedAbbr', { count: summary.failed })}
                       </span>
                     )}
                   </div>
@@ -466,10 +456,10 @@ export function DispersionTable({
             <PaperPlaneTilt className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No hay dispersiones para mostrar
+            {t('inmobiliaria.dispersiones.tableView.emptyTitle')}
           </h3>
           <p className="text-muted-foreground">
-            Genera las dispersiones del mes para enviar pagos a los propietarios
+            {t('inmobiliaria.dispersiones.tableView.emptyDescription')}
           </p>
         </div>
       )}

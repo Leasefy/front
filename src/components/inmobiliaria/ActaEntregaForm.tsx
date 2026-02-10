@@ -27,6 +27,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   ActaEntrega,
   ActaInventoryItem,
@@ -96,13 +97,13 @@ interface FormData {
 // Steps Configuration
 // ============================================================================
 
-const STEPS = [
-  { id: 1, label: 'Informacion', icon: HouseLine },
-  { id: 2, label: 'Espacios', icon: House },
-  { id: 3, label: 'Inventario', icon: ClipboardText },
-  { id: 4, label: 'Contadores', icon: Lightning },
-  { id: 5, label: 'Observaciones', icon: FileText },
-  { id: 6, label: 'Firmas', icon: Signature },
+const STEP_KEYS = [
+  { id: 1, labelKey: 'inmobiliaria.acta.steps.info', icon: HouseLine },
+  { id: 2, labelKey: 'inmobiliaria.acta.steps.spaces', icon: House },
+  { id: 3, labelKey: 'inmobiliaria.acta.steps.inventory', icon: ClipboardText },
+  { id: 4, labelKey: 'inmobiliaria.acta.steps.meters', icon: Lightning },
+  { id: 5, labelKey: 'inmobiliaria.acta.steps.observations', icon: FileText },
+  { id: 6, labelKey: 'inmobiliaria.acta.steps.signatures', icon: Signature },
 ];
 
 // ============================================================================
@@ -114,27 +115,28 @@ interface StepProps {
   updateFormData: (data: Partial<FormData>) => void;
   consignaciones: Consignacion[];
   selectedConsignacion: Consignacion | undefined;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 /**
  * Step 1: Basic Info - Acta type, property selection, date/time
  */
-function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsignacion }: StepProps) {
+function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsignacion, t }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-          Informacion Basica
+          {t('inmobiliaria.acta.basicInfo')}
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Seleccione el tipo de acta y la propiedad correspondiente.
+          {t('inmobiliaria.acta.basicInfoDesc')}
         </p>
       </div>
 
       {/* Acta Type */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Tipo de Acta
+          {t('inmobiliaria.acta.actaType')}
         </label>
         <div className="grid grid-cols-2 gap-3">
           {(['entrega', 'devolucion'] as ActaType[]).map((type) => (
@@ -159,8 +161,8 @@ function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsi
               </span>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 {type === 'entrega'
-                  ? 'Registro de entrega al inquilino'
-                  : 'Registro de devolucion del inmueble'}
+                  ? t('inmobiliaria.acta.typeEntregaDesc')
+                  : t('inmobiliaria.acta.typeDevolucionDesc')}
               </p>
             </button>
           ))}
@@ -170,14 +172,14 @@ function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsi
       {/* Property Selection */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Propiedad
+          {t('inmobiliaria.acta.property')}
         </label>
         <select
           value={formData.consignacionId}
           onChange={(e) => updateFormData({ consignacionId: e.target.value })}
           className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
         >
-          <option value="">Seleccionar propiedad...</option>
+          <option value="">{t('inmobiliaria.acta.selectProperty')}</option>
           {consignaciones.map((consignacion) => (
             <option key={consignacion.id} value={consignacion.id}>
               {consignacion.propertyTitle} - {consignacion.propertyAddress}
@@ -219,7 +221,7 @@ function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsi
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Fecha de {formData.type === 'entrega' ? 'Entrega' : 'Devolucion'}
+            {formData.type === 'entrega' ? t('inmobiliaria.acta.deliveryDate') : t('inmobiliaria.acta.returnDate')}
           </label>
           <input
             type="date"
@@ -230,7 +232,7 @@ function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsi
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Hora
+            {t('inmobiliaria.acta.time')}
           </label>
           <input
             type="time"
@@ -247,7 +249,7 @@ function StepBasicInfo({ formData, updateFormData, consignaciones, selectedConsi
 /**
  * Step 2: Room Selection
  */
-function StepRoomSelection({ formData, updateFormData }: StepProps) {
+function StepRoomSelection({ formData, updateFormData, t }: StepProps) {
   const toggleRoom = (room: RoomType) => {
     const newRooms = formData.rooms.includes(room)
       ? formData.rooms.filter((r) => r !== room)
@@ -267,10 +269,10 @@ function StepRoomSelection({ formData, updateFormData }: StepProps) {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-          Espacios a Inspeccionar
+          {t('inmobiliaria.acta.spacesTitle')}
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Seleccione los espacios del inmueble que seran incluidos en el acta.
+          {t('inmobiliaria.acta.spacesDesc')}
         </p>
       </div>
 
@@ -281,14 +283,14 @@ function StepRoomSelection({ formData, updateFormData }: StepProps) {
           onClick={selectDefaultRooms}
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
-          Espacios Basicos
+          {t('inmobiliaria.acta.basicSpaces')}
         </button>
         <button
           type="button"
           onClick={selectAllRooms}
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
-          Seleccionar Todos
+          {t('inmobiliaria.acta.selectAll')}
         </button>
       </div>
 
@@ -329,7 +331,7 @@ function StepRoomSelection({ formData, updateFormData }: StepProps) {
       {/* Selected Summary */}
       <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30">
         <p className="text-sm text-indigo-700 dark:text-indigo-400">
-          <strong>{formData.rooms.length}</strong> espacios seleccionados
+          <strong>{formData.rooms.length}</strong> {t('inmobiliaria.acta.spacesSelected')}
         </p>
       </div>
     </div>
@@ -339,7 +341,7 @@ function StepRoomSelection({ formData, updateFormData }: StepProps) {
 /**
  * Step 3: Inventory Items per Room
  */
-function StepInventory({ formData, updateFormData }: StepProps) {
+function StepInventory({ formData, updateFormData, t }: StepProps) {
   const [activeRoom, setActiveRoom] = useState<RoomType | null>(
     formData.rooms.length > 0 ? formData.rooms[0] : null
   );
@@ -440,10 +442,10 @@ function StepInventory({ formData, updateFormData }: StepProps) {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-          Inventario por Espacio
+          {t('inmobiliaria.acta.inventoryTitle')}
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Revise y califique la condicion de cada item por espacio.
+          {t('inmobiliaria.acta.inventoryDesc')}
         </p>
       </div>
 
@@ -524,7 +526,7 @@ function StepInventory({ formData, updateFormData }: StepProps) {
                     {item.hasDefects && (
                       <input
                         type="text"
-                        placeholder="Descripcion del defecto..."
+                        placeholder={t('inmobiliaria.acta.defectPlaceholder')}
                         value={item.defectDescription || ''}
                         onChange={(e) => updateItemDefect(item.id, e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-neutral-900 dark:text-white text-sm placeholder:text-amber-600/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
@@ -537,7 +539,7 @@ function StepInventory({ formData, updateFormData }: StepProps) {
                     <button
                       type="button"
                       className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors opacity-50 cursor-not-allowed"
-                      title="Agregar foto (proximamente)"
+                      title={t('inmobiliaria.acta.addPhotoSoon')}
                       disabled
                     >
                       <Camera className="w-4 h-4" />
@@ -546,7 +548,7 @@ function StepInventory({ formData, updateFormData }: StepProps) {
                       type="button"
                       onClick={() => deleteItem(item.id)}
                       className="p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      title="Eliminar item"
+                      title={t('inmobiliaria.acta.deleteItem')}
                     >
                       <Trash className="w-4 h-4" />
                     </button>
@@ -563,7 +565,7 @@ function StepInventory({ formData, updateFormData }: StepProps) {
             className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Agregar Item
+            {t('inmobiliaria.acta.addItem')}
           </button>
         </div>
       )}
@@ -573,10 +575,10 @@ function StepInventory({ formData, updateFormData }: StepProps) {
         <div className="p-6 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 text-center">
           <Warning className="w-8 h-8 text-amber-500 mx-auto mb-2" />
           <p className="text-amber-700 dark:text-amber-400 font-medium">
-            No hay espacios seleccionados
+            {t('inmobiliaria.acta.noSpacesSelected')}
           </p>
           <p className="text-sm text-amber-600 dark:text-amber-500 mt-1">
-            Por favor regrese al paso anterior y seleccione los espacios a inspeccionar.
+            {t('inmobiliaria.acta.noSpacesSelectedDesc')}
           </p>
         </div>
       )}
@@ -587,7 +589,7 @@ function StepInventory({ formData, updateFormData }: StepProps) {
 /**
  * Step 4: Meters & Keys
  */
-function StepMetersKeys({ formData, updateFormData }: StepProps) {
+function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
   // Update meter reading
   const updateMeterReading = (type: MeterReading['type'], value: string) => {
     const existing = formData.meterReadings.find((m) => m.type === type);
@@ -636,10 +638,10 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            Lectura de Contadores
+            {t('inmobiliaria.acta.metersTitle')}
           </h3>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Registre las lecturas actuales de los contadores de servicios.
+            {t('inmobiliaria.acta.metersDesc')}
           </p>
         </div>
 
@@ -650,7 +652,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
               <span className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                 <span className="text-xs">💧</span>
               </span>
-              Agua (m3)
+              {t('inmobiliaria.acta.waterMeter')}
             </label>
             <input
               type="text"
@@ -667,7 +669,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
               <span className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <Lightning className="w-3 h-3 text-amber-600" />
               </span>
-              Luz (kWh)
+              {t('inmobiliaria.acta.electricityMeter')}
             </label>
             <input
               type="text"
@@ -684,7 +686,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
               <span className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                 <span className="text-xs">🔥</span>
               </span>
-              Gas (m3)
+              {t('inmobiliaria.acta.gasMeter')}
             </label>
             <input
               type="text"
@@ -702,10 +704,10 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Llaves Entregadas
+              {t('inmobiliaria.acta.keysTitle')}
             </h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Registre todas las llaves y controles entregados.
+              {t('inmobiliaria.acta.keysDesc')}
             </p>
           </div>
           <button
@@ -714,7 +716,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Agregar
+            {t('inmobiliaria.acta.add')}
           </button>
         </div>
 
@@ -730,7 +732,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
                 type="text"
                 value={key.type}
                 onChange={(e) => updateKey(index, { type: e.target.value })}
-                placeholder="Tipo de llave (ej: Principal, Buzon)"
+                placeholder={t('inmobiliaria.acta.keyTypePlaceholder')}
                 className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
               <input
@@ -754,7 +756,7 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
             <div className="p-6 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-dashed border-neutral-200 dark:border-neutral-700 text-center">
               <Key className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
               <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-                No hay llaves registradas
+                {t('inmobiliaria.acta.noKeysRegistered')}
               </p>
             </div>
           )}
@@ -767,22 +769,23 @@ function StepMetersKeys({ formData, updateFormData }: StepProps) {
 /**
  * Step 5: General Observations
  */
-function StepObservations({ formData, updateFormData }: StepProps) {
+function StepObservations({ formData, updateFormData, t }: StepProps) {
+  const { locale } = useTranslation();
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-          Observaciones Generales
+          {t('inmobiliaria.acta.observationsTitle')}
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Registre el estado general del inmueble y cualquier observacion adicional.
+          {t('inmobiliaria.acta.observationsDesc')}
         </p>
       </div>
 
       {/* General Condition */}
       <div className="space-y-3">
         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Estado General del Inmueble
+          {t('inmobiliaria.acta.generalCondition')}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {ALL_ITEM_CONDITIONS.filter((c) => c !== 'no_aplica').map((condition) => (
@@ -806,17 +809,17 @@ function StepObservations({ formData, updateFormData }: StepProps) {
       {/* General Observations */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Observaciones
+          {t('inmobiliaria.acta.observations')}
         </label>
         <textarea
           value={formData.generalObservations}
           onChange={(e) => updateFormData({ generalObservations: e.target.value })}
           rows={6}
-          placeholder="Ingrese cualquier observacion adicional sobre el estado del inmueble, reparaciones pendientes, recomendaciones, etc."
+          placeholder={t('inmobiliaria.acta.observationsPlaceholder')}
           className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
         />
         <p className="text-xs text-neutral-500 dark:text-neutral-400 text-right">
-          {formData.generalObservations.length} caracteres
+          {formData.generalObservations.length} {t('inmobiliaria.acta.characters')}
         </p>
       </div>
 
@@ -824,18 +827,18 @@ function StepObservations({ formData, updateFormData }: StepProps) {
       {formData.type === 'devolucion' && (
         <div className="space-y-4 pt-6 border-t border-neutral-100 dark:border-neutral-800">
           <h4 className="font-medium text-neutral-900 dark:text-white">
-            Deposito y Deducciones
+            {t('inmobiliaria.acta.depositAndDeductions')}
           </h4>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Valor del Deposito
+              {t('inmobiliaria.acta.depositAmount')}
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">$</span>
               <input
                 type="text"
-                value={formData.depositAmount?.toLocaleString('es-CO') || ''}
+                value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') || ''}
                 onChange={(e) => {
                   const value = parseInt(e.target.value.replace(/\D/g, '')) || 0;
                   updateFormData({ depositAmount: value });
@@ -850,7 +853,7 @@ function StepObservations({ formData, updateFormData }: StepProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Deducciones
+                {t('inmobiliaria.acta.deductions')}
               </label>
               <button
                 type="button"
@@ -862,7 +865,7 @@ function StepObservations({ formData, updateFormData }: StepProps) {
                 }}
                 className="text-xs font-medium text-indigo-500 hover:text-indigo-600"
               >
-                + Agregar deduccion
+                + {t('inmobiliaria.acta.addDeduction')}
               </button>
             </div>
 
@@ -876,14 +879,14 @@ function StepObservations({ formData, updateFormData }: StepProps) {
                     newDeductions[index].concept = e.target.value;
                     updateFormData({ deductions: newDeductions });
                   }}
-                  placeholder="Concepto"
+                  placeholder={t('inmobiliaria.acta.concept')}
                   className="flex-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
                   <input
                     type="text"
-                    value={deduction.amount.toLocaleString('es-CO')}
+                    value={deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                     onChange={(e) => {
                       const newDeductions = [...(formData.deductions || [])];
                       newDeductions[index].amount = parseInt(e.target.value.replace(/\D/g, '')) || 0;
@@ -910,10 +913,10 @@ function StepObservations({ formData, updateFormData }: StepProps) {
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-emerald-700 dark:text-emerald-400">
-                    Valor a devolver:
+                    {t('inmobiliaria.acta.amountToReturn')}:
                   </span>
                   <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                    ${(formData.depositAmount - (formData.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0)).toLocaleString('es-CO')}
+                    ${(formData.depositAmount - (formData.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0)).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                   </span>
                 </div>
               </div>
@@ -928,7 +931,7 @@ function StepObservations({ formData, updateFormData }: StepProps) {
 /**
  * Step 6: Review & Sign
  */
-function StepSignatures({ formData, updateFormData, selectedConsignacion }: StepProps) {
+function StepSignatures({ formData, updateFormData, selectedConsignacion, t }: StepProps) {
   // Calculate item summary
   const itemSummary = useMemo(() => {
     const summary = { excelente: 0, bueno: 0, regular: 0, malo: 0, no_aplica: 0 };
@@ -944,10 +947,10 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-          Revision y Firmas
+          {t('inmobiliaria.acta.reviewTitle')}
         </h3>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Revise el resumen del acta antes de enviar a firmas.
+          {t('inmobiliaria.acta.reviewDesc')}
         </p>
       </div>
 
@@ -956,30 +959,30 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
         {/* Property */}
         <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800">
           <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-            Propiedad
+            {t('inmobiliaria.acta.property')}
           </p>
           <p className="font-medium text-neutral-900 dark:text-white text-sm">
-            {selectedConsignacion?.propertyTitle || 'No seleccionada'}
+            {selectedConsignacion?.propertyTitle || t('inmobiliaria.acta.notSelected')}
           </p>
         </div>
 
         {/* Spaces */}
         <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800">
           <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-            Espacios / Items
+            {t('inmobiliaria.acta.spacesItems')}
           </p>
           <p className="font-medium text-neutral-900 dark:text-white text-sm">
-            {formData.rooms.length} espacios / {formData.items.length} items
+            {formData.rooms.length} {t('inmobiliaria.acta.spacesLabel')} / {formData.items.length} items
           </p>
         </div>
 
         {/* Keys */}
         <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800">
           <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-            Llaves
+            {t('inmobiliaria.acta.keys')}
           </p>
           <p className="font-medium text-neutral-900 dark:text-white text-sm">
-            {totalKeys} llaves
+            {totalKeys} {t('inmobiliaria.acta.keysLabel')}
           </p>
         </div>
       </div>
@@ -987,7 +990,7 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
       {/* Condition Summary */}
       <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800">
         <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
-          Resumen de Condiciones
+          {t('inmobiliaria.acta.conditionSummary')}
         </p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(itemSummary).map(([condition, count]) => (
@@ -1009,7 +1012,7 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
       {/* General Condition */}
       <div className="p-4 rounded-xl border-2 border-neutral-200 dark:border-neutral-700">
         <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
-          Estado General
+          {t('inmobiliaria.acta.generalState')}
         </p>
         <span className={cn('px-3 py-1.5 rounded-lg text-sm font-medium', getConditionColor(formData.generalCondition))}>
           {getConditionLabel(formData.generalCondition)}
@@ -1024,15 +1027,15 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
       {/* Signature Pads Placeholder */}
       <div className="space-y-4">
         <h4 className="font-medium text-neutral-900 dark:text-white">
-          Firmas Requeridas
+          {t('inmobiliaria.acta.signaturesRequired')}
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {(['tenant', 'owner', 'agent'] as const).map((party) => {
             const partyLabels = {
-              tenant: 'Inquilino',
-              owner: 'Propietario',
-              agent: 'Agente',
+              tenant: t('inmobiliaria.acta.tenant'),
+              owner: t('inmobiliaria.acta.owner'),
+              agent: t('inmobiliaria.acta.agent'),
             };
             return (
               <div
@@ -1044,7 +1047,7 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
                   {partyLabels[party]}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  Pendiente de firma
+                  {t('inmobiliaria.acta.pendingSignature')}
                 </p>
               </div>
             );
@@ -1052,7 +1055,7 @@ function StepSignatures({ formData, updateFormData, selectedConsignacion }: Step
         </div>
 
         <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
-          Las firmas se solicitaran despues de guardar el acta.
+          {t('inmobiliaria.acta.signaturesInfo')}
         </p>
       </div>
     </div>
@@ -1074,6 +1077,7 @@ export function ActaEntregaForm({
   onCancel,
   isLoading = false,
 }: ActaEntregaFormProps) {
+  const { t, locale, formatCurrency } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -1171,8 +1175,8 @@ export function ActaEntregaForm({
 
     onSaveDraft?.(draftActa);
     toast.success({
-      title: 'Borrador guardado',
-      description: 'El acta se ha guardado como borrador.',
+      title: t('inmobiliaria.acta.draftSaved'),
+      description: t('inmobiliaria.acta.draftSavedDesc'),
     });
   }, [formData, selectedConsignacion, onSaveDraft]);
 
@@ -1209,14 +1213,14 @@ export function ActaEntregaForm({
 
       onSave?.(acta);
       toast.success({
-        title: 'Acta creada exitosamente',
-        description: 'El acta ha sido creada y enviada para firmas.',
+        title: t('inmobiliaria.acta.actaCreated'),
+        description: t('inmobiliaria.acta.actaCreatedDesc'),
       });
     } catch (error) {
       console.error('Error creating acta:', error);
       toast.error({
-        title: 'Error al crear acta',
-        description: 'Ocurrio un error. Por favor intenta de nuevo.',
+        title: t('inmobiliaria.acta.actaError'),
+        description: t('inmobiliaria.acta.actaErrorDesc'),
       });
     } finally {
       setIsSubmitting(false);
@@ -1236,6 +1240,7 @@ export function ActaEntregaForm({
     updateFormData,
     consignaciones,
     selectedConsignacion,
+    t,
   };
 
   // Render step content
@@ -1264,7 +1269,7 @@ export function ActaEntregaForm({
       <div className="mb-8">
         {/* Desktop Steps */}
         <div className="hidden md:flex items-center justify-between">
-          {STEPS.map((step, index) => {
+          {STEP_KEYS.map((step, index) => {
             const status = getStepStatus(step.id);
             const StepIcon = step.icon;
 
@@ -1304,12 +1309,12 @@ export function ActaEntregaForm({
                         : 'text-neutral-400'
                     )}
                   >
-                    {step.label}
+                    {t(step.labelKey)}
                   </span>
                 </button>
 
                 {/* Connector Line */}
-                {index < STEPS.length - 1 && (
+                {index < STEP_KEYS.length - 1 && (
                   <div
                     className={cn(
                       'flex-1 h-0.5 mx-2',
@@ -1328,7 +1333,7 @@ export function ActaEntregaForm({
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-neutral-900 dark:text-white">
-              Paso {currentStep} de 6: {STEPS[currentStep - 1]?.label}
+              {t('inmobiliaria.acta.stepProgress', { current: currentStep, total: 6 })}: {t(STEP_KEYS[currentStep - 1]?.labelKey)}
             </span>
             <span className="text-sm text-neutral-500">
               {Math.round((currentStep / 6) * 100)}%
@@ -1346,7 +1351,7 @@ export function ActaEntregaForm({
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1372,7 +1377,7 @@ export function ActaEntregaForm({
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <CaretLeft className="w-4 h-4" />
-                  Anterior
+                  {t('inmobiliaria.acta.previous')}
                 </button>
               )}
               {onCancel && (
@@ -1381,7 +1386,7 @@ export function ActaEntregaForm({
                   onClick={onCancel}
                   className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
-                  Cancelar
+                  {t('inmobiliaria.acta.cancel')}
                 </button>
               )}
             </div>
@@ -1395,7 +1400,7 @@ export function ActaEntregaForm({
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FloppyDisk className="w-4 h-4" />
-                Guardar Borrador
+                {t('inmobiliaria.acta.saveDraft')}
               </button>
 
               {/* Next / Submit */}
@@ -1406,7 +1411,7 @@ export function ActaEntregaForm({
                   disabled={!isStepValid}
                   className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Siguiente
+                  {t('inmobiliaria.acta.next')}
                   <CaretRight className="w-4 h-4" />
                 </button>
               ) : (
@@ -1419,12 +1424,12 @@ export function ActaEntregaForm({
                   {isSubmitting ? (
                     <>
                       <SpinnerGap className="w-4 h-4 animate-spin" />
-                      Creando...
+                      {t('inmobiliaria.acta.creating')}
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4" weight="bold" />
-                      Crear Acta
+                      {t('inmobiliaria.acta.createActa')}
                     </>
                   )}
                 </button>

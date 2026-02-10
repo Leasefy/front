@@ -3,6 +3,7 @@
 import { useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -27,6 +28,7 @@ import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
  * Route: /panel/inmobiliaria/agentes/[id]
  */
 export default function AgenteDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const agenteId = params.id as string;
 
@@ -43,16 +45,16 @@ export default function AgenteDetailPage() {
 
   // Handlers
   const handleEdit = useCallback(() => {
-    toast.info('Editar perfil proximamente', {
-      description: 'Podras modificar los datos del agente',
+    toast.info(t('inmobiliaria.agentes.detail.editComingSoon'), {
+      description: t('inmobiliaria.agentes.detail.editComingSoonDesc'),
     });
-  }, []);
+  }, [t]);
 
   const handleAssignProperty = useCallback(() => {
-    toast.info('Asignar propiedad proximamente', {
-      description: 'Podras asignar nuevas propiedades a este agente',
+    toast.info(t('inmobiliaria.agentes.detail.assignComingSoon'), {
+      description: t('inmobiliaria.agentes.detail.assignComingSoonDesc'),
     });
-  }, []);
+  }, [t]);
 
   // 404 if not found
   if (!agente) {
@@ -63,17 +65,17 @@ export default function AgenteDetailPage() {
             <Users className="w-8 h-8 text-neutral-400" />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            Agente no encontrado
+            {t('inmobiliaria.agentes.notFound')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            El agente que buscas no existe o ha sido eliminado
+            {t('inmobiliaria.agentes.notFoundDesc')}
           </p>
           <Link
             href="/panel/inmobiliaria/agentes"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
-            Volver a Agentes
+            {t('inmobiliaria.agentes.backToList')}
           </Link>
         </div>
       </div>
@@ -88,7 +90,7 @@ export default function AgenteDetailPage() {
           href="/panel/inmobiliaria"
           className="text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
         >
-          Inmobiliaria
+          {t('inmobiliaria.common.title')}
         </Link>
         <span className="text-neutral-300 dark:text-neutral-600">/</span>
         <Link
@@ -96,7 +98,7 @@ export default function AgenteDetailPage() {
           className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
-          Agentes
+          {t('inmobiliaria.agentes.title')}
         </Link>
         <span className="text-neutral-300 dark:text-neutral-600">/</span>
         <span className="text-neutral-900 dark:text-white font-medium truncate max-w-[200px]">
@@ -121,7 +123,7 @@ export default function AgenteDetailPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5"
+            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5"
           >
             <AgenteMetrics metrics={agente.metrics} />
           </motion.div>
@@ -155,14 +157,14 @@ export default function AgenteDetailPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
           >
             <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
               <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               </div>
               <h3 className="font-semibold text-neutral-900 dark:text-white">
-                Historial de Comisiones
+                {t('inmobiliaria.agentes.detail.commissions')}
               </h3>
             </div>
             <div className="p-8 text-center">
@@ -170,10 +172,10 @@ export default function AgenteDetailPage() {
                 <Clock className="w-6 h-6 text-neutral-400" />
               </div>
               <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
-                Proximamente
+                {t('inmobiliaria.agentes.detail.comingSoon')}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-500">
-                Historial detallado de pagos y comisiones del agente
+                {t('inmobiliaria.agentes.detail.commissionsDesc')}
               </p>
             </div>
           </motion.div>

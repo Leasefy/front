@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,47 +79,8 @@ type WorkflowStep = {
 };
 
 // ============================================================================
-// Workflow Steps Definition
+// Workflow Steps Definition (built inside component for i18n)
 // ============================================================================
-
-const WORKFLOW_STEPS: WorkflowStep[] = [
-  {
-    status: 'pending',
-    label: 'Revision',
-    icon: <ClipboardText className="h-5 w-5" />,
-    description: 'Revisar detalles del contrato',
-  },
-  {
-    status: 'notified',
-    label: 'Notificacion',
-    icon: <Bell className="h-5 w-5" />,
-    description: 'Notificar al inquilino',
-  },
-  {
-    status: 'negotiating',
-    label: 'Negociacion',
-    icon: <Handshake className="h-5 w-5" />,
-    description: 'Negociar terminos',
-  },
-  {
-    status: 'approved',
-    label: 'Aprobacion',
-    icon: <CheckCircle className="h-5 w-5" />,
-    description: 'Obtener aprobaciones',
-  },
-  {
-    status: 'signed',
-    label: 'Firma',
-    icon: <PenNib className="h-5 w-5" />,
-    description: 'Firmar nuevo contrato',
-  },
-  {
-    status: 'completed',
-    label: 'Completado',
-    icon: <FlagCheckered className="h-5 w-5" />,
-    description: 'Renovacion finalizada',
-  },
-];
 
 // ============================================================================
 // Stepper Component
@@ -127,11 +89,13 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
 function WorkflowStepper({
   currentStatus,
   onStepClick,
+  steps,
 }: {
   currentStatus: RenovacionStatus;
   onStepClick: (status: RenovacionStatus) => void;
+  steps: WorkflowStep[];
 }) {
-  const currentIndex = WORKFLOW_STEPS.findIndex((s) => s.status === currentStatus);
+  const currentIndex = steps.findIndex((s) => s.status === currentStatus);
 
   return (
     <div className="relative">
@@ -139,12 +103,12 @@ function WorkflowStepper({
       <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-700" />
       <div
         className="absolute top-5 left-0 h-0.5 bg-emerald-500 transition-all duration-300"
-        style={{ width: `${(currentIndex / (WORKFLOW_STEPS.length - 1)) * 100}%` }}
+        style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
       />
 
       {/* Steps */}
       <div className="relative flex justify-between">
-        {WORKFLOW_STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isCompleted = index < currentIndex;
           const isCurrent = index === currentIndex;
           const isClickable = index <= currentIndex;
@@ -199,6 +163,7 @@ function StepRevision({
   renovacion: Renovacion;
   onContinue: () => void;
 }) {
+  const { t, locale } = useTranslation();
   const ipc = getCurrentIPC();
   const proposedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
   const increase = proposedRent - renovacion.currentRent;
@@ -211,7 +176,7 @@ function StepRevision({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <House className="h-4 w-4" />
-              Inmueble
+              {t('inmobiliaria.operaciones.renovacion.revision.property')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -225,7 +190,7 @@ function StepRevision({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <User className="h-4 w-4" />
-              Inquilino
+              {t('inmobiliaria.operaciones.renovacion.revision.tenant')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -240,22 +205,22 @@ function StepRevision({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Contrato actual
+              {t('inmobiliaria.operaciones.renovacion.revision.currentContract')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Inicio:</span>
-              <span>{new Date(renovacion.leaseStartDate).toLocaleDateString('es-CO')}</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.startDate')}</span>
+              <span>{new Date(renovacion.leaseStartDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Vencimiento:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.expiryDate')}</span>
               <span className="font-medium text-amber-600">
-                {new Date(renovacion.leaseEndDate).toLocaleDateString('es-CO')}
+                {new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Canon actual:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.currentRent')}</span>
               <span className="font-medium">{formatCurrency(renovacion.currentRent)}</span>
             </div>
           </CardContent>
@@ -266,13 +231,13 @@ function StepRevision({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <TrendUp className="h-4 w-4" />
-              Proyeccion IPC ({ipc.rate}%)
+              {t('inmobiliaria.operaciones.renovacion.revision.ipcProjection', { rate: String(ipc.rate) })}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Nuevo canon propuesto</p>
+                <p className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.proposedRent')}</p>
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
               </div>
               <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -284,7 +249,7 @@ function StepRevision({
       </div>
 
       <Button onClick={onContinue} className="w-full" size="lg">
-        Continuar
+        {t('inmobiliaria.operaciones.renovacion.revision.continue')}
         <ArrowRight className="h-4 w-4 ml-2" />
       </Button>
     </div>
@@ -300,12 +265,13 @@ function StepNotification({
   onNotify: (channel: 'email' | 'whatsapp') => void;
   onMarkNotified: () => void;
 }) {
+  const { t, locale } = useTranslation();
   const ipc = getCurrentIPC();
   const proposedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
 
   const messagePreview = `Estimado/a ${renovacion.tenantName},
 
-Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${new Date(renovacion.leaseEndDate).toLocaleDateString('es-CO')}.
+Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}.
 
 Conforme a la Ley 820 de 2003, el nuevo canon propuesto sera de ${formatCurrency(proposedRent)} (incremento IPC ${ipc.rate}%).
 
@@ -319,7 +285,7 @@ Arriendos Premium`;
       {/* Recipient */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Destinatario</CardTitle>
+          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.recipient')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -337,7 +303,7 @@ Arriendos Premium`;
       {/* Message Preview */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Vista previa del mensaje</CardTitle>
+          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.messagePreview')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm whitespace-pre-line">
@@ -354,7 +320,7 @@ Arriendos Premium`;
           className="flex items-center gap-2"
         >
           <Envelope className="h-4 w-4" />
-          Enviar Email
+          {t('inmobiliaria.operaciones.renovacion.notification.sendEmail')}
         </Button>
         <Button
           variant="outline"
@@ -371,13 +337,13 @@ Arriendos Premium`;
           <div className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">o</span>
+          <span className="bg-background px-2 text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.notification.or')}</span>
         </div>
       </div>
 
       <Button onClick={onMarkNotified} variant="secondary" className="w-full">
         <CheckCircle className="h-4 w-4 mr-2" />
-        Marcar como notificado
+        {t('inmobiliaria.operaciones.renovacion.notification.markNotified')}
       </Button>
     </div>
   );
@@ -392,6 +358,7 @@ function StepNegotiation({
   onAccept: (finalRent: number) => void;
   onContinueNegotiation: (note: string) => void;
 }) {
+  const { t, locale } = useTranslation();
   const [counterOffer, setCounterOffer] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const ipc = getCurrentIPC();
@@ -399,7 +366,7 @@ function StepNegotiation({
 
   const handleCounterOfferChange = (value: string) => {
     const numericValue = value.replace(/[^\d]/g, '');
-    const formatted = numericValue ? parseInt(numericValue).toLocaleString('es-CO') : '';
+    const formatted = numericValue ? parseInt(numericValue).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
     setCounterOffer(formatted);
   };
 
@@ -411,7 +378,7 @@ function StepNegotiation({
       <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
         <CardContent className="pt-4">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Canon propuesto (IPC {ipc.rate}%)</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.operaciones.renovacion.negotiation.proposedRent', { rate: String(ipc.rate) })}</p>
             <p className="text-3xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
           </div>
         </CardContent>
@@ -419,33 +386,33 @@ function StepNegotiation({
 
       {/* Counter Offer */}
       <div className="space-y-2">
-        <Label htmlFor="counterOffer">Contra-oferta del inquilino (opcional)</Label>
+        <Label htmlFor="counterOffer">{t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferLabel')}</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
           <Input
             id="counterOffer"
             value={counterOffer}
             onChange={(e) => handleCounterOfferChange(e.target.value)}
-            placeholder="Ingrese contra-oferta"
+            placeholder={t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferPlaceholder')}
             className="pl-8"
           />
         </div>
         {counterOfferValue > 0 && counterOfferValue < proposedRent && (
           <p className="text-xs text-amber-600 flex items-center gap-1">
             <Warning className="h-3 w-3" />
-            La contra-oferta es {formatCurrency(proposedRent - counterOfferValue)} menor al propuesto
+            {t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferWarning', { amount: formatCurrency(proposedRent - counterOfferValue) })}
           </p>
         )}
       </div>
 
       {/* Notes */}
       <div className="space-y-2">
-        <Label htmlFor="negotiationNote">Notas de negociacion</Label>
+        <Label htmlFor="negotiationNote">{t('inmobiliaria.operaciones.renovacion.negotiation.negotiationNotes')}</Label>
         <Textarea
           id="negotiationNote"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Registre detalles de la negociacion..."
+          placeholder={t('inmobiliaria.operaciones.renovacion.negotiation.negotiationPlaceholder')}
           rows={3}
         />
       </div>
@@ -458,11 +425,11 @@ function StepNegotiation({
           disabled={!note.trim()}
         >
           <ChatCircle className="h-4 w-4 mr-2" />
-          Continuar negociando
+          {t('inmobiliaria.operaciones.renovacion.negotiation.continueNegotiating')}
         </Button>
         <Button onClick={() => onAccept(counterOfferValue || proposedRent)}>
           <CheckCircle className="h-4 w-4 mr-2" />
-          Aceptar propuesta
+          {t('inmobiliaria.operaciones.renovacion.negotiation.acceptProposal')}
         </Button>
       </div>
     </div>
@@ -478,6 +445,7 @@ function StepApproval({
   onOwnerApproved: () => void;
   onTenantApproved: () => void;
 }) {
+  const { t } = useTranslation();
   const [ownerApproved, setOwnerApproved] = useState(false);
   const [tenantApproved, setTenantApproved] = useState(false);
   const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
@@ -487,20 +455,20 @@ function StepApproval({
       {/* Final Terms Summary */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Terminos finales</CardTitle>
+          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.approval.finalTerms')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Nuevo canon:</span>
+            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.newRent')}</span>
             <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Incremento:</span>
+            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.increase')}</span>
             <span>+{formatCurrency(finalRent - renovacion.currentRent)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Vigencia:</span>
-            <span>12 meses</span>
+            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.term')}</span>
+            <span>{t('inmobiliaria.operaciones.renovacion.approval.termMonths')}</span>
           </div>
         </CardContent>
       </Card>
@@ -518,13 +486,13 @@ function StepApproval({
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.propietarioName}</p>
-                  <p className="text-xs text-muted-foreground">Propietario</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.ownerLabel')}</p>
                 </div>
               </div>
               {ownerApproved ? (
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Aprobado
+                  {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
               ) : (
                 <Button
@@ -534,7 +502,7 @@ function StepApproval({
                     onOwnerApproved();
                   }}
                 >
-                  Aprobar
+                  {t('inmobiliaria.operaciones.renovacion.approval.approve')}
                 </Button>
               )}
             </div>
@@ -552,13 +520,13 @@ function StepApproval({
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.tenantName}</p>
-                  <p className="text-xs text-muted-foreground">Inquilino</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.tenantLabel')}</p>
                 </div>
               </div>
               {tenantApproved ? (
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Aprobado
+                  {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
               ) : (
                 <Button
@@ -568,7 +536,7 @@ function StepApproval({
                     onTenantApproved();
                   }}
                 >
-                  Aprobar
+                  {t('inmobiliaria.operaciones.renovacion.approval.approve')}
                 </Button>
               )}
             </div>
@@ -581,7 +549,7 @@ function StepApproval({
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <CheckCircle className="h-5 w-5" weight="fill" />
-              <span className="font-medium">Ambas partes han aprobado los terminos</span>
+              <span className="font-medium">{t('inmobiliaria.operaciones.renovacion.approval.bothApproved')}</span>
             </div>
           </CardContent>
         </Card>
@@ -597,6 +565,7 @@ function StepSignature({
   renovacion: Renovacion;
   onSignatureComplete: () => void;
 }) {
+  const { t } = useTranslation();
   const [signedFile, setSignedFile] = useState<File | null>(null);
   const [signatureDate, setSignatureDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -609,16 +578,16 @@ function StepSignature({
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Nuevo contrato
+            {t('inmobiliaria.operaciones.renovacion.signature.newContract')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="aspect-[8.5/11] bg-slate-100 dark:bg-slate-900/50 rounded-lg flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Vista previa del contrato</p>
+              <p className="text-sm">{t('inmobiliaria.operaciones.renovacion.signature.preview')}</p>
               <Button variant="link" size="sm" className="mt-2">
-                Descargar PDF
+                {t('inmobiliaria.operaciones.renovacion.signature.downloadPdf')}
               </Button>
             </div>
           </div>
@@ -627,7 +596,7 @@ function StepSignature({
 
       {/* Upload Signed Document */}
       <div className="space-y-2">
-        <Label>Subir documento firmado</Label>
+        <Label>{t('inmobiliaria.operaciones.renovacion.signature.upload')}</Label>
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
             signedFile
@@ -644,7 +613,7 @@ function StepSignature({
             <label className="cursor-pointer">
               <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                Arrastra el documento firmado o haz clic para seleccionar
+                {t('inmobiliaria.operaciones.renovacion.signature.dragOrClick')}
               </p>
               <input
                 type="file"
@@ -659,7 +628,7 @@ function StepSignature({
 
       {/* Signature Date */}
       <div className="space-y-2">
-        <Label htmlFor="signatureDate">Fecha de firma</Label>
+        <Label htmlFor="signatureDate">{t('inmobiliaria.operaciones.renovacion.signature.date')}</Label>
         <Input
           id="signatureDate"
           type="date"
@@ -676,13 +645,14 @@ function StepSignature({
         disabled={!signedFile}
       >
         <PenNib className="h-4 w-4 mr-2" />
-        Registrar firma
+        {t('inmobiliaria.operaciones.renovacion.signature.register')}
       </Button>
     </div>
   );
 }
 
 function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
+  const { t } = useTranslation();
   const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
 
   return (
@@ -691,9 +661,9 @@ function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
         <div className="mx-auto w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
           <FlagCheckered className="h-10 w-10 text-emerald-600" weight="fill" />
         </div>
-        <h3 className="text-xl font-bold mb-2">Renovacion completada</h3>
+        <h3 className="text-xl font-bold mb-2">{t('inmobiliaria.operaciones.renovacion.completed.title')}</h3>
         <p className="text-muted-foreground">
-          El contrato ha sido renovado exitosamente
+          {t('inmobiliaria.operaciones.renovacion.completed.desc')}
         </p>
       </div>
 
@@ -701,20 +671,20 @@ function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
         <CardContent className="pt-4">
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Inmueble:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.property')}</span>
               <span className="font-medium">{renovacion.propertyTitle}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Inquilino:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.tenant')}</span>
               <span>{renovacion.tenantName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Nuevo canon:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.newRent')}</span>
               <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Vigencia:</span>
-              <span>12 meses</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.term')}</span>
+              <span>{t('inmobiliaria.operaciones.renovacion.completed.termMonths')}</span>
             </div>
           </div>
         </CardContent>
@@ -736,6 +706,7 @@ function WorkflowSidebar({
   onAddNote: (note: string) => void;
   onTerminate: () => void;
 }) {
+  const { t, locale } = useTranslation();
   const [note, setNote] = useState('');
   const daysUntilExpiry = renovacion.daysUntilExpiry;
 
@@ -745,7 +716,7 @@ function WorkflowSidebar({
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Estado:</span>
+            <span className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.sidebar.status')}</span>
             <Badge className={getRenovacionStatusColor(renovacion.status)}>
               {getRenovacionStatusLabel(renovacion.status)}
             </Badge>
@@ -764,14 +735,14 @@ function WorkflowSidebar({
           }`}>
             {daysUntilExpiry}
           </p>
-          <p className="text-sm text-muted-foreground">dias hasta vencimiento</p>
+          <p className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.sidebar.daysUntilExpiry')}</p>
         </CardContent>
       </Card>
 
       {/* Timeline */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Historial</CardTitle>
+          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.sidebar.history')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -786,7 +757,7 @@ function WorkflowSidebar({
                 <div className="pb-3">
                   <p className="text-sm font-medium">{item.action}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(item.date).toLocaleDateString('es-CO')} - {item.actor}
+                    {new Date(item.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')} - {item.actor}
                   </p>
                   {item.notes && (
                     <p className="text-xs text-muted-foreground mt-1 italic">
@@ -803,14 +774,14 @@ function WorkflowSidebar({
       {/* Add Note */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Agregar nota</CardTitle>
+          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.sidebar.addNote')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Escriba una nota..."
+              placeholder={t('inmobiliaria.operaciones.renovacion.sidebar.notePlaceholder')}
               rows={2}
             />
             <Button
@@ -825,7 +796,7 @@ function WorkflowSidebar({
               }}
               disabled={!note.trim()}
             >
-              Agregar nota
+              {t('inmobiliaria.operaciones.renovacion.sidebar.addNote')}
             </Button>
           </div>
         </CardContent>
@@ -838,7 +809,7 @@ function WorkflowSidebar({
         onClick={onTerminate}
       >
         <X className="h-4 w-4 mr-2" />
-        Terminar renovacion
+        {t('inmobiliaria.operaciones.renovacion.sidebar.terminate')}
       </Button>
     </div>
   );
@@ -856,9 +827,49 @@ export function RenovacionWorkflow({
   onClose,
   open = false,
 }: RenovacionWorkflowProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<RenovacionStatus>(renovacion.status);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [terminateReason, setTerminateReason] = useState('');
+
+  const WORKFLOW_STEPS: WorkflowStep[] = useMemo(() => [
+    {
+      status: 'pending' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.revision.label'),
+      icon: <ClipboardText className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.revision.desc'),
+    },
+    {
+      status: 'notified' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.notification.label'),
+      icon: <Bell className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.notification.desc'),
+    },
+    {
+      status: 'negotiating' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.negotiation.label'),
+      icon: <Handshake className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.negotiation.desc'),
+    },
+    {
+      status: 'approved' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.approval.label'),
+      icon: <CheckCircle className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.approval.desc'),
+    },
+    {
+      status: 'signed' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.signature.label'),
+      icon: <PenNib className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.signature.desc'),
+    },
+    {
+      status: 'completed' as RenovacionStatus,
+      label: t('inmobiliaria.operaciones.renovacion.steps.completed.label'),
+      icon: <FlagCheckered className="h-5 w-5" />,
+      description: t('inmobiliaria.operaciones.renovacion.steps.completed.desc'),
+    },
+  ], [t]);
 
   const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.status === currentStep);
   const currentStepInfo = WORKFLOW_STEPS[currentStepIndex];
@@ -945,7 +956,7 @@ export function RenovacionWorkflow({
               <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
                 <ArrowRight className="h-5 w-5 text-emerald-600" />
               </div>
-              Renovacion de contrato
+              {t('inmobiliaria.operaciones.renovacion.sheetTitle')}
             </SheetTitle>
           </SheetHeader>
 
@@ -955,6 +966,7 @@ export function RenovacionWorkflow({
               <WorkflowStepper
                 currentStatus={currentStep}
                 onStepClick={setCurrentStep}
+                steps={WORKFLOW_STEPS}
               />
             </div>
 
@@ -988,17 +1000,17 @@ export function RenovacionWorkflow({
                       disabled={currentStepIndex === 0}
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
-                      Anterior
+                      {t('inmobiliaria.operaciones.renovacion.navigation.previous')}
                     </Button>
                     <Button variant="outline" onClick={onClose}>
-                      Guardar y salir
+                      {t('inmobiliaria.operaciones.renovacion.navigation.saveAndExit')}
                     </Button>
                   </div>
                 )}
 
                 {currentStep === 'completed' && (
                   <Button className="w-full mt-4" onClick={onClose}>
-                    Cerrar
+                    {t('inmobiliaria.operaciones.renovacion.navigation.close')}
                   </Button>
                 )}
               </div>
@@ -1020,33 +1032,33 @@ export function RenovacionWorkflow({
       <Dialog open={showTerminateDialog} onOpenChange={setShowTerminateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Terminar renovacion</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.operaciones.renovacion.terminateDialog.title')}</DialogTitle>
             <DialogDescription>
-              Esta accion cancelara el proceso de renovacion. El contrato no sera renovado.
+              {t('inmobiliaria.operaciones.renovacion.terminateDialog.desc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="terminateReason">Motivo de terminacion</Label>
+              <Label htmlFor="terminateReason">{t('inmobiliaria.operaciones.renovacion.terminateDialog.reason')}</Label>
               <Textarea
                 id="terminateReason"
                 value={terminateReason}
                 onChange={(e) => setTerminateReason(e.target.value)}
-                placeholder="Ingrese el motivo..."
+                placeholder={t('inmobiliaria.operaciones.renovacion.terminateDialog.reasonPlaceholder')}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTerminateDialog(false)}>
-              Cancelar
+              {t('inmobiliaria.operaciones.renovacion.terminateDialog.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleTerminate}
               disabled={!terminateReason.trim()}
             >
-              Terminar renovacion
+              {t('inmobiliaria.operaciones.renovacion.terminateDialog.terminate')}
             </Button>
           </DialogFooter>
         </DialogContent>

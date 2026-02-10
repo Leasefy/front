@@ -13,6 +13,7 @@ export interface I18nContextValue {
   setLocale: (locale: Locale) => void;
   t: (key: TranslationKey, params?: TranslationParams) => string;
   formatCurrency: (amount: number) => string;
+  formatNumber: (value: number) => string;
   formatDate: (date: Date | string, options?: Intl.DateTimeFormatOptions) => string;
   formatRelativeDate: (date: Date | string) => string;
 }

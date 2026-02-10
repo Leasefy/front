@@ -17,6 +17,7 @@ import {
   Funnel,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   ForecastData,
   ForecastScenario,
@@ -50,15 +51,15 @@ function formatValue(value: number, unit: string): string {
   if (unit === '%') {
     return `${value.toFixed(1)}%`;
   }
-  return value.toLocaleString('es-CO');
+  return value.toLocaleString();
 }
 
 /**
  * Format month label from date
  */
-function formatMonthLabel(dateStr: string): string {
+function formatMonthLabel(dateStr: string, localeStr: string = 'es'): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' });
+  return date.toLocaleDateString(localeStr === 'es' ? 'es-CL' : 'en-US', { month: 'short', year: '2-digit' });
 }
 
 /**
@@ -73,6 +74,7 @@ function ForecastChart({
   activeScenarios: string[];
   horizon: number;
 }) {
+  const { t, locale } = useTranslation();
   const [hoveredPoint, setHoveredPoint] = useState<{ type: string; index: number } | null>(null);
 
   const chartWidth = 700;
@@ -162,23 +164,23 @@ function ForecastChart({
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-          Proyeccion a {horizon} meses
+          {t('inmobiliaria.analytics.forecastComp.projectionMonths', { count: horizon })}
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-0.5 bg-indigo-500 rounded" />
-            <span className="text-neutral-500 dark:text-neutral-400">Historico</span>
+            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span
               className="w-3 h-0.5 bg-neutral-500 rounded"
               style={{ borderTop: '2px dashed' }}
             />
-            <span className="text-neutral-500 dark:text-neutral-400">Base</span>
+            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.base')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 bg-neutral-200 dark:bg-neutral-700 rounded-sm opacity-50" />
-            <span className="text-neutral-500 dark:text-neutral-400">Intervalo</span>
+            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.interval')}</span>
           </div>
         </div>
       </div>
@@ -225,7 +227,7 @@ function ForecastChart({
               className="fill-neutral-400 dark:fill-neutral-500"
               fontSize={10}
             >
-              {formatMonthLabel('date' in point.data ? point.data.date : '')}
+              {formatMonthLabel('date' in point.data ? point.data.date : '', locale)}
             </text>
           ))}
 
@@ -246,7 +248,7 @@ function ForecastChart({
           className="fill-neutral-400 dark:fill-neutral-500"
           fontSize={9}
         >
-          Historico
+          {t('inmobiliaria.analytics.forecastComp.historic')}
         </text>
         <text
           x={(historicalPoints[historicalPoints.length - 1]?.x || padding.left) + 5}
@@ -255,7 +257,7 @@ function ForecastChart({
           className="fill-neutral-400 dark:fill-neutral-500"
           fontSize={9}
         >
-          Proyeccion
+          {t('inmobiliaria.analytics.forecastComp.projection')}
         </text>
 
         {/* Gradients */}
@@ -429,6 +431,7 @@ function ScenarioCard({
   onToggle: () => void;
   unit: string;
 }) {
+  const { t } = useTranslation();
   const endValue = scenario.data[scenario.data.length - 1]?.predicted || 0;
   const color =
     scenario.id === 'optimistic'
@@ -482,11 +485,11 @@ function ScenarioCard({
         <p className="text-lg font-bold text-neutral-900 dark:text-white">
           {formatValue(endValue, unit)}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">Valor proyectado final</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.projectedFinalValue')}</p>
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Supuestos:</p>
+        <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">{t('inmobiliaria.analytics.forecastComp.assumptions')}:</p>
         <ul className="space-y-1">
           {scenario.assumptions.slice(0, 3).map((assumption, i) => (
             <li key={i} className="flex items-start gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
@@ -504,29 +507,30 @@ function ScenarioCard({
  * Forecast details table
  */
 function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit: string }) {
+  const { t, locale } = useTranslation();
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-4">
-        Detalles de Proyeccion
+        {t('inmobiliaria.analytics.forecastComp.projectionDetails')}
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-neutral-100 dark:border-neutral-800">
               <th className="text-left p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                Mes
+                {t('inmobiliaria.analytics.forecastComp.month')}
               </th>
               <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                Prediccion
+                {t('inmobiliaria.analytics.forecastComp.prediction')}
               </th>
               <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                Lim. Inferior
+                {t('inmobiliaria.analytics.forecastComp.lowerBound')}
               </th>
               <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                Lim. Superior
+                {t('inmobiliaria.analytics.forecastComp.upperBound')}
               </th>
               <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                Confianza
+                {t('inmobiliaria.analytics.forecastComp.confidenceLabel')}
               </th>
             </tr>
           </thead>
@@ -540,7 +544,7 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                 className="border-b border-neutral-50 dark:border-neutral-800/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/30"
               >
                 <td className="p-2 text-sm font-medium text-neutral-900 dark:text-white">
-                  {new Date(point.date).toLocaleDateString('es-CO', {
+                  {new Date(point.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                     month: 'long',
                     year: 'numeric',
                   })}
@@ -593,12 +597,13 @@ function FactorsPanel({
 }: {
   factors: { name: string; impact: 'positive' | 'negative' | 'neutral'; weight: number }[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <div className="flex items-center gap-2 mb-4">
         <Funnel className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
         <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
-          Factores de Influencia
+          {t('inmobiliaria.analytics.forecastComp.influenceFactors')}
         </h3>
       </div>
 
@@ -677,6 +682,7 @@ export function AnalyticsForecasting({
   const [activeHorizon, setActiveHorizon] = useState(horizon);
   const [activeScenarios, setActiveScenarios] = useState<string[]>(['conservative']);
   const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
+  const { t, locale } = useTranslation();
 
   const currentForecast = useMemo(() => {
     return data.find((d) => d.metricId === activeMetric) || data[0];
@@ -704,7 +710,7 @@ export function AnalyticsForecasting({
   if (!currentForecast) {
     return (
       <div className={cn('p-6 text-center text-neutral-500', className)}>
-        No hay datos de proyeccion disponibles
+        {t('inmobiliaria.analytics.forecastComp.noData')}
       </div>
     );
   }
@@ -718,9 +724,9 @@ export function AnalyticsForecasting({
             <ChartLineUp className="w-5 h-5 text-purple-600 dark:text-purple-400" weight="bold" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Proyecciones</h2>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Prediccion con intervalos de confianza
+              {t('inmobiliaria.analytics.forecastComp.confidenceIntervals')}
             </p>
           </div>
         </div>
@@ -790,7 +796,7 @@ export function AnalyticsForecasting({
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
               <Export className="w-4 h-4" />
-              Exportar
+              {t('inmobiliaria.analytics.forecastComp.export')}
             </button>
           )}
         </div>
@@ -807,7 +813,7 @@ export function AnalyticsForecasting({
       {currentForecast.scenarios.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-4">
-            Escenarios
+            {t('inmobiliaria.analytics.forecastComp.scenarios')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {currentForecast.scenarios.map((scenario) => (
@@ -842,8 +848,8 @@ export function AnalyticsForecasting({
       {/* Last Updated */}
       <div className="flex items-center justify-end gap-2 text-xs text-neutral-400 dark:text-neutral-500">
         <ArrowsClockwise className="w-3.5 h-3.5" />
-        Ultima actualizacion:{' '}
-        {new Date(currentForecast.lastUpdated).toLocaleDateString('es-CO', {
+        {t('inmobiliaria.analytics.forecastComp.lastUpdated')}:{' '}
+        {new Date(currentForecast.lastUpdated).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
           day: 'numeric',
           month: 'short',
           year: 'numeric',

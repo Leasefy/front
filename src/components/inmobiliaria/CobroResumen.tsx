@@ -14,8 +14,9 @@ import {
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
 interface CobroResumenProps {
   summary: CobroSummary;
@@ -26,49 +27,18 @@ interface CobroResumenProps {
 }
 
 /**
- * Get collection rate info based on percentage
- */
-function getCollectionRateInfo(rate: number): {
-  fill: string;
-  text: string;
-  label: string;
-  trend: 'up' | 'down' | 'neutral';
-} {
-  if (rate >= 90) {
-    return {
-      fill: 'bg-emerald-500',
-      text: 'text-emerald-600 dark:text-emerald-400',
-      label: 'Excelente',
-      trend: 'up',
-    };
-  }
-  if (rate >= 70) {
-    return {
-      fill: 'bg-amber-500',
-      text: 'text-amber-600 dark:text-amber-400',
-      label: 'Aceptable',
-      trend: 'neutral',
-    };
-  }
-  return {
-    fill: 'bg-red-500',
-    text: 'text-red-600 dark:text-red-400',
-    label: 'Bajo',
-    trend: 'down',
-  };
-}
-
-/**
  * Animated counter component
  */
 function AnimatedNumber({
   value,
   duration = 0.8,
   className,
+  formatFn,
 }: {
   value: number;
   duration?: number;
   className?: string;
+  formatFn: (amount: number) => string;
 }) {
   const [displayValue, setDisplayValue] = React.useState(0);
 
@@ -90,7 +60,7 @@ function AnimatedNumber({
     requestAnimationFrame(updateValue);
   }, [value, duration]);
 
-  return <span className={className}>{formatCurrency(displayValue)}</span>;
+  return <span className={className}>{formatFn(displayValue)}</span>;
 }
 
 /**
@@ -104,10 +74,40 @@ export function CobroResumen({
   onRefresh,
   className,
 }: CobroResumenProps) {
+  const { t, formatDate, formatCurrency } = useTranslation();
+
+  /**
+   * Get collection rate info based on percentage
+   */
+  const getCollectionRateInfo = (rate: number) => {
+    if (rate >= 90) {
+      return {
+        fill: 'bg-emerald-500',
+        text: 'text-emerald-600 dark:text-emerald-400',
+        label: t('inmobiliaria.cobros.resumen.rateExcellent'),
+        trend: 'up' as const,
+      };
+    }
+    if (rate >= 70) {
+      return {
+        fill: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-400',
+        label: t('inmobiliaria.cobros.resumen.rateAcceptable'),
+        trend: 'neutral' as const,
+      };
+    }
+    return {
+      fill: 'bg-red-500',
+      text: 'text-red-600 dark:text-red-400',
+      label: t('inmobiliaria.cobros.resumen.rateLow'),
+      trend: 'down' as const,
+    };
+  };
+
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
   // Format month for display
-  const monthDisplay = new Date(summary.month + '-01').toLocaleDateString('es-CO', {
+  const monthDisplay = formatDate(new Date(summary.month + '-01'), {
     month: 'long',
     year: 'numeric',
   });
@@ -132,7 +132,7 @@ export function CobroResumen({
               {monthDisplay}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Resumen de cobros
+              {t('inmobiliaria.cobros.resumen.summaryTitle')}
             </p>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function CobroResumen({
           <button
             onClick={onRefresh}
             className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="Actualizar datos"
+            title={t('inmobiliaria.cobros.resumen.refreshTooltip')}
           >
             <ArrowClockwise className="w-5 h-5" />
           </button>
@@ -152,7 +152,7 @@ export function CobroResumen({
         {/* Collection Rate - Hero Section */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Tasa de recaudo</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.collectionRate')}</p>
             <div className="flex items-baseline gap-2">
               <motion.span
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -174,7 +174,7 @@ export function CobroResumen({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground mb-1">Por cobrar</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.toCollect')}</p>
             <p className="text-2xl font-bold text-foreground">
               {formatCurrency(summary.totalExpected)}
             </p>
@@ -197,14 +197,15 @@ export function CobroResumen({
           <div className="p-3 rounded-lg bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">Cobrado</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.collected')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalCollected}
               className="text-lg font-bold text-foreground"
+              formatFn={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
-              {summary.cobrosPaid} pagos
+              {t('inmobiliaria.cobros.resumen.payments', { count: summary.cobrosPaid })}
             </p>
           </div>
 
@@ -212,14 +213,15 @@ export function CobroResumen({
           <div className="p-3 rounded-lg bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-amber-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">Pendiente</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalPending}
               className="text-lg font-bold text-foreground"
+              formatFn={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
-              {summary.cobrosPending} cobros
+              {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosPending })}
             </p>
           </div>
 
@@ -227,14 +229,15 @@ export function CobroResumen({
           <div className="p-3 rounded-lg bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <Warning className="w-4 h-4 text-red-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">En mora</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalLate}
               className="text-lg font-bold text-foreground"
+              formatFn={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
-              {summary.cobrosLate} cobros
+              {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosLate })}
             </p>
           </div>
         </div>
@@ -249,7 +252,7 @@ export function CobroResumen({
               >
                 <span className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-amber-500" weight="fill" />
-                  Ver pendientes
+                  {t('inmobiliaria.cobros.resumen.viewPending')}
                 </span>
                 <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
@@ -261,7 +264,7 @@ export function CobroResumen({
               >
                 <span className="flex items-center gap-2">
                   <Warning className="w-4 h-4 text-red-500" weight="fill" />
-                  Ver morosos
+                  {t('inmobiliaria.cobros.resumen.viewLate')}
                 </span>
                 <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
@@ -283,12 +286,36 @@ export function CobroResumenCompact({
   summary: CobroSummary;
   className?: string;
 }) {
+  const { t, formatCurrency } = useTranslation();
+
+  const getCollectionRateInfo = (rate: number) => {
+    if (rate >= 90) {
+      return {
+        fill: 'bg-emerald-500',
+        text: 'text-emerald-600 dark:text-emerald-400',
+        trend: 'up' as const,
+      };
+    }
+    if (rate >= 70) {
+      return {
+        fill: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-400',
+        trend: 'neutral' as const,
+      };
+    }
+    return {
+      fill: 'bg-red-500',
+      text: 'text-red-600 dark:text-red-400',
+      trend: 'down' as const,
+    };
+  };
+
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
   return (
     <div className={cn('p-4 rounded-xl border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-foreground">Recaudo</span>
+        <span className="text-sm font-medium text-foreground">{t('inmobiliaria.cobros.resumen.compactCollection')}</span>
         <div className="flex items-center gap-1.5">
           <span className="text-xl font-bold text-foreground">
             {summary.collectionRate.toFixed(0)}%
@@ -311,7 +338,7 @@ export function CobroResumenCompact({
         <span className="text-foreground font-medium">
           {formatCurrency(summary.totalCollected)}
         </span>
-        <span className="text-muted-foreground">de</span>
+        <span className="text-muted-foreground">{t('inmobiliaria.cobros.resumen.compactOf')}</span>
         <span className="text-muted-foreground">
           {formatCurrency(summary.totalExpected)}
         </span>

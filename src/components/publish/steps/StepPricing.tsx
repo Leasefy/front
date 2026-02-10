@@ -6,16 +6,18 @@ import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
 
 export function StepPricing() {
+  const { locale } = useTranslation();
   const { draft, updateDraft } = usePublish();
   const [hasAdminFee, setHasAdminFee] = useState(draft.adminFee > 0);
   const [hasDeposit, setHasDeposit] = useState(draft.deposit > 0);
 
   const formatInputValue = (value: number) => {
     if (value === 0) return '';
-    return value.toLocaleString('es-CO');
+    return value.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US');
   };
 
   const parseInputValue = (value: string) => {

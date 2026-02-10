@@ -15,6 +15,7 @@ import {
   Image,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 interface ActaEntregaViewProps {
@@ -26,29 +27,29 @@ interface ActaEntregaViewProps {
 }
 
 // Condition styling
-const CONDITION_STYLES: Record<InventoryItem['condition'], { bg: string; text: string; label: string; icon: React.ElementType }> = {
+const CONDITION_STYLES: Record<InventoryItem['condition'], { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   excellent: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Excelente',
+    labelKey: 'inmobiliaria.acta.condExcellent',
     icon: CheckCircle,
   },
   good: {
     bg: 'bg-blue-100 dark:bg-blue-900/30',
     text: 'text-blue-700 dark:text-blue-400',
-    label: 'Bueno',
+    labelKey: 'inmobiliaria.acta.condGood',
     icon: CheckCircle,
   },
   fair: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'Regular',
+    labelKey: 'inmobiliaria.acta.condFair',
     icon: Warning,
   },
   poor: {
     bg: 'bg-rose-100 dark:bg-rose-900/30',
     text: 'text-rose-700 dark:text-rose-400',
-    label: 'Malo',
+    labelKey: 'inmobiliaria.acta.condPoor',
     icon: Warning,
   },
 };
@@ -64,18 +65,11 @@ export function ActaEntregaView({
   onPrint,
   onDownload,
 }: ActaEntregaViewProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const hasItems = inventoryItems && inventoryItems.length > 0;
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
 
   // Filter items by search term
   const filteredItems = hasItems
@@ -95,7 +89,7 @@ export function ActaEntregaView({
     : { excellent: 0, good: 0, fair: 0, poor: 0 };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center justify-between mb-2">
@@ -103,14 +97,14 @@ export function ActaEntregaView({
             <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
               <Package className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">Acta de Entrega</h3>
+            <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.acta.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onPrint}
               className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
               disabled
-              title="Próximamente"
+              title={t('inmobiliaria.acta.comingSoon')}
             >
               <Printer className="w-4 h-4" />
             </button>
@@ -118,14 +112,14 @@ export function ActaEntregaView({
               onClick={onDownload}
               className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
               disabled
-              title="Próximamente"
+              title={t('inmobiliaria.acta.comingSoon')}
             >
               <DownloadSimple className="w-4 h-4" />
             </button>
           </div>
         </div>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Fecha de entrega: {formatDate(contractDate)}
+          {t('inmobiliaria.acta.deliveryDateLabel')}: {fmtDate(contractDate)}
         </p>
       </div>
 
@@ -146,7 +140,7 @@ export function ActaEntregaView({
                     )}
                   >
                     <p className={cn('text-lg font-bold', style.text)}>{count}</p>
-                    <p className={cn('text-xs', style.text)}>{style.label}</p>
+                    <p className={cn('text-xs', style.text)}>{t(style.labelKey)}</p>
                   </div>
                 );
               })}
@@ -157,7 +151,7 @@ export function ActaEntregaView({
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
-                placeholder="Buscar item..."
+                placeholder={t('inmobiliaria.acta.searchItem')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
@@ -170,19 +164,19 @@ export function ActaEntregaView({
                 <thead>
                   <tr className="border-b border-neutral-100 dark:border-neutral-800">
                     <th className="text-left py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                      Item
+                      {t('inmobiliaria.acta.thItem')}
                     </th>
                     <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                      Cant.
+                      {t('inmobiliaria.acta.thQty')}
                     </th>
                     <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                      Estado
+                      {t('inmobiliaria.acta.thCondition')}
                     </th>
                     <th className="text-left py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                      Notas
+                      {t('inmobiliaria.acta.thNotes')}
                     </th>
                     <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                      Foto
+                      {t('inmobiliaria.acta.thPhoto')}
                     </th>
                   </tr>
                 </thead>
@@ -218,7 +212,7 @@ export function ActaEntregaView({
                               )}
                             >
                               <Icon className="w-3 h-3" />
-                              {style.label}
+                              {t(style.labelKey)}
                             </span>
                           </div>
                         </td>
@@ -273,7 +267,7 @@ export function ActaEntregaView({
                       <div>
                         <p className="font-medium text-neutral-900 dark:text-white">{item.name}</p>
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                          Cantidad: {item.quantity}
+                          {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>
                       </div>
                       <span
@@ -284,7 +278,7 @@ export function ActaEntregaView({
                         )}
                       >
                         <Icon className="w-3 h-3" />
-                        {style.label}
+                        {t(style.labelKey)}
                       </span>
                     </div>
                     {item.notes && (
@@ -312,16 +306,16 @@ export function ActaEntregaView({
             {/* Total Count */}
             <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
               <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                Total: {filteredItems.length} items
+                {t('inmobiliaria.acta.total')}: {filteredItems.length} items
               </span>
               <button
                 onClick={onAddItem}
                 className="inline-flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium opacity-50 cursor-not-allowed"
                 disabled
-                title="Próximamente"
+                title={t('inmobiliaria.acta.comingSoon')}
               >
                 <Plus className="w-4 h-4" />
-                Agregar item
+                {t('inmobiliaria.acta.addItem')}
               </button>
             </div>
           </div>
@@ -332,19 +326,19 @@ export function ActaEntregaView({
               <Package className="w-7 h-7 text-neutral-400" />
             </div>
             <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
-              No hay inventario registrado
+              {t('inmobiliaria.acta.noInventory')}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              Agrega items al acta de entrega para llevar control del estado de la propiedad
+              {t('inmobiliaria.acta.noInventoryDesc')}
             </p>
             <button
               onClick={onAddItem}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors text-sm opacity-50 cursor-not-allowed"
               disabled
-              title="Próximamente"
+              title={t('inmobiliaria.acta.comingSoon')}
             >
               <Plus className="w-4 h-4" />
-              Agregar inventario
+              {t('inmobiliaria.acta.addInventory')}
             </button>
           </div>
         )}
@@ -369,7 +363,7 @@ export function ActaEntregaView({
             >
               <img
                 src={selectedImage}
-                alt="Vista ampliada"
+                alt={t('inmobiliaria.acta.expandedView')}
                 className="max-w-full max-h-[80vh] object-contain"
               />
               <button

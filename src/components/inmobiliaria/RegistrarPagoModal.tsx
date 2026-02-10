@@ -22,6 +22,7 @@ import {
   DotsThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -31,16 +32,16 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Cobro } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
-// Payment methods with their icons
-const PAYMENT_METHODS = [
-  { value: 'transferencia', label: 'Transferencia', icon: Bank },
-  { value: 'efectivo', label: 'Efectivo', icon: Money },
-  { value: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
-  { value: 'cheque', label: 'Cheque', icon: FileText },
-  { value: 'pse', label: 'PSE', icon: Wallet },
-  { value: 'otro', label: 'Otro', icon: DotsThree },
+// Payment methods with their icons (labels handled by i18n)
+const PAYMENT_METHOD_KEYS = [
+  { value: 'transferencia', key: 'inmobiliaria.cobros.registerModal.paymentMethods.transferencia', icon: Bank },
+  { value: 'efectivo', key: 'inmobiliaria.cobros.registerModal.paymentMethods.efectivo', icon: Money },
+  { value: 'tarjeta', key: 'inmobiliaria.cobros.registerModal.paymentMethods.tarjeta', icon: CreditCard },
+  { value: 'cheque', key: 'inmobiliaria.cobros.registerModal.paymentMethods.cheque', icon: FileText },
+  { value: 'pse', key: 'inmobiliaria.cobros.registerModal.paymentMethods.pse', icon: Wallet },
+  { value: 'otro', key: 'inmobiliaria.cobros.registerModal.paymentMethods.otro', icon: DotsThree },
 ] as const;
 
 interface PaymentFormData {
@@ -78,6 +79,7 @@ export function RegistrarPagoModal({
   cobrosList,
   onSubmit,
 }: RegistrarPagoModalProps) {
+  const { t, locale, formatDate, formatCurrency } = useTranslation();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmation, setShowConfirmation] = React.useState(false);
   const [selectedCobroId, setSelectedCobroId] = React.useState<string | null>(
@@ -131,7 +133,7 @@ export function RegistrarPagoModal({
 
   // Format number for input display
   const formatInputAmount = (value: number): string => {
-    return new Intl.NumberFormat('es-CO', {
+    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
       maximumFractionDigits: 0,
     }).format(value);
   };
@@ -181,8 +183,8 @@ export function RegistrarPagoModal({
         notes: data.notes || undefined,
       }, cobro.id);
 
-      toast.success('Pago registrado', {
-        description: `Se registro un pago de ${formatCurrency(parseAmount(data.amount))}`,
+      toast.success(t('inmobiliaria.cobros.toasts.paymentRegistered'), {
+        description: t('inmobiliaria.cobros.toasts.paymentRegisteredDesc', { amount: formatCurrency(parseAmount(data.amount)) }),
       });
 
       reset();
@@ -190,8 +192,8 @@ export function RegistrarPagoModal({
       setSelectedCobroId(null);
       onClose();
     } catch (error) {
-      toast.error('Error al registrar pago', {
-        description: 'Por favor intenta de nuevo',
+      toast.error(t('inmobiliaria.cobros.toasts.paymentError'), {
+        description: t('inmobiliaria.cobros.toasts.paymentErrorDesc'),
       });
     } finally {
       setIsSubmitting(false);
@@ -220,10 +222,10 @@ export function RegistrarPagoModal({
         <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <CurrencyCircleDollar className="w-5 h-5 text-indigo-600" />
-            Registrar Pago
+            {t('inmobiliaria.cobros.registerModal.title')}
           </DialogTitle>
           <DialogDescription>
-            {cobro ? `${cobro.propertyTitle} - ${cobro.tenantName}` : 'Selecciona un cobro pendiente'}
+            {cobro ? `${cobro.propertyTitle} - ${cobro.tenantName}` : t('inmobiliaria.cobros.registerModal.selectCobro')}
           </DialogDescription>
         </DialogHeader>
 
@@ -233,12 +235,12 @@ export function RegistrarPagoModal({
         {showCobroSelector && !cobro && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Selecciona el cobro para registrar el pago:
+              {t('inmobiliaria.cobros.registerModal.selectCobroDesc')}
             </p>
             <div className="max-h-64 overflow-y-auto space-y-2">
               {pendingCobros.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground text-sm rounded-xl border border-dashed border-border">
-                  No hay cobros pendientes
+                  {t('inmobiliaria.cobros.registerModal.noPendingCobros')}
                 </div>
               ) : (
                 pendingCobros.map((c) => (
@@ -270,7 +272,11 @@ export function RegistrarPagoModal({
                           'text-xs',
                           c.status === 'late' ? 'text-red-500' : 'text-muted-foreground'
                         )}>
-                          {c.status === 'late' ? 'Vencido' : c.status === 'partial' ? 'Parcial' : 'Pendiente'}
+                          {c.status === 'late'
+                            ? t('inmobiliaria.cobros.registerModal.statusOverdue')
+                            : c.status === 'partial'
+                            ? t('inmobiliaria.cobros.registerModal.statusPartial')
+                            : t('inmobiliaria.cobros.registerModal.statusPending')}
                         </p>
                       </div>
                     </div>
@@ -298,18 +304,16 @@ export function RegistrarPagoModal({
                   <Warning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" weight="fill" />
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                      Pago Parcial
+                      {t('inmobiliaria.cobros.registerModal.partialPayment')}
                     </h4>
                     <p className="text-sm text-amber-700 dark:text-amber-400">
-                      Estas registrando un pago parcial de{' '}
-                      <span className="font-semibold">{formatCurrency(parsedAmount)}</span>.
-                      Quedara un saldo pendiente de{' '}
-                      <span className="font-semibold">
-                        {formatCurrency(cobro.pendingAmount - parsedAmount)}
-                      </span>.
+                      {t('inmobiliaria.cobros.registerModal.partialPaymentMessage', {
+                        amount: formatCurrency(parsedAmount),
+                        remaining: formatCurrency(cobro.pendingAmount - parsedAmount),
+                      })}
                     </p>
                     <p className="text-sm text-amber-600 dark:text-amber-500">
-                      ¿Deseas continuar con este pago parcial?
+                      {t('inmobiliaria.cobros.registerModal.partialPaymentConfirm')}
                     </p>
                   </div>
                 </div>
@@ -323,7 +327,7 @@ export function RegistrarPagoModal({
                   onClick={handleCancelConfirmation}
                   disabled={isSubmitting}
                 >
-                  Cancelar
+                  {t('inmobiliaria.cobros.registerModal.cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -337,10 +341,10 @@ export function RegistrarPagoModal({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Registrando...
+                      {t('inmobiliaria.cobros.registerModal.registering')}
                     </span>
                   ) : (
-                    'Confirmar Pago Parcial'
+                    t('inmobiliaria.cobros.registerModal.confirmPartial')
                   )}
                 </Button>
               </div>
@@ -380,18 +384,18 @@ export function RegistrarPagoModal({
                 {/* Amount Details */}
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
                   <div>
-                    <p className="text-xs text-muted-foreground">Mes</p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
                     <p className="text-sm font-medium text-foreground">
-                      {new Date(cobro.month + '-01').toLocaleDateString('es-CO', {
+                      {formatDate(new Date(cobro.month + '-01'), {
                         month: 'long',
                         year: 'numeric',
                       })}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Vencimiento</p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
                     <p className="text-sm font-medium text-foreground">
-                      {new Date(cobro.dueDate).toLocaleDateString('es-CO', {
+                      {formatDate(new Date(cobro.dueDate), {
                         day: 'numeric',
                         month: 'short',
                       })}
@@ -402,21 +406,21 @@ export function RegistrarPagoModal({
                 {/* Amounts Row */}
                 <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.registerModal.totalLabel')}</p>
                     <p className="text-sm font-medium text-foreground">
                       {formatCurrency(cobro.totalWithFees)}
                     </p>
                   </div>
                   {cobro.paidAmount > 0 && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Abonado</p>
+                      <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.registerModal.advancedLabel')}</p>
                       <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                         {formatCurrency(cobro.paidAmount)}
                       </p>
                     </div>
                   )}
                   <div>
-                    <p className="text-xs text-muted-foreground">Pendiente</p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.registerModal.pendingLabel')}</p>
                     <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                       {formatCurrency(cobro.pendingAmount)}
                     </p>
@@ -427,7 +431,7 @@ export function RegistrarPagoModal({
                 {cobro.lateFee > 0 && (
                   <div className="flex items-center gap-2 pt-2 text-xs text-orange-600 dark:text-orange-400">
                     <Warning className="w-4 h-4" />
-                    <span>Incluye {formatCurrency(cobro.lateFee)} de interes por mora</span>
+                    <span>{t('inmobiliaria.cobros.registerModal.lateFeeWarning', { amount: formatCurrency(cobro.lateFee) })}</span>
                   </div>
                 )}
               </div>
@@ -438,14 +442,14 @@ export function RegistrarPagoModal({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-foreground">
-                      Monto a registrar
+                      {t('inmobiliaria.cobros.registerModal.amountLabel')}
                     </label>
                     <button
                       type="button"
                       onClick={handleFullPayment}
                       className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
                     >
-                      Pago total
+                      {t('inmobiliaria.cobros.registerModal.fullPayment')}
                     </button>
                   </div>
                   <div className="relative">
@@ -454,12 +458,12 @@ export function RegistrarPagoModal({
                     </span>
                     <input
                       {...register('amount', {
-                        required: 'El monto es requerido',
+                        required: t('inmobiliaria.cobros.registerModal.amountRequired'),
                         validate: {
-                          positive: (v) => parseAmount(v) > 0 || 'El monto debe ser mayor a 0',
+                          positive: (v) => parseAmount(v) > 0 || t('inmobiliaria.cobros.registerModal.amountPositive'),
                           notOver: (v) =>
                             parseAmount(v) <= cobro.pendingAmount ||
-                            `El monto no puede superar ${formatCurrency(cobro.pendingAmount)}`,
+                            t('inmobiliaria.cobros.registerModal.amountExceeds', { max: formatCurrency(cobro.pendingAmount) }),
                         },
                       })}
                       type="text"
@@ -482,7 +486,7 @@ export function RegistrarPagoModal({
                   {isPartialPayment && !errors.amount && (
                     <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                       <Warning className="w-3.5 h-3.5" />
-                      Pago parcial - quedara saldo de {formatCurrency(cobro.pendingAmount - parsedAmount)}
+                      {t('inmobiliaria.cobros.registerModal.partialWarning', { remaining: formatCurrency(cobro.pendingAmount - parsedAmount) })}
                     </p>
                   )}
                 </div>
@@ -490,10 +494,10 @@ export function RegistrarPagoModal({
                 {/* Payment Method */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
-                    Metodo de pago
+                    {t('inmobiliaria.cobros.registerModal.method')}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {PAYMENT_METHODS.map((method) => {
+                    {PAYMENT_METHOD_KEYS.map((method) => {
                       const Icon = method.icon;
                       const isSelected = watch('method') === method.value;
                       return (
@@ -524,7 +528,7 @@ export function RegistrarPagoModal({
                                 : 'text-muted-foreground'
                             )}
                           >
-                            {method.label}
+                            {t(method.key)}
                           </span>
                         </button>
                       );
@@ -532,7 +536,7 @@ export function RegistrarPagoModal({
                   </div>
                   <input
                     type="hidden"
-                    {...register('method', { required: 'Selecciona un metodo de pago' })}
+                    {...register('method', { required: t('inmobiliaria.cobros.registerModal.methodRequired') })}
                   />
                   {errors.method && (
                     <p className="text-xs text-destructive">{errors.method.message}</p>
@@ -543,10 +547,10 @@ export function RegistrarPagoModal({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    Fecha del pago
+                    {t('inmobiliaria.cobros.registerModal.dateLabel')}
                   </label>
                   <input
-                    {...register('date', { required: 'La fecha es requerida' })}
+                    {...register('date', { required: t('inmobiliaria.cobros.registerModal.dateRequired') })}
                     type="date"
                     max={today}
                     className={cn(
@@ -564,13 +568,13 @@ export function RegistrarPagoModal({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-muted-foreground" />
-                    Referencia / Comprobante
-                    <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                    {t('inmobiliaria.cobros.registerModal.referenceLabel')}
+                    <span className="text-xs text-muted-foreground font-normal">({t('inmobiliaria.cobros.registerModal.optional')})</span>
                   </label>
                   <input
                     {...register('reference')}
                     type="text"
-                    placeholder="Ej: TRF-123456"
+                    placeholder={t('inmobiliaria.cobros.registerModal.referencePlaceholder')}
                     className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
@@ -579,13 +583,13 @@ export function RegistrarPagoModal({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Note className="w-4 h-4 text-muted-foreground" />
-                    Notas
-                    <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                    {t('inmobiliaria.cobros.registerModal.notesLabel')}
+                    <span className="text-xs text-muted-foreground font-normal">({t('inmobiliaria.cobros.registerModal.optional')})</span>
                   </label>
                   <textarea
                     {...register('notes')}
                     rows={2}
-                    placeholder="Notas adicionales sobre este pago..."
+                    placeholder={t('inmobiliaria.cobros.registerModal.notesPlaceholder')}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
                   />
                 </div>
@@ -600,7 +604,7 @@ export function RegistrarPagoModal({
                   onClick={handleClose}
                   disabled={isSubmitting}
                 >
-                  Cancelar
+                  {t('inmobiliaria.cobros.registerModal.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -613,10 +617,10 @@ export function RegistrarPagoModal({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Registrando...
+                      {t('inmobiliaria.cobros.registerModal.registering')}
                     </span>
                   ) : (
-                    'Registrar Pago'
+                    t('inmobiliaria.cobros.registerModal.register')
                   )}
                 </Button>
               </div>

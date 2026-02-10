@@ -17,6 +17,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
 // Timeline event types
@@ -105,6 +106,7 @@ export function ConsignacionTimeline({
   maxVisibleItems = 5,
 }: ConsignacionTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useTranslation();
 
   // Generate timeline events from consignacion data
   const events = useMemo(() => {
@@ -115,9 +117,9 @@ export function ConsignacionTimeline({
       id: 'evt-1',
       type: 'consignacion_created',
       date: consignacion.contractDate,
-      title: 'Consignación creada',
-      description: 'Se firmó el contrato de consignación con el propietario',
-      actor: 'Sistema',
+      title: t('inmobiliaria.consignaciones.timeline.events.consignacionCreated'),
+      description: t('inmobiliaria.consignaciones.timeline.events.consignacionCreatedDesc'),
+      actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
     });
 
     // 2. Agent assigned (same day or day after)
@@ -127,9 +129,9 @@ export function ConsignacionTimeline({
       id: 'evt-2',
       type: 'agent_assigned',
       date: agentDate.toISOString().split('T')[0],
-      title: 'Agente asignado',
-      description: agenteName ? `${agenteName} asignado como agente responsable` : 'Agente responsable asignado',
-      actor: 'Coordinador',
+      title: t('inmobiliaria.consignaciones.timeline.events.agentAssigned'),
+      description: agenteName ? t('inmobiliaria.consignaciones.timeline.events.agentAssignedWithName', { name: agenteName }) : t('inmobiliaria.consignaciones.timeline.events.agentAssignedDefault'),
+      actor: t('inmobiliaria.consignaciones.timeline.actors.coordinator'),
     });
 
     // 3. Property published (2-3 days after)
@@ -140,9 +142,9 @@ export function ConsignacionTimeline({
         id: 'evt-3',
         type: 'property_published',
         date: publishDate.toISOString().split('T')[0],
-        title: 'Propiedad publicada',
-        description: 'La propiedad fue publicada en el portal de arriendos',
-        actor: agenteName || 'Agente',
+        title: t('inmobiliaria.consignaciones.timeline.events.propertyPublished'),
+        description: t('inmobiliaria.consignaciones.timeline.events.propertyPublishedDesc'),
+        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
       });
     }
 
@@ -158,9 +160,9 @@ export function ConsignacionTimeline({
         id: 'evt-4',
         type: 'visit_scheduled',
         date: visit1ScheduledDate.toISOString().split('T')[0],
-        title: 'Visita programada',
-        description: 'Primera visita con interesado',
-        actor: agenteName || 'Agente',
+        title: t('inmobiliaria.consignaciones.timeline.events.visitScheduled'),
+        description: t('inmobiliaria.consignaciones.timeline.events.firstVisit'),
+        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
       });
 
       // First visit completed
@@ -170,9 +172,9 @@ export function ConsignacionTimeline({
         id: 'evt-5',
         type: 'visit_completed',
         date: visit1CompletedDate.toISOString().split('T')[0],
-        title: 'Visita realizada',
-        description: 'Se completó la visita con el interesado',
-        actor: agenteName || 'Agente',
+        title: t('inmobiliaria.consignaciones.timeline.events.visitCompleted'),
+        description: t('inmobiliaria.consignaciones.timeline.events.visitCompletedDesc'),
+        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
       });
 
       if (daysSinceContract > 14) {
@@ -183,9 +185,9 @@ export function ConsignacionTimeline({
           id: 'evt-6',
           type: 'visit_scheduled',
           date: visit2Date.toISOString().split('T')[0],
-          title: 'Visita programada',
-          description: 'Segunda visita con nuevo interesado',
-          actor: agenteName || 'Agente',
+          title: t('inmobiliaria.consignaciones.timeline.events.visitScheduled'),
+          description: t('inmobiliaria.consignaciones.timeline.events.secondVisit'),
+          actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
         });
 
         const visit2CompletedDate = new Date(visit2Date);
@@ -194,9 +196,9 @@ export function ConsignacionTimeline({
           id: 'evt-7',
           type: 'visit_completed',
           date: visit2CompletedDate.toISOString().split('T')[0],
-          title: 'Visita realizada',
-          description: 'Se completó la segunda visita',
-          actor: agenteName || 'Agente',
+          title: t('inmobiliaria.consignaciones.timeline.events.visitCompleted'),
+          description: t('inmobiliaria.consignaciones.timeline.events.secondVisitCompleted'),
+          actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
         });
       }
     }
@@ -214,9 +216,9 @@ export function ConsignacionTimeline({
         id: 'evt-8',
         type: 'candidate_approved',
         date: approvedDate.toISOString().split('T')[0],
-        title: 'Candidato aprobado',
-        description: `${consignacion.currentTenantName} fue aprobado como inquilino`,
-        actor: 'Sistema de scoring',
+        title: t('inmobiliaria.consignaciones.timeline.events.candidateApproved'),
+        description: t('inmobiliaria.consignaciones.timeline.events.candidateApprovedDesc', { name: consignacion.currentTenantName }),
+        actor: t('inmobiliaria.consignaciones.timeline.actors.scoringSystem'),
       });
 
       // 7. Contract signed (days after approval)
@@ -226,8 +228,8 @@ export function ConsignacionTimeline({
         id: 'evt-9',
         type: 'contract_signed',
         date: signedDate.toISOString().split('T')[0],
-        title: 'Contrato firmado',
-        description: 'Se firmó el contrato de arrendamiento',
+        title: t('inmobiliaria.consignaciones.timeline.events.contractSigned'),
+        description: t('inmobiliaria.consignaciones.timeline.events.contractSignedDesc'),
         actor: consignacion.currentTenantName,
       });
 
@@ -238,51 +240,30 @@ export function ConsignacionTimeline({
         id: 'evt-10',
         type: 'handover_completed',
         date: handoverDate.toISOString().split('T')[0],
-        title: 'Entrega realizada',
-        description: 'Se entregó la propiedad al inquilino con acta de entrega',
-        actor: agenteName || 'Agente',
+        title: t('inmobiliaria.consignaciones.timeline.events.handoverCompleted'),
+        description: t('inmobiliaria.consignaciones.timeline.events.handoverCompletedDesc'),
+        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
       });
     }
 
     // Sort by date descending (newest first)
     return generatedEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [consignacion, agenteName]);
+  }, [consignacion, agenteName, t]);
 
   const visibleEvents = isExpanded ? events : events.slice(0, maxVisibleItems);
   const hasMoreEvents = events.length > maxVisibleItems;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const formatRelativeDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Hoy';
-    if (diffDays === 1) return 'Ayer';
-    if (diffDays < 7) return `Hace ${diffDays} días`;
-    if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`;
-    if (diffDays < 365) return `Hace ${Math.floor(diffDays / 30)} meses`;
-    return `Hace ${Math.floor(diffDays / 365)} años`;
-  };
-
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
             <Clock className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
           </div>
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Historial</h3>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
           <span className="ml-auto text-sm text-neutral-500 dark:text-neutral-400">
-            {events.length} eventos
+            {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
           </span>
         </div>
       </div>
@@ -326,7 +307,7 @@ export function ConsignacionTimeline({
                           {event.title}
                         </h4>
                         <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
-                          {formatRelativeDate(event.date)}
+                          {fmtRelDate(event.date)}
                         </span>
                       </div>
 
@@ -337,7 +318,7 @@ export function ConsignacionTimeline({
                       )}
 
                       <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
-                        <span>{formatDate(event.date)}</span>
+                        <span>{fmtDate(event.date)}</span>
                         {event.actor && (
                           <>
                             <span>•</span>
@@ -362,7 +343,7 @@ export function ConsignacionTimeline({
             onClick={() => setIsExpanded(!isExpanded)}
             className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium"
           >
-            {isExpanded ? 'Ver menos' : `Ver ${events.length - maxVisibleItems} eventos más`}
+            {isExpanded ? t('inmobiliaria.consignaciones.timeline.showLess') : t('inmobiliaria.consignaciones.timeline.showMoreEvents', { count: events.length - maxVisibleItems })}
             <CaretDown
               className={cn(
                 'w-4 h-4 transition-transform',

@@ -11,11 +11,13 @@ import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 /**
  * Inner checkout component that uses search params
  */
 function CheckoutContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -39,7 +41,7 @@ function CheckoutContent() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // In real app, would integrate with payment provider
-    alert(`Pago exitoso! Plan ${plan.name} activado.`);
+    alert(t('landlord.checkout.paymentSuccess', { name: plan.name }));
 
     setIsProcessing(false);
     router.push('/panel');
@@ -55,16 +57,16 @@ function CheckoutContent() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Back link */}
         <div className="mb-6">
-          <BackButton href="/panel/upgrade" label="Volver a planes" />
+          <BackButton href="/panel/upgrade" label={t('landlord.checkout.backToPlans')} />
         </div>
 
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">
-            Checkout
+            {t('landlord.checkout.title')}
           </h1>
           <p className="text-muted-foreground">
-            Estas por suscribirte al plan{' '}
+            {t('landlord.checkout.subscribingTo')}{' '}
             <span className="font-medium text-foreground">{plan.name}</span>
           </p>
         </div>
@@ -80,7 +82,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-foreground">
-                    Plan {plan.name}
+                    {t('landlord.checkout.planLabel', { name: plan.name })}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {plan.description}
@@ -95,7 +97,7 @@ function CheckoutContent() {
                         <span>{feature.name}</span>
                         {feature.limit && feature.limit !== 'unlimited' && (
                           <span className="text-muted-foreground">
-                            (hasta {feature.limit})
+                            ({t('landlord.checkout.upTo', { limit: feature.limit })})
                           </span>
                         )}
                       </li>
@@ -108,7 +110,7 @@ function CheckoutContent() {
             {/* Billing cycle selector */}
             <div className="bg-card rounded-sm border border-border p-5">
               <label className="text-sm font-medium text-foreground mb-3 block">
-                Ciclo de facturacion
+                {t('landlord.checkout.billingCycle')}
               </label>
               <div className="flex gap-3">
                 <button
@@ -120,13 +122,13 @@ function CheckoutContent() {
                       : 'border-border text-muted-foreground hover:border-border'
                   )}
                 >
-                  <span className="block">Mensual</span>
+                  <span className="block">{t('landlord.checkout.monthly')}</span>
                   <span className={cn(
                     'block mt-1 text-lg font-bold',
                     billingCycle === 'monthly' ? 'text-primary' : 'text-foreground'
                   )}>
                     {formatCurrency(plan.price.monthly)}
-                    <span className="text-sm font-normal text-muted-foreground">/mes</span>
+                    <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
                   </span>
                 </button>
                 <button
@@ -141,13 +143,13 @@ function CheckoutContent() {
                   <span className="absolute -top-2.5 right-3 px-2 py-0.5 text-xs font-medium bg-emerald-500 text-white rounded-sm">
                     -20%
                   </span>
-                  <span className="block">Anual</span>
+                  <span className="block">{t('landlord.checkout.yearly')}</span>
                   <span className={cn(
                     'block mt-1 text-lg font-bold',
                     billingCycle === 'yearly' ? 'text-primary' : 'text-foreground'
                   )}>
                     {formatCurrency(plan.price.yearly)}
-                    <span className="text-sm font-normal text-muted-foreground">/ano</span>
+                    <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
                   </span>
                 </button>
               </div>
@@ -184,12 +186,12 @@ function CheckoutContent() {
                 {isProcessing ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Procesando...
+                    {t('landlord.checkout.processing')}
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Pagar ahora
+                    {t('landlord.checkout.payNow')}
                   </>
                 )}
               </Button>
@@ -197,7 +199,7 @@ function CheckoutContent() {
               {/* Security note */}
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Lock className="w-3 h-3" />
-                <span>Pago seguro procesado por Stripe</span>
+                <span>{t('landlord.checkout.securePayment')}</span>
               </div>
 
               {/* Trust badges */}
@@ -213,7 +215,7 @@ function CheckoutContent() {
         {/* Robottom trust message */}
         <div className="mt-12 text-center">
           <p className="text-sm text-muted-foreground">
-            Puedes cancelar en cualquier momento. Sin compromisos.
+            {t('landlord.checkout.cancelAnytime')}
           </p>
         </div>
       </div>

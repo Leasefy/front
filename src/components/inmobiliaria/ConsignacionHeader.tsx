@@ -23,6 +23,7 @@ import {
   Timer,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -45,65 +46,55 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   warehouse: Warehouse,
 };
 
-// Property type labels
-const PROPERTY_TYPE_LABELS: Record<Consignacion['propertyType'], string> = {
-  apartment: 'Apartamento',
-  house: 'Casa',
-  studio: 'Estudio',
-  commercial: 'Local Comercial',
-  office: 'Oficina',
-  warehouse: 'Bodega',
-};
-
-// Availability status colors
-const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: string; label: string; icon: React.ElementType }> = {
+// Availability status colors (labels resolved via i18n in component)
+const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   available: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Disponible',
+    labelKey: 'inmobiliaria.consignaciones.availability.available',
     icon: CheckCircle,
   },
   rented: {
     bg: 'bg-indigo-100 dark:bg-indigo-900/30',
     text: 'text-indigo-700 dark:text-indigo-400',
-    label: 'Arrendado',
+    labelKey: 'inmobiliaria.consignaciones.availability.rented',
     icon: House,
   },
   in_process: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'En proceso',
+    labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
     icon: Timer,
   },
   maintenance: {
     bg: 'bg-rose-100 dark:bg-rose-900/30',
     text: 'text-rose-700 dark:text-rose-400',
-    label: 'Mantenimiento',
+    labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
     icon: Wrench,
   },
 };
 
-// Consignacion status colors
-const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; label: string }> = {
+// Consignacion status colors (labels resolved via i18n in component)
+const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labelKey: string }> = {
   active: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Activa',
+    labelKey: 'inmobiliaria.consignaciones.status.active',
   },
   pending: {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     text: 'text-amber-700 dark:text-amber-400',
-    label: 'Pendiente',
+    labelKey: 'inmobiliaria.consignaciones.status.pending',
   },
   expired: {
     bg: 'bg-neutral-100 dark:bg-neutral-800',
     text: 'text-neutral-600 dark:text-neutral-400',
-    label: 'Expirada',
+    labelKey: 'inmobiliaria.consignaciones.status.expired',
   },
   terminated: {
     bg: 'bg-rose-100 dark:bg-rose-900/30',
     text: 'text-rose-700 dark:text-rose-400',
-    label: 'Terminada',
+    labelKey: 'inmobiliaria.consignaciones.status.terminated',
   },
 };
 
@@ -121,25 +112,18 @@ export function ConsignacionHeader({
 }: ConsignacionHeaderProps) {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const { t, formatDate } = useTranslation();
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
   const availability = AVAILABILITY_STYLES[consignacion.availability];
   const status = STATUS_STYLES[consignacion.status];
   const AvailabilityIcon = availability.icon;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-      <div className="flex flex-col lg:flex-row rounded-2xl">
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
-        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-800 overflow-hidden rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl">
+        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-800 overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -156,7 +140,7 @@ export function ConsignacionHeader({
           <div className="absolute bottom-3 left-3">
             <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
               <PropertyIcon className="w-4 h-4" />
-              {PROPERTY_TYPE_LABELS[consignacion.propertyType]}
+              {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
             </span>
           </div>
 
@@ -164,7 +148,7 @@ export function ConsignacionHeader({
           <div className="absolute top-3 right-3">
             <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-1.5">
               <Percent className="w-4 h-4" />
-              {consignacion.commissionPercent}% comisión
+              {consignacion.commissionPercent}% {t('inmobiliaria.consignaciones.header.commission')}
             </span>
           </div>
         </div>
@@ -175,10 +159,10 @@ export function ConsignacionHeader({
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className={cn('px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5', availability.bg, availability.text)}>
               <AvailabilityIcon className="w-4 h-4" />
-              {availability.label}
+              {t(availability.labelKey)}
             </span>
             <span className={cn('px-3 py-1 rounded-full text-sm font-medium', status.bg, status.text)}>
-              Consignación {status.label}
+              {t('inmobiliaria.consignaciones.header.consignacion')} {t(status.labelKey)}
             </span>
           </div>
 
@@ -200,10 +184,10 @@ export function ConsignacionHeader({
             <span className="text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-white">
               {formatCurrency(consignacion.monthlyRent)}
             </span>
-            <span className="text-lg text-neutral-500 dark:text-neutral-400">/mes</span>
+            <span className="text-lg text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
             {consignacion.adminFee && consignacion.adminFee > 0 && (
               <span className="text-sm text-neutral-400 dark:text-neutral-500">
-                + {formatCurrency(consignacion.adminFee)} admin
+                + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.consignaciones.header.admin')}
               </span>
             )}
           </div>
@@ -212,18 +196,18 @@ export function ConsignacionHeader({
           <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
             <div className="flex items-center gap-1.5">
               <CalendarBlank className="w-4 h-4" />
-              <span>Desde: {formatDate(consignacion.contractDate)}</span>
+              <span>{t('inmobiliaria.consignaciones.header.from')} {formatDate(consignacion.contractDate)}</span>
             </div>
             {consignacion.contractEndDate && (
               <div className="flex items-center gap-1.5">
                 <CalendarBlank className="w-4 h-4" />
-                <span>Hasta: {formatDate(consignacion.contractEndDate)}</span>
+                <span>{t('inmobiliaria.consignaciones.header.until')} {formatDate(consignacion.contractEndDate)}</span>
               </div>
             )}
             {consignacion.minimumTerm && (
               <div className="flex items-center gap-1.5">
                 <Timer className="w-4 h-4" />
-                <span>Mínimo: {consignacion.minimumTerm} meses</span>
+                <span>{t('inmobiliaria.consignaciones.header.minimum')} {consignacion.minimumTerm} {t('inmobiliaria.consignaciones.header.months')}</span>
               </div>
             )}
           </div>
@@ -236,7 +220,7 @@ export function ConsignacionHeader({
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
             >
               <PencilSimple className="w-4 h-4" />
-              Editar
+              {t('inmobiliaria.consignaciones.header.edit')}
             </button>
 
             {/* View Portal Button */}
@@ -244,10 +228,10 @@ export function ConsignacionHeader({
               onClick={onViewPortal}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors opacity-50 cursor-not-allowed"
               disabled
-              title="Próximamente"
+              title={t('inmobiliaria.consignaciones.header.comingSoon')}
             >
               <Eye className="w-4 h-4" />
-              Ver en Portal
+              {t('inmobiliaria.consignaciones.header.viewOnPortal')}
               <ArrowSquareOut className="w-4 h-4" />
             </button>
 
@@ -257,7 +241,7 @@ export function ConsignacionHeader({
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
-                Cambiar estado
+                {t('inmobiliaria.consignaciones.header.changeStatus')}
                 <CaretDown className={cn('w-4 h-4 transition-transform', showStatusDropdown && 'rotate-180')} />
               </button>
 
@@ -282,7 +266,7 @@ export function ConsignacionHeader({
                         )}
                       >
                         <Icon className={cn('w-4 h-4', style.text)} />
-                        <span className="text-neutral-700 dark:text-neutral-300">{style.label}</span>
+                        <span className="text-neutral-700 dark:text-neutral-300">{t(style.labelKey)}</span>
                         {consignacion.availability === key && (
                           <CheckCircle className="w-4 h-4 ml-auto text-indigo-500" />
                         )}
@@ -316,7 +300,7 @@ export function ConsignacionHeader({
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors rounded-t-xl"
                   >
                     <ArrowCounterClockwise className="w-4 h-4" />
-                    Renovar consignación
+                    {t('inmobiliaria.consignaciones.header.renewConsignment')}
                   </button>
                   <button
                     onClick={() => {
@@ -326,7 +310,7 @@ export function ConsignacionHeader({
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors rounded-b-xl"
                   >
                     <XCircle className="w-4 h-4" />
-                    Terminar consignación
+                    {t('inmobiliaria.consignaciones.header.terminateConsignment')}
                   </button>
                 </motion.div>
               )}

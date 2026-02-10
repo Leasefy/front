@@ -18,6 +18,7 @@ import {
   Code,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -48,38 +49,38 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 // Category tabs configuration
-const CATEGORY_TABS: { value: DocumentCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'contrato', label: 'Contratos' },
-  { value: 'acta', label: 'Actas' },
-  { value: 'inventario', label: 'Inventarios' },
-  { value: 'poliza', label: 'Polizas' },
-  { value: 'carta', label: 'Cartas' },
+const CATEGORY_TAB_KEYS: { value: DocumentCategory | 'all'; labelKey: string }[] = [
+  { value: 'all', labelKey: 'inmobiliaria.documento.catAll' },
+  { value: 'contrato', labelKey: 'inmobiliaria.documento.catContracts' },
+  { value: 'acta', labelKey: 'inmobiliaria.documento.catActas' },
+  { value: 'inventario', labelKey: 'inmobiliaria.documento.catInventory' },
+  { value: 'poliza', labelKey: 'inmobiliaria.documento.catPoliza' },
+  { value: 'carta', labelKey: 'inmobiliaria.documento.catLetters' },
 ];
 
-// Variable descriptions for the preview modal
-const VARIABLE_DESCRIPTIONS: Record<string, string> = {
-  '{{tenant_name}}': 'Nombre completo del inquilino',
-  '{{tenant_cedula}}': 'Numero de cedula del inquilino',
-  '{{property_address}}': 'Direccion completa del inmueble',
-  '{{monthly_rent}}': 'Canon mensual de arrendamiento',
-  '{{start_date}}': 'Fecha de inicio del contrato',
-  '{{end_date}}': 'Fecha de finalizacion del contrato',
-  '{{delivery_date}}': 'Fecha de entrega del inmueble',
-  '{{inventory_items}}': 'Lista de items del inventario',
-  '{{return_date}}': 'Fecha de devolucion del inmueble',
-  '{{damages}}': 'Descripcion de danos encontrados',
-  '{{deposit_deductions}}': 'Deducciones del deposito',
-  '{{rooms}}': 'Lista de habitaciones',
-  '{{appliances}}': 'Electrodomesticos incluidos',
-  '{{furniture}}': 'Muebles incluidos',
-  '{{termination_date}}': 'Fecha de terminacion',
-  '{{reason}}': 'Motivo de la terminacion',
-  '{{current_rent}}': 'Canon actual',
-  '{{new_rent}}': 'Nuevo canon',
-  '{{ipc_rate}}': 'Porcentaje de IPC aplicado',
-  '{{effective_date}}': 'Fecha efectiva del incremento',
-  '{{coverage_amount}}': 'Monto de cobertura de la poliza',
+// Variable descriptions for the preview modal (keys for i18n)
+const VARIABLE_DESC_KEYS: Record<string, string> = {
+  '{{tenant_name}}': 'inmobiliaria.documento.varTenantName',
+  '{{tenant_cedula}}': 'inmobiliaria.documento.varTenantCedula',
+  '{{property_address}}': 'inmobiliaria.documento.varPropertyAddress',
+  '{{monthly_rent}}': 'inmobiliaria.documento.varMonthlyRent',
+  '{{start_date}}': 'inmobiliaria.documento.varStartDate',
+  '{{end_date}}': 'inmobiliaria.documento.varEndDate',
+  '{{delivery_date}}': 'inmobiliaria.documento.varDeliveryDate',
+  '{{inventory_items}}': 'inmobiliaria.documento.varInventoryItems',
+  '{{return_date}}': 'inmobiliaria.documento.varReturnDate',
+  '{{damages}}': 'inmobiliaria.documento.varDamages',
+  '{{deposit_deductions}}': 'inmobiliaria.documento.varDepositDeductions',
+  '{{rooms}}': 'inmobiliaria.documento.varRooms',
+  '{{appliances}}': 'inmobiliaria.documento.varAppliances',
+  '{{furniture}}': 'inmobiliaria.documento.varFurniture',
+  '{{termination_date}}': 'inmobiliaria.documento.varTerminationDate',
+  '{{reason}}': 'inmobiliaria.documento.varReason',
+  '{{current_rent}}': 'inmobiliaria.documento.varCurrentRent',
+  '{{new_rent}}': 'inmobiliaria.documento.varNewRent',
+  '{{ipc_rate}}': 'inmobiliaria.documento.varIpcRate',
+  '{{effective_date}}': 'inmobiliaria.documento.varEffectiveDate',
+  '{{coverage_amount}}': 'inmobiliaria.documento.varCoverageAmount',
 };
 
 interface DocumentoTemplatesProps {
@@ -99,6 +100,7 @@ export function DocumentoTemplates({
   onUseTemplate,
   isLoading = false,
 }: DocumentoTemplatesProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | 'all'>('all');
   const [previewTemplate, setPreviewTemplate] = useState<DocumentTemplate | null>(null);
@@ -150,20 +152,20 @@ export function DocumentoTemplates({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
-            Plantillas de Documentos
+            {t('inmobiliaria.documento.templatesTitle')}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {templates.length} plantillas disponibles
+            {t('inmobiliaria.documento.templatesCount', { count: templates.length })}
           </p>
         </div>
         <Button
           variant="outline"
           className="gap-2"
           disabled
-          title="Proxinamente"
+          title={t('inmobiliaria.documento.comingSoon')}
         >
           <Plus className="w-4 h-4" />
-          Nueva Plantilla
+          {t('inmobiliaria.documento.newTemplate')}
         </Button>
       </div>
 
@@ -171,7 +173,7 @@ export function DocumentoTemplates({
       <div className="relative">
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar plantillas..."
+          placeholder={t('inmobiliaria.documento.searchTemplates')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -184,13 +186,13 @@ export function DocumentoTemplates({
         onValueChange={(v) => setSelectedCategory(v as DocumentCategory | 'all')}
       >
         <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
-          {CATEGORY_TABS.map((tab) => (
+          {CATEGORY_TAB_KEYS.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full px-4 py-1.5 text-sm"
             >
-              {tab.label}
+              {t(tab.labelKey)}
               {categoryCounts[tab.value] !== undefined && (
                 <span className="ml-1.5 text-xs opacity-70">
                   ({categoryCounts[tab.value]})
@@ -216,12 +218,12 @@ export function DocumentoTemplates({
             <div className="text-center py-12">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-1">
-                No se encontraron plantillas
+                {t('inmobiliaria.documento.noTemplatesFound')}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {searchQuery
-                  ? 'Intenta con otro termino de busqueda'
-                  : 'No hay plantillas en esta categoria'}
+                  ? t('inmobiliaria.documento.tryAnotherSearch')
+                  : t('inmobiliaria.documento.noTemplatesInCategory')}
               </p>
             </div>
           ) : (
@@ -283,14 +285,11 @@ export function DocumentoTemplates({
                         {/* Stats */}
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                           <span>
-                            Usado {template.usageCount.toLocaleString()} veces
+                            {t('inmobiliaria.documento.usedTimes', { count: template.usageCount.toLocaleString() })}
                           </span>
                           <span className="text-xs">
-                            Actualizado{' '}
-                            {new Date(template.lastUpdated).toLocaleDateString('es-CO', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                            {t('inmobiliaria.documento.updated')}{' '}
+                            {fmtDate(template.lastUpdated)}
                           </span>
                         </div>
 
@@ -301,7 +300,7 @@ export function DocumentoTemplates({
                               variant="outline"
                               className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
                             >
-                              Plantilla predeterminada
+                              {t('inmobiliaria.documento.defaultTemplate')}
                             </Badge>
                           </div>
                         )}
@@ -315,7 +314,7 @@ export function DocumentoTemplates({
                             onClick={() => handlePreview(template)}
                           >
                             <Eye className="w-4 h-4" />
-                            Vista previa
+                            {t('inmobiliaria.documento.preview')}
                           </Button>
                           <Button
                             size="sm"
@@ -323,7 +322,7 @@ export function DocumentoTemplates({
                             onClick={() => handleUseTemplate(template)}
                           >
                             <Play className="w-4 h-4" />
-                            Usar
+                            {t('inmobiliaria.documento.use')}
                           </Button>
                         </div>
                       </Card>
@@ -375,7 +374,7 @@ export function DocumentoTemplates({
               {/* Description */}
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-2">
-                  Descripcion
+                  {t('inmobiliaria.documento.description')}
                 </h4>
                 <p className="text-sm text-muted-foreground">
                   {previewTemplate.description}
@@ -391,11 +390,11 @@ export function DocumentoTemplates({
                   {getDocumentCategoryLabel(previewTemplate.category)}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Usado {previewTemplate.usageCount.toLocaleString()} veces
+                  {t('inmobiliaria.documento.usedTimes', { count: previewTemplate.usageCount.toLocaleString() })}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  Ultima actualizacion:{' '}
-                  {new Date(previewTemplate.lastUpdated).toLocaleDateString('es-CO')}
+                  {t('inmobiliaria.documento.lastUpdated')}{' '}
+                  {fmtDate(previewTemplate.lastUpdated)}
                 </span>
               </div>
 
@@ -403,7 +402,7 @@ export function DocumentoTemplates({
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Code className="w-4 h-4" />
-                  Variables ({previewTemplate.variables.length})
+                  {t('inmobiliaria.documento.variables')} ({previewTemplate.variables.length})
                 </h4>
                 <div className="bg-muted rounded-lg p-4 space-y-3">
                   {previewTemplate.variables.map((variable) => (
@@ -412,7 +411,7 @@ export function DocumentoTemplates({
                         {variable}
                       </code>
                       <span className="text-sm text-muted-foreground">
-                        {VARIABLE_DESCRIPTIONS[variable] || 'Variable personalizada'}
+                        {VARIABLE_DESC_KEYS[variable] ? t(VARIABLE_DESC_KEYS[variable]) : t('inmobiliaria.documento.customVariable')}
                       </span>
                     </div>
                   ))}
@@ -422,7 +421,7 @@ export function DocumentoTemplates({
               {/* Document Preview Placeholder */}
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-3">
-                  Vista previa del documento
+                  {t('inmobiliaria.documento.documentPreview')}
                 </h4>
                 <div className="border rounded-lg p-8 bg-background">
                   <div className="max-w-md mx-auto space-y-4">
@@ -449,7 +448,7 @@ export function DocumentoTemplates({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground text-center mt-2">
-                  Vista previa simulada. El documento real incluira todos los datos.
+                  {t('inmobiliaria.documento.simulatedPreview')}
                 </p>
               </div>
 
@@ -459,7 +458,7 @@ export function DocumentoTemplates({
                   variant="outline"
                   onClick={() => setPreviewTemplate(null)}
                 >
-                  Cerrar
+                  {t('inmobiliaria.documento.close')}
                 </Button>
                 <Button
                   className="gap-2"
@@ -469,7 +468,7 @@ export function DocumentoTemplates({
                   }}
                 >
                   <Play className="w-4 h-4" />
-                  Usar Plantilla
+                  {t('inmobiliaria.documento.useTemplate')}
                 </Button>
               </div>
             </div>

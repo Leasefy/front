@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -34,18 +35,19 @@ type TabType = 'equipo' | 'ranking' | 'workload';
 
 const ITEMS_PER_PAGE = 6;
 
-const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
-  { id: 'equipo', label: 'Equipo', icon: UsersThree },
-  { id: 'ranking', label: 'Ranking', icon: Trophy },
-  { id: 'workload', label: 'Carga de Trabajo', icon: ChartBar },
-];
-
 /**
  * Agentes Page - Main view for managing all real estate agents
  * Route: /panel/inmobiliaria/agentes
  */
 export default function AgentesPage() {
+  const { t } = useTranslation();
   const router = useRouter();
+
+  const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
+    { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
+    { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
+    { id: 'workload', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
+  ], [t]);
   const [activeTab, setActiveTab] = useState<TabType>('equipo');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
@@ -128,10 +130,10 @@ export default function AgentesPage() {
   }, [router]);
 
   const handleEdit = useCallback((agente: typeof MOCK_AGENTES[0]) => {
-    toast.info(`Editar ${agente.name}`, {
-      description: 'Formulario de edicion disponible en la proxima version',
+    toast.info(t('inmobiliaria.agentes.toasts.editTitle', { name: agente.name }), {
+      description: t('inmobiliaria.agentes.toasts.editDesc'),
     });
-  }, []);
+  }, [t]);
 
   const handleNuevoAgente = useCallback(() => {
     setShowAddModal(true);
@@ -140,14 +142,14 @@ export default function AgentesPage() {
   const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
     // TODO Backend: Create agent via API
     // For now, just show success toast
-    toast.success('Agente creado', {
-      description: `${data.name} ha sido agregado al equipo`,
+    toast.success(t('inmobiliaria.agentes.toasts.created'), {
+      description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
     });
     // In production, this would:
     // 1. POST to /api/agentes
     // 2. Refresh the agentes list
     // 3. Show success/error toast
-  }, []);
+  }, [t]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -155,10 +157,10 @@ export default function AgentesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-            Equipo de Agentes
+            {t('inmobiliaria.agentes.teamTitle')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Gestiona tu equipo de agentes inmobiliarios
+            {t('inmobiliaria.agentes.subtitle')}
           </p>
         </div>
         <button
@@ -166,7 +168,7 @@ export default function AgentesPage() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
         >
           <Plus className="w-5 h-5" />
-          Nuevo Agente
+          {t('inmobiliaria.agentes.addAgent')}
         </button>
       </div>
 
@@ -183,7 +185,7 @@ export default function AgentesPage() {
                 {stats.total}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Total
+                {t('inmobiliaria.common.total')}
               </p>
             </div>
           </div>
@@ -200,7 +202,7 @@ export default function AgentesPage() {
                 {stats.active}
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-500">
-                Activos
+                {t('inmobiliaria.agentes.active')}
               </p>
             </div>
           </div>
@@ -217,7 +219,7 @@ export default function AgentesPage() {
                 {stats.closedThisMonth}
               </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-500">
-                Cierres mes
+                {t('inmobiliaria.agentes.closingsMonth')}
               </p>
             </div>
           </div>
@@ -234,7 +236,7 @@ export default function AgentesPage() {
                 {formatCurrency(stats.commissionsThisMonth)}
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                Comisiones mes
+                {t('inmobiliaria.agentes.commissionsMonth')}
               </p>
             </div>
           </div>
@@ -289,7 +291,7 @@ export default function AgentesPage() {
                     )}
                   >
                     <List className="w-4 h-4" />
-                    Tabla
+                    {t('inmobiliaria.agentes.viewTable')}
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
@@ -301,11 +303,11 @@ export default function AgentesPage() {
                     )}
                   >
                     <SquaresFour className="w-4 h-4" />
-                    Cards
+                    {t('inmobiliaria.agentes.viewCards')}
                   </button>
                 </div>
                 <span className="text-sm text-muted-foreground tabular-nums">
-                  {filteredAgentes.length} agentes
+                  {filteredAgentes.length} {t('inmobiliaria.agentes.title').toLowerCase()}
                 </span>
               </div>
 
@@ -451,16 +453,17 @@ export default function AgentesPage() {
 
 // Empty State Component
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="p-12 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
         <Users className="w-8 h-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-1">
-        No se encontraron agentes
+        {t('inmobiliaria.agentes.noAgents')}
       </h3>
       <p className="text-muted-foreground max-w-md mx-auto">
-        Ajusta los filtros de busqueda o agrega un nuevo agente para comenzar
+        {t('inmobiliaria.agentes.noAgentsDesc')}
       </p>
     </div>
   );

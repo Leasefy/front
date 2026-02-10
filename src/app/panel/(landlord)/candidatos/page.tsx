@@ -14,6 +14,7 @@ import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
+import { useTranslation } from '@/lib/i18n';
 import type { Candidate } from '@/lib/types/candidate';
 
 type StatusFunnel = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
@@ -39,23 +40,24 @@ interface CandidateRow extends Candidate {
   status: StatusFunnel;
 }
 
-const SCORE_CATEGORIES = [
-  { icon: Briefcase, label: 'Estabilidad laboral', weight: '30%', description: 'Tipo de contrato, antigüedad, industria y cargo. Un contrato indefinido con más de 2 años pesa significativamente.' },
-  { icon: CreditCard, label: 'Capacidad financiera', weight: '25%', description: 'Relación ingreso/arriendo, obligaciones mensuales e ingreso adicional. Idealmente el arriendo no supera el 30% del ingreso.' },
-  { icon: Shield, label: 'Historial crediticio', weight: '20%', description: 'Reportes en centrales de riesgo, deudas vigentes y hábitos de pago. Sin reportes negativos suma puntos.' },
-  { icon: House, label: 'Historial de arriendo', weight: '15%', description: 'Referencias de arrendadores anteriores, tiempo en viviendas previas y motivos de cambio.' },
-  { icon: Scales, label: 'Perfil general', weight: '10%', description: 'Documentación completa, coherencia de datos y verificación de identidad.' },
-];
-
-const RISK_LEVEL_DETAILS = [
-  { level: 'A', label: 'Excelente', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', description: 'Perfil muy confiable. Ingresos estables, excelente historial crediticio, empleo sólido. Riesgo mínimo de impago.' },
-  { level: 'B', label: 'Bueno', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20', description: 'Perfil sólido con fundamentos fuertes. Puede tener algún factor menor a considerar, pero el riesgo es bajo.' },
-  { level: 'C', label: 'Regular', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/20', description: 'Perfil con factores mixtos. Se recomienda solicitar garantías adicionales como un codeudor o depósito mayor.' },
-  { level: 'D', label: 'Riesgoso', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/20', description: 'Perfil con factores de riesgo significativos. Se recomienda precaución y condiciones especiales si se decide aprobar.' },
-];
-
 function ScoringGuide() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const SCORE_CATEGORIES = [
+    { icon: Briefcase, labelKey: 'landlord.candidates.scoreCategoryEmployment', descKey: 'landlord.candidates.scoreCategoryEmploymentDesc', weight: '30%' },
+    { icon: CreditCard, labelKey: 'landlord.candidates.scoreCategoryFinancial', descKey: 'landlord.candidates.scoreCategoryFinancialDesc', weight: '25%' },
+    { icon: Shield, labelKey: 'landlord.candidates.scoreCategoryCredit', descKey: 'landlord.candidates.scoreCategoryCreditDesc', weight: '20%' },
+    { icon: House, labelKey: 'landlord.candidates.scoreCategoryRental', descKey: 'landlord.candidates.scoreCategoryRentalDesc', weight: '15%' },
+    { icon: Scales, labelKey: 'landlord.candidates.scoreCategoryProfile', descKey: 'landlord.candidates.scoreCategoryProfileDesc', weight: '10%' },
+  ];
+
+  const RISK_LEVEL_DETAILS = [
+    { level: 'A', labelKey: 'landlord.candidates.riskExcellent', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', descKey: 'landlord.candidates.riskExcellentDesc' },
+    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20', descKey: 'landlord.candidates.riskGoodDesc' },
+    { level: 'C', labelKey: 'landlord.candidates.riskFair', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/20', descKey: 'landlord.candidates.riskFairDesc' },
+    { level: 'D', labelKey: 'landlord.candidates.riskPoor', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/20', descKey: 'landlord.candidates.riskPoorDesc' },
+  ];
 
   return (
     <div className="mb-6">
@@ -70,38 +72,38 @@ function ScoringGuide() {
         )}
       >
         <Question className="w-4 h-4" />
-        <span>¿Cómo funciona el scoring de candidatos?</span>
+        <span>{t('landlord.candidates.scoringGuideToggle')}</span>
         <CaretDown className={cn('w-3.5 h-3.5 transition-transform ml-1', open && 'rotate-180')} />
       </button>
 
       {open && (
-        <div className="mt-4 bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+        <div className="mt-4 bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           {/* Header */}
           <div className="px-6 py-5 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Sistema de evaluación de candidatos</h3>
+            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">{t('landlord.candidates.scoringGuideTitle')}</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              Cada candidato recibe un puntaje de 0 a 100 basado en múltiples factores verificados. Este score se traduce en un nivel de riesgo (A–D) para facilitar tu decisión.
+              {t('landlord.candidates.scoringGuideDescription')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100 dark:divide-neutral-700">
             {/* Left: Score categories */}
             <div className="p-6">
-              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">Categorías evaluadas</h4>
+              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">{t('landlord.candidates.categoriesTitle')}</h4>
               <div className="space-y-4">
                 {SCORE_CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
                   return (
-                    <div key={cat.label} className="flex gap-3">
+                    <div key={cat.labelKey} className="flex gap-3">
                       <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-medium text-neutral-900 dark:text-white">{cat.label}</span>
-                          <span className="text-xs text-neutral-400 dark:text-neutral-500">Peso: {cat.weight}</span>
+                          <span className="text-sm font-medium text-neutral-900 dark:text-white">{t(cat.labelKey)}</span>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500">{t('landlord.candidates.weight', { weight: cat.weight })}</span>
                         </div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{cat.description}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
                       </div>
                     </div>
                   );
@@ -111,7 +113,7 @@ function ScoringGuide() {
 
             {/* Right: Risk levels */}
             <div className="p-6">
-              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">Niveles de riesgo</h4>
+              <h4 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-4 uppercase tracking-wider">{t('landlord.candidates.riskLevelsTitle')}</h4>
               <div className="space-y-3">
                 {RISK_LEVEL_DETAILS.map((risk) => (
                   <div key={risk.level} className={cn('p-3 rounded-xl', risk.bgColor)}>
@@ -120,18 +122,18 @@ function ScoringGuide() {
                         {risk.level}
                       </span>
                       <div>
-                        <span className={cn('text-sm font-semibold', risk.textColor)}>{risk.label}</span>
-                        <span className="text-xs text-neutral-400 dark:text-neutral-500 ml-2">Score {risk.range}</span>
+                        <span className={cn('text-sm font-semibold', risk.textColor)}>{t(risk.labelKey)}</span>
+                        <span className="text-xs text-neutral-400 dark:text-neutral-500 ml-2">{t('landlord.candidates.scoreRange', { range: risk.range })}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed ml-10">{risk.description}</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed ml-10">{t(risk.descKey)}</p>
                   </div>
                 ))}
               </div>
 
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
                 <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                  <strong>Nota:</strong> El scoring es una herramienta de apoyo, no una decisión automática. Siempre revisa el perfil completo del candidato antes de aprobar o rechazar.
+                  <strong>{t('landlord.candidates.scoringNoteLabel')}</strong> {t('landlord.candidates.scoringNote')}
                 </p>
               </div>
             </div>
@@ -144,6 +146,7 @@ function ScoringGuide() {
 
 export default function CandidatosPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [statusFunnel, setStatusFunnel] = useState<StatusFunnel>('all');
   const [riskFunnel, setRiskFunnel] = useState<RiskFunnel>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
@@ -193,11 +196,11 @@ export default function CandidatosPage() {
 
   const getStatusLabel = (status: StatusFunnel): string => {
     const map: Record<StatusFunnel, string> = {
-      'new': 'Nuevo',
-      'reviewing': 'En revisión',
-      'approved': 'Aprobado',
-      'rejected': 'Rechazado',
-      'all': 'Todos',
+      'new': t('landlord.candidates.statusNew'),
+      'reviewing': t('landlord.candidates.statusReviewing'),
+      'approved': t('landlord.candidates.statusApproved'),
+      'rejected': t('landlord.candidates.statusRejected'),
+      'all': t('landlord.candidates.statusAll'),
     };
     return map[status];
   };
@@ -206,7 +209,7 @@ export default function CandidatosPage() {
   const columns: PlanTableColumn<CandidateRow>[] = [
     {
       key: 'fullName',
-      header: 'Candidato',
+      header: t('landlord.candidates.colCandidate'),
       sortable: true,
       type: 'avatar',
       nameKey: 'fullName',
@@ -214,7 +217,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'propertyTitle',
-      header: 'Propiedad',
+      header: t('landlord.candidates.colProperty'),
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
@@ -227,7 +230,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'riskLevel',
-      header: 'Riesgo',
+      header: t('landlord.candidates.colRisk'),
       sortable: true,
       render: (row) => (
         <PlanRiskBadge level={row.riskLevel} />
@@ -235,7 +238,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'numericScore',
-      header: 'Score',
+      header: t('landlord.candidates.colScore'),
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
@@ -252,7 +255,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'totalIncome',
-      header: 'Ingresos',
+      header: t('landlord.candidates.colIncome'),
       sortable: true,
       render: (row) => (
         <span className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -262,7 +265,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'status',
-      header: 'Estado',
+      header: t('landlord.candidates.colStatus'),
       sortable: true,
       render: (row) => (
         <PlanStatusBadge
@@ -274,7 +277,7 @@ export default function CandidatosPage() {
     },
     {
       key: 'appliedAt',
-      header: 'Fecha',
+      header: t('landlord.candidates.colDate'),
       sortable: true,
       type: 'date',
     },
@@ -287,8 +290,8 @@ export default function CandidatosPage() {
 
   const handleApprove = (candidate: Candidate) => {
     setSheetOpen(false);
-    toast.success('Candidato aprobado', {
-      description: `Iniciando proceso de contrato con ${candidate.fullName}`,
+    toast.success(t('landlord.candidates.approvedToast'), {
+      description: t('landlord.candidates.approvedToastDesc', { name: candidate.fullName }),
     });
     // Use ?new=true to always start fresh contract flow
     router.push(`/panel/${candidate.propertyId}/contract/${candidate.id}?new=true`);
@@ -296,8 +299,8 @@ export default function CandidatosPage() {
 
   const handleReject = (candidate: Candidate) => {
     setSheetOpen(false);
-    toast('Candidato rechazado', {
-      description: `${candidate.fullName} ha sido rechazado y notificado.`,
+    toast(t('landlord.candidates.rejectedToast'), {
+      description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
       icon: '❌',
     });
   };
@@ -306,27 +309,27 @@ export default function CandidatosPage() {
   const getQuickActions = (candidate: Candidate): QuickAction[] => [
     {
       id: 'approve',
-      label: 'Aprobar',
+      label: t('landlord.candidates.approveAction'),
       icon: <UserCheck className="w-4 h-4" />,
       onClick: () => handleApprove(candidate),
       variant: 'primary',
     },
     {
       id: 'reject',
-      label: 'Rechazar',
+      label: t('landlord.candidates.rejectAction'),
       icon: <UserMinus className="w-4 h-4" />,
       onClick: () => handleReject(candidate),
       variant: 'danger',
     },
     {
       id: 'message',
-      label: 'Mensaje',
+      label: t('landlord.candidates.messageAction'),
       icon: <Chat className="w-4 h-4" />,
       onClick: () => router.push(`/panel/mensajes?to=${candidate.id}`),
     },
     {
       id: 'property',
-      label: 'Ver propiedad',
+      label: t('landlord.candidates.viewPropertyAction'),
       icon: <Buildings className="w-4 h-4" />,
       onClick: () => router.push(`/panel/${candidate.propertyId}`),
     },
@@ -336,7 +339,7 @@ export default function CandidatosPage() {
   const getDetailSections = (candidate: Candidate): DetailSection[] => [
     {
       id: 'risk-score',
-      title: 'Evaluación de Riesgo',
+      title: t('landlord.candidates.riskAssessmentTitle'),
       content: (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -369,19 +372,19 @@ export default function CandidatosPage() {
     },
     {
       id: 'financial',
-      title: 'Información Financiera',
+      title: t('landlord.candidates.financialTitle'),
       content: (
         <div className="space-y-2">
           <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Ingresos mensuales</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.monthlyIncome')}</span>
             <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.totalIncome)}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Obligaciones</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.obligations')}</span>
             <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.monthlyObligations)}</span>
           </div>
           <div className="flex justify-between py-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 -mx-3 rounded-lg">
-            <span className="text-sm text-emerald-700 dark:text-emerald-400">Disponible para arriendo</span>
+            <span className="text-sm text-emerald-700 dark:text-emerald-400">{t('landlord.candidates.availableForRent')}</span>
             <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(candidate.availableForRent)}</span>
           </div>
         </div>
@@ -389,23 +392,23 @@ export default function CandidatosPage() {
     },
     {
       id: 'employment',
-      title: 'Información Laboral',
+      title: t('landlord.candidates.employmentTitle'),
       content: (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Ocupación</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.occupation')}</span>
             <span className="text-sm text-neutral-900 dark:text-white">{candidate.occupation}</span>
           </div>
           {candidate.companyName && (
             <div className="flex justify-between">
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">Empresa</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.company')}</span>
               <span className="text-sm text-neutral-900 dark:text-white">{candidate.companyName}</span>
             </div>
           )}
           {candidate.timeAtJob && (
             <div className="flex justify-between">
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">Tiempo en cargo</span>
-              <span className="text-sm text-neutral-900 dark:text-white">{Math.floor(candidate.timeAtJob / 12)} años {candidate.timeAtJob % 12} meses</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.timeAtJob')}</span>
+              <span className="text-sm text-neutral-900 dark:text-white">{t('landlord.candidates.yearsMonths', { years: Math.floor(candidate.timeAtJob / 12), months: candidate.timeAtJob % 12 })}</span>
             </div>
           )}
         </div>
@@ -413,7 +416,7 @@ export default function CandidatosPage() {
     },
     ...(candidate.riskScore?.flags && candidate.riskScore.flags.length > 0 ? [{
       id: 'flags',
-      title: 'Alertas',
+      title: t('landlord.candidates.alertsTitle'),
       content: (
         <div className="space-y-2">
           {candidate.riskScore.flags.map(flag => (
@@ -442,11 +445,11 @@ export default function CandidatosPage() {
 
   // Tabs configuration
   const tabs: PlanTab[] = [
-    { id: 'all', label: 'Todos', count: statusCounts.all },
-    { id: 'new', label: 'Nuevos', count: statusCounts.new },
-    { id: 'reviewing', label: 'En revisión', count: statusCounts.reviewing },
-    { id: 'approved', label: 'Aprobados', count: statusCounts.approved },
-    { id: 'rejected', label: 'Rechazados', count: statusCounts.rejected },
+    { id: 'all', label: t('landlord.candidates.tabAll'), count: statusCounts.all },
+    { id: 'new', label: t('landlord.candidates.tabNew'), count: statusCounts.new },
+    { id: 'reviewing', label: t('landlord.candidates.tabReviewing'), count: statusCounts.reviewing },
+    { id: 'approved', label: t('landlord.candidates.tabApproved'), count: statusCounts.approved },
+    { id: 'rejected', label: t('landlord.candidates.tabRejected'), count: statusCounts.rejected },
   ];
 
   return (
@@ -454,9 +457,9 @@ export default function CandidatosPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Candidatos</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">{t('landlord.candidates.title')}</h1>
           <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-            Evalúa y gestiona las aplicaciones de tus candidatos
+            {t('landlord.candidates.subtitle')}
           </p>
         </header>
 
@@ -465,54 +468,54 @@ export default function CandidatosPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
                 <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.all}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Total candidatos</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.totalCandidates')}</p>
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                 <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.new}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Nuevos</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.newCandidates')}</p>
             {statusCounts.new > 0 && (
               <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium rounded-full">
-                Por revisar
+                {t('landlord.candidates.toReview')}
               </span>
             )}
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.approved}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Aprobados</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.approvedCandidates')}</p>
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                 <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.rejected}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Rechazados</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.rejectedCandidates')}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
+        <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -540,7 +543,7 @@ export default function CandidatosPage() {
         </div>
 
         {/* Funnels Row */}
-        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6">
+        <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* MagnifyingGlass */}
             <div className="relative flex-1">
@@ -549,15 +552,15 @@ export default function CandidatosPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
-                placeholder="Buscar candidato, propiedad u ocupación..."
-                aria-label="Buscar candidato"
+                placeholder={t('landlord.candidates.searchPlaceholder')}
+                aria-label={t('landlord.candidates.searchLabel')}
                 className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
 
             {/* Risk Funnel */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">Riesgo:</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.riskLabel')}</span>
               <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
                 {(['all', 'A', 'B', 'C', 'D'] as const).map(level => (
                   <button
@@ -570,7 +573,7 @@ export default function CandidatosPage() {
                         : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                     )}
                   >
-                    {level === 'all' ? 'Todos' : level}
+                    {level === 'all' ? t('landlord.candidates.riskAll') : level}
                   </button>
                 ))}
               </div>
@@ -582,12 +585,12 @@ export default function CandidatosPage() {
         {allCandidates.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="No hay candidatos"
-            description="Cuando los inquilinos apliquen a tus propiedades, aparecerán aquí para que puedas evaluarlos."
-            action={{ label: "Ver propiedades", href: "/panel/propiedades" }}
+            title={t('landlord.candidates.emptyTitle')}
+            description={t('landlord.candidates.emptyDescription')}
+            action={{ label: t('landlord.candidates.emptyAction'), href: "/panel/propiedades" }}
           />
         ) : (
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
             <PlanTable
               data={tableData}
               columns={columns}
@@ -595,8 +598,8 @@ export default function CandidatosPage() {
               onRowClick={handleRowClick}
               emptyMessage={
                 searchQuery || statusFunnel !== 'all' || riskFunnel !== 'all'
-                  ? 'No se encontraron candidatos con los filtros aplicados'
-                  : 'Cuando recibas aplicaciones, aparecerán aquí'
+                  ? t('landlord.candidates.emptyFilteredMessage')
+                  : t('landlord.candidates.emptyDefaultMessage')
               }
               stickyHeader
               pagination

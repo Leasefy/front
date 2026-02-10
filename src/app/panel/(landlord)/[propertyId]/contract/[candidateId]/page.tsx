@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { FileText, Clock, CheckCircle, WarningCircle, SpinnerGap, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { ContractPreview } from '@/components/contract/ContractPreview';
@@ -72,7 +73,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Platform templates - Main column - Own card */}
       <div className="lg:col-span-2">
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
               <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -144,7 +145,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
       {/* Custom upload - Side column - Own card */}
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-6">
-          <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                 <Upload className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
@@ -238,6 +239,7 @@ function ContractPageLoading() {
 // ============================================================================
 
 function ContractPageContent({ propertyId, candidateId }: { propertyId: string; candidateId: string }) {
+  const { locale } = useTranslation();
   const searchParams = useSearchParams();
 
   // Check if we should force starting fresh (new contract flow)
@@ -360,7 +362,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
+    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,
@@ -594,7 +596,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     <div className="sticky top-6 space-y-4">
                       {/* Insurance Selection (before signing) */}
                       {isLandlordTurn && (
-                        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
+                        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
                           <InsuranceSelector
                             selected={selectedInsurance}
                             onSelect={setSelectedInsurance}
@@ -616,7 +618,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       )}
 
                       {isTenantTurn && (
-                        <div className="rounded-2xl border border-indigo-100 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 p-5">
+                        <div className="rounded-xl border border-indigo-100 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 p-5">
                           <div className="flex items-center gap-3 text-indigo-700 dark:text-indigo-300">
                             <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                               <Clock className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -638,7 +640,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       )}
 
                       {/* Contract Info Card */}
-                      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
+                      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
                         <h4 className="text-xs font-medium font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                           Tipo de contrato
                         </h4>

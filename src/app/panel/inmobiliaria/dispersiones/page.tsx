@@ -14,6 +14,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   MOCK_DISPERSIONES,
   MOCK_PROPIETARIOS,
@@ -65,6 +66,8 @@ function getCurrentMonth(): string {
  * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
 export default function DispersionesPage() {
+  const { t, locale } = useTranslation();
+
   // State for dispersiones (local copy for optimistic updates)
   const [dispersiones, setDispersiones] = useState<Dispersion[]>(MOCK_DISPERSIONES);
 
@@ -176,7 +179,7 @@ export default function DispersionesPage() {
       )
     );
 
-    toast.loading(`Procesando dispersion para ${dispersion.propietarioName}...`, {
+    toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), {
       id: `process-${dispersion.id}`,
     });
 
@@ -200,13 +203,13 @@ export default function DispersionesPage() {
       )
     );
 
-    toast.success(`Dispersion completada`, {
+    toast.success(t('inmobiliaria.dispersiones.toasts.processed'), {
       id: `process-${dispersion.id}`,
-      description: `Transferencia enviada a ${dispersion.propietarioName}`,
+      description: t('inmobiliaria.dispersiones.toasts.transferSent', { name: dispersion.propietarioName }),
     });
 
     setIsDetailOpen(false);
-  }, [filters.month]);
+  }, [filters.month, t]);
 
   // Handle retry failed dispersion
   const handleRetryDispersion = useCallback(async (dispersion: Dispersion) => {
@@ -219,7 +222,7 @@ export default function DispersionesPage() {
     const pending = filteredDispersiones.filter((d) => d.status === 'pending');
     if (pending.length === 0) return;
 
-    toast.loading(`Procesando ${pending.length} dispersiones...`, {
+    toast.loading(t('inmobiliaria.dispersiones.toasts.processingBatch', { count: pending.length }), {
       id: 'process-all',
     });
 
@@ -256,11 +259,11 @@ export default function DispersionesPage() {
       })
     );
 
-    toast.success('Dispersiones completadas', {
+    toast.success(t('inmobiliaria.dispersiones.toasts.batchCompleted'), {
       id: 'process-all',
-      description: `${pending.length} transferencias enviadas exitosamente`,
+      description: t('inmobiliaria.dispersiones.toasts.batchCompletedDesc', { count: pending.length }),
     });
-  }, [filteredDispersiones, filters.month]);
+  }, [filteredDispersiones, filters.month, t]);
 
   // Handle view extracto
   const handleViewExtracto = useCallback((dispersion: Dispersion) => {
@@ -274,13 +277,13 @@ export default function DispersionesPage() {
     const extracto = generateExtractoPropietario(dispersion.propietarioId, dispersion.month);
     if (extracto) {
       downloadExtractoPDF(extracto);
-      toast.success('PDF descargado', {
-        description: `Extracto de ${dispersion.propietarioName}`,
+      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+        description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
       });
     } else {
-      toast.error('No se pudo generar el extracto');
+      toast.error(t('inmobiliaria.dispersiones.toasts.error'));
     }
-  }, []);
+  }, [t]);
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {
@@ -313,7 +316,7 @@ export default function DispersionesPage() {
   }, [extractoDispersion]);
 
   // Format month for display
-  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString('es-CO', {
+  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -326,10 +329,10 @@ export default function DispersionesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Dispersiones a Propietarios
+            {t('inmobiliaria.dispersiones.title')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona los pagos mensuales a los propietarios
+            {t('inmobiliaria.dispersiones.subtitle')}
           </p>
         </div>
         <Link
@@ -337,7 +340,7 @@ export default function DispersionesPage() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
         >
           <Lightning className="w-5 h-5" weight="fill" />
-          Generar Dispersiones
+          {t('inmobiliaria.dispersiones.wizard.title')}
         </Link>
       </div>
 
@@ -374,7 +377,7 @@ export default function DispersionesPage() {
               )}
             >
               <Table className="w-4 h-4" />
-              Tabla
+              {t('inmobiliaria.dispersiones.viewTable')}
             </button>
             <button
               onClick={() => setViewMode('cards')}
@@ -386,11 +389,11 @@ export default function DispersionesPage() {
               )}
             >
               <SquaresFour className="w-4 h-4" />
-              Cards
+              {t('inmobiliaria.dispersiones.viewCards')}
             </button>
           </div>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {filteredDispersiones.length} dispersion{filteredDispersiones.length !== 1 ? 'es' : ''}
+            {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
           </span>
         </div>
 
@@ -433,18 +436,17 @@ export default function DispersionesPage() {
             <div className="p-12 text-center">
               <PaperPlaneTilt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Sin dispersiones
+                {t('inmobiliaria.dispersiones.noDispersions')}
               </h3>
               <p className="text-muted-foreground max-w-sm mx-auto">
-                No hay dispersiones que coincidan con los filtros para{' '}
-                <span className="capitalize">{monthDisplay}</span>.
+                {t('inmobiliaria.dispersiones.noDispersionsDesc')}
               </p>
               {filters.status !== 'all' && (
                 <button
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
                   className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  Ver todas las dispersiones
+                  {t('inmobiliaria.dispersiones.filters.all')}
                 </button>
               )}
               {filteredDispersiones.length === 0 &&
@@ -455,7 +457,7 @@ export default function DispersionesPage() {
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
                     >
                       <Lightning className="w-4 h-4" weight="fill" />
-                      Generar Dispersiones
+                      {t('inmobiliaria.dispersiones.wizard.title')}
                     </Link>
                   </div>
                 )}
@@ -527,7 +529,7 @@ export default function DispersionesPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle className="flex items-center justify-between">
-              <span>Extracto del Propietario</span>
+              <span>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</span>
               {extractoData && (
                 <Button
                   variant="outline"
@@ -536,7 +538,7 @@ export default function DispersionesPage() {
                   className="flex items-center gap-2"
                 >
                   <DownloadSimple className="w-4 h-4" />
-                  Descargar PDF
+                  {t('inmobiliaria.dispersiones.downloadPdf')}
                 </Button>
               )}
             </DialogTitle>

@@ -17,6 +17,7 @@ import {
   Funnel,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { CarteraReport, CarteraItem } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -68,10 +69,10 @@ function getBucketColor(bucket: CarteraItem['bucket']): {
 /**
  * Format month string to Spanish display
  */
-function formatMonth(month: string): string {
+function formatMonth(month: string, loc: string): string {
   const [year, monthNum] = month.split('-');
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', { month: 'short', year: 'numeric' });
 }
 
 /**
@@ -85,6 +86,7 @@ export function CarteraEdadesTable({
   onViewCobro,
   onNotifyAgent,
 }: CarteraEdadesTableProps) {
+  const { t, locale } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('daysLate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
@@ -192,52 +194,52 @@ export function CarteraEdadesTable({
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {/* Total Pendiente */}
         <div className="col-span-2 md:col-span-1 p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
-          <p className="text-sm font-medium text-red-100">Total Pendiente</p>
+          <p className="text-sm font-medium text-red-100">{t('inmobiliaria.finance.aging.totalPending')}</p>
           <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-          <p className="text-xs text-red-200 mt-1">{data.items.length} cobros en mora</p>
+          <p className="text-xs text-red-200 mt-1">{data.items.length} {t('inmobiliaria.finance.aging.overdueCharges')}</p>
         </div>
 
         {/* 0-30 dias */}
         <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">0-30 dias</p>
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{t('inmobiliaria.finance.aging.days030')}</p>
           <p className="text-xl font-bold text-emerald-800 dark:text-emerald-300">
             {formatCurrency(data.summary.bucket0to30)}
           </p>
           <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
-            {bucketCounts['0-30']} cobros
+            {bucketCounts['0-30']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 31-60 dias */}
         <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">31-60 dias</p>
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">{t('inmobiliaria.finance.aging.days3160')}</p>
           <p className="text-xl font-bold text-amber-800 dark:text-amber-300">
             {formatCurrency(data.summary.bucket31to60)}
           </p>
           <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-            {bucketCounts['31-60']} cobros
+            {bucketCounts['31-60']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 61-90 dias */}
         <div className="p-4 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
-          <p className="text-sm font-medium text-orange-700 dark:text-orange-400">61-90 dias</p>
+          <p className="text-sm font-medium text-orange-700 dark:text-orange-400">{t('inmobiliaria.finance.aging.days6190')}</p>
           <p className="text-xl font-bold text-orange-800 dark:text-orange-300">
             {formatCurrency(data.summary.bucket61to90)}
           </p>
           <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">
-            {bucketCounts['61-90']} cobros
+            {bucketCounts['61-90']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 90+ dias */}
         <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-          <p className="text-sm font-medium text-red-700 dark:text-red-400">90+ dias</p>
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">{t('inmobiliaria.finance.aging.days90plus')}</p>
           <p className="text-xl font-bold text-red-800 dark:text-red-300">
             {formatCurrency(data.summary.bucket90plus)}
           </p>
           <p className="text-xs text-red-600 dark:text-red-500 mt-1">
-            {bucketCounts['90+']} cobros
+            {bucketCounts['90+']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
       </div>
@@ -256,7 +258,7 @@ export function CarteraEdadesTable({
             )}
           >
             <Funnel className="w-4 h-4" />
-            Todos
+            {t('inmobiliaria.finance.aging.all')}
             <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
               {bucketCounts.all}
             </span>
@@ -326,7 +328,7 @@ export function CarteraEdadesTable({
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span className="text-sm font-medium">Exportar Excel</span>
+            <span className="text-sm font-medium">{t('inmobiliaria.finance.aging.exportExcel')}</span>
           </button>
         )}
       </div>
@@ -336,13 +338,13 @@ export function CarteraEdadesTable({
         <table className="w-full min-w-[1100px]">
           <thead>
             <tr className="border-b border-neutral-100 dark:border-neutral-800">
-              <SortableHeader field="propertyTitle">Propiedad</SortableHeader>
-              <SortableHeader field="tenantName">Inquilino</SortableHeader>
-              <SortableHeader field="propietarioName">Propietario</SortableHeader>
-              <SortableHeader field="agenteName">Agente</SortableHeader>
-              <SortableHeader field="month">Mes</SortableHeader>
-              <SortableHeader field="pendingAmount">Pendiente</SortableHeader>
-              <SortableHeader field="daysLate">Mora</SortableHeader>
+              <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.aging.property')}</SortableHeader>
+              <SortableHeader field="tenantName">{t('inmobiliaria.finance.aging.tenant')}</SortableHeader>
+              <SortableHeader field="propietarioName">{t('inmobiliaria.finance.aging.owner')}</SortableHeader>
+              <SortableHeader field="agenteName">{t('inmobiliaria.finance.aging.agent')}</SortableHeader>
+              <SortableHeader field="month">{t('inmobiliaria.finance.aging.month')}</SortableHeader>
+              <SortableHeader field="pendingAmount">{t('inmobiliaria.finance.aging.pending')}</SortableHeader>
+              <SortableHeader field="daysLate">{t('inmobiliaria.finance.aging.overdue')}</SortableHeader>
               <th className="w-12 p-4"></th>
             </tr>
           </thead>
@@ -390,7 +392,7 @@ export function CarteraEdadesTable({
                             href={`tel:${item.tenantPhone}`}
                             onClick={(e) => e.stopPropagation()}
                             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                            title="Llamar"
+                            title={t('inmobiliaria.finance.aging.call')}
                           >
                             <Phone className="w-3.5 h-3.5 text-neutral-400" />
                           </a>
@@ -429,7 +431,7 @@ export function CarteraEdadesTable({
                   {/* Month */}
                   <td className="p-4">
                     <span className="text-neutral-700 dark:text-neutral-300 capitalize text-sm">
-                      {formatMonth(item.month)}
+                      {formatMonth(item.month, locale)}
                     </span>
                   </td>
 
@@ -485,7 +487,7 @@ export function CarteraEdadesTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Phone className="w-4 h-4" />
-                                <span className="text-sm">Contactar inquilino</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.aging.contactTenant')}</span>
                               </button>
                             )}
                             {onViewCobro && (
@@ -498,7 +500,7 @@ export function CarteraEdadesTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Eye className="w-4 h-4" />
-                                <span className="text-sm">Ver cobro</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.aging.viewCharge')}</span>
                               </button>
                             )}
                             {onNotifyAgent && (
@@ -511,7 +513,7 @@ export function CarteraEdadesTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                               >
                                 <Envelope className="w-4 h-4" />
-                                <span className="text-sm">Notificar agente</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.aging.notifyAgent')}</span>
                               </button>
                             )}
                           </motion.div>
@@ -532,12 +534,12 @@ export function CarteraEdadesTable({
               <Warning className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              Sin cobros en mora
+              {t('inmobiliaria.finance.aging.noOverdue')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400">
               {bucketFilter === 'all'
-                ? 'No hay cobros pendientes en cartera'
-                : `No hay cobros en el rango de ${bucketFilter} dias`}
+                ? t('inmobiliaria.finance.aging.noOverdueDesc')
+                : t('inmobiliaria.finance.aging.noOverdueRange', { range: bucketFilter })}
             </p>
           </div>
         )}

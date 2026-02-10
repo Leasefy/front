@@ -27,6 +27,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -73,24 +74,24 @@ const STATUS_ICONS: Record<DocumentStatus, React.ElementType> = {
 };
 
 // Format relative date
-function formatRelativeDate(dateString: string): string {
+function formatRelativeDateFn(dateString: string, t: (key: string, params?: Record<string, string | number>) => string, fmtDate: (d: string) => string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'Ayer';
-  if (diffDays < 7) return `Hace ${diffDays} dias`;
-  if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`;
-  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  if (diffDays === 0) return t('inmobiliaria.documento.today');
+  if (diffDays === 1) return t('inmobiliaria.documento.yesterday');
+  if (diffDays < 7) return t('inmobiliaria.documento.daysAgo', { days: diffDays });
+  if (diffDays < 30) return t('inmobiliaria.documento.weeksAgo', { weeks: Math.floor(diffDays / 7) });
+  return fmtDate(dateString);
 }
 
 // Get signature status display
-function getSignatureStatus(doc: PropertyDocument): string {
+function getSignatureStatusFn(doc: PropertyDocument, t: (key: string, params?: Record<string, string | number>) => string): string {
   if (!doc.signatures || doc.signatures.length === 0) return '-';
   const signed = doc.signatures.filter((s) => s.status === 'signed').length;
-  return `${signed}/${doc.signatures.length} firmado${signed === 1 ? '' : 's'}`;
+  return t('inmobiliaria.documento.signedOf', { signed, total: doc.signatures.length });
 }
 
 interface DocumentoManagerProps {
@@ -121,6 +122,7 @@ export function DocumentoManager({
   isLoading = false,
   minimal = false,
 }: DocumentoManagerProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedCategories, setSelectedCategories] = useState<DocumentCategory[]>([]);
@@ -207,9 +209,9 @@ export function DocumentoManager({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {!minimal ? (
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Documentos</h2>
+            <h2 className="text-xl font-semibold text-foreground">{t('inmobiliaria.documento.title')}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {filteredDocuments.length} de {documents.length} documentos
+              {t('inmobiliaria.documento.countOf', { filtered: filteredDocuments.length, total: documents.length })}
             </p>
           </div>
         ) : (
@@ -224,7 +226,7 @@ export function DocumentoManager({
               )}
             >
               <List className="w-4 h-4" />
-              Lista
+              {t('inmobiliaria.documento.listView')}
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -236,7 +238,7 @@ export function DocumentoManager({
               )}
             >
               <GridFour className="w-4 h-4" />
-              Tarjetas
+              {t('inmobiliaria.documento.cardView')}
             </button>
           </div>
         )}
@@ -275,26 +277,26 @@ export function DocumentoManager({
               <DropdownListTrigger asChild>
                 <Button className={cn("gap-2", minimal && "bg-indigo-600 hover:bg-indigo-700")} hideArrow>
                   <FilePlus className="w-4 h-4" />
-                  Generar Documento
+                  {t('inmobiliaria.documento.generateDoc')}
                   <CaretDown className="w-4 h-4" />
                 </Button>
               </DropdownListTrigger>
               <DropdownListContent align="end" className="w-48">
                 <DropdownListItem onSelect={() => onGenerateNew('tpl-contrato-arrendamiento', '')}>
-                  Contrato de Arrendamiento
+                  {t('inmobiliaria.documento.leaseContract')}
                 </DropdownListItem>
                 <DropdownListItem onSelect={() => onGenerateNew('tpl-acta-entrega', '')}>
-                  Acta de Entrega
+                  {t('inmobiliaria.documento.deliveryAct')}
                 </DropdownListItem>
                 <DropdownListItem onSelect={() => onGenerateNew('tpl-acta-devolucion', '')}>
-                  Acta de Devolucion
+                  {t('inmobiliaria.documento.returnAct')}
                 </DropdownListItem>
                 <DropdownListSeparator />
                 <DropdownListItem onSelect={() => onGenerateNew('tpl-inventario', '')}>
-                  Inventario
+                  {t('inmobiliaria.documento.inventory')}
                 </DropdownListItem>
                 <DropdownListItem onSelect={() => onGenerateNew('tpl-carta-incremento', '')}>
-                  Carta de Incremento
+                  {t('inmobiliaria.documento.incrementLetter')}
                 </DropdownListItem>
               </DropdownListContent>
             </DropdownList>
@@ -310,7 +312,7 @@ export function DocumentoManager({
             <div className="relative">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar documento..."
+                placeholder={t('inmobiliaria.documento.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -320,7 +322,7 @@ export function DocumentoManager({
 
           {/* Category Filter */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.documento.typeLabel')}</label>
             <Select
               value={selectedCategories.length === 1 ? selectedCategories[0] : 'all'}
               onValueChange={(v) => {
@@ -332,10 +334,10 @@ export function DocumentoManager({
               }}
             >
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Todos" />
+                <SelectValue placeholder={t('inmobiliaria.documento.allTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">{t('inmobiliaria.documento.allTypes')}</SelectItem>
                 {categoryOptions.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {getDocumentCategoryLabel(cat)}
@@ -347,7 +349,7 @@ export function DocumentoManager({
 
           {/* Status Filter */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Estado</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.documento.statusLabel')}</label>
             <Select
               value={selectedStatuses.length === 1 ? selectedStatuses[0] : 'all'}
               onValueChange={(v) => {
@@ -359,10 +361,10 @@ export function DocumentoManager({
               }}
             >
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Todos" />
+                <SelectValue placeholder={t('inmobiliaria.documento.allStatuses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">{t('inmobiliaria.documento.allStatuses')}</SelectItem>
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {getDocumentStatusLabel(status)}
@@ -376,7 +378,7 @@ export function DocumentoManager({
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 mb-0.5">
               <X className="w-4 h-4" />
-              Limpiar
+              {t('inmobiliaria.documento.clearFilters')}
             </Button>
           )}
         </div>
@@ -385,22 +387,22 @@ export function DocumentoManager({
         {!minimal && (
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Total:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.documento.totalLabel')}:</span>
               <span className="font-medium">{stats.total}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-muted-foreground">Pendientes firma:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.documento.pendingSignature')}:</span>
               <span className="font-medium text-amber-600">{stats.pendingSignature}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-muted-foreground">Firmados:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.documento.signed')}:</span>
               <span className="font-medium text-emerald-600">{stats.signed}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-muted-foreground">Vencidos:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.documento.expired')}:</span>
               <span className="font-medium text-red-600">{stats.expired}</span>
             </div>
           </div>
@@ -415,7 +417,7 @@ export function DocumentoManager({
           className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800/50"
         >
           <span className="text-sm font-medium">
-            {selectedDocIds.length} seleccionado{selectedDocIds.length > 1 ? 's' : ''}
+            {t('inmobiliaria.documento.selectedCount', { count: selectedDocIds.length })}
           </span>
           {onDownload && (
             <Button
@@ -430,7 +432,7 @@ export function DocumentoManager({
               }}
             >
               <DownloadSimple className="w-4 h-4" />
-              Descargar
+              {t('inmobiliaria.documento.download')}
             </Button>
           )}
           {onDelete && (
@@ -444,7 +446,7 @@ export function DocumentoManager({
               }}
             >
               <Trash className="w-4 h-4" />
-              Eliminar
+              {t('inmobiliaria.documento.delete')}
             </Button>
           )}
         </motion.div>
@@ -471,12 +473,12 @@ export function DocumentoManager({
         <div className="text-center py-12">
           <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-1">
-            No se encontraron documentos
+            {t('inmobiliaria.documento.noDocuments')}
           </h3>
           <p className="text-sm text-muted-foreground">
             {hasActiveFilters
-              ? 'Intenta ajustar los filtros'
-              : 'No hay documentos disponibles'}
+              ? t('inmobiliaria.documento.adjustFilters')
+              : t('inmobiliaria.documento.noDocumentsAvailable')}
           </p>
         </div>
       ) : viewMode === 'list' ? (
@@ -491,14 +493,14 @@ export function DocumentoManager({
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead>Inmueble</TableHead>
-                <TableHead>Inquilino</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Firmas</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Tamano</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thDocument')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thProperty')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thTenant')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thCategory')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thStatus')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thSignatures')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thDate')}</TableHead>
+                <TableHead>{t('inmobiliaria.documento.thSize')}</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
@@ -561,12 +563,12 @@ export function DocumentoManager({
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {getSignatureStatus(doc)}
+                        {getSignatureStatusFn(doc, t)}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {formatRelativeDate(doc.updatedAt)}
+                        {formatRelativeDateFn(doc.updatedAt, t, fmtDate)}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -585,13 +587,13 @@ export function DocumentoManager({
                           {onView && (
                             <DropdownListItem onSelect={() => onView(doc)}>
                               <Eye className="w-4 h-4 mr-2" />
-                              Ver documento
+                              {t('inmobiliaria.documento.viewDoc')}
                             </DropdownListItem>
                           )}
                           {onDownload && (
                             <DropdownListItem onSelect={() => onDownload(doc)}>
                               <DownloadSimple className="w-4 h-4 mr-2" />
-                              Descargar PDF
+                              {t('inmobiliaria.documento.downloadPdf')}
                             </DropdownListItem>
                           )}
                           {(onView || onDownload) && (onSendForSignature || onDuplicate || onDelete) && (
@@ -600,19 +602,19 @@ export function DocumentoManager({
                           {doc.status === 'draft' && onSendForSignature && (
                             <DropdownListItem onSelect={() => onSendForSignature(doc)}>
                               <PaperPlaneTilt className="w-4 h-4 mr-2" />
-                              Enviar para firma
+                              {t('inmobiliaria.documento.sendForSignature')}
                             </DropdownListItem>
                           )}
                           {doc.status === 'pending_signature' && onView && (
                             <DropdownListItem onSelect={() => onView(doc)}>
                               <SignIn className="w-4 h-4 mr-2" />
-                              Ver firmas
+                              {t('inmobiliaria.documento.viewSignatures')}
                             </DropdownListItem>
                           )}
                           {onDuplicate && (
                             <DropdownListItem onSelect={() => onDuplicate(doc)}>
                               <Copy className="w-4 h-4 mr-2" />
-                              Duplicar
+                              {t('inmobiliaria.documento.duplicate')}
                             </DropdownListItem>
                           )}
                           {onDelete && (onSendForSignature || onDuplicate) && (
@@ -624,7 +626,7 @@ export function DocumentoManager({
                               onSelect={() => onDelete(doc.id)}
                             >
                               <Trash className="w-4 h-4 mr-2" />
-                              Eliminar
+                              {t('inmobiliaria.documento.delete')}
                             </DropdownListItem>
                           )}
                         </DropdownListContent>
@@ -695,13 +697,13 @@ export function DocumentoManager({
                           {onView && (
                             <DropdownListItem onSelect={() => onView(doc)}>
                               <Eye className="w-4 h-4 mr-2" />
-                              Ver documento
+                              {t('inmobiliaria.documento.viewDoc')}
                             </DropdownListItem>
                           )}
                           {onDownload && (
                             <DropdownListItem onSelect={() => onDownload(doc)}>
                               <DownloadSimple className="w-4 h-4 mr-2" />
-                              Descargar PDF
+                              {t('inmobiliaria.documento.downloadPdf')}
                             </DropdownListItem>
                           )}
                           {doc.status === 'draft' && onSendForSignature && (
@@ -716,7 +718,7 @@ export function DocumentoManager({
                           {onDuplicate && (
                             <DropdownListItem onSelect={() => onDuplicate(doc)}>
                               <Copy className="w-4 h-4 mr-2" />
-                              Duplicar
+                              {t('inmobiliaria.documento.duplicate')}
                             </DropdownListItem>
                           )}
                           {onDelete && (
@@ -762,7 +764,7 @@ export function DocumentoManager({
                       )}
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span>{formatRelativeDate(doc.updatedAt)}</span>
+                        <span>{formatRelativeDateFn(doc.updatedAt, t, fmtDate)}</span>
                         {doc.fileSize && (
                           <>
                             <span className="text-muted-foreground/50">|</span>
@@ -778,7 +780,7 @@ export function DocumentoManager({
                         <div className="flex items-center gap-2 text-sm">
                           <SignIn className="w-4 h-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {getSignatureStatus(doc)}
+                            {getSignatureStatusFn(doc, t)}
                           </span>
                         </div>
                       </div>

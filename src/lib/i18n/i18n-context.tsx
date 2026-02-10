@@ -95,6 +95,15 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     [locale]
   );
 
+  // Format number with locale separators
+  const formatNumber = useCallback(
+    (value: number): string => {
+      const localeString = locale === 'es' ? 'es-CL' : 'en-US';
+      return value.toLocaleString(localeString);
+    },
+    [locale]
+  );
+
   // Format date based on locale
   const formatDate = useCallback(
     (date: Date | string, options?: Intl.DateTimeFormatOptions): string => {
@@ -141,10 +150,11 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
       setLocale,
       t,
       formatCurrency,
+      formatNumber,
       formatDate,
       formatRelativeDate,
     }),
-    [locale, setLocale, t, formatCurrency, formatDate, formatRelativeDate]
+    [locale, setLocale, t, formatCurrency, formatNumber, formatDate, formatRelativeDate]
   );
 
   // Prevent hydration mismatch by rendering default locale until hydrated

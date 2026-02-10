@@ -14,12 +14,14 @@ import {
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 /**
  * Upgrade page for existing users
  * Shows current plan, allows selection of new plan
  */
 export default function UpgradePage() {
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
@@ -58,7 +60,7 @@ export default function UpgradePage() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back link */}
         <div className="mb-6">
-          <BackButton href="/panel" label="Volver al panel" />
+          <BackButton href="/panel" label={t('landlord.upgrade.backToPanel')} />
         </div>
 
         {/* Premium Header */}
@@ -76,28 +78,28 @@ export default function UpgradePage() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
               <Sparkle className="w-4 h-4 text-amber-300" />
               <span className="text-sm font-medium text-white">
-                Desbloquea todo el potencial
+                {t('landlord.upgrade.unlockPotential')}
               </span>
             </div>
 
             <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-              Mejora tu plan
+              {t('landlord.upgrade.title')}
             </h1>
             <p className="text-white/70 max-w-md mx-auto">
-              Accede a herramientas avanzadas para gestionar tus propiedades de forma profesional
+              {t('landlord.upgrade.subtitle')}
             </p>
 
             {/* Current Plan Badge */}
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
               <Crown className="w-4 h-4 text-amber-300" />
-              <span className="text-sm text-white/90">Plan actual:</span>
+              <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
               <span className="text-sm font-semibold text-white">{currentPlan.name}</span>
             </div>
           </div>
         </div>
 
         {/* Current plan summary card */}
-        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-6 mb-8">
+        <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
@@ -105,21 +107,21 @@ export default function UpgradePage() {
               </div>
               <div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">
-                  Tu suscripción actual
+                  {t('landlord.upgrade.currentSubscription')}
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                   {currentPlan.price.monthly > 0 ? (
                     <>
-                      Próximo pago: <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(currentPlan.price.monthly)}</span> el{' '}
+                      {t('landlord.upgrade.nextPayment')} <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(currentPlan.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
                       <span className="font-medium text-neutral-900 dark:text-white">
-                        {new Date(MOCK_SUBSCRIPTION.currentPeriodEnd).toLocaleDateString('es-CO', {
+                        {new Date(MOCK_SUBSCRIPTION.currentPeriodEnd).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                           day: 'numeric',
                           month: 'long',
                         })}
                       </span>
                     </>
                   ) : (
-                    'Plan gratuito · Actualiza para más funcionalidades'
+                    t('landlord.upgrade.freePlanHint')
                   )}
                 </p>
               </div>
@@ -131,13 +133,13 @@ export default function UpgradePage() {
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">
                   {currentPlan.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'property_listing')?.limit || 1}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Propiedades</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.propertiesLabel')}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">
                   {currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Contratos</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.contractsLabel')}</p>
               </div>
             </div>
           </div>
@@ -151,8 +153,8 @@ export default function UpgradePage() {
                 <Lightning className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="font-medium text-neutral-900 dark:text-white text-sm">Análisis AI</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Evaluación automática</p>
+                <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.aiAnalysis')}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.autoEvaluation')}</p>
               </div>
             </div>
           </div>
@@ -162,8 +164,8 @@ export default function UpgradePage() {
                 <Buildings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <p className="font-medium text-neutral-900 dark:text-white text-sm">Multi-propiedad</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Gestión centralizada</p>
+                <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.multiProperty')}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.centralManagement')}</p>
               </div>
             </div>
           </div>
@@ -173,8 +175,8 @@ export default function UpgradePage() {
                 <ChartBar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="font-medium text-neutral-900 dark:text-white text-sm">Analíticas</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Reportes detallados</p>
+                <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.analytics')}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.detailedReports')}</p>
               </div>
             </div>
           </div>
@@ -188,7 +190,7 @@ export default function UpgradePage() {
 
         {/* Selected plan confirmation */}
         {canUpgrade && newPlan && (
-          <div className="mt-8 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-6">
+          <div className="mt-8 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
@@ -196,12 +198,12 @@ export default function UpgradePage() {
                 </div>
                 <div>
                   <p className="font-semibold text-neutral-900 dark:text-white">
-                    Plan seleccionado: {newPlan.name}
+                    {t('landlord.upgrade.selectedPlan', { name: newPlan.name })}
                   </p>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
                     {billingCycle === 'yearly'
-                      ? `${formatCurrency(newPlan.price.yearly)}/año (ahorras ${getYearlySavings(newPlan)}%)`
-                      : `${formatCurrency(newPlan.price.monthly)}/mes`}
+                      ? t('landlord.upgrade.perYearSaving', { price: formatCurrency(newPlan.price.yearly), percent: getYearlySavings(newPlan) })
+                      : t('landlord.upgrade.perMonthPrice', { price: formatCurrency(newPlan.price.monthly) })}
                   </p>
                 </div>
               </div>
@@ -218,12 +220,12 @@ export default function UpgradePage() {
                 {isProcessing ? (
                   <>
                     <CreditCard className="w-4 h-4 animate-pulse" />
-                    Procesando...
+                    {t('landlord.upgrade.processingPayment')}
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4" />
-                    Continuar al pago
+                    {t('landlord.upgrade.continueToPayment')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -235,8 +237,7 @@ export default function UpgradePage() {
               <div className="mt-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
                 <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Al cambiar a un plan menor, perderás acceso a algunas
-                  funcionalidades al final de tu período de facturación actual.
+                  {t('landlord.upgrade.downgradeWarning')}
                 </p>
               </div>
             )}
@@ -248,22 +249,22 @@ export default function UpgradePage() {
           <div className="inline-flex items-center gap-6 px-6 py-4 bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Pago seguro</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.securePayment')}</span>
             </div>
             <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-700" />
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Cancela cuando quieras</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.cancelAnytime')}</span>
             </div>
             <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-700" />
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Garantía de satisfacción</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.satisfactionGuarantee')}</span>
             </div>
           </div>
 
           <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-4">
-            Aceptamos Visa, Mastercard y PSE
+            {t('landlord.upgrade.acceptedMethods')}
           </p>
         </div>
       </div>

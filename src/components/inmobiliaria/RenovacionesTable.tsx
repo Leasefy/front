@@ -19,6 +19,7 @@ import {
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import {
   DropdownList,
   DropdownListTrigger,
@@ -50,8 +51,8 @@ interface RenovacionesTableProps {
 /**
  * Format currency to Colombian Peso
  */
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+function formatCurrencyLocal(amount: number, loc: string): string {
+  return new Intl.NumberFormat(loc === 'es' ? 'es-CL' : 'en-US', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
@@ -62,9 +63,9 @@ function formatCurrency(amount: number): string {
 /**
  * Format date to display
  */
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, loc: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('es-CO', {
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -83,6 +84,7 @@ export function RenovacionesTable({
   onCalculateIPC,
   onViewHistory,
 }: RenovacionesTableProps) {
+  const { t, locale } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('daysUntilExpiry');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
@@ -230,7 +232,7 @@ export function RenovacionesTable({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Todos
+            {t('inmobiliaria.finance.renewals.all')}
             <span className="px-1.5 py-0.5 rounded text-xs tabular-nums bg-muted">
               {bucketCounts.all}
             </span>
@@ -244,7 +246,7 @@ export function RenovacionesTable({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Criticas
+            {t('inmobiliaria.finance.renewals.critical')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '0-30' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-muted'
@@ -261,7 +263,7 @@ export function RenovacionesTable({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Urgentes
+            {t('inmobiliaria.finance.renewals.urgent')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '31-60' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-muted'
@@ -278,7 +280,7 @@ export function RenovacionesTable({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Proximas
+            {t('inmobiliaria.finance.renewals.upcoming')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '61-90' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-muted'
@@ -291,20 +293,20 @@ export function RenovacionesTable({
         {/* Status Filter Dropdown */}
         <div className="flex items-center gap-2">
           <Funnel className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Estado:</span>
+          <span className="text-sm text-muted-foreground">{t('inmobiliaria.finance.renewals.statusLabel')}:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             className="pl-3 pr-8 py-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
           >
-            <option value="all">Todos los estados</option>
-            <option value="pending">Pendiente</option>
-            <option value="notified">Notificado</option>
-            <option value="negotiating">Negociando</option>
-            <option value="approved">Aprobado</option>
-            <option value="signed">Firmado</option>
-            <option value="completed">Completado</option>
-            <option value="terminated">Terminado</option>
+            <option value="all">{t('inmobiliaria.finance.renewals.allStatuses')}</option>
+            <option value="pending">{t('inmobiliaria.finance.renewals.statusPending')}</option>
+            <option value="notified">{t('inmobiliaria.finance.renewals.statusNotified')}</option>
+            <option value="negotiating">{t('inmobiliaria.finance.renewals.statusNegotiating')}</option>
+            <option value="approved">{t('inmobiliaria.finance.renewals.statusApproved')}</option>
+            <option value="signed">{t('inmobiliaria.finance.renewals.statusSigned')}</option>
+            <option value="completed">{t('inmobiliaria.finance.renewals.statusCompleted')}</option>
+            <option value="terminated">{t('inmobiliaria.finance.renewals.statusTerminated')}</option>
           </select>
         </div>
       </div>
@@ -319,7 +321,7 @@ export function RenovacionesTable({
             className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
           >
             <span className="text-sm font-medium text-foreground">
-              {selectedItems.size} seleccionados
+              {selectedItems.size} {t('inmobiliaria.finance.renewals.selected')}
             </span>
             <div className="flex items-center gap-2 ml-auto">
               {onNotifyTenant && (
@@ -334,7 +336,7 @@ export function RenovacionesTable({
                   className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
                 >
                   <Bell className="w-4 h-4" />
-                  Notificar
+                  {t('inmobiliaria.finance.renewals.notify')}
                 </button>
               )}
               {onStartRenewal && (
@@ -349,7 +351,7 @@ export function RenovacionesTable({
                   className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
-                  Iniciar renovacion
+                  {t('inmobiliaria.finance.renewals.startRenewal')}
                 </button>
               )}
             </div>
@@ -373,18 +375,18 @@ export function RenovacionesTable({
                   className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
                 />
               </th>
-              <SortableHeader field="propertyTitle">Propiedad</SortableHeader>
-              <SortableHeader field="tenantName">Inquilino</SortableHeader>
-              <SortableHeader field="propietarioName">Propietario</SortableHeader>
+              <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
+              <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
+              <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
               <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                Vencimiento
+                {t('inmobiliaria.finance.renewals.expiration')}
               </th>
-              <SortableHeader field="daysUntilExpiry">Dias</SortableHeader>
-              <SortableHeader field="currentRent">Canon Actual</SortableHeader>
+              <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
+              <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
               <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                Propuesto
+                {t('inmobiliaria.finance.renewals.proposed')}
               </th>
-              <SortableHeader field="status">Estado</SortableHeader>
+              <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
               <th className="w-12 p-4"></th>
             </tr>
           </thead>
@@ -476,7 +478,7 @@ export function RenovacionesTable({
                   {/* End Date */}
                   <td className="p-4">
                     <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {formatDate(item.leaseEndDate)}
+                      {formatDate(item.leaseEndDate, locale)}
                     </span>
                   </td>
 
@@ -496,7 +498,7 @@ export function RenovacionesTable({
                   {/* Current Rent */}
                   <td className="p-4">
                     <span className="text-sm font-medium text-neutral-900 dark:text-white">
-                      {formatCurrency(item.currentRent)}
+                      {formatCurrencyLocal(item.currentRent, locale)}
                     </span>
                   </td>
 
@@ -505,7 +507,7 @@ export function RenovacionesTable({
                     {item.proposedRent && (
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-neutral-900 dark:text-white">
-                          {formatCurrency(item.negotiatedRent || item.proposedRent)}
+                          {formatCurrencyLocal(item.negotiatedRent || item.proposedRent, locale)}
                         </span>
                         {ipcIncrease && (
                           <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
@@ -547,7 +549,7 @@ export function RenovacionesTable({
                             className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                           >
                             <Eye className="w-4 h-4" />
-                            <span>Ver detalles</span>
+                            <span>{t('inmobiliaria.finance.renewals.viewDetails')}</span>
                           </DropdownListItem>
                         )}
                         {onNotifyTenant && item.status === 'pending' && (
@@ -556,7 +558,7 @@ export function RenovacionesTable({
                             className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                           >
                             <Bell className="w-4 h-4" />
-                            <span>Notificar inquilino</span>
+                            <span>{t('inmobiliaria.finance.renewals.notifyTenant')}</span>
                           </DropdownListItem>
                         )}
                         {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
@@ -567,7 +569,7 @@ export function RenovacionesTable({
                               className="flex items-center gap-3 px-3 py-2 cursor-pointer text-indigo-600 dark:text-indigo-400 focus:text-indigo-600 dark:focus:text-indigo-400"
                             >
                               <ArrowsClockwise className="w-4 h-4" />
-                              <span>Iniciar negociacion</span>
+                              <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
                             </DropdownListItem>
                           </>
                         )}
@@ -577,7 +579,7 @@ export function RenovacionesTable({
                             className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                           >
                             <Calculator className="w-4 h-4" />
-                            <span>Calcular IPC</span>
+                            <span>{t('inmobiliaria.finance.renewals.calculateIPC')}</span>
                           </DropdownListItem>
                         )}
                         {onViewHistory && (
@@ -586,7 +588,7 @@ export function RenovacionesTable({
                             className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                           >
                             <ClockCounterClockwise className="w-4 h-4" />
-                            <span>Ver historial</span>
+                            <span>{t('inmobiliaria.finance.renewals.viewHistory')}</span>
                           </DropdownListItem>
                         )}
                       </DropdownListContent>
@@ -605,12 +607,12 @@ export function RenovacionesTable({
               <CheckSquare className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="fill" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              Sin renovaciones pendientes
+              {t('inmobiliaria.finance.renewals.noRenewals')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400">
               {bucketFilter === 'all' && statusFilter === 'all'
-                ? 'No hay contratos por renovar en los proximos 90 dias'
-                : `No hay renovaciones con los filtros seleccionados`}
+                ? t('inmobiliaria.finance.renewals.noRenewalsDesc')
+                : t('inmobiliaria.finance.renewals.noRenewalsFiltered')}
             </p>
           </div>
         )}

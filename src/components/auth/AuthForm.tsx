@@ -24,6 +24,9 @@ interface ForgotPasswordFormData {
 interface AuthFormProps {
   className?: string;
   onSuccess?: () => void;
+  defaultMode?: AuthMode;
+  defaultRole?: 'tenant' | 'landlord' | 'agency';
+  returnUrl?: string;
 }
 
 // Role configuration - using app's design system
@@ -62,7 +65,7 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-export function AuthForm({ className, onSuccess }: AuthFormProps) {
+export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -73,9 +76,10 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
 
-  const returnUrl = searchParams.get('returnUrl') || '/';
-  const preselectedRole = searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
-  const initialMode = searchParams.get('mode') as AuthMode | null;
+  // Props take priority over searchParams
+  const returnUrl = returnUrlProp || searchParams.get('returnUrl') || '/';
+  const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
+  const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 
   const loginForm = useForm<LoginFormData>({
     defaultValues: { email: '', password: '' },
@@ -94,6 +98,19 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     }
   }, [initialMode, preselectedRole]);
 
+  // Auto-redirect to onboarding when defaultRole is provided from props (e.g., publish wizard)
+  React.useEffect(() => {
+    if (defaultRole && selectedRole && mode === 'register') {
+      const roleConfig = roleCards.find(r => r.id === selectedRole);
+      if (roleConfig) {
+        const href = returnUrl && returnUrl !== '/'
+          ? `${roleConfig.href}?returnUrl=${encodeURIComponent(returnUrl)}`
+          : roleConfig.href;
+        router.push(href);
+      }
+    }
+  }, [defaultRole, selectedRole, mode, returnUrl, router]);
+
   const handleModeSwitch = (newMode: AuthMode) => {
     setMode(newMode);
     setSelectedRole(null);
@@ -111,7 +128,10 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
     if (selectedRole) {
       const roleConfig = roleCards.find(r => r.id === selectedRole);
       if (roleConfig) {
-        router.push(roleConfig.href);
+        const href = returnUrl && returnUrl !== '/'
+          ? `${roleConfig.href}?returnUrl=${encodeURIComponent(returnUrl)}`
+          : roleConfig.href;
+        router.push(href);
       }
     }
   };
@@ -362,6 +382,13 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
             transition={{ duration: 0.15 }}
             className="space-y-3"
           >
+            {/* Auto-redirect when defaultRole is provided (from publish wizard) */}
+            {defaultRole ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <SpinnerGap className="w-6 h-6 animate-spin text-neutral-400" />
+                <p className="text-sm text-muted-foreground">Configurando tu cuenta...</p>
+              </div>
+            ) : (<>
             {roleCards.map((card, index) => {
               const Icon = card.icon;
               const isSelected = selectedRole === card.id;
@@ -453,6 +480,7 @@ export function AuthForm({ className, onSuccess }: AuthFormProps) {
                 {selectedRole ? 'Continuar' : 'Selecciona una opción'}
               </Button>
             </motion.div>
+            </>)}
           </motion.div>
         )}
 

@@ -3913,7 +3913,7 @@ function generateTrendDataPoints(months: number, baseValue: number, growthRate: 
     data.push({
       date: date.toISOString().split('T')[0],
       value: Math.round(value),
-      label: date.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }),
+      label: date.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }),
     });
   }
 

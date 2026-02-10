@@ -13,6 +13,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import {
   DropdownList,
   DropdownListContent,
@@ -96,6 +97,7 @@ export function ExportButton({
   error = null,
   className,
 }: ExportButtonProps) {
+  const { t } = useTranslation();
   const [internalSuccess, setInternalSuccess] = React.useState(false);
   const sizeConfig = SIZE_CONFIG[size];
 
@@ -160,7 +162,7 @@ export function ExportButton({
           )}
         </AnimatePresence>
         <span>
-          {isLoading ? 'Generando...' : internalSuccess ? 'Listo!' : buttonLabel}
+          {isLoading ? t('inmobiliaria.finance.export.generating') : internalSuccess ? t('inmobiliaria.finance.export.done') : buttonLabel}
         </span>
       </button>
     );
@@ -202,7 +204,7 @@ export function ExportButton({
               </motion.span>
             )}
           </AnimatePresence>
-          <span>{isLoading ? 'Exportando...' : label || 'Exportar'}</span>
+          <span>{isLoading ? t('inmobiliaria.finance.export.exporting') : label || t('inmobiliaria.finance.export.export')}</span>
           {!isLoading && <CaretDown className={cn(sizeConfig.icon, 'ml-1')} />}
         </button>
       </DropdownListTrigger>
@@ -232,10 +234,10 @@ export function ExportButton({
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-900 dark:text-white">
-              Descargar PDF
+              {t('inmobiliaria.finance.export.downloadPDF')}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Formato para impresion
+              {t('inmobiliaria.finance.export.printFormat')}
             </p>
           </div>
         </DropdownListItem>
@@ -258,10 +260,10 @@ export function ExportButton({
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-900 dark:text-white">
-              Descargar Excel
+              {t('inmobiliaria.finance.export.downloadExcel')}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Formato para analisis
+              {t('inmobiliaria.finance.export.analysisFormat')}
             </p>
           </div>
         </DropdownListItem>
@@ -278,10 +280,10 @@ export function ExportButton({
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Programar envio
+              {t('inmobiliaria.finance.export.scheduleExport')}
             </p>
             <p className="text-xs text-neutral-400 dark:text-neutral-500">
-              Proximamente
+              {t('inmobiliaria.finance.export.comingSoon')}
             </p>
           </div>
         </DropdownListItem>

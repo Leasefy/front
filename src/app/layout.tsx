@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "es_CO",
+    locale: "es_CL",
     url: siteUrl,
     siteName: "Leasefy",
     title: "Leasefy - Marketplace de Arriendos en Colombia",
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
     languages: {
-      "es-CO": siteUrl,
+      "es-CL": siteUrl,
     },
   },
   category: "real estate",

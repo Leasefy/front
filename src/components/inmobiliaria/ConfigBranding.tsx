@@ -18,6 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 import type { AgencyBranding } from '@/lib/types/inmobiliaria';
 import { getDefaultBranding } from '@/lib/types/inmobiliaria';
 
@@ -80,6 +81,7 @@ export function ConfigBranding({
   onSave,
   isLoading = false,
 }: ConfigBrandingProps) {
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<AgencyBranding>({ ...branding });
   const [isDragging, setIsDragging] = useState(false);
@@ -106,8 +108,8 @@ export function ConfigBranding({
       secondaryColor: preset.secondary,
       accentColor: preset.accent,
     }));
-    toast.success(`Paleta "${preset.name}" aplicada`);
-  }, []);
+    toast.success(t('inmobiliaria.config.brandingSection.paletteApplied', { name: preset.name }));
+  }, [t]);
 
   const resetToDefaults = useCallback(() => {
     const defaults = getDefaultBranding();
@@ -117,20 +119,20 @@ export function ConfigBranding({
       secondaryColor: defaults.secondaryColor,
       accentColor: defaults.accentColor,
     }));
-    toast.info('Colores restaurados a valores por defecto');
-  }, []);
+    toast.info(t('inmobiliaria.config.brandingSection.colorsReset'));
+  }, [t]);
 
   const handleFileSelect = useCallback(
     (file: File) => {
       setPreviewError(null);
 
       if (!ACCEPTED_FORMATS.includes(file.type)) {
-        setPreviewError('Formato no soportado. Usa PNG, JPG o SVG.');
+        setPreviewError(t('inmobiliaria.config.brandingSection.unsupportedFormat'));
         return;
       }
 
       if (file.size > MAX_FILE_SIZE) {
-        setPreviewError('El archivo es muy grande. Máximo 2MB.');
+        setPreviewError(t('inmobiliaria.config.brandingSection.fileTooLarge'));
         return;
       }
 
@@ -144,11 +146,11 @@ export function ConfigBranding({
         }));
       };
       reader.onerror = () => {
-        setPreviewError('Error al leer el archivo');
+        setPreviewError(t('inmobiliaria.config.brandingSection.readError'));
       };
       reader.readAsDataURL(file);
     },
-    []
+    [t]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -192,8 +194,8 @@ export function ConfigBranding({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    toast.info('Logo eliminado');
-  }, []);
+    toast.info(t('inmobiliaria.config.brandingSection.logoRemoved'));
+  }, [t]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -205,9 +207,9 @@ export function ConfigBranding({
       localStorage.setItem('inmobiliaria-branding', JSON.stringify(formData));
 
       onSave?.(formData);
-      toast.success('Branding guardado correctamente');
+      toast.success(t('inmobiliaria.config.toasts.brandingSaved'));
     } catch (err) {
-      toast.error('Error al guardar el branding');
+      toast.error(t('inmobiliaria.config.brandingSection.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -236,7 +238,7 @@ export function ConfigBranding({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
             <Image className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-semibold">Logo de la agencia</h3>
+            <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
           </div>
           {currentLogo && (
             <button
@@ -245,7 +247,7 @@ export function ConfigBranding({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <Trash className="w-4 h-4" />
-              Eliminar
+              {t('inmobiliaria.common.delete')}
             </button>
           )}
         </div>
@@ -253,7 +255,7 @@ export function ConfigBranding({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Current Logo Preview */}
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Logo actual</p>
+            <p className="text-sm text-muted-foreground">{t('inmobiliaria.config.brandingSection.currentLogo')}</p>
             <div className="h-32 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center">
               {currentLogo ? (
                 <img
@@ -264,7 +266,7 @@ export function ConfigBranding({
               ) : (
                 <div className="text-center text-muted-foreground">
                   <Image className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Sin logo</p>
+                  <p className="text-sm">{t('inmobiliaria.config.brandingSection.noLogo')}</p>
                 </div>
               )}
             </div>
@@ -272,7 +274,7 @@ export function ConfigBranding({
 
           {/* Upload Zone */}
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Subir nuevo logo</p>
+            <p className="text-sm text-muted-foreground">{t('inmobiliaria.config.brandingSection.uploadNewLogo')}</p>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -292,8 +294,8 @@ export function ConfigBranding({
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">
-                Arrastra tu logo aquí o{' '}
-                <span className="text-indigo-500 font-medium">haz clic</span>
+                {t('inmobiliaria.config.brandingSection.dragOrClick')}{' '}
+                <span className="text-indigo-500 font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 PNG, JPG, SVG (max 2MB)
@@ -322,7 +324,7 @@ export function ConfigBranding({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
             <Palette className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold">Colores de marca</h3>
+            <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
           </div>
           <button
             type="button"
@@ -330,36 +332,36 @@ export function ConfigBranding({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
           >
             <ArrowCounterClockwise className="w-4 h-4" />
-            Restaurar
+            {t('inmobiliaria.config.brandingSection.restore')}
           </button>
         </div>
 
         {/* Color Pickers */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ColorPickerField
-            label="Color primario"
+            label={t('inmobiliaria.config.brandingSection.primaryColor')}
             value={formData.primaryColor}
             onChange={(value) => updateColor('primaryColor', value)}
-            description="Botones, enlaces y elementos principales"
+            description={t('inmobiliaria.config.brandingSection.primaryColorDesc')}
           />
           <ColorPickerField
-            label="Color secundario"
+            label={t('inmobiliaria.config.brandingSection.secondaryColor')}
             value={formData.secondaryColor}
             onChange={(value) => updateColor('secondaryColor', value)}
-            description="Badges, íconos y acentos"
+            description={t('inmobiliaria.config.brandingSection.secondaryColorDesc')}
           />
           <ColorPickerField
-            label="Color de acento"
+            label={t('inmobiliaria.config.brandingSection.accentColor')}
             value={formData.accentColor}
             onChange={(value) => updateColor('accentColor', value)}
-            description="Alertas, notificaciones y destacados"
+            description={t('inmobiliaria.config.brandingSection.accentColorDesc')}
           />
         </div>
 
         {/* Preset Palettes */}
         <div className="pt-4 border-t border-border">
           <p className="text-sm font-medium text-foreground mb-3">
-            Paletas predefinidas
+            {t('inmobiliaria.config.brandingSection.presetPalettes')}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {COLOR_PRESETS.map((preset) => (
@@ -396,7 +398,7 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Eye className="w-5 h-5 text-emerald-500" />
-          <h3 className="font-semibold">Vista previa</h3>
+          <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
         </div>
 
         <div className="p-6 rounded-xl bg-muted/30 border border-border space-y-6">
@@ -417,7 +419,7 @@ export function ConfigBranding({
                   A
                 </div>
               )}
-              <span className="font-semibold text-foreground">Mi Agencia</span>
+              <span className="font-semibold text-foreground">{t('inmobiliaria.config.brandingSection.myAgency')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-muted-foreground" />
@@ -427,21 +429,21 @@ export function ConfigBranding({
 
           {/* Buttons Preview */}
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground font-medium">Botones</p>
+            <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.buttons')}</p>
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.primaryColor }}
               >
-                Botón primario
+                {t('inmobiliaria.config.brandingSection.primaryButton')}
               </button>
               <button
                 type="button"
                 className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.secondaryColor }}
               >
-                Botón secundario
+                {t('inmobiliaria.config.brandingSection.secondaryButton')}
               </button>
               <button
                 type="button"
@@ -464,26 +466,26 @@ export function ConfigBranding({
                 className="px-2.5 py-1 rounded-full text-xs font-medium text-white"
                 style={{ backgroundColor: formData.primaryColor }}
               >
-                Activo
+                {t('inmobiliaria.common.active')}
               </span>
               <span
                 className="px-2.5 py-1 rounded-full text-xs font-medium text-white"
                 style={{ backgroundColor: formData.secondaryColor }}
               >
-                Completado
+                {t('inmobiliaria.common.completed')}
               </span>
               <span
                 className="px-2.5 py-1 rounded-full text-xs font-medium text-white"
                 style={{ backgroundColor: formData.accentColor }}
               >
-                Pendiente
+                {t('inmobiliaria.common.pending')}
               </span>
             </div>
           </div>
 
           {/* Links Preview */}
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground font-medium">Enlaces</p>
+            <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.links')}</p>
             <div className="flex flex-wrap gap-4">
               <a
                 href="#"
@@ -492,7 +494,7 @@ export function ConfigBranding({
                 onClick={(e) => e.preventDefault()}
               >
                 <Link className="w-4 h-4" />
-                Ver propiedad
+                {t('inmobiliaria.config.brandingSection.viewProperty')}
               </a>
               <a
                 href="#"
@@ -500,14 +502,14 @@ export function ConfigBranding({
                 style={{ color: formData.secondaryColor }}
                 onClick={(e) => e.preventDefault()}
               >
-                Ver detalles
+                {t('inmobiliaria.config.brandingSection.viewDetails')}
               </a>
             </div>
           </div>
 
           {/* Alert Preview */}
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground font-medium">Alerta</p>
+            <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.alert')}</p>
             <div
               className="p-3 rounded-lg text-sm"
               style={{
@@ -516,7 +518,7 @@ export function ConfigBranding({
               }}
             >
               <span style={{ color: formData.accentColor }}>
-                3 cobros pendientes de pago
+                {t('inmobiliaria.config.brandingSection.alertExample')}
               </span>
             </div>
           </div>
@@ -538,7 +540,7 @@ export function ConfigBranding({
               disabled={isSaving}
               className="px-5 py-2.5 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
             >
-              Descartar
+              {t('inmobiliaria.config.brandingSection.discard')}
             </button>
             <button
               type="button"
@@ -549,12 +551,12 @@ export function ConfigBranding({
               {isSaving ? (
                 <>
                   <SpinnerGap className="w-4 h-4 animate-spin" />
-                  Guardando...
+                  {t('inmobiliaria.common.saving')}
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  Guardar branding
+                  {t('inmobiliaria.config.brandingSection.saveBranding')}
                 </>
               )}
             </button>

@@ -27,6 +27,7 @@ import {
   ClipboardText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -92,15 +93,6 @@ const ACTION_ICONS: Record<PermissionAction, React.ElementType> = {
   export: Export,
 };
 
-// Action descriptions for tooltips
-const ACTION_DESCRIPTIONS: Record<PermissionAction, string> = {
-  view: 'Puede ver y consultar',
-  create: 'Puede crear nuevos registros',
-  edit: 'Puede modificar registros existentes',
-  delete: 'Puede eliminar registros',
-  export: 'Puede exportar datos (PDF, Excel)',
-};
-
 // All roles in order
 const ALL_ROLES: AgencyRole[] = ['admin', 'agente', 'contador', 'viewer'];
 
@@ -117,6 +109,7 @@ interface PermissionCellProps {
 }
 
 function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: PermissionCellProps) {
+  const { t } = useTranslation();
   const ActionIcon = ACTION_ICONS[action];
 
   // Admin always has all permissions (disabled UI)
@@ -124,6 +117,17 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
 
   // Show warning for dangerous permissions (delete, config edit)
   const isDangerous = action === 'delete' || (module === 'configuracion' && action === 'edit');
+
+  const actionDescription = useMemo(() => {
+    const descriptions: Record<PermissionAction, string> = {
+      view: t('inmobiliaria.config.permissions.actionDescriptions.view'),
+      create: t('inmobiliaria.config.permissions.actionDescriptions.create'),
+      edit: t('inmobiliaria.config.permissions.actionDescriptions.edit'),
+      delete: t('inmobiliaria.config.permissions.actionDescriptions.delete'),
+      export: t('inmobiliaria.config.permissions.actionDescriptions.export'),
+    };
+    return descriptions[action];
+  }, [action, t]);
 
   return (
     <TooltipProvider>
@@ -162,12 +166,12 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
         <TooltipContent side="top">
           <div className="text-xs">
             <p className="font-medium">{getActionLabel(action)}</p>
-            <p className="text-neutral-400">{ACTION_DESCRIPTIONS[action]}</p>
+            <p className="text-neutral-400">{actionDescription}</p>
             {isDangerous && isEnabled && (
-              <p className="text-amber-400 mt-1">Permiso sensible</p>
+              <p className="text-amber-400 mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
             )}
             {isLocked && (
-              <p className="text-neutral-500 mt-1">Administradores siempre tienen este permiso</p>
+              <p className="text-neutral-500 mt-1">{t('inmobiliaria.config.permissions.adminAlwaysHas')}</p>
             )}
           </div>
         </TooltipContent>
@@ -254,6 +258,8 @@ export function ConfigPermisos({
   onSave,
   isLoading = false,
 }: ConfigPermisosProps) {
+  const { t } = useTranslation();
+
   // Local state for editing
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(initialPermissions);
   const [activeRole, setActiveRole] = useState<AgencyRole>('admin');
@@ -349,10 +355,10 @@ export function ConfigPermisos({
         <div>
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-indigo-500" />
-            Permisos por Rol
+            {t('inmobiliaria.config.permissions.permissionsTitle')}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Configura que puede hacer cada rol en la plataforma
+            {t('inmobiliaria.config.permissions.permissionsSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -363,7 +369,7 @@ export function ConfigPermisos({
             disabled={isLoading}
           >
             <ArrowClockwise className="w-4 h-4 mr-2" />
-            Restablecer
+            {t('inmobiliaria.config.permissions.reset')}
           </Button>
           <Button
             size="sm"
@@ -373,12 +379,12 @@ export function ConfigPermisos({
             {isLoading ? (
               <>
                 <ArrowClockwise className="w-4 h-4 mr-2 animate-spin" />
-                Guardando...
+                {t('inmobiliaria.config.permissions.saving')}
               </>
             ) : (
               <>
                 <Check className="w-4 h-4 mr-2" />
-                Guardar cambios
+                {t('inmobiliaria.config.permissions.saveChanges')}
               </>
             )}
           </Button>
@@ -394,7 +400,7 @@ export function ConfigPermisos({
         >
           <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            Tienes cambios sin guardar. Haz clic en &quot;Guardar cambios&quot; para aplicarlos.
+            {t('inmobiliaria.config.permissions.unsavedChanges')}
           </p>
         </motion.div>
       )}
@@ -421,7 +427,7 @@ export function ConfigPermisos({
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <p className="text-sm text-purple-700 dark:text-purple-300">
-                    Los administradores tienen todos los permisos por defecto y no se pueden modificar.
+                    {t('inmobiliaria.config.permissions.adminNote')}
                   </p>
                 </div>
               </div>
@@ -434,12 +440,12 @@ export function ConfigPermisos({
                   <tr className="border-b border-neutral-100 dark:border-neutral-800">
                     <th className="text-left p-4 w-[200px]">
                       <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                        Modulo
+                        {t('inmobiliaria.config.permissions.module')}
                       </span>
                     </th>
                     <th className="p-4 w-[60px] text-center">
                       <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                        Todo
+                        {t('inmobiliaria.config.permissions.all')}
                       </span>
                     </th>
                     {ALL_PERMISSION_ACTIONS.map((action) => {
@@ -475,7 +481,9 @@ export function ConfigPermisos({
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="text-xs">
-                                    {allEnabled ? 'Quitar' : 'Dar'} permiso de {getActionLabel(action).toLowerCase()} a todos los modulos
+                                    {allEnabled
+                                      ? t('inmobiliaria.config.permissions.revokeAll', { action: getActionLabel(action).toLowerCase() })
+                                      : t('inmobiliaria.config.permissions.grantAll', { action: getActionLabel(action).toLowerCase() })}
                                   </p>
                                 </TooltipContent>
                               </Tooltip>
@@ -507,19 +515,19 @@ export function ConfigPermisos({
                 <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="bold" />
                 </div>
-                <span>Permiso activo</span>
+                <span>{t('inmobiliaria.config.permissions.legendActive')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                   <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" weight="bold" />
                 </div>
-                <span>Permiso sensible</span>
+                <span>{t('inmobiliaria.config.permissions.legendSensitive')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                   <Eye className="w-3.5 h-3.5 text-neutral-400" />
                 </div>
-                <span>Sin permiso</span>
+                <span>{t('inmobiliaria.config.permissions.legendNoPermission')}</span>
               </div>
             </div>
           </TabsContent>
@@ -530,17 +538,17 @@ export function ConfigPermisos({
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmar cambios</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.config.permissions.confirmTitle')}</DialogTitle>
             <DialogDescription>
-              Los cambios en permisos afectaran inmediatamente a todos los usuarios con estos roles.
+              {t('inmobiliaria.config.permissions.confirmDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              Cancelar
+              {t('inmobiliaria.config.permissions.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading ? 'Guardando...' : 'Guardar cambios'}
+              {isLoading ? t('inmobiliaria.config.permissions.saving') : t('inmobiliaria.config.permissions.saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -550,22 +558,22 @@ export function ConfigPermisos({
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-amber-600 dark:text-amber-400">Restablecer permisos</DialogTitle>
+            <DialogTitle className="text-amber-600 dark:text-amber-400">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
             <DialogDescription>
-              Esto restablecera los permisos de todos los roles a sus valores por defecto.
+              {t('inmobiliaria.config.permissions.resetDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              Todos los cambios personalizados se perderan. Esta accion no se puede deshacer.
+              {t('inmobiliaria.config.permissions.resetWarning')}
             </p>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
-              Cancelar
+              {t('inmobiliaria.config.permissions.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleReset}>
-              Restablecer
+              {t('inmobiliaria.config.permissions.reset')}
             </Button>
           </DialogFooter>
         </DialogContent>

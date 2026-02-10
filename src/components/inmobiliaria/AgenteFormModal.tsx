@@ -15,6 +15,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { AgenteFormData, AgenteRole } from '@/lib/types/inmobiliaria';
 
 interface AgenteFormModalProps {
@@ -23,17 +24,9 @@ interface AgenteFormModalProps {
   onSubmit: (data: AgenteFormData) => Promise<void> | void;
 }
 
-const ROLE_OPTIONS: { value: AgenteRole; label: string; description: string }[] = [
-  { value: 'agent', label: 'Agente', description: 'Agente de ventas/arriendos' },
-  { value: 'coordinator', label: 'Coordinador', description: 'Supervisa un equipo de agentes' },
-  { value: 'director', label: 'Director', description: 'Director de la inmobiliaria' },
-];
+const ROLE_VALUES: AgenteRole[] = ['agent', 'coordinator', 'director'];
 
-const SPECIALIZATION_OPTIONS = [
-  { value: 'residential', label: 'Residencial' },
-  { value: 'commercial', label: 'Comercial' },
-  { value: 'both', label: 'Ambos' },
-] as const;
+const SPECIALIZATION_VALUES = ['residential', 'commercial', 'both'] as const;
 
 const ZONE_OPTIONS = [
   'Norte',
@@ -56,9 +49,22 @@ export function AgenteFormModal({
   onClose,
   onSubmit,
 }: AgenteFormModalProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);
+
+  const ROLE_OPTIONS: { value: AgenteRole; label: string; description: string }[] = [
+    { value: 'agent', label: t('inmobiliaria.agente.roleAgent'), description: t('inmobiliaria.agente.roleAgentDesc') },
+    { value: 'coordinator', label: t('inmobiliaria.agente.roleCoordinator'), description: t('inmobiliaria.agente.roleCoordinatorDesc') },
+    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc') },
+  ];
+
+  const SPECIALIZATION_OPTIONS = [
+    { value: 'residential', label: t('inmobiliaria.agente.specResidential') },
+    { value: 'commercial', label: t('inmobiliaria.agente.specCommercial') },
+    { value: 'both', label: t('inmobiliaria.agente.specBoth') },
+  ];
 
   // Mount check for portal
   useEffect(() => {
@@ -109,21 +115,21 @@ export function AgenteFormModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
+      newErrors.name = t('inmobiliaria.agente.errorNameRequired');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido';
+      newErrors.email = t('inmobiliaria.agente.errorEmailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'El email no es valido';
+      newErrors.email = t('inmobiliaria.agente.errorEmailInvalid');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'El telefono es requerido';
+      newErrors.phone = t('inmobiliaria.agente.errorPhoneRequired');
     }
 
     if (formData.commissionSplit < 0 || formData.commissionSplit > 100) {
-      newErrors.commissionSplit = 'Debe ser entre 0 y 100';
+      newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
     }
 
     setErrors(newErrors);
@@ -203,8 +209,8 @@ export function AgenteFormModal({
                   <UserCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground">Nuevo Agente</h2>
-                  <p className="text-sm text-muted-foreground">Agrega un nuevo miembro al equipo</p>
+                  <h2 className="text-lg font-semibold text-foreground">{t('inmobiliaria.agente.newAgent')}</h2>
+                  <p className="text-sm text-muted-foreground">{t('inmobiliaria.agente.newAgentDescription')}</p>
                 </div>
               </div>
               <button
@@ -222,7 +228,7 @@ export function AgenteFormModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  Nombre completo
+                  {t('inmobiliaria.agente.fullName')}
                 </label>
                 <input
                   type="text"
@@ -264,7 +270,7 @@ export function AgenteFormModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground" />
-                  Telefono
+                  {t('inmobiliaria.agente.phone')}
                 </label>
                 <input
                   type="tel"
@@ -283,7 +289,7 @@ export function AgenteFormModal({
 
               {/* Role */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Rol</label>
+                <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {ROLE_OPTIONS.map((option) => (
                     <button
@@ -319,14 +325,14 @@ export function AgenteFormModal({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
-                    Zona
+                    {t('inmobiliaria.agente.zone')}
                   </label>
                   <select
                     value={formData.zone || ''}
                     onChange={(e) => updateField('zone', e.target.value || undefined)}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   >
-                    <option value="">Seleccionar zona</option>
+                    <option value="">{t('inmobiliaria.agente.selectZone')}</option>
                     {ZONE_OPTIONS.map((zone) => (
                       <option key={zone} value={zone}>{zone}</option>
                     ))}
@@ -337,7 +343,7 @@ export function AgenteFormModal({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Buildings className="w-4 h-4 text-muted-foreground" />
-                    Especializacion
+                    {t('inmobiliaria.agente.specialization')}
                   </label>
                   <select
                     value={formData.specialization || 'residential'}
@@ -355,7 +361,7 @@ export function AgenteFormModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Percent className="w-4 h-4 text-muted-foreground" />
-                  Porcentaje de comision
+                  {t('inmobiliaria.agente.commissionPercentage')}
                 </label>
                 <div className="flex items-center gap-4">
                   <input
@@ -382,7 +388,7 @@ export function AgenteFormModal({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Porcentaje de la comision de la agencia que recibe el agente
+                  {t('inmobiliaria.agente.commissionPercentageDesc')}
                 </p>
                 {errors.commissionSplit && (
                   <p className="text-xs text-rose-500">{errors.commissionSplit}</p>
@@ -398,7 +404,7 @@ export function AgenteFormModal({
                 disabled={isSubmitting}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
               >
-                Cancelar
+                {t('inmobiliaria.agente.cancel')}
               </button>
               <button
                 type="submit"
@@ -409,10 +415,10 @@ export function AgenteFormModal({
                 {isSubmitting ? (
                   <>
                     <SpinnerGap className="w-4 h-4 animate-spin" />
-                    Creando...
+                    {t('inmobiliaria.agente.creating')}
                   </>
                 ) : (
-                  'Crear Agente'
+                  t('inmobiliaria.agente.createAgent')
                 )}
               </button>
             </div>

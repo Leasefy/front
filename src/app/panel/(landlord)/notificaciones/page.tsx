@@ -30,6 +30,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   getLandlordNotifications,
@@ -113,23 +114,6 @@ const getNotificationIcon = (type: string) => {
   return iconMap[type] || Bell;
 };
 
-// Format relative time
-const formatRelativeTime = (dateString: string): string => {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'ahora';
-  if (diffMins < 60) return `${diffMins} min`;
-  if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
-  if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
-  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-};
-
 type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'contract' | 'lease' | 'visit' | 'property';
 
 // Skeleton component for loading state
@@ -159,6 +143,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
+  const { t, formatRelativeDate } = useTranslation();
   const router = useRouter();
   const [notifications, setNotifications] = useState<LandlordNotification[]>(getLandlordNotifications());
   const [filter, setFilter] = useState<FilterType>('all');
@@ -213,10 +198,10 @@ export default function NotificacionesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-            Notificaciones
+            {t('landlord.notifications.title')}
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            {unreadCount > 0 ? `${unreadCount} sin leer` : 'Todas leídas'}
+            {unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -226,7 +211,7 @@ export default function NotificacionesPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
             >
               <Check className="w-4 h-4" />
-              Marcar todo como leído
+              {t('landlord.notifications.markAllRead')}
             </button>
           )}
           <button
@@ -241,14 +226,14 @@ export default function NotificacionesPage() {
       {/* Filters */}
       <div className="flex items-center gap-2 mb-6 pb-4 border-b border-neutral-200 dark:border-neutral-700 overflow-x-auto">
         {[
-          { id: 'all', label: 'Todas' },
-          { id: 'unread', label: 'Sin leer', count: unreadCount },
-          { id: 'payment', label: 'Pagos' },
-          { id: 'application', label: 'Candidatos' },
-          { id: 'contract', label: 'Contratos' },
-          { id: 'lease', label: 'Arriendos' },
-          { id: 'visit', label: 'Visitas' },
-          { id: 'property', label: 'Propiedades' },
+          { id: 'all', label: t('landlord.notifications.filterAll') },
+          { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
+          { id: 'payment', label: t('landlord.notifications.filterPayments') },
+          { id: 'application', label: t('landlord.notifications.filterCandidates') },
+          { id: 'contract', label: t('landlord.notifications.filterContracts') },
+          { id: 'lease', label: t('landlord.notifications.filterLeases') },
+          { id: 'visit', label: t('landlord.notifications.filterVisits') },
+          { id: 'property', label: t('landlord.notifications.filterProperties') },
         ].map((f) => (
           <button
             key={f.id}
@@ -293,12 +278,12 @@ export default function NotificacionesPage() {
               icon={Bell}
               title={
                 filter === 'all'
-                  ? 'No hay notificaciones'
+                  ? t('landlord.notifications.emptyAll')
                   : filter === 'unread'
-                    ? 'No hay notificaciones sin leer'
-                    : 'No hay notificaciones en esta categoría'
+                    ? t('landlord.notifications.emptyUnread')
+                    : t('landlord.notifications.emptyCategory')
               }
-              description="Cuando haya actividad en tus propiedades o candidatos, te notificaremos aquí."
+              description={t('landlord.notifications.emptyDescription')}
               className="border-0 rounded-none bg-transparent"
             />
           ) : (
@@ -353,7 +338,7 @@ export default function NotificacionesPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-neutral-400 dark:text-neutral-500">
-                        {formatRelativeTime(notification.createdAt)}
+                        {formatRelativeDate(notification.createdAt)}
                       </span>
                       <span className="text-neutral-300 dark:text-neutral-600">
                         •
@@ -399,7 +384,7 @@ export default function NotificacionesPage() {
                       <button
                         onClick={() => markAsRead(notification.id)}
                         className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        title="Marcar como leído"
+                        title={t('landlord.notifications.markAsRead')}
                       >
                         <Check className="w-4 h-4" />
                       </button>
@@ -407,7 +392,7 @@ export default function NotificacionesPage() {
                     <button
                       onClick={() => deleteNotification(notification.id)}
                       className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Eliminar"
+                      title={t('landlord.notifications.deleteNotification')}
                     >
                       <TrashSimple className="w-4 h-4" />
                     </button>
@@ -432,8 +417,7 @@ export default function NotificacionesPage() {
       {notifications.length > 0 && (
         <div className="mt-4 flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
           <span>
-            Mostrando {filteredNotifications.length} de {notifications.length}{' '}
-            notificaciones
+            {t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })}
           </span>
           {notifications.length > 0 && (
             <button
@@ -442,7 +426,7 @@ export default function NotificacionesPage() {
               }
               className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
             >
-              Limpiar leídas
+              {t('landlord.notifications.clearRead')}
             </button>
           )}
         </div>

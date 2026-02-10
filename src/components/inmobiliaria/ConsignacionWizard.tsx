@@ -17,6 +17,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
 import {
@@ -35,12 +36,12 @@ interface ConsignacionWizardProps {
 }
 
 const STEPS = [
-  { id: 1, label: 'Propietario', icon: User },
-  { id: 2, label: 'Propiedad', icon: HouseLine },
-  { id: 3, label: 'Comision', icon: Percent },
-  { id: 4, label: 'Agente', icon: UserCircle },
-  { id: 5, label: 'Inventario', icon: ClipboardText },
-  { id: 6, label: 'Confirmar', icon: CheckCircle },
+  { id: 1, labelKey: 'inmobiliaria.consignaciones.wizard.steps.owner', icon: User },
+  { id: 2, labelKey: 'inmobiliaria.consignaciones.wizard.steps.property', icon: HouseLine },
+  { id: 3, labelKey: 'inmobiliaria.consignaciones.wizard.steps.commission', icon: Percent },
+  { id: 4, labelKey: 'inmobiliaria.consignaciones.wizard.steps.agent', icon: UserCircle },
+  { id: 5, labelKey: 'inmobiliaria.consignaciones.wizard.steps.inventory', icon: ClipboardText },
+  { id: 6, labelKey: 'inmobiliaria.consignaciones.wizard.steps.confirm', icon: CheckCircle },
 ];
 
 /**
@@ -49,6 +50,7 @@ const STEPS = [
  */
 export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -141,8 +143,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast.success({
-        title: 'Consignacion creada exitosamente',
-        description: `Se ha registrado "${formData.propertyTitle}" en el portafolio.`,
+        title: t('inmobiliaria.consignaciones.wizard.toasts.successTitle'),
+        description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', { title: formData.propertyTitle || '' }),
       });
 
       // Redirect to portafolio
@@ -150,8 +152,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     } catch (error) {
       console.error('Error creating consignacion:', error);
       toast.error({
-        title: 'Error al crear consignacion',
-        description: 'Ocurrio un error. Por favor intenta de nuevo.',
+        title: t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'),
+        description: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
       });
     } finally {
       setIsSubmitting(false);
@@ -244,7 +246,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                         ? 'text-neutral-900 dark:text-white'
                         : 'text-neutral-400'
                   )}>
-                    {step.label}
+                    {t(step.labelKey)}
                   </span>
                 </button>
 
@@ -266,7 +268,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-neutral-900 dark:text-white">
-              Paso {currentStep} de 6: {STEPS[currentStep - 1]?.label}
+              {t('inmobiliaria.consignaciones.wizard.mobileProgress', { current: currentStep, total: 6, label: t(STEPS[currentStep - 1]?.labelKey) })}
             </span>
             <span className="text-sm text-neutral-500">{Math.round((currentStep / 6) * 100)}%</span>
           </div>
@@ -282,7 +284,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -305,7 +307,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
             onClick={handleCancel}
             className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
-            Cancelar
+            {t('inmobiliaria.consignaciones.wizard.cancel')}
           </button>
 
           {/* Navigation Buttons */}
@@ -317,7 +319,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 <CaretLeft className="w-4 h-4" />
-                Anterior
+                {t('inmobiliaria.consignaciones.wizard.previous')}
               </button>
             )}
 
@@ -333,7 +335,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                 )}
               >
-                Siguiente
+                {t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />
               </button>
             ) : (
@@ -351,12 +353,12 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 {isSubmitting ? (
                   <>
                     <SpinnerGap className="w-4 h-4 animate-spin" />
-                    Creando...
+                    {t('inmobiliaria.consignaciones.wizard.creating')}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />
-                    Confirmar Consignación
+                    {t('inmobiliaria.consignaciones.wizard.confirmConsignment')}
                   </>
                 )}
               </button>
@@ -388,10 +390,10 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900 dark:text-white">
-                    Cancelar consignacion?
+                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}
                   </h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Se perdera toda la informacion ingresada
+                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
                   </p>
                 </div>
               </div>
@@ -401,13 +403,13 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   onClick={() => setShowCancelDialog(false)}
                   className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
-                  Continuar editando
+                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
                 </button>
                 <button
                   onClick={confirmCancel}
                   className="px-4 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
                 >
-                  Si, cancelar
+                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
                 </button>
               </div>
             </motion.div>

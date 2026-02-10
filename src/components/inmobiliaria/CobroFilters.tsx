@@ -12,6 +12,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
 
 export interface CobroFiltersState {
@@ -30,32 +31,15 @@ interface CobroFiltersProps {
   cobroCountByStatus: Record<CobroStatus | 'all', number>;
 }
 
-// Status tabs configuration
-const STATUS_TABS: { value: CobroStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'paid', label: 'Pagados' },
-  { value: 'late', label: 'En mora' },
-  { value: 'partial', label: 'Parciales' },
-  { value: 'defaulted', label: 'Incobrables' },
+// Status tabs configuration - keys for i18n
+const STATUS_TAB_KEYS: { value: CobroStatus | 'all'; key: string }[] = [
+  { value: 'all', key: 'inmobiliaria.cobros.filters.all' },
+  { value: 'pending', key: 'inmobiliaria.cobros.filters.pending' },
+  { value: 'paid', key: 'inmobiliaria.cobros.filters.paid' },
+  { value: 'late', key: 'inmobiliaria.cobros.filters.late' },
+  { value: 'partial', key: 'inmobiliaria.cobros.filters.partial' },
+  { value: 'defaulted', key: 'inmobiliaria.cobros.filters.defaulted' },
 ];
-
-/**
- * Get last N months including current month
- */
-function getRecentMonths(count: number): { value: string; label: string }[] {
-  const months: { value: string; label: string }[] = [];
-  const today = new Date();
-
-  for (let i = 0; i < count; i++) {
-    const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
-    months.push({ value, label });
-  }
-
-  return months;
-}
 
 /**
  * CobroFilters - Filter bar for cobros (collections) page
@@ -69,6 +53,7 @@ export function CobroFilters({
   onFilterChange,
   cobroCountByStatus,
 }: CobroFiltersProps) {
+  const { t, formatDate } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
@@ -83,8 +68,22 @@ export function CobroFilters({
     return () => clearTimeout(timer);
   }, [searchInput, filters, onFilterChange]);
 
-  // Recent months for dropdown
-  const recentMonths = useMemo(() => getRecentMonths(6), []);
+  /**
+   * Get last N months including current month
+   */
+  const recentMonths = useMemo(() => {
+    const months: { value: string; label: string }[] = [];
+    const today = new Date();
+
+    for (let i = 0; i < 6; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = formatDate(date, { month: 'long', year: 'numeric' });
+      months.push({ value, label });
+    }
+
+    return months;
+  }, [formatDate]);
 
   // Count active filters (excluding month and 'all' status since those are always set)
   const activeFiltersCount = useMemo(() => {
@@ -117,19 +116,19 @@ export function CobroFilters({
   // Get labels for current selections
   const getMonthLabel = () => {
     const month = recentMonths.find((m) => m.value === filters.month);
-    return month?.label || 'Seleccionar mes';
+    return month?.label || t('inmobiliaria.cobros.filters.selectMonth');
   };
 
   const getConsignacionLabel = () => {
-    if (!filters.consignacionId) return 'Todas';
+    if (!filters.consignacionId) return t('inmobiliaria.cobros.filters.allProperties');
     const consignacion = consignaciones.find((c) => c.id === filters.consignacionId);
-    return consignacion?.propertyTitle || 'Todas';
+    return consignacion?.propertyTitle || t('inmobiliaria.cobros.filters.allProperties');
   };
 
   const getPropietarioLabel = () => {
-    if (!filters.propietarioId) return 'Todos';
+    if (!filters.propietarioId) return t('inmobiliaria.cobros.filters.allOwners');
     const propietario = propietarios.find((p) => p.id === filters.propietarioId);
-    return propietario?.name || 'Todos';
+    return propietario?.name || t('inmobiliaria.cobros.filters.allOwners');
   };
 
   return (
@@ -141,7 +140,7 @@ export function CobroFilters({
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por nombre del inquilino..."
+            placeholder={t('inmobiliaria.cobros.filters.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
@@ -170,7 +169,7 @@ export function CobroFilters({
           )}
         >
           <Funnel className="w-4 h-4" />
-          <span>Filtros</span>
+          <span>{t('inmobiliaria.cobros.filters.filtersLabel')}</span>
           {activeFiltersCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
@@ -195,7 +194,7 @@ export function CobroFilters({
                 {/* Month Selector */}
                 <div className="relative shrink-0">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Mes
+                    {t('inmobiliaria.cobros.filters.monthLabel')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
@@ -238,10 +237,10 @@ export function CobroFilters({
                 {/* Status Tabs */}
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Estado
+                    {t('inmobiliaria.cobros.filters.statusLabel')}
                   </label>
                   <div className="flex items-center gap-1 p-1 rounded-lg bg-muted overflow-x-auto">
-                    {STATUS_TABS.map((tab) => {
+                    {STATUS_TAB_KEYS.map((tab) => {
                       const count = cobroCountByStatus[tab.value] || 0;
                       const isActive = filters.status === tab.value;
 
@@ -256,7 +255,7 @@ export function CobroFilters({
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          {tab.label}
+                          {t(tab.key)}
                           {count > 0 && (
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
@@ -279,7 +278,7 @@ export function CobroFilters({
                 {/* Property (Consignacion) Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Propiedad
+                    {t('inmobiliaria.cobros.filters.propertyLabel')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'consignacion' ? null : 'consignacion')}
@@ -314,7 +313,7 @@ export function CobroFilters({
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
-                          Todas las propiedades
+                          {t('inmobiliaria.cobros.filters.allProperties')}
                         </button>
                         {consignaciones.map((consignacion) => (
                           <button
@@ -344,7 +343,7 @@ export function CobroFilters({
                 {/* Propietario Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Propietario
+                    {t('inmobiliaria.cobros.filters.ownerLabel')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'propietario' ? null : 'propietario')}
@@ -379,7 +378,7 @@ export function CobroFilters({
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
-                          Todos los propietarios
+                          {t('inmobiliaria.cobros.filters.allOwners')}
                         </button>
                         {propietarios.map((propietario) => (
                           <button
@@ -410,7 +409,7 @@ export function CobroFilters({
                       onClick={clearAllFilters}
                       className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                     >
-                      Limpiar filtros
+                      {t('inmobiliaria.cobros.filters.clearFilters')}
                     </button>
                   </div>
                 )}

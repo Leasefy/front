@@ -16,8 +16,9 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 
 type SortField = 'propertyTitle' | 'tenantName' | 'month' | 'totalAmount' | 'paidAmount' | 'pendingAmount' | 'status' | 'daysLate' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -27,24 +28,6 @@ interface CobroTableProps {
   onCobroClick?: (cobro: Cobro) => void;
   onRegisterPayment?: (cobro: Cobro) => void;
   showSummary?: boolean;
-}
-
-// Status labels in Spanish
-const STATUS_LABELS: Record<CobroStatus, string> = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  partial: 'Parcial',
-  late: 'En mora',
-  defaulted: 'Incobrable',
-};
-
-/**
- * Format month string (2026-02) to Spanish display (Feb 2026)
- */
-function formatMonth(month: string): string {
-  const [year, monthNum] = month.split('-');
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
 }
 
 /**
@@ -57,9 +40,28 @@ export function CobroTable({
   onRegisterPayment,
   showSummary = false,
 }: CobroTableProps) {
+  const { t, formatDate, formatCurrency } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Status labels from i18n
+  const STATUS_LABELS: Record<CobroStatus, string> = {
+    pending: t('inmobiliaria.cobros.status.pending'),
+    paid: t('inmobiliaria.cobros.status.paid'),
+    partial: t('inmobiliaria.cobros.status.partial'),
+    late: t('inmobiliaria.cobros.status.late'),
+    defaulted: t('inmobiliaria.cobros.status.defaulted'),
+  };
+
+  /**
+   * Format month string (2026-02) to localized display (Feb 2026)
+   */
+  const formatMonth = (month: string): string => {
+    const [year, monthNum] = month.split('-');
+    const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    return formatDate(date, { month: 'short', year: 'numeric' });
+  };
 
   // Sort cobros
   const sortedCobros = useMemo(() => {
@@ -163,14 +165,14 @@ export function CobroTable({
       <table className="w-full min-w-[1000px]">
         <thead>
           <tr className="border-b border-border">
-            <SortableHeader field="propertyTitle">Propiedad</SortableHeader>
-            <SortableHeader field="tenantName">Inquilino</SortableHeader>
-            <SortableHeader field="month">Mes</SortableHeader>
-            <SortableHeader field="totalAmount">Total</SortableHeader>
-            <SortableHeader field="paidAmount">Pagado</SortableHeader>
-            <SortableHeader field="pendingAmount">Pendiente</SortableHeader>
-            <SortableHeader field="status">Estado</SortableHeader>
-            <SortableHeader field="daysLate">Mora</SortableHeader>
+            <SortableHeader field="propertyTitle">{t('inmobiliaria.cobros.table.property')}</SortableHeader>
+            <SortableHeader field="tenantName">{t('inmobiliaria.cobros.table.tenant')}</SortableHeader>
+            <SortableHeader field="month">{t('inmobiliaria.cobros.table.month')}</SortableHeader>
+            <SortableHeader field="totalAmount">{t('inmobiliaria.cobros.table.total')}</SortableHeader>
+            <SortableHeader field="paidAmount">{t('inmobiliaria.cobros.table.paid')}</SortableHeader>
+            <SortableHeader field="pendingAmount">{t('inmobiliaria.cobros.table.pending')}</SortableHeader>
+            <SortableHeader field="status">{t('inmobiliaria.cobros.table.status')}</SortableHeader>
+            <SortableHeader field="daysLate">{t('inmobiliaria.cobros.table.lateLabel')}</SortableHeader>
             <th className="w-12 p-4"></th>
           </tr>
         </thead>
@@ -220,7 +222,7 @@ export function CobroTable({
                           href={`mailto:${cobro.tenantEmail}`}
                           onClick={(e) => e.stopPropagation()}
                           className="p-1 rounded hover:bg-muted transition-colors"
-                          title="Enviar email"
+                          title={t('inmobiliaria.cobros.table.sendEmail')}
                         >
                           <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
                         </a>
@@ -300,7 +302,7 @@ export function CobroTable({
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">&mdash;</span>
                   )}
                 </td>
 
@@ -334,7 +336,7 @@ export function CobroTable({
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                            <span className="text-sm">Ver detalle</span>
+                            <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
                           </button>
                           {cobro.status !== 'paid' && onRegisterPayment && (
                             <button
@@ -346,7 +348,7 @@ export function CobroTable({
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                             >
                               <CurrencyCircleDollar className="w-4 h-4" />
-                              <span className="text-sm">Registrar pago</span>
+                              <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
                             </button>
                           )}
                         </motion.div>
@@ -365,7 +367,7 @@ export function CobroTable({
             <tr className="bg-muted/30 border-t border-border">
               <td colSpan={3} className="p-4">
                 <span className="font-semibold text-foreground">
-                  Total ({cobros.length} cobros)
+                  {t('inmobiliaria.cobros.table.totalSummary', { count: cobros.length })}
                 </span>
               </td>
               <td className="p-4">
@@ -396,10 +398,10 @@ export function CobroTable({
             <CurrencyCircleDollar className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No hay cobros para mostrar
+            {t('inmobiliaria.cobros.table.noCollections')}
           </h3>
           <p className="text-muted-foreground">
-            Ajusta los filtros o selecciona otro mes
+            {t('inmobiliaria.cobros.table.noCollectionsDesc')}
           </p>
         </div>
       )}

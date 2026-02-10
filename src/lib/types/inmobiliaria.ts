@@ -709,9 +709,9 @@ export function getDispersionStatusLabel(status: DispersionStatus): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat('es-CL', {
     style: 'currency',
-    currency: 'COP',
+    currency: 'CLP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);

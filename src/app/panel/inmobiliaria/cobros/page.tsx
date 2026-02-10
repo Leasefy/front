@@ -13,6 +13,7 @@ import {
   Plus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   MOCK_COBROS,
   MOCK_CONSIGNACIONES,
@@ -50,6 +51,7 @@ function getCurrentMonth(): string {
  * Route: /panel/inmobiliaria/cobros
  */
 export default function CobrosPage() {
+  const { t, locale } = useTranslation();
   const searchParams = useSearchParams();
 
   // State for cobros (local copy for optimistic updates)
@@ -280,7 +282,7 @@ export default function CobrosPage() {
 
 
   // Format month for display
-  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString('es-CO', {
+  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -290,9 +292,9 @@ export default function CobrosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Gestion de Cobros</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.cobros.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Administra los pagos y recordatorios del mes
+            {t('inmobiliaria.cobros.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -301,7 +303,7 @@ export default function CobrosPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
           >
             <Gear className="w-5 h-5" />
-            <span className="hidden sm:inline">Configurar</span>
+            <span className="hidden sm:inline">{t('inmobiliaria.config.title')}</span>
           </button>
           <button
             onClick={() => {
@@ -311,7 +313,7 @@ export default function CobrosPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors shadow-lg shadow-indigo-500/20"
           >
             <Plus className="w-5 h-5" />
-            Registrar Pago
+            {t('inmobiliaria.cobros.registerPayment')}
           </button>
         </div>
       </div>
@@ -349,7 +351,7 @@ export default function CobrosPage() {
               )}
             >
               <Table className="w-4 h-4" />
-              Tabla
+              {t('inmobiliaria.cobros.viewTable')}
             </button>
             <button
               onClick={() => setViewMode('cards')}
@@ -361,11 +363,11 @@ export default function CobrosPage() {
               )}
             >
               <SquaresFour className="w-4 h-4" />
-              Cards
+              {t('inmobiliaria.cobros.viewCards')}
             </button>
           </div>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {filteredCobros.length} cobros
+            {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
           </span>
         </div>
 
@@ -404,18 +406,17 @@ export default function CobrosPage() {
             <div className="p-12 text-center">
               <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Sin cobros
+                {t('inmobiliaria.cobros.noPayments')}
               </h3>
               <p className="text-muted-foreground max-w-sm mx-auto">
-                No hay cobros que coincidan con los filtros seleccionados para{' '}
-                <span className="capitalize">{monthDisplay}</span>.
+                {t('inmobiliaria.cobros.noPaymentsDesc')}
               </p>
               {filters.status !== 'all' && (
                 <button
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
                   className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  Ver todos los cobros
+                  {t('inmobiliaria.cobros.filters.all')}
                 </button>
               )}
             </div>

@@ -25,6 +25,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import {
   Sheet,
   SheetContent,
@@ -82,24 +83,14 @@ const CATEGORY_ICON_COLORS: Record<ReportCategory, string> = {
 /**
  * Format period for display
  */
-function formatPeriodDisplay(period: { start: string; end: string }): string {
-  const start = new Date(period.start);
-  const end = new Date(period.end);
-
-  return `${start.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  })} - ${end.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })}`;
+function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: (d: string) => string): string {
+  return `${fmtDate(period.start)} - ${fmtDate(period.end)}`;
 }
 
 /**
  * Comisiones Agente Preview
  */
-function ComisionesAgentePreview() {
+function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const data = React.useMemo(
     () => generateComisionesAgenteReport(new Date().toISOString().slice(0, 7)),
     []
@@ -110,24 +101,24 @@ function ComisionesAgentePreview() {
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 rounded-lg bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">Total Comisiones</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalCommissions')}</p>
           <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(data.totalCommissions)}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">Agentes</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.agentsLabel')}</p>
           <p className="text-lg font-bold text-foreground">{data.agentes.length}</p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">Cierres</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.closings')}</p>
           <p className="text-lg font-bold text-foreground">{data.totalClosedDeals}</p>
         </div>
       </div>
 
       {/* Top Performers */}
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-foreground">Top Agentes</h4>
+        <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.topAgents')}</h4>
         <div className="space-y-2">
           {data.agentes
             .sort((a, b) => b.totalCommission - a.totalCommission)
@@ -153,7 +144,7 @@ function ComisionesAgentePreview() {
                       {agente.agenteName}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {agente.closedDeals} cierres
+                      {agente.closedDeals} {t('inmobiliaria.reporte.closings')}
                     </p>
                   </div>
                 </div>
@@ -171,7 +162,7 @@ function ComisionesAgentePreview() {
                     {agente.trend === 'stable' && (
                       <Minus className="w-3 h-3" />
                     )}
-                    vs periodo anterior
+                    {t('inmobiliaria.reporte.vsPrevPeriod')}
                   </div>
                 </div>
               </div>
@@ -185,7 +176,7 @@ function ComisionesAgentePreview() {
 /**
  * Ocupacion Preview
  */
-function OcupacionPreview() {
+function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const data = React.useMemo(() => generateOcupacionReport(), []);
 
   return (
@@ -195,14 +186,14 @@ function OcupacionPreview() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-              Ocupacion General
+              {t('inmobiliaria.reporte.generalOccupancy')}
             </p>
             <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
               {data.overallOccupancyRate}%
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">vs mes anterior</p>
+            <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.vsPrevMonth')}</p>
             <div className="flex items-center justify-end gap-1">
               {data.previousMonthOccupancyRate &&
               data.overallOccupancyRate > data.previousMonthOccupancyRate ? (
@@ -227,31 +218,31 @@ function OcupacionPreview() {
         <div className="p-3 rounded-lg bg-muted/50 text-center">
           <Buildings className="w-5 h-5 mx-auto text-neutral-500 mb-1" />
           <p className="text-lg font-bold text-foreground">{data.totalProperties}</p>
-          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalLabel')}</p>
         </div>
         <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
           <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
             {data.totalOccupied}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">Arrendadas</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.rented')}</p>
         </div>
         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
             {data.totalInProcess}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">En proceso</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400">{t('inmobiliaria.reporte.inProcess')}</p>
         </div>
         <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
           <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
             {data.totalAvailable}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">Disponibles</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.available')}</p>
         </div>
       </div>
 
       {/* By Zone */}
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-foreground">Por Zona</h4>
+        <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.byZone')}</h4>
         <div className="space-y-2">
           {data.zones.map((zone) => (
             <div
@@ -289,7 +280,7 @@ function OcupacionPreview() {
 /**
  * Vencimientos Preview
  */
-function VencimientosPreview() {
+function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const data = React.useMemo(() => generateVencimientosReport(), []);
 
   const bucketColors = {
@@ -307,32 +298,32 @@ function VencimientosPreview() {
           <p className="text-lg font-bold text-red-600 dark:text-red-400">
             {data.summary.bucket0to30}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">0-30 dias</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{t('inmobiliaria.reporte.days0to30')}</p>
         </div>
         <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
           <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
             {data.summary.bucket31to60}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">31-60 dias</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.days31to60')}</p>
         </div>
         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
             {data.summary.bucket61to90}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">61-90 dias</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400">{t('inmobiliaria.reporte.days61to90')}</p>
         </div>
         <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
           <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
             {data.summary.bucket90plus}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">90+ dias</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.days90plus')}</p>
         </div>
       </div>
 
       {/* Items List */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">
-          Proximos Vencimientos ({data.summary.totalVencimientos})
+          {t('inmobiliaria.reporte.upcomingExpirations')} ({data.summary.totalVencimientos})
         </h4>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {data.items.slice(0, 10).map((item) => (
@@ -355,7 +346,7 @@ function VencimientosPreview() {
                     bucketColors[item.bucket]
                   )}
                 >
-                  {item.daysUntilExpiry} dias
+                  {t('inmobiliaria.reporte.nDays', { count: item.daysUntilExpiry })}
                 </span>
               </div>
             </div>
@@ -369,7 +360,7 @@ function VencimientosPreview() {
 /**
  * Flujo de Caja Preview
  */
-function FlujoCajaPreview() {
+function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<string, string | number>) => string; fmtDate: (d: string) => string }) {
   const data = React.useMemo(() => generateFlujoCajaReport('semester'), []);
 
   return (
@@ -379,7 +370,7 @@ function FlujoCajaPreview() {
         <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
           <div className="flex items-center gap-2 mb-1">
             <CurrencyCircleDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">Ingresos</p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.income')}</p>
           </div>
           <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
             {formatCurrency(data.totals.totalIngresos)}
@@ -388,7 +379,7 @@ function FlujoCajaPreview() {
         <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
           <div className="flex items-center gap-2 mb-1">
             <Percent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <p className="text-sm text-indigo-600 dark:text-indigo-400">Comisiones</p>
+            <p className="text-sm text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.reporte.commissions')}</p>
           </div>
           <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
             {formatCurrency(data.totals.totalComisiones)}
@@ -398,7 +389,7 @@ function FlujoCajaPreview() {
 
       {/* Monthly Breakdown */}
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-foreground">Desglose Mensual</h4>
+        <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.monthlyBreakdown')}</h4>
         <div className="space-y-2">
           {data.months.map((month) => (
             <div
@@ -406,20 +397,17 @@ function FlujoCajaPreview() {
               className="flex items-center justify-between p-3 rounded-lg border border-border"
             >
               <span className="text-sm font-medium text-foreground capitalize">
-                {new Date(month.month + '-01').toLocaleDateString('es-CO', {
-                  month: 'long',
-                  year: 'numeric',
-                })}
+                {fmtDate(month.month + '-01')}
               </span>
               <div className="flex items-center gap-6">
                 <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Ingresos</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.income')}</p>
                   <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(month.ingresos)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Comisiones</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.commissions')}</p>
                   <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                     {formatCurrency(month.comisiones)}
                   </p>
@@ -436,16 +424,16 @@ function FlujoCajaPreview() {
 /**
  * Cartera Edades Preview
  */
-function CarteraEdadesPreview() {
+function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const data = React.useMemo(() => generateCarteraReport(), []);
 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
-        <p className="text-sm font-medium text-red-100">Total Cartera en Mora</p>
+        <p className="text-sm font-medium text-red-100">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-        <p className="text-xs text-red-200 mt-1">{data.items.length} cobros pendientes</p>
+        <p className="text-xs text-red-200 mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
       </div>
 
       {/* Bucket Summary */}
@@ -454,32 +442,32 @@ function CarteraEdadesPreview() {
           <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(data.summary.bucket0to30)}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">0-30 dias</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.days0to30')}</p>
         </div>
         <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
           <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
             {formatCurrency(data.summary.bucket31to60)}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">31-60 dias</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.days31to60')}</p>
         </div>
         <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
           <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
             {formatCurrency(data.summary.bucket61to90)}
           </p>
-          <p className="text-xs text-orange-600 dark:text-orange-400">61-90 dias</p>
+          <p className="text-xs text-orange-600 dark:text-orange-400">{t('inmobiliaria.reporte.days61to90')}</p>
         </div>
         <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-center">
           <p className="text-lg font-bold text-red-600 dark:text-red-400">
             {formatCurrency(data.summary.bucket90plus)}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">90+ dias</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{t('inmobiliaria.reporte.days90plus')}</p>
         </div>
       </div>
 
       {/* Top Deudores */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">
-          Principales Deudores ({data.items.length})
+          {t('inmobiliaria.reporte.topDebtors')} ({data.items.length})
         </h4>
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {data.items
@@ -503,7 +491,7 @@ function CarteraEdadesPreview() {
                     {formatCurrency(item.pendingAmount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {item.daysLate} dias
+                    {t('inmobiliaria.reporte.nDays', { count: item.daysLate })}
                   </p>
                 </div>
               </div>
@@ -517,15 +505,15 @@ function CarteraEdadesPreview() {
 /**
  * Generic Preview Placeholder
  */
-function GenericPreview({ report }: { report: ReportDefinition }) {
+function GenericPreview({ report, t }: { report: ReportDefinition; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
     <div className="p-8 rounded-xl bg-muted/50 text-center">
       <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
       <h4 className="text-lg font-semibold text-foreground mb-2">
-        Vista previa no disponible
+        {t('inmobiliaria.reporte.previewNotAvailable')}
       </h4>
       <p className="text-sm text-muted-foreground">
-        Genera el reporte para ver los datos completos de {report.title}.
+        {t('inmobiliaria.reporte.generateToView', { title: report.title })}
       </p>
     </div>
   );
@@ -542,6 +530,7 @@ export function ReporteViewer({
   filters,
   onExport,
 }: ReporteViewerProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [isExporting, setIsExporting] = React.useState(false);
 
   // Handle export
@@ -565,18 +554,18 @@ export function ReporteViewer({
   const PreviewContent = () => {
     switch (report.id) {
       case 'cartera-edades':
-        return <CarteraEdadesPreview />;
+        return <CarteraEdadesPreview t={t} />;
       case 'comisiones-agente':
       case 'rendimiento-agentes':
-        return <ComisionesAgentePreview />;
+        return <ComisionesAgentePreview t={t} />;
       case 'ocupacion-portafolio':
-        return <OcupacionPreview />;
+        return <OcupacionPreview t={t} />;
       case 'vencimientos':
-        return <VencimientosPreview />;
+        return <VencimientosPreview t={t} />;
       case 'flujo-caja':
-        return <FlujoCajaPreview />;
+        return <FlujoCajaPreview t={t} fmtDate={fmtDate} />;
       default:
-        return <GenericPreview report={report} />;
+        return <GenericPreview report={report} t={t} />;
     }
   };
 
@@ -589,7 +578,7 @@ export function ReporteViewer({
           <button
             onClick={onClose}
             className="absolute right-4 top-4 p-2 rounded-lg hover:bg-muted transition-colors group"
-            aria-label="Cerrar"
+            aria-label={t('inmobiliaria.reporte.close')}
           >
             <X className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" weight="bold" />
           </button>
@@ -640,13 +629,13 @@ export function ReporteViewer({
           className="px-6 py-4 bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/30"
         >
           <h4 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3">
-            Filtros Aplicados
+            {t('inmobiliaria.reporte.appliedFilters')}
           </h4>
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-background border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
               <CalendarBlank className="w-4 h-4 text-indigo-500 dark:text-indigo-400" weight="duotone" />
               <span className="text-sm font-medium text-foreground">
-                {formatPeriodDisplay(filters.period)}
+                {formatPeriodDisplayFn(filters.period, fmtDate)}
               </span>
             </div>
             {filters.zone && (
@@ -661,7 +650,7 @@ export function ReporteViewer({
         {/* Preview Content */}
         <div className="p-6 space-y-4">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Vista Previa
+            {t('inmobiliaria.reporte.previewLabel')}
           </h4>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -689,12 +678,12 @@ export function ReporteViewer({
             >
               {isExporting ? (
                 <>
-                  <span className="animate-pulse">Exportando...</span>
+                  <span className="animate-pulse">{t('inmobiliaria.reporte.exporting')}</span>
                 </>
               ) : (
                 <>
                   <DownloadSimple className="w-4 h-4 mr-2" />
-                  Descargar {report.format.toUpperCase()}
+                  {t('inmobiliaria.reporte.downloadFormat', { format: report.format.toUpperCase() })}
                 </>
               )}
             </Button>
@@ -713,7 +702,7 @@ export function ReporteViewer({
 
           {/* Scheduled Export - Future Feature */}
           <p className="text-center text-xs text-muted-foreground mt-4">
-            Programar envio automatico (proximamente)
+            {t('inmobiliaria.reporte.scheduledExport')}
           </p>
         </motion.div>
       </SheetContent>

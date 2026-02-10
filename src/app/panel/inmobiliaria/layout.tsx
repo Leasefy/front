@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Toaster } from 'sonner';
 import {
   SquaresFour,
@@ -24,80 +24,6 @@ import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { I18nProvider, useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-/**
- * Inmobiliaria Navigation Items
- * Complete navigation for real estate agency operations
- */
-const INMOBILIARIA_NAV_ITEMS: NavItem[] = [
-  {
-    label: 'Dashboard',
-    href: '/panel/inmobiliaria',
-    icon: SquaresFour,
-    exact: true,
-  },
-  {
-    label: 'Propietarios',
-    href: '/panel/inmobiliaria/propietarios',
-    icon: UserCircle,
-  },
-  {
-    label: 'Portafolio',
-    href: '/panel/inmobiliaria/portafolio',
-    icon: Buildings,
-  },
-  {
-    label: 'Pipeline',
-    href: '/panel/inmobiliaria/pipeline',
-    icon: Kanban,
-  },
-  {
-    label: 'Agentes',
-    href: '/panel/inmobiliaria/agentes',
-    icon: Users,
-  },
-  {
-    label: 'Cobros',
-    href: '/panel/inmobiliaria/cobros',
-    icon: CurrencyDollar,
-  },
-  {
-    label: 'Dispersiones',
-    href: '/panel/inmobiliaria/dispersiones',
-    icon: PaperPlaneTilt,
-  },
-  {
-    label: 'Operaciones',
-    href: '/panel/inmobiliaria/operaciones',
-    icon: Wrench,
-  },
-  {
-    label: 'Documentos',
-    href: '/panel/inmobiliaria/documentos',
-    icon: FileText,
-  },
-  {
-    label: 'Reportes',
-    href: '/panel/inmobiliaria/reportes',
-    icon: ChartLine,
-  },
-  {
-    label: 'Analitica',
-    href: '/panel/inmobiliaria/analytics',
-    icon: ChartLineUp,
-  },
-  {
-    label: 'Configuracion',
-    href: '/panel/inmobiliaria/configuracion',
-    icon: Gear,
-  },
-  {
-    label: 'Mensajes',
-    href: '/panel/inmobiliaria/mensajes',
-    icon: Chat,
-    badge: 5,
-  },
-];
-
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
 }
@@ -107,7 +33,72 @@ interface InmobiliariaLayoutProps {
  */
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
+
+  const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => [
+    {
+      label: t('inmobiliaria.nav.dashboard'),
+      href: '/panel/inmobiliaria',
+      icon: SquaresFour,
+      exact: true,
+    },
+    {
+      label: t('inmobiliaria.nav.propietarios'),
+      href: '/panel/inmobiliaria/propietarios',
+      icon: UserCircle,
+    },
+    {
+      label: t('inmobiliaria.nav.portafolio'),
+      href: '/panel/inmobiliaria/portafolio',
+      icon: Buildings,
+    },
+    {
+      label: t('inmobiliaria.nav.pipeline'),
+      href: '/panel/inmobiliaria/pipeline',
+      icon: Kanban,
+    },
+    {
+      label: t('inmobiliaria.nav.agentes'),
+      href: '/panel/inmobiliaria/agentes',
+      icon: Users,
+    },
+    {
+      label: t('inmobiliaria.nav.cobros'),
+      href: '/panel/inmobiliaria/cobros',
+      icon: CurrencyDollar,
+    },
+    {
+      label: t('inmobiliaria.nav.dispersiones'),
+      href: '/panel/inmobiliaria/dispersiones',
+      icon: PaperPlaneTilt,
+    },
+    {
+      label: t('inmobiliaria.nav.operaciones'),
+      href: '/panel/inmobiliaria/operaciones',
+      icon: Wrench,
+    },
+    {
+      label: t('inmobiliaria.nav.documentos'),
+      href: '/panel/inmobiliaria/documentos',
+      icon: FileText,
+    },
+    {
+      label: t('inmobiliaria.nav.reportes'),
+      href: '/panel/inmobiliaria/reportes',
+      icon: ChartLine,
+    },
+    {
+      label: t('inmobiliaria.nav.analitica'),
+      href: '/panel/inmobiliaria/analytics',
+      icon: ChartLineUp,
+    },
+    {
+      label: t('inmobiliaria.nav.mensajes'),
+      href: '/panel/inmobiliaria/mensajes',
+      icon: Chat,
+      badge: 5,
+    },
+  ], [t]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -115,7 +106,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       <PlanSidebar
         navItems={INMOBILIARIA_NAV_ITEMS}
         logo={{
-          title: 'Inmobiliaria',
+          title: t('inmobiliaria.common.title'),
           href: '/panel/inmobiliaria',
         }}
         showUpgrade={false}

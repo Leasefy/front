@@ -24,6 +24,7 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '@/lib/format';
 import { Switch } from '@/components/ui/switch';
@@ -66,14 +67,6 @@ interface ConfigIntegracionesProps {
   isLoading?: boolean;
 }
 
-const CATEGORY_TABS: { value: IntegrationCategory | 'all'; label: string; icon: React.ElementType }[] = [
-  { value: 'all', label: 'Todos', icon: Plugs },
-  { value: 'payments', label: 'Pagos', icon: CreditCard },
-  { value: 'accounting', label: 'Contabilidad', icon: Calculator },
-  { value: 'communications', label: 'Comunicaciones', icon: EnvelopeSimple },
-  { value: 'storage', label: 'Almacenamiento', icon: Cloud },
-];
-
 /**
  * ConfigIntegraciones - Integration management for third-party services
  *
@@ -91,6 +84,15 @@ export function ConfigIntegraciones({
   onConfigure,
   isLoading = false,
 }: ConfigIntegracionesProps) {
+  const { t } = useTranslation();
+
+  const CATEGORY_TABS: { value: IntegrationCategory | 'all'; label: string; icon: React.ElementType }[] = useMemo(() => [
+    { value: 'all', label: t('inmobiliaria.config.integrations.categories.all'), icon: Plugs },
+    { value: 'payments', label: t('inmobiliaria.config.integrations.categories.payments'), icon: CreditCard },
+    { value: 'accounting', label: t('inmobiliaria.config.integrations.categories.accounting'), icon: Calculator },
+    { value: 'communications', label: t('inmobiliaria.config.integrations.categories.communications'), icon: EnvelopeSimple },
+    { value: 'storage', label: t('inmobiliaria.config.integrations.categories.storage'), icon: Cloud },
+  ], [t]);
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -142,16 +144,16 @@ export function ConfigIntegraciones({
         onToggle?.(integration.id, newEnabled);
         toast.success(
           newEnabled
-            ? `${integration.name} activado correctamente`
-            : `${integration.name} desactivado`
+            ? t('inmobiliaria.config.integrations.toasts.activated', { name: integration.name })
+            : t('inmobiliaria.config.integrations.toasts.deactivated', { name: integration.name })
         );
       } catch (err) {
-        toast.error(`Error al actualizar ${integration.name}`);
+        toast.error(t('inmobiliaria.config.integrations.toasts.updateError', { name: integration.name }));
       } finally {
         setTogglingId(null);
       }
     },
-    [onToggle]
+    [onToggle, t]
   );
 
   const handleConfigure = useCallback((integration: AgencyIntegration) => {
@@ -169,14 +171,14 @@ export function ConfigIntegraciones({
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       onConfigure?.(selectedIntegration.id, { apiKey });
-      toast.success(`Configuracion de ${selectedIntegration.name} guardada`);
+      toast.success(t('inmobiliaria.config.integrations.toasts.configSaved', { name: selectedIntegration.name }));
       setIsDialogOpen(false);
     } catch (err) {
-      toast.error(`Error al guardar configuracion de ${selectedIntegration.name}`);
+      toast.error(t('inmobiliaria.config.integrations.toasts.configError', { name: selectedIntegration.name }));
     } finally {
       setIsSaving(false);
     }
-  }, [selectedIntegration, apiKey, onConfigure]);
+  }, [selectedIntegration, apiKey, onConfigure, t]);
 
   const handleTestConnection = useCallback(async () => {
     if (!selectedIntegration) return;
@@ -185,13 +187,13 @@ export function ConfigIntegraciones({
     try {
       // Simulate connection test
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success(`Conexion con ${selectedIntegration.name} exitosa`);
+      toast.success(t('inmobiliaria.config.integrations.toasts.connectionSuccess', { name: selectedIntegration.name }));
     } catch (err) {
-      toast.error(`Error al conectar con ${selectedIntegration.name}`);
+      toast.error(t('inmobiliaria.config.integrations.toasts.connectionError', { name: selectedIntegration.name }));
     } finally {
       setIsSaving(false);
     }
-  }, [selectedIntegration]);
+  }, [selectedIntegration, t]);
 
   const getStatusIcon = (status: IntegrationStatus) => {
     switch (status) {
@@ -234,13 +236,13 @@ export function ConfigIntegraciones({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-foreground">Integraciones</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('inmobiliaria.config.integrations.title')}</h2>
             <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-              {activeCount} activas
+              {activeCount} {t('inmobiliaria.config.integrations.active')}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Conecta servicios externos para automatizar tu negocio
+            {t('inmobiliaria.config.integrations.subtitleFull')}
           </p>
         </div>
 
@@ -251,7 +253,7 @@ export function ConfigIntegraciones({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar integracion..."
+            placeholder={t('inmobiliaria.config.integrations.searchPlaceholder')}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           />
         </div>
@@ -365,7 +367,7 @@ export function ConfigIntegraciones({
                       {integration.lastSyncAt && integration.status === 'active' && (
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <ArrowsClockwise className="w-3 h-3" />
-                          Sincronizado {formatRelativeTime(integration.lastSyncAt)}
+                          {t('inmobiliaria.config.integrations.syncedAt', { time: formatRelativeTime(integration.lastSyncAt) })}
                         </span>
                       )}
                     </div>
@@ -390,7 +392,7 @@ export function ConfigIntegraciones({
                           <div className="flex items-start gap-2">
                             <Key className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-xs text-amber-600 dark:text-amber-400">
-                              API Key no configurada. Configura la integracion para activarla.
+                              {t('inmobiliaria.config.integrations.apiKeyNotConfigured')}
                             </p>
                           </div>
                         </div>
@@ -403,7 +405,7 @@ export function ConfigIntegraciones({
                         className="mt-3 flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
                       >
                         <Gear className="w-4 h-4" />
-                        Configurar
+                        {t('inmobiliaria.config.integrations.configure')}
                         <CaretRight className="w-3 h-3" />
                       </button>
                     )}
@@ -418,7 +420,7 @@ export function ConfigIntegraciones({
           <div className="col-span-full py-12 text-center">
             <Plugs className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-muted-foreground">
-              No se encontraron integraciones
+              {t('inmobiliaria.config.integrations.noResults')}
             </p>
           </div>
         )}
@@ -435,7 +437,7 @@ export function ConfigIntegraciones({
                   return <IconComponent className="w-5 h-5 text-indigo-500" />;
                 })()
               )}
-              Configurar {selectedIntegration?.name}
+              {t('inmobiliaria.config.integrations.configureTitle', { name: selectedIntegration?.name ?? '' })}
             </DialogTitle>
             <DialogDescription>
               {selectedIntegration?.description}
@@ -448,8 +450,7 @@ export function ConfigIntegraciones({
               <div className="flex gap-2">
                 <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-600 dark:text-blue-400">
-                  Ingresa tu API Key para conectar con {selectedIntegration?.name}.
-                  Puedes obtenerla en el panel de administracion del servicio.
+                  {t('inmobiliaria.config.integrations.apiKeyInfo', { name: selectedIntegration?.name ?? '' })}
                 </p>
               </div>
             </div>
@@ -487,7 +488,7 @@ export function ConfigIntegraciones({
               ) : (
                 <ArrowsClockwise className="w-4 h-4" />
               )}
-              Probar conexion
+              {t('inmobiliaria.config.integrations.testConnection')}
             </button>
           </div>
 
@@ -497,7 +498,7 @@ export function ConfigIntegraciones({
               disabled={isSaving}
               className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
             >
-              Cancelar
+              {t('inmobiliaria.config.integrations.cancel')}
             </button>
             <button
               onClick={handleSaveConfig}
@@ -512,12 +513,12 @@ export function ConfigIntegraciones({
               {isSaving ? (
                 <>
                   <SpinnerGap className="w-4 h-4 animate-spin" />
-                  Guardando...
+                  {t('inmobiliaria.config.integrations.saving')}
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  Guardar
+                  {t('inmobiliaria.config.integrations.save')}
                 </>
               )}
             </button>

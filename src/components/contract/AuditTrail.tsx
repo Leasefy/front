@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { FileText, PaperPlaneTilt, PenNib, CheckCircle, Clock, CaretDown, CaretUp, Globe, Monitor, Shield } from '@phosphor-icons/react';
@@ -100,6 +101,7 @@ interface AuditEventItemProps {
 }
 
 function AuditEventItem({ event, isLast, showDetails }: AuditEventItemProps) {
+  const { locale } = useTranslation();
   const config = EVENT_CONFIG[event.type];
   const Icon = config.icon;
 
@@ -134,7 +136,7 @@ function AuditEventItem({ event, isLast, showDetails }: AuditEventItemProps) {
               {formatDate(event.timestamp)}
             </p>
             <p className="text-[10px] text-muted-foreground font-mono">
-              {new Date(event.timestamp).toLocaleTimeString('es-CO', {
+              {new Date(event.timestamp).toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}

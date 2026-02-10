@@ -14,6 +14,7 @@ import type {
   PlanId,
   Subscription,
   PlanComparisonRow,
+  AgencyPlan,
 } from '@/lib/types/subscription';
 
 /**
@@ -159,6 +160,72 @@ export const PLANS: Plan[] = [
       { ...PLAN_FEATURES.priority_support, included: true },
       { ...PLAN_FEATURES.advanced_analytics, included: true },
       { ...PLAN_FEATURES.multi_property, included: true, limit: 25 },
+    ],
+  },
+];
+
+/**
+ * Available subscription plans for real estate agencies
+ * Prices in COP (Colombian Peso)
+ */
+export const AGENCY_PLANS: AgencyPlan[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    description: 'Para inmobiliarias pequeñas',
+    price: { monthly: 149000 },
+    limits: { properties: 20, users: 3 },
+    features: [
+      'CRM de candidatos',
+      'Publicación en portales',
+      'Contratos digitales',
+      'Scoring de arrendatarios',
+      'Soporte por email',
+    ],
+  },
+  {
+    id: 'growth',
+    name: 'Growth',
+    description: 'Para inmobiliarias en crecimiento',
+    price: { monthly: 399000 },
+    limits: { properties: 100, users: 10 },
+    features: [
+      'Todo en Starter',
+      'API REST básica',
+      'Reportes avanzados',
+      'Recordatorios automáticos',
+      'Soporte prioritario',
+    ],
+    highlighted: true,
+    badge: 'Popular',
+  },
+  {
+    id: 'agency-business',
+    name: 'Business',
+    description: 'Para operaciones grandes',
+    price: { monthly: 899000 },
+    limits: { properties: 300, users: 25 },
+    features: [
+      'Todo en Growth',
+      'API REST completa',
+      'Webhooks en tiempo real',
+      'Multi-sucursal',
+      'Gerente de cuenta dedicado',
+    ],
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: '500+ propiedades',
+    price: { monthly: null },
+    limits: { properties: null, users: null },
+    features: [
+      'Todo en Business',
+      'Propiedades ilimitadas',
+      'Usuarios ilimitados',
+      'White-label completo',
+      'SLA garantizado 99.9%',
+      'Onboarding personalizado',
     ],
   },
 ];

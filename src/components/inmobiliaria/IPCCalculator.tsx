@@ -26,6 +26,7 @@ import {
 } from '@phosphor-icons/react';
 import { IPC_HISTORICAL, getCurrentIPC, calculateNewRent, type IPCRecord } from '@/lib/data/mock-inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { useTranslation } from '@/lib/i18n/use-translation';
 
 // ============================================================================
 // Types
@@ -45,7 +46,7 @@ interface IPCCalculatorProps {
 // IPC Trend Chart (CSS-only)
 // ============================================================================
 
-function IPCTrendChart({ data }: { data: IPCRecord[] }) {
+function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => string }) {
   const last12Months = data.slice(0, 12).reverse();
   const maxRate = Math.max(...last12Months.map((d) => d.rate));
   const minRate = Math.min(...last12Months.map((d) => d.rate));
@@ -54,10 +55,10 @@ function IPCTrendChart({ data }: { data: IPCRecord[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">Tendencia IPC (12 meses)</span>
+        <span className="text-sm font-medium text-foreground">{t('inmobiliaria.finance.ipc.trend12m')}</span>
         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-xs font-medium text-emerald-700 dark:text-emerald-400">
           <TrendDown className="h-3.5 w-3.5" weight="bold" />
-          <span>En descenso</span>
+          <span>{t('inmobiliaria.finance.ipc.decreasing')}</span>
         </span>
       </div>
       <div className="relative h-28 flex items-end gap-2 p-3 rounded-xl bg-muted/30">
@@ -142,6 +143,8 @@ function CalculatorForm({
   initialRent = 0,
   ipcRate,
   onCalculate,
+  t,
+  locale,
 }: {
   initialRent?: number;
   ipcRate: number;
@@ -151,9 +154,11 @@ function CalculatorForm({
     ipcRate: number;
     increase: number;
   }) => void;
+  t: (key: string) => string;
+  locale: string;
 }) {
   const [currentRent, setCurrentRent] = useState<string>(
-    initialRent ? initialRent.toLocaleString('es-CO') : ''
+    initialRent ? initialRent.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''
   );
   const [useCustomRate, setUseCustomRate] = useState(false);
   const [customRate, setCustomRate] = useState<string>(ipcRate.toFixed(2));
@@ -173,7 +178,7 @@ function CalculatorForm({
   const handleCurrentRentChange = (value: string) => {
     // Remove non-numeric characters except dots
     const numericValue = value.replace(/[^\d]/g, '');
-    const formatted = numericValue ? parseInt(numericValue).toLocaleString('es-CO') : '';
+    const formatted = numericValue ? parseInt(numericValue).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
     setCurrentRent(formatted);
   };
 
@@ -200,7 +205,7 @@ function CalculatorForm({
           <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
             <CurrencyDollar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           </div>
-          Canon actual
+          {t('inmobiliaria.finance.ipc.currentRent')}
         </Label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
@@ -221,7 +226,7 @@ function CalculatorForm({
             <div className="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
               <Percent className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
             </div>
-            Tasa IPC
+            {t('inmobiliaria.finance.ipc.ipcRate')}
           </Label>
           <button
             type="button"
@@ -232,7 +237,7 @@ function CalculatorForm({
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
-            {useCustomRate ? 'Usar oficial' : 'Personalizar'}
+            {useCustomRate ? t('inmobiliaria.finance.ipc.useOfficial') : t('inmobiliaria.finance.ipc.customize')}
           </button>
         </div>
         {useCustomRate ? (
@@ -262,7 +267,7 @@ function CalculatorForm({
           <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
           </div>
-          Fecha efectiva
+          {t('inmobiliaria.finance.ipc.effectiveDate')}
         </Label>
         <Input
           id="effectiveDate"
@@ -276,7 +281,7 @@ function CalculatorForm({
       {/* Calculate Button */}
       <Button onClick={handleCalculate} className="w-full h-12 text-base font-medium bg-indigo-600 hover:bg-indigo-700" size="lg">
         <Calculator className="h-5 w-5 mr-2" />
-        Calcular incremento
+        {t('inmobiliaria.finance.ipc.calculateIncrease')}
       </Button>
 
       {/* Result Display */}
@@ -284,24 +289,24 @@ function CalculatorForm({
         <div className="p-5 rounded-xl border border-border bg-muted/20">
           <div className="flex items-center justify-center gap-4 mb-5">
             <div className="text-center p-4 rounded-xl bg-card border border-border flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Canon actual</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('inmobiliaria.finance.ipc.currentRent')}</p>
               <p className="text-xl font-bold text-foreground">{formatCurrency(result.currentRent)}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
               <ArrowRight className="h-5 w-5 text-white" weight="bold" />
             </div>
             <div className="text-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex-1 border border-indigo-200 dark:border-indigo-800">
-              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1">Nuevo canon</p>
+              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-1">{t('inmobiliaria.finance.ipc.newRent')}</p>
               <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(result.newRent)}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 rounded-xl bg-card border border-border">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Incremento</p>
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.increase')}</p>
               <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">+{formatCurrency(result.increase)}</p>
             </div>
             <div className="text-center p-3 rounded-xl bg-card border border-border">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Porcentaje</p>
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.percentage')}</p>
               <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">+{result.ipcRate.toFixed(2)}%</p>
             </div>
           </div>
@@ -315,7 +320,7 @@ function CalculatorForm({
 // Info Section
 // ============================================================================
 
-function InfoSection() {
+function InfoSection({ t }: { t: (key: string) => string }) {
   return (
     <div className="p-5 rounded-xl border border-border bg-muted/20">
       <div className="flex items-start gap-4">
@@ -323,10 +328,9 @@ function InfoSection() {
           <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div className="space-y-2">
-          <h4 className="font-semibold text-foreground">Incremento de arrendamiento</h4>
+          <h4 className="font-semibold text-foreground">{t('inmobiliaria.finance.ipc.rentIncrease')}</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Segun la Ley 820 de 2003, el canon de arrendamiento de vivienda urbana puede
-            incrementarse anualmente en un porcentaje que no supere el IPC del ano inmediatamente anterior.
+            {t('inmobiliaria.finance.ipc.legalInfo')}
           </p>
           <a
             href="https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
@@ -335,7 +339,7 @@ function InfoSection() {
             className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
           >
             <LinkIcon className="h-4 w-4" />
-            Ver IPC oficial (DANE)
+            {t('inmobiliaria.finance.ipc.viewOfficialIPC')}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -352,6 +356,7 @@ export function IPCCalculator({
   currentRent,
   onCalculate,
 }: IPCCalculatorProps) {
+  const { t, locale } = useTranslation();
   const currentIPC = getCurrentIPC();
 
   return (
@@ -365,9 +370,9 @@ export function IPCCalculator({
                 <Calculator className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <CardTitle className="text-lg">Calculadora IPC</CardTitle>
+                <CardTitle className="text-lg">{t('inmobiliaria.finance.ipc.calculator')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Calcula el incremento de canon basado en el IPC
+                  {t('inmobiliaria.finance.ipc.calculatorDesc')}
                 </p>
               </div>
             </div>
@@ -384,7 +389,7 @@ export function IPCCalculator({
       {/* IPC Trend */}
       <Card className="rounded-xl">
         <CardContent className="pt-4">
-          <IPCTrendChart data={IPC_HISTORICAL} />
+          <IPCTrendChart data={IPC_HISTORICAL} t={t} />
         </CardContent>
       </Card>
 
@@ -396,9 +401,9 @@ export function IPCCalculator({
               <Calculator className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Calcular incremento</CardTitle>
+              <CardTitle className="text-lg">{t('inmobiliaria.finance.ipc.calculateIncrease')}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Calcula el nuevo canon para un inmueble
+                {t('inmobiliaria.finance.ipc.calculateDesc')}
               </p>
             </div>
           </div>
@@ -408,12 +413,14 @@ export function IPCCalculator({
             initialRent={currentRent}
             ipcRate={currentIPC.rate}
             onCalculate={onCalculate}
+            t={t}
+            locale={locale}
           />
         </CardContent>
       </Card>
 
       {/* Info Section */}
-      <InfoSection />
+      <InfoSection t={t} />
     </div>
   );
 }

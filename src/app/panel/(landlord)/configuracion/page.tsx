@@ -588,7 +588,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-3xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 overflow-hidden relative"
+            className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 overflow-hidden relative"
           >
             <div className="relative px-6 py-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -638,7 +638,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
@@ -695,7 +695,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center justify-between">
@@ -771,7 +771,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18 }}
-            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center justify-between">
@@ -808,7 +808,7 @@ export default function ConfiguracionPage() {
                     return (
                       <div
                         key={account.id}
-                        className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]"
+                        className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
@@ -919,7 +919,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -962,7 +962,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -1020,7 +1020,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -1068,7 +1068,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="rounded-3xl border-2 border-red-100 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 overflow-hidden h-fit"
+              className="rounded-xl border-2 border-red-100 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 overflow-hidden h-fit"
             >
               <div className="px-6 py-5 border-b border-red-100 dark:border-red-900/50">
                 <div className="flex items-center gap-3">
@@ -1163,7 +1163,7 @@ export default function ConfiguracionPage() {
           {sessions.map((session) => {
             const DeviceIcon = getDeviceIcon(session.deviceType);
             return (
-              <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]">
+              <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                     <DeviceIcon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -1206,7 +1206,7 @@ export default function ConfiguracionPage() {
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             {t('landlordSettings.modals.downloadData.description')}
           </p>
-          <div className="p-4 bg-stone-50 dark:bg-[#1f1f21] rounded-2xl space-y-2">
+          <div className="p-4 bg-stone-50 dark:bg-[#1f1f21] rounded-xl space-y-2">
             {[
               t('landlordSettings.modals.downloadData.profileInfo'),
               t('landlordSettings.modals.downloadData.paymentHistory'),
@@ -1280,7 +1280,7 @@ export default function ConfiguracionPage() {
             </>
           ) : (
             <>
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
                   <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
@@ -1309,7 +1309,7 @@ export default function ConfiguracionPage() {
       {/* Delete Account Modal */}
       <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('landlordSettings.modals.deleteAccount.title')}>
         <div className="space-y-4">
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
               <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
@@ -1703,7 +1703,7 @@ export default function ConfiguracionPage() {
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
                 <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
                   <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>

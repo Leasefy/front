@@ -26,6 +26,7 @@ import {
   Bank,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
@@ -35,7 +36,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { MOCK_PROPIETARIOS, MOCK_CONSIGNACIONES } from '@/lib/data/mock-inmobiliaria';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
@@ -46,15 +47,6 @@ interface CobroDetailProps {
   onRegisterPayment?: (cobro: Cobro) => void;
   onSendReminder?: (cobro: Cobro) => void;
 }
-
-// Status labels in Spanish
-const STATUS_LABELS: Record<CobroStatus, string> = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  partial: 'Parcial',
-  late: 'En mora',
-  defaulted: 'Incobrable',
-};
 
 // Mock payment history for partial payments
 function getMockPaymentHistory(cobro: Cobro) {
@@ -118,17 +110,19 @@ function getMockReminderHistory(cobro: Cobro) {
 /**
  * CopyButton - Button that copies text to clipboard
  */
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, tooltip }: { text: string; tooltip: string }) {
+  const { t } = useTranslation();
+
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
-    toast.success('Copiado al portapapeles');
+    toast.success(t('inmobiliaria.cobros.toasts.copiedToClipboard'));
   };
 
   return (
     <button
       onClick={handleCopy}
       className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-      title="Copiar"
+      title={tooltip}
     >
       <Copy className="w-4 h-4" />
     </button>
@@ -169,6 +163,16 @@ function ContactAction({
  * StatusBadge - Badge showing cobro status with appropriate color
  */
 function StatusBadge({ status }: { status: CobroStatus }) {
+  const { t } = useTranslation();
+
+  const STATUS_LABELS: Record<CobroStatus, string> = {
+    pending: t('inmobiliaria.cobros.status.pending'),
+    paid: t('inmobiliaria.cobros.status.paid'),
+    partial: t('inmobiliaria.cobros.status.partial'),
+    late: t('inmobiliaria.cobros.status.late'),
+    defaulted: t('inmobiliaria.cobros.status.defaulted'),
+  };
+
   return (
     <span className={cn('px-3 py-1.5 rounded-full text-sm font-medium', getCobroStatusColor(status))}>
       {STATUS_LABELS[status]}
@@ -185,12 +189,14 @@ function AmountRow({
   isTotal,
   isWarning,
   isSuccess,
+  formatCurrencyFn,
 }: {
   label: string;
   amount: number;
   isTotal?: boolean;
   isWarning?: boolean;
   isSuccess?: boolean;
+  formatCurrencyFn: (amount: number) => string;
 }) {
   return (
     <div className="flex items-center justify-between py-2">
@@ -212,7 +218,7 @@ function AmountRow({
             : 'text-foreground'
         )}
       >
-        {formatCurrency(amount)}
+        {formatCurrencyFn(amount)}
       </span>
     </div>
   );
@@ -229,6 +235,7 @@ export function CobroDetail({
   onRegisterPayment,
   onSendReminder,
 }: CobroDetailProps) {
+  const { t, formatDate, formatCurrency } = useTranslation();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const { stop: stopLenis, start: startLenis } = useLenis();
 
@@ -271,8 +278,8 @@ export function CobroDetail({
     setIsSendingReminder(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     onSendReminder(cobro);
-    toast.success('Recordatorio enviado', {
-      description: `Se envio un recordatorio a ${cobro.tenantName}`,
+    toast.success(t('inmobiliaria.cobros.toasts.reminderSent'), {
+      description: t('inmobiliaria.cobros.toasts.reminderSentDesc', { name: cobro.tenantName }),
     });
     setIsSendingReminder(false);
   };
@@ -280,8 +287,8 @@ export function CobroDetail({
   // Handle mark as defaulted
   const handleMarkDefaulted = () => {
     if (!cobro) return;
-    toast.info('Marcar como incobrable', {
-      description: 'Esta accion requiere aprobacion del administrador.',
+    toast.info(t('inmobiliaria.cobros.toasts.markDefaulted'), {
+      description: t('inmobiliaria.cobros.toasts.markDefaultedDesc'),
     });
   };
 
@@ -318,7 +325,7 @@ export function CobroDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Buildings className="w-4 h-4 text-indigo-600" />
-              Propiedad
+              {t('inmobiliaria.cobros.detail.propertySection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
               {consignacion?.propertyThumbnail && (
@@ -334,8 +341,8 @@ export function CobroDetail({
                 <p className="font-medium text-foreground">{cobro.propertyTitle}</p>
                 <p className="text-sm text-muted-foreground">{cobro.propertyAddress}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="capitalize">{consignacion?.propertyType || 'Propiedad'}</span>
-                  <span>•</span>
+                  <span className="capitalize">{consignacion?.propertyType || t('inmobiliaria.cobros.detail.propertySection')}</span>
+                  <span>&bull;</span>
                   <span>{consignacion?.propertyZone || ''}</span>
                 </div>
                 {consignacion && (
@@ -344,7 +351,7 @@ export function CobroDetail({
                     onClick={onClose}
                     className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2"
                   >
-                    Ver consignacion
+                    {t('inmobiliaria.cobros.detail.viewConsignacion')}
                     <CaretRight className="w-4 h-4" />
                   </Link>
                 )}
@@ -361,7 +368,7 @@ export function CobroDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <User className="w-4 h-4 text-indigo-600" />
-              Inquilino
+              {t('inmobiliaria.cobros.detail.tenantSection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
@@ -373,7 +380,7 @@ export function CobroDetail({
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Envelope className="w-3.5 h-3.5" />
                     <span>{cobro.tenantEmail}</span>
-                    <CopyButton text={cobro.tenantEmail} />
+                    <CopyButton text={cobro.tenantEmail} tooltip={t('inmobiliaria.cobros.detail.copyTooltip')} />
                   </div>
                 </div>
               </div>
@@ -381,7 +388,7 @@ export function CobroDetail({
                 <ContactAction
                   icon={Phone}
                   href={`tel:${cobro.tenantPhone}`}
-                  label="Llamar"
+                  label={t('inmobiliaria.cobros.detail.callAction')}
                   className="bg-muted hover:bg-muted/80 text-foreground"
                 />
                 <ContactAction
@@ -410,7 +417,7 @@ export function CobroDetail({
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Bank className="w-4 h-4 text-indigo-600" />
-                Propietario
+                {t('inmobiliaria.cobros.detail.ownerSection')}
               </h3>
               <div className="p-4 rounded-xl border border-border bg-muted/30">
                 <div className="flex items-center justify-between">
@@ -422,7 +429,7 @@ export function CobroDetail({
                     href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
                     className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
-                    Ver perfil
+                    {t('inmobiliaria.cobros.detail.viewProfile')}
                   </Link>
                 </div>
               </div>
@@ -438,24 +445,24 @@ export function CobroDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <CurrencyCircleDollar className="w-4 h-4 text-indigo-600" />
-              Desglose
+              {t('inmobiliaria.cobros.detail.breakdownSection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
               {/* Month and Due Date */}
               <div className="grid grid-cols-2 gap-4 pb-3 mb-3 border-b border-border">
                 <div>
-                  <p className="text-xs text-muted-foreground">Mes</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
                   <p className="font-medium text-foreground capitalize">
-                    {new Date(cobro.month + '-01').toLocaleDateString('es-CO', {
+                    {formatDate(new Date(cobro.month + '-01'), {
                       month: 'long',
                       year: 'numeric',
                     })}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Vencimiento</p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
                   <p className="font-medium text-foreground">
-                    {new Date(cobro.dueDate).toLocaleDateString('es-CO', {
+                    {formatDate(new Date(cobro.dueDate), {
                       day: 'numeric',
                       month: 'short',
                     })}
@@ -465,28 +472,28 @@ export function CobroDetail({
 
               {/* Amounts */}
               <div className="divide-y divide-border">
-                <AmountRow label="Arriendo" amount={cobro.rentAmount} />
+                <AmountRow label={t('inmobiliaria.cobros.detail.rentLabel')} amount={cobro.rentAmount} formatCurrencyFn={formatCurrency} />
                 {cobro.adminAmount > 0 && (
-                  <AmountRow label="Administracion" amount={cobro.adminAmount} />
+                  <AmountRow label={t('inmobiliaria.cobros.detail.adminLabel')} amount={cobro.adminAmount} formatCurrencyFn={formatCurrency} />
                 )}
                 {cobro.lateFee > 0 && (
-                  <AmountRow label="Interes por mora" amount={cobro.lateFee} isWarning />
+                  <AmountRow label={t('inmobiliaria.cobros.detail.lateFeeLabel')} amount={cobro.lateFee} isWarning formatCurrencyFn={formatCurrency} />
                 )}
-                <AmountRow label="Total" amount={cobro.totalWithFees} isTotal />
+                <AmountRow label={t('inmobiliaria.cobros.detail.totalLabel')} amount={cobro.totalWithFees} isTotal formatCurrencyFn={formatCurrency} />
               </div>
 
               {/* Paid/Pending */}
               {(cobro.status === 'paid' || cobro.status === 'partial') && (
                 <div className="mt-3 pt-3 border-t border-border divide-y divide-border">
-                  <AmountRow label="Pagado" amount={cobro.paidAmount} isSuccess />
+                  <AmountRow label={t('inmobiliaria.cobros.detail.paidLabel')} amount={cobro.paidAmount} isSuccess formatCurrencyFn={formatCurrency} />
                   {cobro.status === 'partial' && (
-                    <AmountRow label="Pendiente" amount={cobro.pendingAmount} isWarning />
+                    <AmountRow label={t('inmobiliaria.cobros.detail.pendingLabel')} amount={cobro.pendingAmount} isWarning formatCurrencyFn={formatCurrency} />
                   )}
                   {cobro.paidDate && (
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-muted-foreground">Fecha de pago</span>
+                      <span className="text-sm text-muted-foreground">{t('inmobiliaria.cobros.detail.paymentDateLabel')}</span>
                       <span className="text-sm text-foreground">
-                        {new Date(cobro.paidDate).toLocaleDateString('es-CO', {
+                        {formatDate(new Date(cobro.paidDate), {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -503,7 +510,7 @@ export function CobroDetail({
                   <div className="flex items-center gap-2">
                     <Warning className="w-4 h-4 text-red-600 dark:text-red-400" weight="fill" />
                     <span className="text-sm font-medium text-red-700 dark:text-red-400">
-                      {cobro.daysLate} dias en mora
+                      {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
                     </span>
                   </div>
                 </div>
@@ -521,7 +528,7 @@ export function CobroDetail({
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-indigo-600" />
-                Historial de Pagos
+                {t('inmobiliaria.cobros.detail.paymentHistory')}
               </h3>
               <div className="space-y-2">
                 {paymentHistory.map((payment) => (
@@ -538,12 +545,12 @@ export function CobroDetail({
                           {formatCurrency(payment.amount)}
                         </p>
                         <p className="text-xs text-muted-foreground capitalize">
-                          {payment.method} • {payment.reference}
+                          {payment.method} &bull; {payment.reference}
                         </p>
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(payment.date).toLocaleDateString('es-CO', {
+                      {formatDate(new Date(payment.date), {
                         day: 'numeric',
                         month: 'short',
                       })}
@@ -563,7 +570,7 @@ export function CobroDetail({
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Bell className="w-4 h-4 text-indigo-600" />
-              Recordatorios ({cobro.remindersSent})
+              {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
             </h3>
             {reminderHistory.length > 0 ? (
               <div className="space-y-2">
@@ -585,12 +592,12 @@ export function CobroDetail({
                           {reminder.channel}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {reminder.type === 'pre' ? 'Pre-vencimiento' : 'Mora'}
+                          {reminder.type === 'pre' ? t('inmobiliaria.cobros.detail.preExpiry') : t('inmobiliaria.cobros.detail.overdue')}
                         </p>
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(reminder.date).toLocaleDateString('es-CO', {
+                      {formatDate(new Date(reminder.date), {
                         day: 'numeric',
                         month: 'short',
                       })}
@@ -599,8 +606,8 @@ export function CobroDetail({
                 ))}
                 {cobro.lastReminderDate && (
                   <p className="text-xs text-muted-foreground">
-                    Ultimo recordatorio:{' '}
-                    {new Date(cobro.lastReminderDate).toLocaleDateString('es-CO', {
+                    {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
+                    {formatDate(new Date(cobro.lastReminderDate), {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',
@@ -610,7 +617,7 @@ export function CobroDetail({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground p-4 rounded-xl border border-dashed border-border text-center">
-                No se han enviado recordatorios
+                {t('inmobiliaria.cobros.detail.noReminders')}
               </p>
             )}
           </motion.section>
@@ -630,7 +637,7 @@ export function CobroDetail({
                 onClick={() => onRegisterPayment(cobro)}
               >
                 <CurrencyCircleDollar className="w-4 h-4 mr-2" />
-                Registrar Pago
+                {t('inmobiliaria.cobros.detail.registerPayment')}
               </Button>
             )}
             {isPending && onSendReminder && (
@@ -658,12 +665,12 @@ export function CobroDetail({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Enviando...
+                    {t('inmobiliaria.cobros.detail.sendingReminder')}
                   </span>
                 ) : (
                   <>
                     <Bell className="w-4 h-4 mr-2" />
-                    Enviar Recordatorio
+                    {t('inmobiliaria.cobros.detail.sendReminder')}
                   </>
                 )}
               </Button>
@@ -676,7 +683,7 @@ export function CobroDetail({
               onClick={handleMarkDefaulted}
             >
               <XCircle className="w-4 h-4 mr-2" />
-              Marcar como incobrable
+              {t('inmobiliaria.cobros.detail.markDefaulted')}
             </Button>
           )}
         </motion.div>

@@ -17,6 +17,7 @@ import {
   FileXls,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -62,12 +63,12 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
 /**
  * Get status indicator based on last generated date
  */
-function getGenerationStatus(lastGenerated?: string): {
+function getGenerationStatus(lastGenerated: string | undefined, t: (key: string, params?: Record<string, string | number>) => string): {
   color: string;
   label: string;
 } {
   if (!lastGenerated) {
-    return { color: 'bg-neutral-400', label: 'Nunca generado' };
+    return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.neverGenerated') };
   }
 
   const lastDate = new Date(lastGenerated);
@@ -77,25 +78,20 @@ function getGenerationStatus(lastGenerated?: string): {
   );
 
   if (diffDays === 0) {
-    return { color: 'bg-emerald-500', label: 'Generado hoy' };
+    return { color: 'bg-emerald-500', label: t('inmobiliaria.reporte.generatedToday') };
   } else if (diffDays <= 7) {
-    return { color: 'bg-amber-500', label: `Hace ${diffDays} dias` };
+    return { color: 'bg-amber-500', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   } else {
-    return { color: 'bg-neutral-400', label: `Hace ${diffDays} dias` };
+    return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   }
 }
 
 /**
  * Format last generated date for display
  */
-function formatLastGenerated(lastGenerated?: string): string {
-  if (!lastGenerated) return 'Nunca';
-
-  return new Date(lastGenerated).toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function formatLastGeneratedFn(lastGenerated: string | undefined, t: (key: string) => string, fmtDate: (d: string) => string): string {
+  if (!lastGenerated) return t('inmobiliaria.reporte.never');
+  return fmtDate(lastGenerated);
 }
 
 /**
@@ -111,10 +107,11 @@ export function ReporteCard({
   onToggleFavorite,
   isGenerating = false,
 }: ReporteCardProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const Icon = ICON_MAP[report.icon] || FileText;
   const bgColor = CATEGORY_BG_COLORS[report.category] || 'bg-neutral-100';
   const iconColor = CATEGORY_ICON_COLORS[report.category] || 'text-neutral-600';
-  const status = getGenerationStatus(report.lastGenerated);
+  const status = getGenerationStatus(report.lastGenerated, t);
   const FormatIcon = report.format === 'pdf' ? FilePdf : FileXls;
 
   // Compact variant - single row for grid views
@@ -176,7 +173,7 @@ export function ReporteCard({
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all hover:shadow-lg"
+      className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all hover:shadow-lg"
     >
       {/* Header Section */}
       <div className="p-5 pb-4">
@@ -261,7 +258,7 @@ export function ReporteCard({
           className={cn('w-2 h-2 rounded-full shrink-0', status.color)}
         />
         <span className="text-sm text-neutral-600 dark:text-neutral-400">
-          Ultimo: {formatLastGenerated(report.lastGenerated)}
+          {t('inmobiliaria.reporte.last')}: {formatLastGeneratedFn(report.lastGenerated, t, fmtDate)}
         </span>
       </div>
 
@@ -285,12 +282,12 @@ export function ReporteCard({
             {isGenerating ? (
               <>
                 <ArrowClockwise className="w-4 h-4 animate-spin" />
-                Generando...
+                {t('inmobiliaria.reporte.generating')}
               </>
             ) : (
               <>
                 <ArrowClockwise className="w-4 h-4" />
-                Generar
+                {t('inmobiliaria.reporte.generate')}
               </>
             )}
           </button>
@@ -306,7 +303,7 @@ export function ReporteCard({
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
             <Eye className="w-4 h-4" />
-            Vista previa
+            {t('inmobiliaria.reporte.preview')}
           </button>
         )}
 
@@ -318,7 +315,7 @@ export function ReporteCard({
               onDownload();
             }}
             className="flex items-center justify-center p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
-            title="Descargar"
+            title={t('inmobiliaria.reporte.download')}
           >
             <DownloadSimple className="w-4 h-4" />
           </button>

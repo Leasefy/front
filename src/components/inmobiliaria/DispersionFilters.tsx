@@ -11,6 +11,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { DispersionStatus } from '@/lib/types/inmobiliaria';
 
 export interface DispersionFiltersState {
@@ -32,26 +33,31 @@ interface DispersionFiltersProps {
   statusCounts: Record<DispersionStatus | 'all', number>;
 }
 
-// Status tabs configuration
-const STATUS_TABS: { value: DispersionStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todas' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'processing', label: 'Procesando' },
-  { value: 'completed', label: 'Completadas' },
-  { value: 'failed', label: 'Fallidas' },
+// Status tabs values (labels resolved via i18n)
+const STATUS_TAB_VALUES: (DispersionStatus | 'all')[] = [
+  'all', 'pending', 'processing', 'completed', 'failed',
 ];
+
+// Map status tab values to i18n keys
+const STATUS_TAB_KEYS: Record<DispersionStatus | 'all', string> = {
+  all: 'inmobiliaria.dispersiones.filtersPanel.statusAll',
+  pending: 'inmobiliaria.dispersiones.filtersPanel.statusPending',
+  processing: 'inmobiliaria.dispersiones.filtersPanel.statusProcessing',
+  completed: 'inmobiliaria.dispersiones.filtersPanel.statusCompleted',
+  failed: 'inmobiliaria.dispersiones.filtersPanel.statusFailed',
+};
 
 /**
  * Get last N months including current month
  */
-function getRecentMonths(count: number): { value: string; label: string }[] {
+function getRecentMonths(count: number, formatDateFn: (date: Date | string, options?: Intl.DateTimeFormatOptions) => string): { value: string; label: string }[] {
   const months: { value: string; label: string }[] = [];
   const today = new Date();
 
   for (let i = 0; i < count; i++) {
     const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+    const label = formatDateFn(date, { month: 'long', year: 'numeric' });
     months.push({ value, label });
   }
 
@@ -68,6 +74,7 @@ export function DispersionFilters({
   propietarios,
   statusCounts,
 }: DispersionFiltersProps) {
+  const { t, formatDate } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
@@ -83,7 +90,7 @@ export function DispersionFilters({
   }, [searchInput, filters, onFiltersChange]);
 
   // Recent months for dropdown
-  const recentMonths = useMemo(() => getRecentMonths(12), []);
+  const recentMonths = useMemo(() => getRecentMonths(12, formatDate), [formatDate]);
 
   // Count active filters (excluding default values)
   const activeFiltersCount = useMemo(() => {
@@ -117,13 +124,13 @@ export function DispersionFilters({
   // Get labels for current selections
   const getMonthLabel = () => {
     const month = recentMonths.find((m) => m.value === filters.month);
-    return month?.label || 'Seleccionar mes';
+    return month?.label || t('inmobiliaria.dispersiones.filtersPanel.selectMonth');
   };
 
   const getPropietarioLabel = () => {
-    if (filters.propietarioId === 'all') return 'Todos';
+    if (filters.propietarioId === 'all') return t('inmobiliaria.dispersiones.filtersPanel.all');
     const propietario = propietarios.find((p) => p.id === filters.propietarioId);
-    return propietario?.name || 'Todos';
+    return propietario?.name || t('inmobiliaria.dispersiones.filtersPanel.all');
   };
 
   return (
@@ -135,7 +142,7 @@ export function DispersionFilters({
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por propietario..."
+            placeholder={t('inmobiliaria.dispersiones.filtersPanel.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
@@ -164,7 +171,7 @@ export function DispersionFilters({
           )}
         >
           <Funnel className="w-4 h-4" />
-          <span>Filtros</span>
+          <span>{t('inmobiliaria.dispersiones.filtersPanel.filtersButton')}</span>
           {activeFiltersCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
@@ -189,7 +196,7 @@ export function DispersionFilters({
                 {/* Month Selector */}
                 <div className="relative shrink-0">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Mes
+                    {t('inmobiliaria.dispersiones.filtersPanel.monthLabel')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
@@ -232,17 +239,17 @@ export function DispersionFilters({
                 {/* Status Tabs */}
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Estado
+                    {t('inmobiliaria.dispersiones.filtersPanel.statusLabel')}
                   </label>
                   <div className="flex items-center gap-1 p-1 rounded-lg bg-muted overflow-x-auto">
-                    {STATUS_TABS.map((tab) => {
-                      const count = statusCounts[tab.value] || 0;
-                      const isActive = filters.status === tab.value;
+                    {STATUS_TAB_VALUES.map((tabValue) => {
+                      const count = statusCounts[tabValue] || 0;
+                      const isActive = filters.status === tabValue;
 
                       return (
                         <button
-                          key={tab.value}
-                          onClick={() => updateFilter('status', tab.value)}
+                          key={tabValue}
+                          onClick={() => updateFilter('status', tabValue)}
                           className={cn(
                             'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all',
                             isActive
@@ -250,7 +257,7 @@ export function DispersionFilters({
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          {tab.label}
+                          {t(STATUS_TAB_KEYS[tabValue])}
                           {count > 0 && (
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
@@ -273,7 +280,7 @@ export function DispersionFilters({
                 {/* Propietario Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Propietario
+                    {t('inmobiliaria.dispersiones.filtersPanel.propietarioLabel')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'propietario' ? null : 'propietario')}
@@ -308,7 +315,7 @@ export function DispersionFilters({
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
-                          Todos los propietarios
+                          {t('inmobiliaria.dispersiones.filtersPanel.allOwners')}
                         </button>
                         {propietarios.map((propietario) => (
                           <button
@@ -338,7 +345,7 @@ export function DispersionFilters({
                     onClick={clearAllFilters}
                     className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                   >
-                    Limpiar filtros
+                    {t('inmobiliaria.dispersiones.filtersPanel.clearFilters')}
                   </button>
                 )}
               </div>

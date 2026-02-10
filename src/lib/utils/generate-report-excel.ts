@@ -77,7 +77,7 @@ function downloadCSV(content: string, filename: string): void {
  * Format currency for CSV (without currency symbol for sorting)
  */
 function formatCurrencyForCSV(amount: number): string {
-  return amount.toLocaleString('es-CO', {
+  return amount.toLocaleString('es-CL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -269,7 +269,7 @@ export function exportFlujoCaja(data: FlujoCajaReport): void {
   ];
 
   const rows: (string | number)[][] = data.months.map((month) => [
-    new Date(month.month + '-01').toLocaleDateString('es-CO', {
+    new Date(month.month + '-01').toLocaleDateString('es-CL', {
       month: 'long',
       year: 'numeric',
     }),

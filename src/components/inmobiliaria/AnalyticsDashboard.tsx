@@ -16,6 +16,7 @@ import {
   Target,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   AnalyticsData,
   AnalyticsChart,
@@ -35,30 +36,22 @@ interface AnalyticsDashboardProps {
 // Section Configuration
 // ============================================================================
 
-const SECTION_CONFIG: Record<AdvancedKPI['category'], {
-  title: string;
-  description: string;
+const SECTION_ICONS: Record<AdvancedKPI['category'], {
   icon: React.ElementType;
   color: string;
   bgColor: string;
 }> = {
   financial: {
-    title: 'Indicadores Financieros',
-    description: 'Ingresos, comisiones y flujo de caja',
     icon: CurrencyDollar,
     color: 'text-emerald-600 dark:text-emerald-400',
     bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
   },
   operational: {
-    title: 'Indicadores Operacionales',
-    description: 'Ocupación, propiedades y eficiencia',
     icon: Buildings,
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
   },
   performance: {
-    title: 'Indicadores de Rendimiento',
-    description: 'Metas, conversión y productividad',
     icon: ChartLineUp,
     color: 'text-violet-600 dark:text-violet-400',
     bgColor: 'bg-violet-100 dark:bg-violet-900/30',
@@ -159,7 +152,8 @@ function KPISection({
   category: AdvancedKPI['category'];
   kpis: AdvancedKPI[];
 }) {
-  const config = SECTION_CONFIG[category];
+  const { t } = useTranslation();
+  const config = SECTION_ICONS[category];
   const Icon = config.icon;
 
   if (kpis.length === 0) return null;
@@ -172,8 +166,8 @@ function KPISection({
           <Icon className={cn('w-5 h-5', config.color)} weight="duotone" />
         </div>
         <div>
-          <h3 className="font-semibold text-neutral-900 dark:text-white">{config.title}</h3>
-          <p className="text-xs text-neutral-500">{config.description}</p>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t(`inmobiliaria.analytics.sections.${category}.title`)}</h3>
+          <p className="text-xs text-neutral-500">{t(`inmobiliaria.analytics.sections.${category}.description`)}</p>
         </div>
       </div>
       {/* KPIs Grid */}
@@ -304,7 +298,8 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
   );
 }
 
-function DonutChart({ chart }: { chart: AnalyticsChart }) {
+function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
+  const { t } = useTranslation();
   const data = chart.datasets[0].data;
   const total = data.reduce((sum, val) => sum + val, 0);
   const colors = ['#10B981', '#FBBF24', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -355,7 +350,7 @@ function DonutChart({ chart }: { chart: AnalyticsChart }) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{data[0]}%</p>
-            <p className="text-xs text-neutral-500">Al dia</p>
+            <p className="text-xs text-neutral-500">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
           </div>
         </div>
       </div>
@@ -380,7 +375,7 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-neutral-500/5 transition-all"
+      className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-neutral-500/5 transition-all"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -401,7 +396,7 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
       <div className="min-h-[160px]">
         {chart.type === 'bar' && <BarChart chart={chart} />}
         {(chart.type === 'area' || chart.type === 'line') && <AreaLineChart chart={chart} />}
-        {(chart.type === 'donut' || chart.type === 'pie') && <DonutChart chart={chart} />}
+        {(chart.type === 'donut' || chart.type === 'pie') && <DonutChartViz chart={chart} />}
       </div>
     </motion.div>
   );
@@ -415,6 +410,7 @@ export function AnalyticsDashboard({
   data,
   isLoading = false,
 }: AnalyticsDashboardProps) {
+  const { t } = useTranslation();
   // Group KPIs by category
   const groupedKPIs = useMemo(() => {
     const groups: Record<AdvancedKPI['category'], AdvancedKPI[]> = {
@@ -452,8 +448,8 @@ export function AnalyticsDashboard({
             <ChartBar className="w-5 h-5 text-amber-600 dark:text-amber-400" weight="duotone" />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">Visualizaciones</h3>
-            <p className="text-xs text-neutral-500">Tendencias y distribuciones detalladas</p>
+            <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
+            <p className="text-xs text-neutral-500">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

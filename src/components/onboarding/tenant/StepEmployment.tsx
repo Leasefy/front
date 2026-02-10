@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Briefcase, Buildings, CurrencyDollar, TrendUp, GraduationCap, Clock, Users } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 import type { EmploymentType } from '@/lib/auth/types'
 
@@ -46,10 +47,11 @@ const EMPLOYMENT_OPTIONS: { value: EmploymentType; label: string; icon: React.El
 ]
 
 export function StepEmployment() {
+  const { locale } = useTranslation()
   const { draft, updateDraft, canProceed } = useTenantOnboarding()
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
+    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,

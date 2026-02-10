@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Buildings,
@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 import type {
   InmobiliariaConfigExtended,
   AgencyContactInfo,
@@ -51,6 +52,7 @@ export function ConfigPerfilAgencia({
   onSave,
   isLoading = false,
 }: ConfigPerfilAgenciaProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -134,44 +136,44 @@ export function ConfigPerfilAgencia({
 
     // Name validation
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre de la agencia es requerido';
+      newErrors.name = t('inmobiliaria.config.profile.validation.nameRequired');
     }
 
     // Contact validation
     if (!formData.contact.phone.trim()) {
-      newErrors['contact.phone'] = 'El teléfono es requerido';
+      newErrors['contact.phone'] = t('inmobiliaria.config.profile.validation.phoneRequired');
     }
     if (!formData.contact.email.trim()) {
-      newErrors['contact.email'] = 'El email es requerido';
+      newErrors['contact.email'] = t('inmobiliaria.config.profile.validation.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact.email)) {
-      newErrors['contact.email'] = 'Email inválido';
+      newErrors['contact.email'] = t('inmobiliaria.config.profile.validation.emailInvalid');
     }
     if (!formData.contact.address.trim()) {
-      newErrors['contact.address'] = 'La dirección es requerida';
+      newErrors['contact.address'] = t('inmobiliaria.config.profile.validation.addressRequired');
     }
     if (!formData.contact.city.trim()) {
-      newErrors['contact.city'] = 'La ciudad es requerida';
+      newErrors['contact.city'] = t('inmobiliaria.config.profile.validation.cityRequired');
     }
     if (!formData.contact.department) {
-      newErrors['contact.department'] = 'El departamento es requerido';
+      newErrors['contact.department'] = t('inmobiliaria.config.profile.validation.departmentRequired');
     }
 
     // Legal validation
     if (!formData.legal.nit.trim()) {
-      newErrors['legal.nit'] = 'El NIT es requerido';
+      newErrors['legal.nit'] = t('inmobiliaria.config.profile.validation.nitRequired');
     } else if (!validateNIT(formData.legal.nit)) {
-      newErrors['legal.nit'] = 'Formato inválido (XXX.XXX.XXX-X)';
+      newErrors['legal.nit'] = t('inmobiliaria.config.profile.validation.nitInvalid');
     }
     if (!formData.legal.razonSocial.trim()) {
-      newErrors['legal.razonSocial'] = 'La razón social es requerida';
+      newErrors['legal.razonSocial'] = t('inmobiliaria.config.profile.validation.razonSocialRequired');
     }
     if (!formData.legal.representanteLegal.trim()) {
       newErrors['legal.representanteLegal'] =
-        'El representante legal es requerido';
+        t('inmobiliaria.config.profile.validation.representanteRequired');
     }
     if (!formData.legal.representanteCedula.trim()) {
       newErrors['legal.representanteCedula'] =
-        'La cédula del representante es requerida';
+        t('inmobiliaria.config.profile.validation.cedulaRequired');
     }
 
     // Defaults validation
@@ -179,26 +181,26 @@ export function ConfigPerfilAgencia({
       formData.defaults.defaultCommissionPercent < 0 ||
       formData.defaults.defaultCommissionPercent > 100
     ) {
-      newErrors['defaults.commission'] = 'La comisión debe estar entre 0-100%';
+      newErrors['defaults.commission'] = t('inmobiliaria.config.profile.validation.commissionRange');
     }
     if (
       formData.defaults.defaultAdminFeePercent < 0 ||
       formData.defaults.defaultAdminFeePercent > 100
     ) {
       newErrors['defaults.adminFee'] =
-        'La tarifa admin debe estar entre 0-100%';
+        t('inmobiliaria.config.profile.validation.adminFeeRange');
     }
     if (
       formData.defaults.paymentDueDay < 1 ||
       formData.defaults.paymentDueDay > 28
     ) {
-      newErrors['defaults.paymentDueDay'] = 'Día debe estar entre 1-28';
+      newErrors['defaults.paymentDueDay'] = t('inmobiliaria.config.profile.validation.dayRange');
     }
     if (
       formData.defaults.disbursementDay < 1 ||
       formData.defaults.disbursementDay > 28
     ) {
-      newErrors['defaults.disbursementDay'] = 'Día debe estar entre 1-28';
+      newErrors['defaults.disbursementDay'] = t('inmobiliaria.config.profile.validation.dayRange');
     }
 
     setErrors(newErrors);
@@ -207,7 +209,7 @@ export function ConfigPerfilAgencia({
 
   const handleSave = async () => {
     if (!validate()) {
-      toast.error('Por favor corrija los errores en el formulario');
+      toast.error(t('inmobiliaria.config.profile.validation.fixErrors'));
       return;
     }
 
@@ -233,9 +235,9 @@ export function ConfigPerfilAgencia({
 
       onSave?.(updatedConfig);
       setIsEditing(false);
-      toast.success('Configuración guardada correctamente');
+      toast.success(t('inmobiliaria.config.toasts.configSaved'));
     } catch (err) {
-      toast.error('Error al guardar la configuración');
+      toast.error(t('inmobiliaria.config.profile.validation.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -322,7 +324,7 @@ export function ConfigPerfilAgencia({
         <div>
           <h2 className="text-xl font-bold text-foreground">{config.name}</h2>
           <p className="text-sm text-muted-foreground">
-            Configuración del perfil de la agencia
+            {t('inmobiliaria.config.profile.subtitle')}
           </p>
         </div>
         {!isEditing && (
@@ -330,7 +332,7 @@ export function ConfigPerfilAgencia({
             onClick={() => setIsEditing(true)}
             className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
           >
-            Editar
+            {t('inmobiliaria.common.edit')}
           </button>
         )}
       </div>
@@ -338,9 +340,9 @@ export function ConfigPerfilAgencia({
       {/* Agency Name */}
       {isEditing && (
         <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
-          <SectionHeader icon={Buildings} title="Nombre de la agencia" />
+          <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} />
           <InputWrapper
-            label="Nombre comercial"
+            label={t('inmobiliaria.config.profile.agencyName')}
             required
             error={touched.name ? errors.name : undefined}
           >
@@ -369,14 +371,14 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <SectionHeader
           icon={Phone}
-          title="Información de contacto"
+          title={t('inmobiliaria.config.profile.contactInfo')}
           color="text-emerald-500"
         />
 
         {isEditing ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputWrapper
-              label="Teléfono principal"
+              label={t('inmobiliaria.config.profile.mainPhone')}
               required
               error={touched['contact.phone'] ? errors['contact.phone'] : undefined}
             >
@@ -397,7 +399,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="Teléfono alternativo" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.alternatePhone')} hint={t('common.optional')}>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -411,7 +413,7 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <InputWrapper
-              label="Email principal"
+              label={t('inmobiliaria.config.profile.mainEmail')}
               required
               error={touched['contact.email'] ? errors['contact.email'] : undefined}
             >
@@ -432,7 +434,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="Email de soporte" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.supportEmail')} hint={t('common.optional')}>
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -445,7 +447,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="WhatsApp" hint="Opcional">
+            <InputWrapper label="WhatsApp" hint={t('common.optional')}>
               <div className="relative">
                 <WhatsappLogo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -458,7 +460,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="Sitio web" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.website')} hint={t('common.optional')}>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -473,7 +475,7 @@ export function ConfigPerfilAgencia({
 
             <div className="sm:col-span-2">
               <InputWrapper
-                label="Dirección"
+                label={t('inmobiliaria.config.profile.address')}
                 required
                 error={touched['contact.address'] ? errors['contact.address'] : undefined}
               >
@@ -496,7 +498,7 @@ export function ConfigPerfilAgencia({
             </div>
 
             <InputWrapper
-              label="Ciudad"
+              label={t('inmobiliaria.config.profile.city')}
               required
               error={touched['contact.city'] ? errors['contact.city'] : undefined}
             >
@@ -504,7 +506,7 @@ export function ConfigPerfilAgencia({
                 type="text"
                 value={formData.contact.city}
                 onChange={(e) => updateContact('city', e.target.value)}
-                placeholder="Bogotá"
+                placeholder="Bogota"
                 className={cn(
                   'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                   touched['contact.city'] && errors['contact.city']
@@ -515,7 +517,7 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <InputWrapper
-              label="Departamento"
+              label={t('inmobiliaria.config.profile.department')}
               required
               error={touched['contact.department'] ? errors['contact.department'] : undefined}
             >
@@ -530,7 +532,7 @@ export function ConfigPerfilAgencia({
                       : 'border-border'
                   )}
                 >
-                  <option value="">Seleccionar...</option>
+                  <option value="">{t('inmobiliaria.config.profile.selectPlaceholder')}</option>
                   {COLOMBIAN_DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
@@ -541,7 +543,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="Código postal" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.postalCode')} hint={t('common.optional')}>
               <input
                 type="text"
                 value={formData.contact.postalCode || ''}
@@ -554,11 +556,11 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-muted-foreground">Teléfono:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.phone')}:</span>
               <span className="ml-2 text-foreground">{config.contact.phone}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Email:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.email')}:</span>
               <span className="ml-2 text-foreground">{config.contact.email}</span>
             </div>
             <div>
@@ -566,11 +568,11 @@ export function ConfigPerfilAgencia({
               <span className="ml-2 text-foreground">{config.contact.whatsapp || '-'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Web:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.website')}:</span>
               <span className="ml-2 text-foreground">{config.contact.website || '-'}</span>
             </div>
             <div className="sm:col-span-2">
-              <span className="text-muted-foreground">Dirección:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.address')}:</span>
               <span className="ml-2 text-foreground">
                 {config.contact.address}, {config.contact.city}, {config.contact.department}
               </span>
@@ -583,17 +585,17 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <SectionHeader
           icon={Certificate}
-          title="Información legal"
+          title={t('inmobiliaria.config.profile.legalInfo')}
           color="text-purple-500"
         />
 
         {isEditing ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputWrapper
-              label="NIT"
+              label={t('inmobiliaria.config.profile.nit')}
               required
               error={touched['legal.nit'] ? errors['legal.nit'] : undefined}
-              hint="Formato: XXX.XXX.XXX-X"
+              hint={t('inmobiliaria.config.profile.nitFormat')}
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -613,7 +615,7 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <InputWrapper
-              label="Razón social"
+              label={t('inmobiliaria.config.profile.legalName')}
               required
               error={touched['legal.razonSocial'] ? errors['legal.razonSocial'] : undefined}
             >
@@ -632,7 +634,7 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <InputWrapper
-              label="Representante legal"
+              label={t('inmobiliaria.config.profile.legalRep')}
               required
               error={touched['legal.representanteLegal'] ? errors['legal.representanteLegal'] : undefined}
             >
@@ -642,7 +644,7 @@ export function ConfigPerfilAgencia({
                   type="text"
                   value={formData.legal.representanteLegal}
                   onChange={(e) => updateLegal('representanteLegal', e.target.value)}
-                  placeholder="Juan Pérez García"
+                  placeholder="Juan Perez Garcia"
                   className={cn(
                     'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
                     touched['legal.representanteLegal'] && errors['legal.representanteLegal']
@@ -654,7 +656,7 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <InputWrapper
-              label="Cédula del representante"
+              label={t('inmobiliaria.config.profile.legalRepId')}
               required
               error={touched['legal.representanteCedula'] ? errors['legal.representanteCedula'] : undefined}
             >
@@ -675,7 +677,7 @@ export function ConfigPerfilAgencia({
               </div>
             </InputWrapper>
 
-            <InputWrapper label="Matrícula inmobiliaria" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.realEstateRegistration')} hint={t('common.optional')}>
               <input
                 type="text"
                 value={formData.legal.matriculaInmobiliaria || ''}
@@ -685,7 +687,7 @@ export function ConfigPerfilAgencia({
               />
             </InputWrapper>
 
-            <InputWrapper label="Registro Cámara de Comercio" hint="Opcional">
+            <InputWrapper label={t('inmobiliaria.config.profile.chamberRegistration')} hint={t('common.optional')}>
               <input
                 type="text"
                 value={formData.legal.registroCamara || ''}
@@ -698,27 +700,27 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-muted-foreground">NIT:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.nit')}:</span>
               <span className="ml-2 text-foreground font-mono">{config.legal.nit}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Razón social:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalName')}:</span>
               <span className="ml-2 text-foreground">{config.legal.razonSocial}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Representante:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRep')}:</span>
               <span className="ml-2 text-foreground">{config.legal.representanteLegal}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Cédula:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRepId')}:</span>
               <span className="ml-2 text-foreground font-mono">{config.legal.representanteCedula}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Matrícula:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.realEstateRegistration')}:</span>
               <span className="ml-2 text-foreground">{config.legal.matriculaInmobiliaria || '-'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Reg. Cámara:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.chamberRegistrationShort')}:</span>
               <span className="ml-2 text-foreground">{config.legal.registroCamara || '-'}</span>
             </div>
           </div>
@@ -729,7 +731,7 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <SectionHeader
           icon={Percent}
-          title="Configuración por defecto"
+          title={t('inmobiliaria.config.profile.defaultSettings')}
           color="text-amber-500"
         />
 
@@ -739,14 +741,14 @@ export function ConfigPerfilAgencia({
               <div className="flex gap-3">
                 <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Estos valores se usarán por defecto al crear nuevas consignaciones. Pueden modificarse individualmente después.
+                  {t('inmobiliaria.config.profile.defaultSettingsHint')}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputWrapper
-                label="Comisión agencia %"
+                label={t('inmobiliaria.config.profile.commissionPercent')}
                 required
                 error={errors['defaults.commission']}
               >
@@ -767,7 +769,7 @@ export function ConfigPerfilAgencia({
               </InputWrapper>
 
               <InputWrapper
-                label="Administración %"
+                label={t('inmobiliaria.config.profile.adminFeePercent')}
                 required
                 error={errors['defaults.adminFee']}
               >
@@ -788,7 +790,7 @@ export function ConfigPerfilAgencia({
               </InputWrapper>
 
               <InputWrapper
-                label="Mora %"
+                label={t('inmobiliaria.config.profile.lateFeePercent')}
                 required
               >
                 <div className="relative">
@@ -810,7 +812,7 @@ export function ConfigPerfilAgencia({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputWrapper
-                label="Día de pago (1-28)"
+                label={t('inmobiliaria.config.profile.paymentDueDay')}
                 required
                 error={errors['defaults.paymentDueDay']}
               >
@@ -830,7 +832,7 @@ export function ConfigPerfilAgencia({
               </InputWrapper>
 
               <InputWrapper
-                label="Día de dispersión (1-28)"
+                label={t('inmobiliaria.config.profile.disbursementDay')}
                 required
                 error={errors['defaults.disbursementDay']}
               >
@@ -850,7 +852,7 @@ export function ConfigPerfilAgencia({
               </InputWrapper>
 
               <InputWrapper
-                label="Días de gracia"
+                label={t('inmobiliaria.config.profile.gracePeriodDays')}
                 required
               >
                 <input
@@ -870,11 +872,11 @@ export function ConfigPerfilAgencia({
             <div className="space-y-4 pt-4 border-t border-border">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Recordatorios</span>
+                <span className="text-sm font-medium text-foreground">{t('inmobiliaria.config.profile.reminders')}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputWrapper label="Días antes del vencimiento">
+                <InputWrapper label={t('inmobiliaria.config.profile.daysBeforeDue')}>
                   <div className="flex flex-wrap gap-2">
                     {REMINDER_DAYS_OPTIONS.map((day) => (
                       <button
@@ -894,7 +896,7 @@ export function ConfigPerfilAgencia({
                   </div>
                 </InputWrapper>
 
-                <InputWrapper label="Días después del vencimiento">
+                <InputWrapper label={t('inmobiliaria.config.profile.daysAfterDue')}>
                   <div className="flex flex-wrap gap-2">
                     {REMINDER_DAYS_OPTIONS.map((day) => (
                       <button
@@ -920,37 +922,37 @@ export function ConfigPerfilAgencia({
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Comisión</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.defaultCommissionPercent}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Administración</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.adminFee')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.defaultAdminFeePercent}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Mora</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.defaultLateFeePercent}%
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Día de pago</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.paymentDueDay}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Día dispersión</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.disbursementDay}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="text-muted-foreground text-xs">Días de gracia</div>
+                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.gracePeriodDays')}</div>
                 <div className="text-foreground font-semibold">
                   {config.defaults.gracePeriodDays}
                 </div>
@@ -959,13 +961,13 @@ export function ConfigPerfilAgencia({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-muted-foreground">Recordatorios antes:</span>
+                <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersBefore')}:</span>
                 <span className="ml-2 text-foreground">
                   {config.defaults.reminderDaysBefore.map((d) => `${d}d`).join(', ')}
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground">Recordatorios después:</span>
+                <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersAfter')}:</span>
                 <span className="ml-2 text-foreground">
                   {config.defaults.reminderDaysAfter.map((d) => `${d}d`).join(', ')}
                 </span>
@@ -984,7 +986,7 @@ export function ConfigPerfilAgencia({
             disabled={isSaving}
             className="px-5 py-2.5 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
           >
-            Cancelar
+            {t('inmobiliaria.common.cancel')}
           </button>
           <button
             type="button"
@@ -995,12 +997,12 @@ export function ConfigPerfilAgencia({
             {isSaving ? (
               <>
                 <SpinnerGap className="w-4 h-4 animate-spin" />
-                Guardando...
+                {t('inmobiliaria.common.saving')}
               </>
             ) : (
               <>
                 <Check className="w-4 h-4" />
-                Guardar cambios
+                {t('inmobiliaria.config.profile.saveChanges')}
               </>
             )}
           </button>

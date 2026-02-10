@@ -12,6 +12,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { AdvancedKPI, TrendDirection } from '@/lib/types/inmobiliaria';
 import { getCategoryLabel } from '@/lib/types/inmobiliaria';
 
@@ -118,7 +119,7 @@ function KPICard({
     <motion.div
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className="flex flex-col h-full p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-indigo-500/5 hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
+      className="flex flex-col h-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-indigo-500/5 hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
     >
       {/* Header - Icon + Title */}
       <div className="flex items-center gap-3 mb-4">
@@ -249,6 +250,7 @@ export function AnalyticsKPICards({
   layout = 'grid',
   onKPIClick,
 }: AnalyticsKPICardsProps) {
+  const { t, locale } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<AdvancedKPI['category'] | null>(null);
 
   // Group KPIs by category
@@ -280,7 +282,7 @@ export function AnalyticsKPICards({
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
           )}
         >
-          Todos ({kpis.length})
+          {t('inmobiliaria.analytics.kpiCards.all')} ({kpis.length})
         </button>
         {categories.map((category) => (
           <button
@@ -358,14 +360,14 @@ export function AnalyticsKPICards({
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     {upTrends}/{categoryKpis.length}
                   </span>
-                  <span className="text-neutral-400 dark:text-neutral-500 ml-1">positivo</span>
+                  <span className="text-neutral-400 dark:text-neutral-500 ml-1">{t('inmobiliaria.analytics.kpiCards.positive')}</span>
                 </span>
               </div>
             );
           })}
         </div>
         <p className="text-xs text-neutral-400">
-          Actualizado: {new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+          {t('inmobiliaria.analytics.kpiCards.updated')}: {new Date().toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </div>

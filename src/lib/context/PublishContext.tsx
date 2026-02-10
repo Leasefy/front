@@ -59,7 +59,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
       case 8: // Tenant Requirements
         return true; // Optional - landlord can skip this step
       case 9: // Plan
-        return draft.selectedPlan !== '';
+        return draft.ownerType !== '' && draft.selectedPlan !== '';
       case 10: // Review
         return true;
       default:
@@ -102,7 +102,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [draft]);
+  }, []);
 
   const resetDraft = useCallback(() => {
     setDraft(initialPropertyDraft);

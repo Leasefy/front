@@ -16,6 +16,7 @@ import {
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,7 +55,7 @@ interface RecordatorioConfigProps {
   onSave: (config: RecordatorioConfigData) => void;
 }
 
-// Message template previews
+// Message template previews (these contain dynamic placeholders, not translatable)
 const PRE_VENCIMIENTO_TEMPLATE = `Hola {inquilino},
 
 Te recordamos que el pago de tu arriendo en {propiedad} vence el {fecha}.
@@ -91,6 +92,8 @@ function DaySelector({
   onChange: (days: number[]) => void;
   label: string;
 }) {
+  const { t } = useTranslation();
+
   const toggleDay = (day: number) => {
     if (selected.includes(day)) {
       onChange(selected.filter((d) => d !== day));
@@ -117,7 +120,9 @@ function DaySelector({
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              {day} {day === 1 ? 'dia' : 'dias'}
+              {day === 1
+                ? t('inmobiliaria.cobros.recordatorioConfig.day', { count: day })
+                : t('inmobiliaria.cobros.recordatorioConfig.days', { count: day })}
               {isSelected && <Check className="inline-block w-3.5 h-3.5 ml-1" />}
             </button>
           );
@@ -126,7 +131,7 @@ function DaySelector({
       {selected.length === 0 && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Info className="w-3.5 h-3.5" />
-          Selecciona al menos un dia
+          {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneDay')}
         </p>
       )}
     </div>
@@ -227,6 +232,7 @@ export function RecordatorioConfig({
   config,
   onSave,
 }: RecordatorioConfigProps) {
+  const { t } = useTranslation();
   const [localConfig, setLocalConfig] = React.useState<RecordatorioConfigData>(config);
   const [isSaving, setIsSaving] = React.useState(false);
 
@@ -274,8 +280,8 @@ export function RecordatorioConfig({
 
     onSave(localConfig);
 
-    toast.success('Configuracion guardada', {
-      description: 'Los recordatorios se enviaran segun la nueva configuracion.',
+    toast.success(t('inmobiliaria.cobros.toasts.configSaved'), {
+      description: t('inmobiliaria.cobros.toasts.configSavedDesc'),
     });
 
     setIsSaving(false);
@@ -288,10 +294,10 @@ export function RecordatorioConfig({
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
             <Gear className="w-5 h-5 text-indigo-600" />
-            Configurar Recordatorios
+            {t('inmobiliaria.cobros.recordatorioConfig.title')}
           </SheetTitle>
           <SheetDescription>
-            Define cuando y como enviar recordatorios de pago a los inquilinos.
+            {t('inmobiliaria.cobros.recordatorioConfig.description')}
           </SheetDescription>
         </SheetHeader>
 
@@ -306,14 +312,14 @@ export function RecordatorioConfig({
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <Calendar className="w-4 h-4 text-indigo-600" />
               <h3 className="text-sm font-semibold text-foreground">
-                Pre-vencimiento
+                {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
               </h3>
             </div>
             <DaySelector
               options={DAYS_BEFORE_OPTIONS}
               selected={localConfig.daysBefore}
               onChange={handleDaysBeforeChange}
-              label="Dias antes del vencimiento"
+              label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
             />
           </motion.section>
 
@@ -327,14 +333,14 @@ export function RecordatorioConfig({
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <Warning className="w-4 h-4 text-amber-600" />
               <h3 className="text-sm font-semibold text-foreground">
-                Post-vencimiento (Mora)
+                {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
               </h3>
             </div>
             <DaySelector
               options={DAYS_AFTER_OPTIONS}
               selected={localConfig.daysAfter}
               onChange={handleDaysAfterChange}
-              label="Dias despues del vencimiento"
+              label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
             />
           </motion.section>
 
@@ -348,7 +354,7 @@ export function RecordatorioConfig({
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <Bell className="w-4 h-4 text-indigo-600" />
               <h3 className="text-sm font-semibold text-foreground">
-                Canales de Notificacion
+                {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
               </h3>
             </div>
             <div className="space-y-3">
@@ -364,7 +370,7 @@ export function RecordatorioConfig({
             {localConfig.channels.length === 0 && (
               <p className="text-xs text-destructive flex items-center gap-1">
                 <Warning className="w-3.5 h-3.5" />
-                Selecciona al menos un canal de notificacion
+                {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
               </p>
             )}
           </motion.section>
@@ -379,20 +385,19 @@ export function RecordatorioConfig({
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <Envelope className="w-4 h-4 text-indigo-600" />
               <h3 className="text-sm font-semibold text-foreground">
-                Plantillas de Mensajes
+                {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
               </h3>
             </div>
             <MessagePreview
-              title="Recordatorio pre-vencimiento"
+              title={t('inmobiliaria.cobros.recordatorioConfig.preExpiryTemplate')}
               template={PRE_VENCIMIENTO_TEMPLATE}
             />
             <MessagePreview
-              title="Recordatorio de mora"
+              title={t('inmobiliaria.cobros.recordatorioConfig.overdueTemplate')}
               template={MORA_TEMPLATE}
             />
             <p className="text-xs text-muted-foreground">
-              Las variables entre llaves se reemplazan automaticamente con los
-              datos del inquilino y la propiedad.
+              {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
             </p>
           </motion.section>
 
@@ -410,7 +415,7 @@ export function RecordatorioConfig({
               onClick={onClose}
               disabled={isSaving}
             >
-              Cancelar
+              {t('inmobiliaria.cobros.recordatorioConfig.cancel')}
             </Button>
             <Button
               type="button"
@@ -436,12 +441,12 @@ export function RecordatorioConfig({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Guardando...
+                  {t('inmobiliaria.cobros.recordatorioConfig.saving')}
                 </span>
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" />
-                  Guardar Configuracion
+                  {t('inmobiliaria.cobros.recordatorioConfig.save')}
                 </>
               )}
             </Button>

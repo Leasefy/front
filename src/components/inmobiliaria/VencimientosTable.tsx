@@ -18,6 +18,7 @@ import {
   EnvelopeSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { VencimientosReport, VencimientoItem, RenewalStatus } from '@/lib/types/inmobiliaria';
 
 type SortField = 'propertyTitle' | 'tenantName' | 'propietarioName' | 'daysUntilExpiry' | 'renewalStatus';
@@ -69,29 +70,29 @@ function getBucketColor(bucket: VencimientoItem['bucket']): {
 /**
  * Get renewal status display
  */
-function getRenewalStatusDisplay(status: RenewalStatus): {
+function getRenewalStatusDisplay(status: RenewalStatus, t: (key: string) => string): {
   label: string;
   bg: string;
   text: string;
 } {
   const displays: Record<RenewalStatus, { label: string; bg: string; text: string }> = {
     pending: {
-      label: 'Pendiente',
+      label: t('inmobiliaria.finance.expirations.statusPending'),
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       text: 'text-neutral-600 dark:text-neutral-400',
     },
     negotiating: {
-      label: 'En negociacion',
+      label: t('inmobiliaria.finance.expirations.statusNegotiating'),
       bg: 'bg-blue-100 dark:bg-blue-900/30',
       text: 'text-blue-700 dark:text-blue-400',
     },
     renewed: {
-      label: 'Renovado',
+      label: t('inmobiliaria.finance.expirations.statusRenewed'),
       bg: 'bg-emerald-100 dark:bg-emerald-900/30',
       text: 'text-emerald-700 dark:text-emerald-400',
     },
     terminating: {
-      label: 'Terminando',
+      label: t('inmobiliaria.finance.expirations.statusTerminating'),
       bg: 'bg-red-100 dark:bg-red-900/30',
       text: 'text-red-700 dark:text-red-400',
     },
@@ -102,9 +103,9 @@ function getRenewalStatusDisplay(status: RenewalStatus): {
 /**
  * Format date to display
  */
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, loc: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('es-CO', {
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -123,6 +124,7 @@ export function VencimientosTable({
   onBulkRenewal,
   onBulkReminder,
 }: VencimientosTableProps) {
+  const { t, locale } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('daysUntilExpiry');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
@@ -251,10 +253,10 @@ export function VencimientosTable({
         <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
           <div className="flex items-center gap-2 mb-1">
             <Warning className="w-5 h-5 text-red-200" weight="fill" />
-            <span className="text-sm font-medium text-red-100">Critico (30d)</span>
+            <span className="text-sm font-medium text-red-100">{t('inmobiliaria.finance.expirations.critical30d')}</span>
           </div>
           <p className="text-2xl font-bold">{data.summary.bucket0to30}</p>
-          <p className="text-xs text-red-200 mt-1">Contratos por vencer</p>
+          <p className="text-xs text-red-200 mt-1">{t('inmobiliaria.finance.expirations.contractsExpiring')}</p>
         </div>
 
         {/* 31-60 dias */}
@@ -262,7 +264,7 @@ export function VencimientosTable({
           <div className="flex items-center gap-2 mb-1">
             <CalendarBlank className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
-              Advertencia (31-60d)
+              {t('inmobiliaria.finance.expirations.warning3160d')}
             </span>
           </div>
           <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
@@ -275,7 +277,7 @@ export function VencimientosTable({
           <div className="flex items-center gap-2 mb-1">
             <CalendarBlank className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-              Info (61-90d)
+              {t('inmobiliaria.finance.expirations.info6190d')}
             </span>
           </div>
           <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
@@ -288,7 +290,7 @@ export function VencimientosTable({
           <div className="flex items-center gap-2 mb-1">
             <HouseLine className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
             <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Total
+              {t('inmobiliaria.finance.expirations.total')}
             </span>
           </div>
           <p className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -311,7 +313,7 @@ export function VencimientosTable({
             )}
           >
             <Funnel className="w-4 h-4" />
-            Todos
+            {t('inmobiliaria.finance.expirations.all')}
             <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
               {bucketCounts.all}
             </span>
@@ -370,7 +372,7 @@ export function VencimientosTable({
               className="flex items-center gap-2"
             >
               <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {selectedItems.size} seleccionados
+                {selectedItems.size} {t('inmobiliaria.finance.expirations.selected')}
               </span>
               {onBulkRenewal && (
                 <button
@@ -378,7 +380,7 @@ export function VencimientosTable({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
-                  Iniciar renovacion
+                  {t('inmobiliaria.finance.expirations.startRenewal')}
                 </button>
               )}
               {onBulkReminder && (
@@ -387,7 +389,7 @@ export function VencimientosTable({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <EnvelopeSimple className="w-4 h-4" />
-                  Enviar recordatorios
+                  {t('inmobiliaria.finance.expirations.sendReminders')}
                 </button>
               )}
             </motion.div>
@@ -411,21 +413,21 @@ export function VencimientosTable({
                   className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
                 />
               </th>
-              <SortableHeader field="propertyTitle">Propiedad</SortableHeader>
-              <SortableHeader field="tenantName">Inquilino</SortableHeader>
-              <SortableHeader field="propietarioName">Propietario</SortableHeader>
+              <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.expirations.property')}</SortableHeader>
+              <SortableHeader field="tenantName">{t('inmobiliaria.finance.expirations.tenant')}</SortableHeader>
+              <SortableHeader field="propietarioName">{t('inmobiliaria.finance.expirations.owner')}</SortableHeader>
               <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                Vencimiento
+                {t('inmobiliaria.finance.expirations.expiration')}
               </th>
-              <SortableHeader field="daysUntilExpiry">Dias</SortableHeader>
-              <SortableHeader field="renewalStatus">Estado</SortableHeader>
+              <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.expirations.days')}</SortableHeader>
+              <SortableHeader field="renewalStatus">{t('inmobiliaria.finance.expirations.status')}</SortableHeader>
               <th className="w-12 p-4"></th>
             </tr>
           </thead>
           <tbody>
             {filteredAndSortedItems.map((item, index) => {
               const bucketColors = getBucketColor(item.bucket);
-              const statusDisplay = getRenewalStatusDisplay(item.renewalStatus);
+              const statusDisplay = getRenewalStatusDisplay(item.renewalStatus, t);
               const isUrgent = item.bucket === '0-30';
               const isSelected = selectedItems.has(item.propertyId);
 
@@ -506,7 +508,7 @@ export function VencimientosTable({
                   {/* End Date */}
                   <td className="p-4">
                     <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {formatDate(item.contractEndDate)}
+                      {formatDate(item.contractEndDate, locale)}
                     </span>
                   </td>
 
@@ -568,7 +570,7 @@ export function VencimientosTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Phone className="w-4 h-4" />
-                                <span className="text-sm">Contactar inquilino</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
                               </button>
                             )}
                             {onStartRenewal && (
@@ -581,7 +583,7 @@ export function VencimientosTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                               >
                                 <ArrowsClockwise className="w-4 h-4" />
-                                <span className="text-sm">Iniciar renovacion</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
                               </button>
                             )}
                             {onViewContract && (
@@ -594,7 +596,7 @@ export function VencimientosTable({
                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Eye className="w-4 h-4" />
-                                <span className="text-sm">Ver contrato</span>
+                                <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
                               </button>
                             )}
                           </motion.div>
@@ -615,12 +617,12 @@ export function VencimientosTable({
               <CheckSquare className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="fill" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              Sin vencimientos proximos
+              {t('inmobiliaria.finance.expirations.noExpirations')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400">
               {bucketFilter === 'all'
-                ? 'No hay contratos por vencer en los proximos 90 dias'
-                : `No hay contratos en el rango de ${bucketFilter} dias`}
+                ? t('inmobiliaria.finance.expirations.noExpirationsDesc')
+                : t('inmobiliaria.finance.expirations.noExpirationsRange', { range: bucketFilter })}
             </p>
           </div>
         )}

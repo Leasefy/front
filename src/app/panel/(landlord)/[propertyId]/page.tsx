@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
 import { getCandidateById } from '@/lib/data/mock-candidates';
@@ -56,6 +57,7 @@ interface CandidateRow extends LandlordCandidate {
 // ============================================================================
 
 export default function PropertyCandidatesPage({ params }: PropertyCandidatesPageProps) {
+  const { locale } = useTranslation();
   const { propertyId } = params;
   const router = useRouter();
 
@@ -526,25 +528,25 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Salario mensual</span>
-              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString('es-CO')}</span>
+              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
             {selectedCandidate.additionalIncome > 0 && (
               <div className="flex justify-between">
                 <span className="text-plan-secondary">Ingresos adicionales</span>
-                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString('es-CO')}</span>
+                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-plan-secondary">Ingreso total</span>
-              <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString('es-CO')}</span>
+              <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-plan-secondary">Obligaciones mensuales</span>
-              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString('es-CO')}</span>
+              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
             <div className="flex justify-between bg-emerald-50 p-2 rounded">
               <span className="text-emerald-700">Disponible para arriendo</span>
-              <span className="text-emerald-700 font-semibold">${selectedCandidate.availableForRent?.toLocaleString('es-CO')}</span>
+              <span className="text-emerald-700 font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
           </div>
         </div>
@@ -724,7 +726,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         {activeContract ? (
           <div className="space-y-6">
             {/* Active lease banner */}
-            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 flex items-center gap-3">
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                 <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
@@ -762,7 +764,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </PlanStatsGrid>
 
                 {/* Contract details card */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
                   <div>
                     <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</p>
                     <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{CONTRACT_TYPE_LABELS[activeContract.type]}</p>
@@ -820,7 +822,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
               {/* Sidebar actions */}
               <div className="space-y-4">
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5 space-y-3">
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Acciones rápidas</h3>
                   <Link
                     href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
@@ -849,7 +851,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </div>
 
                 {/* Tenant summary card */}
-                <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5">
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5">
                   <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Arrendatario</p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400">
@@ -955,7 +957,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 onSave={handleSaveSchedule}
               />
             ) : activeTab !== 'visits' ? (
-              <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
                 <PlanTable
                   data={tableData}
                   columns={columns}
@@ -972,7 +974,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 />
               </div>
             ) : (
-              <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
                 <PlanTable<Visit>
                   data={propertyVisits}
                   pagination
@@ -1054,7 +1056,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       {previewDoc && selectedCandidate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewDoc(null)} />
-          <div className="relative bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
               <div>

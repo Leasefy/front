@@ -31,7 +31,7 @@ const VOLUME_TIERS_COMPLETE = [
 type EvaluationTextT = 'basic' | 'complete';
 
 function formatCOP(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
@@ -76,7 +76,7 @@ function AnimatedNumber({ value, prefix = '' }: { value: number; prefix?: string
     requestAnimationFrame(animate);
   }, [value]);
 
-  return <>{prefix}{displayValue.toLocaleString('es-CO')}</>;
+  return <>{prefix}{displayValue.toLocaleString('es-CL')}</>;
 }
 
 export default function EmpresasCalculadoraPage() {

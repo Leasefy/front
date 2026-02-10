@@ -91,7 +91,7 @@ function getRecentMonths(count: number): { value: string; label: string }[] {
   for (let i = 0; i < count; i++) {
     const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = date.toLocaleDateString('es-CO', {
+    const label = date.toLocaleDateString('es-CL', {
       month: 'long',
       year: 'numeric',
     });
@@ -105,7 +105,7 @@ function getRecentMonths(count: number): { value: string; label: string }[] {
  * Format month for display
  */
 function formatMonth(month: string): string {
-  return new Date(month + '-01').toLocaleDateString('es-CO', {
+  return new Date(month + '-01').toLocaleDateString('es-CL', {
     month: 'long',
     year: 'numeric',
   });
@@ -967,7 +967,7 @@ export function DispersionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div

@@ -115,7 +115,7 @@ export function PlanTable<T extends object>({
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
-  }, [data.length, currentPage, totalPages]);
+  }, [currentPage, totalPages]);
 
   const renderCell = (row: T, column: PlanTableColumn<T>, index: number) => {
     if (column.render) {

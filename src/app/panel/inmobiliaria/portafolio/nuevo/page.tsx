@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { CaretLeft, Buildings } from '@phosphor-icons/react';
+import { useTranslation } from '@/lib/i18n';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
 import { MOCK_PROPIETARIOS, MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
 
 export default function NuevaConsignacionPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#0c0c0d]">
       <div className="p-4 md:p-6 space-y-6">
@@ -17,7 +20,7 @@ export default function NuevaConsignacionPage() {
             className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors w-fit"
           >
             <CaretLeft className="w-4 h-4" />
-            Volver al portafolio
+            {t('inmobiliaria.portafolio.detail.backToPortfolio')}
           </Link>
 
           {/* Title */}
@@ -27,10 +30,10 @@ export default function NuevaConsignacionPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                Nueva Consignacion
+                {t('inmobiliaria.portafolio.new.title')}
               </h1>
               <p className="text-neutral-500 dark:text-neutral-400">
-                Registra una nueva propiedad en el portafolio
+                {t('inmobiliaria.portafolio.new.subtitle')}
               </p>
             </div>
           </div>

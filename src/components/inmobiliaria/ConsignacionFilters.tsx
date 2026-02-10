@@ -13,6 +13,7 @@ import {
   Briefcase,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion, Propietario, Agente, PropertyAvailability } from '@/lib/types/inmobiliaria';
 
 export interface ConsignacionFiltersState {
@@ -32,22 +33,22 @@ interface ConsignacionFiltersProps {
   agentes: Agente[];
 }
 
-const AVAILABILITY_OPTIONS: { value: PropertyAvailability | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'available', label: 'Disponible' },
-  { value: 'rented', label: 'Arrendado' },
-  { value: 'in_process', label: 'En proceso' },
-  { value: 'maintenance', label: 'Mant.' },
+const AVAILABILITY_OPTIONS: { value: PropertyAvailability | 'all'; labelKey: string }[] = [
+  { value: 'all', labelKey: 'inmobiliaria.consignaciones.filters.all' },
+  { value: 'available', labelKey: 'inmobiliaria.consignaciones.filters.available' },
+  { value: 'rented', labelKey: 'inmobiliaria.consignaciones.filters.rented' },
+  { value: 'in_process', labelKey: 'inmobiliaria.consignaciones.filters.inProcess' },
+  { value: 'maintenance', labelKey: 'inmobiliaria.consignaciones.filters.maintenance' },
 ];
 
-const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; label: string; icon: React.ElementType }[] = [
-  { value: 'all', label: 'Todos', icon: Buildings },
-  { value: 'apartment', label: 'Apto', icon: Buildings },
-  { value: 'house', label: 'Casa', icon: House },
-  { value: 'studio', label: 'Estudio', icon: Buildings },
-  { value: 'commercial', label: 'Local', icon: Storefront },
-  { value: 'office', label: 'Oficina', icon: Briefcase },
-  { value: 'warehouse', label: 'Bodega', icon: Warehouse },
+const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; labelKey: string; icon: React.ElementType }[] = [
+  { value: 'all', labelKey: 'inmobiliaria.consignaciones.filters.allTypes', icon: Buildings },
+  { value: 'apartment', labelKey: 'inmobiliaria.consignaciones.filters.apartment', icon: Buildings },
+  { value: 'house', labelKey: 'inmobiliaria.consignaciones.filters.house', icon: House },
+  { value: 'studio', labelKey: 'inmobiliaria.consignaciones.filters.studio', icon: Buildings },
+  { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.filters.commercial', icon: Storefront },
+  { value: 'office', labelKey: 'inmobiliaria.consignaciones.filters.office', icon: Briefcase },
+  { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.filters.warehouse', icon: Warehouse },
 ];
 
 /**
@@ -63,6 +64,7 @@ export function ConsignacionFilters({
 }: ConsignacionFiltersProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -113,25 +115,25 @@ export function ConsignacionFilters({
 
   // Get labels for current selections
   const getAgenteLabel = () => {
-    if (filters.agenteId === 'all') return 'Agente';
+    if (filters.agenteId === 'all') return t('inmobiliaria.consignaciones.filters.agentLabel');
     const agente = agentes.find((a) => a.id === filters.agenteId);
-    return agente?.name || 'Agente';
+    return agente?.name || t('inmobiliaria.consignaciones.filters.agentLabel');
   };
 
   const getPropietarioLabel = () => {
-    if (filters.propietarioId === 'all') return 'Propietario';
+    if (filters.propietarioId === 'all') return t('inmobiliaria.consignaciones.filters.ownerLabel');
     const prop = propietarios.find((p) => p.id === filters.propietarioId);
-    return prop?.name || 'Propietario';
+    return prop?.name || t('inmobiliaria.consignaciones.filters.ownerLabel');
   };
 
   const getCityLabel = () => {
-    return filters.city === 'all' ? 'Ciudad' : filters.city;
+    return filters.city === 'all' ? t('inmobiliaria.consignaciones.filters.cityLabel') : filters.city;
   };
 
   const getPropertyTypeLabel = () => {
-    if (filters.propertyType === 'all') return 'Tipo';
+    if (filters.propertyType === 'all') return t('inmobiliaria.consignaciones.filters.typeLabel');
     const option = PROPERTY_TYPE_OPTIONS.find((o) => o.value === filters.propertyType);
-    return option?.label || 'Tipo';
+    return option ? t(option.labelKey) : t('inmobiliaria.consignaciones.filters.typeLabel');
   };
 
   return (
@@ -141,7 +143,7 @@ export function ConsignacionFilters({
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Buscar por título o dirección..."
+          placeholder={t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
           value={filters.search}
           onChange={(e) => updateFilter('search', e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
@@ -171,7 +173,7 @@ export function ConsignacionFilters({
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           ))}
         </div>
@@ -210,7 +212,7 @@ export function ConsignacionFilters({
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
-                  Todos los agentes
+                  {t('inmobiliaria.consignaciones.filters.allAgents')}
                 </button>
                 {agentes.map((agente) => (
                   <button
@@ -269,7 +271,7 @@ export function ConsignacionFilters({
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
-                  Todos los propietarios
+                  {t('inmobiliaria.consignaciones.filters.allOwners')}
                 </button>
                 {propietarios.map((prop) => (
                   <button
@@ -321,7 +323,7 @@ export function ConsignacionFilters({
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
-                  Todas las ciudades
+                  {t('inmobiliaria.consignaciones.filters.allCities')}
                 </button>
                 {uniqueCities.map((city) => (
                   <button
@@ -378,7 +380,7 @@ export function ConsignacionFilters({
                       )}
                     >
                       <Icon className="w-4 h-4" />
-                      {option.label}
+                      {t(option.labelKey)}
                     </button>
                   );
                 })}
@@ -396,7 +398,7 @@ export function ConsignacionFilters({
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
             >
               <X className="w-4 h-4" />
-              Limpiar
+              {t('inmobiliaria.consignaciones.filters.clear')}
             </button>
           </>
         )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -102,21 +103,22 @@ interface ActaCardProps {
 }
 
 function ActaCard({ acta, onClick }: ActaCardProps) {
+  const { t, locale } = useTranslation();
   const statusConfig: Record<ActaEntrega['status'], { label: string; className: string }> = {
     draft: {
-      label: 'Borrador',
+      label: t('inmobiliaria.documentos.actas.status.draft'),
       className: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
     },
     in_progress: {
-      label: 'En Progreso',
+      label: t('inmobiliaria.documentos.actas.status.inProgress'),
       className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     },
     pending_signatures: {
-      label: 'Por Firmar',
+      label: t('inmobiliaria.documentos.actas.status.pendingSignatures'),
       className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     },
     completed: {
-      label: 'Completada',
+      label: t('inmobiliaria.documentos.actas.status.completed'),
       className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
   };
@@ -135,14 +137,14 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
           <div className="flex items-center gap-2 mb-1">
             <ClipboardText className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
-              {acta.type === 'entrega' ? 'Entrega' : 'Devolucion'}
+              {acta.type === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega') : t('inmobiliaria.documentos.actas.typeDevolucion')}
             </span>
           </div>
           <p className="font-medium text-foreground truncate">{acta.propertyTitle}</p>
           <p className="text-sm text-muted-foreground truncate">{acta.tenantName}</p>
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
             <Calendar className="w-3.5 h-3.5" />
-            <span>{new Date(acta.deliveryDate).toLocaleDateString('es-CO')}</span>
+            <span>{new Date(acta.deliveryDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
           </div>
         </div>
         <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', config.className)}>
@@ -162,6 +164,8 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
  * Route: /panel/inmobiliaria/documentos
  */
 export default function DocumentosPage() {
+  const { t, locale } = useTranslation();
+
   // State
   const [activeTab, setActiveTab] = useState<DocTab>('documentos');
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,25 +192,25 @@ export default function DocumentosPage() {
   }, [actas, searchQuery]);
 
   // Tabs configuration
-  const TABS: TabConfig[] = [
-    { id: 'documentos', label: 'Documentos', icon: FolderOpen, count: documents.length },
-    { id: 'plantillas', label: 'Plantillas', icon: FilePlus, count: templates.length },
-    { id: 'actas', label: 'Actas', icon: ClipboardText, count: actas.length },
-  ];
+  const TABS: TabConfig[] = useMemo(() => [
+    { id: 'documentos', label: t('inmobiliaria.documentos.title'), icon: FolderOpen, count: documents.length },
+    { id: 'plantillas', label: t('inmobiliaria.documentos.filters.templates'), icon: FilePlus, count: templates.length },
+    { id: 'actas', label: t('inmobiliaria.documentos.filters.actas'), icon: ClipboardText, count: actas.length },
+  ], [t, documents.length, templates.length, actas.length]);
 
   // -------------------------------------------------------------------------
   // Handlers - Templates
   // -------------------------------------------------------------------------
 
   const handlePreviewTemplate = (template: DocumentTemplate) => {
-    toast.info('Vista previa', {
-      description: `Abriendo preview de ${template.name}`,
+    toast.info(t('inmobiliaria.documentos.toasts.preview'), {
+      description: t('inmobiliaria.documentos.toasts.openingPreview', { name: template.name }),
     });
   };
 
   const handleUseTemplate = (template: DocumentTemplate) => {
-    toast.success('Usando plantilla', {
-      description: `Creando documento con ${template.name}`,
+    toast.success(t('inmobiliaria.documentos.toasts.usingTemplate'), {
+      description: t('inmobiliaria.documentos.toasts.creatingDocument', { name: template.name }),
     });
   };
 
@@ -218,8 +222,8 @@ export default function DocumentosPage() {
     if (doc.fileUrl) {
       window.open(doc.fileUrl, '_blank');
     } else {
-      toast.info('Vista previa no disponible', {
-        description: 'Este documento no tiene archivo asociado',
+      toast.info(t('inmobiliaria.documentos.toasts.previewNotAvailable'), {
+        description: t('inmobiliaria.documentos.toasts.noFileAssociated'),
       });
     }
   };
@@ -233,31 +237,31 @@ export default function DocumentosPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('Descarga iniciada', {
+      toast.success(t('inmobiliaria.documentos.toasts.downloadStarted'), {
         description: doc.name,
       });
     } else {
-      toast.error('No se puede descargar', {
-        description: 'Este documento no tiene archivo asociado',
+      toast.error(t('inmobiliaria.documentos.toasts.cannotDownload'), {
+        description: t('inmobiliaria.documentos.toasts.noFileAssociated'),
       });
     }
   };
 
   const handleSendForSignature = (doc: PropertyDocument) => {
-    toast.success('Documento enviado para firma', {
-      description: `"${doc.name}" ha sido enviado a los firmantes`,
+    toast.success(t('inmobiliaria.documentos.toasts.sentForSignature'), {
+      description: t('inmobiliaria.documentos.toasts.sentToSigners', { name: doc.name }),
     });
   };
 
   const handleDuplicateDocument = (doc: PropertyDocument) => {
-    toast.success('Documento duplicado', {
-      description: `Copia de "${doc.name}" creada`,
+    toast.success(t('inmobiliaria.documentos.toasts.documentDuplicated'), {
+      description: t('inmobiliaria.documentos.toasts.copyCreated', { name: doc.name }),
     });
   };
 
   const handleDeleteDocument = (documentId: string) => {
     const doc = documents.find((d) => d.id === documentId);
-    toast.success('Documento eliminado', {
+    toast.success(t('inmobiliaria.documentos.toasts.documentDeleted'), {
       description: doc?.name || documentId,
     });
   };
@@ -273,23 +277,23 @@ export default function DocumentosPage() {
         setIsActaFormOpen(true);
         break;
       case 'tpl-contrato-arrendamiento':
-        toast.info('Contrato de Arrendamiento', {
-          description: 'Esta funcionalidad estara disponible proximamente',
+        toast.info(t('inmobiliaria.documentos.templates.contract'), {
+          description: t('inmobiliaria.documentos.toasts.comingSoon'),
         });
         break;
       case 'tpl-inventario':
-        toast.info('Inventario', {
-          description: 'Esta funcionalidad estara disponible proximamente',
+        toast.info(t('inmobiliaria.documentos.toasts.inventory'), {
+          description: t('inmobiliaria.documentos.toasts.comingSoon'),
         });
         break;
       case 'tpl-carta-incremento':
-        toast.info('Carta de Incremento', {
-          description: 'Esta funcionalidad estara disponible proximamente',
+        toast.info(t('inmobiliaria.documentos.toasts.incrementLetter'), {
+          description: t('inmobiliaria.documentos.toasts.comingSoon'),
         });
         break;
       default:
-        toast.info('Documento', {
-          description: 'Esta funcionalidad estara disponible proximamente',
+        toast.info(t('inmobiliaria.documentos.title'), {
+          description: t('inmobiliaria.documentos.toasts.comingSoon'),
         });
     }
   };
@@ -309,8 +313,8 @@ export default function DocumentosPage() {
 
   const handleSaveActa = (data: ActaEntrega) => {
     setIsActaFormOpen(false);
-    toast.success('Acta creada', {
-      description: `El acta de ${data.type === 'entrega' ? 'entrega' : 'devolucion'} ha sido guardada`,
+    toast.success(t('inmobiliaria.documentos.toasts.actaCreated'), {
+      description: t('inmobiliaria.documentos.toasts.actaSaved', { type: data.type === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega').toLowerCase() : t('inmobiliaria.documentos.actas.typeDevolucion').toLowerCase() }),
     });
   };
 
@@ -331,10 +335,10 @@ export default function DocumentosPage() {
             <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
               <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
-            Documentos
+            {t('inmobiliaria.documentos.title')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Gestiona documentos, plantillas y actas de entrega
+            {t('inmobiliaria.documentos.subtitle')}
           </p>
         </div>
         <button
@@ -342,7 +346,7 @@ export default function DocumentosPage() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 font-medium shadow-lg shadow-indigo-500/20 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Nueva Acta
+          {t('inmobiliaria.documentos.newActa')}
         </button>
       </div>
 
@@ -354,28 +358,28 @@ export default function DocumentosPage() {
       >
         <StatCard
           icon={FolderOpen}
-          label="Total documentos"
+          label={t('inmobiliaria.documentos.stats.totalDocuments')}
           value={stats.total}
           bgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
         />
         <StatCard
           icon={FileText}
-          label="Firmados"
+          label={t('inmobiliaria.documentos.stats.signed')}
           value={stats.signed}
           bgColor="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
         />
         <StatCard
           icon={ClipboardText}
-          label="Por firmar"
+          label={t('inmobiliaria.documentos.stats.pendingSignature')}
           value={stats.pending}
           bgColor="bg-amber-100 dark:bg-amber-900/30"
           iconColor="text-amber-600 dark:text-amber-400"
         />
         <StatCard
           icon={Buildings}
-          label="Actas completadas"
+          label={t('inmobiliaria.documentos.stats.actasCompleted')}
           value={stats.actasCompleted}
           bgColor="bg-violet-100 dark:bg-violet-900/30"
           iconColor="text-violet-600 dark:text-violet-400"
@@ -433,7 +437,7 @@ export default function DocumentosPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar actas..."
+                placeholder={t('inmobiliaria.documentos.searchActas')}
                 className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
             </div>
@@ -480,14 +484,14 @@ export default function DocumentosPage() {
                   <div className="text-center py-12 rounded-xl border border-dashed border-border">
                     <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
                     <p className="text-muted-foreground">
-                      {searchQuery ? 'No se encontraron actas' : 'No hay actas de entrega'}
+                      {searchQuery ? t('inmobiliaria.documentos.noActasFound') : t('inmobiliaria.documentos.noActas')}
                     </p>
                     <button
                       onClick={handleCreateActa}
                       className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
                     >
                       <Plus className="w-4 h-4" />
-                      Crear primera acta
+                      {t('inmobiliaria.documentos.createFirstActa')}
                     </button>
                   </div>
                 ) : (
@@ -509,7 +513,7 @@ export default function DocumentosPage() {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <ClipboardText className="w-5 h-5 text-indigo-600" />
-              Nueva Acta de {actaFormType === 'entrega' ? 'Entrega' : 'Devolucion'}
+              {t('inmobiliaria.documentos.newActaOf', { type: actaFormType === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega') : t('inmobiliaria.documentos.actas.typeDevolucion') })}
             </SheetTitle>
           </SheetHeader>
           <div className="mt-6">
@@ -529,7 +533,7 @@ export default function DocumentosPage() {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <ClipboardText className="w-5 h-5 text-indigo-600" />
-              Detalle del Acta
+              {t('inmobiliaria.documentos.actaDetail')}
             </SheetTitle>
           </SheetHeader>
           <div className="mt-6">

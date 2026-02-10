@@ -9,6 +9,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
 export interface AgenteFiltersState {
@@ -24,25 +25,10 @@ interface AgenteFiltersProps {
   agentes: Agente[];
 }
 
-const ROLE_OPTIONS: { value: AgenteRole | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'agent', label: 'Agente' },
-  { value: 'coordinator', label: 'Coordinador' },
-  { value: 'director', label: 'Director' },
-];
-
-const STATUS_OPTIONS: { value: AgenteStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'active', label: 'Activo' },
-  { value: 'inactive', label: 'Inactivo' },
-  { value: 'on_leave', label: 'Licencia' },
-];
-
-const SORT_OPTIONS: { value: AgenteFiltersState['sortBy']; label: string }[] = [
-  { value: 'name', label: 'Nombre' },
-  { value: 'closedThisMonth', label: 'Cierres mes' },
-  { value: 'commissionsThisMonth', label: 'Comisiones' },
-];
+// Role/status/sort option values - labels are translated in component
+const ROLE_VALUES: (AgenteRole | 'all')[] = ['all', 'agent', 'coordinator', 'director'];
+const STATUS_VALUES: (AgenteStatus | 'all')[] = ['all', 'active', 'inactive', 'on_leave'];
+const SORT_VALUES: AgenteFiltersState['sortBy'][] = ['name', 'closedThisMonth', 'commissionsThisMonth'];
 
 /**
  * AgenteFilters - Filter bar for agentes page
@@ -53,8 +39,29 @@ export function AgenteFilters({
   onFiltersChange,
   agentes,
 }: AgenteFiltersProps) {
+  const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  const ROLE_OPTIONS: { value: AgenteRole | 'all'; label: string }[] = [
+    { value: 'all', label: t('inmobiliaria.agente.all') },
+    { value: 'agent', label: t('inmobiliaria.agente.roleAgent') },
+    { value: 'coordinator', label: t('inmobiliaria.agente.roleCoordinator') },
+    { value: 'director', label: t('inmobiliaria.agente.roleDirector') },
+  ];
+
+  const STATUS_OPTIONS: { value: AgenteStatus | 'all'; label: string }[] = [
+    { value: 'all', label: t('inmobiliaria.agente.all') },
+    { value: 'active', label: t('inmobiliaria.agente.statusActive') },
+    { value: 'inactive', label: t('inmobiliaria.agente.statusInactive') },
+    { value: 'on_leave', label: t('inmobiliaria.agente.statusOnLeaveShort') },
+  ];
+
+  const SORT_OPTIONS: { value: AgenteFiltersState['sortBy']; label: string }[] = [
+    { value: 'name', label: t('inmobiliaria.agente.name') },
+    { value: 'closedThisMonth', label: t('inmobiliaria.agente.closingsMonth') },
+    { value: 'commissionsThisMonth', label: t('inmobiliaria.agente.commissions') },
+  ];
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
@@ -84,17 +91,17 @@ export function AgenteFilters({
   // Get labels for current selections
   const getRoleLabel = () => {
     const option = ROLE_OPTIONS.find((o) => o.value === filters.role);
-    return option?.label || 'Todos';
+    return option?.label || t('inmobiliaria.agente.all');
   };
 
   const getStatusLabel = () => {
     const option = STATUS_OPTIONS.find((o) => o.value === filters.status);
-    return option?.label || 'Todos';
+    return option?.label || t('inmobiliaria.agente.all');
   };
 
   const getSortLabel = () => {
     const option = SORT_OPTIONS.find((o) => o.value === filters.sortBy);
-    return option?.label || 'Nombre';
+    return option?.label || t('inmobiliaria.agente.name');
   };
 
   return (
@@ -106,7 +113,7 @@ export function AgenteFilters({
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por nombre o email..."
+            placeholder={t('inmobiliaria.agente.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
@@ -132,7 +139,7 @@ export function AgenteFilters({
           )}
         >
           <Funnel className="w-4 h-4" />
-          <span className="text-sm font-medium">Filtros</span>
+          <span className="text-sm font-medium">{t('inmobiliaria.agente.filters')}</span>
           {activeFiltersCount > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
@@ -155,7 +162,7 @@ export function AgenteFilters({
                 {/* Role Filter */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
-                    Rol
+                    {t('inmobiliaria.agente.role')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'role' ? null : 'role')}
@@ -199,7 +206,7 @@ export function AgenteFilters({
                 {/* Status Filter */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
-                    Estado
+                    {t('inmobiliaria.agente.status')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
@@ -243,7 +250,7 @@ export function AgenteFilters({
                 {/* Sort Filter */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
-                    Ordenar por
+                    {t('inmobiliaria.agente.sortBy')}
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'sortBy' ? null : 'sortBy')}
@@ -291,7 +298,7 @@ export function AgenteFilters({
                   onClick={clearAllFilters}
                   className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  Limpiar filtros
+                  {t('inmobiliaria.agente.clearFilters')}
                 </button>
               )}
             </div>

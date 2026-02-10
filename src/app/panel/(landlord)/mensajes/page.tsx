@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Chat, ChatCircle, MagnifyingGlass, PaperPlaneTilt, Paperclip, DotsThreeVertical, Check, Checks, Info, Image, Smiley, ArrowLeft, X, House, Envelope, Calendar, Archive, BellSlash, TrashSimple, Flag } from '@phosphor-icons/react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs
@@ -185,6 +186,7 @@ function getInitials(name: string): string {
 // ============================================================================
 
 export default function MensajesPage() {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [selectedId, setSelectedId] = useState('conv-1');
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);
@@ -322,22 +324,22 @@ export default function MensajesPage() {
   // List Actions
   const handleArchive = () => {
     setShowOptionsList(false);
-    alert(`Conversación con ${selectedConversation.name} archivada`);
+    alert(t('landlord.messages.archivedAlert', { name: selectedConversation.name }));
   };
 
   const handleMute = () => {
     setShowOptionsList(false);
-    alert(`Notificaciones de ${selectedConversation.name} silenciadas`);
+    alert(t('landlord.messages.mutedAlert', { name: selectedConversation.name }));
   };
 
   const handleReport = () => {
     setShowOptionsList(false);
-    alert('Conversación reportada');
+    alert(t('landlord.messages.reportedAlert'));
   };
 
   const handleDelete = () => {
     setShowOptionsList(false);
-    if (confirm(`¿Eliminar conversación con ${selectedConversation.name}?`)) {
+    if (confirm(t('landlord.messages.deleteConfirm', { name: selectedConversation.name }))) {
       setConversations((prev) => prev.filter((c) => c.id !== selectedId));
       const remaining = conversations.filter((c) => c.id !== selectedId);
       if (remaining.length > 0) {
@@ -358,17 +360,17 @@ export default function MensajesPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
-                Mensajes
+                {t('landlord.messages.title')}
               </h1>
               <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-                Comunicación con inquilinos y candidatos
+                {t('landlord.messages.subtitle')}
               </p>
             </div>
             {totalUnread > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-full">
                 <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                  {totalUnread} sin leer
+                  {t('landlord.messages.unreadCount', { count: totalUnread })}
                 </span>
               </div>
             )}
@@ -380,7 +382,7 @@ export default function MensajesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden shadow-sm flex-1 min-h-0"
+          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden shadow-sm flex-1 min-h-0"
         >
           <div className="h-full flex">
             {/* Conversations List */}
@@ -398,8 +400,8 @@ export default function MensajesPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
-                    placeholder="Buscar conversación..."
-                    aria-label="Buscar conversación"
+                    placeholder={t('landlord.messages.searchPlaceholder')}
+                    aria-label={t('landlord.messages.searchLabel')}
                     className="w-full h-11 pl-11 pr-4 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>
@@ -411,11 +413,11 @@ export default function MensajesPage() {
                   <div className="p-4">
                     <EmptyState
                       icon={ChatCircle}
-                      title="No hay conversaciones"
+                      title={t('landlord.messages.noConversations')}
                       description={
                         searchQuery
-                          ? 'No se encontraron conversaciones con ese término de búsqueda.'
-                          : 'Cuando los inquilinos te envíen mensajes sobre tus propiedades, aparecerán aquí.'
+                          ? t('landlord.messages.noConversationsSearch')
+                          : t('landlord.messages.noConversationsEmpty')
                       }
                     />
                   </div>
@@ -519,9 +521,9 @@ export default function MensajesPage() {
                     </p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
                       {selectedConversation.online ? (
-                        <span className="text-emerald-600 dark:text-emerald-400">En línea</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">{t('landlord.messages.online')}</span>
                       ) : (
-                        'Desconectado'
+                        t('landlord.messages.offline')
                       )}
                       {selectedConversation.property &&
                         ` • ${selectedConversation.property}`}
@@ -538,7 +540,7 @@ export default function MensajesPage() {
                         ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
                         : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
                     )}
-                    aria-label="Información"
+                    aria-label={t('landlord.messages.infoLabel')}
                   >
                     <Info className="w-5 h-5" />
                   </button>
@@ -553,7 +555,7 @@ export default function MensajesPage() {
                           ? 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
                           : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
                       )}
-                      aria-label="Más opciones"
+                      aria-label={t('landlord.messages.moreOptions')}
                     >
                       <DotsThreeVertical className="w-5 h-5" />
                     </button>
@@ -573,21 +575,21 @@ export default function MensajesPage() {
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
                           >
                             <Archive className="w-4 h-4 text-neutral-400" />
-                            Archivar conversación
+                            {t('landlord.messages.archiveConversation')}
                           </button>
                           <button
                             onClick={handleMute}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
                           >
                             <BellSlash className="w-4 h-4 text-neutral-400" />
-                            Silenciar notificaciones
+                            {t('landlord.messages.muteNotifications')}
                           </button>
                           <button
                             onClick={handleReport}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
                           >
                             <Flag className="w-4 h-4 text-neutral-400" />
-                            Reportar
+                            {t('landlord.messages.report')}
                           </button>
                           <div className="h-px bg-neutral-100 dark:bg-neutral-700 my-2" />
                           <button
@@ -595,7 +597,7 @@ export default function MensajesPage() {
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           >
                             <TrashSimple className="w-4 h-4" />
-                            Eliminar conversación
+                            {t('landlord.messages.deleteConversation')}
                           </button>
                         </motion.div>
                       )}
@@ -618,8 +620,8 @@ export default function MensajesPage() {
                       <div className="h-full flex items-center justify-center">
                         <EmptyState
                           icon={ChatCircle}
-                          title="Sin mensajes"
-                          description="Esta conversación aún no tiene mensajes. Envía el primer mensaje para iniciar la comunicación."
+                          title={t('landlord.messages.noMessages')}
+                          description={t('landlord.messages.noMessagesDescription')}
                         />
                       </div>
                     ) : (
@@ -627,7 +629,7 @@ export default function MensajesPage() {
                         {/* Date Separator */}
                         <div className="flex items-center justify-center mb-6">
                           <span className="px-4 py-1.5 bg-white dark:bg-[#2a2a2c] text-xs text-neutral-500 dark:text-neutral-400 rounded-full shadow-sm border border-neutral-100 dark:border-neutral-700">
-                            Hoy
+                            {t('landlord.messages.today')}
                           </span>
                         </div>
 
@@ -692,13 +694,13 @@ export default function MensajesPage() {
                       <div className="flex items-center gap-1">
                         <button
                           className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
-                          aria-label="Adjuntar archivo"
+                          aria-label={t('landlord.messages.attachFile')}
                         >
                           <Paperclip className="w-5 h-5" />
                         </button>
                         <button
                           className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
-                          aria-label="Enviar imagen"
+                          aria-label={t('landlord.messages.sendImage')}
                         >
                           <Image className="w-5 h-5" />
                         </button>
@@ -712,13 +714,13 @@ export default function MensajesPage() {
                           onKeyDown={(e) =>
                             e.key === 'Enter' && handlePaperPlaneTiltMessage()
                           }
-                          placeholder="Escribe un mensaje..."
-                          aria-label="Escribe un mensaje"
+                          placeholder={t('landlord.messages.typeMessage')}
+                          aria-label={t('landlord.messages.typeMessageLabel')}
                           className="w-full h-12 pl-5 pr-12 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                         />
                         <button
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                          aria-label="Emoji"
+                          aria-label={t('landlord.messages.emoji')}
                         >
                           <Smiley className="w-5 h-5" />
                         </button>
@@ -726,7 +728,7 @@ export default function MensajesPage() {
                       <button
                         onClick={handlePaperPlaneTiltMessage}
                         disabled={!messageText.trim()}
-                        aria-label="Enviar mensaje"
+                        aria-label={t('landlord.messages.send')}
                         className={cn(
                           'p-3 rounded-full transition-all',
                           messageText.trim()
@@ -753,7 +755,7 @@ export default function MensajesPage() {
                       {/* Panel Header */}
                       <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-700">
                         <h3 className="font-semibold text-neutral-900 dark:text-white">
-                          Información
+                          {t('landlord.messages.info')}
                         </h3>
                         <button
                           onClick={() => setShowInfoPanel(false)}
@@ -779,7 +781,7 @@ export default function MensajesPage() {
                           {selectedConversation.online && (
                             <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
                               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                              En línea
+                              {t('landlord.messages.online')}
                             </span>
                           )}
                         </div>
@@ -793,7 +795,7 @@ export default function MensajesPage() {
                               </div>
                               <div>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  Propiedad
+                                  {t('landlord.messages.property')}
                                 </p>
                                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
                                   {selectedConversation.property}
@@ -809,7 +811,7 @@ export default function MensajesPage() {
                               </div>
                               <div>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  Correo
+                                  {t('landlord.messages.email')}
                                 </p>
                                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
                                   {selectedConversation.email}
@@ -825,7 +827,7 @@ export default function MensajesPage() {
                               </div>
                               <div>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  Miembro desde
+                                  {t('landlord.messages.memberSince')}
                                 </p>
                                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
                                   {selectedConversation.memberSince}
@@ -838,7 +840,7 @@ export default function MensajesPage() {
                         {/* Quick Actions */}
                         <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-700">
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
-                            Acciones rápidas
+                            {t('landlord.messages.quickActions')}
                           </p>
                           <div className="space-y-2">
                             <button
@@ -846,14 +848,14 @@ export default function MensajesPage() {
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
                             >
                               <BellSlash className="w-4 h-4 text-neutral-400" />
-                              Silenciar notificaciones
+                              {t('landlord.messages.muteNotifications')}
                             </button>
                             <button
                               onClick={handleArchive}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
                             >
                               <Archive className="w-4 h-4 text-neutral-400" />
-                              Archivar conversación
+                              {t('landlord.messages.archiveConversation')}
                             </button>
                           </div>
                         </div>

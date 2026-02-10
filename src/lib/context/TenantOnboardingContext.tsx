@@ -265,7 +265,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     } finally {
       setIsSubmitting(false)
     }
-  }, [completedSteps, totalSteps, draft])
+  }, [totalSteps, draft])
 
   const resetDraft = useCallback(() => {
     setDraft(initialTenantOnboardingDraft)

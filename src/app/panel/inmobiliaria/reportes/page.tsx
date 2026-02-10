@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -102,6 +103,8 @@ function saveFavorites(favorites: Set<ReportId>): void {
  * Route: /panel/inmobiliaria/reportes
  */
 export default function ReportesPage() {
+  const { t, locale } = useTranslation();
+
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
     return MOCK_REPORTS.map((r) => ({ ...r }));
@@ -213,13 +216,13 @@ export default function ReportesPage() {
       totalReports: reports.length,
       favoritesCount: favorites.size,
       lastGeneratedTime: lastGenerated?.lastGenerated
-        ? new Date(lastGenerated.lastGenerated).toLocaleString('es-CO', {
+        ? new Date(lastGenerated.lastGenerated).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US', {
             day: 'numeric',
             month: 'short',
             hour: 'numeric',
             minute: '2-digit',
           })
-        : 'Nunca',
+        : t('inmobiliaria.reportes.stats.never'),
       lastGeneratedReport: lastGenerated?.title || 'N/A',
     };
   }, [reports, favorites]);
@@ -247,10 +250,10 @@ export default function ReportesPage() {
     const report = reports.find((r) => r.id === reportId);
     const wasFavorite = favorites.has(reportId);
 
-    toast.success(wasFavorite ? 'Removido de favoritos' : 'Agregado a favoritos', {
+    toast.success(wasFavorite ? t('inmobiliaria.reportes.toasts.removedFromFavorites') : t('inmobiliaria.reportes.toasts.addedToFavorites'), {
       description: report?.title,
     });
-  }, [reports, favorites]);
+  }, [reports, favorites, t]);
 
   // Handle generate report
   const handleGenerateReport = useCallback(async (report: ReportDefinition) => {
@@ -273,10 +276,10 @@ export default function ReportesPage() {
       return next;
     });
 
-    toast.success('Reporte generado', {
-      description: `${report.title} actualizado`,
+    toast.success(t('inmobiliaria.reportes.toasts.reportGenerated'), {
+      description: t('inmobiliaria.reportes.toasts.reportUpdated', { title: report.title }),
     });
-  }, []);
+  }, [t]);
 
   // Handle preview report
   const handlePreviewReport = useCallback((report: ReportDefinition) => {
@@ -321,37 +324,37 @@ export default function ReportesPage() {
               break;
             }
             default:
-              toast.error('Exportacion no disponible', {
-                description: 'Este reporte no soporta formato Excel',
+              toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
+                description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
               });
               return;
           }
         } else {
           // PDF export - only extractos for now
           if (report.id === 'extractos-propietarios') {
-            toast.info('Selecciona un propietario', {
-              description: 'Ve a Dispersiones para generar extractos PDF',
+            toast.info(t('inmobiliaria.reportes.toasts.selectOwner'), {
+              description: t('inmobiliaria.reportes.toasts.goToDispersions'),
             });
             return;
           }
 
           // For other reports, show coming soon
-          toast.info('PDF en desarrollo', {
-            description: 'Usa Excel por ahora para exportar',
+          toast.info(t('inmobiliaria.reportes.toasts.pdfInDevelopment'), {
+            description: t('inmobiliaria.reportes.toasts.useExcel'),
           });
           return;
         }
 
-        toast.success('Archivo descargado', {
-          description: `${report.title} exportado correctamente`,
+        toast.success(t('inmobiliaria.reportes.toasts.fileDownloaded'), {
+          description: t('inmobiliaria.reportes.toasts.exportedSuccessfully', { title: report.title }),
         });
       } catch (error) {
-        toast.error('Error al exportar', {
-          description: 'Intenta de nuevo mas tarde',
+        toast.error(t('inmobiliaria.reportes.toasts.exportError'), {
+          description: t('inmobiliaria.reportes.toasts.tryAgainLater'),
         });
       }
     },
-    []
+    [t]
   );
 
   // Handle viewer export
@@ -383,7 +386,7 @@ export default function ReportesPage() {
 
     if (pendingReports.length === 0) return;
 
-    toast.loading(`Generando ${pendingReports.length} reportes...`, {
+    toast.loading(t('inmobiliaria.reportes.toasts.generatingReports', { count: pendingReports.length }), {
       id: 'generate-all',
     });
 
@@ -402,11 +405,11 @@ export default function ReportesPage() {
 
     setGeneratingReports(new Set());
 
-    toast.success('Reportes generados', {
+    toast.success(t('inmobiliaria.reportes.toasts.reportsGenerated'), {
       id: 'generate-all',
-      description: `${pendingReports.length} reportes actualizados`,
+      description: t('inmobiliaria.reportes.toasts.reportsUpdated', { count: pendingReports.length }),
     });
-  }, [filteredReports, generatingReports]);
+  }, [filteredReports, generatingReports, t]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -417,10 +420,10 @@ export default function ReportesPage() {
             <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
               <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
-            Centro de Reportes
+            {t('inmobiliaria.reportes.title')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Genera, visualiza y exporta reportes del portafolio
+            {t('inmobiliaria.reportes.subtitle')}
           </p>
         </div>
         {/* TODO Backend: Los reportes deben actualizarse en tiempo real via subscriptions/websockets */}
@@ -436,7 +439,7 @@ export default function ReportesPage() {
             )}
           >
             <Lightning className="w-5 h-5" weight="fill" />
-            Generar Todos
+            {t('inmobiliaria.reportes.generateAll')}
           </button>
         </div>
       </div>
@@ -456,7 +459,7 @@ export default function ReportesPage() {
               <p className="text-2xl font-bold text-foreground">
                 {stats.totalReports}
               </p>
-              <p className="text-xs text-muted-foreground">Reportes</p>
+              <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.reports')}</p>
             </div>
           </div>
         </div>
@@ -470,7 +473,7 @@ export default function ReportesPage() {
               <p className="text-2xl font-bold text-foreground">
                 {stats.favoritesCount}
               </p>
-              <p className="text-xs text-muted-foreground">Favoritos</p>
+              <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.favorites')}</p>
             </div>
           </div>
         </div>
@@ -485,7 +488,7 @@ export default function ReportesPage() {
                 {stats.lastGeneratedReport}
               </p>
               <p className="text-xs text-muted-foreground">
-                Ultimo: {stats.lastGeneratedTime}
+                {t('inmobiliaria.reportes.stats.lastGenerated')}: {stats.lastGeneratedTime}
               </p>
             </div>
           </div>
@@ -512,7 +515,7 @@ export default function ReportesPage() {
               )}
             >
               <SquaresFour className="w-4 h-4" />
-              Tarjetas
+              {t('inmobiliaria.reportes.viewCards')}
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -524,11 +527,11 @@ export default function ReportesPage() {
               )}
             >
               <Table className="w-4 h-4" />
-              Lista
+              {t('inmobiliaria.reportes.viewList')}
             </button>
           </div>
           <p className="text-sm text-muted-foreground">
-            {filteredReports.length} reporte{filteredReports.length !== 1 ? 's' : ''}
+            {filteredReports.length} {filteredReports.length !== 1 ? t('inmobiliaria.reportes.stats.reports').toLowerCase() : t('inmobiliaria.reportes.stats.report')}
           </p>
         </div>
 
@@ -550,7 +553,7 @@ export default function ReportesPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-500" weight="fill" />
-              <h2 className="font-semibold text-foreground">Favoritos</h2>
+              <h2 className="font-semibold text-foreground">{t('inmobiliaria.reportes.stats.favorites')}</h2>
               <span className="text-xs text-muted-foreground">
                 ({favoriteReports.length})
               </span>
@@ -596,7 +599,7 @@ export default function ReportesPage() {
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-neutral-400" />
                 <h2 className="font-semibold text-foreground">
-                  Otros Reportes
+                  {t('inmobiliaria.reportes.otherReports')}
                 </h2>
                 <span className="text-xs text-muted-foreground">
                   ({otherReports.length})
@@ -642,10 +645,10 @@ export default function ReportesPage() {
           <div className="p-12 text-center rounded-xl border border-dashed border-border">
             <MagnifyingGlass className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Sin reportes
+              {t('inmobiliaria.reportes.noReports')}
             </h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              No hay reportes que coincidan con los filtros seleccionados.
+              {t('inmobiliaria.reportes.noReportsDesc')}
             </p>
             {filters.search && (
               <button
@@ -654,7 +657,7 @@ export default function ReportesPage() {
                 }
                 className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
               >
-                Limpiar busqueda
+                {t('inmobiliaria.reportes.clearSearch')}
               </button>
             )}
           </div>

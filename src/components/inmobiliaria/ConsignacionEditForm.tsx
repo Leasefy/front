@@ -18,6 +18,7 @@ import {
   FloppyDisk,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import type { Consignacion, ConsignacionFormData } from '@/lib/types/inmobiliaria';
 import { MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
 
@@ -27,14 +28,14 @@ interface ConsignacionEditFormProps {
   onCancel: () => void;
 }
 
-// Property types with icons
-const PROPERTY_TYPES: { value: Consignacion['propertyType']; label: string; icon: React.ElementType }[] = [
-  { value: 'apartment', label: 'Apartamento', icon: Buildings },
-  { value: 'house', label: 'Casa', icon: House },
-  { value: 'studio', label: 'Estudio', icon: Buildings },
-  { value: 'commercial', label: 'Local Comercial', icon: Storefront },
-  { value: 'office', label: 'Oficina', icon: Briefcase },
-  { value: 'warehouse', label: 'Bodega', icon: Warehouse },
+// Property types with icons (labels resolved via i18n)
+const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; icon: React.ElementType }[] = [
+  { value: 'apartment', labelKey: 'inmobiliaria.consignaciones.propertyType.apartment', icon: Buildings },
+  { value: 'house', labelKey: 'inmobiliaria.consignaciones.propertyType.house', icon: House },
+  { value: 'studio', labelKey: 'inmobiliaria.consignaciones.propertyType.studio', icon: Buildings },
+  { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: Storefront },
+  { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: Briefcase },
+  { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: Warehouse },
 ];
 
 // Zones in Bogotá
@@ -95,6 +96,7 @@ export function ConsignacionEditForm({
 }: ConsignacionEditFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { t, formatCurrency: fmtCurrency } = useTranslation();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -133,28 +135,28 @@ export function ConsignacionEditForm({
     const newErrors: Record<string, string> = {};
 
     if (!formData.propertyTitle.trim()) {
-      newErrors.propertyTitle = 'El título es requerido';
+      newErrors.propertyTitle = t('inmobiliaria.consignaciones.editForm.validation.titleRequired');
     }
     if (!formData.propertyAddress.trim()) {
-      newErrors.propertyAddress = 'La dirección es requerida';
+      newErrors.propertyAddress = t('inmobiliaria.consignaciones.editForm.validation.addressRequired');
     }
     if (!formData.propertyCity.trim()) {
-      newErrors.propertyCity = 'La ciudad es requerida';
+      newErrors.propertyCity = t('inmobiliaria.consignaciones.editForm.validation.cityRequired');
     }
     if (!formData.propertyZone) {
-      newErrors.propertyZone = 'La zona es requerida';
+      newErrors.propertyZone = t('inmobiliaria.consignaciones.editForm.validation.zoneRequired');
     }
     if (!formData.monthlyRent || formData.monthlyRent <= 0) {
-      newErrors.monthlyRent = 'El canon mensual debe ser mayor a 0';
+      newErrors.monthlyRent = t('inmobiliaria.consignaciones.editForm.validation.rentPositive');
     }
     if (!formData.commissionPercent || formData.commissionPercent <= 0) {
-      newErrors.commissionPercent = 'La comisión debe ser mayor a 0';
+      newErrors.commissionPercent = t('inmobiliaria.consignaciones.editForm.validation.commissionPositive');
     }
     if (!formData.agenteId) {
-      newErrors.agenteId = 'Debe seleccionar un agente';
+      newErrors.agenteId = t('inmobiliaria.consignaciones.editForm.validation.agentRequired');
     }
     if (!formData.contractDate) {
-      newErrors.contractDate = 'La fecha de inicio es requerida';
+      newErrors.contractDate = t('inmobiliaria.consignaciones.editForm.validation.startDateRequired');
     }
 
     setErrors(newErrors);
@@ -194,13 +196,7 @@ export function ConsignacionEditForm({
     return 0;
   }, [formData.monthlyRent, formData.commissionPercent]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Use i18n formatCurrency instead of local function
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -208,11 +204,11 @@ export function ConsignacionEditForm({
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
           <Buildings className="w-5 h-5 text-indigo-500" />
-          <h3 className="font-semibold">Información del inmueble</h3>
+          <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.propertyInfo')}</h3>
         </div>
 
         {/* Property Type */}
-        <InputWrapper label="Tipo de inmueble" required error={errors.propertyType}>
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.propertyTypeLabel')} required error={errors.propertyType}>
           <div className="grid grid-cols-3 gap-2">
             {PROPERTY_TYPES.map((type) => {
               const Icon = type.icon;
@@ -245,7 +241,7 @@ export function ConsignacionEditForm({
                         : 'text-neutral-600 dark:text-neutral-400'
                     )}
                   >
-                    {type.label}
+                    {t(type.labelKey)}
                   </span>
                 </button>
               );
@@ -254,13 +250,13 @@ export function ConsignacionEditForm({
         </InputWrapper>
 
         {/* Title */}
-        <InputWrapper label="Título del inmueble" required error={errors.propertyTitle}>
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.propertyTitle')} required error={errors.propertyTitle}>
           <input
             type="text"
             name="propertyTitle"
             value={formData.propertyTitle}
             onChange={handleChange}
-            placeholder="Ej: Apartamento Moderno Chicó"
+            placeholder={t('inmobiliaria.consignaciones.editForm.propertyTitlePlaceholder')}
             className={cn(
               'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
               errors.propertyTitle
@@ -271,7 +267,7 @@ export function ConsignacionEditForm({
         </InputWrapper>
 
         {/* Address */}
-        <InputWrapper label="Dirección" required error={errors.propertyAddress}>
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.address')} required error={errors.propertyAddress}>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
@@ -279,7 +275,7 @@ export function ConsignacionEditForm({
               name="propertyAddress"
               value={formData.propertyAddress}
               onChange={handleChange}
-              placeholder="Cra 11 #94-45, Apto 701"
+              placeholder={t('inmobiliaria.consignaciones.editForm.addressPlaceholder')}
               className={cn(
                 'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                 errors.propertyAddress
@@ -292,13 +288,13 @@ export function ConsignacionEditForm({
 
         {/* City & Zone */}
         <div className="grid grid-cols-2 gap-4">
-          <InputWrapper label="Ciudad" required error={errors.propertyCity}>
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.city')} required error={errors.propertyCity}>
             <input
               type="text"
               name="propertyCity"
               value={formData.propertyCity}
               onChange={handleChange}
-              placeholder="Bogotá"
+              placeholder={t('inmobiliaria.consignaciones.editForm.cityPlaceholder')}
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                 errors.propertyCity
@@ -308,7 +304,7 @@ export function ConsignacionEditForm({
             />
           </InputWrapper>
 
-          <InputWrapper label="Zona" required error={errors.propertyZone}>
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.zone')} required error={errors.propertyZone}>
             <select
               name="propertyZone"
               value={formData.propertyZone}
@@ -320,7 +316,7 @@ export function ConsignacionEditForm({
                   : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
               )}
             >
-              <option value="">Seleccionar zona</option>
+              <option value="">{t('inmobiliaria.consignaciones.editForm.selectZone')}</option>
               {ZONES.map((zone) => (
                 <option key={zone} value={zone}>
                   {zone}
@@ -335,12 +331,12 @@ export function ConsignacionEditForm({
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
           <CurrencyDollar className="w-5 h-5 text-emerald-500" />
-          <h3 className="font-semibold">Información financiera</h3>
+          <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.financialInfo')}</h3>
         </div>
 
         {/* Monthly Rent & Admin Fee */}
         <div className="grid grid-cols-2 gap-4">
-          <InputWrapper label="Canon mensual" required error={errors.monthlyRent}>
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.monthlyRent')} required error={errors.monthlyRent}>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
               <input
@@ -361,7 +357,7 @@ export function ConsignacionEditForm({
             </div>
           </InputWrapper>
 
-          <InputWrapper label="Administración" helper="Opcional">
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administration')} helper={t('common.optional')}>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
               <input
@@ -379,7 +375,7 @@ export function ConsignacionEditForm({
         </div>
 
         {/* Commission */}
-        <InputWrapper label="Comisión de administración" required error={errors.commissionPercent}>
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administrationCommission')} required error={errors.commissionPercent}>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <input
@@ -402,7 +398,7 @@ export function ConsignacionEditForm({
             </div>
             {estimatedCommission > 0 && (
               <div className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm">
-                ≈ {formatCurrency(estimatedCommission)}/mes
+                {t('inmobiliaria.consignaciones.editForm.estimatedPerMonth', { amount: fmtCurrency(estimatedCommission) })}
               </div>
             )}
           </div>
@@ -413,11 +409,11 @@ export function ConsignacionEditForm({
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
           <CalendarBlank className="w-5 h-5 text-blue-500" />
-          <h3 className="font-semibold">Términos del contrato</h3>
+          <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>
 
         {/* Agent Selection */}
-        <InputWrapper label="Agente asignado" required error={errors.agenteId}>
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.assignedAgent')} required error={errors.agenteId}>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <select
@@ -431,10 +427,10 @@ export function ConsignacionEditForm({
                   : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
               )}
             >
-              <option value="">Seleccionar agente</option>
+              <option value="">{t('inmobiliaria.consignaciones.editForm.selectAgent')}</option>
               {agentes.map((agente) => (
                 <option key={agente.id} value={agente.id}>
-                  {agente.name} - {agente.zone || 'Sin zona'}
+                  {agente.name} - {agente.zone || t('inmobiliaria.consignaciones.editForm.noZone')}
                 </option>
               ))}
             </select>
@@ -443,7 +439,7 @@ export function ConsignacionEditForm({
 
         {/* Contract Dates */}
         <div className="grid grid-cols-2 gap-4">
-          <InputWrapper label="Fecha inicio contrato" required error={errors.contractDate}>
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.contractStartDate')} required error={errors.contractDate}>
             <input
               type="date"
               name="contractDate"
@@ -458,7 +454,7 @@ export function ConsignacionEditForm({
             />
           </InputWrapper>
 
-          <InputWrapper label="Fecha fin contrato" helper="Opcional">
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.contractEndDate')} helper={t('common.optional')}>
             <input
               type="date"
               name="contractEndDate"
@@ -470,7 +466,7 @@ export function ConsignacionEditForm({
         </div>
 
         {/* Minimum Term */}
-        <InputWrapper label="Plazo mínimo arriendo" helper="En meses">
+        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.minimumLeaseTerm')} helper={t('inmobiliaria.consignaciones.editForm.inMonths')}>
           <div className="relative">
             <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
@@ -491,7 +487,7 @@ export function ConsignacionEditForm({
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
         <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
         <p className="text-sm text-blue-700 dark:text-blue-300">
-          Los cambios se aplicarán inmediatamente. El propietario será notificado de cualquier modificación en los términos financieros.
+          {t('inmobiliaria.consignaciones.editForm.changesNotice')}
         </p>
       </div>
 
@@ -503,7 +499,7 @@ export function ConsignacionEditForm({
           disabled={isSubmitting}
           className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
         >
-          Cancelar
+          {t('inmobiliaria.consignaciones.editForm.cancel')}
         </button>
         <button
           type="submit"
@@ -513,12 +509,12 @@ export function ConsignacionEditForm({
           {isSubmitting ? (
             <>
               <SpinnerGap className="w-4 h-4 animate-spin" />
-              Guardando...
+              {t('inmobiliaria.consignaciones.editForm.saving')}
             </>
           ) : (
             <>
               <FloppyDisk className="w-4 h-4" />
-              Guardar cambios
+              {t('inmobiliaria.consignaciones.editForm.saveChanges')}
             </>
           )}
         </button>

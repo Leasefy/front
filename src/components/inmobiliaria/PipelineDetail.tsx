@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import {
   type PipelineItem,
   type PipelineStage,
@@ -122,7 +123,7 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
 
   return (
     <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium', colors[level || 'E'])}>
-      {level && <span className="font-bold">Nivel {level}</span>}
+      {level && <span className="font-bold">{level}</span>}
       {score && <span className="opacity-75">({score} pts)</span>}
     </div>
   );
@@ -133,6 +134,7 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
  * Clean, minimal design following project conventions
  */
 export function PipelineDetail({ isOpen, onClose, item, onStageChange }: PipelineDetailProps) {
+  const { t, formatDate: formatDateI18n } = useTranslation();
   const [notes, setNotes] = useState('');
   const [isMoving, setIsMoving] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
@@ -169,8 +171,8 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
 
   const copyToClipboard = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copiado', { description: `${label} copiado al portapapeles` });
-  }, []);
+    toast.success(t('inmobiliaria.pipeline.copied'), { description: t('inmobiliaria.pipeline.copiedToClipboard', { label }) });
+  }, [t]);
 
   const openWhatsApp = useCallback((phone: string) => {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -187,8 +189,8 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
       onStageChange(item.id, nextStage);
     }
 
-    toast.success('Etapa actualizada', {
-      description: `${item.candidateName} movido a ${nextStageInfo?.labelEs}`,
+    toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
+      description: t('inmobiliaria.pipeline.movedTo', { name: item.candidateName, stage: nextStageInfo?.labelEs || '' }),
     });
 
     setIsMoving(false);
@@ -204,8 +206,8 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
       onStageChange(item.id, 'lost');
     }
 
-    toast.info('Marcado como perdido', {
-      description: `${item.candidateName} ha sido marcado como perdido`,
+    toast.info(t('inmobiliaria.pipeline.markedAsLost'), {
+      description: t('inmobiliaria.pipeline.markedAsLostDesc', { name: item.candidateName }),
     });
 
     setIsMarking(false);
@@ -268,7 +270,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 <h3 className="font-medium text-foreground truncate">{item.propertyTitle}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.propertyAddress}</p>
                 <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mt-2 tabular-nums">
-                  {formatCurrency(item.monthlyRent)}<span className="text-sm font-normal text-muted-foreground">/mes</span>
+                  {formatCurrency(item.monthlyRent)}<span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
                 </p>
               </div>
             </div>
@@ -276,7 +278,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               href={`/panel/inmobiliaria/portafolio/${item.consignacionId}`}
               className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-muted/50 transition-colors"
             >
-              <span>Ver consignación</span>
+              <span>{t('inmobiliaria.pipeline.viewConsignment')}</span>
               <CaretRight className="w-4 h-4" />
             </Link>
           </div>
@@ -285,7 +287,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <User className="w-3.5 h-3.5" />
-              Candidato
+              {t('inmobiliaria.pipeline.candidate')}
             </h4>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-3 mb-4">
@@ -329,13 +331,13 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition-colors"
               >
                 <WhatsappLogo className="w-4 h-4" weight="fill" />
-                Enviar WhatsApp
+                {t('inmobiliaria.pipeline.sendWhatsApp')}
               </button>
 
               {/* Risk Score */}
               {(item.riskScore || item.riskLevel) && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                  <span className="text-sm text-muted-foreground">Perfil de riesgo</span>
+                  <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.riskProfile')}</span>
                   <RiskBadge score={item.riskScore} level={item.riskLevel} />
                 </div>
               )}
@@ -346,43 +348,40 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <TrendUp className="w-3.5 h-3.5" />
-              Progreso
+              {t('inmobiliaria.pipeline.progress')}
             </h4>
             <div className="rounded-xl border border-border bg-card divide-y divide-border">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-muted-foreground">Etapa actual</span>
+                <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.currentStage')}</span>
                 <span className={cn('px-2.5 py-1 rounded-md text-xs font-medium', stageInfo?.color)}>
                   {stageInfo?.labelEs}
                 </span>
               </div>
 
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-muted-foreground">Días en etapa</span>
+                <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.daysInStage')}</span>
                 <span className={cn(
                   'flex items-center gap-1.5 text-sm font-semibold tabular-nums',
                   isOverdue ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
                 )}>
-                  {item.daysInStage} días
+                  {item.daysInStage} {t('inmobiliaria.pipeline.days')}
                   {isOverdue && <Warning className="w-4 h-4" weight="fill" />}
                 </span>
               </div>
 
               {item.nextAction && (
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Siguiente acción</span>
+                  <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.nextAction')}</span>
                   <span className="text-sm font-medium text-foreground">{item.nextAction}</span>
                 </div>
               )}
 
               {item.nextActionDate && (
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Fecha objetivo</span>
+                  <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.targetDate')}</span>
                   <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                     <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-                    {new Date(item.nextActionDate).toLocaleDateString('es-CO', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+                    {formatDateI18n(new Date(item.nextActionDate), { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
               )}
@@ -393,7 +392,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Timer className="w-3.5 h-3.5" />
-              Historial
+              {t('inmobiliaria.pipeline.history')}
             </h4>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="relative pl-5">
@@ -424,14 +423,11 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                               {entryStageInfo?.labelEs}
                             </span>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {entry.daysSpent} {entry.daysSpent === 1 ? 'día' : 'días'} en esta etapa
+                              {entry.daysSpent} {entry.daysSpent === 1 ? t('inmobiliaria.pipeline.daySingular') : t('inmobiliaria.pipeline.days')} {t('inmobiliaria.pipeline.inThisStage')}
                             </p>
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                            {new Date(entry.enteredAt).toLocaleDateString('es-CO', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                            {formatDateI18n(new Date(entry.enteredAt), { day: 'numeric', month: 'short' })}
                           </span>
                         </div>
                       </div>
@@ -446,7 +442,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Note className="w-3.5 h-3.5" />
-              Notas
+              {t('inmobiliaria.pipeline.notes')}
             </h4>
             {item.notes && (
               <div className="p-3 rounded-lg bg-muted text-sm text-foreground">
@@ -456,7 +452,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Agregar una nota..."
+              placeholder={t('inmobiliaria.pipeline.addNotePlaceholder')}
               rows={3}
               className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
             />
@@ -467,7 +463,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
               <h4 className="font-medium text-red-700 dark:text-red-400 text-sm mb-2 flex items-center gap-2">
                 <XCircle className="w-4 h-4" weight="fill" />
-                Razón de pérdida
+                {t('inmobiliaria.pipeline.lostReason')}
               </h4>
               <p className="text-sm text-red-600 dark:text-red-400">{item.lostReason}</p>
             </div>
@@ -488,12 +484,12 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Marcando...
+                  {t('inmobiliaria.pipeline.marking')}
                 </span>
               ) : (
                 <>
                   <XCircle className="w-4 h-4" />
-                  Marcar como perdido
+                  {t('inmobiliaria.pipeline.markAsLost')}
                 </>
               )}
             </button>
@@ -510,11 +506,11 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Moviendo...
+                    {t('inmobiliaria.pipeline.moving')}
                   </span>
                 ) : (
                   <>
-                    Mover a {nextStageInfo?.labelEs}
+                    {t('inmobiliaria.pipeline.moveTo')} {nextStageInfo?.labelEs}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

@@ -15,6 +15,7 @@ import {
   CalendarBlank,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -43,6 +44,7 @@ function getMockTrend(agente: Agente): 'up' | 'down' | 'stable' {
  * Shows top performers with medals and trend indicators
  */
 export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
 
@@ -109,10 +111,10 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Ranking de Agentes
+              {t('inmobiliaria.agente.agentRanking')}
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Top performers por cierres y comisiones
+              {t('inmobiliaria.agente.topPerformers')}
             </p>
           </div>
         </div>
@@ -129,7 +131,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             )}
           >
             <CalendarBlank className="w-4 h-4" />
-            Este Mes
+            {t('inmobiliaria.agente.thisMonth')}
           </button>
           <button
             onClick={() => setTimeRange('year')}
@@ -141,7 +143,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             )}
           >
             <Calendar className="w-4 h-4" />
-            Este Ano
+            {t('inmobiliaria.agente.thisYear')}
           </button>
         </div>
       </div>
@@ -151,12 +153,12 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
-          <div className="col-span-4">Agente</div>
+          <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
           <div className="col-span-2 text-center">
-            <span className="hidden sm:inline">Cierres</span>
+            <span className="hidden sm:inline">{t('inmobiliaria.agente.closings')}</span>
             <ChartLineUp className="sm:hidden w-4 h-4 mx-auto" />
           </div>
-          <div className="col-span-3 text-right">Comisiones</div>
+          <div className="col-span-3 text-right">{t('inmobiliaria.agente.commissions')}</div>
           <div className="col-span-1 text-center">
             <span className="hidden sm:inline">Conv.</span>
             <span className="sm:hidden">%</span>
@@ -237,7 +239,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         {agente.name}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                        {agente.zone || 'Sin zona'}
+                        {agente.zone || t('inmobiliaria.agente.noZone')}
                       </p>
                     </div>
                   </div>
@@ -303,7 +305,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             <div className="px-4 py-12 text-center">
               <Trophy className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
               <p className="text-neutral-500 dark:text-neutral-400">
-                No hay agentes activos para mostrar
+                {t('inmobiliaria.agente.noActiveAgents')}
               </p>
             </div>
           )}
@@ -315,7 +317,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
         <div className="grid grid-cols-3 gap-4">
           <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-              Total Cierres {timeRange === 'month' ? 'Mes' : 'Ano'}
+              {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">
               {rankedAgentes.reduce(
@@ -327,7 +329,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
           </div>
           <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-              Total Comisiones
+              {t('inmobiliaria.agente.totalCommissions')}
             </p>
             <p className="text-lg font-bold text-neutral-900 dark:text-white truncate">
               {formatCurrency(
@@ -341,7 +343,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
           </div>
           <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-              Promedio Conversion
+              {t('inmobiliaria.agente.avgConversion')}
             </p>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">
               {Math.round(

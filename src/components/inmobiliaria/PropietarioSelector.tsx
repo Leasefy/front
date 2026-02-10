@@ -10,6 +10,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioCard } from './PropietarioCard';
 import { PropietarioForm } from './PropietarioForm';
@@ -33,6 +34,7 @@ export function PropietarioSelector({
   newPropietarioData,
   className,
 }: PropietarioSelectorProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [showNewForm, setShowNewForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -94,7 +96,7 @@ export function PropietarioSelector({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar propietario por nombre, email o documento..."
+            placeholder={t('inmobiliaria.propietario.selector.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           />
           {search && (
@@ -113,7 +115,7 @@ export function PropietarioSelector({
             className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 font-medium hover:border-indigo-400 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Agregar nuevo</span>
+            <span className="hidden sm:inline">{t('inmobiliaria.propietario.selector.addNew')}</span>
           </button>
         )}
       </div>
@@ -143,7 +145,7 @@ export function PropietarioSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
-                    Nuevo propietario
+                    {t('inmobiliaria.propietario.selector.newOwner')}
                   </span>
                 </div>
                 <h3 className="font-semibold text-neutral-900 dark:text-white truncate">
@@ -164,7 +166,7 @@ export function PropietarioSelector({
                 }}
                 className="shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
               >
-                Editar
+                {t('inmobiliaria.propietario.selector.edit')}
               </button>
             </div>
           </motion.div>
@@ -183,7 +185,7 @@ export function PropietarioSelector({
             <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">
-                  Nuevo propietario
+                  {t('inmobiliaria.propietario.selector.newOwner')}
                 </h3>
                 <button
                   onClick={handleCancelNewPropietario}
@@ -221,14 +223,14 @@ export function PropietarioSelector({
             <div className="p-8 text-center rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416]">
               <User className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
               <p className="text-neutral-500 dark:text-neutral-400 mb-2">
-                {search ? 'No se encontraron propietarios' : 'No hay propietarios registrados'}
+                {search ? t('inmobiliaria.propietario.selector.noResults') : t('inmobiliaria.propietario.selector.noRegistered')}
               </p>
               <button
                 onClick={handleStartNewPropietario}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Agregar nuevo propietario
+                {t('inmobiliaria.propietario.selector.addNewOwner')}
               </button>
             </div>
           )}
@@ -250,7 +252,7 @@ export function PropietarioSelector({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </motion.svg>
           </span>
-          Propietario seleccionado
+          {t('inmobiliaria.propietario.selector.ownerSelected')}
         </p>
       )}
     </div>

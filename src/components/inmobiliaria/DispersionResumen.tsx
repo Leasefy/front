@@ -12,9 +12,9 @@ import {
   PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 interface DispersionResumenProps {
   summary: DispersionSummary;
@@ -40,10 +40,12 @@ function AnimatedCurrency({
   value,
   duration = 0.8,
   className,
+  formatter,
 }: {
   value: number;
   duration?: number;
   className?: string;
+  formatter: (amount: number) => string;
 }) {
   const [displayValue, setDisplayValue] = React.useState(0);
 
@@ -65,7 +67,7 @@ function AnimatedCurrency({
     requestAnimationFrame(updateValue);
   }, [value, duration]);
 
-  return <span className={className}>{formatCurrency(displayValue)}</span>;
+  return <span className={className}>{formatter(displayValue)}</span>;
 }
 
 /**
@@ -78,13 +80,14 @@ export function DispersionResumen({
   onProcessAll,
   className,
 }: DispersionResumenProps) {
+  const { t, formatDate, formatCurrency } = useTranslation();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
   const completionRate = totalDispersions > 0
     ? (summary.dispersionsCompleted / totalDispersions) * 100
     : 0;
 
   // Format month for display
-  const monthDisplay = new Date(summary.month + '-01').toLocaleDateString('es-CO', {
+  const monthDisplay = formatDate(summary.month + '-01', {
     month: 'long',
     year: 'numeric',
   });
@@ -104,10 +107,10 @@ export function DispersionResumen({
       {/* Header */}
       <div className="px-6 pt-6 pb-4">
         <h3 className="text-lg font-semibold text-foreground capitalize">
-          Resumen {monthDisplay}
+          {t('inmobiliaria.dispersiones.resumen.summaryMonth', { month: monthDisplay })}
         </h3>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Dispersiones a propietarios
+          {t('inmobiliaria.dispersiones.resumen.ownerDisbursements')}
         </p>
       </div>
 
@@ -119,12 +122,13 @@ export function DispersionResumen({
             <div className="flex items-center gap-2 mb-2">
               <CurrencyCircleDollar className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                A dispersar
+                {t('inmobiliaria.dispersiones.resumen.toDisburse')}
               </span>
             </div>
             <AnimatedCurrency
               value={summary.totalToDisburse}
               className="text-2xl font-semibold text-foreground tabular-nums"
+              formatter={formatCurrency}
             />
           </div>
 
@@ -133,12 +137,13 @@ export function DispersionResumen({
             <div className="flex items-center gap-2 mb-2">
               <Coin className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                Comisiones
+                {t('inmobiliaria.dispersiones.resumen.commissions')}
               </span>
             </div>
             <AnimatedCurrency
               value={summary.totalCommissions}
               className="text-2xl font-semibold text-foreground tabular-nums"
+              formatter={formatCurrency}
             />
           </div>
 
@@ -147,7 +152,7 @@ export function DispersionResumen({
             <div className="flex items-center gap-2 mb-2">
               <TrendUp className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                Progreso
+                {t('inmobiliaria.dispersiones.resumen.progress')}
               </span>
             </div>
             <div className="flex items-baseline gap-1">
@@ -181,7 +186,7 @@ export function DispersionResumen({
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
           <div className="flex items-center gap-1.5 text-sm">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Pendientes:</span>
+            <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.pendingLabel')}</span>
             <span className={cn(
               'font-medium tabular-nums',
               hasPending ? 'text-foreground' : 'text-muted-foreground'
@@ -191,7 +196,7 @@ export function DispersionResumen({
           </div>
           <div className="flex items-center gap-1.5 text-sm">
             <CheckCircle className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Completadas:</span>
+            <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.completedLabel')}</span>
             <span className="font-medium text-foreground tabular-nums">
               {summary.dispersionsCompleted}
             </span>
@@ -199,7 +204,7 @@ export function DispersionResumen({
           {hasFailed && (
             <div className="flex items-center gap-1.5 text-sm">
               <Warning className="w-3.5 h-3.5 text-destructive" />
-              <span className="text-muted-foreground">Fallidas:</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.dispersiones.resumen.failedLabel')}</span>
               <span className="font-medium text-destructive tabular-nums">
                 {summary.dispersionsFailed}
               </span>
@@ -212,7 +217,9 @@ export function DispersionResumen({
       {hasPending && (onProcessAll || onViewPending) && (
         <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {summary.dispersionsPending} dispersion{summary.dispersionsPending !== 1 ? 'es' : ''} pendiente{summary.dispersionsPending !== 1 ? 's' : ''} de procesar
+            {summary.dispersionsPending !== 1
+              ? t('inmobiliaria.dispersiones.resumen.pendingToProcessPlural', { count: summary.dispersionsPending })
+              : t('inmobiliaria.dispersiones.resumen.pendingToProcess', { count: summary.dispersionsPending })}
           </p>
           <div className="flex items-center gap-2">
             {onViewPending && (
@@ -222,7 +229,7 @@ export function DispersionResumen({
                 onClick={onViewPending}
                 hideArrow
               >
-                Ver pendientes
+                {t('inmobiliaria.dispersiones.resumen.viewPending')}
               </Button>
             )}
             {onProcessAll && (
@@ -232,7 +239,7 @@ export function DispersionResumen({
                 className="gap-2"
               >
                 <PaperPlaneTilt className="w-4 h-4" weight="fill" />
-                Procesar todas
+                {t('inmobiliaria.dispersiones.resumen.processAll')}
               </Button>
             )}
           </div>
@@ -252,6 +259,7 @@ export function DispersionResumenCompact({
   summary: DispersionSummary;
   className?: string;
 }) {
+  const { t, formatCurrency } = useTranslation();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
   const completionRate = totalDispersions > 0
     ? (summary.dispersionsCompleted / totalDispersions) * 100
@@ -260,7 +268,7 @@ export function DispersionResumenCompact({
   return (
     <div className={cn('p-4 rounded-xl border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-foreground">Dispersiones</span>
+        <span className="text-sm font-medium text-foreground">{t('inmobiliaria.dispersiones.resumen.dispersionsLabel')}</span>
         <span className="text-lg font-semibold text-foreground tabular-nums">
           {completionRate.toFixed(0)}%
         </span>

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretLeft,
@@ -139,6 +140,8 @@ function Modal({
  * Property Card Component
  */
 function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
+  const { t } = useTranslation();
+
   const statusColors = {
     available: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     rented: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -147,10 +150,10 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   };
 
   const statusLabels = {
-    available: 'Disponible',
-    rented: 'Arrendada',
-    in_process: 'En proceso',
-    maintenance: 'Mantenimiento',
+    available: t('inmobiliaria.portafolio.status.available'),
+    rented: t('inmobiliaria.portafolio.status.rented'),
+    in_process: t('inmobiliaria.propietarios.detail.statusInProcess'),
+    maintenance: t('inmobiliaria.portafolio.status.maintenance'),
   };
 
   return (
@@ -193,14 +196,14 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
               <p className="text-lg font-bold text-neutral-900 dark:text-white">
                 {formatCurrency(consignacion.monthlyRent)}
               </p>
-              <p className="text-xs text-neutral-500">/mes</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.common.perMonth')}</p>
             </div>
             <div className="h-8 w-px bg-neutral-200 dark:bg-neutral-700" />
             <div>
               <p className="text-sm font-medium text-neutral-900 dark:text-white">
                 {consignacion.commissionPercent}%
               </p>
-              <p className="text-xs text-neutral-500">Comisión</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.agentes.commission')}</p>
             </div>
             {consignacion.currentTenantName && (
               <>
@@ -209,7 +212,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
                   <p className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-1">
                     {consignacion.currentTenantName}
                   </p>
-                  <p className="text-xs text-neutral-500">Inquilino</p>
+                  <p className="text-xs text-neutral-500">{t('inmobiliaria.propietarios.detail.tenant')}</p>
                 </div>
               </>
             )}
@@ -224,6 +227,8 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
  * Payment History Item Component
  */
 function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
+  const { t, locale } = useTranslation();
+
   const statusColors = {
     pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -232,13 +237,13 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
   };
 
   const statusLabels = {
-    pending: 'Pendiente',
-    processing: 'Procesando',
-    completed: 'Completado',
-    failed: 'Fallido',
+    pending: t('inmobiliaria.dispersiones.status.pending'),
+    processing: t('inmobiliaria.dispersiones.status.processed'),
+    completed: t('inmobiliaria.common.completed'),
+    failed: t('inmobiliaria.dispersiones.status.failed'),
   };
 
-  const monthLabel = new Date(dispersion.month + '-01').toLocaleDateString('es-CO', {
+  const monthLabel = new Date(dispersion.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -263,7 +268,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
             {monthLabel}
           </p>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {dispersion.items.length} propiedad(es)
+            {dispersion.items.length} {t('inmobiliaria.propietarios.detail.propertiesCount')}
           </p>
         </div>
       </div>
@@ -285,6 +290,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
  * Full profile view with properties, payments, and history
  */
 export default function PropietarioDetailPage() {
+  const { t, locale } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -325,17 +331,17 @@ export default function PropietarioDetailPage() {
             <User className="w-8 h-8 text-neutral-400" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
-            Propietario no encontrado
+            {t('inmobiliaria.propietarios.notFound')}
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-            El propietario que buscas no existe o fue eliminado.
+            {t('inmobiliaria.propietarios.notFoundDesc')}
           </p>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propietarios')}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
-            Volver a propietarios
+            {t('inmobiliaria.propietarios.backToList')}
           </button>
         </div>
       </div>
@@ -354,20 +360,20 @@ export default function PropietarioDetailPage() {
         setCopiedPhone(true);
         setTimeout(() => setCopiedPhone(false), 2000);
       }
-      toast.success('Copiado al portapapeles');
+      toast.success(t('inmobiliaria.propietarios.detail.copied'));
     } catch (err) {
-      toast.error('Error al copiar');
+      toast.error(t('inmobiliaria.propietarios.detail.copyError'));
     }
   };
 
   const handleEditSubmit = async (data: PropietarioFormData) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success('Propietario actualizado');
+    toast.success(t('inmobiliaria.propietarios.toasts.updated'));
     setShowEditModal(false);
   };
 
   const handleDelete = () => {
-    toast.success('Propietario eliminado');
+    toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: propietario.name }));
     router.push('/panel/inmobiliaria/propietarios');
   };
 
@@ -384,7 +390,7 @@ export default function PropietarioDetailPage() {
           updatedAt: new Date().toISOString(),
         });
       }
-      toast.success('Notas guardadas');
+      toast.success(t('inmobiliaria.propietarios.detail.notesSaved'));
       setShowNotesModal(false);
     } finally {
       setIsSavingNotes(false);
@@ -399,7 +405,7 @@ export default function PropietarioDetailPage() {
           onClick={() => router.push('/panel/inmobiliaria/propietarios')}
           className="hover:text-neutral-900 dark:hover:text-white transition-colors"
         >
-          Propietarios
+          {t('inmobiliaria.propietarios.title')}
         </button>
         <CaretRight className="w-3 h-3" />
         <span className="text-neutral-900 dark:text-white">{propietario.name}</span>
@@ -451,7 +457,7 @@ export default function PropietarioDetailPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <PencilSimple className="w-4 h-4" />
-            Editar
+            {t('inmobiliaria.propietarios.edit')}
           </button>
 
           <div className="relative">
@@ -472,11 +478,11 @@ export default function PropietarioDetailPage() {
                 >
                   <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <FileText className="w-4 h-4" />
-                    <span className="text-sm">Generar extracto</span>
+                    <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
                   </button>
                   <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <Download className="w-4 h-4" />
-                    <span className="text-sm">Exportar datos</span>
+                    <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
                   </button>
                   <div className="h-px bg-neutral-100 dark:bg-neutral-700 my-1" />
                   <button
@@ -487,7 +493,7 @@ export default function PropietarioDetailPage() {
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <TrashSimple className="w-4 h-4" />
-                    <span className="text-sm">Eliminar</span>
+                    <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
                   </button>
                 </motion.div>
               )}
@@ -506,7 +512,7 @@ export default function PropietarioDetailPage() {
           {/* Contact Info */}
           <div className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
             <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
-              Información de contacto
+              {t('inmobiliaria.propietarios.detail.contactInfo')}
             </h3>
 
             <div className="space-y-4">
@@ -517,7 +523,7 @@ export default function PropietarioDetailPage() {
                     <Envelope className="w-5 h-5 text-neutral-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Email</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.email')}</p>
                     <a
                       href={`mailto:${propietario.email}`}
                       className="text-neutral-900 dark:text-white hover:text-indigo-500 transition-colors"
@@ -541,7 +547,7 @@ export default function PropietarioDetailPage() {
                     <Phone className="w-5 h-5 text-neutral-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Teléfono</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.phone')}</p>
                     <a
                       href={`tel:${propietario.phone}`}
                       className="text-neutral-900 dark:text-white hover:text-indigo-500 transition-colors"
@@ -565,7 +571,7 @@ export default function PropietarioDetailPage() {
                     <MapPin className="w-5 h-5 text-neutral-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Dirección</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.detail.address')}</p>
                     <p className="text-neutral-900 dark:text-white">
                       {propietario.address}
                       {propietario.city && `, ${propietario.city}`}
@@ -584,8 +590,8 @@ export default function PropietarioDetailPage() {
 
           {/* Timestamps */}
           <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] text-sm text-neutral-500 dark:text-neutral-400">
-            <p>Creado: {new Date(propietario.createdAt).toLocaleDateString('es-CO', { dateStyle: 'long' })}</p>
-            <p>Actualizado: {new Date(propietario.updatedAt).toLocaleDateString('es-CO', { dateStyle: 'long' })}</p>
+            <p>{t('inmobiliaria.propietarios.detail.createdAt')}: {new Date(propietario.createdAt).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { dateStyle: 'long' })}</p>
+            <p>{t('inmobiliaria.propietarios.detail.updatedAt')}: {new Date(propietario.updatedAt).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { dateStyle: 'long' })}</p>
           </div>
         </div>
 
@@ -594,9 +600,9 @@ export default function PropietarioDetailPage() {
           {/* Tabs */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 w-fit">
             {[
-              { key: 'properties', label: 'Propiedades', count: consignaciones.length },
-              { key: 'payments', label: 'Pagos', count: dispersiones.length },
-              { key: 'notes', label: 'Notas' },
+              { key: 'properties', label: t('inmobiliaria.propietarios.detail.properties'), count: consignaciones.length },
+              { key: 'payments', label: t('inmobiliaria.propietarios.detail.payments'), count: dispersiones.length },
+              { key: 'notes', label: t('inmobiliaria.propietarios.detail.notes') },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -643,11 +649,11 @@ export default function PropietarioDetailPage() {
                       <House className="w-6 h-6 text-neutral-400" />
                     </div>
                     <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-                      No hay propiedades consignadas
+                      {t('inmobiliaria.propietarios.detail.noProperties')}
                     </p>
                     <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors">
                       <Plus className="w-4 h-4" />
-                      Nueva consignación
+                      {t('inmobiliaria.propietarios.detail.newConsignment')}
                     </button>
                   </div>
                 )}
@@ -672,7 +678,7 @@ export default function PropietarioDetailPage() {
                       <CurrencyDollar className="w-6 h-6 text-neutral-400" />
                     </div>
                     <p className="text-neutral-500 dark:text-neutral-400">
-                      No hay historial de pagos
+                      {t('inmobiliaria.propietarios.detail.noPayments')}
                     </p>
                   </div>
                 )}
@@ -690,7 +696,7 @@ export default function PropietarioDetailPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Note className="w-5 h-5 text-neutral-500" />
                     <h3 className="font-semibold text-neutral-900 dark:text-white">
-                      Notas internas
+                      {t('inmobiliaria.propietarios.detail.internalNotes')}
                     </h3>
                   </div>
 
@@ -699,7 +705,7 @@ export default function PropietarioDetailPage() {
                       {propietario.notes}
                     </p>
                   ) : (
-                    <p className="text-neutral-400 italic">Sin notas</p>
+                    <p className="text-neutral-400 italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
                   )}
 
                   <button
@@ -709,7 +715,7 @@ export default function PropietarioDetailPage() {
                     }}
                     className="mt-4 text-sm text-indigo-500 hover:text-indigo-600 font-medium"
                   >
-                    {propietario.notes ? 'Editar notas' : 'Agregar notas'}
+                    {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
                   </button>
                 </div>
               </motion.div>
@@ -722,7 +728,7 @@ export default function PropietarioDetailPage() {
       <Modal
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Editar propietario"
+        title={t('inmobiliaria.propietarios.editOwner')}
         size="lg"
       >
         <PropietarioForm
@@ -737,19 +743,19 @@ export default function PropietarioDetailPage() {
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Eliminar propietario"
+        title={t('inmobiliaria.propietarios.deleteOwner')}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-neutral-600 dark:text-neutral-400">
-            ¿Estás seguro de eliminar a <strong className="text-neutral-900 dark:text-white">{propietario.name}</strong>?
+            {t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
           </p>
           {propietario.propertyCount > 0 && (
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                 <Warning className="w-4 h-4" />
                 <p className="text-sm">
-                  Este propietario tiene {propietario.propertyCount} propiedad(es) consignadas.
+                  {t('inmobiliaria.propietarios.deleteWarningProperties', { count: propietario.propertyCount })}
                 </p>
               </div>
             </div>
@@ -759,13 +765,13 @@ export default function PropietarioDetailPage() {
               onClick={() => setShowDeleteModal(false)}
               className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
-              Cancelar
+              {t('inmobiliaria.common.cancel')}
             </button>
             <button
               onClick={handleDelete}
               className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
             >
-              Eliminar
+              {t('inmobiliaria.common.delete')}
             </button>
           </div>
         </div>
@@ -775,23 +781,23 @@ export default function PropietarioDetailPage() {
       <Modal
         open={showNotesModal}
         onClose={() => setShowNotesModal(false)}
-        title="Notas internas"
+        title={t('inmobiliaria.propietarios.detail.internalNotes')}
         size="md"
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Notas sobre {propietario.name}
+              {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
             </label>
             <textarea
               value={notesValue}
               onChange={(e) => setNotesValue(e.target.value)}
-              placeholder="Escribe notas internas sobre este propietario..."
+              placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
               rows={6}
               className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
             />
             <p className="mt-2 text-xs text-neutral-500">
-              Estas notas son privadas y solo visibles para el equipo de la inmobiliaria.
+              {t('inmobiliaria.propietarios.detail.notesPrivacy')}
             </p>
           </div>
           <div className="flex items-center gap-3 justify-end pt-2">
@@ -799,7 +805,7 @@ export default function PropietarioDetailPage() {
               onClick={() => setShowNotesModal(false)}
               className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
-              Cancelar
+              {t('inmobiliaria.common.cancel')}
             </button>
             <button
               onClick={handleSaveNotes}
@@ -809,10 +815,10 @@ export default function PropietarioDetailPage() {
               {isSavingNotes ? (
                 <>
                   <SpinnerGap className="w-4 h-4 animate-spin" />
-                  Guardando...
+                  {t('inmobiliaria.common.saving')}
                 </>
               ) : (
-                'Guardar notas'
+                t('inmobiliaria.propietarios.detail.saveNotes')
               )}
             </button>
           </div>

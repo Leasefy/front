@@ -5,12 +5,12 @@ import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPl
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MOCK_VISITS, getVisitStats } from '@/lib/data/mock-visits';
-import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useTranslation } from '@/lib/i18n';
 
 type TabFunnel = 'all' | VisitStatus;
 
@@ -21,22 +21,6 @@ const STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
   cancelled: 'rejected',
   no_show: 'important',
 };
-
-const CANCEL_REASONS = [
-  'No tengo disponibilidad en esa fecha',
-  'La propiedad ya no está disponible',
-  'El candidato no cumple los requisitos',
-  'Problemas de agenda, prefiero reagendar',
-  'Otro motivo',
-];
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CL', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function formatTime(time: string): string {
   const [h, m] = time.split(':');
@@ -59,8 +43,18 @@ function CancelModal({
 }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const { t, formatDate } = useTranslation();
 
-  const finalReason = selectedReason === 'Otro motivo' ? customReason : selectedReason;
+  const CANCEL_REASONS = [
+    { key: 'cancelReason1', value: t('landlord.visits.cancelReason1') },
+    { key: 'cancelReason2', value: t('landlord.visits.cancelReason2') },
+    { key: 'cancelReason3', value: t('landlord.visits.cancelReason3') },
+    { key: 'cancelReason4', value: t('landlord.visits.cancelReason4') },
+    { key: 'cancelReasonOther', value: t('landlord.visits.cancelReasonOther') },
+  ];
+
+  const isOtherReason = selectedReason === t('landlord.visits.cancelReasonOther');
+  const finalReason = isOtherReason ? customReason : selectedReason;
   const canSubmit = finalReason.trim().length > 0;
 
   return (
@@ -69,7 +63,7 @@ function CancelModal({
       <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Cancelar visita</h3>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.cancelModalTitle')}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -78,20 +72,20 @@ function CancelModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-5">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Visita con <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span> el {formatDate(visit.requestedDate)} a las {formatTime(visit.requestedTime)}.
+            {t('landlord.visits.cancelModalVisitWith')} <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span> {t('landlord.visits.cancelModalDateAt', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
           </p>
 
           <div>
             <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-3">
-              Motivo de cancelación
+              {t('landlord.visits.cancelReasonLabel')}
             </label>
             <div className="space-y-2">
               {CANCEL_REASONS.map((reason) => (
                 <label
-                  key={reason}
+                  key={reason.key}
                   className={cn(
                     'flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all border',
-                    selectedReason === reason
+                    selectedReason === reason.value
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                   )}
@@ -99,22 +93,22 @@ function CancelModal({
                   <input
                     type="radio"
                     name="cancel-reason"
-                    value={reason}
-                    checked={selectedReason === reason}
-                    onChange={() => setSelectedReason(reason)}
+                    value={reason.value}
+                    checked={selectedReason === reason.value}
+                    onChange={() => setSelectedReason(reason.value)}
                     className="accent-indigo-600"
                   />
-                  <span className="text-sm text-neutral-700 dark:text-neutral-300">{reason}</span>
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">{reason.value}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {selectedReason === 'Otro motivo' && (
+          {isOtherReason && (
             <textarea
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
-              placeholder="Escribe el motivo..."
+              placeholder={t('landlord.visits.cancelReasonPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
@@ -127,14 +121,14 @@ function CancelModal({
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
-            Volver
+            {t('landlord.visits.cancelBack')}
           </button>
           <button
             onClick={() => canSubmit && onConfirm(finalReason)}
             disabled={!canSubmit}
             className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Confirmar cancelación
+            {t('landlord.visits.cancelConfirm')}
           </button>
         </div>
       </div>
@@ -157,6 +151,7 @@ function RescheduleModal({
 }) {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
+  const { t, formatDate } = useTranslation();
 
   const canSubmit = newDate.length > 0 && newTime.length > 0;
 
@@ -171,7 +166,7 @@ function RescheduleModal({
       <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Reagendar visita</h3>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.rescheduleModalTitle')}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -181,21 +176,21 @@ function RescheduleModal({
         <div className="px-6 py-5 space-y-5">
           <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Visita original con <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span>
+              {t('landlord.visits.rescheduleOriginal')} <span className="font-medium text-neutral-900 dark:text-white">{visit.candidateName}</span>
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-0.5">
-              {formatDate(visit.requestedDate)} a las {formatTime(visit.requestedTime)}
+              {t('landlord.visits.rescheduleOriginalDate', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
             </p>
           </div>
 
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Se propondrá una nueva fecha al candidato. La visita original será cancelada automáticamente.
+            {t('landlord.visits.rescheduleExplanation')}
           </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">
-                Nueva fecha
+                {t('landlord.visits.rescheduleNewDate')}
               </label>
               <input
                 type="date"
@@ -207,7 +202,7 @@ function RescheduleModal({
             </div>
             <div>
               <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">
-                Nueva hora
+                {t('landlord.visits.rescheduleNewTime')}
               </label>
               <input
                 type="time"
@@ -225,14 +220,14 @@ function RescheduleModal({
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
-            Volver
+            {t('landlord.visits.rescheduleBack')}
           </button>
           <button
             onClick={() => canSubmit && onConfirm(newDate, newTime)}
             disabled={!canSubmit}
             className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Reagendar visita
+            {t('landlord.visits.rescheduleConfirm')}
           </button>
         </div>
       </div>
@@ -267,6 +262,7 @@ function ScheduleModal({
   const [hora, setHora] = useState('');
   const [propiedad, setPropiedad] = useState('');
   const [notas, setNotas] = useState('');
+  const { t } = useTranslation();
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -276,8 +272,8 @@ function ScheduleModal({
 
   const handleConfirm = () => {
     if (!canSubmit) return;
-    toast.success('Visita agendada exitosamente', {
-      description: 'Se ha programado la visita.',
+    toast.success(t('landlord.visits.scheduleSuccessToast'), {
+      description: t('landlord.visits.scheduleSuccessDesc'),
     });
     onClose();
   };
@@ -288,7 +284,7 @@ function ScheduleModal({
       <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Agendar visita</h3>
+          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.scheduleModalTitle')}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -298,7 +294,7 @@ function ScheduleModal({
         <div className="px-6 py-5 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Fecha</label>
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">{t('landlord.visits.scheduleDateLabel')}</label>
               <input
                 type="date"
                 value={fecha}
@@ -308,13 +304,13 @@ function ScheduleModal({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Hora</label>
+              <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">{t('landlord.visits.scheduleTimeLabel')}</label>
               <select
                 value={hora}
                 onChange={(e) => setHora(e.target.value)}
                 className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
-                <option value="">Seleccionar</option>
+                <option value="">{t('landlord.visits.scheduleTimeSelect')}</option>
                 {SCHEDULE_HOURS.map((h) => (
                   <option key={h} value={h}>{h}</option>
                 ))}
@@ -323,13 +319,13 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Propiedad</label>
+            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">{t('landlord.visits.schedulePropertyLabel')}</label>
             <select
               value={propiedad}
               onChange={(e) => setPropiedad(e.target.value)}
               className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
-              <option value="">Seleccionar propiedad</option>
+              <option value="">{t('landlord.visits.schedulePropertySelect')}</option>
               {SCHEDULE_PROPERTIES.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
@@ -337,11 +333,11 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">Notas</label>
+            <label className="text-sm font-medium text-neutral-900 dark:text-white block mb-2">{t('landlord.visits.scheduleNotesLabel')}</label>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Notas adicionales para la visita..."
+              placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
@@ -354,14 +350,14 @@ function ScheduleModal({
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
-            Cancelar
+            {t('landlord.visits.scheduleCancel')}
           </button>
           <button
             onClick={handleConfirm}
             disabled={!canSubmit}
             className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Confirmar
+            {t('landlord.visits.scheduleConfirm')}
           </button>
         </div>
       </div>
@@ -378,6 +374,7 @@ export default function VisitasPage() {
   const [visits, setVisits] = useState<Visit[]>(MOCK_VISITS);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { t, formatDate } = useTranslation();
 
   // Modal state
   const [cancelTarget, setCancelTarget] = useState<Visit | null>(null);
@@ -385,6 +382,15 @@ export default function VisitasPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   const stats = getVisitStats();
+
+  // Visit status labels using i18n
+  const visitStatusLabels: Record<VisitStatus, string> = {
+    requested: t('landlord.visits.visitStatusRequested'),
+    confirmed: t('landlord.visits.visitStatusConfirmed'),
+    completed: t('landlord.visits.visitStatusCompleted'),
+    cancelled: t('landlord.visits.visitStatusCancelled'),
+    no_show: t('landlord.visits.visitStatusNoShow'),
+  };
 
   // Today's confirmed
   const today = new Date().toISOString().split('T')[0];
@@ -405,24 +411,24 @@ export default function VisitasPage() {
   };
 
   const tabs = [
-    { id: 'all', label: 'Todas', count: visits.length },
-    { id: 'requested', label: 'Solicitadas', count: countByStatus('requested') },
-    { id: 'confirmed', label: 'Confirmadas', count: countByStatus('confirmed') },
-    { id: 'completed', label: 'Completadas', count: countByStatus('completed') },
-    { id: 'cancelled', label: 'Canceladas', count: countByStatus('cancelled') + countByStatus('no_show') },
+    { id: 'all', label: t('landlord.visits.tabAll'), count: visits.length },
+    { id: 'requested', label: t('landlord.visits.tabRequested'), count: countByStatus('requested') },
+    { id: 'confirmed', label: t('landlord.visits.tabConfirmed'), count: countByStatus('confirmed') },
+    { id: 'completed', label: t('landlord.visits.tabCompleted'), count: countByStatus('completed') },
+    { id: 'cancelled', label: t('landlord.visits.tabCancelled'), count: countByStatus('cancelled') + countByStatus('no_show') },
   ];
 
   const columns: PlanTableColumn<Visit>[] = [
     {
       key: 'candidateName',
-      header: 'Candidato',
+      header: t('landlord.visits.colCandidate'),
       sortable: true,
       type: 'avatar',
       nameKey: 'candidateName',
     },
     {
       key: 'propertyTitle',
-      header: 'Propiedad',
+      header: t('landlord.visits.colProperty'),
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
@@ -435,15 +441,15 @@ export default function VisitasPage() {
     },
     {
       key: 'requestedDate',
-      header: 'Fecha',
+      header: t('landlord.visits.colDate'),
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-300">{formatDate(row.requestedDate)}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-300">{formatDate(row.requestedDate + 'T12:00:00')}</span>
       ),
     },
     {
       key: 'requestedTime',
-      header: 'Hora',
+      header: t('landlord.visits.colTime'),
       sortable: true,
       render: (row) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-300">{formatTime(row.requestedTime)}</span>
@@ -451,12 +457,12 @@ export default function VisitasPage() {
     },
     {
       key: 'status',
-      header: 'Estado',
+      header: t('landlord.visits.colStatus'),
       sortable: true,
       render: (row) => (
         <PlanStatusBadge
           status={STATUS_TO_PLAN[row.status]}
-          label={VISIT_STATUS_LABELS[row.status]}
+          label={visitStatusLabels[row.status]}
           size="sm"
         />
       ),
@@ -475,8 +481,8 @@ export default function VisitasPage() {
       v.id === visit.id ? { ...v, status: 'confirmed' as VisitStatus } : v
     ));
     setSheetOpen(false);
-    toast.success('Visita confirmada', {
-      description: `Visita con ${visit.candidateName} confirmada para ${formatDate(visit.requestedDate)} a las ${formatTime(visit.requestedTime)}.`,
+    toast.success(t('landlord.visits.confirmedToast'), {
+      description: t('landlord.visits.confirmedToastDesc', { name: visit.candidateName, date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) }),
     });
   };
 
@@ -485,8 +491,8 @@ export default function VisitasPage() {
       v.id === visit.id ? { ...v, status: 'completed' as VisitStatus } : v
     ));
     setSheetOpen(false);
-    toast.success('Visita completada', {
-      description: `Visita con ${visit.candidateName} marcada como completada.`,
+    toast.success(t('landlord.visits.completedToast'), {
+      description: t('landlord.visits.completedToastDesc', { name: visit.candidateName }),
     });
   };
 
@@ -504,8 +510,8 @@ export default function VisitasPage() {
         : v
     ));
     setCancelTarget(null);
-    toast('Visita cancelada', {
-      description: `La visita con ${cancelTarget.candidateName} ha sido cancelada.`,
+    toast(t('landlord.visits.cancelledToast'), {
+      description: t('landlord.visits.cancelledToastDesc', { name: cancelTarget.candidateName }),
       icon: '❌',
     });
   };
@@ -536,14 +542,14 @@ export default function VisitasPage() {
       newVisit,
       ...prev.map(v =>
         v.id === rescheduleTarget.id
-          ? { ...v, status: 'cancelled' as VisitStatus, cancellationReason: 'Reagendada a nueva fecha' }
+          ? { ...v, status: 'cancelled' as VisitStatus, cancellationReason: t('landlord.visits.rescheduledCancelReason') }
           : v
       ),
     ]);
 
     setRescheduleTarget(null);
-    toast.success('Visita reagendada', {
-      description: `Nueva visita con ${rescheduleTarget.candidateName} propuesta para ${formatDate(newDate)} a las ${formatTime(newTime)}.`,
+    toast.success(t('landlord.visits.rescheduledToast'), {
+      description: t('landlord.visits.rescheduledToastDesc', { name: rescheduleTarget.candidateName, date: formatDate(newDate + 'T12:00:00'), time: formatTime(newTime) }),
     });
   };
 
@@ -555,20 +561,20 @@ export default function VisitasPage() {
     if (visit.status === 'requested') {
       actions.push({
         id: 'confirm',
-        label: 'Confirmar',
+        label: t('landlord.visits.confirmAction'),
         icon: <CheckCircle className="w-4 h-4" />,
         onClick: () => handleConfirm(visit),
         variant: 'primary',
       });
       actions.push({
         id: 'reschedule',
-        label: 'Reagendar',
+        label: t('landlord.visits.rescheduleAction'),
         icon: <CalendarPlus className="w-4 h-4" />,
         onClick: () => openRescheduleModal(visit),
       });
       actions.push({
         id: 'cancel',
-        label: 'Cancelar',
+        label: t('landlord.visits.cancelAction'),
         icon: <XCircle className="w-4 h-4" />,
         onClick: () => openCancelModal(visit),
         variant: 'danger',
@@ -578,20 +584,20 @@ export default function VisitasPage() {
     if (visit.status === 'confirmed') {
       actions.push({
         id: 'complete',
-        label: 'Completar',
+        label: t('landlord.visits.completeAction'),
         icon: <CheckCircle className="w-4 h-4" />,
         onClick: () => handleComplete(visit),
         variant: 'primary',
       });
       actions.push({
         id: 'reschedule',
-        label: 'Reagendar',
+        label: t('landlord.visits.rescheduleAction'),
         icon: <CalendarPlus className="w-4 h-4" />,
         onClick: () => openRescheduleModal(visit),
       });
       actions.push({
         id: 'cancel',
-        label: 'Cancelar',
+        label: t('landlord.visits.cancelAction'),
         icon: <XCircle className="w-4 h-4" />,
         onClick: () => openCancelModal(visit),
         variant: 'danger',
@@ -606,32 +612,32 @@ export default function VisitasPage() {
   const getDetailSections = (visit: Visit): DetailSection[] => [
     {
       id: 'visit-info',
-      title: 'Información de la Visita',
+      title: t('landlord.visits.visitInfoTitle'),
       content: (
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Fecha</span>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatDate(visit.requestedDate)}</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.dateLabel')}</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatDate(visit.requestedDate + 'T12:00:00')}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Hora</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.timeLabel')}</span>
             <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatTime(visit.requestedTime)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Estado</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.statusLabel')}</span>
             <PlanStatusBadge
               status={STATUS_TO_PLAN[visit.status]}
-              label={VISIT_STATUS_LABELS[visit.status]}
+              label={visitStatusLabels[visit.status]}
               size="sm"
             />
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">Propiedad</span>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.propertyLabel')}</span>
             <span className="text-sm text-neutral-900 dark:text-white">{visit.propertyTitle}</span>
           </div>
           {visit.rescheduledFrom && (
             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-              <p className="text-xs text-indigo-700 dark:text-indigo-400">Reagendada desde otra visita</p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-400">{t('landlord.visits.rescheduledNote')}</p>
             </div>
           )}
         </div>
@@ -639,7 +645,7 @@ export default function VisitasPage() {
     },
     ...(visit.candidateMessage ? [{
       id: 'candidate-message',
-      title: 'Mensaje del Candidato',
+      title: t('landlord.visits.candidateMessageTitle'),
       content: (
         <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
           <div className="flex items-start gap-3">
@@ -653,7 +659,7 @@ export default function VisitasPage() {
     }] : []),
     ...(visit.cancellationReason ? [{
       id: 'cancel-reason',
-      title: 'Motivo de Cancelación',
+      title: t('landlord.visits.cancelReasonTitle'),
       content: (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
           <div className="flex items-start gap-3">
@@ -665,7 +671,7 @@ export default function VisitasPage() {
     }] : []),
     ...(visit.landlordNotes ? [{
       id: 'landlord-notes',
-      title: 'Notas',
+      title: t('landlord.visits.notesTitle'),
       content: (
         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
           <p className="text-sm text-amber-800 dark:text-amber-300">{visit.landlordNotes}</p>
@@ -680,9 +686,9 @@ export default function VisitasPage() {
         {/* Header */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Visitas</h1>
+            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.title')}</h1>
             <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-              Gestiona las visitas programadas a tus propiedades
+              {t('landlord.visits.subtitle')}
             </p>
           </div>
           <button
@@ -691,60 +697,60 @@ export default function VisitasPage() {
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shrink-0"
           >
             <CalendarPlus className="w-4 h-4" />
-            Agendar visita
+            {t('landlord.visits.scheduleButton')}
           </button>
         </header>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
                 <CalendarBlank className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.total}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Total visitas</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.totalVisits')}</p>
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.requested}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.pendingVisits')}</p>
             {stats.requested > 0 && (
               <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                Por confirmar
+                {t('landlord.visits.toConfirm')}
               </span>
             )}
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                 <CalendarCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{confirmedToday}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Confirmadas hoy</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.confirmedToday')}</p>
           </div>
 
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.completed}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Completadas</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.completedVisits')}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
+        <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-1.5 mb-6 inline-flex">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -777,20 +783,20 @@ export default function VisitasPage() {
             icon={CalendarBlank}
             title={
               tabFunnel === 'all'
-                ? 'No hay visitas programadas'
+                ? t('landlord.visits.emptyAll')
                 : tabFunnel === 'requested'
-                ? 'No hay visitas solicitadas'
+                ? t('landlord.visits.emptyRequested')
                 : tabFunnel === 'confirmed'
-                ? 'No hay visitas confirmadas'
+                ? t('landlord.visits.emptyConfirmed')
                 : tabFunnel === 'completed'
-                ? 'No hay visitas completadas'
-                : 'No hay visitas canceladas'
+                ? t('landlord.visits.emptyCompleted')
+                : t('landlord.visits.emptyCancelled')
             }
-            description="Cuando los inquilinos soliciten visitar tus propiedades, aparecerán aquí."
-            action={{ label: 'Ver propiedades', href: '/panel/propiedades' }}
+            description={t('landlord.visits.emptyDescription')}
+            action={{ label: t('landlord.visits.emptyAction'), href: '/panel/propiedades' }}
           />
         ) : (
-          <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
             <PlanTable
               data={getFunneledVisits()}
               columns={columns}
@@ -814,7 +820,7 @@ export default function VisitasPage() {
             name: selectedVisit.candidateName,
             subtitle: selectedVisit.propertyTitle,
             status: STATUS_TO_PLAN[selectedVisit.status],
-            statusLabel: VISIT_STATUS_LABELS[selectedVisit.status],
+            statusLabel: visitStatusLabels[selectedVisit.status],
           }}
           quickActions={getQuickActions(selectedVisit)}
           sections={getDetailSections(selectedVisit)}

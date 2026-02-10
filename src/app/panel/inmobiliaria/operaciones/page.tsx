@@ -25,6 +25,7 @@ import {
   Kanban,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
@@ -155,6 +156,8 @@ function StatCard({
  * Route: /panel/inmobiliaria/operaciones
  */
 export default function OperacionesPage() {
+  const { t } = useTranslation();
+
   // State
   const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
   const [renovaciones, setRenovaciones] = useState<Renovacion[]>(MOCK_RENOVACIONES);
@@ -182,8 +185,8 @@ export default function OperacionesPage() {
   }, []);
 
   const handleNotifyTenant = useCallback((renovacion: Renovacion) => {
-    toast.success('Notificacion enviada', {
-      description: `Se envio notificacion a ${renovacion.tenantName}`,
+    toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
+      description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
     });
     // Update status to notified
     setRenovaciones((prev) =>
@@ -258,8 +261,8 @@ export default function OperacionesPage() {
       setMantenimientos((prev) => [newSolicitud, ...prev]);
       setIsSubmittingMantenimiento(false);
       setIsMantenimientoFormOpen(false);
-      toast.success('Solicitud creada', {
-        description: `${data.title} reportada exitosamente`,
+      toast.success(t('inmobiliaria.operaciones.toasts.requestCreated'), {
+        description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
       });
     }, 1000);
   }, []);
@@ -289,15 +292,15 @@ export default function OperacionesPage() {
       );
 
       const statusLabels: Record<MantenimientoStatus, string> = {
-        reported: 'Reportada',
-        quoted: 'Cotizada',
-        approved: 'Aprobada',
-        in_progress: 'En progreso',
-        completed: 'Completada',
-        cancelled: 'Cancelada',
+        reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
+        quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
+        approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
+        in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
+        completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
+        cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
       };
 
-      toast.success(`Estado actualizado: ${statusLabels[newStatus]}`);
+      toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
 
       if (newStatus === 'cancelled' || newStatus === 'completed') {
         handleMantenimientoViewerClose();
@@ -320,16 +323,16 @@ export default function OperacionesPage() {
         };
       })
     );
-    toast.success('Cotizacion aprobada');
+    toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
   }, []);
 
   const handleAddNote = useCallback((solicitudId: string, note: string) => {
-    toast.success('Nota agregada');
-  }, []);
+    toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
+  }, [t]);
 
   const handleRequestQuote = useCallback((solicitudId: string) => {
-    toast.info('Funcion en desarrollo', {
-      description: 'Proximamente podras solicitar cotizaciones directamente',
+    toast.info(t('inmobiliaria.operaciones.toasts.featureInDevelopment'), {
+      description: t('inmobiliaria.operaciones.toasts.featureInDevelopmentDesc'),
     });
   }, []);
 
@@ -344,9 +347,9 @@ export default function OperacionesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Centro de Operaciones</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.operaciones.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona renovaciones, mantenimiento y calculos de IPC
+            {t('inmobiliaria.operaciones.subtitle')}
           </p>
         </div>
       </div>
@@ -359,11 +362,11 @@ export default function OperacionesPage() {
       >
         <StatCard
           icon={ClockCounterClockwise}
-          label="Renovaciones pendientes"
+          label={t('inmobiliaria.operaciones.stats.pendingRenewals')}
           value={stats.renovaciones.pending}
           subValue={
             stats.renovaciones.critical > 0
-              ? `${stats.renovaciones.critical} criticas`
+              ? t('inmobiliaria.operaciones.stats.criticalCount', { count: stats.renovaciones.critical })
               : undefined
           }
           subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
@@ -372,11 +375,11 @@ export default function OperacionesPage() {
         />
         <StatCard
           icon={Wrench}
-          label="Mantenimientos activos"
+          label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
           value={stats.mantenimiento.active}
           subValue={
             stats.mantenimiento.quoted > 0
-              ? `${stats.mantenimiento.quoted} por aprobar`
+              ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.mantenimiento.quoted })
               : undefined
           }
           subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
@@ -385,14 +388,14 @@ export default function OperacionesPage() {
         />
         <StatCard
           icon={CurrencyDollar}
-          label="Cotizaciones pendientes"
+          label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
           value={stats.mantenimiento.quoted}
           bgColor="bg-violet-100 dark:bg-violet-900/30"
           iconColor="text-violet-600 dark:text-violet-400"
         />
         <StatCard
           icon={TrendUp}
-          label="IPC actual"
+          label={t('inmobiliaria.operaciones.stats.currentIPC')}
           value={`${stats.ipc.currentRate.toFixed(2)}%`}
           subValue={stats.ipc.description}
           bgColor="bg-emerald-100 dark:bg-emerald-900/30"
@@ -416,7 +419,7 @@ export default function OperacionesPage() {
                 className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <ClockCounterClockwise className="w-4 h-4 mr-2" />
-                Renovaciones
+                {t('inmobiliaria.operaciones.tabs.renovaciones')}
                 {stats.renovaciones.pending > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                     {stats.renovaciones.pending}
@@ -428,7 +431,7 @@ export default function OperacionesPage() {
                 className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Wrench className="w-4 h-4 mr-2" />
-                Mantenimiento
+                {t('inmobiliaria.operaciones.tabs.mantenimiento')}
                 {stats.mantenimiento.active > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
                     {stats.mantenimiento.active}
@@ -440,7 +443,7 @@ export default function OperacionesPage() {
                 className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Calculator className="w-4 h-4 mr-2" />
-                Calculadora IPC
+                {t('inmobiliaria.operaciones.tabs.ipc')}
               </TabsTrigger>
             </TabsList>
 
@@ -456,7 +459,7 @@ export default function OperacionesPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Nueva solicitud
+                  {t('inmobiliaria.operaciones.maintenance.new')}
                 </motion.button>
               )}
             </AnimatePresence>
@@ -483,10 +486,10 @@ export default function OperacionesPage() {
                   <span className="font-medium text-foreground">
                     {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
                   </span>
-                  {' '}solicitudes activas
+                  {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
                   {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
                     <span className="ml-2 text-blue-600 dark:text-blue-400">
-                      ({mantenimientos.filter((m) => m.status === 'quoted').length} por aprobar)
+                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
                     </span>
                   )}
                 </p>
@@ -502,7 +505,7 @@ export default function OperacionesPage() {
                   )}
                 >
                   <Kanban className="w-4 h-4" />
-                  Pipeline
+                  {t('inmobiliaria.operaciones.maintenance.kanbanView')}
                 </button>
                 <button
                   onClick={() => setMantenimientoView('cards')}
@@ -514,7 +517,7 @@ export default function OperacionesPage() {
                   )}
                 >
                   <SquaresFour className="w-4 h-4" />
-                  Tarjetas
+                  {t('inmobiliaria.operaciones.maintenance.listView')}
                 </button>
               </div>
             </div>
@@ -557,8 +560,8 @@ export default function OperacionesPage() {
           <TabsContent value="ipc" className="mt-0 p-5">
             <IPCCalculator
               onCalculate={(result) => {
-                toast.success('Calculo completado', {
-                  description: `Nuevo arriendo: ${formatCurrency(result.newRent)}`,
+                toast.success(t('inmobiliaria.operaciones.toasts.calculationComplete'), {
+                  description: t('inmobiliaria.operaciones.toasts.newRent', { amount: formatCurrency(result.newRent) }),
                 });
               }}
             />
@@ -580,7 +583,7 @@ export default function OperacionesPage() {
                   : r
               )
             );
-            toast.success(`Estado actualizado: ${getRenovacionStatusLabel(newStatus)}`);
+            toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
           }}
           onTerminate={(reason) => {
             setRenovaciones((prev) =>
@@ -591,10 +594,10 @@ export default function OperacionesPage() {
               )
             );
             handleRenovacionWorkflowClose();
-            toast.success('Renovacion terminada');
+            toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
           }}
           onNoteAdd={(note) => {
-            toast.success('Nota agregada');
+            toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
           }}
         />
       )}
@@ -614,7 +617,7 @@ export default function OperacionesPage() {
       <Sheet open={isMantenimientoFormOpen} onOpenChange={setIsMantenimientoFormOpen}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Nueva solicitud de mantenimiento</SheetTitle>
+            <SheetTitle>{t('inmobiliaria.operaciones.maintenance.newRequest')}</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
             <MantenimientoForm

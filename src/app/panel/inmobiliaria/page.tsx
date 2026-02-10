@@ -22,6 +22,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   MOCK_DASHBOARD_KPIS,
   MOCK_PIPELINE_ITEMS,
@@ -49,8 +50,9 @@ interface KPICardProps {
 }
 
 function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-indigo-600', href }: KPICardProps) {
+  const { t } = useTranslation();
   const content = (
-    <div className="group relative h-full rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
+    <div className="group relative h-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
       <div className="flex items-start justify-between h-full">
         <div className="flex-1 flex flex-col">
           <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">{title}</p>
@@ -72,7 +74,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-
               <span className={cn('text-sm font-medium', trend.isPositive ? 'text-emerald-600' : 'text-red-600')}>
                 {trend.isPositive ? '+' : ''}{trend.value}%
               </span>
-              <span className="text-sm text-neutral-400">vs mes anterior</span>
+              <span className="text-sm text-neutral-400">{t('inmobiliaria.common.vsLastMonth')}</span>
             </div>
           ) : (
             <div className="h-6" />
@@ -158,7 +160,7 @@ function PipelineMiniCard({ item }: { item: typeof MOCK_PIPELINE_ITEMS[0] }) {
 /**
  * Agent Mini Card
  */
-function AgentMiniCard({ agent }: { agent: typeof MOCK_AGENTES[0] }) {
+function AgentMiniCard({ agent, t }: { agent: typeof MOCK_AGENTES[0]; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm">
@@ -169,7 +171,7 @@ function AgentMiniCard({ agent }: { agent: typeof MOCK_AGENTES[0] }) {
           {agent.name}
         </p>
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          {agent.metrics.closedThisMonth} cerrados este mes
+          {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
       <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -184,6 +186,7 @@ function AgentMiniCard({ agent }: { agent: typeof MOCK_AGENTES[0] }) {
  * Main overview for real estate agency operations
  */
 export default function InmobiliariaDashboardPage() {
+  const { t } = useTranslation();
   const kpis = MOCK_DASHBOARD_KPIS;
   const activeAgents = getActiveAgentes();
 
@@ -207,44 +210,44 @@ export default function InmobiliariaDashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-          Dashboard Inmobiliaria
+          {t('inmobiliaria.dashboard.title')}
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Resumen de operaciones y métricas clave
+          {t('inmobiliaria.dashboard.subtitle')}
         </p>
       </div>
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Propiedades Totales"
+          title={t('inmobiliaria.dashboard.kpi.totalProperties')}
           value={kpis.totalProperties}
-          subtitle={`${kpis.propertiesRented} arrendadas · ${kpis.propertiesAvailable} disponibles`}
+          subtitle={t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })}
           icon={Buildings}
           iconColor="text-indigo-600"
           href="/panel/inmobiliaria/portafolio"
         />
         <KPICard
-          title="Recaudo del Mes"
+          title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
           value={formatCurrency(kpis.collectedRevenue)}
-          subtitle={`${kpis.collectionRate.toFixed(1)}% tasa de cobro`}
+          subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', { rate: kpis.collectionRate.toFixed(1) })}
           trend={{ value: 5.2, isPositive: true }}
           icon={CurrencyDollar}
           iconColor="text-emerald-600"
           href="/panel/inmobiliaria/cobros"
         />
         <KPICard
-          title="Comisiones"
+          title={t('inmobiliaria.dashboard.kpi.commissions')}
           value={formatCurrency(kpis.totalCommissions)}
-          subtitle="Generadas este mes"
+          subtitle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
           trend={{ value: 8.1, isPositive: true }}
           icon={Wallet}
           iconColor="text-purple-600"
         />
         <KPICard
-          title="Ocupación"
+          title={t('inmobiliaria.dashboard.kpi.occupancy')}
           value={`${kpis.occupancyRate}%`}
-          subtitle={`${kpis.propertiesRented} de ${kpis.totalProperties} propiedades`}
+          subtitle={t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: kpis.totalProperties })}
           icon={House}
           iconColor="text-amber-600"
         />
@@ -259,7 +262,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
             <div>
               <p className="text-lg font-semibold text-neutral-900 dark:text-white">{kpis.activeLeads}</p>
-              <p className="text-xs text-neutral-500">Leads activos</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.dashboard.kpi.activeLeads')}</p>
             </div>
           </div>
         </div>
@@ -270,7 +273,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
             <div>
               <p className="text-lg font-semibold text-neutral-900 dark:text-white">{kpis.scheduledVisits}</p>
-              <p className="text-xs text-neutral-500">Visitas programadas</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.dashboard.kpi.scheduledVisits')}</p>
             </div>
           </div>
         </div>
@@ -281,7 +284,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
             <div>
               <p className="text-lg font-semibold text-neutral-900 dark:text-white">{kpis.contractsInProgress}</p>
-              <p className="text-xs text-neutral-500">Contratos en firma</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.dashboard.kpi.contractsInProgress')}</p>
             </div>
           </div>
         </div>
@@ -292,7 +295,7 @@ export default function InmobiliariaDashboardPage() {
             </div>
             <div>
               <p className="text-lg font-semibold text-neutral-900 dark:text-white">{pendingCobros.length}</p>
-              <p className="text-xs text-neutral-500">Cobros pendientes</p>
+              <p className="text-xs text-neutral-500">{t('inmobiliaria.dashboard.kpi.pendingCollections')}</p>
             </div>
           </div>
         </div>
@@ -301,17 +304,17 @@ export default function InmobiliariaDashboardPage() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pipeline Activity */}
-        <div className="lg:col-span-2 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+        <div className="lg:col-span-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Pipeline Activo</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Leads y negociaciones en curso</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.dashboard.pipeline.title')}</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.pipeline.subtitle')}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/pipeline"
               className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
             >
-              Ver todo
+              {t('inmobiliaria.common.viewAll')}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -325,41 +328,41 @@ export default function InmobiliariaDashboardPage() {
           ) : (
             <div className="text-center py-8">
               <Kanban className="h-8 w-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">No hay leads activos</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
             </div>
           )}
         </div>
 
         {/* Team Performance */}
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Equipo</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeAgents.length} agentes activos</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.dashboard.team.title')}</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/agentes"
               className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
             >
-              Ver todos
+              {t('inmobiliaria.common.viewAllM')}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           <div className="space-y-4">
             {activeAgents.slice(0, 4).map((agent) => (
-              <AgentMiniCard key={agent.id} agent={agent} />
+              <AgentMiniCard key={agent.id} agent={agent} t={t} />
             ))}
           </div>
 
           <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">Cerrados este mes</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.team.closedThisMonthLabel')}</span>
               <span className="font-semibold text-neutral-900 dark:text-white">{kpis.closedThisMonth}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-neutral-500 dark:text-neutral-400">Promedio días cierre</span>
-              <span className="font-semibold text-neutral-900 dark:text-white">{kpis.avgDaysToClose} días</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
+              <span className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })}</span>
             </div>
           </div>
         </div>
@@ -367,31 +370,31 @@ export default function InmobiliariaDashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Acciones Rápidas</h2>
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{t('inmobiliaria.dashboard.quickActions.title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickAction
-            title="Nuevo Propietario"
-            description="Registrar propietario"
+            title={t('inmobiliaria.dashboard.quickActions.newOwner')}
+            description={t('inmobiliaria.dashboard.quickActions.newOwnerDesc')}
             href="/panel/inmobiliaria/propietarios?nuevo=true"
             icon={UserCircle}
           />
           <QuickAction
-            title="Nueva Consignación"
-            description="Agregar propiedad"
+            title={t('inmobiliaria.dashboard.quickActions.newConsignment')}
+            description={t('inmobiliaria.dashboard.quickActions.newConsignmentDesc')}
             href="/panel/inmobiliaria/portafolio/nuevo"
             icon={Buildings}
             iconBg="bg-emerald-100 dark:bg-emerald-900/30"
           />
           <QuickAction
-            title="Registrar Cobro"
-            description="Recibir pago"
+            title={t('inmobiliaria.dashboard.quickActions.registerPayment')}
+            description={t('inmobiliaria.dashboard.quickActions.registerPaymentDesc')}
             href="/panel/inmobiliaria/cobros?status=pending"
             icon={CurrencyDollar}
             iconBg="bg-purple-100 dark:bg-purple-900/30"
           />
           <QuickAction
-            title="Ver Reportes"
-            description="Extractos y cartera"
+            title={t('inmobiliaria.dashboard.quickActions.viewReports')}
+            description={t('inmobiliaria.dashboard.quickActions.viewReportsDesc')}
             href="/panel/inmobiliaria/reportes"
             icon={ChartLine}
             iconBg="bg-amber-100 dark:bg-amber-900/30"
@@ -401,30 +404,32 @@ export default function InmobiliariaDashboardPage() {
 
       {/* Alerts Section */}
       {(pendingCobros.filter(c => c.status === 'late').length > 0 || pendingMaintenance.length > 0) && (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 p-6">
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 p-6">
           <div className="flex items-start gap-4">
             <div className="rounded-lg p-2 bg-amber-100 dark:bg-amber-900/50">
               <Warning weight="duotone" className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-amber-800 dark:text-amber-200">Requiere atención</h3>
+              <h3 className="font-semibold text-amber-800 dark:text-amber-200">{t('inmobiliaria.dashboard.alerts.title')}</h3>
               <div className="mt-2 space-y-2">
                 {pendingCobros.filter(c => c.status === 'late').length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
                     <CurrencyDollar className="h-4 w-4" />
                     <span>
-                      {pendingCobros.filter(c => c.status === 'late').length} cobros en mora por{' '}
-                      {formatCurrency(
-                        pendingCobros
-                          .filter(c => c.status === 'late')
-                          .reduce((sum, c) => sum + c.pendingAmount, 0)
-                      )}
+                      {t('inmobiliaria.dashboard.alerts.latePayments', {
+                        count: pendingCobros.filter(c => c.status === 'late').length,
+                        amount: formatCurrency(
+                          pendingCobros
+                            .filter(c => c.status === 'late')
+                            .reduce((sum, c) => sum + c.pendingAmount, 0)
+                        ),
+                      })}
                     </span>
                     <Link
                       href="/panel/inmobiliaria/cobros?status=late"
                       className="ml-auto font-medium hover:underline"
                     >
-                      Ver cobros
+                      {t('inmobiliaria.dashboard.alerts.viewPayments')}
                     </Link>
                   </div>
                 )}
@@ -432,13 +437,13 @@ export default function InmobiliariaDashboardPage() {
                   <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
                     <Wrench className="h-4 w-4" />
                     <span>
-                      {pendingMaintenance.length} solicitudes de mantenimiento pendientes
+                      {t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
                     </span>
                     <Link
-                      href="/panel/inmobiliaria/mantenimiento"
+                      href="/panel/inmobiliaria/operaciones"
                       className="ml-auto font-medium hover:underline"
                     >
-                      Ver solicitudes
+                      {t('inmobiliaria.dashboard.alerts.viewRequests')}
                     </Link>
                   </div>
                 )}
@@ -449,48 +454,48 @@ export default function InmobiliariaDashboardPage() {
       )}
 
       {/* Financial Summary */}
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Resumen Financiero</h2>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.dashboard.financial.title')}</h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">Febrero 2026</p>
           </div>
           <Link
             href="/panel/inmobiliaria/reportes"
             className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
           >
-            Ver reportes completos
+            {t('inmobiliaria.dashboard.financial.viewFullReports')}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Esperado</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.expected')}</p>
             <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">
               {formatCurrency(kpis.expectedRevenue)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Recaudado</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.collected')}</p>
             <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
               {formatCurrency(kpis.collectedRevenue)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Pendiente</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.pendingLabel')}</p>
             <p className="text-xl font-semibold text-amber-600 dark:text-amber-400 mt-1">
               {formatCurrency(kpis.pendingCollections)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">En mora</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.late')}</p>
             <p className="text-xl font-semibold text-red-600 dark:text-red-400 mt-1">
               {formatCurrency(kpis.lateCollections)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Dispersiones pendientes</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</p>
             <p className="text-xl font-semibold text-purple-600 dark:text-purple-400 mt-1">
               {kpis.pendingDispersions}
             </p>
@@ -500,7 +505,7 @@ export default function InmobiliariaDashboardPage() {
         {/* Collection Rate Progress */}
         <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-neutral-500 dark:text-neutral-400">Tasa de recaudo</span>
+            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.financial.collectionRate')}</span>
             <span className="font-medium text-neutral-900 dark:text-white">{kpis.collectionRate.toFixed(1)}%</span>
           </div>
           <div className="h-2 rounded-full bg-neutral-100 dark:bg-[#1f1f21] overflow-hidden">

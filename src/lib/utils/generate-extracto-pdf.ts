@@ -3,21 +3,21 @@ import type { ExtractoPropietario, CobroStatus } from '@/lib/types/inmobiliaria'
 import { MOCK_INMOBILIARIA_CONFIG, MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
 
 /**
- * Format currency in Colombian Peso format
+ * Format currency in Chilean Peso format
  */
-function formatCOP(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+function formatCLP(amount: number): string {
+  return new Intl.NumberFormat('es-CL', {
     style: 'currency',
-    currency: 'COP',
+    currency: 'CLP',
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 /**
- * Format date in Colombian Spanish
+ * Format date in Chilean Spanish
  */
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', {
+  return new Date(iso).toLocaleDateString('es-CL', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -25,10 +25,10 @@ function formatDate(iso: string): string {
 }
 
 /**
- * Format month/year in Colombian Spanish
+ * Format month/year in Chilean Spanish
  */
 function formatMonth(monthStr: string): string {
-  return new Date(monthStr + '-01').toLocaleDateString('es-CO', {
+  return new Date(monthStr + '-01').toLocaleDateString('es-CL', {
     month: 'long',
     year: 'numeric',
   });
@@ -262,7 +262,7 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
 
     // Collected
     doc.setTextColor(30);
-    doc.text(formatCOP(prop.totalCollected), xPos, y, { align: 'left' });
+    doc.text(formatCLP(prop.totalCollected), xPos, y, { align: 'left' });
     xPos += colWidths.collected;
 
     // Status
@@ -279,13 +279,13 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
 
     // Commission
     doc.setTextColor(79, 70, 229); // indigo-600
-    doc.text(`${prop.commissionPercent}% = ${formatCOP(prop.commissionAmount)}`, xPos, y);
+    doc.text(`${prop.commissionPercent}% = ${formatCLP(prop.commissionAmount)}`, xPos, y);
     xPos += colWidths.commission;
 
     // Net
     doc.setTextColor(22, 163, 74); // emerald-600
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCOP(prop.netAmount), xPos, y);
+    doc.text(formatCLP(prop.netAmount), xPos, y);
     doc.setFont('helvetica', 'normal');
 
     y += 9;
@@ -304,15 +304,15 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
   doc.text(`Total (${extracto.summary.totalProperties} propiedades)`, xPos, y);
 
   xPos = margin + colWidths.property + colWidths.tenant + 2;
-  doc.text(formatCOP(extracto.summary.totalCollected), xPos, y, { align: 'left' });
+  doc.text(formatCLP(extracto.summary.totalCollected), xPos, y, { align: 'left' });
 
   xPos += colWidths.collected + colWidths.status;
   doc.setTextColor(79, 70, 229);
-  doc.text(formatCOP(extracto.summary.totalCommissions), xPos, y);
+  doc.text(formatCLP(extracto.summary.totalCommissions), xPos, y);
 
   xPos += colWidths.commission;
   doc.setTextColor(22, 163, 74);
-  doc.text(formatCOP(extracto.summary.netToPropietario), xPos, y);
+  doc.text(formatCLP(extracto.summary.netToPropietario), xPos, y);
 
   y += 15;
 
@@ -336,7 +336,7 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
 
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text(formatCOP(extracto.summary.netToPropietario), margin + 4, y + 18);
+  doc.text(formatCLP(extracto.summary.netToPropietario), margin + 4, y + 18);
 
   // Payment reference on the right
   if (extracto.summary.paymentReference) {
@@ -356,12 +356,12 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
   doc.setTextColor(100);
 
   doc.text('Total recaudado:', margin + 4, y);
-  doc.text(formatCOP(extracto.summary.totalCollected), margin + contentWidth / 2 - 10, y, { align: 'right' });
+  doc.text(formatCLP(extracto.summary.totalCollected), margin + contentWidth / 2 - 10, y, { align: 'right' });
   y += 5;
 
   doc.text('Comisiones agencia:', margin + 4, y);
   doc.setTextColor(79, 70, 229);
-  doc.text(`-${formatCOP(extracto.summary.totalCommissions)}`, margin + contentWidth / 2 - 10, y, { align: 'right' });
+  doc.text(`-${formatCLP(extracto.summary.totalCommissions)}`, margin + contentWidth / 2 - 10, y, { align: 'right' });
   y += 5;
 
   doc.setDrawColor(200);
@@ -372,7 +372,7 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
   doc.setTextColor(30);
   doc.text('Neto a propietario:', margin + 4, y);
   doc.setTextColor(22, 163, 74);
-  doc.text(formatCOP(extracto.summary.netToPropietario), margin + contentWidth / 2 - 10, y, { align: 'right' });
+  doc.text(formatCLP(extracto.summary.netToPropietario), margin + contentWidth / 2 - 10, y, { align: 'right' });
 
   if (extracto.summary.paymentDate) {
     y += 8;

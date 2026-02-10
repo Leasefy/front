@@ -9,6 +9,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -26,11 +27,8 @@ interface PipelineFiltersProps {
   onFilterChange: (filters: PipelineFiltersState) => void;
 }
 
-const DATE_PRESETS = [
-  { label: 'Hoy', value: 'today' },
-  { label: 'Semana', value: 'week' },
-  { label: 'Mes', value: 'month' },
-] as const;
+// Date preset values - labels are translated in the component
+const DATE_PRESET_VALUES = ['today', 'week', 'month'] as const;
 
 /**
  * PipelineFilters - Inline filter bar for the rental pipeline Kanban board
@@ -42,8 +40,15 @@ export function PipelineFilters({
   filters,
   onFilterChange,
 }: PipelineFiltersProps) {
+  const { t } = useTranslation();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const DATE_PRESETS = [
+    { label: t('inmobiliaria.pipeline.today'), value: 'today' as const },
+    { label: t('inmobiliaria.pipeline.week'), value: 'week' as const },
+    { label: t('inmobiliaria.pipeline.monthPreset'), value: 'month' as const },
+  ];
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -134,16 +139,16 @@ export function PipelineFilters({
 
   // Get label for agente dropdown
   const getAgenteLabel = () => {
-    if (!filters.agenteId) return 'Agente';
+    if (!filters.agenteId) return t('inmobiliaria.pipeline.agent');
     const agente = agentes.find((a) => a.id === filters.agenteId);
-    return agente?.name || 'Agente';
+    return agente?.name || t('inmobiliaria.pipeline.agent');
   };
 
   // Get label for property dropdown
   const getPropertyLabel = () => {
-    if (!filters.consignacionId) return 'Propiedad';
+    if (!filters.consignacionId) return t('inmobiliaria.pipeline.property');
     const consignacion = uniqueProperties.find((c) => c.id === filters.consignacionId);
-    return consignacion?.propertyTitle || 'Propiedad';
+    return consignacion?.propertyTitle || t('inmobiliaria.pipeline.property');
   };
 
   // Get initials for avatar fallback
@@ -163,7 +168,7 @@ export function PipelineFilters({
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Buscar por candidato, email o propiedad..."
+          placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
           value={filters.search || ''}
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
@@ -214,7 +219,7 @@ export function PipelineFilters({
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
-                  Todos los agentes
+                  {t('inmobiliaria.pipeline.allAgents')}
                 </button>
                 {agentes
                   .filter((a) => a.status === 'active')
@@ -288,7 +293,7 @@ export function PipelineFilters({
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
-                  Todas las propiedades
+                  {t('inmobiliaria.pipeline.allProperties')}
                 </button>
                 {uniqueProperties.map((consignacion) => (
                   <button
@@ -359,7 +364,7 @@ export function PipelineFilters({
             onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
             className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
           />
-          <span className="text-muted-foreground text-sm">a</span>
+          <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
           <input
             type="date"
             value={filters.dateTo || ''}
@@ -377,7 +382,7 @@ export function PipelineFilters({
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
             >
               <X className="w-4 h-4" />
-              Limpiar
+              {t('inmobiliaria.pipeline.clear')}
             </button>
           </>
         )}

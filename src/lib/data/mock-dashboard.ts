@@ -283,7 +283,7 @@ export function getDashboardData(landlordId: string = 'landlord-001'): Dashboard
 }
 
 /**
- * Format currency in Colombian Pesos
+ * Format currency in Chilean Pesos
  */
 export function formatCurrency(amount: number | undefined | null): string {
   if (amount == null || isNaN(amount)) {
@@ -297,7 +297,7 @@ export function formatCurrency(amount: number | undefined | null): string {
     const thousands = amount / 1000;
     return `$${thousands.toFixed(0)}k`;
   }
-  return `$${amount.toLocaleString('es-CO')}`;
+  return `$${amount.toLocaleString('es-CL')}`;
 }
 
 /**
@@ -307,5 +307,5 @@ export function formatCurrencyFull(amount: number | undefined | null): string {
   if (amount == null || isNaN(amount)) {
     return '$0';
   }
-  return `$${amount.toLocaleString('es-CO')}`;
+  return `$${amount.toLocaleString('es-CL')}`;
 }

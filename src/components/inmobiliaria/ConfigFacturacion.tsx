@@ -28,6 +28,7 @@ import {
   ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
@@ -58,97 +59,6 @@ interface ConfigFacturacionProps {
   isLoading?: boolean;
 }
 
-// Plan display configuration
-const PLAN_CONFIG: Record<BillingPlan, {
-  icon: React.ElementType;
-  price: number;
-  description: string;
-  highlight?: boolean;
-}> = {
-  starter: {
-    icon: Rocket,
-    price: 99000,
-    description: 'Para agencias pequenas que estan comenzando',
-  },
-  professional: {
-    icon: Crown,
-    price: 299000,
-    description: 'Para agencias en crecimiento con multiples agentes',
-    highlight: true,
-  },
-  enterprise: {
-    icon: ShieldCheck,
-    price: 599000,
-    description: 'Para grandes agencias con necesidades avanzadas',
-  },
-};
-
-// Feature list for plan comparison
-const PLAN_FEATURES = [
-  {
-    key: 'properties',
-    label: 'Propiedades',
-    icon: Buildings,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.maxProperties === -1 ? 'Ilimitadas' : `Hasta ${limits.maxProperties}`,
-  },
-  {
-    key: 'users',
-    label: 'Usuarios',
-    icon: Users,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.maxUsers === -1 ? 'Ilimitados' : `Hasta ${limits.maxUsers}`,
-  },
-  {
-    key: 'agents',
-    label: 'Agentes',
-    icon: Users,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.maxAgents === -1 ? 'Ilimitados' : `Hasta ${limits.maxAgents}`,
-  },
-  {
-    key: 'reports',
-    label: 'Reportes',
-    icon: FileText,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.includesReports ? 'Incluido' : null,
-  },
-  {
-    key: 'analytics',
-    label: 'Analitica avanzada',
-    icon: ChartLineUp,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.includesAnalytics ? 'Incluido' : null,
-  },
-  {
-    key: 'integrations',
-    label: 'Integraciones',
-    icon: Plugs,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.includesIntegrations ? 'Incluido' : null,
-  },
-  {
-    key: 'api',
-    label: 'Acceso API',
-    icon: Code,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) =>
-      limits.includesApi ? 'Incluido' : null,
-  },
-  {
-    key: 'support',
-    label: 'Soporte',
-    icon: Headset,
-    getValue: (limits: typeof PLAN_LIMITS['starter']) => {
-      const labels = {
-        email: 'Email',
-        priority: 'Prioritario',
-        dedicated: 'Dedicado',
-      };
-      return labels[limits.supportLevel];
-    },
-  },
-];
-
 /**
  * ConfigFacturacion - Billing and subscription management
  *
@@ -167,9 +77,107 @@ export function ConfigFacturacion({
   onUpdatePaymentMethod,
   isLoading = false,
 }: ConfigFacturacionProps) {
+  const { t } = useTranslation();
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<BillingPlan | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
+
+  // Plan display configuration
+  const PLAN_CONFIG = useMemo<Record<BillingPlan, {
+    icon: React.ElementType;
+    price: number;
+    description: string;
+    highlight?: boolean;
+  }>>(() => ({
+    starter: {
+      icon: Rocket,
+      price: 99000,
+      description: t('inmobiliaria.config.billing.plans.starter.description'),
+    },
+    professional: {
+      icon: Crown,
+      price: 299000,
+      description: t('inmobiliaria.config.billing.plans.professional.description'),
+      highlight: true,
+    },
+    enterprise: {
+      icon: ShieldCheck,
+      price: 599000,
+      description: t('inmobiliaria.config.billing.plans.enterprise.description'),
+    },
+  }), [t]);
+
+  // Feature list for plan comparison
+  const PLAN_FEATURES = useMemo(() => [
+    {
+      key: 'properties',
+      label: t('inmobiliaria.config.billing.features.properties'),
+      icon: Buildings,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.maxProperties === -1
+          ? t('inmobiliaria.config.billing.features.unlimitedFem')
+          : t('inmobiliaria.config.billing.features.upTo', { count: limits.maxProperties }),
+    },
+    {
+      key: 'users',
+      label: t('inmobiliaria.config.billing.features.users'),
+      icon: Users,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.maxUsers === -1
+          ? t('inmobiliaria.config.billing.features.unlimitedMasc')
+          : t('inmobiliaria.config.billing.features.upTo', { count: limits.maxUsers }),
+    },
+    {
+      key: 'agents',
+      label: t('inmobiliaria.config.billing.features.agents'),
+      icon: Users,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.maxAgents === -1
+          ? t('inmobiliaria.config.billing.features.unlimitedMasc')
+          : t('inmobiliaria.config.billing.features.upTo', { count: limits.maxAgents }),
+    },
+    {
+      key: 'reports',
+      label: t('inmobiliaria.config.billing.features.reports'),
+      icon: FileText,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.includesReports ? t('inmobiliaria.config.billing.features.included') : null,
+    },
+    {
+      key: 'analytics',
+      label: t('inmobiliaria.config.billing.features.analytics'),
+      icon: ChartLineUp,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.includesAnalytics ? t('inmobiliaria.config.billing.features.included') : null,
+    },
+    {
+      key: 'integrations',
+      label: t('inmobiliaria.config.billing.features.integrations'),
+      icon: Plugs,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.includesIntegrations ? t('inmobiliaria.config.billing.features.included') : null,
+    },
+    {
+      key: 'api',
+      label: t('inmobiliaria.config.billing.features.api'),
+      icon: Code,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) =>
+        limits.includesApi ? t('inmobiliaria.config.billing.features.included') : null,
+    },
+    {
+      key: 'support',
+      label: t('inmobiliaria.config.billing.features.support'),
+      icon: Headset,
+      getValue: (limits: typeof PLAN_LIMITS['starter']) => {
+        const labels = {
+          email: t('inmobiliaria.config.billing.supportLevel.email'),
+          priority: t('inmobiliaria.config.billing.supportLevel.priority'),
+          dedicated: t('inmobiliaria.config.billing.supportLevel.dedicated'),
+        };
+        return labels[limits.supportLevel];
+      },
+    },
+  ], [t]);
 
   // Calculate usage percentages
   const usagePercentages = useMemo(() => {
@@ -208,7 +216,11 @@ export function ConfigFacturacion({
   };
 
   const getInvoiceStatusLabel = (status: BillingInvoice['status']) => {
-    const labels = { paid: 'Pagado', pending: 'Pendiente', failed: 'Fallido' };
+    const labels = {
+      paid: t('inmobiliaria.config.billing.invoiceStatusLabels.paid'),
+      pending: t('inmobiliaria.config.billing.invoiceStatusLabels.pending'),
+      failed: t('inmobiliaria.config.billing.invoiceStatusLabels.failed'),
+    };
     return labels[status];
   };
 
@@ -223,27 +235,27 @@ export function ConfigFacturacion({
         await new Promise((resolve) => setTimeout(resolve, 1200));
 
         onUpgrade?.(plan);
-        toast.success(`Plan actualizado a ${getPlanLabel(plan)}`);
+        toast.success(t('inmobiliaria.config.billing.planUpdated', { plan: getPlanLabel(plan) }));
         setIsUpgradeDialogOpen(false);
       } catch (err) {
-        toast.error('Error al actualizar el plan');
+        toast.error(t('inmobiliaria.config.billing.planUpdateError'));
       } finally {
         setIsUpgrading(false);
       }
     },
-    [billing.plan, onUpgrade]
+    [billing.plan, onUpgrade, t]
   );
 
   // Handle payment method update
   const handleUpdatePaymentMethod = useCallback(() => {
     onUpdatePaymentMethod?.();
-    toast.info('Abriendo formulario de pago...');
-  }, [onUpdatePaymentMethod]);
+    toast.info(t('inmobiliaria.config.billing.openingPaymentForm'));
+  }, [onUpdatePaymentMethod, t]);
 
   // Handle invoice download
   const handleDownloadInvoice = useCallback((invoice: BillingInvoice) => {
-    toast.success(`Descargando factura ${invoice.id}...`);
-  }, []);
+    toast.success(t('inmobiliaria.config.billing.downloadingInvoice', { id: invoice.id }));
+  }, [t]);
 
   if (isLoading) {
     return (
@@ -268,9 +280,9 @@ export function ConfigFacturacion({
     >
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-foreground">Facturacion</h2>
+        <h2 className="text-xl font-bold text-foreground">{t('inmobiliaria.config.billing.title')}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Gestiona tu plan y metodo de pago
+          {t('inmobiliaria.config.billing.subtitle')}
         </p>
       </div>
 
@@ -295,10 +307,10 @@ export function ConfigFacturacion({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-foreground">
-                    Plan {getPlanLabel(billing.plan)}
+                    {t('inmobiliaria.config.billing.currentPlan', { plan: getPlanLabel(billing.plan) })}
                   </h3>
                   <Badge className={getPlanColor(billing.plan)}>
-                    {billing.cycle === 'monthly' ? 'Mensual' : 'Anual'}
+                    {billing.cycle === 'monthly' ? t('inmobiliaria.config.billing.monthly') : t('inmobiliaria.config.billing.annual')}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -314,10 +326,10 @@ export function ConfigFacturacion({
               <span className="text-2xl font-bold text-foreground">
                 {formatCOP(billing.pricePerMonth)}
               </span>
-              <span className="text-muted-foreground">/mes</span>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.billing.perMonth')}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Proximo cobro: {formatDate(billing.nextBillingDate)}
+              {t('inmobiliaria.config.billing.nextBilling', { date: formatDate(billing.nextBillingDate) })}
             </p>
           </div>
 
@@ -328,7 +340,7 @@ export function ConfigFacturacion({
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
             >
               <ArrowUp className="w-4 h-4" />
-              Mejorar plan
+              {t('inmobiliaria.config.billing.upgradePlan')}
             </button>
           )}
         </div>
@@ -337,7 +349,7 @@ export function ConfigFacturacion({
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
             <ChartLineUp className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-semibold text-foreground">Uso del plan</h3>
+            <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.planUsage')}</h3>
           </div>
 
           <div className="space-y-5">
@@ -346,7 +358,7 @@ export function ConfigFacturacion({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Buildings className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Propiedades</span>
+                  <span className="text-sm text-foreground">{t('inmobiliaria.config.billing.properties')}</span>
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {billing.usage.properties}
@@ -365,7 +377,7 @@ export function ConfigFacturacion({
               {billing.limits.maxProperties === -1 && (
                 <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                   <Lightning className="w-3 h-3" />
-                  Ilimitado
+                  {t('inmobiliaria.config.billing.unlimited')}
                 </div>
               )}
             </div>
@@ -375,7 +387,7 @@ export function ConfigFacturacion({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Usuarios</span>
+                  <span className="text-sm text-foreground">{t('inmobiliaria.config.billing.users')}</span>
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {billing.usage.users}
@@ -394,7 +406,7 @@ export function ConfigFacturacion({
               {billing.limits.maxUsers === -1 && (
                 <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                   <Lightning className="w-3 h-3" />
-                  Ilimitado
+                  {t('inmobiliaria.config.billing.unlimited')}
                 </div>
               )}
             </div>
@@ -404,7 +416,7 @@ export function ConfigFacturacion({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Agentes</span>
+                  <span className="text-sm text-foreground">{t('inmobiliaria.config.billing.agentsLabel')}</span>
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {billing.usage.agents}
@@ -423,7 +435,7 @@ export function ConfigFacturacion({
               {billing.limits.maxAgents === -1 && (
                 <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                   <Lightning className="w-3 h-3" />
-                  Ilimitado
+                  {t('inmobiliaria.config.billing.unlimited')}
                 </div>
               )}
             </div>
@@ -438,13 +450,13 @@ export function ConfigFacturacion({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-blue-500" />
-              <h3 className="font-semibold text-foreground">Metodo de pago</h3>
+              <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.paymentMethod')}</h3>
             </div>
             <button
               onClick={handleUpdatePaymentMethod}
               className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
             >
-              Actualizar
+              {t('inmobiliaria.config.billing.update')}
             </button>
           </div>
 
@@ -464,7 +476,7 @@ export function ConfigFacturacion({
                       {billing.paymentMethod.brand} **** {billing.paymentMethod.last4}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Tarjeta de credito/debito
+                      {t('inmobiliaria.config.billing.creditDebitCard')}
                     </p>
                   </>
                 )}
@@ -478,7 +490,7 @@ export function ConfigFacturacion({
                 )}
                 {billing.paymentMethod.type === 'transfer' && (
                   <>
-                    <p className="font-medium text-foreground">Transferencia</p>
+                    <p className="font-medium text-foreground">{t('inmobiliaria.config.billing.transfer')}</p>
                     <p className="text-xs text-muted-foreground">
                       {billing.paymentMethod.bankName}
                     </p>
@@ -491,7 +503,7 @@ export function ConfigFacturacion({
               <div className="flex items-center gap-2">
                 <Info className="w-4 h-4 text-amber-500" />
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  No tienes un metodo de pago configurado
+                  {t('inmobiliaria.config.billing.noPaymentMethod')}
                 </p>
               </div>
             </div>
@@ -502,7 +514,7 @@ export function ConfigFacturacion({
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
             <Sparkle className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-foreground">Tu plan incluye</h3>
+            <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.planIncludes')}</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -528,7 +540,7 @@ export function ConfigFacturacion({
                     )}
                   >
                     {feature.label}
-                    {isIncluded && value !== 'Incluido' && (
+                    {isIncluded && value !== t('inmobiliaria.config.billing.features.included') && (
                       <span className="text-muted-foreground"> ({value})</span>
                     )}
                   </span>
@@ -543,7 +555,7 @@ export function ConfigFacturacion({
       <div className="p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center gap-2 mb-4">
           <Receipt className="w-5 h-5 text-amber-500" />
-          <h3 className="font-semibold text-foreground">Historial de facturas</h3>
+          <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.invoiceHistory')}</h3>
         </div>
 
         {invoices.length > 0 ? (
@@ -552,16 +564,16 @@ export function ConfigFacturacion({
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Fecha
+                    {t('inmobiliaria.config.billing.invoiceDate')}
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Monto
+                    {t('inmobiliaria.config.billing.invoiceAmount')}
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Estado
+                    {t('inmobiliaria.config.billing.invoiceStatus')}
                   </th>
                   <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Acciones
+                    {t('inmobiliaria.config.billing.invoiceActions')}
                   </th>
                 </tr>
               </thead>
@@ -599,7 +611,7 @@ export function ConfigFacturacion({
                           className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
                         >
                           <Download className="w-4 h-4" />
-                          Descargar
+                          {t('common.download')}
                         </button>
                       )}
                     </td>
@@ -612,7 +624,7 @@ export function ConfigFacturacion({
           <div className="py-8 text-center">
             <Receipt className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
             <p className="text-sm text-muted-foreground">
-              No hay facturas disponibles
+              {t('inmobiliaria.config.billing.noInvoices')}
             </p>
           </div>
         )}
@@ -622,9 +634,9 @@ export function ConfigFacturacion({
       <Dialog open={isUpgradeDialogOpen} onOpenChange={setIsUpgradeDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Cambiar plan</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.config.billing.changePlan')}</DialogTitle>
             <DialogDescription>
-              Selecciona el plan que mejor se adapte a tus necesidades
+              {t('inmobiliaria.config.billing.changePlanDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -655,7 +667,7 @@ export function ConfigFacturacion({
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge variant="default" className="bg-indigo-500 text-white">
                         <Sparkle className="w-3 h-3 mr-1" />
-                        Popular
+                        {t('inmobiliaria.config.billing.popular')}
                       </Badge>
                     </div>
                   )}
@@ -676,7 +688,7 @@ export function ConfigFacturacion({
                     </span>
                     {isCurrentPlan && (
                       <Badge variant="secondary" className="ml-auto text-xs">
-                        Actual
+                        {t('inmobiliaria.config.billing.current')}
                       </Badge>
                     )}
                   </div>
@@ -685,7 +697,7 @@ export function ConfigFacturacion({
                     <span className="text-2xl font-bold text-foreground">
                       {formatCOP(config.price)}
                     </span>
-                    <span className="text-muted-foreground">/mes</span>
+                    <span className="text-muted-foreground">{t('inmobiliaria.config.billing.perMonth')}</span>
                   </div>
 
                   <p className="text-xs text-muted-foreground mb-3">
@@ -734,7 +746,7 @@ export function ConfigFacturacion({
               disabled={isUpgrading}
               className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
             >
-              Cancelar
+              {t('inmobiliaria.config.billing.cancel')}
             </button>
             <button
               onClick={() => selectedPlan && handleUpgrade(selectedPlan)}
@@ -749,12 +761,12 @@ export function ConfigFacturacion({
               {isUpgrading ? (
                 <>
                   <SpinnerGap className="w-4 h-4 animate-spin" />
-                  Actualizando...
+                  {t('inmobiliaria.config.billing.updating')}
                 </>
               ) : (
                 <>
                   <ArrowUp className="w-4 h-4" />
-                  Cambiar a {selectedPlan ? getPlanLabel(selectedPlan) : 'plan'}
+                  {t('inmobiliaria.config.billing.changeTo', { plan: selectedPlan ? getPlanLabel(selectedPlan) : 'plan' })}
                 </>
               )}
             </button>

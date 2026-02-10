@@ -2,12 +2,12 @@ import jsPDF from 'jspdf';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
 import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
 
-function formatCOP(amount: number): string {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+function formatCLP(amount: number): string {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(iso + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 /**
@@ -130,8 +130,8 @@ export function generateContractPdf(contract: Contract, template: ContractTempla
   doc.setFontSize(10);
   doc.setTextColor(30);
   doc.setFont('helvetica', 'bold');
-  doc.text(formatCOP(contract.monthlyRent), col1, y);
-  doc.text(contract.adminFee > 0 ? formatCOP(contract.adminFee) : 'Incluida', col2, y);
+  doc.text(formatCLP(contract.monthlyRent), col1, y);
+  doc.text(contract.adminFee > 0 ? formatCLP(contract.adminFee) : 'Incluida', col2, y);
   y += 7;
 
   doc.setFont('helvetica', 'normal');

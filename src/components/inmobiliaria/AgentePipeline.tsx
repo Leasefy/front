@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -31,6 +32,7 @@ function getStageInfo(stage: PipelineStage) {
  * Collapsible section showing leads in progress (excluding completed/lost)
  */
 export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Filter out completed and lost items
@@ -41,15 +43,15 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
   }, [pipelineItems]);
 
   const handleItemClick = (item: PipelineItem) => {
-    toast.info(`Ver lead: ${item.candidateName}`, {
-      description: `Propiedad: ${item.propertyTitle}`,
+    toast.info(t('inmobiliaria.agente.viewLead', { name: item.candidateName }), {
+      description: t('inmobiliaria.agente.propertyLabel', { title: item.propertyTitle }),
     });
   };
 
   return (
     <div
       className={cn(
-        'rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden',
+        'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden',
         className
       )}
     >
@@ -64,7 +66,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
           </div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-neutral-900 dark:text-white">
-              Pipeline Activo
+              {t('inmobiliaria.agente.activePipeline')}
             </h3>
             <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-xs font-medium text-purple-700 dark:text-purple-400">
               {activeItems.length}
@@ -92,8 +94,8 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                 activeItems.map((item) => {
                   const stageInfo = getStageInfo(item.stage);
                   const daysInStageText = item.daysInStage === 1
-                    ? '1 dia'
-                    : `${item.daysInStage} dias`;
+                    ? `1 ${t('inmobiliaria.agente.daySingular')}`
+                    : `${item.daysInStage} ${t('inmobiliaria.agente.daysPlural')}`;
 
                   return (
                     <button
@@ -159,10 +161,10 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                     <Funnel className="w-6 h-6 text-neutral-400" />
                   </div>
                   <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
-                    Sin leads activos
+                    {t('inmobiliaria.agente.noActiveLeads')}
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-500">
-                    Este agente no tiene prospectos en pipeline
+                    {t('inmobiliaria.agente.noProspectsInPipeline')}
                   </p>
                 </div>
               )}

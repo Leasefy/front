@@ -7,17 +7,19 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { DispersionWizard } from '@/components/inmobiliaria';
 import type { Dispersion } from '@/lib/types/inmobiliaria';
+import { useTranslation } from '@/lib/i18n';
 
 /**
  * GenerarDispersionesPage - Wrapper page for DispersionWizard
  * Route: /panel/inmobiliaria/dispersiones/generar
  */
 export default function GenerarDispersionesPage() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const handleComplete = (dispersiones: Dispersion[]) => {
-    toast.success('Dispersiones generadas correctamente', {
-      description: `Se generaron ${dispersiones.length} dispersiones`,
+    toast.success(t('inmobiliaria.dispersiones.toasts.generated'), {
+      description: t('inmobiliaria.dispersiones.toasts.generatedDesc', { count: dispersiones.length }),
     });
     router.push('/panel/inmobiliaria/dispersiones');
   };
@@ -41,7 +43,7 @@ export default function GenerarDispersionesPage() {
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <CaretLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Volver</span>
+              <span className="hidden sm:inline">{t('inmobiliaria.common.back')}</span>
             </Link>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
@@ -49,10 +51,10 @@ export default function GenerarDispersionesPage() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-foreground">
-                  Generar Dispersiones del Mes
+                  {t('inmobiliaria.dispersiones.wizard.title')}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Calcula y genera los pagos a propietarios
+                  {t('inmobiliaria.dispersiones.subtitle')}
                 </p>
               </div>
             </div>

@@ -14,7 +14,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Image,
+  Image as ImageIcon,
   CaretDown,
   Eye,
   CurrencyCircleDollar,
@@ -29,6 +29,7 @@ import {
   ListBullets,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -59,20 +60,20 @@ type SortDirection = 'asc' | 'desc';
 // Constants
 // ============================================================================
 
-const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; label: string }> = {
-  low: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', label: 'Baja' },
-  medium: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'Media' },
-  high: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', label: 'Alta' },
-  emergency: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'Emergencia' },
+const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
+  low: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  medium: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  high: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
+  emergency: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
-const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; label: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', label: 'Reportada', icon: ListBullets },
-  quoted: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'Cotizada', icon: CurrencyCircleDollar },
-  approved: { bg: 'bg-lime-100 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', label: 'Aprobada', icon: Check },
-  in_progress: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', label: 'En progreso', icon: Clock },
-  completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', label: 'Completada', icon: CheckCircle },
-  cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'Cancelada', icon: XCircle },
+const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
+  reported: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
+  quoted: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
+  approved: { bg: 'bg-lime-100 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
+  in_progress: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
+  completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
+  cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
 };
 
 const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
@@ -99,18 +100,15 @@ function getDaysSinceCreated(createdAt: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  });
+function formatDateFn(dateString: string, fmtDate: (d: string) => string): string {
+  return fmtDate(dateString);
 }
 
 // ============================================================================
 // Summary Cards Component
 // ============================================================================
 
-function SummaryCards({ data }: { data: SolicitudMantenimiento[] }) {
+function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: string, params?: Record<string, string | number>) => string }) {
   const stats = useMemo(() => {
     const counts = {
       total: data.length,
@@ -131,25 +129,25 @@ function SummaryCards({ data }: { data: SolicitudMantenimiento[] }) {
   }, [data]);
 
   const cards = [
-    { label: 'Total', value: stats.total, color: 'bg-indigo-500' },
-    { label: 'Reportadas', value: stats.reported, color: 'bg-slate-400' },
-    { label: 'Cotizadas', value: stats.quoted, color: 'bg-blue-500' },
-    { label: 'Aprobadas', value: stats.approved, color: 'bg-lime-500' },
-    { label: 'En progreso', value: stats.in_progress, color: 'bg-amber-500' },
-    { label: 'Completadas', value: stats.completed, color: 'bg-emerald-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-indigo-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-slate-400' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-blue-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-lime-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-amber-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusCompleted', value: stats.completed, color: 'bg-emerald-500' },
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map((card) => (
         <div
-          key={card.label}
+          key={card.labelKey}
           className="p-4 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />
             <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-              {card.label}
+              {t(card.labelKey)}
             </span>
           </div>
           <p className="text-2xl font-bold text-neutral-900 dark:text-white">{card.value}</p>
@@ -176,6 +174,7 @@ interface FilterBarProps {
   setSortField: (value: SortField) => void;
   sortDirection: SortDirection;
   setSortDirection: (value: SortDirection) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 function FilterBar({
@@ -191,6 +190,7 @@ function FilterBar({
   setSortField,
   sortDirection,
   setSortDirection,
+  t,
 }: FilterBarProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-4">
@@ -199,7 +199,7 @@ function FilterBar({
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
         <input
           type="text"
-          placeholder="Buscar por propiedad o zona..."
+          placeholder={t('inmobiliaria.mantenimiento.searchPropertyOrZone')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
@@ -215,7 +215,7 @@ function FilterBar({
             onChange={(e) => setTypeFilter(e.target.value as MantenimientoType | 'all')}
             className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           >
-            <option value="all">Todos los tipos</option>
+            <option value="all">{t('inmobiliaria.mantenimiento.allTypes')}</option>
             {MANTENIMIENTO_TYPES.map((type) => (
               <option key={type.type} value={type.type}>
                 {type.icon} {type.labelEs}
@@ -232,11 +232,11 @@ function FilterBar({
             onChange={(e) => setPriorityFilter(e.target.value as MantenimientoPriority | 'all')}
             className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           >
-            <option value="all">Todas las prioridades</option>
-            <option value="emergency">Emergencia</option>
-            <option value="high">Alta</option>
-            <option value="medium">Media</option>
-            <option value="low">Baja</option>
+            <option value="all">{t('inmobiliaria.mantenimiento.allPriorities')}</option>
+            <option value="emergency">{t('inmobiliaria.mantenimiento.priorityEmergency')}</option>
+            <option value="high">{t('inmobiliaria.mantenimiento.priorityHigh')}</option>
+            <option value="medium">{t('inmobiliaria.mantenimiento.priorityMedium')}</option>
+            <option value="low">{t('inmobiliaria.mantenimiento.priorityLow')}</option>
           </select>
           <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
         </div>
@@ -248,13 +248,13 @@ function FilterBar({
             onChange={(e) => setStatusFilter(e.target.value as MantenimientoStatus | 'all')}
             className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           >
-            <option value="all">Todos los estados</option>
-            <option value="reported">Reportadas</option>
-            <option value="quoted">Cotizadas</option>
-            <option value="approved">Aprobadas</option>
-            <option value="in_progress">En progreso</option>
-            <option value="completed">Completadas</option>
-            <option value="cancelled">Canceladas</option>
+            <option value="all">{t('inmobiliaria.mantenimiento.allStatuses')}</option>
+            <option value="reported">{t('inmobiliaria.mantenimiento.statusReported')}</option>
+            <option value="quoted">{t('inmobiliaria.mantenimiento.statusQuoted')}</option>
+            <option value="approved">{t('inmobiliaria.mantenimiento.statusApproved')}</option>
+            <option value="in_progress">{t('inmobiliaria.mantenimiento.statusInProgress')}</option>
+            <option value="completed">{t('inmobiliaria.mantenimiento.statusCompleted')}</option>
+            <option value="cancelled">{t('inmobiliaria.mantenimiento.statusCancelled')}</option>
           </select>
           <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
         </div>
@@ -270,11 +270,11 @@ function FilterBar({
             }}
             className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
           >
-            <option value="priority-asc">Prioridad (mayor primero)</option>
-            <option value="priority-desc">Prioridad (menor primero)</option>
-            <option value="createdAt-desc">Más recientes</option>
-            <option value="createdAt-asc">Más antiguas</option>
-            <option value="status-asc">Estado</option>
+            <option value="priority-asc">{t('inmobiliaria.mantenimiento.sortPriorityHigh')}</option>
+            <option value="priority-desc">{t('inmobiliaria.mantenimiento.sortPriorityLow')}</option>
+            <option value="createdAt-desc">{t('inmobiliaria.mantenimiento.sortNewest')}</option>
+            <option value="createdAt-asc">{t('inmobiliaria.mantenimiento.sortOldest')}</option>
+            <option value="status-asc">{t('inmobiliaria.mantenimiento.sortStatus')}</option>
           </select>
           <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
         </div>
@@ -294,6 +294,8 @@ interface MantenimientoCardProps {
   onApproveQuote?: (quoteId: string) => void;
   onComplete?: () => void;
   onCancel?: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  fmtDate: (d: string) => string;
 }
 
 function MantenimientoCard({
@@ -303,6 +305,8 @@ function MantenimientoCard({
   onApproveQuote,
   onComplete,
   onCancel,
+  t,
+  fmtDate,
 }: MantenimientoCardProps) {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -372,7 +376,7 @@ function MantenimientoCard({
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
                   >
                     <Eye className="w-4 h-4" />
-                    <span className="text-sm">Ver detalle</span>
+                    <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
                   </button>
 
                   {solicitud.status === 'reported' && onAddQuote && (
@@ -384,7 +388,7 @@ function MantenimientoCard({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     >
                       <CurrencyCircleDollar className="w-4 h-4" />
-                      <span className="text-sm">Agregar cotizacion</span>
+                      <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
                     </button>
                   )}
 
@@ -397,7 +401,7 @@ function MantenimientoCard({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-lime-600 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-colors"
                     >
                       <Check className="w-4 h-4" />
-                      <span className="text-sm">Aprobar cotizacion</span>
+                      <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
                     </button>
                   )}
 
@@ -410,7 +414,7 @@ function MantenimientoCard({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm">Marcar completada</span>
+                      <span className="text-sm">{t('inmobiliaria.mantenimiento.markCompleted')}</span>
                     </button>
                   )}
 
@@ -423,7 +427,7 @@ function MantenimientoCard({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <X className="w-4 h-4" />
-                      <span className="text-sm">Cancelar solicitud</span>
+                      <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
                     </button>
                   )}
                 </motion.div>
@@ -457,13 +461,13 @@ function MantenimientoCard({
         {/* Priority Badge */}
         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium', priorityStyle.bg, priorityStyle.text)}>
           {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 mr-1" weight="fill" />}
-          {priorityStyle.label}
+          {t(priorityStyle.labelKey)}
         </span>
 
         {/* Status Badge */}
         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium', statusStyle.bg, statusStyle.text)}>
           <StatusIcon className="w-3 h-3 mr-1" />
-          {statusStyle.label}
+          {t(statusStyle.labelKey)}
         </span>
       </div>
 
@@ -474,7 +478,7 @@ function MantenimientoCard({
           <div className="flex items-center gap-1">
             <CalendarBlank className="w-4 h-4" />
             <span>
-              {formatDate(solicitud.createdAt)} ({daysSince}d)
+              {formatDateFn(solicitud.createdAt, fmtDate)} ({daysSince}d)
             </span>
           </div>
 
@@ -489,7 +493,7 @@ function MantenimientoCard({
           {/* Photo indicator */}
           {solicitud.photoUrls && solicitud.photoUrls.length > 0 && (
             <div className="flex items-center gap-1">
-              <Image className="w-4 h-4" />
+              <ImageIcon className="w-4 h-4" />
               <span>{solicitud.photoUrls.length}</span>
             </div>
           )}
@@ -519,6 +523,7 @@ export function MantenimientoList({
   onCancel,
   minimal = false,
 }: MantenimientoListProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   // Filter State
   const [typeFilter, setTypeFilter] = useState<MantenimientoType | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<MantenimientoPriority | 'all'>('all');
@@ -593,7 +598,7 @@ export function MantenimientoList({
   return (
     <div className={minimal ? 'p-5' : 'space-y-6'}>
       {/* Summary Cards - only show in full mode */}
-      {!minimal && <SummaryCards data={data} />}
+      {!minimal && <SummaryCards data={data} t={t} />}
 
       {/* Filters - only show in full mode */}
       {!minimal && (
@@ -610,6 +615,7 @@ export function MantenimientoList({
           setSortField={setSortField}
           sortDirection={sortDirection}
           setSortDirection={setSortDirection}
+          t={t}
         />
       )}
 
@@ -617,8 +623,8 @@ export function MantenimientoList({
       {!minimal && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {filteredData.length} de {data.length} solicitudes
-            {hasFilters && ' (filtradas)'}
+            {t('inmobiliaria.mantenimiento.countOf', { filtered: filteredData.length, total: data.length })}
+            {hasFilters && ` (${t('inmobiliaria.mantenimiento.filtered')})`}
           </p>
 
           {hasFilters && (
@@ -631,7 +637,7 @@ export function MantenimientoList({
               }}
               className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
             >
-              Limpiar filtros
+              {t('inmobiliaria.mantenimiento.clearFilters')}
             </button>
           )}
         </div>
@@ -650,6 +656,8 @@ export function MantenimientoList({
                 onApproveQuote={(quoteId) => onApproveQuote?.(solicitud, quoteId)}
                 onComplete={() => onComplete?.(solicitud)}
                 onCancel={() => onCancel?.(solicitud)}
+                t={t}
+                fmtDate={fmtDate}
               />
             ))}
           </AnimatePresence>
@@ -660,10 +668,10 @@ export function MantenimientoList({
             <Wrench className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No hay solicitudes para mostrar
+            {t('inmobiliaria.mantenimiento.noRequestsToShow')}
           </h3>
           <p className="text-muted-foreground">
-            {hasFilters ? 'Ajusta los filtros para ver más resultados' : 'No hay solicitudes de mantenimiento registradas'}
+            {hasFilters ? t('inmobiliaria.mantenimiento.adjustFilters') : t('inmobiliaria.mantenimiento.noRequestsRegistered')}
           </p>
         </div>
       )}

@@ -33,13 +33,13 @@ const ACTION_ICONS: Record<UrgentAction['type'], React.ElementType> = {
 
 function UrgentActionsBanner({ actions }: { actions: UrgentAction[] }) {
   const [expanded, setExpanded] = useState(false);
-  const { locale } = useTranslation();
+  const { t } = useTranslation();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 overflow-hidden"
+      className="mb-8 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 overflow-hidden"
     >
       <button
         type="button"
@@ -51,7 +51,7 @@ function UrgentActionsBanner({ actions }: { actions: UrgentAction[] }) {
         </div>
         <div className="flex-1 text-left">
           <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-            {actions.length} {locale === 'es' ? 'acciones pendientes' : 'pending actions'}
+            {t('landlord.dashboard.pendingActions', { count: actions.length })}
           </p>
           <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
             {actions[0]?.description}
@@ -127,7 +127,7 @@ export default function PanelPage() {
   const { t, locale, formatCurrency: i18nFormatCurrency, formatDate: i18nFormatDate } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Propietario' : 'Owner');
+  const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
 
   // Check if coming from onboarding or if user hasn't completed onboarding
   const isSetupMode = searchParams.get('setup') === 'true';
@@ -212,7 +212,7 @@ export default function PanelPage() {
   const pendingReviews = properties.reduce((sum, p) => sum + (p.pendingCount || 0), 0);
 
   const formatDateShort = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return i18nFormatDate(dateString, {
       day: 'numeric',
       month: 'short',
     });
@@ -246,7 +246,7 @@ export default function PanelPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
         >
           {/* Monthly Income - Featured Card */}
-          <div className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-200/50 dark:border-emerald-800/30 p-6">
+          <div className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-200/50 dark:border-emerald-800/30 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
                 <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -256,62 +256,62 @@ export default function PanelPage() {
                 +12%
               </span>
             </div>
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-1">{locale === 'es' ? 'Ingresos mensuales' : 'Monthly income'}</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-1">{t('landlord.dashboard.monthlyIncome')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
             </p>
             <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
-              {dashboardData.financial.activeLeases} {locale === 'es' ? 'arriendos activos' : 'active leases'}
+              {t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
             </p>
           </div>
 
           {/* Properties */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
             <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
               <Buildings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Propiedades' : 'Properties'}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.properties')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {properties.length}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-              {dashboardData.financial.activeLeases} {locale === 'es' ? 'arrendadas' : 'rented'}
+              {dashboardData.financial.activeLeases} {t('landlord.dashboard.rented')}
             </p>
           </div>
 
           {/* Candidates */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
             <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
               <Users className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Candidatos' : 'Candidates'}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.candidates')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {totalCandidates}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
               {pendingReviews > 0 && (
-                <span className="text-amber-600 dark:text-amber-400 font-medium">{pendingReviews} {locale === 'es' ? 'pendientes' : 'pending'}</span>
+                <span className="text-amber-600 dark:text-amber-400 font-medium">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
               )}
-              {pendingReviews === 0 && (locale === 'es' ? 'Todos revisados' : 'All reviewed')}
+              {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
             </p>
           </div>
 
           {/* Collection Rate */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
+          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
             <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
               <ChartBar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Tasa cobranza' : 'Collection rate'}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.collectionRate')}</p>
             <div className="flex items-center gap-2">
               <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
                 {dashboardData.financial.collectionRate}%
               </p>
               <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
-                {locale === 'es' ? 'Excelente' : 'Excellent'}
+                {t('landlord.dashboard.excellent')}
               </span>
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-              {locale === 'es' ? 'Este mes' : 'This month'}
+              {t('landlord.dashboard.thisMonth')}
             </p>
           </div>
         </motion.div>
@@ -332,12 +332,12 @@ export default function PanelPage() {
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Mis Propiedades' : 'My Properties'}</h2>
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('landlord.dashboard.myProperties')}</h2>
                 <Link
                   href="/panel/propiedades"
                   className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
-                  {locale === 'es' ? 'Ver todas' : 'View all'}
+                  {t('landlord.dashboard.viewAll')}
                   <CaretRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -359,7 +359,7 @@ export default function PanelPage() {
                         transition={{ delay: 0.3 + index * 0.05 }}
                       >
                         <Link href={`/panel/${property.id}`}>
-                          <div className="group relative overflow-hidden rounded-3xl bg-stone-100 dark:bg-[#1a1a1c] hover:shadow-lg transition-all duration-300">
+                          <div className="group relative overflow-hidden rounded-xl bg-stone-100 dark:bg-[#1a1a1c] hover:shadow-lg transition-all duration-300">
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
@@ -380,10 +380,10 @@ export default function PanelPage() {
                                         : 'bg-amber-500 text-white'
                                   )}>
                                     {property.status === 'available'
-                                      ? (locale === 'es' ? 'Disponible' : 'Available')
+                                      ? t('landlord.dashboard.statusAvailable')
                                       : property.status === 'rented'
-                                        ? (locale === 'es' ? 'Arrendada' : 'Rented')
-                                        : (locale === 'es' ? 'Pendiente' : 'Pending')}
+                                        ? t('landlord.dashboard.statusRented')
+                                        : t('landlord.dashboard.statusPending')}
                                   </span>
                                 </div>
                               </div>
@@ -404,7 +404,7 @@ export default function PanelPage() {
                                     <p className="text-lg font-bold text-neutral-900 dark:text-white">
                                       {i18nFormatCurrency(property.monthlyRent)}
                                     </p>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">/{locale === 'es' ? 'mes' : 'mo'}</p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">/{t('landlord.dashboard.perMonth')}</p>
                                   </div>
                                 </div>
 
@@ -436,14 +436,14 @@ export default function PanelPage() {
 
                                   {property.pendingCount > 0 && (
                                     <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                                      {property.pendingCount} {locale === 'es' ? 'pendientes' : 'pending'}
+                                      {t('landlord.dashboard.pendingCount', { count: property.pendingCount })}
                                     </span>
                                   )}
 
                                   {property.pendingCount === 0 && property.candidateCount > 0 && (
                                     <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
                                       <Check className="w-3 h-3" />
-                                      {locale === 'es' ? 'Revisado' : 'Reviewed'}
+                                      {t('landlord.dashboard.reviewed')}
                                     </span>
                                   )}
                                 </div>
@@ -461,17 +461,17 @@ export default function PanelPage() {
                     <Buildings className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
-                    {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
+                    {t('landlord.dashboard.noPublishedProperties')}
                   </h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
-                    {locale === 'es' ? 'Publica tu primera propiedad para comenzar' : 'Publish your first property to get started'}
+                    {t('landlord.dashboard.publishFirstProperty')}
                   </p>
                   <Link
                     href="/publicar?from=panel"
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-full hover:bg-indigo-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    {locale === 'es' ? 'Publicar propiedad' : 'Publish property'}
+                    {t('landlord.dashboard.publishProperty')}
                   </Link>
                 </div>
               )}
@@ -482,9 +482,9 @@ export default function PanelPage() {
                   href="/panel/propiedades"
                   className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-2xl border border-stone-200 dark:border-neutral-700 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#1a1a1c] hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
-                  {locale === 'es' ? 'Ver todas las propiedades' : 'View all properties'}
+                  {t('landlord.dashboard.viewAllProperties')}
                   <span className="px-2 py-0.5 bg-stone-100 dark:bg-neutral-800 rounded-full text-xs">
-                    +{properties.length - 3} {locale === 'es' ? 'más' : 'more'}
+                    {t('landlord.dashboard.moreCount', { count: properties.length - 3 })}
                   </span>
                 </Link>
               )}
@@ -497,10 +497,10 @@ export default function PanelPage() {
               transition={{ delay: 0.4 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Actividad reciente' : 'Recent activity'}</h2>
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
-              <div className="bg-stone-50 dark:bg-[#1a1a1c] rounded-3xl overflow-hidden divide-y divide-stone-100 dark:divide-neutral-800">
+              <div className="bg-stone-50 dark:bg-[#1a1a1c] rounded-xl overflow-hidden divide-y divide-stone-100 dark:divide-neutral-800">
                 {recentActivities.slice(0, 5).map((activity, index) => (
                   <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm flex-shrink-0">
@@ -537,22 +537,22 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 border border-indigo-200/50 dark:border-indigo-800/30 p-6"
+              className="rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 border border-indigo-200/50 dark:border-indigo-800/30 p-6"
             >
               <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm mb-3">
                 <Wallet className="w-4 h-4" />
-                {locale === 'es' ? 'Resumen financiero' : 'Financial summary'}
+                {t('landlord.dashboard.financialSummary')}
               </div>
               <p className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
                 {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
               </p>
               <p className="text-neutral-600 dark:text-neutral-400 text-sm mt-1">
-                {locale === 'es' ? 'Ingresos este mes' : 'Income this month'}
+                {t('landlord.dashboard.incomeThisMonth')}
               </p>
 
               <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Tasa cobranza' : 'Collection rate'}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.collectionRateLabel')}</span>
                   <span className="text-neutral-900 dark:text-white font-medium">{dashboardData.financial.collectionRate}%</span>
                 </div>
                 <div className="h-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full overflow-hidden">
@@ -563,17 +563,17 @@ export default function PanelPage() {
                 </div>
                 {dashboardData.financial.pendingPayments > 0 && (
                   <div className="flex items-center justify-between text-sm pt-2">
-                    <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Pagos pendientes' : 'Pending payments'}</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.pendingPayments')}</span>
                     <span className="text-amber-600 dark:text-amber-400 font-medium">{dashboardData.financial.pendingPayments}</span>
                   </div>
                 )}
               </div>
 
               <Link
-                href="/panel/finanzas"
+                href="/panel/leases"
                 className="inline-flex items-center gap-1.5 mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
               >
-                {locale === 'es' ? 'Ver detalles' : 'View details'}
+                {t('landlord.dashboard.viewDetails')}
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </motion.div>
@@ -583,15 +583,15 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+              className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
             >
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}</h3>
+              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
-                  { href: '/publicar?from=panel', icon: Plus, label: locale === 'es' ? 'Nueva propiedad' : 'New property', desc: locale === 'es' ? 'Publica un inmueble' : 'Publish a property' },
-                  { href: '/panel/candidatos', icon: Users, label: locale === 'es' ? 'Ver candidatos' : 'View candidates', desc: `${totalCandidates} ${locale === 'es' ? 'postulantes' : 'applicants'}`, badge: pendingReviews > 0 },
-                  { href: '/panel/visitas', icon: CalendarBlank, label: locale === 'es' ? 'Visitas' : 'Visits', desc: `${upcomingVisits.length} ${locale === 'es' ? 'programadas' : 'scheduled'}` },
-                  { href: '/panel/contratos', icon: FileText, label: locale === 'es' ? 'Contratos' : 'Contracts', desc: locale === 'es' ? 'Gestiona arriendos' : 'Manage leases' },
+                  { href: '/publicar?from=panel', icon: Plus, label: t('landlord.dashboard.newProperty'), desc: t('landlord.dashboard.publishAProperty') },
+                  { href: '/panel/candidatos', icon: Users, label: t('landlord.dashboard.viewCandidates'), desc: t('landlord.dashboard.applicantsCount', { count: totalCandidates }), badge: pendingReviews > 0 },
+                  { href: '/panel/visitas', icon: CalendarBlank, label: t('landlord.dashboard.visits'), desc: t('landlord.dashboard.scheduledCount', { count: upcomingVisits.length }) },
+                  { href: '/panel/contratos', icon: FileText, label: t('landlord.dashboard.contracts'), desc: t('landlord.dashboard.manageLeases') },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
@@ -645,13 +645,13 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
 };
 
 function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
-  const { locale } = useTranslation();
+  const { t, locale, formatDate: i18nFmtDate } = useTranslation();
   const [selected, setSelected] = useState<Visit | null>(null);
 
   const sections: DetailSection[] = selected ? [
     {
       id: 'visit-property',
-      title: locale === 'es' ? 'Propiedad' : 'Property',
+      title: t('landlord.dashboard.visitProperty'),
       content: (
         <div className="flex items-start gap-3">
           <MapPin className="w-4 h-4 text-neutral-400 mt-0.5" />
@@ -661,23 +661,23 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
     },
     {
       id: 'visit-datetime',
-      title: locale === 'es' ? 'Fecha y hora' : 'Date & time',
+      title: t('landlord.dashboard.visitDateTime'),
       content: (
         <div className="flex items-start gap-3">
           <Clock className="w-4 h-4 text-neutral-400 mt-0.5" />
           <p className="text-sm text-neutral-900 dark:text-white">
-            {new Date(selected.requestedDate + 'T12:00:00').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+            {i18nFmtDate(selected.requestedDate + 'T12:00:00', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
-            })} {locale === 'es' ? 'a las' : 'at'} {selected.requestedTime}
+            })} {t('landlord.dashboard.visitAtTime')} {selected.requestedTime}
           </p>
         </div>
       ),
     },
     ...(selected.candidateMessage ? [{
       id: 'visit-message',
-      title: locale === 'es' ? 'Mensaje del candidato' : 'Candidate message',
+      title: t('landlord.dashboard.candidateMessage'),
       content: (
         <div className="flex items-start gap-3">
           <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
@@ -687,7 +687,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
     }] : []),
     ...(selected.landlordNotes ? [{
       id: 'visit-notes',
-      title: locale === 'es' ? 'Tus notas' : 'Your notes',
+      title: t('landlord.dashboard.yourNotes'),
       content: (
         <div className="flex items-start gap-3">
           <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
@@ -703,11 +703,11 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
       >
         <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
           <CalendarBlank className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-          {locale === 'es' ? 'Próximas Visitas' : 'Upcoming Visits'}
+          {t('landlord.dashboard.upcomingVisits')}
         </h3>
         <div className="space-y-1">
           {visits.slice(0, 3).map((visit) => (
@@ -720,7 +720,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{visit.candidateName}</p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {new Date(visit.requestedDate + 'T12:00:00').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                  {i18nFmtDate(visit.requestedDate + 'T12:00:00', {
                     day: 'numeric',
                     month: 'short',
                   })} · {visit.requestedTime} · {VISIT_STATUS_LABELS[visit.status]}
@@ -735,7 +735,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             href="/panel/visitas"
             className="block mt-3 text-center text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
-            {locale === 'es' ? 'Ver todas las visitas' : 'View all visits'} →
+            {t('landlord.dashboard.viewAllVisits')} →
           </Link>
         )}
       </motion.div>
@@ -756,13 +756,13 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
               href={`/panel/${selected.propertyId}`}
               className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-white dark:bg-[#2a2a2c] border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-xl hover:bg-neutral-50 dark:hover:bg-[#333] transition-colors"
             >
-              {locale === 'es' ? 'Ver propiedad' : 'View property'}
+              {t('landlord.dashboard.viewProperty')}
             </Link>
             <Link
               href="/panel/visitas"
               className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
             >
-              {locale === 'es' ? 'Gestionar visita' : 'Manage visit'}
+              {t('landlord.dashboard.manageVisit')}
             </Link>
           </div>
         ) : undefined}
@@ -777,7 +777,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
 // ============================================================================
 
 function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
-  const { locale } = useTranslation();
+  const { t, locale, formatDate: i18nFmtDate } = useTranslation();
   const [selected, setSelected] = useState<UpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {
@@ -791,18 +791,18 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
 
   const urgencyLabel = selected
     ? isOverdue
-      ? `${locale === 'es' ? 'Vencido hace' : 'Overdue by'} ${Math.abs(selected.daysUntil)} ${locale === 'es' ? 'días' : 'days'}`
+      ? t('landlord.dashboard.overdueBy', { count: Math.abs(selected.daysUntil) })
       : selected.daysUntil === 0
-        ? (locale === 'es' ? 'Hoy' : 'Today')
+        ? t('landlord.dashboard.today')
         : selected.daysUntil === 1
-          ? (locale === 'es' ? 'Mañana' : 'Tomorrow')
-          : `${locale === 'es' ? 'En' : 'In'} ${selected.daysUntil} ${locale === 'es' ? 'días' : 'days'}`
+          ? t('landlord.dashboard.tomorrow')
+          : t('landlord.dashboard.inDays', { count: selected.daysUntil })
     : '';
 
   const sections: DetailSection[] = selected ? [
     {
       id: 'event-urgency',
-      title: locale === 'es' ? 'Urgencia' : 'Urgency',
+      title: t('landlord.dashboard.urgency'),
       content: (
         <span className={cn(
           'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full',
@@ -818,7 +818,7 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
     },
     ...(selected.description ? [{
       id: 'event-property',
-      title: locale === 'es' ? 'Propiedad' : 'Property',
+      title: t('landlord.dashboard.eventProperty'),
       content: (
         <div className="flex items-start gap-3">
           <Buildings className="w-4 h-4 text-neutral-400 mt-0.5" />
@@ -828,12 +828,12 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
     }] : []),
     {
       id: 'event-date',
-      title: locale === 'es' ? 'Fecha' : 'Date',
+      title: t('landlord.dashboard.eventDate'),
       content: (
         <div className="flex items-start gap-3">
           <Calendar className="w-4 h-4 text-neutral-400 mt-0.5" />
           <p className="text-sm text-neutral-900 dark:text-white">
-            {new Date(selected.date + 'T12:00:00').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+            {i18nFmtDate(selected.date + 'T12:00:00', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -846,10 +846,10 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
   ] : [];
 
   const actionLabel = selected?.type === 'payment_due'
-    ? (locale === 'es' ? 'Ver arriendos' : 'View rentals')
+    ? t('landlord.dashboard.viewRentals')
     : selected?.type === 'lease_ending'
-      ? (locale === 'es' ? 'Ver contrato' : 'View contract')
-      : (locale === 'es' ? 'Ver detalle' : 'View detail');
+      ? t('landlord.dashboard.viewContract')
+      : t('landlord.dashboard.viewDetail');
 
   return (
     <>
@@ -857,11 +857,11 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
       >
         <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-          {locale === 'es' ? 'Próximos Eventos' : 'Upcoming Events'}
+          {t('landlord.dashboard.upcomingEvents')}
         </h3>
         <div className="space-y-1">
           {events.slice(0, 5).map((event) => {
@@ -876,7 +876,7 @@ function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{event.title}</p>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {new Date(event.date + 'T12:00:00').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                    {i18nFmtDate(event.date + 'T12:00:00', {
                       day: 'numeric',
                       month: 'short',
                     })}

@@ -127,7 +127,7 @@ const formatRelativeTime = (dateString: string, locale: string): string => {
     if (diffHours < 24) return `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
     if (diffDays < 7) return `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
     if (diffDays < 30) return `hace ${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
-    return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'short' });
   } else {
     if (diffMins < 1) return 'now';
     if (diffMins < 60) return `${diffMins} min ago`;

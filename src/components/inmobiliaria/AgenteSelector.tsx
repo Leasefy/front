@@ -13,6 +13,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteSelectorProps {
@@ -25,17 +26,7 @@ interface AgenteSelectorProps {
 
 type SortOption = 'recommended' | 'name' | 'workload' | 'performance';
 
-const ROLE_LABELS: Record<Agente['role'], string> = {
-  agent: 'Agente',
-  coordinator: 'Coordinador',
-  director: 'Director',
-};
-
-const SPECIALIZATION_LABELS: Record<NonNullable<Agente['specialization']>, string> = {
-  residential: 'Residencial',
-  commercial: 'Comercial',
-  both: 'Mixto',
-};
+// Role and specialization labels moved inside component for i18n
 
 /**
  * AgenteSelector - Selector for assigning an agent to a consignment
@@ -48,8 +39,21 @@ export function AgenteSelector({
   className,
   allowNoAgent = true,
 }: AgenteSelectorProps) {
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [zoneFilter, setZoneFilter] = useState<string>('all');
+
+  const ROLE_LABELS: Record<Agente['role'], string> = {
+    agent: t('inmobiliaria.agente.roleAgent'),
+    coordinator: t('inmobiliaria.agente.roleCoordinator'),
+    director: t('inmobiliaria.agente.roleDirector'),
+  };
+
+  const SPECIALIZATION_LABELS: Record<NonNullable<Agente['specialization']>, string> = {
+    residential: t('inmobiliaria.agente.specResidential'),
+    commercial: t('inmobiliaria.agente.specCommercial'),
+    both: t('inmobiliaria.agente.specMixed'),
+  };
 
   // Get unique zones for filter
   const zones = useMemo(() => {
@@ -125,7 +129,7 @@ export function AgenteSelector({
             onChange={(e) => setZoneFilter(e.target.value)}
             className="appearance-none pl-4 pr-8 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
-            <option value="all">Todas las zonas</option>
+            <option value="all">{t('inmobiliaria.agente.allZones')}</option>
             {zones.map((zone) => (
               <option key={zone} value={zone}>
                 {zone}
@@ -142,16 +146,18 @@ export function AgenteSelector({
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="appearance-none pl-4 pr-8 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
-            <option value="recommended">Recomendados</option>
-            <option value="name">Por nombre</option>
-            <option value="workload">Menor carga</option>
-            <option value="performance">Mayor rendimiento</option>
+            <option value="recommended">{t('inmobiliaria.agente.sortRecommended')}</option>
+            <option value="name">{t('inmobiliaria.agente.sortByName')}</option>
+            <option value="workload">{t('inmobiliaria.agente.sortLeastWorkload')}</option>
+            <option value="performance">{t('inmobiliaria.agente.sortBestPerformance')}</option>
           </select>
           <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
         </div>
 
         <span className="text-sm text-neutral-500 dark:text-neutral-400">
-          {filteredAgentes.length} agente{filteredAgentes.length !== 1 ? 's' : ''} disponible{filteredAgentes.length !== 1 ? 's' : ''}
+          {filteredAgentes.length === 1
+            ? t('inmobiliaria.agente.availableAgentSingular')
+            : t('inmobiliaria.agente.availableAgentsPlural', { count: String(filteredAgentes.length) })}
         </span>
       </div>
 
@@ -194,16 +200,16 @@ export function AgenteSelector({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-sm">
-                    Sin agente asignado
+                    {t('inmobiliaria.agente.noAgentAssigned')}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    La propiedad no tendrá un agente responsable
+                    {t('inmobiliaria.agente.noAgentAssignedDesc')}
                   </p>
                 </div>
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Puedes asignar un agente más adelante desde el detalle de la propiedad.
+                {t('inmobiliaria.agente.assignLater')}
               </p>
             </motion.button>
           )}
@@ -225,7 +231,7 @@ export function AgenteSelector({
               {isRecommended(agente.id) && (
                 <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium flex items-center gap-1">
                   <Star className="w-3 h-3" weight="fill" />
-                  Recomendado
+                  {t('inmobiliaria.agente.recommended')}
                 </div>
               )}
 
@@ -298,7 +304,9 @@ export function AgenteSelector({
                 <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
                   <Briefcase className="w-4 h-4 text-neutral-400" />
                   <span>
-                    {agente.assignedPropertyIds.length} propiedad{agente.assignedPropertyIds.length !== 1 ? 'es' : ''} asignada{agente.assignedPropertyIds.length !== 1 ? 's' : ''}
+                    {agente.assignedPropertyIds.length === 1
+                      ? t('inmobiliaria.agente.assignedPropertySingular')
+                      : t('inmobiliaria.agente.assignedPropertiesPlural', { count: String(agente.assignedPropertyIds.length) })}
                   </span>
                 </div>
 
@@ -322,7 +330,7 @@ export function AgenteSelector({
 
                   {/* Closed This Month */}
                   <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-                    <span>{agente.metrics.closedThisMonth} cerrados/mes</span>
+                    <span>{agente.metrics.closedThisMonth} {t('inmobiliaria.agente.closedPerMonth')}</span>
                   </div>
                 </div>
               </div>
@@ -334,8 +342,8 @@ export function AgenteSelector({
           <User className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
           <p className="text-neutral-500 dark:text-neutral-400">
             {zoneFilter !== 'all'
-              ? 'No hay agentes disponibles en esta zona'
-              : 'No hay agentes activos disponibles'}
+              ? t('inmobiliaria.agente.noAgentsInZone')
+              : t('inmobiliaria.agente.noActiveAgentsAvailable')}
           </p>
         </div>
       )}
@@ -366,8 +374,8 @@ export function AgenteSelector({
             </motion.svg>
           </span>
           {value === null
-            ? "Sin agente asignado"
-            : `Agente asignado: ${activeAgentes.find((a) => a.id === value)?.name}`
+            ? t('inmobiliaria.agente.noAgentAssigned')
+            : t('inmobiliaria.agente.agentAssigned', { name: activeAgentes.find((a) => a.id === value)?.name || '' })
           }
         </p>
       )}

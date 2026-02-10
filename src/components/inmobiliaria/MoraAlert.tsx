@@ -4,6 +4,7 @@ import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Warning, WarningCircle, Bell, ClockCountdown, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 type MoraSeverity = 'warning' | 'critical' | 'severe';
@@ -83,6 +84,8 @@ export function MoraAlert({
   compact = false,
   className,
 }: MoraAlertProps) {
+  const { t } = useTranslation();
+
   // Don't render if not late
   if (daysLate <= 0) return null;
 
@@ -112,7 +115,7 @@ export function MoraAlert({
         ) : (
           <Warning className={cn('w-3.5 h-3.5', styles.icon)} weight="fill" />
         )}
-        <span>{daysLate} dias</span>
+        <span>{daysLate} {t('inmobiliaria.cobros.mora.daysCompact')}</span>
       </motion.div>
     );
   }
@@ -157,25 +160,25 @@ export function MoraAlert({
           <div>
             <h4 className={cn('text-sm font-semibold', styles.text)}>
               {severity === 'severe'
-                ? 'Mora Critica'
+                ? t('inmobiliaria.cobros.mora.severeCritical')
                 : severity === 'critical'
-                ? 'Mora Alta'
-                : 'Pago Vencido'}
+                ? t('inmobiliaria.cobros.mora.severityHigh')
+                : t('inmobiliaria.cobros.mora.paymentOverdue')}
             </h4>
             <div className={cn('flex items-center gap-2 text-sm mt-1', styles.textSecondary)}>
               <ClockCountdown className="w-4 h-4" />
-              <span className="font-medium">{daysLate} dias de mora</span>
+              <span className="font-medium">{daysLate} {t('inmobiliaria.cobros.mora.daysOverdue')}</span>
             </div>
           </div>
 
           {/* Fee Info */}
           <div className={cn('flex flex-wrap gap-x-4 gap-y-1 text-sm', styles.textSecondary)}>
             <div>
-              <span className="opacity-75">Interes: </span>
+              <span className="opacity-75">{t('inmobiliaria.cobros.mora.interestLabel')}</span>
               <span className="font-semibold">+{formatCurrency(lateFee)}</span>
             </div>
             <div>
-              <span className="opacity-75">Total: </span>
+              <span className="opacity-75">{t('inmobiliaria.cobros.mora.totalLabel')}</span>
               <span className="font-semibold">{formatCurrency(totalWithFees)}</span>
             </div>
           </div>
@@ -195,7 +198,7 @@ export function MoraAlert({
                   )}
                 >
                   <Bell className="w-3.5 h-3.5" />
-                  Enviar recordatorio
+                  {t('inmobiliaria.cobros.mora.sendReminder')}
                 </button>
               )}
               {onViewHistory && (
@@ -207,7 +210,7 @@ export function MoraAlert({
                     styles.textSecondary
                   )}
                 >
-                  Ver historial
+                  {t('inmobiliaria.cobros.mora.viewHistory')}
                   <ArrowRight className="w-3 h-3" />
                 </button>
               )}

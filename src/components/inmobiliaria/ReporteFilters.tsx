@@ -12,6 +12,7 @@ import {
   MapPin,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { ReportCategory } from '@/lib/types/inmobiliaria';
 
 export interface ReporteFiltersState {
@@ -37,20 +38,20 @@ interface ReporteFiltersProps {
 }
 
 // Category tabs configuration
-const CATEGORY_TABS: { value: 'all' | ReportCategory; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'financiero', label: 'Financieros' },
-  { value: 'operativo', label: 'Operativos' },
-  { value: 'agentes', label: 'Agentes' },
+const CATEGORY_TAB_KEYS: { value: 'all' | ReportCategory; labelKey: string }[] = [
+  { value: 'all', labelKey: 'inmobiliaria.reporte.all' },
+  { value: 'financiero', labelKey: 'inmobiliaria.reporte.financial' },
+  { value: 'operativo', labelKey: 'inmobiliaria.reporte.operative' },
+  { value: 'agentes', labelKey: 'inmobiliaria.reporte.agents' },
 ];
 
 // Quick period options
-const PERIOD_OPTIONS = [
-  { value: 'this-month', label: 'Este mes' },
-  { value: 'last-month', label: 'Mes anterior' },
-  { value: 'last-quarter', label: 'Ultimo trimestre' },
-  { value: 'this-year', label: 'Ano actual' },
-  { value: 'custom', label: 'Personalizado' },
+const PERIOD_OPTION_KEYS = [
+  { value: 'this-month', labelKey: 'inmobiliaria.reporte.thisMonth' },
+  { value: 'last-month', labelKey: 'inmobiliaria.reporte.lastMonth' },
+  { value: 'last-quarter', labelKey: 'inmobiliaria.reporte.lastQuarter' },
+  { value: 'this-year', labelKey: 'inmobiliaria.reporte.thisYear' },
+  { value: 'custom', labelKey: 'inmobiliaria.reporte.custom' },
 ];
 
 /**
@@ -106,21 +107,8 @@ function getPeriodDates(option: string): { start: string; end: string } {
 /**
  * Format period for display
  */
-function formatPeriodDisplay(period: { start: string; end: string }): string {
-  const start = new Date(period.start);
-  const end = new Date(period.end);
-
-  const startStr = start.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  });
-  const endStr = end.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  return `${startStr} - ${endStr}`;
+function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: (d: string) => string): string {
+  return `${fmtDate(period.start)} - ${fmtDate(period.end)}`;
 }
 
 /**
@@ -134,6 +122,7 @@ export function ReporteFilters({
   zones,
   minimal = false,
 }: ReporteFiltersProps) {
+  const { t, formatDate: fmtDate } = useTranslation();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
   const [selectedPeriodOption, setSelectedPeriodOption] = useState('this-month');
@@ -198,7 +187,7 @@ export function ReporteFilters({
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Buscar reportes..."
+          placeholder={t('inmobiliaria.reporte.searchReports')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -220,7 +209,7 @@ export function ReporteFilters({
       <div className="flex flex-wrap items-center gap-3">
         {/* Category Tabs */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto">
-          {CATEGORY_TABS.map((tab) => {
+          {CATEGORY_TAB_KEYS.map((tab) => {
             const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
             const isActive = filters.category === tab.value;
 
@@ -235,7 +224,7 @@ export function ReporteFilters({
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {tab.label}
+                {t(tab.labelKey)}
                 {count > 0 && (
                   <span
                     className={cn(
@@ -266,7 +255,7 @@ export function ReporteFilters({
           >
             <CalendarBlank className="w-4 h-4 text-muted-foreground" />
             <span className="text-foreground">
-              {formatPeriodDisplay(filters.period)}
+              {formatPeriodDisplayFn(filters.period, fmtDate)}
             </span>
             <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
@@ -278,7 +267,7 @@ export function ReporteFilters({
                 exit={{ opacity: 0, y: -5 }}
                 className="absolute top-full left-0 mt-1 w-52 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
               >
-                {PERIOD_OPTIONS.map((option) => (
+                {PERIOD_OPTION_KEYS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handlePeriodSelect(option.value)}
@@ -289,7 +278,7 @@ export function ReporteFilters({
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 ))}
               </motion.div>
@@ -312,7 +301,7 @@ export function ReporteFilters({
           >
             <MapPin className="w-4 h-4" />
             <span className="max-w-[100px] truncate">
-              {filters.zone || 'Zona'}
+              {filters.zone || t('inmobiliaria.reporte.zone')}
             </span>
             <CaretDown className="w-3.5 h-3.5" />
           </button>
@@ -336,7 +325,7 @@ export function ReporteFilters({
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
-                  Todas las zonas
+                  {t('inmobiliaria.reporte.allZones')}
                 </button>
                 {zones.map((zone) => (
                   <button
@@ -374,7 +363,7 @@ export function ReporteFilters({
             className="w-4 h-4"
             weight={filters.favoritesOnly ? 'fill' : 'regular'}
           />
-          Favoritos
+          {t('inmobiliaria.reporte.favorites')}
         </button>
 
         {/* Clear Filters */}
@@ -384,7 +373,7 @@ export function ReporteFilters({
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
           >
             <Funnel className="w-4 h-4" weight="fill" />
-            Limpiar
+            {t('inmobiliaria.reporte.clear')}
             <X className="w-3.5 h-3.5" />
           </button>
         )}

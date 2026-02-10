@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type {
   SolicitudMantenimiento,
   MantenimientoQuote,
@@ -50,9 +51,9 @@ interface QuoteAnalysis {
 // Helper Functions
 // ============================================================================
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string, loc: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('es-CO', {
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -108,9 +109,11 @@ interface QuoteCardProps {
   analysis: QuoteAnalysis;
   isSelected: boolean;
   onSelect: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  locale: string;
 }
 
-function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
+function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCardProps) {
   const isLowestPrice = analysis.lowestPriceId === quote.id;
   const isFastest = analysis.fastestId === quote.id;
   const isBestValue = analysis.bestValueId === quote.id;
@@ -133,25 +136,25 @@ function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
         {isBestValue && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 dark:from-amber-900/40 dark:to-amber-800/40 dark:text-amber-400">
             <Crown className="w-3 h-3" weight="fill" />
-            Mejor valor
+            {t('inmobiliaria.finance.quotes.bestValue')}
           </span>
         )}
         {isLowestPrice && !isBestValue && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
             <TrendDown className="w-3 h-3" weight="bold" />
-            Mas economico
+            {t('inmobiliaria.finance.quotes.cheapest')}
           </span>
         )}
         {isFastest && !isBestValue && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
             <Lightning className="w-3 h-3" weight="fill" />
-            Mas rapido
+            {t('inmobiliaria.finance.quotes.fastest')}
           </span>
         )}
         {isSelected && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
             <CheckCircle className="w-3 h-3" weight="fill" />
-            Seleccionada
+            {t('inmobiliaria.finance.quotes.selected')}
           </span>
         )}
       </div>
@@ -190,7 +193,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
               ) : (
                 <TrendUp className="w-3 h-3" />
               )}
-              {Math.abs(priceDeviation).toFixed(0)}% vs promedio
+              {Math.abs(priceDeviation).toFixed(0)}% {t('inmobiliaria.finance.quotes.vsAverage')}
             </div>
           )}
         </div>
@@ -205,11 +208,11 @@ function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="w-4 h-4" />
             <span className="font-medium text-foreground">{quote.estimatedDays}</span>
-            <span>dias</span>
+            <span>{t('inmobiliaria.finance.quotes.days')}</span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
             <CalendarBlank className="w-4 h-4" />
-            <span>{formatDate(quote.createdAt)}</span>
+            <span>{formatDate(quote.createdAt, locale)}</span>
           </div>
         </div>
 
@@ -231,7 +234,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
             />
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Competitividad de precio
+            {t('inmobiliaria.finance.quotes.priceCompetitiveness')}
           </p>
         </div>
 
@@ -249,12 +252,12 @@ function QuoteCard({ quote, analysis, isSelected, onSelect }: QuoteCardProps) {
           {isSelected ? (
             <>
               <CheckCircle className="w-4 h-4" weight="fill" />
-              Seleccionada
+              {t('inmobiliaria.finance.quotes.selected')}
             </>
           ) : (
             <>
               <Check className="w-4 h-4" weight="bold" />
-              Seleccionar
+              {t('inmobiliaria.finance.quotes.select')}
             </>
           )}
         </button>
@@ -277,6 +280,7 @@ export function CotizacionComparator({
   onRequestNewQuote,
   selectedQuoteId,
 }: CotizacionComparatorProps) {
+  const { t, locale } = useTranslation();
   const typeInfo = getMantenimientoTypeInfo(solicitud.type);
   const analysis = useMemo(() => analyzeQuotes(solicitud.quotes), [solicitud.quotes]);
 
@@ -288,9 +292,9 @@ export function CotizacionComparator({
           <CurrencyDollar className="w-7 h-7 text-muted-foreground" />
         </div>
         <div>
-          <h4 className="font-semibold text-foreground">Sin cotizaciones</h4>
+          <h4 className="font-semibold text-foreground">{t('inmobiliaria.finance.quotes.noQuotes')}</h4>
           <p className="text-sm text-muted-foreground mt-1">
-            Aun no hay cotizaciones para esta solicitud.
+            {t('inmobiliaria.finance.quotes.noQuotesDesc')}
           </p>
         </div>
         {onRequestNewQuote && (
@@ -299,7 +303,7 @@ export function CotizacionComparator({
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20"
           >
             <Plus className="w-4 h-4" weight="bold" />
-            Solicitar cotizacion
+            {t('inmobiliaria.finance.quotes.requestQuote')}
           </button>
         )}
       </div>
@@ -326,7 +330,7 @@ export function CotizacionComparator({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {quote.estimatedDays} dias
+                  {quote.estimatedDays} {t('inmobiliaria.finance.quotes.days')}
                 </span>
               </div>
             </div>
@@ -335,7 +339,7 @@ export function CotizacionComparator({
                 {formatCurrency(quote.amount)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {formatDate(quote.createdAt)}
+                {formatDate(quote.createdAt, locale)}
               </p>
             </div>
           </div>
@@ -353,12 +357,12 @@ export function CotizacionComparator({
               {selectedQuoteId === quote.id ? (
                 <>
                   <CheckCircle className="w-4 h-4" weight="fill" />
-                  Seleccionada
+                  {t('inmobiliaria.finance.quotes.selected')}
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" weight="bold" />
-                  Seleccionar
+                  {t('inmobiliaria.finance.quotes.select')}
                 </>
               )}
             </button>
@@ -373,7 +377,7 @@ export function CotizacionComparator({
           </div>
         </div>
         <p className="text-sm text-muted-foreground text-center">
-          Solicita mas cotizaciones para comparar precios
+          {t('inmobiliaria.finance.quotes.requestMoreToCompare')}
         </p>
       </div>
     );
@@ -399,7 +403,7 @@ export function CotizacionComparator({
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm font-medium text-foreground"
           >
             <Plus className="w-4 h-4" />
-            Nueva cotizacion
+            {t('inmobiliaria.finance.quotes.newQuote')}
           </button>
         )}
       </div>
@@ -409,7 +413,7 @@ export function CotizacionComparator({
         <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
             <TrendDown className="w-4 h-4" weight="bold" />
-            <span className="text-xs font-medium">Mas economico</span>
+            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.cheapest')}</span>
           </div>
           <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">
             {formatCurrency(Math.min(...solicitud.quotes.map((q) => q.amount)))}
@@ -418,16 +422,16 @@ export function CotizacionComparator({
         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <Lightning className="w-4 h-4" weight="fill" />
-            <span className="text-xs font-medium">Mas rapido</span>
+            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.fastest')}</span>
           </div>
           <p className="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">
-            {Math.min(...solicitud.quotes.map((q) => q.estimatedDays))} dias
+            {Math.min(...solicitud.quotes.map((q) => q.estimatedDays))} {t('inmobiliaria.finance.quotes.days')}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
           <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
             <Crown className="w-4 h-4" weight="fill" />
-            <span className="text-xs font-medium">Mejor valor</span>
+            <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.bestValue')}</span>
           </div>
           <p className="text-lg font-bold text-amber-700 dark:text-amber-300 mt-1">
             {solicitud.quotes.find((q) => q.id === analysis.bestValueId)?.providerName?.split(' ')[0] || '-'}
@@ -446,6 +450,8 @@ export function CotizacionComparator({
                 analysis={analysis}
                 isSelected={selectedQuoteId === quote.id}
                 onSelect={() => onSelectQuote(quote.id)}
+                t={t}
+                locale={locale}
               />
             ))}
           </AnimatePresence>
@@ -470,7 +476,7 @@ export function CotizacionComparator({
               </div>
               <div>
                 <p className="font-medium text-emerald-700 dark:text-emerald-300">
-                  Cotizacion seleccionada
+                  {t('inmobiliaria.finance.quotes.quoteSelected')}
                 </p>
                 <p className="text-sm text-emerald-600 dark:text-emerald-400">
                   {solicitud.quotes.find((q) => q.id === selectedQuoteId)?.providerName} -{' '}
@@ -481,7 +487,7 @@ export function CotizacionComparator({
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-              <span>Continuar a aprobacion</span>
+              <span>{t('inmobiliaria.finance.quotes.continueToApproval')}</span>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>

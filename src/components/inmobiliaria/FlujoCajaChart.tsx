@@ -14,6 +14,7 @@ import {
   Calendar,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n/use-translation';
 import type { FlujoCajaReport, FlujoCajaMonth } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -29,25 +30,25 @@ interface FlujoCajaChartProps {
 /**
  * Format month for display (2026-02 -> Feb)
  */
-function formatMonthLabel(month: string): string {
+function formatMonthLabel(month: string, loc: string): string {
   const [year, monthNum] = month.split('-');
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'short' });
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', { month: 'short' });
 }
 
 /**
  * Format month for full display
  */
-function formatMonthFull(month: string): string {
+function formatMonthFull(month: string, loc: string): string {
   const [year, monthNum] = month.split('-');
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', { month: 'short', year: 'numeric' });
 }
 
 /**
  * CSS-only bar chart with grouped monthly bars
  */
-function BarChart({ data }: { data: FlujoCajaMonth[] }) {
+function BarChart({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string; t: (key: string, params?: Record<string, string | number>) => string }) {
   // Calculate max for scaling
   const maxValue = useMemo(() => {
     return Math.max(...data.flatMap((m) => [m.ingresos, m.dispersiones, m.comisiones]));
@@ -112,26 +113,26 @@ function BarChart({ data }: { data: FlujoCajaMonth[] }) {
                   custom={getBarHeight(month.ingresos)}
                   variants={barVariants}
                   className="w-5 rounded-t bg-gradient-to-t from-emerald-500 to-emerald-400"
-                  title={`Ingresos: ${formatCurrency(month.ingresos)}`}
+                  title={`${t('inmobiliaria.finance.cashFlow.income')}: ${formatCurrency(month.ingresos)}`}
                 />
                 {/* Dispersiones bar */}
                 <motion.div
                   custom={getBarHeight(month.dispersiones)}
                   variants={barVariants}
                   className="w-5 rounded-t bg-gradient-to-t from-blue-500 to-blue-400"
-                  title={`Dispersiones: ${formatCurrency(month.dispersiones)}`}
+                  title={`${t('inmobiliaria.finance.cashFlow.disbursements')}: ${formatCurrency(month.dispersiones)}`}
                 />
                 {/* Comisiones bar */}
                 <motion.div
                   custom={getBarHeight(month.comisiones)}
                   variants={barVariants}
                   className="w-5 rounded-t bg-gradient-to-t from-violet-500 to-violet-400"
-                  title={`Comisiones: ${formatCurrency(month.comisiones)}`}
+                  title={`${t('inmobiliaria.finance.cashFlow.commissions')}: ${formatCurrency(month.comisiones)}`}
                 />
               </div>
               {/* Month label */}
               <span className="text-xs text-neutral-500 dark:text-neutral-400 capitalize">
-                {formatMonthLabel(month.month)}
+                {formatMonthLabel(month.month, locale)}
               </span>
             </div>
           ))}
@@ -142,15 +143,15 @@ function BarChart({ data }: { data: FlujoCajaMonth[] }) {
       <div className="flex items-center justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-sm bg-emerald-500" />
-          <span className="text-neutral-600 dark:text-neutral-400">Ingresos</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.income')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-sm bg-blue-500" />
-          <span className="text-neutral-600 dark:text-neutral-400">Dispersiones</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.disbursements')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-sm bg-violet-500" />
-          <span className="text-neutral-600 dark:text-neutral-400">Comisiones</span>
+          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.commissions')}</span>
         </div>
       </div>
     </div>
@@ -160,26 +161,26 @@ function BarChart({ data }: { data: FlujoCajaMonth[] }) {
 /**
  * Table view alternative
  */
-function TableView({ data }: { data: FlujoCajaMonth[] }) {
+function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-neutral-100 dark:border-neutral-800">
             <th className="text-left p-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-              Mes
+              {t('inmobiliaria.finance.cashFlow.month')}
             </th>
             <th className="text-right p-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
-              Ingresos
+              {t('inmobiliaria.finance.cashFlow.income')}
             </th>
             <th className="text-right p-3 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">
-              Dispersiones
+              {t('inmobiliaria.finance.cashFlow.disbursements')}
             </th>
             <th className="text-right p-3 text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase">
-              Comisiones
+              {t('inmobiliaria.finance.cashFlow.commissions')}
             </th>
             <th className="text-right p-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-              Balance
+              {t('inmobiliaria.finance.cashFlow.balance')}
             </th>
           </tr>
         </thead>
@@ -194,7 +195,7 @@ function TableView({ data }: { data: FlujoCajaMonth[] }) {
             >
               <td className="p-3">
                 <span className="font-medium text-neutral-900 dark:text-white capitalize">
-                  {formatMonthFull(month.month)}
+                  {formatMonthFull(month.month, locale)}
                 </span>
               </td>
               <td className="p-3 text-right">
@@ -230,7 +231,7 @@ function TableView({ data }: { data: FlujoCajaMonth[] }) {
         <tfoot>
           <tr className="bg-neutral-50 dark:bg-neutral-800/50 border-t-2 border-neutral-200 dark:border-neutral-700">
             <td className="p-3">
-              <span className="font-semibold text-neutral-900 dark:text-white">Total</span>
+              <span className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.finance.cashFlow.total')}</span>
             </td>
             <td className="p-3 text-right">
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
@@ -269,6 +270,7 @@ export function FlujoCajaChart({
   onPeriodChange,
   className,
 }: FlujoCajaChartProps) {
+  const { t, locale } = useTranslation();
   const [viewVariant, setViewVariant] = useState<'chart' | 'table'>(variant);
 
   // Calculate trend vs previous period
@@ -292,12 +294,12 @@ export function FlujoCajaChart({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Flujo de Caja
+              {t('inmobiliaria.finance.cashFlow.title')}
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              {data.period === 'quarter' && 'Ultimo trimestre'}
-              {data.period === 'semester' && 'Ultimos 6 meses'}
-              {data.period === 'year' && 'Ano actual'}
+              {data.period === 'quarter' && t('inmobiliaria.finance.cashFlow.lastQuarter')}
+              {data.period === 'semester' && t('inmobiliaria.finance.cashFlow.lastSemester')}
+              {data.period === 'year' && t('inmobiliaria.finance.cashFlow.currentYear')}
             </p>
           </div>
         </div>
@@ -376,7 +378,7 @@ export function FlujoCajaChart({
         <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
           <div className="flex items-center gap-2 mb-2">
             <ArrowsInSimple className="w-5 h-5 text-emerald-200" />
-            <span className="text-sm font-medium text-emerald-100">Total Ingresos</span>
+            <span className="text-sm font-medium text-emerald-100">{t('inmobiliaria.finance.cashFlow.totalIncome')}</span>
           </div>
           <p className="text-xl font-bold truncate">{formatCurrency(data.totals.totalIngresos)}</p>
         </div>
@@ -386,7 +388,7 @@ export function FlujoCajaChart({
           <div className="flex items-center gap-2 mb-2">
             <ArrowsOutSimple className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-              Dispersiones
+              {t('inmobiliaria.finance.cashFlow.disbursements')}
             </span>
           </div>
           <p className="text-xl font-bold text-blue-800 dark:text-blue-300 truncate">
@@ -399,7 +401,7 @@ export function FlujoCajaChart({
           <div className="flex items-center gap-2 mb-2">
             <CurrencyDollar className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             <span className="text-sm font-medium text-violet-700 dark:text-violet-400">
-              Comisiones
+              {t('inmobiliaria.finance.cashFlow.commissions')}
             </span>
           </div>
           <p className="text-xl font-bold text-violet-800 dark:text-violet-300 truncate">
@@ -430,7 +432,7 @@ export function FlujoCajaChart({
                   : 'text-red-700 dark:text-red-400'
               )}
             >
-              Balance Neto
+              {t('inmobiliaria.finance.cashFlow.netBalance')}
             </span>
           </div>
           <p
@@ -456,7 +458,7 @@ export function FlujoCajaChart({
               ) : (
                 <TrendDown className="w-3 h-3" weight="bold" />
               )}
-              {trend.percent}% vs mes anterior
+              {trend.percent}% {t('inmobiliaria.finance.cashFlow.vsPrevMonth')}
             </div>
           )}
         </div>
@@ -465,9 +467,9 @@ export function FlujoCajaChart({
       {/* Chart or Table */}
       <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
         {viewVariant === 'chart' ? (
-          <BarChart data={data.months} />
+          <BarChart data={data.months} locale={locale} t={t} />
         ) : (
-          <TableView data={data.months} />
+          <TableView data={data.months} locale={locale} t={t} />
         )}
       </div>
     </div>

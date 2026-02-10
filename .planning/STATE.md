@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 20 in progress — Plan 01 complete, plan 02 pending
+**Current focus:** Phase 20 complete — Agent Activity Display fully implemented
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 20 of 25 (Agent Activity Display)
-Plan: 1 of 2 in phase 20
-Status: In progress
-Last activity: 2026-02-10 — Completed 20-01-PLAN.md
+Plan: 2 of 2 in phase 20
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 20-02-PLAN.md
 
-Progress: █████████░░░░░░░░░░░░░░░░░░░░░ ~36%
+Progress: ██████████░░░░░░░░░░░░░░░░░░░░ ~38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 3.9 min
-- Total execution time: 0.52 hours
+- Total execution time: 0.59 hours
 
 **By Phase:**
 
@@ -34,10 +34,10 @@ Progress: █████████░░░░░░░░░░░░░░�
 | 17-beta-sidebar | 2/2 | 10min | 5min |
 | 18-chat-interface | 3/3 | 11min | 3.7min |
 | 19-conversation-management | 2/2 | 8min | 4min |
-| 20-agent-activity-display | 1/2 | 2min | 2min |
+| 20-agent-activity-display | 2/2 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 18-02 (3min), 18-03 (4min), 19-01 (4min), 19-02 (merged), 20-01 (2min)
+- Last 5 plans: 18-03 (4min), 19-01 (4min), 19-02 (merged), 20-01 (2min), 20-02 (4min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -88,6 +88,10 @@ Recent decisions affecting current work:
 - 20-01: Completed/failed badges override agent color with green/red for universal status clarity
 - 20-01: AgentActivityIndicator uses dashed border to distinguish from regular message bubbles
 - 20-01: Activity block mirrors AssistantBubble layout (avatar + content) for visual consistency
+- 20-02: Agent result summaries static per agent type for mock simplicity; real API returns actual results
+- 20-02: Grid-rows-[0fr]/[1fr] for collapse animation (no hardcoded max-height)
+- 20-02: activeAgentBlock as top-level state during execution, persisted to message.agentActivity on completion
+- 20-02: Retry always succeeds (no recursive failure) for better demo UX
 
 ### Pending Todos
 
@@ -100,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 20-01-PLAN.md
-Resume file: .planning/phases/20-agent-activity-display/20-02-PLAN.md
+Stopped at: Completed 20-02-PLAN.md (Phase 20 complete)
+Resume file: None — ready for Phase 21 planning

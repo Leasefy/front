@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { AutonomySettings } from './AutonomySettings';
 import { NotificationSettings } from './NotificationSettings';
 import { ToneSelector } from './ToneSelector';
+import { ThresholdSettings } from './ThresholdSettings';
 
 interface PreferencesPanelProps {
   className?: string;
@@ -49,6 +50,12 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
 
         {/* Tone selector */}
         <ToneSelector />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-200 dark:border-border" />
+
+        {/* Threshold settings */}
+        <ThresholdSettings />
       </div>
     </div>
   );

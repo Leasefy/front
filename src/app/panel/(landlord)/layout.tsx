@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Sparkle } from '@phosphor-icons/react';
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
@@ -59,6 +59,12 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     href: '/panel/mensajes',
     icon: Chat,
     badge: 3,
+  },
+  // --- AI Beta section ---
+  {
+    label: 'AI Beta',
+    href: '/panel/beta',
+    icon: Sparkle,
   },
 ];
 

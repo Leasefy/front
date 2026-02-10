@@ -16,6 +16,7 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -97,6 +98,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       href: '/panel/inmobiliaria/mensajes',
       icon: Chat,
       badge: 5,
+    },
+    // --- AI Beta section ---
+    {
+      label: t('inmobiliaria.nav.aiBeta'),
+      href: '/panel/inmobiliaria/beta',
+      icon: Sparkle,
     },
   ], [t]);
 

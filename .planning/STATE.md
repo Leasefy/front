@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 21 planned — Decision System ready for execution
+**Current focus:** Phase 21 — Decision System (plan 01 complete, plan 02 ready)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 21 of 25 (Decision System)
-Plan: 0 of 2 in phase 21
-Status: Plans written, ready for execution
-Last activity: 2026-02-10 — Created 21-01-PLAN.md and 21-02-PLAN.md
+Plan: 1 of 2 in phase 21
+Status: In progress
+Last activity: 2026-02-10 — Completed 21-01-PLAN.md
 
-Progress: ██████████░░░░░░░░░░░░░░░░░░░░ ~38%
+Progress: ██████████░░░░░░░░░░░░░░░░░░░░ ~40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 3.9 min
-- Total execution time: 0.59 hours
+- Total execution time: 0.66 hours
 
 **By Phase:**
 
@@ -35,9 +35,10 @@ Progress: ██████████░░░░░░░░░░░░░�
 | 18-chat-interface | 3/3 | 11min | 3.7min |
 | 19-conversation-management | 2/2 | 8min | 4min |
 | 20-agent-activity-display | 2/2 | 6min | 3min |
+| 21-decision-system | 1/2 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 18-03 (4min), 19-01 (4min), 19-02 (merged), 20-01 (2min), 20-02 (4min)
+- Last 5 plans: 19-01 (4min), 19-02 (merged), 20-01 (2min), 20-02 (4min), 21-01 (4min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -92,6 +93,10 @@ Recent decisions affecting current work:
 - 20-02: Grid-rows-[0fr]/[1fr] for collapse animation (no hardcoded max-height)
 - 20-02: activeAgentBlock as top-level state during execution, persisted to message.agentActivity on completion
 - 20-02: Retry always succeeds (no recursive failure) for better demo UX
+- 21-01: Decision attached after streaming completes via pendingDecisionRef (not inline during stream)
+- 21-01: selectDecisionOption sends "He seleccionado: [label]" for natural conversation flow
+- 21-01: Recommendation badges: green Recomendado, gray Neutral, red No recomendado
+- 21-01: Read-only state uses emerald ring for selected option, opacity-50 for non-selected
 
 ### Pending Todos
 
@@ -104,5 +109,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Phase 21 plans written
-Resume file: None — ready for Phase 21 execution
+Stopped at: Completed 21-01-PLAN.md
+Resume file: None — ready for 21-02 execution

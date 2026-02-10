@@ -8,9 +8,19 @@ import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
+import { AgentActivityIndicator } from './AgentActivityIndicator';
+import { AgentResultCard } from './AgentResultCard';
 
 interface ChatContainerProps {
   className?: string;
+}
+
+/**
+ * Helper: format duration in ms to human string.
+ */
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 /**
@@ -18,6 +28,12 @@ interface ChatContainerProps {
  *
  * Empty state: shows BetaWelcome with clickable suggested prompts.
  * Active state: message list with smart auto-scroll + sticky ChatInput at bottom.
+ *
+ * Agent execution flow:
+ *   1. User sends message
+ *   2. If agents dispatched: AgentActivityIndicator appears (badges animate)
+ *   3. After agents complete: AgentResultCards shown (collapsible)
+ *   4. Then AssistantBubble streams the response text
  *
  * Smart auto-scroll: only scrolls if user is near the bottom (within 100px).
  * If user scrolled up to read history, auto-scroll is suppressed.
@@ -27,7 +43,16 @@ interface ChatContainerProps {
  *   - ChatInput (sticky at bottom)
  */
 export function ChatContainer({ className }: ChatContainerProps) {
-  const { messages, sendMessage, isThinking, isStreaming, streamingContent } = useBetaChatContext();
+  const {
+    messages,
+    sendMessage,
+    isThinking,
+    isStreaming,
+    streamingContent,
+    activeAgentBlock,
+    isAgentsRunning,
+    retryAgent,
+  } = useBetaChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
 
@@ -43,10 +68,10 @@ export function ChatContainer({ className }: ChatContainerProps) {
     if (isNearBottom()) {
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, streamingContent, isThinking, isNearBottom]);
+  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning, isNearBottom]);
 
   const hasMessages = messages.length > 0;
-  const isBusy = isThinking || isStreaming;
+  const isBusy = isThinking || isStreaming || isAgentsRunning;
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
@@ -66,17 +91,59 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 return <UserBubble key={message.id} message={message} />;
               }
 
+              // Completed agent activity stored on the message (from previous turns)
+              const storedActivity = message.agentActivity;
+
+              // For the last assistant message, use live activeAgentBlock if agents are running
+              const liveActivity = isLastAssistant ? activeAgentBlock : null;
+              const activityToShow = liveActivity || storedActivity;
+
               // During thinking phase, hide the placeholder assistant bubble
               if (isLastAssistant && isThinking) {
                 return null;
               }
 
+              // During agent execution: show activity block, hide assistant bubble
+              if (isLastAssistant && isAgentsRunning && activeAgentBlock) {
+                return (
+                  <div key={message.id} className="space-y-3">
+                    <AgentActivityIndicator activity={activeAgentBlock} />
+                  </div>
+                );
+              }
+
               return (
-                <AssistantBubble
-                  key={message.id}
-                  message={message}
-                  streamingContent={isLastAssistant && isStreaming ? streamingContent : undefined}
-                />
+                <div key={message.id} className="space-y-3">
+                  {/* Agent result cards (shown after agents complete) */}
+                  {activityToShow && activityToShow.agents.length > 0 && (
+                    <div className="ml-9 space-y-1.5">
+                      {activityToShow.agents.map((agent) => (
+                        <AgentResultCard
+                          key={agent.id}
+                          agentType={agent.agentType}
+                          status={agent.status}
+                          duration={
+                            agent.durationMs !== undefined
+                              ? formatDuration(agent.durationMs)
+                              : undefined
+                          }
+                          error={agent.error}
+                          onRetry={
+                            agent.status === 'failed'
+                              ? () => retryAgent(agent.id)
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Assistant bubble (normal rendering) */}
+                  <AssistantBubble
+                    message={message}
+                    streamingContent={isLastAssistant && isStreaming ? streamingContent : undefined}
+                  />
+                </div>
               );
             })}
 

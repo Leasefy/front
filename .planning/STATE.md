@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 23 in progress — Preferences & Autonomy (1/2 plans complete)
+**Current focus:** Phase 23 complete — Preferences & Autonomy (2/2 plans complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 23 of 25 (Preferences & Autonomy)
-Plan: 1 of 2 in phase 23
-Status: In progress
-Last activity: 2026-02-10 — Completed 23-01-PLAN.md
+Plan: 2 of 2 in phase 23
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 23-02-PLAN.md
 
-Progress: ██████████████░░░░░░░░░░░░░░░░ ~54%
+Progress: ███████████████░░░░░░░░░░░░░░░ ~58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 3.8 min
-- Total execution time: 0.90 hours
+- Total plans completed: 15
+- Average duration: 3.7 min
+- Total execution time: 0.95 hours
 
 **By Phase:**
 
@@ -37,10 +37,10 @@ Progress: ██████████████░░░░░░░░░�
 | 20-agent-activity-display | 2/2 | 6min | 3min |
 | 21-decision-system | 2/2 | 7min | 3.5min |
 | 22-briefing-display | 2/2 | 8min | 4min |
-| 23-preferences-autonomy | 1/2 | 4min | 4min |
+| 23-preferences-autonomy | 2/2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 21-01 (4min), 21-02 (3min), 22-01 (4min), 22-02 (4min), 23-01 (4min)
+- Last 5 plans: 21-02 (3min), 22-01 (4min), 22-02 (4min), 23-01 (4min), 23-02 (3min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -114,6 +114,10 @@ Recent decisions affecting current work:
 - 23-01: PreferencesPanel renders in main content area via BetaLayout conditional (not sidebar)
 - 23-01: Deep merge in updatePreferences to avoid replacing nested objects
 - 23-01: All agents default to ask_first (safest conservative default for rental management)
+- 23-02: Toggle switches use role=switch with aria-checked for accessibility
+- 23-02: COP formatting uses toLocaleString('es-CO') for dot-as-thousands separator
+- 23-02: Score indicator 3-tier color: red (<50), amber (50-69), green (70+)
+- 23-02: Global reset button at panel bottom with red hover for destructive action affordance
 
 ### Pending Todos
 
@@ -126,5 +130,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 23-01-PLAN.md
-Resume file: None — ready to execute 23-02-PLAN.md
+Stopped at: Completed 23-02-PLAN.md (Phase 23 complete)
+Resume file: None — ready for Phase 24

@@ -24,6 +24,35 @@ export type AgentType =
 
 export type AgentExecutionStatus = 'dispatching' | 'running' | 'completed' | 'failed';
 
+/** Decision recommendation level for each option */
+export type DecisionRecommendation = 'recommended' | 'neutral' | 'not_recommended';
+
+// ============================================================================
+// Decision Types
+// ============================================================================
+
+/** A single option within a pending decision */
+export interface DecisionOption {
+  id: string;
+  label: string;
+  description: string;
+  recommendation: DecisionRecommendation;
+}
+
+/** A decision card embedded in the conversation */
+export interface PendingDecision {
+  id: string;
+  title: string;
+  description: string;
+  options: DecisionOption[];
+  /** Set when user selects an option */
+  selectedOptionId?: string;
+  /** Timestamp when user made the selection */
+  selectedAt?: Date;
+  /** Which agent category this decision relates to */
+  category: AgentType;
+}
+
 // ============================================================================
 // Core Types
 // ============================================================================
@@ -64,6 +93,8 @@ export interface ChatMessage {
   status: MessageStatus;
   /** Agent executions associated with this assistant response */
   agentActivity?: AgentActivityBlock;
+  /** Pending decision attached to this assistant response */
+  decision?: PendingDecision;
 }
 
 export interface Conversation {

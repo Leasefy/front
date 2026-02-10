@@ -1,145 +1,169 @@
-# Requirements: Arriendo Fácil
+# Requirements: Leasefy
 
 **Defined:** 2026-01-18
-**Core Value:** Propietarios toman decisiones informadas sobre inquilinos en minutos, no días, con explicabilidad total del scoring AI.
+**Updated:** 2026-02-10 (v4.0 requirements added)
+**Core Value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.
 
-## v1 Requirements
+## v1-v3 Requirements (COMPLETE)
 
-Requirements for MVP release. Each maps to roadmap phases.
+All v1 through v3.1 requirements shipped. See previous milestones in MILESTONES.md.
 
-### Foundation (FUND)
+<details>
+<summary>v1 Requirements (54 total — all complete)</summary>
 
-- [ ] **FUND-01**: Next.js 14 App Router project scaffolded with TypeScript
-- [ ] **FUND-02**: Tailwind CSS + shadcn/ui configured
-- [ ] **FUND-03**: Prisma + PostgreSQL schema initialized
-- [ ] **FUND-04**: Project deploys to Vercel successfully
-- [ ] **FUND-05**: Seed data script creates demo content
+### Foundation (FUND) — Phase 1 ✓
+- [x] **FUND-01**: Next.js 14 App Router project scaffolded with TypeScript
+- [x] **FUND-02**: Tailwind CSS + shadcn/ui configured
+- [x] **FUND-03**: Prisma + PostgreSQL schema initialized
+- [x] **FUND-04**: Project deploys to Vercel successfully
+- [x] **FUND-05**: Seed data script creates demo content
 
-### Authentication (AUTH)
+### Authentication (AUTH) — Phase 2 ✓
+- [x] **AUTH-01**: User can register with email magic link (OTP)
+- [x] **AUTH-02**: User can log in with magic link
+- [x] **AUTH-03**: User session persists across browser refresh
+- [x] **AUTH-04**: User can log out from any page
+- [x] **AUTH-05**: User role distinction (tenant vs landlord) established
 
-- [ ] **AUTH-01**: User can register with email magic link (OTP)
-- [ ] **AUTH-02**: User can log in with magic link
-- [ ] **AUTH-03**: User session persists across browser refresh
-- [ ] **AUTH-04**: User can log out from any page
-- [ ] **AUTH-05**: User role distinction (tenant vs landlord) established
+### Catalog (CATL) — Phase 3 ✓
+- [x] **CATL-01** through **CATL-07**: Property catalog with filters, wishlist, detail, map
 
-### Catalog (CATL)
+### Property Management (PROP) — Phase 4 ✓
+- [x] **PROP-01** through **PROP-05**: Property CRUD and photo management
 
-- [ ] **CATL-01**: User can browse property listings with premium cards (Airbnb-level)
-- [ ] **CATL-02**: User can filter by city, neighborhood, price range
-- [ ] **CATL-03**: User can filter by bedrooms, pet friendly, furnished, parking
-- [ ] **CATL-04**: User can save properties to wishlist (without account)
-- [ ] **CATL-05**: User can view property detail with image carousel
-- [ ] **CATL-06**: Property detail shows rules, availability, sticky "Apply" CTA
-- [ ] **CATL-07**: Map placeholder shows property location
+### Application Flow (APPL) — Phase 5 ✓
+- [x] **APPL-01** through **APPL-08**: Application wizard with autosave
 
-### Property Management (PROP)
+### Risk Score Engine (SCOR) — Phase 6 ✓
+- [x] **SCOR-01** through **SCOR-11**: Full scoring engine display
 
-- [ ] **PROP-01**: Landlord can view list of own properties
-- [ ] **PROP-02**: Landlord can create new property listing
-- [ ] **PROP-03**: Landlord can edit property details
-- [ ] **PROP-04**: Landlord can upload property photos
-- [ ] **PROP-05**: Property photos display with optimized loading
+### Tenant Experience (TENT) — Phase 7 ✓
+- [x] **TENT-01** through **TENT-05**: Tenant tracking dashboard
 
-### Application Flow (APPL)
+### Landlord Experience (LAND) — Phase 8 ✓
+- [x] **LAND-01** through **LAND-12**: Landlord candidate management
 
-- [ ] **APPL-01**: Tenant can start application wizard for a property
-- [ ] **APPL-02**: Wizard has 4-6 steps with clear progress indicator
-- [ ] **APPL-03**: Wizard autosaves progress (resume later)
-- [ ] **APPL-04**: Tenant can upload identity documents with preview
-- [ ] **APPL-05**: Tenant can upload income proof documents
-- [ ] **APPL-06**: Tenant provides employment information
-- [ ] **APPL-07**: Tenant provides references
-- [ ] **APPL-08**: Tenant reviews and submits application
+### State Machine (STAT) — Phase 9 ✓
+- [x] **STAT-01** through **STAT-04**: Application state transitions
 
-### Risk Score Engine (SCOR)
+### UX Premium (UXPL) — Phase 10 ✓
+- [x] **UXPL-01** through **UXPL-05**: Skeletons, empty states, micro-interactions
 
-- [ ] **SCOR-01**: FeatureBuilder extracts features from application data
-- [ ] **SCOR-02**: IntegrityEngine detects fraud/inconsistencies
-- [ ] **SCOR-03**: FinancialModel calculates rent-to-income ratio + debt buffer
-- [ ] **SCOR-04**: StabilityModel evaluates job tenure, contract type, address history
-- [ ] **SCOR-05**: HistoryModel evaluates payment history, references
-- [ ] **SCOR-06**: Aggregator combines subscores with configurable weights → 0-100
-- [ ] **SCOR-07**: Score translates to level A/B/C/D with text recommendation
-- [ ] **SCOR-08**: 3-6 driver explanations generated per candidate
-- [ ] **SCOR-09**: Risk flags generated as visual chips
-- [ ] **SCOR-10**: Suggested conditions generated (cosigner, deposit, insurance)
-- [ ] **SCOR-11**: Features + outcomes persisted for future ML
+</details>
 
-### Tenant Experience (TENT)
+## v4.0 Requirements — AI Agent Platform Beta
 
-- [ ] **TENT-01**: Tenant can view list of own applications with status
-- [ ] **TENT-02**: Tenant can view application detail with timeline
-- [ ] **TENT-03**: Tenant can see verification checklist status
-- [ ] **TENT-04**: Tenant can respond to information requests
-- [ ] **TENT-05**: Tenant can withdraw application
+Requirements for v4.0 milestone. **Scope: Frontend UI + Backend API documentation.**
+Claude builds the frontend. Backend developer builds the AI orchestrator and agents using our documentation.
 
-### Landlord Experience (LAND)
+### Beta Sidebar Integration (BETA)
 
-- [ ] **LAND-01**: Landlord can view candidates for each property
-- [ ] **LAND-02**: Candidates ranked by fit score
-- [ ] **LAND-03**: Candidate cards show level, score, rent-to-income ratio
-- [ ] **LAND-04**: Candidate cards show verification checks and risk flags
-- [ ] **LAND-05**: Landlord can request additional information
-- [ ] **LAND-06**: Landlord can pre-approve candidate
-- [ ] **LAND-07**: Landlord can approve candidate
-- [ ] **LAND-08**: Landlord can reject candidate
-- [ ] **LAND-09**: Landlord can view detailed candidate profile
-- [ ] **LAND-10**: Candidate detail shows AI summary, subscores, drivers
-- [ ] **LAND-11**: Candidate detail shows documents, references, notes
-- [ ] **LAND-12**: Landlord can add private notes to candidates
+- [ ] **BETA-01**: "Beta" section visible in propietarios sidebar with sparkle/AI icon
+- [ ] **BETA-02**: "Beta" section visible in inmobiliarias sidebar with sparkle/AI icon
+- [ ] **BETA-03**: Beta section has its own route group (/panel/beta/*, /panel/inmobiliaria/beta/*)
+- [ ] **BETA-04**: Beta section has dedicated layout with chat-optimized structure
+- [ ] **BETA-05**: Beta badge/label indicates experimental status
+- [ ] **BETA-06**: Existing dashboard functionality unchanged (no regressions)
 
-### State Machine (STAT)
+### Chat Interface (CHAT)
 
-- [ ] **STAT-01**: Applications have states: DRAFT, SUBMITTED, UNDER_REVIEW, NEEDS_INFO, PREAPPROVED, APPROVED, REJECTED, WITHDRAWN
-- [ ] **STAT-02**: State transitions logged with timestamps
-- [ ] **STAT-03**: Timeline shows all events visually
-- [ ] **STAT-04**: Status changes visible to tenant in real-time
+- [ ] **CHAT-01**: Chat input with send button, Enter to send, Shift+Enter for newline
+- [ ] **CHAT-02**: User message bubbles (right-aligned, user avatar/initials)
+- [ ] **CHAT-03**: Assistant message bubbles (left-aligned, Leasefy AI branding)
+- [ ] **CHAT-04**: Streaming text display (typewriter/character-by-character rendering)
+- [ ] **CHAT-05**: Markdown rendering in assistant messages (bold, lists, tables, code)
+- [ ] **CHAT-06**: Typing indicator while AI is processing
+- [ ] **CHAT-07**: Auto-scroll to latest message
+- [ ] **CHAT-08**: Welcome message with suggested prompts for first-time users
+- [ ] **CHAT-09**: Conversation persists across page navigation within session
+- [ ] **CHAT-10**: Empty state when no conversations exist
 
-### UX Premium (UXPL)
+### Conversation Management (CONV)
 
-- [ ] **UXPL-01**: Skeleton loaders on all list views
-- [ ] **UXPL-02**: Empty states with clear CTAs
-- [ ] **UXPL-03**: Large cards with optimized photos
-- [ ] **UXPL-04**: Micro-interactions (hover, transitions)
-- [ ] **UXPL-05**: Verification badges displayed consistently
+- [ ] **CONV-01**: Conversation list sidebar showing past conversations
+- [ ] **CONV-02**: New conversation button creates fresh thread
+- [ ] **CONV-03**: Conversation titles auto-generated from first message
+- [ ] **CONV-04**: Conversations grouped by date (Hoy, Ayer, Esta semana, Anterior)
+- [ ] **CONV-05**: Delete conversation action with confirmation
+- [ ] **CONV-06**: Search/filter conversations by text
 
-## v2 Requirements
+### Agent Activity Display (AGNT)
 
-Deferred to future release. Tracked but not in current roadmap.
+- [ ] **AGNT-01**: Visual indicator when AI orchestrator is dispatching agents
+- [ ] **AGNT-02**: Agent name badges with icons (Cobranza, Pipeline, Documentos, Mantenimiento, etc.)
+- [ ] **AGNT-03**: Agent execution status (running/completed/failed) shown inline
+- [ ] **AGNT-04**: Agent result cards displayed inline in conversation (collapsible detail)
+- [ ] **AGNT-05**: Multiple agents can show as executing simultaneously
+- [ ] **AGNT-06**: Error state when agent execution fails with retry option
 
-### Payments & Contracts
+### Decision System (DCSN)
 
-- **PAY-01**: Tenant can pay rent through platform
-- **PAY-02**: Lease contract generation
-- **PAY-03**: Insurance/guarantee integration
+- [ ] **DCSN-01**: Pending decision cards embedded in conversation with 2-4 options
+- [ ] **DCSN-02**: Each option shows AI recommendation indicator (recommended/neutral/not recommended)
+- [ ] **DCSN-03**: User can select an option which sends it as their response
+- [ ] **DCSN-04**: Decision cards become read-only after selection (shows what was chosen)
+- [ ] **DCSN-05**: Pending decisions counter in Beta sidebar nav item
+- [ ] **DCSN-06**: Decision history accessible (what was decided and when)
 
-### Communication
+### Briefing Display (BRFG)
 
-- **COMM-01**: Real-time chat between tenant and landlord
-- **COMM-02**: WhatsApp/SMS notifications
-- **COMM-03**: Push notifications
+- [ ] **BRFG-01**: Daily briefing card displayed at top of Beta section
+- [ ] **BRFG-02**: Briefing sections: cobros summary, pipeline updates, mantenimiento, decisiones pendientes
+- [ ] **BRFG-03**: Each briefing section expandable/collapsible
+- [ ] **BRFG-04**: Briefing actions: "Cuéntame más sobre cobros" → opens chat with context
+- [ ] **BRFG-05**: New briefing notification badge in sidebar
+- [ ] **BRFG-06**: Historical briefings browsable by date
 
-### Advanced Features
+### Preferences & Autonomy (PREF)
 
-- **ADV-01**: Real credit bureau integration (Datacrédito)
-- **ADV-02**: Identity verification (facial recognition)
-- **ADV-03**: ML-based scoring (trained on outcomes)
-- **ADV-04**: Multi-city expansion beyond Colombia
+- [ ] **PREF-01**: Settings page for AI autonomy levels per category (cobranza, mantenimiento, comunicación)
+- [ ] **PREF-02**: Autonomy toggles: auto/ask-first/manual for each agent type
+- [ ] **PREF-03**: Notification preferences: what AI notifies about and via which channel
+- [ ] **PREF-04**: Communication tone preference (formal/casual/professional)
+- [ ] **PREF-05**: Threshold settings (mora tolerance, maintenance budget limits)
 
-## Out of Scope
+### API Client & Mock Layer (APIC)
 
-Explicitly excluded. Documented to prevent scope creep.
+- [ ] **APIC-01**: API client module with typed endpoints for chat, conversations, decisions, briefings
+- [ ] **APIC-02**: SSE/streaming client for real-time chat responses
+- [ ] **APIC-03**: Mock API responses that simulate realistic orchestrator behavior
+- [ ] **APIC-04**: Mock agent execution simulation (delays, status updates)
+- [ ] **APIC-05**: Mock briefing data with realistic Colombian rental scenarios
+- [ ] **APIC-06**: Environment flag to switch between mock and real API
+
+### Backend API Documentation (DOCS)
+
+- [ ] **DOCS-01**: OpenAPI-style spec for POST /api/v1/ai/message (chat endpoint with streaming)
+- [ ] **DOCS-02**: OpenAPI-style spec for GET/POST/DELETE /api/v1/ai/conversations
+- [ ] **DOCS-03**: OpenAPI-style spec for GET/POST /api/v1/ai/decisions
+- [ ] **DOCS-04**: OpenAPI-style spec for GET /api/v1/ai/briefings
+- [ ] **DOCS-05**: OpenAPI-style spec for GET/PUT /api/v1/ai/preferences
+- [ ] **DOCS-06**: WebSocket/SSE protocol documentation for streaming responses
+- [ ] **DOCS-07**: Agent execution status event schema documentation
+- [ ] **DOCS-08**: Updated AI-AGENT-ARCHITECTURE.md with exact frontend contract
+
+### Polish & QA (PLSH)
+
+- [ ] **PLSH-01**: Dark mode compatible across all Beta UI
+- [ ] **PLSH-02**: Responsive design: mobile chat experience (full-screen chat)
+- [ ] **PLSH-03**: i18n support (ES/EN) for all Beta strings
+- [ ] **PLSH-04**: Keyboard shortcuts (Cmd+K for new chat, Esc to close)
+- [ ] **PLSH-05**: Accessibility: screen reader support, focus management
+- [ ] **PLSH-06**: Loading states and error boundaries for all Beta pages
+- [ ] **PLSH-07**: TypeScript strict mode, zero build warnings
+
+## Out of Scope (v4.0)
 
 | Feature | Reason |
 |---------|--------|
-| Real payments/contracts | MVP validates flow, not transaction |
-| Real-time chat | Async messages sufficient for MVP |
-| Real credit bureau integration | Internal scoring rules for MVP |
-| Multi-country support | Colombia only (COP, Colombian cities) |
-| SMS/WhatsApp OTP | Email magic link reduces complexity |
-| Real identity verification | Document upload simulation for MVP |
-| ML-based scoring | Rule-based first, save data for future ML |
+| Real AI orchestrator backend | Backend developer builds this using our docs |
+| Real agent execution | Mock simulation in frontend, real in backend |
+| WhatsApp integration backend | Documented in API spec, backend implements |
+| Real Claude API calls | Backend responsibility |
+| Payment processing | Separate backend concern |
+| ML-based scoring | Future milestone |
+| Multi-country | Colombia only |
+| Bland.ai phone calls | Future phase, not beta |
 
 ## Traceability
 
@@ -147,79 +171,78 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FUND-01 | Phase 1 | Pending |
-| FUND-02 | Phase 1 | Pending |
-| FUND-03 | Phase 1 | Pending |
-| FUND-04 | Phase 1 | Pending |
-| FUND-05 | Phase 1 | Pending |
-| AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 2 | Pending |
-| AUTH-03 | Phase 2 | Pending |
-| AUTH-04 | Phase 2 | Pending |
-| AUTH-05 | Phase 2 | Pending |
-| CATL-01 | Phase 3 | Pending |
-| CATL-02 | Phase 3 | Pending |
-| CATL-03 | Phase 3 | Pending |
-| CATL-04 | Phase 3 | Pending |
-| CATL-05 | Phase 3 | Pending |
-| CATL-06 | Phase 3 | Pending |
-| CATL-07 | Phase 3 | Pending |
-| PROP-01 | Phase 4 | Pending |
-| PROP-02 | Phase 4 | Pending |
-| PROP-03 | Phase 4 | Pending |
-| PROP-04 | Phase 4 | Pending |
-| PROP-05 | Phase 4 | Pending |
-| APPL-01 | Phase 5 | Pending |
-| APPL-02 | Phase 5 | Pending |
-| APPL-03 | Phase 5 | Pending |
-| APPL-04 | Phase 5 | Pending |
-| APPL-05 | Phase 5 | Pending |
-| APPL-06 | Phase 5 | Pending |
-| APPL-07 | Phase 5 | Pending |
-| APPL-08 | Phase 5 | Pending |
-| SCOR-01 | Phase 6 | Pending |
-| SCOR-02 | Phase 6 | Pending |
-| SCOR-03 | Phase 6 | Pending |
-| SCOR-04 | Phase 6 | Pending |
-| SCOR-05 | Phase 6 | Pending |
-| SCOR-06 | Phase 6 | Pending |
-| SCOR-07 | Phase 6 | Pending |
-| SCOR-08 | Phase 6 | Pending |
-| SCOR-09 | Phase 6 | Pending |
-| SCOR-10 | Phase 6 | Pending |
-| SCOR-11 | Phase 6 | Pending |
-| TENT-01 | Phase 7 | Pending |
-| TENT-02 | Phase 7 | Pending |
-| TENT-03 | Phase 7 | Pending |
-| TENT-04 | Phase 7 | Pending |
-| TENT-05 | Phase 7 | Pending |
-| LAND-01 | Phase 8 | Pending |
-| LAND-02 | Phase 8 | Pending |
-| LAND-03 | Phase 8 | Pending |
-| LAND-04 | Phase 8 | Pending |
-| LAND-05 | Phase 8 | Pending |
-| LAND-06 | Phase 8 | Pending |
-| LAND-07 | Phase 8 | Pending |
-| LAND-08 | Phase 8 | Pending |
-| LAND-09 | Phase 8 | Pending |
-| LAND-10 | Phase 8 | Pending |
-| LAND-11 | Phase 8 | Pending |
-| LAND-12 | Phase 8 | Pending |
-| STAT-01 | Phase 9 | Pending |
-| STAT-02 | Phase 9 | Pending |
-| STAT-03 | Phase 9 | Pending |
-| STAT-04 | Phase 9 | Pending |
-| UXPL-01 | Phase 10 | Pending |
-| UXPL-02 | Phase 10 | Pending |
-| UXPL-03 | Phase 10 | Pending |
-| UXPL-04 | Phase 10 | Pending |
-| UXPL-05 | Phase 10 | Pending |
+| BETA-01 | Phase 17 | Pending |
+| BETA-02 | Phase 17 | Pending |
+| BETA-03 | Phase 17 | Pending |
+| BETA-04 | Phase 17 | Pending |
+| BETA-05 | Phase 17 | Pending |
+| BETA-06 | Phase 17 | Pending |
+| CHAT-01 | Phase 18 | Pending |
+| CHAT-02 | Phase 18 | Pending |
+| CHAT-03 | Phase 18 | Pending |
+| CHAT-04 | Phase 18 | Pending |
+| CHAT-05 | Phase 18 | Pending |
+| CHAT-06 | Phase 18 | Pending |
+| CHAT-07 | Phase 18 | Pending |
+| CHAT-08 | Phase 18 | Pending |
+| CHAT-09 | Phase 18 | Pending |
+| CHAT-10 | Phase 18 | Pending |
+| CONV-01 | Phase 19 | Pending |
+| CONV-02 | Phase 19 | Pending |
+| CONV-03 | Phase 19 | Pending |
+| CONV-04 | Phase 19 | Pending |
+| CONV-05 | Phase 19 | Pending |
+| CONV-06 | Phase 19 | Pending |
+| AGNT-01 | Phase 20 | Pending |
+| AGNT-02 | Phase 20 | Pending |
+| AGNT-03 | Phase 20 | Pending |
+| AGNT-04 | Phase 20 | Pending |
+| AGNT-05 | Phase 20 | Pending |
+| AGNT-06 | Phase 20 | Pending |
+| DCSN-01 | Phase 21 | Pending |
+| DCSN-02 | Phase 21 | Pending |
+| DCSN-03 | Phase 21 | Pending |
+| DCSN-04 | Phase 21 | Pending |
+| DCSN-05 | Phase 21 | Pending |
+| DCSN-06 | Phase 21 | Pending |
+| BRFG-01 | Phase 22 | Pending |
+| BRFG-02 | Phase 22 | Pending |
+| BRFG-03 | Phase 22 | Pending |
+| BRFG-04 | Phase 22 | Pending |
+| BRFG-05 | Phase 22 | Pending |
+| BRFG-06 | Phase 22 | Pending |
+| PREF-01 | Phase 23 | Pending |
+| PREF-02 | Phase 23 | Pending |
+| PREF-03 | Phase 23 | Pending |
+| PREF-04 | Phase 23 | Pending |
+| PREF-05 | Phase 23 | Pending |
+| APIC-01 | Phase 24 | Pending |
+| APIC-02 | Phase 24 | Pending |
+| APIC-03 | Phase 24 | Pending |
+| APIC-04 | Phase 24 | Pending |
+| APIC-05 | Phase 24 | Pending |
+| APIC-06 | Phase 24 | Pending |
+| DOCS-01 | Phase 24 | Pending |
+| DOCS-02 | Phase 24 | Pending |
+| DOCS-03 | Phase 24 | Pending |
+| DOCS-04 | Phase 24 | Pending |
+| DOCS-05 | Phase 24 | Pending |
+| DOCS-06 | Phase 24 | Pending |
+| DOCS-07 | Phase 24 | Pending |
+| DOCS-08 | Phase 24 | Pending |
+| PLSH-01 | Phase 25 | Pending |
+| PLSH-02 | Phase 25 | Pending |
+| PLSH-03 | Phase 25 | Pending |
+| PLSH-04 | Phase 25 | Pending |
+| PLSH-05 | Phase 25 | Pending |
+| PLSH-06 | Phase 25 | Pending |
+| PLSH-07 | Phase 25 | Pending |
 
 **Coverage:**
-- v1 requirements: 54 total
-- Mapped to phases: 54
+- v4.0 requirements: 63 total
+- Mapped to phases: 63
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after roadmap creation*
+*Requirements defined: 2026-01-18 (v1)*
+*Last updated: 2026-02-10 after v4.0 roadmap creation*

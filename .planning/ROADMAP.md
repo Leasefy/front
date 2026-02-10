@@ -251,7 +251,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
 | 19. Conversation Management | 2/2 | Complete | 2026-02-10 |
 | 20. Agent Activity Display | 2/2 | Complete | 2026-02-10 |
-| 21. Decision System | 0/2 | Not started | - |
+| 21. Decision System | 2/2 | Complete | 2026-02-10 |
 | 22. Briefing Display | 0/2 | Not started | - |
 | 23. Preferences & Autonomy | 0/2 | Not started | - |
 | 24. API Client & Backend Docs | 0/3 | Not started | - |

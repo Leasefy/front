@@ -4,6 +4,7 @@ import { ChatCircle, Lightning, ListChecks, Newspaper, Plus, Sparkle } from '@ph
 import { cn } from '@/lib/utils';
 import { AppSwitcher } from './AppSwitcher';
 import { ConversationList } from './ConversationList';
+import { DecisionHistory } from './DecisionHistory';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing';
@@ -114,11 +115,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
             Fase 20
           </div>
         )}
-        {activeTab === 'decisions' && (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
-            Fase 21
-          </div>
-        )}
+        {activeTab === 'decisions' && <DecisionHistory />}
         {activeTab === 'briefing' && (
           <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
             Fase 22

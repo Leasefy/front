@@ -8,17 +8,17 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 25 plan 03 complete — Phase 25 (Polish & QA) nearing completion
+**Current focus:** Phase 25 complete — All v4.0 milestone plans executed, including i18n + a11y re-execution
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 25 of 25 (Polish & QA)
 Plan: 3 of 3 in phase 25
-Status: Plan 25-03 complete (loading states, error boundaries, TypeScript strict)
-Last activity: 2026-02-10 — Completed 25-03-PLAN.md
+Status: All plans complete — 25-02 re-executed with i18n, keyboard shortcuts, accessibility
+Last activity: 2026-02-10 — Re-executed 25-02-PLAN.md (i18n + a11y)
 
-Progress: ██████████████████████████████ ~99%
+Progress: ██████████████████████████████ 100%
 
 ## Performance Metrics
 
@@ -138,6 +138,11 @@ Recent decisions affecting current work:
 - 25-03: isLoading always false in mock mode, ready for real API latency
 - 25-03: BriefingCard isLoading check placed after hooks to avoid rules-of-hooks violation
 - 25-03: Pre-existing build errors (Server Components prerender) not addressed - outside Beta scope
+- 25-02: labelKey pattern for static arrays -- store translation key string, resolve with t() at render time
+- 25-02: DATE_GROUP_KEYS Record<DateGroup, string> maps internal Spanish keys to i18n keys for display
+- 25-02: BetaKeyboardShortcuts renderless component inside BetaChatProvider for context access
+- 25-02: Mock data strings (AGENT_RESULT_SUMMARIES, AGENT_ERROR_MESSAGES) kept hardcoded -- will be replaced by real API
+- 25-02: UserBubble "TU" kept as literal (user initials, not translatable text)
 
 ### Pending Todos
 
@@ -145,11 +150,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Aggressive linter/auto-import tool keeps injecting useI18n into Beta components (Beta routes lack I18nProvider). Watch for this in future edits to Beta components.
 - Pre-existing build errors on non-Beta routes (/, /auth, /pricing) due to Server Components prerender issues. Not blocking Beta functionality.
+- i18n linter concern resolved: Beta components now properly use useI18n() with beta.* translation keys.
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 25-03-PLAN.md (loading states, error boundaries, TypeScript strict)
-Resume file: None — all 3 plans in Phase 25 complete
+Stopped at: Re-executed 25-02-PLAN.md (i18n strings + keyboard shortcuts + accessibility)
+Resume file: None — all plans in Phase 25 complete, v4.0 milestone done

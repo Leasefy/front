@@ -188,6 +188,50 @@ export interface DailyBriefing {
 // Hook State
 // ============================================================================
 
+// ============================================================================
+// Preferences Types
+// ============================================================================
+
+/** Autonomy level for each agent type */
+export type AutonomyLevel = 'auto' | 'ask_first' | 'manual';
+
+/** Communication tone preference */
+export type CommunicationTone = 'formal' | 'professional' | 'casual';
+
+/** Notification preferences per agent category */
+export interface NotificationPreferences {
+  /** Which categories to notify about */
+  categories: Record<AgentType, boolean>;
+  /** Notification channel preference */
+  channel: 'in_app' | 'email' | 'whatsapp' | 'all';
+}
+
+/** Threshold settings for agent decision-making */
+export interface ThresholdSettings {
+  /** Days of mora tolerance before escalation */
+  moraTolerance: number;
+  /** Max maintenance budget (COP) before requiring approval */
+  maintenanceBudgetLimit: number;
+  /** Min risk score to auto-approve candidates */
+  minCandidateScore: number;
+}
+
+/** User preferences for the AI Beta platform */
+export interface BetaPreferences {
+  /** Per-agent autonomy settings */
+  autonomy: Record<AgentType, AutonomyLevel>;
+  /** Notification preferences */
+  notifications: NotificationPreferences;
+  /** Communication tone */
+  tone: CommunicationTone;
+  /** Threshold settings */
+  thresholds: ThresholdSettings;
+}
+
+// ============================================================================
+// Hook State
+// ============================================================================
+
 export interface ChatState {
   /** All messages in the current conversation */
   messages: ChatMessage[];

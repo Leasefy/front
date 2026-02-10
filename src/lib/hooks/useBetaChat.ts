@@ -13,6 +13,7 @@ import type {
 } from '@/lib/types/beta-chat';
 import { getMockResponse } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
+import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
 
 // ============================================================================
 // Constants
@@ -154,6 +155,9 @@ export interface UseBetaChatReturn {
   isAgentsRunning: boolean;
   retryAgent: (executionId: string) => void;
 
+  // Decision handling
+  selectDecisionOption: (messageId: string, optionId: string) => void;
+
   // Conversation management
   conversations: Conversation[];
   activeConversationId: string | null;
@@ -207,6 +211,9 @@ export function useBetaChat(): UseBetaChatReturn {
     responseText: string;
     conversationId: string;
   } | null>(null);
+
+  // Store pending decision to attach after streaming completes
+  const pendingDecisionRef = useRef<import('@/lib/types/beta-chat').PendingDecision | null>(null);
 
   // Sync activeConversationId on init when state initializers may differ
   useEffect(() => {
@@ -270,7 +277,9 @@ export function useBetaChat(): UseBetaChatReturn {
 
       const revealNextChar = () => {
         if (charIndexRef.current >= responseText.length) {
-          // Complete
+          // Complete — also attach pending decision if any
+          const decision = pendingDecisionRef.current;
+          pendingDecisionRef.current = null;
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== conversationId) return c;
@@ -278,7 +287,12 @@ export function useBetaChat(): UseBetaChatReturn {
                 ...c,
                 messages: c.messages.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: responseText, status: 'complete' as MessageStatus }
+                    ? {
+                        ...m,
+                        content: responseText,
+                        status: 'complete' as MessageStatus,
+                        ...(decision ? { decision } : {}),
+                      }
                     : m
                 ),
                 updatedAt: new Date(),
@@ -580,6 +594,10 @@ export function useBetaChat(): UseBetaChatReturn {
 
       const responseText = getMockResponse(trimmed);
       const agentScenario = getMockAgentScenario(trimmed);
+      const decisionScenario = getMockDecisionScenario(trimmed);
+
+      // Store pending decision for attachment after streaming completes
+      pendingDecisionRef.current = decisionScenario;
 
       if (agentScenario && agentScenario.length > 0) {
         // Agents to dispatch — show agent execution before streaming
@@ -660,6 +678,50 @@ export function useBetaChat(): UseBetaChatReturn {
   );
 
   // ========================================================================
+  // Decision selection
+  // ========================================================================
+
+  const selectDecisionOption = useCallback(
+    (messageId: string, optionId: string) => {
+      if (!activeConversationId) return;
+
+      // Find the option label for the user response message
+      let optionLabel = '';
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConversationId) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) => {
+              if (m.id !== messageId || !m.decision) return m;
+              const option = m.decision.options.find((o) => o.id === optionId);
+              if (option) optionLabel = option.label;
+              return {
+                ...m,
+                decision: {
+                  ...m.decision,
+                  selectedOptionId: optionId,
+                  selectedAt: new Date(),
+                },
+              };
+            }),
+            updatedAt: new Date(),
+          };
+        })
+      );
+
+      // Send a user message confirming the selection, then trigger a mock response
+      if (optionLabel) {
+        // Small delay so the decision card updates visually first
+        setTimeout(() => {
+          sendMessage(`He seleccionado: ${optionLabel}`);
+        }, 300);
+      }
+    },
+    [activeConversationId, sendMessage]
+  );
+
+  // ========================================================================
   // Search / Summaries
   // ========================================================================
 
@@ -690,6 +752,9 @@ export function useBetaChat(): UseBetaChatReturn {
     activeAgentBlock,
     isAgentsRunning,
     retryAgent,
+
+    // Decision handling
+    selectDecisionOption,
 
     // Conversation management
     conversations,

@@ -10,6 +10,7 @@ import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentResultCard } from './AgentResultCard';
+import { DecisionCard } from './DecisionCard';
 
 interface ChatContainerProps {
   className?: string;
@@ -52,6 +53,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     activeAgentBlock,
     isAgentsRunning,
     retryAgent,
+    selectDecisionOption,
   } = useBetaChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
@@ -136,6 +138,18 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         />
                       ))}
                     </div>
+                  )}
+
+                  {/* Decision card (shown after agent results, before assistant text) */}
+                  {message.decision && (
+                    <DecisionCard
+                      decision={message.decision}
+                      onSelect={
+                        !message.decision.selectedOptionId
+                          ? (optionId) => selectDecisionOption(message.id, optionId)
+                          : undefined
+                      }
+                    />
                   )}
 
                   {/* Assistant bubble (normal rendering) */}

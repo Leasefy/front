@@ -7,6 +7,7 @@ import {
   Plus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 // ============================================================================
@@ -23,33 +24,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** Determine candidate score color */
-function getScoreColor(score: number): {
-  bg: string;
-  text: string;
-  label: string;
-} {
-  if (score < 50) {
-    return {
-      bg: 'bg-red-100 dark:bg-red-500/10',
-      text: 'text-red-600 dark:text-red-400',
-      label: 'Riesgoso',
-    };
-  }
-  if (score < 70) {
-    return {
-      bg: 'bg-amber-100 dark:bg-amber-500/10',
-      text: 'text-amber-600 dark:text-amber-400',
-      label: 'Moderado',
-    };
-  }
-  return {
-    bg: 'bg-emerald-100 dark:bg-emerald-500/10',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    label: 'Seguro',
-  };
-}
-
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -61,9 +35,11 @@ interface NumberStepperProps {
   step: number;
   suffix: string;
   onChange: (value: number) => void;
+  decreaseLabel: string;
+  increaseLabel: string;
 }
 
-function NumberStepper({ value, min, max, step, suffix, onChange }: NumberStepperProps) {
+function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel, increaseLabel }: NumberStepperProps) {
   const handleDecrement = () => {
     onChange(clamp(value - step, min, max));
   };
@@ -85,7 +61,7 @@ function NumberStepper({ value, min, max, step, suffix, onChange }: NumberSteppe
           'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
-        aria-label="Disminuir"
+        aria-label={decreaseLabel}
       >
         <Minus className="w-3.5 h-3.5" weight="bold" />
       </button>
@@ -112,7 +88,7 @@ function NumberStepper({ value, min, max, step, suffix, onChange }: NumberSteppe
           'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
-        aria-label="Aumentar"
+        aria-label={increaseLabel}
       >
         <Plus className="w-3.5 h-3.5" weight="bold" />
       </button>
@@ -126,9 +102,11 @@ interface CurrencyStepperProps {
   max: number;
   step: number;
   onChange: (value: number) => void;
+  decreaseLabel: string;
+  increaseLabel: string;
 }
 
-function CurrencyStepper({ value, min, max, step, onChange }: CurrencyStepperProps) {
+function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, increaseLabel }: CurrencyStepperProps) {
   const handleDecrement = () => {
     onChange(clamp(value - step, min, max));
   };
@@ -150,7 +128,7 @@ function CurrencyStepper({ value, min, max, step, onChange }: CurrencyStepperPro
           'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
-        aria-label="Disminuir"
+        aria-label={decreaseLabel}
       >
         <Minus className="w-3.5 h-3.5" weight="bold" />
       </button>
@@ -177,7 +155,7 @@ function CurrencyStepper({ value, min, max, step, onChange }: CurrencyStepperPro
           'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
-        aria-label="Aumentar"
+        aria-label={increaseLabel}
       >
         <Plus className="w-3.5 h-3.5" weight="bold" />
       </button>
@@ -201,6 +179,7 @@ interface ThresholdSettingsProps {
  * Candidate score includes a colored indicator (red/amber/green).
  */
 export function ThresholdSettings({ className }: ThresholdSettingsProps) {
+  const { t } = useI18n();
   const { preferences, updatePreferences } = useBetaChatContext();
   const { thresholds } = preferences;
 
@@ -216,6 +195,33 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
     [thresholds, updatePreferences]
   );
 
+  /** Determine candidate score color */
+  const getScoreColor = (score: number): {
+    bg: string;
+    text: string;
+    label: string;
+  } => {
+    if (score < 50) {
+      return {
+        bg: 'bg-red-100 dark:bg-red-500/10',
+        text: 'text-red-600 dark:text-red-400',
+        label: t('beta.preferences.thresholds.scoreRisky'),
+      };
+    }
+    if (score < 70) {
+      return {
+        bg: 'bg-amber-100 dark:bg-amber-500/10',
+        text: 'text-amber-600 dark:text-amber-400',
+        label: t('beta.preferences.thresholds.scoreModerate'),
+      };
+    }
+    return {
+      bg: 'bg-emerald-100 dark:bg-emerald-500/10',
+      text: 'text-emerald-600 dark:text-emerald-400',
+      label: t('beta.preferences.thresholds.scoreSafe'),
+    };
+  };
+
   const scoreColor = getScoreColor(thresholds.minCandidateScore);
 
   return (
@@ -225,10 +231,10 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         <Sliders className="w-4.5 h-4.5 text-muted-foreground" weight="duotone" />
         <div>
           <h3 className="text-[15px] font-semibold text-foreground">
-            Umbrales y Limites
+            {t('beta.preferences.thresholds.title')}
           </h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            Configura los limites para la toma de decisiones automatica.
+            {t('beta.preferences.thresholds.subtitle')}
           </p>
         </div>
       </div>
@@ -246,10 +252,10 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <p className="text-[13px] font-medium text-foreground">
-                Tolerancia de mora
+                {t('beta.preferences.thresholds.moraTolerance')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-0.5">
-                Dias antes de escalar automaticamente un cobro vencido.
+                {t('beta.preferences.thresholds.moraDescription')}
               </p>
             </div>
             <NumberStepper
@@ -259,6 +265,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
               step={1}
               suffix="dias"
               onChange={(v) => updateThreshold('moraTolerance', v)}
+              decreaseLabel={t('beta.preferences.thresholds.decrease')}
+              increaseLabel={t('beta.preferences.thresholds.increase')}
             />
           </div>
         </div>
@@ -274,10 +282,10 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <p className="text-[13px] font-medium text-foreground">
-                Presupuesto de mantenimiento
+                {t('beta.preferences.thresholds.maintenanceBudget')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-0.5">
-                Monto maximo que el agente puede aprobar sin consultar.
+                {t('beta.preferences.thresholds.maintenanceDescription')}
               </p>
             </div>
             <CurrencyStepper
@@ -286,6 +294,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
               max={5000000}
               step={50000}
               onChange={(v) => updateThreshold('maintenanceBudgetLimit', v)}
+              decreaseLabel={t('beta.preferences.thresholds.decrease')}
+              increaseLabel={t('beta.preferences.thresholds.increase')}
             />
           </div>
         </div>
@@ -301,10 +311,10 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <p className="text-[13px] font-medium text-foreground">
-                Puntaje minimo de candidato
+                {t('beta.preferences.thresholds.candidateScore')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-0.5">
-                Puntaje minimo de riesgo para auto-aprobar un candidato.
+                {t('beta.preferences.thresholds.candidateDescription')}
               </p>
             </div>
             <div className="flex items-center gap-2.5">
@@ -315,6 +325,8 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
                 step={5}
                 suffix="pts"
                 onChange={(v) => updateThreshold('minCandidateScore', v)}
+                decreaseLabel={t('beta.preferences.thresholds.decrease')}
+                increaseLabel={t('beta.preferences.thresholds.increase')}
               />
               <span
                 className={cn(

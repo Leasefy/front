@@ -14,6 +14,7 @@ import {
   ChartBar,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { AgentType, AgentExecutionStatus } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import type { Icon } from '@phosphor-icons/react';
@@ -106,6 +107,7 @@ export function AgentResultCard({
   onRetry,
   className,
 }: AgentResultCardProps) {
+  const { t } = useI18n();
   const isFailed = status === 'failed';
   const [isExpanded, setIsExpanded] = useState(isFailed);
 
@@ -218,7 +220,7 @@ export function AgentResultCard({
                 )}
               >
                 <ArrowClockwise className="w-3 h-3" weight="bold" />
-                Reintentar
+                {t('beta.agents.retry')}
               </button>
             )}
           </div>

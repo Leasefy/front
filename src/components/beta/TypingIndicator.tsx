@@ -2,6 +2,7 @@
 
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 interface TypingIndicatorProps {
   className?: string;
@@ -14,6 +15,8 @@ interface TypingIndicatorProps {
  * but replaces message content with three staggered bouncing dots.
  */
 export function TypingIndicator({ className }: TypingIndicatorProps) {
+  const { t } = useI18n();
+
   return (
     <div className={cn('flex items-end gap-2', className)}>
       {/* AI avatar */}
@@ -33,7 +36,7 @@ export function TypingIndicator({ className }: TypingIndicatorProps) {
       <div className="flex flex-col items-start">
         {/* Label */}
         <span className="text-[11px] font-medium text-indigo-500 mb-1 ml-1">
-          Leasefy AI
+          {t('beta.title')}
         </span>
 
         {/* Bubble with animated dots */}

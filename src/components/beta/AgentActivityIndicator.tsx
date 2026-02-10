@@ -2,6 +2,7 @@
 
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { AgentActivityBlock } from '@/lib/types/beta-chat';
 import { AgentBadge } from './AgentBadge';
 
@@ -26,11 +27,12 @@ interface AgentActivityIndicatorProps {
 /**
  * AgentActivityIndicator - Multi-agent activity block showing dispatched agents.
  *
- * Displays "Consultando agentes..." header while agents are running.
+ * Displays header while agents are running.
  * Badges appear with staggered animation (100ms delay between each).
  * Visually distinct from regular messages with subtle border/background.
  */
 export function AgentActivityIndicator({ activity, className }: AgentActivityIndicatorProps) {
+  const { t } = useI18n();
   const allCompleted = activity.agents.every(
     (a) => a.status === 'completed' || a.status === 'failed'
   );
@@ -40,11 +42,11 @@ export function AgentActivityIndicator({ activity, className }: AgentActivityInd
   // Header text based on overall state
   const headerText = allCompleted
     ? hasFailure
-      ? 'Agentes completados con errores'
-      : 'Agentes completados'
+      ? t('beta.agents.completedWithErrors')
+      : t('beta.agents.completed')
     : isDispatching
-      ? 'Despachando agentes...'
-      : 'Consultando agentes...';
+      ? t('beta.agents.dispatching')
+      : t('beta.agents.running');
 
   return (
     <div className={cn('flex items-end gap-2', className)}>

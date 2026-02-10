@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
 import { PaperPlaneTilt } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 interface ChatInputProps {
   /** Called when user sends a message */
@@ -25,6 +26,7 @@ const LINE_HEIGHT = 24;
  * Auto-resizes from 1 row to MAX_ROWS, then scrolls internally.
  */
 export function ChatInput({ onSend, disabled = false, className }: ChatInputProps) {
+  const { t } = useI18n();
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -82,7 +84,7 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Escribe un mensaje..."
+        placeholder={t('beta.chat.placeholder')}
         disabled={disabled}
         rows={1}
         className={cn(
@@ -109,7 +111,7 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
             ? 'bg-neutral-100 dark:bg-neutral-800 text-muted-foreground cursor-not-allowed'
             : 'bg-indigo-500 text-white hover:bg-indigo-600 active:scale-95'
         )}
-        aria-label="Enviar mensaje"
+        aria-label={t('beta.chat.sendButton')}
       >
         <PaperPlaneTilt className="w-4 h-4" weight="fill" />
       </button>

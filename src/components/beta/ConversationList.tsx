@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { MagnifyingGlass, Trash, ChatCircleDots } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { ConversationListSkeleton } from './BetaSkeletons';
 import type { ConversationSummary, DateGroup } from '@/lib/types/beta-chat';
@@ -28,6 +29,14 @@ function getDateGroup(date: Date): DateGroup {
 }
 
 const GROUP_ORDER: DateGroup[] = ['Hoy', 'Ayer', 'Esta semana', 'Anterior'];
+
+/** Maps internal DateGroup keys to i18n translation keys for display */
+const DATE_GROUP_KEYS: Record<DateGroup, string> = {
+  'Hoy': 'beta.conversations.today',
+  'Ayer': 'beta.conversations.yesterday',
+  'Esta semana': 'beta.conversations.thisWeek',
+  'Anterior': 'beta.conversations.older',
+};
 
 function groupByDate(
   summaries: ConversationSummary[]
@@ -58,6 +67,7 @@ interface ConversationItemProps {
 }
 
 function ConversationItem({ summary, isActive, onSelect, onDelete }: ConversationItemProps) {
+  const { t } = useI18n();
   const [showDelete, setShowDelete] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -116,7 +126,7 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
                 ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
                 : 'hover:bg-neutral-200 dark:hover:bg-neutral-700 text-muted-foreground'
             )}
-            title={confirmDelete ? 'Confirmar eliminar' : 'Eliminar conversacion'}
+            title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
           >
             <Trash className="w-3.5 h-3.5" weight={confirmDelete ? 'fill' : 'regular'} />
           </button>
@@ -126,7 +136,7 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
       {/* Message count */}
       {summary.messageCount > 0 && (
         <p className="text-[11px] text-muted-foreground/60 mt-1">
-          {summary.messageCount} mensaje{summary.messageCount !== 1 ? 's' : ''}
+          {summary.messageCount} {summary.messageCount !== 1 ? t('beta.conversations.messages') : t('beta.conversations.message')}
         </p>
       )}
     </button>
@@ -138,6 +148,7 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
 // ============================================================================
 
 export function ConversationList() {
+  const { t } = useI18n();
   const {
     isLoading,
     activeConversationId,
@@ -166,7 +177,7 @@ export function ConversationList() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar conversaciones..."
+          placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
             'w-full pl-8 pr-3 py-2 rounded-lg',
             'text-[13px] placeholder:text-muted-foreground/50',
@@ -179,21 +190,21 @@ export function ConversationList() {
       </div>
 
       {/* Conversation groups */}
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-3" role="list">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <ChatCircleDots className="w-8 h-8 mb-2 opacity-40" />
             <p className="text-[13px]">
               {searchQuery.trim()
-                ? 'Sin resultados'
-                : 'Sin conversaciones'}
+                ? t('beta.conversations.emptySearch')
+                : t('beta.conversations.noConversations')}
             </p>
           </div>
         ) : (
           grouped.map(({ group, items }) => (
-            <div key={group}>
+            <div key={group} role="listitem">
               <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1 mb-1.5">
-                {group}
+                {t(DATE_GROUP_KEYS[group])}
               </p>
               <div className="space-y-0.5">
                 {items.map((s) => (

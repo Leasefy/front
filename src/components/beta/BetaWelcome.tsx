@@ -2,13 +2,7 @@
 
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-
-const SUGGESTED_PROMPTS = [
-  { id: 'cobros', text: '\u00bfComo van mis cobros este mes?' },
-  { id: 'propiedades', text: 'Resume el estado de mis propiedades' },
-  { id: 'decisiones', text: '\u00bfHay decisiones pendientes?' },
-  { id: 'reporte', text: 'Genera un reporte de pagos' },
-];
+import { useI18n } from '@/lib/i18n';
 
 interface BetaWelcomeProps {
   /** Called when user clicks a suggested prompt. Non-functional for now. */
@@ -23,6 +17,15 @@ interface BetaWelcomeProps {
  * a subtitle, and suggested prompt chips that will feed into chat in Phase 18.
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
+  const { t } = useI18n();
+
+  const SUGGESTED_PROMPTS = [
+    { id: 'cobros', text: t('beta.chat.welcome.prompt_cobros') },
+    { id: 'propiedades', text: t('beta.chat.welcome.prompt_propiedades') },
+    { id: 'decisiones', text: t('beta.chat.welcome.prompt_decisiones') },
+    { id: 'reporte', text: t('beta.chat.welcome.prompt_reporte') },
+  ];
+
   return (
     <div
       className={cn(
@@ -43,7 +46,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
 
       {/* Title */}
       <h1 className="text-2xl font-semibold text-foreground mb-2">
-        Leasefy AI
+        {t('beta.title')}
       </h1>
 
       {/* Beta badge */}
@@ -55,12 +58,12 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
         )}
       >
         <Sparkle className="w-3 h-3" weight="fill" />
-        Beta
+        {t('beta.badge')}
       </span>
 
       {/* Subtitle */}
       <p className="text-muted-foreground text-center max-w-md mb-10">
-        Tu asistente de administracion de arriendos. Preguntame lo que necesites.
+        {t('beta.chat.welcome.subtitle')}
       </p>
 
       {/* Suggested prompt chips */}

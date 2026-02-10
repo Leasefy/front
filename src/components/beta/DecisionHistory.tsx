@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { DecisionHistorySkeleton } from './BetaSkeletons';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
@@ -42,6 +43,7 @@ interface DecisionItemProps {
 }
 
 function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
+  const { t } = useI18n();
   const { decision } = entry;
   const isResolved = !!decision.selectedOptionId;
   const meta = AGENT_METADATA[decision.category];
@@ -92,7 +94,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
           <span className="text-[12px] text-muted-foreground">
-            {decision.options.length} opciones disponibles
+            {decision.options.length} {t('beta.decisions.optionsAvailable')}
           </span>
         </div>
       )}
@@ -111,6 +113,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
  * Clicking a decision entry switches to that conversation.
  */
 export function DecisionHistory() {
+  const { t } = useI18n();
   const { isLoading, allDecisions, switchConversation } = useBetaChatContext();
 
   if (isLoading) return <DecisionHistorySkeleton />;
@@ -118,7 +121,7 @@ export function DecisionHistory() {
   if (allDecisions.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
-        No hay decisiones aun
+        {t('beta.decisions.noPending')}
       </div>
     );
   }
@@ -132,7 +135,7 @@ export function DecisionHistory() {
       {pending.length > 0 && (
         <section>
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2 px-1">
-            Pendientes ({pending.length})
+            {t('beta.decisions.pending')} ({pending.length})
           </h3>
           <div className="space-y-2">
             {pending.map((entry) => (
@@ -150,7 +153,7 @@ export function DecisionHistory() {
       {resolved.length > 0 && (
         <section>
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 px-1">
-            Resueltas ({resolved.length})
+            {t('beta.decisions.resolved')} ({resolved.length})
           </h3>
           <div className="space-y-2">
             {resolved.map((entry) => (

@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { AgentType, NotificationPreferences } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
@@ -60,14 +61,14 @@ const DOT_COLORS: Record<string, string> = {
 
 type ChannelOption = {
   id: NotificationPreferences['channel'];
-  label: string;
+  labelKey: string;
 };
 
 const CHANNEL_OPTIONS: ChannelOption[] = [
-  { id: 'in_app', label: 'En la app' },
-  { id: 'email', label: 'Email' },
-  { id: 'whatsapp', label: 'WhatsApp' },
-  { id: 'all', label: 'Todos' },
+  { id: 'in_app', labelKey: 'beta.preferences.notifications.inApp' },
+  { id: 'email', labelKey: 'beta.preferences.notifications.email' },
+  { id: 'whatsapp', labelKey: 'beta.preferences.notifications.whatsapp' },
+  { id: 'all', labelKey: 'beta.preferences.notifications.all' },
 ];
 
 // ============================================================================
@@ -85,6 +86,7 @@ interface NotificationSettingsProps {
  * the notification channel preference.
  */
 export function NotificationSettings({ className }: NotificationSettingsProps) {
+  const { t } = useI18n();
   const { preferences, updatePreferences } = useBetaChatContext();
 
   const handleToggle = (agentType: AgentType) => {
@@ -115,10 +117,10 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
         <Bell className="w-4.5 h-4.5 text-muted-foreground" weight="duotone" />
         <div>
           <h3 className="text-[15px] font-semibold text-foreground">
-            Notificaciones
+            {t('beta.preferences.notifications.title')}
           </h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            Elige sobre que te notificamos y por donde.
+            {t('beta.preferences.notifications.subtitle')}
           </p>
         </div>
       </div>
@@ -169,7 +171,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                 )}
                 role="switch"
                 aria-checked={isEnabled}
-                aria-label={`Notificaciones de ${meta.label}`}
+                aria-label={t('beta.preferences.notifications.toggleLabel', { agent: meta.label })}
               >
                 <span
                   className={cn(
@@ -187,7 +189,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
       {/* Channel selector */}
       <div className="space-y-2">
         <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wide px-1">
-          Canal de notificacion
+          {t('beta.preferences.notifications.channel')}
         </p>
         <div
           className={cn(
@@ -212,7 +214,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {option.label}
+                {t(option.labelKey)}
               </button>
             );
           })}

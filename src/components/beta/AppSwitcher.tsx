@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { SquaresFour, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 type Workspace = 'dashboard' | 'beta';
 
@@ -19,10 +20,9 @@ interface AppSwitcherProps {
  * Inspired by Slack's workspace selector. Compact clickable element
  * at the top of the sidebar that switches between the classic Dashboard
  * and the AI Beta universe.
- *
- * Integration: Will be placed in the Beta layout sidebar (Plan 02).
  */
 export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -67,19 +67,19 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
 
       {/* Label */}
       <span className="flex-1 text-left truncate">
-        {isDashboard ? 'Dashboard' : 'AI Beta'}
+        {isDashboard ? t('beta.appSwitcher.dashboard') : t('beta.appSwitcher.aiBeta')}
       </span>
 
       {/* Beta badge (only on AI Beta mode) */}
       {!isDashboard && (
         <span className="bg-indigo-500 text-white text-[11px] rounded-full px-1.5 py-0.5 leading-none font-medium">
-          Beta
+          {t('beta.badge')}
         </span>
       )}
 
       {/* Switch indicator */}
       <span className="text-[11px] text-muted-foreground">
-        {isDashboard ? 'Ir a Beta' : 'Ir a Dashboard'}
+        {isDashboard ? t('beta.appSwitcher.goToBeta') : t('beta.appSwitcher.goToDashboard')}
       </span>
     </button>
   );

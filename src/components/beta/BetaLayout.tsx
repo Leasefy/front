@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { List, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { BetaSidebar, BetaTab } from './BetaSidebar';
 import { BetaChatProvider, useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { BetaErrorBoundary } from './BetaErrorBoundary';
@@ -30,6 +31,7 @@ interface BetaLayoutProps {
  * tab switches and page navigation within the Beta section.
  */
 export function BetaLayout({ children, basePath }: BetaLayoutProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<BetaTab>('conversations');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -66,7 +68,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
               'hover:bg-neutral-100 dark:hover:bg-neutral-800',
               'transition-colors duration-150'
             )}
-            aria-label="Abrir menu"
+            aria-label={t('beta.mobile.openMenu')}
           >
             <List className="w-5 h-5" weight="regular" />
           </button>
@@ -75,7 +77,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           <div className="flex items-center gap-1.5">
             <Sparkle className="w-4 h-4 text-indigo-500" weight="fill" />
             <span className="text-[14px] font-semibold text-foreground">
-              Leasefy AI
+              {t('beta.title')}
             </span>
           </div>
 
@@ -122,6 +124,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
  * Separate component because it needs to be inside BetaChatProvider.
  */
 function MobileNewChatButton() {
+  const { t } = useI18n();
   const { createConversation } = useBetaChatContext();
 
   return (
@@ -134,7 +137,7 @@ function MobileNewChatButton() {
         'hover:bg-indigo-50 dark:hover:bg-indigo-500/10',
         'transition-colors duration-150'
       )}
-      aria-label="Nueva conversacion"
+      aria-label={t('beta.mobile.newChat')}
     >
       <Plus className="w-5 h-5" weight="bold" />
     </button>

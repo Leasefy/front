@@ -2,6 +2,7 @@
 
 import { ChatCircle, GearSix, Lightning, ListChecks, Newspaper, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { AppSwitcher } from './AppSwitcher';
 import { ConversationList } from './ConversationList';
 import { DecisionHistory } from './DecisionHistory';
@@ -12,16 +13,16 @@ export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing' | 's
 
 interface TabItem {
   id: BetaTab;
-  label: string;
+  labelKey: string;
   icon: typeof ChatCircle;
 }
 
-const TABS: TabItem[] = [
-  { id: 'conversations', label: 'Conversaciones', icon: ChatCircle },
-  { id: 'agents', label: 'Agentes', icon: Lightning },
-  { id: 'decisions', label: 'Decisiones', icon: ListChecks },
-  { id: 'briefing', label: 'Briefing', icon: Newspaper },
-  { id: 'settings', label: 'Configuracion', icon: GearSix },
+const TAB_ITEMS: TabItem[] = [
+  { id: 'conversations', labelKey: 'beta.sidebar.conversations', icon: ChatCircle },
+  { id: 'agents', labelKey: 'beta.sidebar.agents', icon: Lightning },
+  { id: 'decisions', labelKey: 'beta.sidebar.decisions', icon: ListChecks },
+  { id: 'briefing', labelKey: 'beta.sidebar.briefing', icon: Newspaper },
+  { id: 'settings', labelKey: 'beta.sidebar.settings', icon: GearSix },
 ];
 
 interface BetaSidebarProps {
@@ -38,6 +39,7 @@ interface BetaSidebarProps {
  * Other tabs show placeholder content (future phases).
  */
 export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange, className }: BetaSidebarProps) {
+  const { t } = useI18n();
   const { createConversation, pendingDecisionsCount, hasNewBriefing, markBriefingSeen } = useBetaChatContext();
 
   const handleTabChange = (tab: BetaTab) => {
@@ -66,13 +68,15 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
 
       {/* Tab navigation */}
       <nav className="px-3 py-3">
-        <div className="space-y-0.5">
-          {TABS.map((tab) => {
+        <div className="space-y-0.5" role="tablist" aria-label={t('beta.a11y.sidebarNav')}>
+          {TAB_ITEMS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => handleTabChange(tab.id)}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[14px]',
@@ -89,7 +93,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
                   )}
                   weight={isActive ? 'fill' : 'regular'}
                 />
-                <span className="flex-1 text-left">{tab.label}</span>
+                <span className="flex-1 text-left">{t(tab.labelKey)}</span>
                 {tab.id === 'decisions' && pendingDecisionsCount > 0 && (
                   <span
                     className={cn(
@@ -123,11 +127,11 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
       <div className="mx-3 border-b border-neutral-200 dark:border-border" />
 
       {/* Tab content area */}
-      <div className="flex-1 overflow-hidden px-3 py-3">
+      <div className="flex-1 overflow-hidden px-3 py-3" role="tabpanel">
         {activeTab === 'conversations' && <ConversationList />}
         {activeTab === 'agents' && (
           <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
-            Fase 20
+            {t('beta.agents.phase')}
           </div>
         )}
         {activeTab === 'decisions' && <DecisionHistory />}
@@ -152,7 +156,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
           )}
         >
           <Plus className="w-4 h-4" weight="bold" />
-          <span>Nueva conversacion</span>
+          <span>{t('beta.sidebar.newConversation')}</span>
         </button>
 
         {/* Beta badge */}
@@ -165,7 +169,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
             )}
           >
             <Sparkle className="w-3 h-3" weight="fill" />
-            Beta
+            {t('beta.badge')}
           </span>
         </div>
       </div>

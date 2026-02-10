@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { AgentType, AutonomyLevel } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
@@ -105,9 +106,10 @@ interface AutonomySettingsProps {
  * Auto | Preguntar primero | Manual
  *
  * Color-coded left border per agent matching AGENT_METADATA tokens.
- * Includes a "Restablecer por defecto" reset link at the bottom.
+ * Includes a reset link at the bottom.
  */
 export function AutonomySettings({ className }: AutonomySettingsProps) {
+  const { t } = useI18n();
   const { preferences, updatePreferences, resetPreferences } = useBetaChatContext();
 
   const handleLevelChange = (agentType: AgentType, level: AutonomyLevel) => {
@@ -121,10 +123,10 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
       {/* Section header */}
       <div>
         <h3 className="text-[15px] font-semibold text-foreground">
-          Autonomia de Agentes
+          {t('beta.preferences.autonomy.title')}
         </h3>
         <p className="text-[13px] text-muted-foreground mt-0.5">
-          Define cuanto control tiene cada agente para actuar sin tu aprobacion.
+          {t('beta.preferences.autonomy.subtitle')}
         </p>
       </div>
 
@@ -229,7 +231,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
         )}
       >
         <ArrowCounterClockwise className="w-3.5 h-3.5" />
-        <span>Restablecer por defecto</span>
+        <span>{t('beta.preferences.autonomy.resetDefault')}</span>
       </button>
     </section>
   );

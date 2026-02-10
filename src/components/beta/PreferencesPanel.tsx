@@ -2,6 +2,7 @@
 
 import { ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { PreferencesSkeleton } from './BetaSkeletons';
 import { AutonomySettings } from './AutonomySettings';
@@ -17,14 +18,15 @@ interface PreferencesPanelProps {
  * PreferencesPanel - Full-width settings container rendered in the main content area.
  *
  * Renders sub-sections in order:
- * 1. AutonomySettings — per-agent autonomy level toggles
- * 2. NotificationSettings — category toggles + channel selector
- * 3. ToneSelector — formal/professional/casual tone cards
- * 4. ThresholdSettings — mora, budget, and candidate score thresholds
+ * 1. AutonomySettings
+ * 2. NotificationSettings
+ * 3. ToneSelector
+ * 4. ThresholdSettings
  *
- * Includes a global "Restablecer toda la configuracion" reset button at the bottom.
+ * Includes a global reset button at the bottom.
  */
 export function PreferencesPanel({ className }: PreferencesPanelProps) {
+  const { t } = useI18n();
   const { isLoading, resetPreferences } = useBetaChatContext();
 
   if (isLoading) return <PreferencesSkeleton />;
@@ -39,9 +41,9 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
       <div className="max-w-2xl mx-auto w-full px-6 py-8 space-y-8">
         {/* Page header */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Configuracion</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('beta.preferences.title')}</h2>
           <p className="text-[13px] text-muted-foreground mt-1">
-            Ajusta el comportamiento de tus agentes de IA y preferencias de la plataforma.
+            {t('beta.preferences.subtitle')}
           </p>
         </div>
 
@@ -80,7 +82,7 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
             )}
           >
             <ArrowCounterClockwise className="w-4 h-4" />
-            Restablecer toda la configuracion
+            {t('beta.preferences.reset')}
           </button>
         </div>
       </div>

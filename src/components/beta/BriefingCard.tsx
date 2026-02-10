@@ -14,6 +14,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { BriefingCardSkeleton } from './BetaSkeletons';
 import type { DailyBriefing, BriefingSection } from '@/lib/types/beta-chat';
 import type { Icon } from '@phosphor-icons/react';
@@ -67,18 +68,20 @@ const ACTION_BTN_COLORS: Record<string, string> = {
 // Date Formatting
 // ============================================================================
 
-const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+const DAY_KEYS = [
+  'beta.briefing.days.sunday',
+  'beta.briefing.days.monday',
+  'beta.briefing.days.tuesday',
+  'beta.briefing.days.wednesday',
+  'beta.briefing.days.thursday',
+  'beta.briefing.days.friday',
+  'beta.briefing.days.saturday',
+];
+
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
-
-function formatBriefingDate(date: Date): string {
-  const day = DAYS[date.getDay()];
-  const num = date.getDate();
-  const month = MONTHS[date.getMonth()];
-  return `${day} ${num} de ${month}`;
-}
 
 // ============================================================================
 // Section Component
@@ -208,6 +211,7 @@ interface BriefingCardProps {
  * Each section uses grid-rows-[0fr]/[1fr] for smooth collapse animation.
  */
 export function BriefingCard({ briefing, onAction, isLoading, className }: BriefingCardProps) {
+  const { t } = useI18n();
   // First section expanded by default, rest collapsed
   const [expandedSections, setExpandedSections] = useState<Set<number>>(() => new Set([0]));
 
@@ -225,13 +229,18 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
 
   if (isLoading) return <BriefingCardSkeleton />;
 
+  const dayName = t(DAY_KEYS[briefing.date.getDay()]);
+  const num = briefing.date.getDate();
+  const month = MONTHS[briefing.date.getMonth()];
+  const formattedDate = `${dayName} ${num} de ${month}`;
+
   return (
     <div className={cn('space-y-3', className)}>
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <p className="text-xs text-muted-foreground font-medium">
-            {formatBriefingDate(briefing.date)}
+            {formattedDate}
           </p>
           {briefing.isNew && (
             <span
@@ -243,7 +252,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
               )}
             >
               <Sparkle className="w-2.5 h-2.5" weight="fill" />
-              Nuevo
+              {t('beta.briefing.new')}
             </span>
           )}
         </div>

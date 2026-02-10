@@ -2,6 +2,7 @@
 
 import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { PendingDecision, DecisionRecommendation } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 
@@ -9,24 +10,24 @@ import { AGENT_METADATA } from '@/lib/types/beta-chat';
 // Recommendation Badge Config
 // ============================================================================
 
-const RECOMMENDATION_CONFIG: Record<
+const RECOMMENDATION_STYLES: Record<
   DecisionRecommendation,
-  { label: string; bg: string; text: string; border: string }
+  { labelKey: string; bg: string; text: string; border: string }
 > = {
   recommended: {
-    label: 'Recomendado',
+    labelKey: 'beta.decisions.recommended',
     bg: 'bg-emerald-50 dark:bg-emerald-500/10',
     text: 'text-emerald-700 dark:text-emerald-400',
     border: 'border-emerald-200 dark:border-emerald-500/30',
   },
   neutral: {
-    label: 'Neutral',
+    labelKey: 'beta.decisions.neutral',
     bg: 'bg-neutral-50 dark:bg-neutral-500/10',
     text: 'text-neutral-600 dark:text-neutral-400',
     border: 'border-neutral-200 dark:border-neutral-500/30',
   },
   not_recommended: {
-    label: 'No recomendado',
+    labelKey: 'beta.decisions.notRecommended',
     bg: 'bg-red-50 dark:bg-red-500/10',
     text: 'text-red-700 dark:text-red-400',
     border: 'border-red-200 dark:border-red-500/30',
@@ -74,6 +75,7 @@ interface DecisionCardProps {
  * non-selected options dimmed, "Decidido" timestamp shown.
  */
 export function DecisionCard({ decision, onSelect, className }: DecisionCardProps) {
+  const { t } = useI18n();
   const isResolved = !!decision.selectedOptionId;
   const meta = AGENT_METADATA[decision.category];
   const borderColor = BORDER_LEFT_COLORS[meta.color] ?? BORDER_LEFT_COLORS.blue;
@@ -117,7 +119,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
         {decision.options.map((option) => {
           const isSelected = decision.selectedOptionId === option.id;
           const isNotSelected = isResolved && !isSelected;
-          const recConfig = RECOMMENDATION_CONFIG[option.recommendation];
+          const recConfig = RECOMMENDATION_STYLES[option.recommendation];
 
           return (
             <button
@@ -172,7 +174,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
                           recConfig.border
                         )}
                       >
-                        {recConfig.label}
+                        {t(recConfig.labelKey)}
                       </span>
                     )}
                   </div>
@@ -190,7 +192,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
       {isResolved && decision.selectedAt && (
         <div className="px-3.5 pb-2.5 -mt-0.5">
           <span className="text-[10px] text-muted-foreground">
-            Decidido {decision.selectedAt.toLocaleTimeString('es-CO', {
+            {t('beta.decisions.decided')} {decision.selectedAt.toLocaleTimeString('es-CO', {
               hour: '2-digit',
               minute: '2-digit',
             })}

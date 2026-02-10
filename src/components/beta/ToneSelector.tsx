@@ -8,6 +8,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { CommunicationTone } from '@/lib/types/beta-chat';
 
@@ -17,28 +18,28 @@ import type { CommunicationTone } from '@/lib/types/beta-chat';
 
 interface ToneOption {
   id: CommunicationTone;
-  label: string;
-  example: string;
+  labelKey: string;
+  exampleKey: string;
   icon: Icon;
 }
 
 const TONE_OPTIONS: ToneOption[] = [
   {
     id: 'formal',
-    label: 'Formal',
-    example: 'Estimado propietario, le informamos que...',
+    labelKey: 'beta.preferences.tone.formal',
+    exampleKey: 'beta.preferences.tone.formalExample',
     icon: Briefcase,
   },
   {
     id: 'professional',
-    label: 'Profesional',
-    example: 'Hola, te comparto la actualizacion de...',
+    labelKey: 'beta.preferences.tone.professional',
+    exampleKey: 'beta.preferences.tone.professionalExample',
     icon: Handshake,
   },
   {
     id: 'casual',
-    label: 'Casual',
-    example: '\u00a1Ey! Todo listo con los cobros de...',
+    labelKey: 'beta.preferences.tone.casual',
+    exampleKey: 'beta.preferences.tone.casualExample',
     icon: Smiley,
   },
 ];
@@ -58,6 +59,7 @@ interface ToneSelectorProps {
  * Selected card has an indigo ring. Clicking updates preferences.tone.
  */
 export function ToneSelector({ className }: ToneSelectorProps) {
+  const { t } = useI18n();
   const { preferences, updatePreferences } = useBetaChatContext();
 
   const handleToneChange = (tone: CommunicationTone) => {
@@ -71,10 +73,10 @@ export function ToneSelector({ className }: ToneSelectorProps) {
         <ChatText className="w-4.5 h-4.5 text-muted-foreground" weight="duotone" />
         <div>
           <h3 className="text-[15px] font-semibold text-foreground">
-            Tono de Comunicacion
+            {t('beta.preferences.tone.title')}
           </h3>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            Define como se comunican tus agentes con inquilinos y proveedores.
+            {t('beta.preferences.tone.subtitle')}
           </p>
         </div>
       </div>
@@ -116,12 +118,12 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                       : 'text-foreground'
                   )}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </span>
               </div>
 
               <p className="text-[12px] italic text-muted-foreground leading-relaxed">
-                &ldquo;{option.example}&rdquo;
+                &ldquo;{t(option.exampleKey)}&rdquo;
               </p>
             </button>
           );

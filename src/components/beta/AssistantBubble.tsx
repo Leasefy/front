@@ -2,6 +2,7 @@
 
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -20,6 +21,7 @@ interface AssistantBubbleProps {
  * During streaming status, shows streamingContent with a blinking cursor.
  */
 export function AssistantBubble({ message, streamingContent, className }: AssistantBubbleProps) {
+  const { t } = useI18n();
   const isStreaming = message.status === 'streaming';
   const isSending = message.status === 'sending';
   const displayContent = isStreaming && streamingContent ? streamingContent : message.content;
@@ -48,7 +50,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
       <div className="flex flex-col items-start max-w-[75%]">
         {/* Label */}
         <span className="text-[11px] font-medium text-indigo-500 mb-1 ml-1">
-          Leasefy AI
+          {t('beta.title')}
         </span>
 
         {/* Bubble */}

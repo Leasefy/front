@@ -48,6 +48,8 @@ export interface UseBetaChatReturn {
   messages: ChatMessage[];
   /** Send a message from the user. Triggers mock assistant response. */
   sendMessage: (text: string) => void;
+  /** Whether the assistant is "thinking" (pre-stream delay before streaming starts) */
+  isThinking: boolean;
   /** Whether the assistant is currently streaming a response */
   isStreaming: boolean;
   /** Partial content being revealed during streaming */
@@ -70,6 +72,7 @@ export interface UseBetaChatReturn {
  */
 export function useBetaChat(): UseBetaChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isThinking, setIsThinking] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
 
@@ -101,7 +104,7 @@ export function useBetaChat(): UseBetaChatReturn {
   const sendMessage = useCallback(
     (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isStreaming) return;
+      if (!trimmed || isThinking || isStreaming) return;
 
       // 1. Add user message immediately
       const userMessage: ChatMessage = {
@@ -123,7 +126,7 @@ export function useBetaChat(): UseBetaChatReturn {
       };
 
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
-      setIsStreaming(true);
+      setIsThinking(true);
       setStreamingContent('');
 
       // 3. Get mock response text
@@ -132,6 +135,8 @@ export function useBetaChat(): UseBetaChatReturn {
       // 4. After delay, start streaming character by character
       delayTimeoutRef.current = setTimeout(() => {
         charIndexRef.current = 0;
+        setIsThinking(false);
+        setIsStreaming(true);
 
         // Update assistant status to streaming
         setMessages((prev) =>
@@ -167,12 +172,13 @@ export function useBetaChat(): UseBetaChatReturn {
         revealNextChar();
       }, randomDelay());
     },
-    [isStreaming, getCharDelay]
+    [isThinking, isStreaming, getCharDelay]
   );
 
   return {
     messages,
     sendMessage,
+    isThinking,
     isStreaming,
     streamingContent,
   };

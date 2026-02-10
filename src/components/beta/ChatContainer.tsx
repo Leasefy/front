@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useBetaChat } from '@/lib/hooks/useBetaChat';
 import { BetaWelcome } from './BetaWelcome';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
+import { TypingIndicator } from './TypingIndicator';
 
 interface ChatContainerProps {
   className?: string;
@@ -16,23 +17,36 @@ interface ChatContainerProps {
  * ChatContainer - Main chat area wiring useBetaChat + bubbles + input.
  *
  * Empty state: shows BetaWelcome with clickable suggested prompts.
- * Active state: message list with auto-scroll + sticky ChatInput at bottom.
+ * Active state: message list with smart auto-scroll + sticky ChatInput at bottom.
+ *
+ * Smart auto-scroll: only scrolls if user is near the bottom (within 100px).
+ * If user scrolled up to read history, auto-scroll is suppressed.
  *
  * Layout: flex-col h-full
  *   - Messages area (flex-1 overflow-y-auto) with bottom padding
  *   - ChatInput (sticky at bottom)
  */
 export function ChatContainer({ className }: ChatContainerProps) {
-  const { messages, sendMessage, isStreaming, streamingContent } = useBetaChat();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { messages, sendMessage, isThinking, isStreaming, streamingContent } = useBetaChat();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change or during streaming
+  /** Check if user is near the bottom of the scroll container */
+  const isNearBottom = useCallback((): boolean => {
+    const container = messagesAreaRef.current;
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+  }, []);
+
+  // Smart auto-scroll: only scroll if user is near bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
+    if (isNearBottom()) {
+      scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, streamingContent, isThinking, isNearBottom]);
 
   const hasMessages = messages.length > 0;
+  const isBusy = isThinking || isStreaming;
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
@@ -52,6 +66,11 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 return <UserBubble key={message.id} message={message} />;
               }
 
+              // During thinking phase, hide the placeholder assistant bubble
+              if (isLastAssistant && isThinking) {
+                return null;
+              }
+
               return (
                 <AssistantBubble
                   key={message.id}
@@ -61,12 +80,15 @@ export function ChatContainer({ className }: ChatContainerProps) {
               );
             })}
 
-            {/* Scroll anchor */}
-            <div ref={messagesEndRef} />
+            {/* Typing indicator shown during the thinking delay */}
+            {isThinking && <TypingIndicator />}
+
+            {/* Scroll sentinel */}
+            <div ref={scrollRef} />
           </div>
 
           {/* Chat input - sticky bottom */}
-          <ChatInput onSend={sendMessage} disabled={isStreaming} />
+          <ChatInput onSend={sendMessage} disabled={isBusy} />
         </>
       ) : (
         <>
@@ -74,7 +96,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <div className="flex-1 overflow-y-auto">
             <BetaWelcome onPromptClick={sendMessage} />
           </div>
-          <ChatInput onSend={sendMessage} disabled={isStreaming} />
+          <ChatInput onSend={sendMessage} disabled={isBusy} />
         </>
       )}
     </div>

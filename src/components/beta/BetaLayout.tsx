@@ -33,12 +33,14 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
         'bg-plan-page'
       )}
     >
-      {/* Mission Control Sidebar */}
-      <BetaSidebar
-        basePath={basePath}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
+      {/* Mission Control Sidebar - hidden on mobile for now */}
+      <div className="hidden md:flex">
+        <BetaSidebar
+          basePath={basePath}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+      </div>
 
       {/* Main content area (chat area in future phases) */}
       <main className="flex-1 overflow-y-auto">

@@ -8,34 +8,35 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.
-**Current focus:** Phase 17 complete, verified — ready for Phase 18 (Chat Interface)
+**Current focus:** Phase 18 in progress — Chat Interface (plan 1 of 3 complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
-Phase: 17 of 25 (Beta Sidebar Integration) — COMPLETE
-Plan: 2 of 2 in phase 17
-Status: Phase verified and complete
-Last activity: 2026-02-10 — Phase 17 verified, state updated
+Phase: 18 of 25 (Chat Interface) — IN PROGRESS
+Plan: 1 of 3 in phase 18
+Status: In progress
+Last activity: 2026-02-10 — Completed 18-01-PLAN.md
 
-Progress: ███░░░░░░░░░░░░░░░░░░░░░░░░░░░ ~11%
+Progress: ████░░░░░░░░░░░░░░░░░░░░░░░░░░ ~13%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 5 min
-- Total execution time: 0.17 hours
+- Total execution time: 0.23 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 17-beta-sidebar | 2/2 | 10min | 5min |
+| 18-chat-interface | 1/3 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 17-01 (5min), 17-02 (5min)
-- Trend: Consistent
+- Last 5 plans: 17-01 (5min), 17-02 (5min), 18-01 (4min)
+- Trend: Consistent, slightly faster
 
 ## Previous Milestones
 
@@ -63,6 +64,10 @@ Recent decisions affecting current work:
 - 17-02: Sidebar hidden on mobile (hidden md:flex) — mobile chat deferred to Phase 18
 - 17-02: Tab state managed locally (useState), no routing per tab yet
 - 17-02: Layout files are Server Components exporting Metadata, importing client BetaLayout
+- 18-01: Local useState for chat state (no external SDK), swappable to real API in Phase 24
+- 18-01: Character-by-character streaming simulation with punctuation-aware pauses (~40 chars/sec)
+- 18-01: ChatContainer renders BetaWelcome as empty state, switches to chat on first message
+- 18-01: ChatInput always visible in both empty and active states
 
 ### Pending Todos
 
@@ -75,5 +80,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Phase 17 verified and complete. State/roadmap/requirements updated.
-Resume file: None (phase complete, ready for Phase 18)
+Stopped at: Completed 18-01-PLAN.md (chat types, useBetaChat hook, bubbles, ChatContainer)
+Resume file: None (ready for 18-02)

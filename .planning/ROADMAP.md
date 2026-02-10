@@ -22,7 +22,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 1-16**: v1.0-v2.0 complete (see collapsed details below)
 - [x] **Inmobiliaria 1-10**: v3.0 complete
 - [x] **Phase 17: Beta Sidebar Integration** - Add Beta section to both dashboards with AI-optimized layout
-- [ ] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
+- [x] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
 - [ ] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
 - [ ] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
 - [ ] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
@@ -105,9 +105,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 18-01: Chat input component + message bubble components
-- [ ] 18-02: Streaming text renderer + markdown support
-- [ ] 18-03: Welcome state, suggested prompts, auto-scroll, typing indicator
+- [x] 18-01: Chat input component + message bubble components
+- [x] 18-02: Streaming text renderer + markdown support
+- [x] 18-03: Welcome state, suggested prompts, auto-scroll, typing indicator
 
 #### Phase 19: Conversation Management
 **Goal**: Historial de conversaciones navegable con búsqueda
@@ -248,7 +248,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Beta Sidebar Integration | 2/2 | Complete | 2026-02-10 |
-| 18. Chat Interface | 0/3 | Not started | - |
+| 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
 | 19. Conversation Management | 0/2 | Not started | - |
 | 20. Agent Activity Display | 0/2 | Not started | - |
 | 21. Decision System | 0/2 | Not started | - |

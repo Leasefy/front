@@ -67,16 +67,16 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Chat Interface (CHAT)
 
-- [ ] **CHAT-01**: Chat input with send button, Enter to send, Shift+Enter for newline
-- [ ] **CHAT-02**: User message bubbles (right-aligned, user avatar/initials)
-- [ ] **CHAT-03**: Assistant message bubbles (left-aligned, Leasefy AI branding)
-- [ ] **CHAT-04**: Streaming text display (typewriter/character-by-character rendering)
-- [ ] **CHAT-05**: Markdown rendering in assistant messages (bold, lists, tables, code)
-- [ ] **CHAT-06**: Typing indicator while AI is processing
-- [ ] **CHAT-07**: Auto-scroll to latest message
-- [ ] **CHAT-08**: Welcome message with suggested prompts for first-time users
-- [ ] **CHAT-09**: Conversation persists across page navigation within session
-- [ ] **CHAT-10**: Empty state when no conversations exist
+- [x] **CHAT-01**: Chat input with send button, Enter to send, Shift+Enter for newline
+- [x] **CHAT-02**: User message bubbles (right-aligned, user avatar/initials)
+- [x] **CHAT-03**: Assistant message bubbles (left-aligned, Leasefy AI branding)
+- [x] **CHAT-04**: Streaming text display (typewriter/character-by-character rendering)
+- [x] **CHAT-05**: Markdown rendering in assistant messages (bold, lists, tables, code)
+- [x] **CHAT-06**: Typing indicator while AI is processing
+- [x] **CHAT-07**: Auto-scroll to latest message
+- [x] **CHAT-08**: Welcome message with suggested prompts for first-time users
+- [x] **CHAT-09**: Conversation persists across page navigation within session
+- [x] **CHAT-10**: Empty state when no conversations exist
 
 ### Conversation Management (CONV)
 
@@ -177,16 +177,16 @@ Which phases cover which requirements. Updated by create-roadmap.
 | BETA-04 | Phase 17 | Complete |
 | BETA-05 | Phase 17 | Complete |
 | BETA-06 | Phase 17 | Complete |
-| CHAT-01 | Phase 18 | Pending |
-| CHAT-02 | Phase 18 | Pending |
-| CHAT-03 | Phase 18 | Pending |
-| CHAT-04 | Phase 18 | Pending |
-| CHAT-05 | Phase 18 | Pending |
-| CHAT-06 | Phase 18 | Pending |
-| CHAT-07 | Phase 18 | Pending |
-| CHAT-08 | Phase 18 | Pending |
-| CHAT-09 | Phase 18 | Pending |
-| CHAT-10 | Phase 18 | Pending |
+| CHAT-01 | Phase 18 | Complete |
+| CHAT-02 | Phase 18 | Complete |
+| CHAT-03 | Phase 18 | Complete |
+| CHAT-04 | Phase 18 | Complete |
+| CHAT-05 | Phase 18 | Complete |
+| CHAT-06 | Phase 18 | Complete |
+| CHAT-07 | Phase 18 | Complete |
+| CHAT-08 | Phase 18 | Complete |
+| CHAT-09 | Phase 18 | Complete |
+| CHAT-10 | Phase 18 | Complete |
 | CONV-01 | Phase 19 | Pending |
 | CONV-02 | Phase 19 | Pending |
 | CONV-03 | Phase 19 | Pending |

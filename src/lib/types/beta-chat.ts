@@ -13,9 +13,43 @@ export type MessageRole = 'user' | 'assistant' | 'system';
 
 export type MessageStatus = 'sending' | 'sent' | 'streaming' | 'complete' | 'error';
 
+/** Agent types matching AI-AGENT-ARCHITECTURE.md */
+export type AgentType =
+  | 'cobranza'
+  | 'pipeline'
+  | 'mantenimiento'
+  | 'documentos'
+  | 'comunicacion'
+  | 'reportes';
+
+export type AgentExecutionStatus = 'dispatching' | 'running' | 'completed' | 'failed';
+
 // ============================================================================
 // Core Types
 // ============================================================================
+
+export interface AgentExecution {
+  id: string;
+  agentType: AgentType;
+  /** Brief description of what the agent is doing */
+  taskDescription: string;
+  status: AgentExecutionStatus;
+  startedAt: Date;
+  completedAt?: Date;
+  /** Duration in ms (for display) */
+  durationMs?: number;
+  /** Error message if status === 'failed' */
+  error?: string;
+}
+
+/** An agent activity block in the conversation */
+export interface AgentActivityBlock {
+  id: string;
+  /** Which message this activity belongs to (the assistant response) */
+  messageId: string;
+  agents: AgentExecution[];
+  startedAt: Date;
+}
 
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
@@ -28,6 +62,8 @@ export interface ChatMessage {
   timestamp: Date;
   /** Current delivery/processing status */
   status: MessageStatus;
+  /** Agent executions associated with this assistant response */
+  agentActivity?: AgentActivityBlock;
 }
 
 export interface Conversation {
@@ -42,6 +78,47 @@ export interface Conversation {
   /** Last activity timestamp */
   updatedAt: Date;
 }
+
+// ============================================================================
+// Conversation Management
+// ============================================================================
+
+/** Date group labels for conversation list */
+export type DateGroup = 'Hoy' | 'Ayer' | 'Esta semana' | 'Anterior';
+
+/** Lightweight conversation summary for list display */
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  /** Preview of last message content (truncated) */
+  preview: string;
+  updatedAt: Date;
+  /** Number of messages in the conversation */
+  messageCount: number;
+}
+
+/** Serializable conversation for localStorage */
+export interface SerializedConversation {
+  id: string;
+  title: string;
+  messages: Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// Agent Metadata
+// ============================================================================
+
+/** Display metadata for each agent type: label, Phosphor icon name, Tailwind color */
+export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; color: string }> = {
+  cobranza:      { label: 'Cobranza',      icon: 'CurrencyDollar', color: 'emerald' },
+  pipeline:      { label: 'Pipeline',      icon: 'FunnelSimple',   color: 'blue' },
+  mantenimiento: { label: 'Mantenimiento', icon: 'Wrench',         color: 'amber' },
+  documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },
+  comunicacion:  { label: 'Comunicacion',  icon: 'ChatCircle',     color: 'pink' },
+  reportes:      { label: 'Reportes',      icon: 'ChartBar',       color: 'indigo' },
+};
 
 // ============================================================================
 // Hook State

@@ -208,7 +208,6 @@ interface BriefingCardProps {
  * Each section uses grid-rows-[0fr]/[1fr] for smooth collapse animation.
  */
 export function BriefingCard({ briefing, onAction, isLoading, className }: BriefingCardProps) {
-  if (isLoading) return <BriefingCardSkeleton />;
   // First section expanded by default, rest collapsed
   const [expandedSections, setExpandedSections] = useState<Set<number>>(() => new Set([0]));
 
@@ -223,6 +222,8 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
       return next;
     });
   };
+
+  if (isLoading) return <BriefingCardSkeleton />;
 
   return (
     <div className={cn('space-y-3', className)}>

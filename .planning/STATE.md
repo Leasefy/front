@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 24 verified complete — Ready for Phase 25 (Polish & QA)
+**Current focus:** Phase 25 (Polish & QA) — Plan 01 complete, plans 02-03 in progress
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
-Phase: 24 of 25 (API Client & Backend Docs) — COMPLETE
-Plan: 3 of 3 in phase 24
-Status: Phase verified (14/14 requirements passed)
-Last activity: 2026-02-10 — Phase 24 verified complete
+Phase: 25 of 25 (Polish & QA)
+Plan: 1 of 3 in phase 25
+Status: In progress
+Last activity: 2026-02-10 — Completed 25-01-PLAN.md (Dark Mode + Mobile)
 
-Progress: █████████████████████████████░ ~96%
+Progress: █████████████████████████████░ ~97%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 3.6 min
-- Total execution time: 1.1 hours
+- Total plans completed: 19
+- Average duration: 3.8 min
+- Total execution time: 1.2 hours
 
 **By Phase:**
 
@@ -39,10 +39,11 @@ Progress: ███████████████████████�
 | 22-briefing-display | 2/2 | 8min | 4min |
 | 23-preferences-autonomy | 2/2 | 7min | 3.5min |
 | 24-api-client | 3/3 | 9min | 3min |
+| 25-polish-qa | 1/3 | 8min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 23-01 (4min), 23-02 (3min), 24-01 (2min), 24-02 (3min), 24-03 (4min)
-- Trend: Consistent ~3min per plan
+- Last 5 plans: 23-02 (3min), 24-01 (2min), 24-02 (3min), 24-03 (4min), 25-01 (8min)
+- Trend: QA plans take longer due to full audit scope
 
 ## Previous Milestones
 
@@ -129,6 +130,11 @@ Recent decisions affecting current work:
 - 24-03: BACKEND-API-V4.md covers all 11 endpoints + SSE + agent events in single doc for backend dev convenience
 - 24-03: Section 9 of AI-AGENT-ARCHITECTURE.md replaced entirely (old list was outdated vs implemented types)
 - 24-03: Documented 11 endpoints (not 10) since briefings/latest is distinct from briefings list
+- 25-01: DecisionHistory category badges used dynamic Tailwind classes (bg-${color}-100) which cannot be compiled -- replaced with static CATEGORY_BADGE lookup map
+- 25-01: MobileSidebarDrawer uses fixed z-[61] (above z-[60] backdrop) without portal -- simpler than createPortal
+- 25-01: MobileNewChatButton as separate component inside BetaChatProvider to access context
+- 25-01: Drawer auto-closes on tab change for natural mobile navigation
+- 25-01: safe-area-inset-bottom uses max() function for graceful fallback on non-notch devices
 
 ### Pending Todos
 
@@ -136,10 +142,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None yet.
+- Aggressive linter/auto-import tool keeps injecting useI18n into Beta components (Beta routes lack I18nProvider). Watch for this in future edits to Beta components.
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Phase 24 verified complete (14/14 requirements)
-Resume file: None — ready for Phase 25 (Polish & QA)
+Stopped at: Completed 25-01-PLAN.md (Dark Mode + Mobile)
+Resume file: None — plans 25-02 and 25-03 next

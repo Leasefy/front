@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { ChatCircle, Lightning, ListChecks, Newspaper, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { AppSwitcher } from './AppSwitcher';
+import { ConversationList } from './ConversationList';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing';
 
@@ -28,23 +29,15 @@ interface BetaSidebarProps {
 }
 
 /**
- * BetaSidebar - Mission Control sidebar with tabs and AppSwitcher.
+ * BetaSidebar - Mission Control sidebar with tabs, conversation list, and AppSwitcher.
  *
- * Structure (top to bottom):
- * - AppSwitcher at top (switch back to Dashboard)
- * - Separator
- * - Tab navigation (Conversaciones, Agentes, Decisiones, Briefing)
- * - Spacer
- * - "Nueva conversacion" button
- * - Beta badge pill
+ * When "Conversaciones" tab is active, shows the ConversationList below tabs.
+ * Other tabs show placeholder content (future phases).
  */
-export function BetaSidebar({ basePath, activeTab: controlledTab, onTabChange, className }: BetaSidebarProps) {
-  const [internalTab, setInternalTab] = useState<BetaTab>('conversations');
-
-  const activeTab = controlledTab ?? internalTab;
+export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange, className }: BetaSidebarProps) {
+  const { createConversation, pendingDecisionsCount } = useBetaChatContext();
 
   const handleTabChange = (tab: BetaTab) => {
-    setInternalTab(tab);
     onTabChange?.(tab);
   };
 
@@ -66,7 +59,7 @@ export function BetaSidebar({ basePath, activeTab: controlledTab, onTabChange, c
       <div className="mx-3 border-b border-neutral-200 dark:border-border" />
 
       {/* Tab navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3">
+      <nav className="px-3 py-3">
         <div className="space-y-0.5">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -90,17 +83,54 @@ export function BetaSidebar({ basePath, activeTab: controlledTab, onTabChange, c
                   )}
                   weight={isActive ? 'fill' : 'regular'}
                 />
-                <span>{tab.label}</span>
+                <span className="flex-1 text-left">{tab.label}</span>
+                {tab.id === 'decisions' && pendingDecisionsCount > 0 && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center justify-center',
+                      'min-w-[20px] h-5 px-1.5 rounded-full',
+                      'bg-indigo-500 text-white text-[11px] font-semibold',
+                      'transition-all duration-200',
+                      'animate-in fade-in zoom-in-75'
+                    )}
+                  >
+                    {pendingDecisionsCount}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </nav>
 
+      {/* Separator */}
+      <div className="mx-3 border-b border-neutral-200 dark:border-border" />
+
+      {/* Tab content area */}
+      <div className="flex-1 overflow-hidden px-3 py-3">
+        {activeTab === 'conversations' && <ConversationList />}
+        {activeTab === 'agents' && (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
+            Fase 20
+          </div>
+        )}
+        {activeTab === 'decisions' && (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
+            Fase 21
+          </div>
+        )}
+        {activeTab === 'briefing' && (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
+            Fase 22
+          </div>
+        )}
+      </div>
+
       {/* Bottom section: New conversation + Beta badge */}
       <div className="px-3 pb-3 space-y-3">
         {/* New conversation button */}
         <button
+          onClick={createConversation}
           className={cn(
             'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl',
             'text-[13px] font-medium',

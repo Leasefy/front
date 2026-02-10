@@ -10,6 +10,7 @@ import type {
   AgentActivityBlock,
   AgentExecution,
   AgentExecutionStatus,
+  PendingDecision,
 } from '@/lib/types/beta-chat';
 import { getMockResponse } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
@@ -142,6 +143,14 @@ function saveToStorage(conversations: Conversation[]) {
 // Hook Return Type
 // ============================================================================
 
+/** A decision entry with context about its source conversation */
+export interface DecisionEntry {
+  decision: PendingDecision;
+  conversationId: string;
+  conversationTitle: string;
+  messageId: string;
+}
+
 export interface UseBetaChatReturn {
   // Current conversation
   messages: ChatMessage[];
@@ -157,6 +166,8 @@ export interface UseBetaChatReturn {
 
   // Decision handling
   selectDecisionOption: (messageId: string, optionId: string) => void;
+  pendingDecisionsCount: number;
+  allDecisions: DecisionEntry[];
 
   // Conversation management
   conversations: Conversation[];
@@ -722,6 +733,25 @@ export function useBetaChat(): UseBetaChatReturn {
   );
 
   // ========================================================================
+  // Decision aggregation (across all conversations)
+  // ========================================================================
+
+  const allDecisions: DecisionEntry[] = conversations.flatMap((c) =>
+    c.messages
+      .filter((m): m is ChatMessage & { decision: PendingDecision } => !!m.decision)
+      .map((m) => ({
+        decision: m.decision,
+        conversationId: c.id,
+        conversationTitle: c.title,
+        messageId: m.id,
+      }))
+  );
+
+  const pendingDecisionsCount = allDecisions.filter(
+    (d) => !d.decision.selectedOptionId
+  ).length;
+
+  // ========================================================================
   // Search / Summaries
   // ========================================================================
 
@@ -755,6 +785,8 @@ export function useBetaChat(): UseBetaChatReturn {
 
     // Decision handling
     selectDecisionOption,
+    pendingDecisionsCount,
+    allDecisions,
 
     // Conversation management
     conversations,

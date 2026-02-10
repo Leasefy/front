@@ -14,6 +14,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BriefingCardSkeleton } from './BetaSkeletons';
 import type { DailyBriefing, BriefingSection } from '@/lib/types/beta-chat';
 import type { Icon } from '@phosphor-icons/react';
 
@@ -195,6 +196,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 interface BriefingCardProps {
   briefing: DailyBriefing;
   onAction?: (sectionId: string, context: string) => void;
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -205,7 +207,8 @@ interface BriefingCardProps {
  * cobros, pipeline, mantenimiento, decisiones pendientes.
  * Each section uses grid-rows-[0fr]/[1fr] for smooth collapse animation.
  */
-export function BriefingCard({ briefing, onAction, className }: BriefingCardProps) {
+export function BriefingCard({ briefing, onAction, isLoading, className }: BriefingCardProps) {
+  if (isLoading) return <BriefingCardSkeleton />;
   // First section expanded by default, rest collapsed
   const [expandedSections, setExpandedSections] = useState<Set<number>>(() => new Set([0]));
 

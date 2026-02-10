@@ -3,6 +3,7 @@
 import { ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { PreferencesSkeleton } from './BetaSkeletons';
 import { AutonomySettings } from './AutonomySettings';
 import { NotificationSettings } from './NotificationSettings';
 import { ToneSelector } from './ToneSelector';
@@ -24,7 +25,9 @@ interface PreferencesPanelProps {
  * Includes a global "Restablecer toda la configuracion" reset button at the bottom.
  */
 export function PreferencesPanel({ className }: PreferencesPanelProps) {
-  const { resetPreferences } = useBetaChatContext();
+  const { isLoading, resetPreferences } = useBetaChatContext();
+
+  if (isLoading) return <PreferencesSkeleton />;
 
   return (
     <div

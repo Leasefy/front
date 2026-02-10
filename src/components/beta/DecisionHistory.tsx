@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { DecisionHistorySkeleton } from './BetaSkeletons';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import type { DecisionEntry } from '@/lib/hooks/useBetaChat';
 
@@ -110,7 +111,9 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
  * Clicking a decision entry switches to that conversation.
  */
 export function DecisionHistory() {
-  const { allDecisions, switchConversation } = useBetaChatContext();
+  const { isLoading, allDecisions, switchConversation } = useBetaChatContext();
+
+  if (isLoading) return <DecisionHistorySkeleton />;
 
   if (allDecisions.length === 0) {
     return (

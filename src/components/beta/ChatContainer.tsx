@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { ChatMessageSkeleton } from './BetaSkeletons';
 import { BetaWelcome } from './BetaWelcome';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
@@ -45,6 +46,7 @@ function formatDuration(ms: number): string {
  */
 export function ChatContainer({ className }: ChatContainerProps) {
   const {
+    isLoading,
     messages,
     sendMessage,
     isThinking,
@@ -74,6 +76,14 @@ export function ChatContainer({ className }: ChatContainerProps) {
 
   const hasMessages = messages.length > 0;
   const isBusy = isThinking || isStreaming || isAgentsRunning;
+
+  if (isLoading) {
+    return (
+      <div className={cn('flex flex-col h-full', className)}>
+        <ChatMessageSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex flex-col h-full', className)}>

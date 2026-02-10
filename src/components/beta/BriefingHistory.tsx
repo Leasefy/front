@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { BriefingCardSkeleton } from './BetaSkeletons';
 import { BriefingCard } from './BriefingCard';
 
 // ============================================================================
@@ -32,7 +33,9 @@ function getDateLabel(date: Date): string {
  * with indigo background. Renders the selected day's BriefingCard below.
  */
 export function BriefingHistory() {
-  const { briefings, selectedBriefing, selectBriefing, sendBriefingAction } = useBetaChatContext();
+  const { isLoading, briefings, selectedBriefing, selectBriefing, sendBriefingAction } = useBetaChatContext();
+
+  if (isLoading) return <BriefingCardSkeleton />;
 
   if (briefings.length === 0) return null;
 

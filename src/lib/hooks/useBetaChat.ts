@@ -181,6 +181,9 @@ export interface DecisionEntry {
 }
 
 export interface UseBetaChatReturn {
+  // Loading state (false in mock, true during real API fetch)
+  isLoading: boolean;
+
   // Current conversation
   messages: ChatMessage[];
   sendMessage: (text: string) => void;
@@ -904,6 +907,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   }, []);
 
   return {
+    // Loading state (always false in mock mode; real API sets true during fetch)
+    isLoading: false,
+
     // Current conversation
     messages,
     sendMessage,

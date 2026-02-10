@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 18 complete, verified — ready for Phase 19 (Conversation Management)
+**Current focus:** Phase 19 complete — Phase 20 planned, ready for execution
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
-Phase: 18 of 25 (Chat Interface) — COMPLETE
-Plan: 3 of 3 in phase 18
-Status: Phase verified and complete
-Last activity: 2026-02-10 — Phase 18 verified, state updated
+Phase: 20 of 25 (Agent Activity Display) — PLANNED
+Plan: 0 of 2 in phase 20
+Status: Plans written, ready for execution
+Last activity: 2026-02-10 — Phase 20 plans created
 
-Progress: ██████░░░░░░░░░░░░░░░░░░░░░░░░ ~20%
+Progress: ████████░░░░░░░░░░░░░░░░░░░░░░ ~33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 4.4 min
-- Total execution time: 0.37 hours
+- Total plans completed: 7
+- Average duration: 4.1 min
+- Total execution time: 0.48 hours
 
 **By Phase:**
 
@@ -33,9 +33,10 @@ Progress: ██████░░░░░░░░░░░░░░░░░�
 |-------|-------|-------|----------|
 | 17-beta-sidebar | 2/2 | 10min | 5min |
 | 18-chat-interface | 3/3 | 11min | 3.7min |
+| 19-conversation-management | 2/2 | 8min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 17-02 (5min), 18-01 (4min), 18-02 (3min), 18-03 (4min)
+- Last 5 plans: 18-01 (4min), 18-02 (3min), 18-03 (4min), 19-01 (4min), 19-02 (merged)
 - Trend: Consistent ~4min per plan
 
 ## Previous Milestones
@@ -76,6 +77,12 @@ Recent decisions affecting current work:
 - 18-03: Smart auto-scroll with 100px threshold (suppressed when user scrolled up)
 - 18-03: BetaChatProvider wraps at BetaLayout level for session-level persistence
 - 18-03: useBetaChat remains standalone; context consumes it internally for testability
+- 19-01: Multi-conversation state: Conversation[] with activeConversationId
+- 19-01: localStorage persistence via serializeConversations/deserializeConversations
+- 19-01: Date grouping: Hoy/Ayer/Esta semana/Anterior
+- 19-01: Two-click delete pattern for conversation deletion
+- 19-01: Search filters by title and message content
+- 19-02: Merged into 19-01 (CRUD tightly coupled with state management)
 
 ### Pending Todos
 
@@ -88,5 +95,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Phase 18 verified and complete. State/roadmap/requirements updated.
-Resume file: None (phase complete, ready for Phase 19)
+Stopped at: Phase 20 plans created. Ready for execution.
+Resume file: .planning/phases/20-agent-activity-display/20-01-PLAN.md

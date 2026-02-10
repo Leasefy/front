@@ -80,12 +80,12 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Conversation Management (CONV)
 
-- [ ] **CONV-01**: Conversation list sidebar showing past conversations
-- [ ] **CONV-02**: New conversation button creates fresh thread
-- [ ] **CONV-03**: Conversation titles auto-generated from first message
-- [ ] **CONV-04**: Conversations grouped by date (Hoy, Ayer, Esta semana, Anterior)
-- [ ] **CONV-05**: Delete conversation action with confirmation
-- [ ] **CONV-06**: Search/filter conversations by text
+- [x] **CONV-01**: Conversation list sidebar showing past conversations
+- [x] **CONV-02**: New conversation button creates fresh thread
+- [x] **CONV-03**: Conversation titles auto-generated from first message
+- [x] **CONV-04**: Conversations grouped by date (Hoy, Ayer, Esta semana, Anterior)
+- [x] **CONV-05**: Delete conversation action with confirmation
+- [x] **CONV-06**: Search/filter conversations by text
 
 ### Agent Activity Display (AGNT)
 

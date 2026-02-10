@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 21 — Decision System (plan 01 complete, plan 02 ready)
+**Current focus:** Phase 21 complete — ready for Phase 22 (Daily Briefing)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 21 of 25 (Decision System)
-Plan: 1 of 2 in phase 21
-Status: In progress
-Last activity: 2026-02-10 — Completed 21-01-PLAN.md
+Plan: 2 of 2 in phase 21
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 21-02-PLAN.md
 
-Progress: ██████████░░░░░░░░░░░░░░░░░░░░ ~40%
+Progress: ████████████░░░░░░░░░░░░░░░░░░ ~44%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 3.9 min
-- Total execution time: 0.66 hours
+- Total plans completed: 11
+- Average duration: 3.8 min
+- Total execution time: 0.71 hours
 
 **By Phase:**
 
@@ -35,10 +35,10 @@ Progress: ██████████░░░░░░░░░░░░░�
 | 18-chat-interface | 3/3 | 11min | 3.7min |
 | 19-conversation-management | 2/2 | 8min | 4min |
 | 20-agent-activity-display | 2/2 | 6min | 3min |
-| 21-decision-system | 1/2 | 4min | 4min |
+| 21-decision-system | 2/2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 19-01 (4min), 19-02 (merged), 20-01 (2min), 20-02 (4min), 21-01 (4min)
+- Last 5 plans: 19-02 (merged), 20-01 (2min), 20-02 (4min), 21-01 (4min), 21-02 (3min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -97,6 +97,9 @@ Recent decisions affecting current work:
 - 21-01: selectDecisionOption sends "He seleccionado: [label]" for natural conversation flow
 - 21-01: Recommendation badges: green Recomendado, gray Neutral, red No recomendado
 - 21-01: Read-only state uses emerald ring for selected option, opacity-50 for non-selected
+- 21-02: DecisionEntry as flat array for simpler rendering (not grouped map)
+- 21-02: Category badge uses AGENT_METADATA color tokens for consistency
+- 21-02: Pending decisions listed before resolved for action-priority UX
 
 ### Pending Todos
 
@@ -109,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 21-01-PLAN.md
-Resume file: None — ready for 21-02 execution
+Stopped at: Completed 21-02-PLAN.md (Phase 21 complete)
+Resume file: None — ready for Phase 22 planning

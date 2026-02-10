@@ -11,12 +11,14 @@ import type {
   AgentExecution,
   AgentExecutionStatus,
   PendingDecision,
+  BetaPreferences,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { getMockResponse } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
 import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
 import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
+import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
 
 // ============================================================================
 // Constants
@@ -31,6 +33,7 @@ const LONG_PAUSE_MULTIPLIER = 6;
 const SHORT_PAUSE_MULTIPLIER = 3;
 
 const STORAGE_KEY = 'leasefy-beta-conversations';
+const PREFERENCES_STORAGE_KEY = 'leasefy-beta-preferences';
 const TITLE_MAX_LENGTH = 50;
 const PREVIEW_MAX_LENGTH = 80;
 
@@ -142,6 +145,30 @@ function saveToStorage(conversations: Conversation[]) {
 }
 
 // ============================================================================
+// Preferences Persistence
+// ============================================================================
+
+function loadPreferencesFromStorage(): BetaPreferences {
+  if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
+  try {
+    const stored = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    if (!stored) return DEFAULT_PREFERENCES;
+    return JSON.parse(stored) as BetaPreferences;
+  } catch {
+    return DEFAULT_PREFERENCES;
+  }
+}
+
+function savePreferencesToStorage(prefs: BetaPreferences) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(prefs));
+  } catch {
+    // Storage full or unavailable — silently fail
+  }
+}
+
+// ============================================================================
 // Hook Return Type
 // ============================================================================
 
@@ -191,6 +218,11 @@ export interface UseBetaChatReturn {
   briefings: DailyBriefing[];
   selectedBriefing: DailyBriefing | null;
   selectBriefing: (id: string) => void;
+
+  // Preferences
+  preferences: BetaPreferences;
+  updatePreferences: (partial: Partial<BetaPreferences>) => void;
+  resetPreferences: () => void;
 }
 
 // ============================================================================
@@ -234,6 +266,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   const [hasNewBriefing, setHasNewBriefing] = useState(true);
   const [briefings] = useState<DailyBriefing[]>(() => getMockBriefings());
   const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
+
+  // Preferences state
+  const [preferences, setPreferences] = useState<BetaPreferences>(() => loadPreferencesFromStorage());
 
   // Timeout refs
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -830,6 +865,44 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     ? briefings.find((b) => b.id === selectedBriefingId) ?? briefings[0] ?? null
     : briefings[0] ?? null;
 
+  // ========================================================================
+  // Preferences persistence & mutations
+  // ========================================================================
+
+  // Persist preferences to localStorage whenever they change
+  useEffect(() => {
+    savePreferencesToStorage(preferences);
+  }, [preferences]);
+
+  const updatePreferences = useCallback((partial: Partial<BetaPreferences>) => {
+    setPreferences((prev) => {
+      const next = { ...prev };
+      if (partial.autonomy) {
+        next.autonomy = { ...prev.autonomy, ...partial.autonomy };
+      }
+      if (partial.notifications) {
+        next.notifications = {
+          ...prev.notifications,
+          ...partial.notifications,
+          categories: partial.notifications.categories
+            ? { ...prev.notifications.categories, ...partial.notifications.categories }
+            : prev.notifications.categories,
+        };
+      }
+      if (partial.tone !== undefined) {
+        next.tone = partial.tone;
+      }
+      if (partial.thresholds) {
+        next.thresholds = { ...prev.thresholds, ...partial.thresholds };
+      }
+      return next;
+    });
+  }, []);
+
+  const resetPreferences = useCallback(() => {
+    setPreferences(DEFAULT_PREFERENCES);
+  }, []);
+
   return {
     // Current conversation
     messages,
@@ -868,5 +941,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     briefings,
     selectedBriefing,
     selectBriefing,
+
+    // Preferences
+    preferences,
+    updatePreferences,
+    resetPreferences,
   };
 }

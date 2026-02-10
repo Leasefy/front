@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 24 planned — API Client & Backend Docs (3 plans ready)
+**Current focus:** Phase 24 executing — API Client & Backend Docs (1/3 plans complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 24 of 25 (API Client & Backend Docs)
-Plan: 0 of 3 in phase 24
-Status: Planning complete — ready for execution
-Last activity: 2026-02-10 — Planned Phase 24
+Plan: 1 of 3 in phase 24
+Status: In progress
+Last activity: 2026-02-10 — Completed 24-01-PLAN.md
 
-Progress: ████████████████████░░░░░░░░░░ ~67%
+Progress: ████████████████████░░░░░░░░░░ ~70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 3.7 min
-- Total execution time: 0.95 hours
+- Total plans completed: 16
+- Average duration: 3.6 min
+- Total execution time: 0.99 hours
 
 **By Phase:**
 
@@ -38,10 +38,11 @@ Progress: ████████████████████░░░�
 | 21-decision-system | 2/2 | 7min | 3.5min |
 | 22-briefing-display | 2/2 | 8min | 4min |
 | 23-preferences-autonomy | 2/2 | 7min | 3.5min |
+| 24-api-client | 1/3 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 21-02 (3min), 22-01 (4min), 22-02 (4min), 23-01 (4min), 23-02 (3min)
-- Trend: Consistent ~3-4min per plan
+- Last 5 plans: 22-01 (4min), 22-02 (4min), 23-01 (4min), 23-02 (3min), 24-01 (2min)
+- Trend: Consistent ~3min per plan, accelerating
 
 ## Previous Milestones
 
@@ -118,6 +119,9 @@ Recent decisions affecting current work:
 - 23-02: COP formatting uses toLocaleString('es-CO') for dot-as-thousands separator
 - 23-02: Score indicator 3-tier color: red (<50), amber (50-69), green (70+)
 - 23-02: Global reset button at panel bottom with red hover for destructive action affordance
+- 24-01: AsyncGenerator<ChatStreamEvent> for sendMessage (not EventSource) — more idiomatic for async iteration
+- 24-01: Underscore-prefixed params for stub methods to suppress unused variable warnings
+- 24-01: Mock mode defaults true when NEXT_PUBLIC_USE_MOCK_API env var is unset
 
 ### Pending Todos
 
@@ -130,5 +134,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Planned Phase 24 (3 plans written)
-Resume file: None — ready to execute Phase 24
+Stopped at: Completed 24-01-PLAN.md
+Resume file: None — ready for 24-02

@@ -8,24 +8,24 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 22 planned — ready for execution (Briefing Display)
+**Current focus:** Phase 22 in progress — Briefing Display (plan 01 complete)
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
 Phase: 22 of 25 (Briefing Display)
-Plan: 0 of 2 in phase 22
-Status: Plans written, ready for execution
-Last activity: 2026-02-10 — Phase 22 plans written
+Plan: 1 of 2 in phase 22
+Status: In progress
+Last activity: 2026-02-10 — Completed 22-01-PLAN.md
 
-Progress: ████████████░░░░░░░░░░░░░░░░░░ ~44%
+Progress: ████████████░░░░░░░░░░░░░░░░░░ ~48%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 3.8 min
-- Total execution time: 0.71 hours
+- Total execution time: 0.78 hours
 
 **By Phase:**
 
@@ -36,9 +36,10 @@ Progress: ████████████░░░░░░░░░░░�
 | 19-conversation-management | 2/2 | 8min | 4min |
 | 20-agent-activity-display | 2/2 | 6min | 3min |
 | 21-decision-system | 2/2 | 7min | 3.5min |
+| 22-briefing-display | 1/2 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 19-02 (merged), 20-01 (2min), 20-02 (4min), 21-01 (4min), 21-02 (3min)
+- Last 5 plans: 20-01 (2min), 20-02 (4min), 21-01 (4min), 21-02 (3min), 22-01 (4min)
 - Trend: Consistent ~3-4min per plan
 
 ## Previous Milestones
@@ -100,6 +101,11 @@ Recent decisions affecting current work:
 - 21-02: DecisionEntry as flat array for simpler rendering (not grouped map)
 - 21-02: Category badge uses AGENT_METADATA color tokens for consistency
 - 21-02: Pending decisions listed before resolved for action-priority UX
+- 22-01: BriefingSection summary always visible (not hidden inside collapse)
+- 22-01: First section expanded by default, rest collapsed
+- 22-01: sendBriefingAction switches to conversations tab via onTabChange callback
+- 22-01: Briefing loaded from mock data, no localStorage persistence yet
+- 22-01: Action button color-coded per section matching AGENT_METADATA tokens
 
 ### Pending Todos
 
@@ -112,5 +118,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Phase 22 plans written (22-01-PLAN.md, 22-02-PLAN.md)
-Resume file: None — ready for Phase 22 execution
+Stopped at: Completed 22-01-PLAN.md
+Resume file: None — ready for 22-02 execution

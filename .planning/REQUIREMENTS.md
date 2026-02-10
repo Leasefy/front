@@ -211,11 +211,11 @@ Which phases cover which requirements. Updated by create-roadmap.
 | BRFG-04 | Phase 22 | Complete |
 | BRFG-05 | Phase 22 | Complete |
 | BRFG-06 | Phase 22 | Complete |
-| PREF-01 | Phase 23 | Pending |
-| PREF-02 | Phase 23 | Pending |
-| PREF-03 | Phase 23 | Pending |
-| PREF-04 | Phase 23 | Pending |
-| PREF-05 | Phase 23 | Pending |
+| PREF-01 | Phase 23 | Complete |
+| PREF-02 | Phase 23 | Complete |
+| PREF-03 | Phase 23 | Complete |
+| PREF-04 | Phase 23 | Complete |
+| PREF-05 | Phase 23 | Complete |
 | APIC-01 | Phase 24 | Pending |
 | APIC-02 | Phase 24 | Pending |
 | APIC-03 | Phase 24 | Pending |

@@ -253,7 +253,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | 20. Agent Activity Display | 2/2 | Complete | 2026-02-10 |
 | 21. Decision System | 2/2 | Complete | 2026-02-10 |
 | 22. Briefing Display | 2/2 | Complete | 2026-02-10 |
-| 23. Preferences & Autonomy | 0/2 | Not started | - |
+| 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
 | 24. API Client & Backend Docs | 0/3 | Not started | - |
 | 25. Polish & QA | 0/3 | Not started | - |
 

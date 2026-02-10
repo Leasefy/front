@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { useBetaChat } from '@/lib/hooks/useBetaChat';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { BetaWelcome } from './BetaWelcome';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
@@ -27,7 +27,7 @@ interface ChatContainerProps {
  *   - ChatInput (sticky at bottom)
  */
 export function ChatContainer({ className }: ChatContainerProps) {
-  const { messages, sendMessage, isThinking, isStreaming, streamingContent } = useBetaChat();
+  const { messages, sendMessage, isThinking, isStreaming, streamingContent } = useBetaChatContext();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
 

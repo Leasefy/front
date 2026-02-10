@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { BetaSidebar, BetaTab } from './BetaSidebar';
 import { BetaChatProvider } from '@/lib/context/BetaChatContext';
+import { PreferencesPanel } from './PreferencesPanel';
 
 interface BetaLayoutProps {
   children: React.ReactNode;
@@ -47,9 +48,9 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           />
         </div>
 
-        {/* Main content area (chat area in future phases) */}
+        {/* Main content area — settings panel or page content */}
         <main className="flex-1 overflow-y-auto">
-          {children}
+          {activeTab === 'settings' ? <PreferencesPanel /> : children}
         </main>
       </div>
     </BetaChatProvider>

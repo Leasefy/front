@@ -1,6 +1,6 @@
 'use client';
 
-import { ChatCircle, Lightning, ListChecks, Newspaper, Plus, Sparkle } from '@phosphor-icons/react';
+import { ChatCircle, GearSix, Lightning, ListChecks, Newspaper, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { AppSwitcher } from './AppSwitcher';
 import { ConversationList } from './ConversationList';
@@ -8,7 +8,7 @@ import { DecisionHistory } from './DecisionHistory';
 import { BriefingHistory } from './BriefingHistory';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
-export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing';
+export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing' | 'settings';
 
 interface TabItem {
   id: BetaTab;
@@ -21,6 +21,7 @@ const TABS: TabItem[] = [
   { id: 'agents', label: 'Agentes', icon: Lightning },
   { id: 'decisions', label: 'Decisiones', icon: ListChecks },
   { id: 'briefing', label: 'Briefing', icon: Newspaper },
+  { id: 'settings', label: 'Configuracion', icon: GearSix },
 ];
 
 interface BetaSidebarProps {

@@ -6,6 +6,19 @@ import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import type { DecisionEntry } from '@/lib/hooks/useBetaChat';
 
 // ============================================================================
+// Static color lookup for category badges (Tailwind requires static classes)
+// ============================================================================
+
+const CATEGORY_BADGE: Record<string, string> = {
+  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  purple: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+  pink: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
+  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400',
+};
+
+// ============================================================================
 // Helpers
 // ============================================================================
 
@@ -54,8 +67,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         <span
           className={cn(
             'shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full',
-            `bg-${meta.color}-100 text-${meta.color}-700`,
-            `dark:bg-${meta.color}-500/15 dark:text-${meta.color}-400`
+            CATEGORY_BADGE[meta.color] ?? CATEGORY_BADGE.blue
           )}
         >
           {meta.label}

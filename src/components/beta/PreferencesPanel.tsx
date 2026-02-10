@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { AutonomySettings } from './AutonomySettings';
+import { NotificationSettings } from './NotificationSettings';
 
 interface PreferencesPanelProps {
   className?: string;
@@ -36,13 +37,11 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
         {/* Autonomy settings */}
         <AutonomySettings />
 
-        {/* Divider before future sections */}
+        {/* Divider */}
         <div className="border-t border-neutral-200 dark:border-border" />
 
-        {/* Placeholder for notification preferences (Phase 23-02) */}
-        <div className="text-[13px] text-muted-foreground italic">
-          Notificaciones, tono de comunicacion y umbrales se configuran en la siguiente fase.
-        </div>
+        {/* Notification settings */}
+        <NotificationSettings />
       </div>
     </div>
   );

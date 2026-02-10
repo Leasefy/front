@@ -5,6 +5,7 @@ import { List, Plus, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { BetaSidebar, BetaTab } from './BetaSidebar';
 import { BetaChatProvider, useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { BetaErrorBoundary } from './BetaErrorBoundary';
 import { PreferencesPanel } from './PreferencesPanel';
 import { MobileSidebarDrawer } from './MobileSidebarDrawer';
 
@@ -82,14 +83,16 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           <MobileNewChatButton />
         </div>
 
-        {/* Desktop sidebar - hidden on mobile */}
-        <div className="hidden md:flex">
-          <BetaSidebar
-            basePath={basePath}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
-        </div>
+        {/* Desktop sidebar - hidden on mobile, error-isolated */}
+        <BetaErrorBoundary>
+          <div className="hidden md:flex">
+            <BetaSidebar
+              basePath={basePath}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+            />
+          </div>
+        </BetaErrorBoundary>
 
         {/* Mobile drawer */}
         <MobileSidebarDrawer
@@ -103,10 +106,12 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           />
         </MobileSidebarDrawer>
 
-        {/* Main content area — settings panel or page content */}
-        <main className="flex-1 overflow-y-auto">
-          {activeTab === 'settings' ? <PreferencesPanel /> : children}
-        </main>
+        {/* Main content area — error-isolated from sidebar */}
+        <BetaErrorBoundary>
+          <main className="flex-1 overflow-y-auto">
+            {activeTab === 'settings' ? <PreferencesPanel /> : children}
+          </main>
+        </BetaErrorBoundary>
       </div>
     </BetaChatProvider>
   );

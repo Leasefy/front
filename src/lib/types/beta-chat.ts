@@ -152,6 +152,39 @@ export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; co
 };
 
 // ============================================================================
+// Briefing Types
+// ============================================================================
+
+/** A single section within a daily briefing (cobros, pipeline, mantenimiento, decisiones) */
+export interface BriefingSection {
+  id: string;
+  title: string;
+  /** Phosphor icon name (maps to ICON_MAP) */
+  icon: string;
+  /** Tailwind color token matching AGENT_METADATA */
+  color: string;
+  /** One-line summary always visible */
+  summary: string;
+  /** Detailed bullet points shown when expanded */
+  details: string[];
+  /** CTA label, e.g. "Cuéntame mas sobre cobros" */
+  actionLabel?: string;
+  /** Context string sent to chat when action is triggered */
+  actionContext?: string;
+}
+
+/** A complete daily briefing with greeting and sectioned overview */
+export interface DailyBriefing {
+  id: string;
+  date: Date;
+  greeting: string;
+  overallSummary: string;
+  sections: BriefingSection[];
+  /** Whether this briefing has been viewed yet */
+  isNew: boolean;
+}
+
+// ============================================================================
 // Hook State
 // ============================================================================
 

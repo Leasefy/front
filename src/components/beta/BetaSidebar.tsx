@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { AppSwitcher } from './AppSwitcher';
 import { ConversationList } from './ConversationList';
 import { DecisionHistory } from './DecisionHistory';
-import { BriefingCard } from './BriefingCard';
+import { BriefingHistory } from './BriefingHistory';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing';
@@ -37,7 +37,7 @@ interface BetaSidebarProps {
  * Other tabs show placeholder content (future phases).
  */
 export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange, className }: BetaSidebarProps) {
-  const { createConversation, pendingDecisionsCount, currentBriefing, sendBriefingAction, hasNewBriefing, markBriefingSeen } = useBetaChatContext();
+  const { createConversation, pendingDecisionsCount, hasNewBriefing, markBriefingSeen } = useBetaChatContext();
 
   const handleTabChange = (tab: BetaTab) => {
     if (tab === 'briefing') {
@@ -130,16 +130,8 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
           </div>
         )}
         {activeTab === 'decisions' && <DecisionHistory />}
-        {activeTab === 'briefing' && currentBriefing && (
-          <div className="h-full overflow-y-auto">
-            <BriefingCard
-              briefing={currentBriefing}
-              onAction={(sectionId, context) => {
-                sendBriefingAction(sectionId, context);
-                onTabChange?.('conversations');
-              }}
-            />
-          </div>
+        {activeTab === 'briefing' && (
+          <BriefingHistory />
         )}
       </div>
 

@@ -89,12 +89,12 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Agent Activity Display (AGNT)
 
-- [ ] **AGNT-01**: Visual indicator when AI orchestrator is dispatching agents
-- [ ] **AGNT-02**: Agent name badges with icons (Cobranza, Pipeline, Documentos, Mantenimiento, etc.)
-- [ ] **AGNT-03**: Agent execution status (running/completed/failed) shown inline
-- [ ] **AGNT-04**: Agent result cards displayed inline in conversation (collapsible detail)
-- [ ] **AGNT-05**: Multiple agents can show as executing simultaneously
-- [ ] **AGNT-06**: Error state when agent execution fails with retry option
+- [x] **AGNT-01**: Visual indicator when AI orchestrator is dispatching agents
+- [x] **AGNT-02**: Agent name badges with icons (Cobranza, Pipeline, Documentos, Mantenimiento, etc.)
+- [x] **AGNT-03**: Agent execution status (running/completed/failed) shown inline
+- [x] **AGNT-04**: Agent result cards displayed inline in conversation (collapsible detail)
+- [x] **AGNT-05**: Multiple agents can show as executing simultaneously
+- [x] **AGNT-06**: Error state when agent execution fails with retry option
 
 ### Decision System (DCSN)
 

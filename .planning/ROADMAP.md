@@ -250,7 +250,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | 17. Beta Sidebar Integration | 2/2 | Complete | 2026-02-10 |
 | 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
 | 19. Conversation Management | 2/2 | Complete | 2026-02-10 |
-| 20. Agent Activity Display | 1/2 | In progress | - |
+| 20. Agent Activity Display | 2/2 | Complete | 2026-02-10 |
 | 21. Decision System | 0/2 | Not started | - |
 | 22. Briefing Display | 0/2 | Not started | - |
 | 23. Preferences & Autonomy | 0/2 | Not started | - |

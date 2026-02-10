@@ -4075,5 +4075,160 @@
         "ownerSelected": "Propietario seleccionado"
       }
     }
+  },
+  "beta": {
+    "title": "Leasefy AI",
+    "badge": "Beta",
+    "sidebar": {
+      "conversations": "Conversaciones",
+      "agents": "Agentes",
+      "decisions": "Decisiones",
+      "briefing": "Briefing",
+      "settings": "Configuracion",
+      "newConversation": "Nueva conversacion",
+      "searchPlaceholder": "Buscar conversaciones..."
+    },
+    "chat": {
+      "placeholder": "Escribe un mensaje...",
+      "sendButton": "Enviar mensaje",
+      "welcome": {
+        "subtitle": "Tu asistente de administracion de arriendos. Preguntame lo que necesites.",
+        "prompt_cobros": "\u00bfComo van mis cobros este mes?",
+        "prompt_propiedades": "Resume el estado de mis propiedades",
+        "prompt_decisiones": "\u00bfHay decisiones pendientes?",
+        "prompt_reporte": "Genera un reporte de pagos"
+      },
+      "typing": "Escribiendo..."
+    },
+    "conversations": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "thisWeek": "Esta semana",
+      "older": "Anterior",
+      "noConversations": "Sin conversaciones",
+      "deleteConfirm": "Eliminar",
+      "emptySearch": "Sin resultados",
+      "messages": "mensajes",
+      "message": "mensaje",
+      "confirmDelete": "Confirmar eliminar",
+      "deleteConversation": "Eliminar conversacion"
+    },
+    "agents": {
+      "dispatching": "Despachando agentes...",
+      "running": "Consultando agentes...",
+      "completed": "Agentes completados",
+      "completedWithErrors": "Agentes completados con errores",
+      "failed": "Fallido",
+      "retry": "Reintentar",
+      "results": "Resultados",
+      "showDetails": "Ver detalles",
+      "hideDetails": "Ocultar detalles",
+      "phase": "Fase 20"
+    },
+    "decisions": {
+      "title": "Decisiones",
+      "pending": "Pendientes",
+      "resolved": "Resueltas",
+      "recommended": "Recomendado",
+      "neutral": "Neutral",
+      "notRecommended": "No recomendado",
+      "select": "Seleccionar",
+      "selected": "Seleccionado",
+      "history": "Historial de decisiones",
+      "noPending": "No hay decisiones aun",
+      "decided": "Decidido",
+      "optionsAvailable": "opciones disponibles"
+    },
+    "briefing": {
+      "title": "Briefing diario",
+      "new": "Nuevo",
+      "sections": {
+        "cobros": "Cobros",
+        "pipeline": "Pipeline",
+        "mantenimiento": "Mantenimiento",
+        "decisions": "Decisiones pendientes"
+      },
+      "action": "Cuentame mas",
+      "noHistory": "No hay briefings anteriores",
+      "days": {
+        "sunday": "Dom",
+        "monday": "Lun",
+        "tuesday": "Mar",
+        "wednesday": "Mie",
+        "thursday": "Jue",
+        "friday": "Vie",
+        "saturday": "Sab"
+      }
+    },
+    "preferences": {
+      "title": "Configuracion",
+      "subtitle": "Ajusta el comportamiento de tus agentes de IA y preferencias de la plataforma.",
+      "autonomy": {
+        "title": "Autonomia de Agentes",
+        "subtitle": "Define cuanto control tiene cada agente para actuar sin tu aprobacion.",
+        "auto": "Automatico",
+        "askFirst": "Preguntar primero",
+        "manual": "Manual",
+        "resetDefault": "Restablecer por defecto"
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "subtitle": "Elige sobre que te notificamos y por donde.",
+        "channel": "Canal de notificacion",
+        "inApp": "En la app",
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "all": "Todos",
+        "toggleLabel": "Notificaciones de {{agent}}"
+      },
+      "tone": {
+        "title": "Tono de Comunicacion",
+        "subtitle": "Define como se comunican tus agentes con inquilinos y proveedores.",
+        "formal": "Formal",
+        "professional": "Profesional",
+        "casual": "Casual",
+        "formalExample": "Estimado propietario, le informamos que...",
+        "professionalExample": "Hola, te comparto la actualizacion de...",
+        "casualExample": "\u00a1Ey! Todo listo con los cobros de..."
+      },
+      "thresholds": {
+        "title": "Umbrales y Limites",
+        "subtitle": "Configura los limites para la toma de decisiones automatica.",
+        "moraTolerance": "Tolerancia de mora",
+        "moraDescription": "Dias antes de escalar automaticamente un cobro vencido.",
+        "maintenanceBudget": "Presupuesto de mantenimiento",
+        "maintenanceDescription": "Monto maximo que el agente puede aprobar sin consultar.",
+        "candidateScore": "Puntaje minimo de candidato",
+        "candidateDescription": "Puntaje minimo de riesgo para auto-aprobar un candidato.",
+        "scoreRisky": "Riesgoso",
+        "scoreModerate": "Moderado",
+        "scoreSafe": "Seguro",
+        "decrease": "Disminuir",
+        "increase": "Aumentar"
+      },
+      "reset": "Restablecer toda la configuracion",
+      "score": "Puntaje de autonomia"
+    },
+    "appSwitcher": {
+      "dashboard": "Dashboard",
+      "aiBeta": "AI Beta",
+      "goToBeta": "Ir a Beta",
+      "goToDashboard": "Ir a Dashboard"
+    },
+    "mobile": {
+      "openMenu": "Abrir menu",
+      "closeMenu": "Cerrar menu",
+      "newChat": "Nueva conversacion"
+    },
+    "shortcuts": {
+      "newChat": "Nueva conversacion",
+      "closePanel": "Cerrar panel"
+    },
+    "a11y": {
+      "skipToChat": "Ir al chat principal",
+      "mainChat": "Chat principal",
+      "sidebarNav": "Navegacion Beta",
+      "newMessageRegion": "Nuevos mensajes"
+    }
   }
 }

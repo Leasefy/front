@@ -4075,5 +4075,160 @@
         "ownerSelected": "Owner selected"
       }
     }
+  },
+  "beta": {
+    "title": "Leasefy AI",
+    "badge": "Beta",
+    "sidebar": {
+      "conversations": "Conversations",
+      "agents": "Agents",
+      "decisions": "Decisions",
+      "briefing": "Briefing",
+      "settings": "Settings",
+      "newConversation": "New conversation",
+      "searchPlaceholder": "Search conversations..."
+    },
+    "chat": {
+      "placeholder": "Type a message...",
+      "sendButton": "Send message",
+      "welcome": {
+        "subtitle": "Your rental management assistant. Ask me anything you need.",
+        "prompt_cobros": "How are my collections this month?",
+        "prompt_propiedades": "Summarize the status of my properties",
+        "prompt_decisiones": "Are there pending decisions?",
+        "prompt_reporte": "Generate a payments report"
+      },
+      "typing": "Typing..."
+    },
+    "conversations": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "thisWeek": "This week",
+      "older": "Older",
+      "noConversations": "No conversations",
+      "deleteConfirm": "Delete",
+      "emptySearch": "No results",
+      "messages": "messages",
+      "message": "message",
+      "confirmDelete": "Confirm delete",
+      "deleteConversation": "Delete conversation"
+    },
+    "agents": {
+      "dispatching": "Dispatching agents...",
+      "running": "Consulting agents...",
+      "completed": "Agents completed",
+      "completedWithErrors": "Agents completed with errors",
+      "failed": "Failed",
+      "retry": "Retry",
+      "results": "Results",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "phase": "Phase 20"
+    },
+    "decisions": {
+      "title": "Decisions",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "recommended": "Recommended",
+      "neutral": "Neutral",
+      "notRecommended": "Not recommended",
+      "select": "Select",
+      "selected": "Selected",
+      "history": "Decision history",
+      "noPending": "No decisions yet",
+      "decided": "Decided",
+      "optionsAvailable": "options available"
+    },
+    "briefing": {
+      "title": "Daily briefing",
+      "new": "New",
+      "sections": {
+        "cobros": "Collections",
+        "pipeline": "Pipeline",
+        "mantenimiento": "Maintenance",
+        "decisions": "Pending decisions"
+      },
+      "action": "Tell me more",
+      "noHistory": "No previous briefings",
+      "days": {
+        "sunday": "Sun",
+        "monday": "Mon",
+        "tuesday": "Tue",
+        "wednesday": "Wed",
+        "thursday": "Thu",
+        "friday": "Fri",
+        "saturday": "Sat"
+      }
+    },
+    "preferences": {
+      "title": "Settings",
+      "subtitle": "Adjust the behavior of your AI agents and platform preferences.",
+      "autonomy": {
+        "title": "Agent Autonomy",
+        "subtitle": "Define how much control each agent has to act without your approval.",
+        "auto": "Automatic",
+        "askFirst": "Ask first",
+        "manual": "Manual",
+        "resetDefault": "Reset to defaults"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "Choose what we notify you about and how.",
+        "channel": "Notification channel",
+        "inApp": "In-app",
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "all": "All",
+        "toggleLabel": "Notifications for {{agent}}"
+      },
+      "tone": {
+        "title": "Communication Tone",
+        "subtitle": "Define how your agents communicate with tenants and providers.",
+        "formal": "Formal",
+        "professional": "Professional",
+        "casual": "Casual",
+        "formalExample": "Dear owner, we inform you that...",
+        "professionalExample": "Hi, sharing the update on...",
+        "casualExample": "Hey! All set with the collections for..."
+      },
+      "thresholds": {
+        "title": "Thresholds & Limits",
+        "subtitle": "Configure limits for automatic decision-making.",
+        "moraTolerance": "Late payment tolerance",
+        "moraDescription": "Days before automatically escalating an overdue payment.",
+        "maintenanceBudget": "Maintenance budget",
+        "maintenanceDescription": "Maximum amount the agent can approve without consulting.",
+        "candidateScore": "Minimum candidate score",
+        "candidateDescription": "Minimum risk score to auto-approve a candidate.",
+        "scoreRisky": "Risky",
+        "scoreModerate": "Moderate",
+        "scoreSafe": "Safe",
+        "decrease": "Decrease",
+        "increase": "Increase"
+      },
+      "reset": "Reset all settings",
+      "score": "Autonomy score"
+    },
+    "appSwitcher": {
+      "dashboard": "Dashboard",
+      "aiBeta": "AI Beta",
+      "goToBeta": "Go to Beta",
+      "goToDashboard": "Go to Dashboard"
+    },
+    "mobile": {
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "newChat": "New conversation"
+    },
+    "shortcuts": {
+      "newChat": "New conversation",
+      "closePanel": "Close panel"
+    },
+    "a11y": {
+      "skipToChat": "Skip to main chat",
+      "mainChat": "Main chat",
+      "sidebarNav": "Beta navigation",
+      "newMessageRegion": "New messages"
+    }
   }
 }

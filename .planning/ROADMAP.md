@@ -24,11 +24,11 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 17: Beta Sidebar Integration** - Add Beta section to both dashboards with AI-optimized layout
 - [x] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
 - [x] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
-- [ ] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
-- [ ] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
-- [ ] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
-- [ ] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
-- [ ] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
+- [x] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
+- [x] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
+- [x] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
+- [x] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
+- [x] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
 - [ ] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
 
 ## Phase Details
@@ -143,8 +143,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: Agent execution indicators + status badges
-- [ ] 20-02: Agent result cards (collapsible, inline) + error states
+- [x] 20-01: Agent execution indicators + status badges
+- [x] 20-02: Agent result cards (collapsible, inline) + error states
 
 #### Phase 21: Decision System
 **Goal**: Sistema de decisiones pendientes donde AI presenta opciones y usuario decide
@@ -161,8 +161,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 21-01: Decision card component with options, recommendations, selection
-- [ ] 21-02: Decision counter badge, history view, read-only state
+- [x] 21-01: Decision card component with options, recommendations, selection
+- [x] 21-02: Decision counter badge, history view, read-only state
 
 #### Phase 22: Briefing Display
 **Goal**: Briefings diarios/semanales del AI con resumen ejecutivo y acciones
@@ -179,8 +179,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 22-01: Briefing card with sections (cobros, pipeline, maint, decisions)
-- [ ] 22-02: Briefing history, notification badge, chat integration actions
+- [x] 22-01: Briefing card with sections (cobros, pipeline, maint, decisions)
+- [x] 22-02: Briefing history, notification badge, chat integration actions
 
 #### Phase 23: Preferences & Autonomy
 **Goal**: Configuración de autonomía AI y preferencias del usuario
@@ -196,8 +196,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 23-01: Autonomy settings page with per-agent toggles
-- [ ] 23-02: Notification preferences, tone selector, threshold settings
+- [x] 23-01: Autonomy settings page with per-agent toggles
+- [x] 23-02: Notification preferences, tone selector, threshold settings
 
 #### Phase 24: API Client & Backend Documentation
 **Goal**: Capa de integración frontend-backend completa + documentación para backend dev
@@ -216,9 +216,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 24-01: API client module + TypeScript types + environment switching
-- [ ] 24-02: SSE streaming client + mock API layer with agent simulation
-- [ ] 24-03: Backend API documentation (OpenAPI spec + architecture update)
+- [x] 24-01: API client module + TypeScript types + environment switching
+- [x] 24-02: SSE streaming client + mock API layer with agent simulation
+- [x] 24-03: Backend API documentation (OpenAPI spec + architecture update)
 
 #### Phase 25: Polish & QA
 **Goal**: Beta section pulida, accesible, responsive, i18n, sin errores
@@ -254,7 +254,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 | 21. Decision System | 2/2 | Complete | 2026-02-10 |
 | 22. Briefing Display | 2/2 | Complete | 2026-02-10 |
 | 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
-| 24. API Client & Backend Docs | 0/3 | Not started | - |
+| 24. API Client & Backend Docs | 3/3 | Complete | 2026-02-10 |
 | 25. Polish & QA | 0/3 | Not started | - |
 
 ## Notes

@@ -124,23 +124,23 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### API Client & Mock Layer (APIC)
 
-- [ ] **APIC-01**: API client module with typed endpoints for chat, conversations, decisions, briefings
-- [ ] **APIC-02**: SSE/streaming client for real-time chat responses
-- [ ] **APIC-03**: Mock API responses that simulate realistic orchestrator behavior
-- [ ] **APIC-04**: Mock agent execution simulation (delays, status updates)
-- [ ] **APIC-05**: Mock briefing data with realistic Colombian rental scenarios
-- [ ] **APIC-06**: Environment flag to switch between mock and real API
+- [x] **APIC-01**: API client module with typed endpoints for chat, conversations, decisions, briefings
+- [x] **APIC-02**: SSE/streaming client for real-time chat responses
+- [x] **APIC-03**: Mock API responses that simulate realistic orchestrator behavior
+- [x] **APIC-04**: Mock agent execution simulation (delays, status updates)
+- [x] **APIC-05**: Mock briefing data with realistic Colombian rental scenarios
+- [x] **APIC-06**: Environment flag to switch between mock and real API
 
 ### Backend API Documentation (DOCS)
 
-- [ ] **DOCS-01**: OpenAPI-style spec for POST /api/v1/ai/message (chat endpoint with streaming)
-- [ ] **DOCS-02**: OpenAPI-style spec for GET/POST/DELETE /api/v1/ai/conversations
-- [ ] **DOCS-03**: OpenAPI-style spec for GET/POST /api/v1/ai/decisions
-- [ ] **DOCS-04**: OpenAPI-style spec for GET /api/v1/ai/briefings
-- [ ] **DOCS-05**: OpenAPI-style spec for GET/PUT /api/v1/ai/preferences
-- [ ] **DOCS-06**: WebSocket/SSE protocol documentation for streaming responses
-- [ ] **DOCS-07**: Agent execution status event schema documentation
-- [ ] **DOCS-08**: Updated AI-AGENT-ARCHITECTURE.md with exact frontend contract
+- [x] **DOCS-01**: OpenAPI-style spec for POST /api/v1/ai/message (chat endpoint with streaming)
+- [x] **DOCS-02**: OpenAPI-style spec for GET/POST/DELETE /api/v1/ai/conversations
+- [x] **DOCS-03**: OpenAPI-style spec for GET/POST /api/v1/ai/decisions
+- [x] **DOCS-04**: OpenAPI-style spec for GET /api/v1/ai/briefings
+- [x] **DOCS-05**: OpenAPI-style spec for GET/PUT /api/v1/ai/preferences
+- [x] **DOCS-06**: WebSocket/SSE protocol documentation for streaming responses
+- [x] **DOCS-07**: Agent execution status event schema documentation
+- [x] **DOCS-08**: Updated AI-AGENT-ARCHITECTURE.md with exact frontend contract
 
 ### Polish & QA (PLSH)
 
@@ -216,20 +216,20 @@ Which phases cover which requirements. Updated by create-roadmap.
 | PREF-03 | Phase 23 | Complete |
 | PREF-04 | Phase 23 | Complete |
 | PREF-05 | Phase 23 | Complete |
-| APIC-01 | Phase 24 | Pending |
-| APIC-02 | Phase 24 | Pending |
-| APIC-03 | Phase 24 | Pending |
-| APIC-04 | Phase 24 | Pending |
-| APIC-05 | Phase 24 | Pending |
-| APIC-06 | Phase 24 | Pending |
-| DOCS-01 | Phase 24 | Pending |
-| DOCS-02 | Phase 24 | Pending |
-| DOCS-03 | Phase 24 | Pending |
-| DOCS-04 | Phase 24 | Pending |
-| DOCS-05 | Phase 24 | Pending |
-| DOCS-06 | Phase 24 | Pending |
-| DOCS-07 | Phase 24 | Pending |
-| DOCS-08 | Phase 24 | Pending |
+| APIC-01 | Phase 24 | Complete |
+| APIC-02 | Phase 24 | Complete |
+| APIC-03 | Phase 24 | Complete |
+| APIC-04 | Phase 24 | Complete |
+| APIC-05 | Phase 24 | Complete |
+| APIC-06 | Phase 24 | Complete |
+| DOCS-01 | Phase 24 | Complete |
+| DOCS-02 | Phase 24 | Complete |
+| DOCS-03 | Phase 24 | Complete |
+| DOCS-04 | Phase 24 | Complete |
+| DOCS-05 | Phase 24 | Complete |
+| DOCS-06 | Phase 24 | Complete |
+| DOCS-07 | Phase 24 | Complete |
+| DOCS-08 | Phase 24 | Complete |
 | PLSH-01 | Phase 25 | Pending |
 | PLSH-02 | Phase 25 | Pending |
 | PLSH-03 | Phase 25 | Pending |

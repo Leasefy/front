@@ -58,12 +58,12 @@ Claude builds the frontend. Backend developer builds the AI orchestrator and age
 
 ### Beta Sidebar Integration (BETA)
 
-- [ ] **BETA-01**: "Beta" section visible in propietarios sidebar with sparkle/AI icon
-- [ ] **BETA-02**: "Beta" section visible in inmobiliarias sidebar with sparkle/AI icon
-- [ ] **BETA-03**: Beta section has its own route group (/panel/beta/*, /panel/inmobiliaria/beta/*)
-- [ ] **BETA-04**: Beta section has dedicated layout with chat-optimized structure
-- [ ] **BETA-05**: Beta badge/label indicates experimental status
-- [ ] **BETA-06**: Existing dashboard functionality unchanged (no regressions)
+- [x] **BETA-01**: "Beta" section visible in propietarios sidebar with sparkle/AI icon
+- [x] **BETA-02**: "Beta" section visible in inmobiliarias sidebar with sparkle/AI icon
+- [x] **BETA-03**: Beta section has its own route group (/panel/beta/*, /panel/inmobiliaria/beta/*)
+- [x] **BETA-04**: Beta section has dedicated layout with chat-optimized structure
+- [x] **BETA-05**: Beta badge/label indicates experimental status
+- [x] **BETA-06**: Existing dashboard functionality unchanged (no regressions)
 
 ### Chat Interface (CHAT)
 
@@ -171,12 +171,12 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BETA-01 | Phase 17 | Pending |
-| BETA-02 | Phase 17 | Pending |
-| BETA-03 | Phase 17 | Pending |
-| BETA-04 | Phase 17 | Pending |
-| BETA-05 | Phase 17 | Pending |
-| BETA-06 | Phase 17 | Pending |
+| BETA-01 | Phase 17 | Complete |
+| BETA-02 | Phase 17 | Complete |
+| BETA-03 | Phase 17 | Complete |
+| BETA-04 | Phase 17 | Complete |
+| BETA-05 | Phase 17 | Complete |
+| BETA-06 | Phase 17 | Complete |
 | CHAT-01 | Phase 18 | Pending |
 | CHAT-02 | Phase 18 | Pending |
 | CHAT-03 | Phase 18 | Pending |

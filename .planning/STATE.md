@@ -8,35 +8,35 @@ See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 18 in progress — Chat Interface (plan 2 of 3 complete)
+**Current focus:** Phase 18 complete — Chat Interface (all 3 plans done). Ready for Phase 19.
 
 ## Current Position
 
 Milestone: v4.0 — AI Agent Platform Beta
-Phase: 18 of 25 (Chat Interface) — IN PROGRESS
-Plan: 2 of 3 in phase 18
-Status: In progress
-Last activity: 2026-02-10 — Completed 18-02-PLAN.md
+Phase: 18 of 25 (Chat Interface) — COMPLETE
+Plan: 3 of 3 in phase 18
+Status: Phase complete
+Last activity: 2026-02-10 — Completed 18-03-PLAN.md
 
-Progress: █████░░░░░░░░░░░░░░░░░░░░░░░░░ ~17%
+Progress: ██████░░░░░░░░░░░░░░░░░░░░░░░░ ~20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4.5 min
-- Total execution time: 0.28 hours
+- Total plans completed: 5
+- Average duration: 4.4 min
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 17-beta-sidebar | 2/2 | 10min | 5min |
-| 18-chat-interface | 2/3 | 7min | 3.5min |
+| 18-chat-interface | 3/3 | 11min | 3.7min |
 
 **Recent Trend:**
-- Last 5 plans: 17-01 (5min), 17-02 (5min), 18-01 (4min), 18-02 (3min)
-- Trend: Consistent, getting faster
+- Last 5 plans: 17-02 (5min), 18-01 (4min), 18-02 (3min), 18-03 (4min)
+- Trend: Consistent ~4min per plan
 
 ## Previous Milestones
 
@@ -72,6 +72,10 @@ Recent decisions affecting current work:
 - 18-02: @tailwindcss/typography for prose base styling with custom chat-tight overrides
 - 18-02: Headings capped at h3 size in chat bubbles to prevent oversized text
 - 18-02: 12 rich mock responses with markdown tables, lists, code blocks, bold formatting
+- 18-03: TypingIndicator mirrors AssistantBubble layout for visual consistency
+- 18-03: Smart auto-scroll with 100px threshold (suppressed when user scrolled up)
+- 18-03: BetaChatProvider wraps at BetaLayout level for session-level persistence
+- 18-03: useBetaChat remains standalone; context consumes it internally for testability
 
 ### Pending Todos
 
@@ -84,5 +88,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 18-02-PLAN.md (MarkdownRenderer, rich mock responses, prose styling)
-Resume file: None (ready for 18-03)
+Stopped at: Completed 18-03-PLAN.md (Phase 18 complete - typing indicator, auto-scroll, session persistence)
+Resume file: None (ready for Phase 19)

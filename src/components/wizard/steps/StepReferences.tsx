@@ -327,7 +327,7 @@ export function StepReferences() {
                       handleLandlordChange(
                         index,
                         'duration',
-                        e.target.value ? parseInt(e.target.value, 10) : 0
+                        e.target.value === '' ? '' : parseInt(e.target.value, 10)
                       )
                     }
                     onBlur={() => handleBlur(`landlord-${index}-duration`)}

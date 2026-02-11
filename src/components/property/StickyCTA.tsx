@@ -107,7 +107,7 @@ export function StickyCTA({
       <div className="bg-white dark:bg-card border border-border rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
         {/* Urgency Banner - Using design system amber/orange */}
         {stats && stats.demandLevel !== 'media' && (
-          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
             <TrendUp className="w-4 h-4" />
             {stats.demandLevel === 'muy-alta'
               ? 'Muy solicitado — No te quedes sin verlo'
@@ -119,8 +119,8 @@ export function StickyCTA({
           {/* Live viewers indicator */}
           <div className="flex items-center gap-2.5 mb-5">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success-500))]"></span>
             </span>
             <span className="text-[13px] text-muted-foreground">
               <span className="font-semibold text-foreground">{currentViewers} personas</span> viendo ahora
@@ -132,7 +132,7 @@ export function StickyCTA({
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-[15px] font-heading font-semibold text-foreground tracking-tight">Leasefy</p>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold uppercase tracking-wide rounded-full">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
                   <Check className="w-3 h-3" />
                   Verificado
                 </span>
@@ -146,7 +146,7 @@ export function StickyCTA({
                   className={cn(
                     'w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200',
                     isWishlisted
-                      ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100'
+                      ? 'border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10'
                       : 'border-border hover:bg-neutral-100 text-muted-foreground'
                   )}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
@@ -210,8 +210,8 @@ export function StickyCTA({
             <div>
               {/* Benefits */}
               <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
-                  <div className="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-3 p-3.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.08)] border border-[hsl(var(--success-100))] dark:border-[hsl(var(--success-500)/0.2)] rounded-xl">
+                  <div className="w-9 h-9 bg-[hsl(var(--success-500))] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Check className="w-4 h-4 text-white" strokeWidth={3} />
                   </div>
                   <div>
@@ -246,7 +246,7 @@ export function StickyCTA({
           ) : visitConfirmed ? (
             /* Visit Confirmed State */
             <div className="text-center py-4">
-              <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500 rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-2xl flex items-center justify-center">
                 <Check className="w-8 h-8 text-white" strokeWidth={3} />
               </div>
               <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
@@ -382,7 +382,7 @@ export function StickyCTA({
               </button>
 
               <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                <span className="w-1 h-1 rounded-full bg-[hsl(var(--success-500))]"></span>
                 Visita gratuita
                 <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
                 Cancelación flexible
@@ -394,7 +394,7 @@ export function StickyCTA({
         {/* Recent activity footer */}
         <div className="px-6 py-3.5 bg-neutral-50 dark:from-white/[0.02] dark:to-white/[0.04] border-t border-border">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse"></span>
             <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
           </div>
         </div>
@@ -423,7 +423,7 @@ export function MobileStickyCTA({
     <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
       {/* Urgency banner for mobile */}
       {stats && stats.demandLevel !== 'media' && (
-        <div className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
+        <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
           <TrendUp className="w-3.5 h-3.5" />
           {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular esta semana'}
         </div>
@@ -437,8 +437,8 @@ export function MobileStickyCTA({
             </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]"></span>
               </span>
               {stats?.viewingNow || 0} personas viendo
             </p>

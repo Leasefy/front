@@ -11,8 +11,10 @@ import type {
   ContractType,
   ContractAuditEvent,
 } from '@/lib/types/contract';
+import type { TenantRequirements } from '@/lib/types/publish';
 import { mockProperties } from './mock-properties';
 import { MOCK_CANDIDATES } from './mock-candidates';
+import { generateNonNegotiableClauses } from '@/lib/utils/generate-non-negotiable-clauses';
 
 // ============================================================================
 // Contract Clauses by Type - Based on Ley 820 de 2003
@@ -280,6 +282,29 @@ export const MOCK_CONTRACTS: Contract[] = [
       otpVerified: true,
       otpVerifiedAt: '2026-01-16T14:19:30Z',
     },
+    nonNegotiableClauses: [
+      {
+        id: 'nn-income',
+        title: 'Requisito de Ingreso Mínimo (Innegociable)',
+        content:
+          'El ARRENDATARIO declara bajo juramento que sus ingresos mensuales demostrables son iguales o superiores a 3x el arriendo ($11,400,000 mensuales), calculados sobre el canon de arrendamiento de $3,800,000. El ARRENDATARIO se compromete a acreditar dichos ingresos mediante los documentos de soporte requeridos (certificación laboral, extractos bancarios, declaración de renta, u otros documentos equivalentes). Esta condición es requisito esencial e innegociable del presente contrato.',
+        required: true,
+      },
+      {
+        id: 'nn-pets',
+        title: 'Política de Mascotas: Solo pequeñas (Innegociable)',
+        content:
+          'Se permite únicamente la tenencia de mascotas pequeñas (gatos, perros de raza pequeña de hasta 10 kg) en el inmueble arrendado, sujeto a las siguientes condiciones: a) Máximo una (1) mascota. b) El ARRENDATARIO será responsable de cualquier daño causado por la mascota al inmueble o áreas comunes. c) Se deberá cumplir con la normativa de propiedad horizontal aplicable respecto a mascotas. No se permiten mascotas medianas, grandes ni exóticas.',
+        required: true,
+      },
+      {
+        id: 'nn-smoking',
+        title: 'Política de Fumadores: No permitido (Innegociable)',
+        content:
+          'El inmueble arrendado se designa como LIBRE DE HUMO. Queda expresamente prohibido fumar cigarrillos, cigarrillos electrónicos, vaporizadores, tabaco o cualquier sustancia similar dentro del inmueble, incluyendo balcones, terrazas y áreas privadas. Esta prohibición aplica tanto al ARRENDATARIO como a cualquier visitante o familiar. El incumplimiento de esta cláusula constituye causal de terminación del contrato.',
+        required: true,
+      },
+    ],
     createdAt: '2026-01-14T09:00:00Z',
     updatedAt: '2026-01-16T14:20:00Z',
     certificateId: 'CERT-CONTRACT-001-1705416000000',
@@ -582,7 +607,8 @@ export function getContractSteps(contract: Contract): ContractStep[] {
 export function createContractFromTemplate(
   propertyId: string,
   candidateId: string,
-  templateType: ContractType
+  templateType: ContractType,
+  tenantRequirements?: TenantRequirements
 ): Contract | null {
   const property = mockProperties.find((p) => p.id === propertyId);
   const candidate = MOCK_CANDIDATES.find((c) => c.id === candidateId);
@@ -644,6 +670,9 @@ export function createContractFromTemplate(
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
     paymentDueDay: 5,
+    nonNegotiableClauses: tenantRequirements
+      ? generateNonNegotiableClauses(tenantRequirements, property.monthlyRent)
+      : undefined,
     landlordSignature: null,
     tenantSignature: null,
     createdAt: now,

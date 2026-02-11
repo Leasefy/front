@@ -732,10 +732,11 @@
       "cannotDeleteWithProperties": "Esta cuenta tiene propiedades asignadas"
     },
     "paymentAccounts": {
-      "title": "Cuentas de Cobro",
+      "title": "Cuentas de Recaudo",
       "subtitle": "Configura dónde recibir tus pagos",
       "myAccounts": "Mis Cuentas",
       "noAccounts": "No tienes cuentas registradas",
+      "addAccount": "Agregar cuenta de recaudo",
       "addBankAccount": "Agregar cuenta bancaria",
       "addDigitalWallet": "Agregar billetera digital",
       "default": "Por defecto",
@@ -769,6 +770,18 @@
         "rappipay": "Rappipay"
       },
       "modals": {
+        "addAccount": {
+          "title": "Agregar cuenta de recaudo",
+          "methodType": "Tipo de cuenta",
+          "methodBank": "Cuenta bancaria",
+          "methodWallet": "Billetera digital",
+          "assignProperties": "Asignar inmuebles (opcional)",
+          "assignPropertiesHint": "Selecciona los inmuebles que depositarán en esta cuenta",
+          "allPropertiesAssigned": "Todos los inmuebles asignados",
+          "addButton": "Agregar cuenta",
+          "adding": "Agregando...",
+          "perMonth": "/mes"
+        },
         "addBankAccount": {
           "title": "Agregar cuenta bancaria",
           "bank": "Banco",
@@ -822,7 +835,7 @@
         "bankRequired": "Selecciona un banco",
         "accountTypeRequired": "Selecciona el tipo de cuenta",
         "accountNumberRequired": "Ingresa el número de cuenta",
-        "accountNumberInvalid": "El número de cuenta debe tener entre 10 y 20 dígitos",
+        "accountNumberInvalid": "El número de cuenta debe tener entre 7 y 20 dígitos",
         "holderNameRequired": "Ingresa el nombre del titular",
         "holderNameMinLength": "El nombre debe tener al menos 3 caracteres",
         "documentRequired": "Ingresa el número de documento",

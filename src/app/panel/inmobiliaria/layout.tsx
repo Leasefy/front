@@ -133,6 +133,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Toast notifications - Premium style */}
       <Toaster
         position="top-right"
+        style={{ zIndex: 9999 }}
         toastOptions={{
           style: {
             borderRadius: '16px',

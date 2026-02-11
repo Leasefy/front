@@ -162,12 +162,12 @@ export function PropertyAccordion({
             <span className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] border",
               property.amenities.some((a) => a.id === 'pets')
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                ? 'bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))] border-[hsl(var(--success-100))]'
                 : 'bg-neutral-50 text-foreground/70 border-border'
             )}>
               <span className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                property.amenities.some((a) => a.id === 'pets') ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+                property.amenities.some((a) => a.id === 'pets') ? 'bg-[hsl(var(--success-500))]' : 'bg-muted-foreground/40'
               )} />
               {property.amenities.some((a) => a.id === 'pets')
                 ? 'Se aceptan mascotas'
@@ -181,8 +181,8 @@ export function PropertyAccordion({
               <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
               Depósito 1 mes
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[12px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))] border border-[hsl(var(--success-100))] rounded-full text-[12px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success-500))]" />
               Sin codeudor
             </span>
           </div>

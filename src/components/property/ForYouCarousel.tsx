@@ -143,8 +143,8 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
 
   // Match score color based on value
   const getScoreColor = (score: number) => {
-    if (score >= 85) return 'bg-green-600';
-    if (score >= 70) return 'bg-blue-600';
+    if (score >= 85) return 'bg-[hsl(var(--success-500))]';
+    if (score >= 70) return 'bg-primary';
     return 'bg-foreground';
   };
 

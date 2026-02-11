@@ -1,7 +1,9 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
+import { useLenis } from '@/components/providers/SmoothScroll';
 
 export function SettingsModal({
   open,
@@ -14,36 +16,59 @@ export function SettingsModal({
   title: string;
   children: React.ReactNode;
 }) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+  const [mounted, setMounted] = useState(false);
+  const lenis = useLenis();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Stop Lenis smooth scroll when modal opens to allow native scroll inside
+  useEffect(() => {
+    if (open) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+    return () => {
+      lenis.start();
+    };
+  }, [open, lenis]);
+
+  if (!mounted || !open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Modal panel */}
+      <div
+        className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl"
+        data-lenis-prevent
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+          <button
             onClick={onClose}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-6">{children}</div>
-          </motion.div>
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
-    </AnimatePresence>
+        {/* Scrollable content */}
+        <div
+          className="p-6 overflow-y-auto overscroll-contain"
+          style={{ maxHeight: 'calc(80vh - 73px)' }}
+          data-lenis-prevent
+        >
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

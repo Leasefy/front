@@ -133,6 +133,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
       <Toaster
         position="top-right"
+        style={{ zIndex: 9999 }}
         toastOptions={{
           style: {
             borderRadius: '16px',

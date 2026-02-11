@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { User, Phone } from '@phosphor-icons/react'
+import { User, Phone, SignIn } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
@@ -95,6 +96,22 @@ export function StepTenantWelcome() {
           Ingresa tu nombre para continuar
         </motion.p>
       )}
+
+      {/* Already have account */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="pt-4 border-t border-neutral-100 dark:border-neutral-800"
+      >
+        <Link
+          href="/auth/login?redirect=/inquilino"
+          className="flex items-center justify-center gap-2 w-full py-3 text-sm text-neutral-500 dark:text-neutral-400 hover:text-primary transition-colors rounded-xl hover:bg-neutral-50 dark:hover:bg-white/[0.03]"
+        >
+          <SignIn className="w-4 h-4" />
+          ¿Ya tienes cuenta? Inicia sesión
+        </Link>
+      </motion.div>
     </div>
   )
 }

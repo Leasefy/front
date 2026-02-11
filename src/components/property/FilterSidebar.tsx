@@ -133,7 +133,7 @@ export function FunnelSidebar({
             className={cn(
               'w-full flex items-center gap-3 p-4 rounded-sm transition-all duration-200',
               onlyAffordable
-                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
+                ? 'bg-[hsl(var(--success-50))] border border-[hsl(var(--success-100))]'
                 : 'bg-muted border border-border hover:bg-muted hover:border-border'
             )}
           >
@@ -141,7 +141,7 @@ export function FunnelSidebar({
               className={cn(
                 'w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-all duration-200',
                 onlyAffordable
-                  ? 'bg-green-600 border-green-600'
+                  ? 'bg-[hsl(var(--success-500))] border-[hsl(var(--success-500))]'
                   : 'bg-card border-border'
               )}
             >
@@ -156,7 +156,7 @@ export function FunnelSidebar({
               </p>
             </div>
             {onlyAffordable && (
-              <span className="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded-sm">
+              <span className="px-2 py-0.5 text-xs font-medium text-[hsl(var(--success-700))] bg-[hsl(var(--success-100))] rounded-sm">
                 Activo
               </span>
             )}

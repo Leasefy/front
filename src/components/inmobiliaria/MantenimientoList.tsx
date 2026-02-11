@@ -29,7 +29,7 @@ import {
   ListBullets,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -523,7 +523,7 @@ export function MantenimientoList({
   onCancel,
   minimal = false,
 }: MantenimientoListProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   // Filter State
   const [typeFilter, setTypeFilter] = useState<MantenimientoType | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<MantenimientoPriority | 'all'>('all');

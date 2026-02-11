@@ -24,7 +24,7 @@ import {
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '@/lib/format';
 import { Switch } from '@/components/ui/switch';
@@ -84,7 +84,7 @@ export function ConfigIntegraciones({
   onConfigure,
   isLoading = false,
 }: ConfigIntegracionesProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const CATEGORY_TABS: { value: IntegrationCategory | 'all'; label: string; icon: React.ElementType }[] = useMemo(() => [
     { value: 'all', label: t('inmobiliaria.config.integrations.categories.all'), icon: Plugs },

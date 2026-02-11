@@ -21,7 +21,7 @@ import {
   Export,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -47,7 +47,7 @@ export function PropietarioTable({
   onDelete,
   onExport,
 }: PropietarioTableProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');

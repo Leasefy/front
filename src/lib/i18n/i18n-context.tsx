@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { Locale, I18nContextValue, TranslationParams, Translations } from './types';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '@/lib/format';
 import es from './locales/es.json';
 import en from './locales/en.json';
 
@@ -82,25 +83,15 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     [locale]
   );
 
-  // Format currency based on locale
+  // Format currency — delegates to shared format.ts utility
   const formatCurrency = useCallback(
-    (amount: number): string => {
-      if (locale === 'es') {
-        // Chilean format: $ 2.500.000
-        return `$ ${amount.toLocaleString('es-CL')}`;
-      }
-      // English format: $ 2,500,000
-      return `$ ${amount.toLocaleString('en-US')}`;
-    },
+    (amount: number): string => formatCurrencyUtil(amount, locale),
     [locale]
   );
 
-  // Format number with locale separators
+  // Format number — delegates to shared format.ts utility
   const formatNumber = useCallback(
-    (value: number): string => {
-      const localeString = locale === 'es' ? 'es-CL' : 'en-US';
-      return value.toLocaleString(localeString);
-    },
+    (value: number): string => formatNumberUtil(value, locale),
     [locale]
   );
 

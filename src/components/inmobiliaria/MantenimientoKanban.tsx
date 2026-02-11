@@ -21,7 +21,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -307,7 +307,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
 // ============================================================================
 
 export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanbanProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   // Group data by status
   const groupedData = useMemo(() => {
     const groups: Record<MantenimientoStatus, SolicitudMantenimiento[]> = {

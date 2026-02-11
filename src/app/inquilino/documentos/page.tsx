@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, File, SealCheck, House, X, CaretLeft, CaretRight, FolderOpen, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -155,7 +155,7 @@ type Document = (typeof mockDocuments)[number];
  * Tenant Documents Page - Leasefy Brand Style
  */
 export default function DocumentosPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');

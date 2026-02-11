@@ -33,7 +33,7 @@ import {
   CalendarCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   getTenantNotifications,
   getUnreadCount,
@@ -169,7 +169,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const router = useRouter();
   const [notifications, setNotifications] = useState<TenantNotification[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');

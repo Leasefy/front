@@ -13,7 +13,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import {
   Table,
   TableBody,
@@ -135,7 +135,7 @@ export function ComisionDesglose({
   showPercentages = true,
   className,
 }: ComisionDesgloseProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = React.useState(variant === 'full');
   const totals = React.useMemo(() => calculateTotals(items), [items]);
 
@@ -279,7 +279,7 @@ export function ComisionDesgloseCompact({
   items: DispersionItem[];
   className?: string;
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const totals = React.useMemo(() => calculateTotals(items), [items]);
 
   return (

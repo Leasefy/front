@@ -16,7 +16,7 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 
@@ -40,7 +40,7 @@ export function CobroTable({
   onRegisterPayment,
   showSummary = false,
 }: CobroTableProps) {
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);

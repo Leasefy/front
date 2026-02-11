@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Calendar, CreditCard, ArrowsClockwise, ClipboardText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { UpcomingEvent } from '@/lib/data/mock-dashboard';
 
 interface UpcomingEventsCardProps {
@@ -49,7 +49,7 @@ interface EventItemProps {
 }
 
 function EventItem({ event }: EventItemProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const Icon = eventIcons[event.type];
   const isOverdue = event.daysUntil < 0;
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { FileText, Clock, CheckCircle, WarningCircle, SpinnerGap, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { ContractPreview } from '@/components/contract/ContractPreview';
@@ -239,7 +239,7 @@ function ContractPageLoading() {
 // ============================================================================
 
 function ContractPageContent({ propertyId, candidateId }: { propertyId: string; candidateId: string }) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const searchParams = useSearchParams();
 
   // Check if we should force starting fresh (new contract flow)

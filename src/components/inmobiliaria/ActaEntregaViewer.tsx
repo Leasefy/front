@@ -27,7 +27,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { ActaEntrega, RoomType, ItemCondition } from '@/lib/types/inmobiliaria';
 import {
   getRoomLabel,
@@ -157,7 +157,7 @@ export function ActaEntregaViewer({
   onPrint,
   onRequestSignature,
 }: ActaEntregaViewerProps) {
-  const { t, locale, formatDate: fmtDate } = useTranslation();
+  const { t, locale, formatDate: fmtDate } = useI18n();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Format date

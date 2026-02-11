@@ -16,7 +16,7 @@ import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit } from '@/lib/types/visit';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { PlanDetailSheet, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { SetupDashboard } from '@/components/panel/SetupDashboard';
 import { LandlordDashboardEmpty } from '@/components/panel/LandlordDashboardEmpty';
@@ -33,7 +33,7 @@ const ACTION_ICONS: Record<UrgentAction['type'], React.ElementType> = {
 
 function UrgentActionsBanner({ actions }: { actions: UrgentAction[] }) {
   const [expanded, setExpanded] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <motion.div
@@ -124,7 +124,7 @@ function UrgentActionsBanner({ actions }: { actions: UrgentAction[] }) {
 export default function PanelPage() {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
-  const { t, locale, formatCurrency: i18nFormatCurrency, formatDate: i18nFormatDate } = useTranslation();
+  const { t, locale, formatCurrency: i18nFormatCurrency, formatDate: i18nFormatDate } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
@@ -645,7 +645,7 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
 };
 
 function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
-  const { t, locale, formatDate: i18nFmtDate } = useTranslation();
+  const { t, locale, formatDate: i18nFmtDate } = useI18n();
   const [selected, setSelected] = useState<Visit | null>(null);
 
   const sections: DetailSection[] = selected ? [
@@ -777,7 +777,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
 // ============================================================================
 
 function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
-  const { t, locale, formatDate: i18nFmtDate } = useTranslation();
+  const { t, locale, formatDate: i18nFmtDate } = useI18n();
   const [selected, setSelected] = useState<UpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {

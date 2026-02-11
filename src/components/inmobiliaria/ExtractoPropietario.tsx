@@ -19,7 +19,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -113,7 +113,7 @@ export function ExtractoPropietario({
   onEmail,
   className,
 }: ExtractoPropietarioProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
 

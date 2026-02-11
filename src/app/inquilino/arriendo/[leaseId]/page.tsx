@@ -9,10 +9,10 @@ import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
 import { getLeaseById, getPaymentsForLease, getNextPayment, PAYMENT_METHODS } from '@/lib/data/mock-leases';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 export default function LeaseDetailPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
   const leaseId = params.leaseId as string;

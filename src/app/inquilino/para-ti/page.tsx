@@ -17,7 +17,7 @@ import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { formatCurrency } from '@/lib/format';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs & Constants
@@ -33,7 +33,7 @@ const ITEMS_PER_PAGE = 9;
 // ============================================================================
 
 export default function ParaTiPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { profile, hasVerifiedProfile, isLoading } = useTenantProfile();
   const [sortBy, setSortBy] = useState<SortOption>('match');
   const [probabilityFunnel, setProbabilityFunnel] = useState<ProbabilityFunnel>('all');

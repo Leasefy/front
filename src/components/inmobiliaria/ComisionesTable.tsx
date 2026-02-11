@@ -15,7 +15,7 @@ import {
   SortDescending,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { ComisionesAgenteReport, ComisionAgente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -88,7 +88,7 @@ export function ComisionesTable({
   showComparison = false,
   onAgentClick,
 }: ComisionesTableProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 

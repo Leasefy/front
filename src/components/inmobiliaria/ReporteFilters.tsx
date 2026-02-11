@@ -12,7 +12,7 @@ import {
   MapPin,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { ReportCategory } from '@/lib/types/inmobiliaria';
 
 export interface ReporteFiltersState {
@@ -122,7 +122,7 @@ export function ReporteFilters({
   zones,
   minimal = false,
 }: ReporteFiltersProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
   const [selectedPeriodOption, setSelectedPeriodOption] = useState('this-month');

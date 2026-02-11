@@ -18,7 +18,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -78,7 +78,7 @@ export function ConsignacionTable({
   onView,
   onEdit,
 }: ConsignacionTableProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);

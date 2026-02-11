@@ -23,7 +23,7 @@ import {
   Wallet,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   Consignacion,
   MantenimientoType,
@@ -514,7 +514,7 @@ export function MantenimientoForm({
   onCancel,
   isSubmitting = false,
 }: MantenimientoFormProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [formData, setFormData] = useState<{
     consignacionId: string;
     type: MantenimientoType | '';

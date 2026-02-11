@@ -13,7 +13,7 @@ import {
   MapPin,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -38,7 +38,7 @@ export function AgenteCard({
   selected,
   variant = 'default',
 }: AgenteCardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Role badge colors
   const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = useMemo(() => ({

@@ -18,7 +18,7 @@ import {
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import {
   COLOMBIAN_BANKS,
@@ -100,7 +100,7 @@ export function PropietarioForm({
   onCancel,
   mode,
 }: PropietarioFormProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});

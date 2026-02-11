@@ -52,7 +52,7 @@ import {
   Eye,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -124,7 +124,7 @@ const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', '
 // Helper Functions
 // ============================================================================
 
-// formatDate and formatDateTime are replaced by fmtDate from useTranslation
+// formatDate and formatDateTime are replaced by fmtDate from useI18n
 
 function generateTimelineFn(
   solicitud: SolicitudMantenimiento,
@@ -381,7 +381,7 @@ export function MantenimientoViewer({
   onUploadPhoto,
   onRequestQuote,
 }: MantenimientoViewerProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);

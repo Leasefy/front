@@ -17,7 +17,7 @@ import {
   FileXls,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -107,7 +107,7 @@ export function ReporteCard({
   onToggleFavorite,
   isGenerating = false,
 }: ReporteCardProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const Icon = ICON_MAP[report.icon] || FileText;
   const bgColor = CATEGORY_BG_COLORS[report.category] || 'bg-neutral-100';
   const iconColor = CATEGORY_ICON_COLORS[report.category] || 'text-neutral-600';

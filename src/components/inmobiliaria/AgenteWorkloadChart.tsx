@@ -9,7 +9,7 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteWorkloadChartProps {
@@ -45,7 +45,7 @@ function getWorkloadLevel(count: number): { level: WorkloadLevel; color: string 
  * Clean design following design token system
  */
 export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   // Filter to active agentes and sort by workload (highest first)
   const sortedAgentes = useMemo(() => {
     return [...agentes]

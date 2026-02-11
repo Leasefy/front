@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   getConsignacionById,
@@ -146,7 +146,7 @@ function Modal({
  * Route: /panel/inmobiliaria/portafolio/[id]
  */
 export default function ConsignacionDetailPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const inventoryRef = useRef<HTMLDivElement>(null);

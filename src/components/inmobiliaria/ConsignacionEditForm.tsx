@@ -18,7 +18,7 @@ import {
   FloppyDisk,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, ConsignacionFormData } from '@/lib/types/inmobiliaria';
 import { MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
 
@@ -96,7 +96,7 @@ export function ConsignacionEditForm({
 }: ConsignacionEditFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { t, formatCurrency: fmtCurrency } = useTranslation();
+  const { t, formatCurrency: fmtCurrency } = useI18n();
 
   // Form state
   const [formData, setFormData] = useState({

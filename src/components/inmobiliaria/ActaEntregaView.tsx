@@ -15,7 +15,7 @@ import {
   Image,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 interface ActaEntregaViewProps {
@@ -65,7 +65,7 @@ export function ActaEntregaView({
   onPrint,
   onDownload,
 }: ActaEntregaViewProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 

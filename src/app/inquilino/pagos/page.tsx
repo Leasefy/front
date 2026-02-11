@@ -9,7 +9,7 @@ import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircle
 import { getActiveLeasesForTenant, getPaymentsForLease, getNextPayment } from '@/lib/data/mock-leases';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NoDataEmptyState } from '@/components/tenant/NoDataEmptyState';
@@ -29,7 +29,7 @@ const ITEMS_PER_PAGE = 5;
  * Tenant Payments Page - Landing Style (matching brand aesthetic)
  */
 export default function PagosPage() {
-  const { t, locale, formatCurrency: formatCurrencyI18n } = useTranslation();
+  const { t, locale, formatCurrency: formatCurrencyI18n } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   const tenantId = 'user-tenant-1';

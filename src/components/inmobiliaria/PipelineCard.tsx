@@ -10,7 +10,7 @@ import {
   Warning,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 
@@ -44,7 +44,7 @@ export function PipelineCard({
   isDragging = false,
   dragHandleProps,
 }: PipelineCardProps) {
-  const { t, formatDate: formatDateI18n } = useTranslation();
+  const { t, formatDate: formatDateI18n } = useI18n();
   const stageInfo = getPipelineStageInfo(item.stage);
   const riskColors = item.riskLevel ? RISK_LEVEL_COLORS[item.riskLevel] : null;
 

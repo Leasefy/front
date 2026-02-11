@@ -16,7 +16,7 @@ import {
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
@@ -92,7 +92,7 @@ function DaySelector({
   onChange: (days: number[]) => void;
   label: string;
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const toggleDay = (day: number) => {
     if (selected.includes(day)) {
@@ -232,7 +232,7 @@ export function RecordatorioConfig({
   config,
   onSave,
 }: RecordatorioConfigProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [localConfig, setLocalConfig] = React.useState<RecordatorioConfigData>(config);
   const [isSaving, setIsSaving] = React.useState(false);
 

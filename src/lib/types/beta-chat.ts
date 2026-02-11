@@ -80,6 +80,45 @@ export interface AgentActivityBlock {
   startedAt: Date;
 }
 
+/** Type of response for display routing */
+export type ResponseType = 'informative' | 'actionable';
+
+/** An action button shown on response cards */
+export interface ResponseAction {
+  id: string;
+  label: string;
+  /** Route within the app (e.g. '/panel/propiedades') */
+  href?: string;
+  /** Phosphor icon name */
+  icon: string;
+  /** Visual variant */
+  variant: 'primary' | 'secondary' | 'ghost';
+}
+
+/** Metadata for structured response display */
+export interface ResponseMeta {
+  type: ResponseType;
+  /** Card title for the response */
+  title: string;
+  /** Short summary shown in the card header */
+  summary: string;
+  /** Action buttons for the response */
+  actions: ResponseAction[];
+  /** Agent that primarily contributed to this response */
+  primaryAgent?: AgentType;
+  /** Steps for actionable workspace (left column) */
+  steps?: WorkspaceStep[];
+}
+
+/** A step in an actionable workspace flow */
+export interface WorkspaceStep {
+  id: string;
+  label: string;
+  description?: string;
+  status: 'pending' | 'active' | 'completed';
+  agentType?: AgentType;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -95,6 +134,8 @@ export interface ChatMessage {
   agentActivity?: AgentActivityBlock;
   /** Pending decision attached to this assistant response */
   decision?: PendingDecision;
+  /** Structured response metadata for rich card display */
+  responseMeta?: ResponseMeta;
 }
 
 export interface Conversation {

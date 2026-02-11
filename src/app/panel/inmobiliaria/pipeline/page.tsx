@@ -10,7 +10,7 @@ import {
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   MOCK_PIPELINE_ITEMS,
   MOCK_AGENTES,
@@ -29,7 +29,7 @@ import {
  * Route: /panel/inmobiliaria/pipeline
  */
 export default function PipelinePage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // State for pipeline items (local copy for optimistic updates)
   const [items, setItems] = useState<PipelineItem[]>(MOCK_PIPELINE_ITEMS);

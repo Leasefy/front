@@ -14,14 +14,14 @@ import {
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Upgrade page for existing users
  * Shows current plan, allows selection of new plan
  */
 export default function UpgradePage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');

@@ -19,7 +19,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -81,7 +81,7 @@ interface InviteModalProps {
 }
 
 function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<AgencyRole>('agente');
@@ -206,7 +206,7 @@ interface EditRoleModalProps {
 }
 
 function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRoleModalProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [selectedRole, setSelectedRole] = useState<AgencyRole>(user?.role || 'agente');
 
   // Update selected role when user changes
@@ -284,7 +284,7 @@ interface DeleteModalProps {
 }
 
 function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteModalProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const handleConfirm = () => {
     if (user) {
@@ -347,7 +347,7 @@ export function ConfigUsuarios({
   onDelete,
   isLoading = false,
 }: ConfigUsuariosProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Filter state
   const [search, setSearch] = useState('');

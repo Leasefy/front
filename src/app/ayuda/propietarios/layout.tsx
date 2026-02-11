@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description:
       "Todo lo que necesitas saber para arrendar tu propiedad de forma segura y eficiente.",
     type: "website",
-    locale: "es_CL",
+    locale: "es_CO",
   },
 };
 

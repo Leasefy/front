@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chat, ChatCircle, MagnifyingGlass, PaperPlaneTilt, Paperclip, DotsThreeVertical, Check, Checks, Info, Image, Smiley, ArrowLeft, X, House, Envelope, Calendar, Archive, BellSlash, TrashSimple, Flag } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NoDataEmptyState } from '@/components/tenant/NoDataEmptyState';
@@ -260,7 +260,7 @@ function getInitials(name: string): string {
  * Tenant Messages Page - Leasefy Brand Style
  */
 export default function MensajesPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   // Only show conversations if onboarding is complete

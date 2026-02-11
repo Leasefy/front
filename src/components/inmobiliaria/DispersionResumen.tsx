@@ -12,7 +12,7 @@ import {
   PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 
@@ -80,7 +80,7 @@ export function DispersionResumen({
   onProcessAll,
   className,
 }: DispersionResumenProps) {
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
   const completionRate = totalDispersions > 0
     ? (summary.dispersionsCompleted / totalDispersions) * 100
@@ -259,7 +259,7 @@ export function DispersionResumenCompact({
   summary: DispersionSummary;
   className?: string;
 }) {
-  const { t, formatCurrency } = useTranslation();
+  const { t, formatCurrency } = useI18n();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
   const completionRate = totalDispersions > 0
     ? (summary.dispersionsCompleted / totalDispersions) * 100

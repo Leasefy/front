@@ -9,7 +9,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
 export interface AgenteFiltersState {
@@ -39,7 +39,7 @@ export function AgenteFilters({
   onFiltersChange,
   agentes,
 }: AgenteFiltersProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 

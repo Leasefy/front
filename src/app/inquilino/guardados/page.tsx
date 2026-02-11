@@ -7,14 +7,14 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import type { Property } from '@/lib/types/property';
 
 export default function GuardadosPage() {
-  const { t, locale, formatCurrency } = useTranslation();
+  const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { getWishlistedProperties, removeFromWishlist, count } = useWishlist();
 

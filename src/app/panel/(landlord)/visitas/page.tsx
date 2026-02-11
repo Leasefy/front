@@ -10,7 +10,7 @@ import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 type TabFunnel = 'all' | VisitStatus;
 
@@ -43,7 +43,7 @@ function CancelModal({
 }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [customReason, setCustomReason] = useState('');
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
 
   const CANCEL_REASONS = [
     { key: 'cancelReason1', value: t('landlord.visits.cancelReason1') },
@@ -151,7 +151,7 @@ function RescheduleModal({
 }) {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
 
   const canSubmit = newDate.length > 0 && newTime.length > 0;
 
@@ -262,7 +262,7 @@ function ScheduleModal({
   const [hora, setHora] = useState('');
   const [propiedad, setPropiedad] = useState('');
   const [notas, setNotas] = useState('');
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -374,7 +374,7 @@ export default function VisitasPage() {
   const [visits, setVisits] = useState<Visit[]>(MOCK_VISITS);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
 
   // Modal state
   const [cancelTarget, setCancelTarget] = useState<Visit | null>(null);

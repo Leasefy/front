@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, TreeEvergreen, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { useTranslation } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
 const CITIES = [
@@ -32,7 +32,7 @@ const AMENITIES = [
 ]
 
 export function StepHousingPreferences() {
-  const { locale } = useTranslation()
+  const { locale } = useI18n()
   const { draft, updateDraft, canProceed } = useTenantOnboarding()
   const [customZone, setCustomZone] = useState('')
 

@@ -14,7 +14,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   MOCK_DISPERSIONES,
   MOCK_PROPIETARIOS,
@@ -66,7 +66,7 @@ function getCurrentMonth(): string {
  * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
 export default function DispersionesPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   // State for dispersiones (local copy for optimistic updates)
   const [dispersiones, setDispersiones] = useState<Dispersion[]>(MOCK_DISPERSIONES);

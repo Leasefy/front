@@ -22,7 +22,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   MOCK_DASHBOARD_KPIS,
   MOCK_PIPELINE_ITEMS,
@@ -50,7 +50,7 @@ interface KPICardProps {
 }
 
 function KPICard({ title, value, subtitle, trend, icon: Icon, iconColor = 'text-indigo-600', href }: KPICardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const content = (
     <div className="group relative h-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all">
       <div className="flex items-start justify-between h-full">
@@ -186,7 +186,7 @@ function AgentMiniCard({ agent, t }: { agent: typeof MOCK_AGENTES[0]; t: (key: s
  * Main overview for real estate agency operations
  */
 export default function InmobiliariaDashboardPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const kpis = MOCK_DASHBOARD_KPIS;
   const activeAgents = getActiveAgentes();
 

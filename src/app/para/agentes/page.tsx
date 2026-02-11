@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
-import { CaretLeft, CaretRight, Check, SealCheck, Link as LinkIcon, Users, Crosshair, Copy, Bell, TrendUp, DeviceMobile, Shield, Clock, FileX, UserMinus, Warning, FileText, Lightning, ChartBarHorizontal, ChartBar, ArrowRight } from '@phosphor-icons/react';
+import { TestimonialCarousel } from '@/components/home/TestimonialCarousel';
+import { Check, SealCheck, Link as LinkIcon, Users, Crosshair, Copy, Bell, TrendUp, DeviceMobile, Shield, Clock, FileX, UserMinus, Warning, FileText, Lightning, ChartBarHorizontal, ChartBar, ArrowRight } from '@phosphor-icons/react';
 
 // Testimonials data
 const testimonials = [
@@ -652,17 +653,8 @@ function CommissionVisual() {
 }
 
 export default function AgentesPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const bentoRef = useRef(null);
   const bentoInView = useInView(bentoRef, { once: true, margin: '-50px' });
-
-  const nextTestimonial = () => {
-    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
-  };
-
-  const prevTestimonial = () => {
-    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
-  };
 
   return (
     <>
@@ -1303,100 +1295,16 @@ export default function AgentesPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
-          <div className="container-platform py-[80px] pb-[100px]">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-              {/* Left - Header & Compass */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="lg:sticky lg:top-32"
-              >
-                <h2 className="text-[40px] md:text-[52px] font-heading font-normal text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
-                  Agentes que ya están{' '}
-                  <span className="italic">cerrando más</span>
-                </h2>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={prevTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Anterior testimonio"
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Siguiente testimonio"
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </motion.div>
-
-              {/* Right - Testimonial Cards */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <AnimatePresence mode="popLayout">
-                  {[0, 1].map((offset) => {
-                    const index = (currentIndex + offset) % testimonials.length;
-                    const testimonial = testimonials[index];
-                    return (
-                      <motion.div
-                        key={`${index}-${currentIndex}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-muted rounded-xl p-8 flex flex-col"
-                      >
-                        {/* Quote icon */}
-                        <div className="mb-6">
-                          <svg
-                            className="w-10 h-10 text-muted-foreground"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
-                          </svg>
-                        </div>
-
-                        {/* Quote text */}
-                        <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-foreground mb-8 flex-grow">
-                          {testimonial.quote}
-                        </p>
-
-                        {/* Author info */}
-                        <div className="flex items-center gap-4">
-                          <div className="w-[52px] h-[52px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                            <Image
-                              src={testimonial.image}
-                              alt={testimonial.author}
-                              width={52}
-                              height={52}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-[16px] font-normal text-foreground tracking-[-0.32px] leading-[21.6px]">
-                              {testimonial.author}
-                            </p>
-                            <p className="text-[16px] text-muted-foreground tracking-[-0.32px] leading-[21.6px]">
-                              {testimonial.role}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-        </section>
+        <TestimonialCarousel
+          testimonials={testimonials}
+          title={
+            <h2 className="text-[40px] md:text-[52px] font-heading font-normal text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
+              Agentes que ya están{' '}
+              <span className="italic">cerrando más</span>
+            </h2>
+          }
+          cardClassName="bg-muted"
+        />
 
         {/* FAQ — reusable component from home */}
         <FAQSection />

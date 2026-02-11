@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { User, Buildings, CurrencyDollar, Warning, CaretRight, Phone, Envelope } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -24,7 +24,7 @@ export function PropietarioCard({
   selected,
   variant = 'default',
 }: PropietarioCardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const hasPendingBalance = propietario.pendingBalance > 0;
   const isCompany = propietario.documentType === 'NIT';
 

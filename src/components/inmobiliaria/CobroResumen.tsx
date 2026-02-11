@@ -14,7 +14,7 @@ import {
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -74,7 +74,7 @@ export function CobroResumen({
   onRefresh,
   className,
 }: CobroResumenProps) {
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
 
   /**
    * Get collection rate info based on percentage
@@ -286,7 +286,7 @@ export function CobroResumenCompact({
   summary: CobroSummary;
   className?: string;
 }) {
-  const { t, formatCurrency } = useTranslation();
+  const { t, formatCurrency } = useI18n();
 
   const getCollectionRateInfo = (rate: number) => {
     if (rate >= 90) {

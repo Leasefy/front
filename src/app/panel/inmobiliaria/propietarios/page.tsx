@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -162,7 +162,7 @@ function Modal({
  * Main CRM view for managing property owners
  */
 export default function PropietariosPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [propietarios, setPropietarios] = useState<Propietario[]>(MOCK_PROPIETARIOS);

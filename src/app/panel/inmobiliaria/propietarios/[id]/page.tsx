@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretLeft,
@@ -140,7 +140,7 @@ function Modal({
  * Property Card Component
  */
 function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const statusColors = {
     available: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -227,7 +227,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
  * Payment History Item Component
  */
 function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   const statusColors = {
     pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -290,7 +290,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
  * Full profile view with properties, payments, and history
  */
 export default function PropietarioDetailPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;

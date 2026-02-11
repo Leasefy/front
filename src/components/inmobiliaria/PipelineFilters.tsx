@@ -9,7 +9,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -40,7 +40,7 @@ export function PipelineFilters({
   filters,
   onFilterChange,
 }: PipelineFiltersProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

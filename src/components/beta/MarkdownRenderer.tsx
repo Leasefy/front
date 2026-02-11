@@ -1,6 +1,7 @@
 'use client';
 
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -135,7 +136,7 @@ export function MarkdownRenderer({
         className
       )}
     >
-      <ReactMarkdown components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
       {isStreaming && (

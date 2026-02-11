@@ -12,7 +12,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { AdvancedKPI, TrendDirection } from '@/lib/types/inmobiliaria';
 import { getCategoryLabel } from '@/lib/types/inmobiliaria';
 
@@ -250,7 +250,7 @@ export function AnalyticsKPICards({
   layout = 'grid',
   onKPIClick,
 }: AnalyticsKPICardsProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [selectedCategory, setSelectedCategory] = useState<AdvancedKPI['category'] | null>(null);
 
   // Group KPIs by category

@@ -26,7 +26,7 @@ import {
   Bank,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
@@ -111,7 +111,7 @@ function getMockReminderHistory(cobro: Cobro) {
  * CopyButton - Button that copies text to clipboard
  */
 function CopyButton({ text, tooltip }: { text: string; tooltip: string }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -163,7 +163,7 @@ function ContactAction({
  * StatusBadge - Badge showing cobro status with appropriate color
  */
 function StatusBadge({ status }: { status: CobroStatus }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const STATUS_LABELS: Record<CobroStatus, string> = {
     pending: t('inmobiliaria.cobros.status.pending'),
@@ -235,7 +235,7 @@ export function CobroDetail({
   onRegisterPayment,
   onSendReminder,
 }: CobroDetailProps) {
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const { stop: stopLenis, start: startLenis } = useLenis();
 

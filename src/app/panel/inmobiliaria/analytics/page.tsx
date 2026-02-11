@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -279,7 +279,7 @@ function InsightCard({ type, title, description, action }: InsightProps) {
 // Las métricas deben actualizarse automáticamente sin necesidad de refresh manual
 
 export default function AnalyticsPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
   const [dateRange, setDateRange] = useState<DateRange>('30d');
 

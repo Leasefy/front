@@ -12,7 +12,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -118,7 +118,7 @@ export function PropietarioStats({
   variant = 'full',
   className,
 }: PropietarioStatsProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const hasPendingBalance = propietario.pendingBalance > 0;
   const occupancyRate = propietario.propertyCount > 0
     ? Math.round((propietario.activeLeases / propietario.propertyCount) * 100)

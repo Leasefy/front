@@ -48,7 +48,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
         className={cn(
           'fixed inset-0 z-50',
           'flex flex-col md:flex-row',
-          'bg-plan-page'
+          'bg-[#f5f5f7] dark:bg-[#0c0c0e]'
         )}
       >
         {/* Skip to chat link - visible only on focus for screen readers */}

@@ -4,186 +4,22 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Bell, CreditCard, Shield, Users, Envelope, Phone, Globe, Moon, CaretRight, Check, Crown, Lightning, X, SpinnerGap, Monitor, Warning, TrashSimple, Camera, Copy, Download, DeviceMobile, DeviceTablet, Laptop, Lock, ShieldCheck, Eye, FileText, ArrowCounterClockwise, Tag, UserPlus, ArrowUpRight, PencilSimple, Bank, Wallet, Plus, House, Star } from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
+import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, DeviceMobile, DeviceTablet, Laptop, Lock, ShieldCheck, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import { getPlanById, MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
-import { getTeamMembers } from '@/lib/data/mock-team';
-import type { TeamRole } from '@/lib/types/team';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { MOCK_LEASES } from '@/lib/data/mock-leases';
 import { getPendingVisitCount } from '@/lib/data/mock-visits';
 import { toast } from 'sonner';
-import {
-  type PaymentAccount,
-  type BankAccount,
-  type DigitalWallet,
-  type BankAccountFormData,
-  type DigitalWalletFormData,
-  type BankCode,
-  type WalletCode,
-  type AccountType,
-  COLOMBIAN_BANKS,
-  DIGITAL_WALLETS,
-  maskAccountNumber,
-  maskPhoneNumber,
-  isBankAccount,
-  isDigitalWallet,
-} from '@/lib/types/payment-accounts';
-import {
-  getPaymentAccounts,
-  getPropertyCountForAccount,
-} from '@/lib/data/mock-payment-accounts';
-import { mockProperties } from '@/lib/data/mock-properties';
-
-// ============================================================================
-// Modal Component with modern style
-// ============================================================================
-
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-6">{children}</div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// ============================================================================
-// Setting Toggle Component
-// ============================================================================
-
-function SettingToggle({
-  icon: Icon,
-  title,
-  description,
-  enabled,
-  onToggle,
-  accent,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  enabled: boolean;
-  onToggle: () => void;
-  accent?: 'emerald' | 'indigo';
-}) {
-  return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
-        </div>
-      </div>
-      <button
-        onClick={onToggle}
-        role="switch"
-        aria-checked={enabled}
-        className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
-          enabled
-            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-500'
-            : 'bg-neutral-200 dark:bg-[#2a2a2c]'
-        )}
-      >
-        <span
-          className={cn(
-            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
-            enabled ? 'translate-x-5' : 'translate-x-0'
-          )}
-        />
-      </button>
-    </div>
-  );
-}
-
-// ============================================================================
-// Setting Link Component
-// ============================================================================
-
-function SettingLink({
-  icon: Icon,
-  title,
-  description,
-  onClick,
-  badge,
-  external,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  onClick: () => void;
-  badge?: string;
-  external?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
-    >
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-        </div>
-        <div className="text-left">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {badge && (
-          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">
-            {badge}
-          </span>
-        )}
-        <CaretRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
-      </div>
-    </button>
-  );
-}
+import { SettingsModal } from '@/components/settings/SettingsModal';
+import { SettingToggle } from '@/components/settings/SettingToggle';
+import { SettingLink } from '@/components/settings/SettingLink';
+import { PaymentAccountsSection } from '@/components/settings/PaymentAccountsSection';
+import { TeamManagementSection } from '@/components/settings/TeamManagementSection';
 
 // ============================================================================
 // Mock Data
@@ -228,45 +64,12 @@ export default function ConfiguracionPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [inviteForm, setInviteForm] = useState<{ email: string; role: TeamRole }>({ email: '', role: 'viewer' });
-  const [teamMembersList, setTeamMembersList] = useState(getTeamMembers());
-  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
-  const [editingMember, setEditingMember] = useState<{ id: string; name?: string; email: string; role: TeamRole } | null>(null);
-  const [editMemberForm, setEditMemberForm] = useState<{ name: string; role: TeamRole }>({ name: '', role: 'viewer' });
-
-  // Payment accounts state
-  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>(getPaymentAccounts());
-  const [showAddBankModal, setShowAddBankModal] = useState(false);
-  const [showAddWalletModal, setShowAddWalletModal] = useState(false);
-  const [showEditAccountModal, setShowEditAccountModal] = useState(false);
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
-  const [showAssignPropertiesModal, setShowAssignPropertiesModal] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<PaymentAccount | null>(null);
-  const [bankForm, setBankForm] = useState<BankAccountFormData>({
-    bankCode: '',
-    accountType: '',
-    accountNumber: '',
-    accountHolderName: '',
-    accountHolderDocument: '',
-    isDefault: false,
-  });
-  const [walletForm, setWalletForm] = useState<DigitalWalletFormData>({
-    walletCode: '',
-    phoneNumber: '',
-    holderName: '',
-    isDefault: false,
-  });
-  const [propertyAssignments, setPropertyAssignments] = useState<Record<string, string | null>>({});
-
-  // Get landlord's properties (filter by landlord-001 to match mock data)
-  const landlordProperties = mockProperties.filter(p => p.landlordId === 'landlord-001');
 
   const currentPlan = getPlanById(MOCK_SUBSCRIPTION.planId);
 
@@ -344,219 +147,11 @@ export default function ConfiguracionPage() {
     setTimeout(() => router.push('/panel'), 500);
   };
 
-  const handleInviteMember = async () => {
-    if (!inviteForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email)) {
-      toast.error(t('landlordSettings.toasts.invalidEmail'));
-      return;
-    }
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setShowInviteModal(false);
-    setInviteForm({ email: '', role: 'viewer' });
-    toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
-  };
-
-  const handleRemoveMember = (memberId: string) => {
-    setTeamMembersList(prev => prev.filter(m => m.id !== memberId));
-    toast.success(t('landlordSettings.toasts.memberRemoved'));
-  };
-
-  const handleEditMember = async () => {
-    if (!editingMember) return;
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setTeamMembersList(prev => prev.map(m =>
-      m.id === editingMember.id
-        ? { ...m, name: editMemberForm.name || m.name, role: editMemberForm.role }
-        : m
-    ));
-    setIsLoading(false);
-    setShowEditMemberModal(false);
-    setEditingMember(null);
-    setEditMemberForm({ name: '', role: 'viewer' });
-    toast.success(t('landlordSettings.toasts.memberUpdated'));
-  };
-
   const getDeviceIcon = (type: 'desktop' | 'mobile' | 'tablet') => {
     switch (type) {
       case 'mobile': return DeviceMobile;
       case 'tablet': return DeviceTablet;
       default: return Laptop;
-    }
-  };
-
-  // Payment account handlers
-  const resetBankForm = () => {
-    setBankForm({
-      bankCode: '',
-      accountType: '',
-      accountNumber: '',
-      accountHolderName: '',
-      accountHolderDocument: '',
-      isDefault: false,
-    });
-  };
-
-  const resetWalletForm = () => {
-    setWalletForm({
-      walletCode: '',
-      phoneNumber: '',
-      holderName: '',
-      isDefault: false,
-    });
-  };
-
-  const validateBankForm = (): boolean => {
-    if (!bankForm.bankCode) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.bankRequired'));
-      return false;
-    }
-    if (!bankForm.accountType) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.accountTypeRequired'));
-      return false;
-    }
-    if (!bankForm.accountNumber) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.accountNumberRequired'));
-      return false;
-    }
-    if (bankForm.accountNumber.length < 10 || bankForm.accountNumber.length > 20) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.accountNumberInvalid'));
-      return false;
-    }
-    if (!bankForm.accountHolderName || bankForm.accountHolderName.length < 3) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.holderNameRequired'));
-      return false;
-    }
-    if (!bankForm.accountHolderDocument || bankForm.accountHolderDocument.length < 6 || bankForm.accountHolderDocument.length > 12) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.documentInvalid'));
-      return false;
-    }
-    return true;
-  };
-
-  const validateWalletForm = (): boolean => {
-    if (!walletForm.walletCode) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.walletRequired'));
-      return false;
-    }
-    if (!walletForm.phoneNumber || walletForm.phoneNumber.length !== 10) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.phoneInvalid'));
-      return false;
-    }
-    if (!walletForm.holderName || walletForm.holderName.length < 3) {
-      toast.error(t('landlordSettings.paymentAccounts.validation.holderNameRequired'));
-      return false;
-    }
-    return true;
-  };
-
-  const handleAddBankAccount = async () => {
-    if (!validateBankForm()) return;
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const bank = COLOMBIAN_BANKS.find(b => b.code === bankForm.bankCode);
-    const newAccount: BankAccount = {
-      id: `account-${Date.now()}`,
-      type: 'bank',
-      bankCode: bankForm.bankCode as BankCode,
-      bankName: bank?.name || '',
-      accountType: bankForm.accountType as AccountType,
-      accountNumber: bankForm.accountNumber,
-      accountHolderName: bankForm.accountHolderName,
-      accountHolderDocument: bankForm.accountHolderDocument,
-      isDefault: bankForm.isDefault || paymentAccounts.length === 0,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (newAccount.isDefault) {
-      setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newAccount));
-    } else {
-      setPaymentAccounts(prev => [...prev, newAccount]);
-    }
-
-    setIsLoading(false);
-    setShowAddBankModal(false);
-    resetBankForm();
-    toast.success(t('landlordSettings.toasts.accountAdded'));
-  };
-
-  const handleAddWallet = async () => {
-    if (!validateWalletForm()) return;
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const wallet = DIGITAL_WALLETS.find(w => w.code === walletForm.walletCode);
-    const newWallet: DigitalWallet = {
-      id: `wallet-${Date.now()}`,
-      type: 'wallet',
-      walletCode: walletForm.walletCode as WalletCode,
-      walletName: wallet?.name || '',
-      phoneNumber: walletForm.phoneNumber,
-      holderName: walletForm.holderName,
-      isDefault: walletForm.isDefault || paymentAccounts.length === 0,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (newWallet.isDefault) {
-      setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newWallet));
-    } else {
-      setPaymentAccounts(prev => [...prev, newWallet]);
-    }
-
-    setIsLoading(false);
-    setShowAddWalletModal(false);
-    resetWalletForm();
-    toast.success(t('landlordSettings.toasts.accountAdded'));
-  };
-
-  const handleSetDefaultAccount = (accountId: string) => {
-    setPaymentAccounts(prev =>
-      prev.map(a => ({
-        ...a,
-        isDefault: a.id === accountId,
-      }))
-    );
-    toast.success(t('landlordSettings.toasts.accountSetDefault'));
-  };
-
-  const handleDeletePaymentAccount = async () => {
-    if (!editingAccount) return;
-    const assignedCount = getPropertyCountForAccount(editingAccount.id);
-    if (assignedCount > 0) {
-      toast.error(t('landlordSettings.toasts.cannotDeleteWithProperties'));
-      return;
-    }
-    if (editingAccount.isDefault && paymentAccounts.length > 1) {
-      toast.error(t('landlordSettings.toasts.cannotDeleteDefault'));
-      return;
-    }
-
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setPaymentAccounts(prev => prev.filter(a => a.id !== editingAccount.id));
-    setIsLoading(false);
-    setShowDeleteAccountModal(false);
-    setEditingAccount(null);
-    toast.success(t('landlordSettings.toasts.accountDeleted'));
-  };
-
-  const getAccountDisplayInfo = (account: PaymentAccount) => {
-    if (isBankAccount(account)) {
-      return {
-        icon: Bank,
-        name: account.bankName,
-        detail: `${t(`landlordSettings.paymentAccounts.accountTypes.${account.accountType}`)} ${maskAccountNumber(account.accountNumber)}`,
-        holder: account.accountHolderName,
-      };
-    } else {
-      return {
-        icon: Wallet,
-        name: account.walletName,
-        detail: maskPhoneNumber(account.phoneNumber),
-        holder: account.holderName,
-      };
     }
   };
 
@@ -690,227 +285,11 @@ export default function ConfiguracionPage() {
             </div>
           </motion.section>
 
-          {/* Team Management - Landlord specific */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
-          >
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.team.title')}</h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{teamMembersList.length} {teamMembersList.length !== 1 ? t('landlordSettings.team.members') : t('landlordSettings.team.member')}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  {t('landlordSettings.team.invite')}
-                </button>
-              </div>
-            </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
-              {teamMembersList.map((member) => (
-                <div key={member.id} className="flex items-center justify-between px-6 py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-                        {(member.name || member.email || '?').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{member.name || t('landlordSettings.team.pendingInvitation')}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{member.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      'px-2.5 py-1 rounded-full text-xs font-medium',
-                      member.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' :
-                      member.role === 'manager' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
-                      'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                    )}>
-                      {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'manager' ? t('landlordSettings.team.roles.manager') : member.role === 'accountant' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
-                    </span>
-                    {member.role !== 'admin' && (
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            setEditingMember(member);
-                            setEditMemberForm({ name: member.name || '', role: member.role });
-                            setShowEditMemberModal(true);
-                          }}
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                        >
-                          {t('landlordSettings.team.edit')}
-                        </button>
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                        >
-                          {t('landlordSettings.team.remove')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.section>
+          {/* Team Management - Extracted */}
+          <TeamManagementSection delay={0.15} />
 
-          {/* Payment Accounts - New Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18 }}
-            className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
-          >
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.paymentAccounts.title')}</h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.paymentAccounts.subtitle')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* My Accounts List */}
-            <div className="p-6">
-              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
-                {t('landlordSettings.paymentAccounts.myAccounts')}
-              </h3>
-
-              {paymentAccounts.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                    {t('landlordSettings.paymentAccounts.noAccounts')}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 mb-4">
-                  {paymentAccounts.map((account) => {
-                    const info = getAccountDisplayInfo(account);
-                    const Icon = info.icon;
-                    const assignedCount = getPropertyCountForAccount(account.id);
-                    return (
-                      <div
-                        key={account.id}
-                        className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                            <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                {info.name} {info.detail}
-                              </p>
-                              {account.isDefault && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
-                                  <Star className="w-3 h-3" weight="fill" />
-                                  {t('landlordSettings.paymentAccounts.default')}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                              {info.holder} · {assignedCount > 0
-                                ? t('landlordSettings.paymentAccounts.propertiesAssigned', { count: assignedCount })
-                                : t('landlordSettings.paymentAccounts.noPropertiesAssigned')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {!account.isDefault && (
-                            <button
-                              onClick={() => handleSetDefaultAccount(account.id)}
-                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                              {t('landlordSettings.paymentAccounts.setAsDefault')}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setEditingAccount(account);
-                              setShowDeleteAccountModal(true);
-                            }}
-                            className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                          >
-                            {t('common.delete')}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Add Account Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => setShowAddBankModal(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-indigo-500 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
-                >
-                  <Bank className="w-5 h-5" />
-                  <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addBankAccount')}</span>
-                </button>
-                <button
-                  onClick={() => setShowAddWalletModal(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-indigo-500 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addDigitalWallet')}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Property Assignments */}
-            {paymentAccounts.length > 0 && landlordProperties.length > 0 && (
-              <div className="px-6 pb-6">
-                <div className="border-t border-neutral-200/50 dark:border-[#2a2a2c]/50 pt-6">
-                  <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
-                    {t('landlordSettings.paymentAccounts.propertyAssignments')}
-                  </h3>
-                  <div className="space-y-2">
-                    {landlordProperties.slice(0, 4).map((property) => {
-                      const assignedAccount = paymentAccounts.find(a => a.isDefault);
-                      const accountInfo = assignedAccount ? getAccountDisplayInfo(assignedAccount) : null;
-                      return (
-                        <div
-                          key={property.id}
-                          className="flex items-center justify-between p-3 bg-white dark:bg-[#1f1f21] rounded-xl border border-neutral-100 dark:border-neutral-800"
-                        >
-                          <div className="flex items-center gap-3">
-                            <House className="w-4 h-4 text-neutral-400" />
-                            <span className="text-sm text-neutral-700 dark:text-neutral-300">{property.title}</span>
-                          </div>
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                            → {accountInfo ? `${accountInfo.name} ${accountInfo.detail}` : t('landlordSettings.paymentAccounts.usesDefault')}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-3 italic">
-                    {t('landlordSettings.paymentAccounts.assignmentInfo')}
-                  </p>
-                </div>
-              </div>
-            )}
-          </motion.section>
+          {/* Payment Accounts - Extracted */}
+          <PaymentAccountsSection delay={0.18} />
 
           {/* Security & Preferences - 2 column grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1106,7 +485,7 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Password Modal */}
-      <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title={t('landlordSettings.modals.changePassword.title')}>
+      <SettingsModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title={t('landlordSettings.modals.changePassword.title')}>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.currentPassword')}</label>
@@ -1155,10 +534,10 @@ export default function ConfiguracionPage() {
             </button>
           </div>
         </div>
-      </Modal>
+      </SettingsModal>
 
       {/* Sessions Modal */}
-      <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
+      <SettingsModal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
         <div className="space-y-3">
           {sessions.map((session) => {
             const DeviceIcon = getDeviceIcon(session.deviceType);
@@ -1198,10 +577,10 @@ export default function ConfiguracionPage() {
             </button>
           )}
         </div>
-      </Modal>
+      </SettingsModal>
 
       {/* Download Data Modal */}
-      <Modal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title={t('landlordSettings.modals.downloadData.title')}>
+      <SettingsModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title={t('landlordSettings.modals.downloadData.title')}>
         <div className="space-y-4">
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             {t('landlordSettings.modals.downloadData.description')}
@@ -1241,10 +620,10 @@ export default function ConfiguracionPage() {
             </button>
           </div>
         </div>
-      </Modal>
+      </SettingsModal>
 
       {/* 2FA Modal */}
-      <Modal open={show2FAModal} onClose={() => setShow2FAModal(false)} title={t('landlordSettings.modals.twoFactor.title')}>
+      <SettingsModal open={show2FAModal} onClose={() => setShow2FAModal(false)} title={t('landlordSettings.modals.twoFactor.title')}>
         <div className="space-y-4">
           {!settings.twoFactorAuth ? (
             <>
@@ -1304,10 +683,10 @@ export default function ConfiguracionPage() {
             </>
           )}
         </div>
-      </Modal>
+      </SettingsModal>
 
       {/* Delete Account Modal */}
-      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('landlordSettings.modals.deleteAccount.title')}>
+      <SettingsModal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('landlordSettings.modals.deleteAccount.title')}>
         <div className="space-y-4">
           <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
@@ -1352,406 +731,7 @@ export default function ConfiguracionPage() {
             </button>
           </div>
         </div>
-      </Modal>
-
-      {/* Invite Team Member Modal */}
-      <Modal open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t('landlordSettings.modals.inviteMember.title')}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
-            <input
-              type="email"
-              value={inviteForm.email}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder="email@ejemplo.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.inviteMember.role')}</label>
-            <div className="space-y-2">
-              {([
-                { value: 'admin' as TeamRole, label: t('landlordSettings.team.roles.admin'), desc: t('landlordSettings.modals.inviteMember.adminDesc') },
-                { value: 'manager' as TeamRole, label: t('landlordSettings.team.roles.manager'), desc: t('landlordSettings.modals.inviteMember.managerDesc') },
-                { value: 'accountant' as TeamRole, label: t('landlordSettings.team.roles.accountant'), desc: t('landlordSettings.modals.inviteMember.accountantDesc') },
-                { value: 'viewer' as TeamRole, label: t('landlordSettings.team.roles.viewer'), desc: t('landlordSettings.modals.inviteMember.viewerDesc') },
-              ]).map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => setInviteForm(prev => ({ ...prev, role: role.value }))}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
-                    inviteForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
-                  )}
-                >
-                  <div className={cn(
-                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                    inviteForm.role === role.value
-                      ? 'border-indigo-500'
-                      : 'border-neutral-300 dark:border-neutral-600'
-                  )}>
-                    {inviteForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{role.label}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{role.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setShowInviteModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
-              onClick={handleInviteMember}
-              disabled={isLoading || !inviteForm.email}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit Team Member Modal */}
-      <Modal open={showEditMemberModal} onClose={() => setShowEditMemberModal(false)} title={t('landlordSettings.modals.editMember.title')}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.editMember.name')}</label>
-            <input
-              type="text"
-              value={editMemberForm.name}
-              onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.editMember.role')}</label>
-            <div className="space-y-2">
-              {([
-                { value: 'admin' as TeamRole, label: t('landlordSettings.team.roles.admin'), desc: t('landlordSettings.modals.inviteMember.adminDesc') },
-                { value: 'manager' as TeamRole, label: t('landlordSettings.team.roles.manager'), desc: t('landlordSettings.modals.inviteMember.managerDesc') },
-                { value: 'accountant' as TeamRole, label: t('landlordSettings.team.roles.accountant'), desc: t('landlordSettings.modals.inviteMember.accountantDesc') },
-                { value: 'viewer' as TeamRole, label: t('landlordSettings.team.roles.viewer'), desc: t('landlordSettings.modals.inviteMember.viewerDesc') },
-              ]).map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => setEditMemberForm(prev => ({ ...prev, role: role.value }))}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
-                    editMemberForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
-                  )}
-                >
-                  <div className={cn(
-                    'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                    editMemberForm.role === role.value
-                      ? 'border-indigo-500'
-                      : 'border-neutral-300 dark:border-neutral-600'
-                  )}>
-                    {editMemberForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{role.label}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{role.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => {
-                setShowEditMemberModal(false);
-                setEditingMember(null);
-              }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
-              onClick={handleEditMember}
-              disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <PencilSimple className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add Bank Account Modal */}
-      <Modal open={showAddBankModal} onClose={() => { setShowAddBankModal(false); resetBankForm(); }} title={t('landlordSettings.paymentAccounts.modals.addBankAccount.title')}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.bank')}
-            </label>
-            <div className="relative">
-              <select
-                value={bankForm.bankCode}
-                onChange={(e) => setBankForm(prev => ({ ...prev, bankCode: e.target.value as BankCode }))}
-                className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">{t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')}</option>
-                {COLOMBIAN_BANKS.map((bank) => (
-                  <option key={bank.code} value={bank.code}>{bank.name}</option>
-                ))}
-              </select>
-              <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountType')}
-            </label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => setBankForm(prev => ({ ...prev, accountType: 'savings' }))}
-                className={cn(
-                  'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
-                  bankForm.accountType === 'savings'
-                    ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                    : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
-                )}
-              >
-                {t('landlordSettings.paymentAccounts.accountTypes.savings')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setBankForm(prev => ({ ...prev, accountType: 'checking' }))}
-                className={cn(
-                  'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
-                  bankForm.accountType === 'checking'
-                    ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                    : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
-                )}
-              >
-                {t('landlordSettings.paymentAccounts.accountTypes.checking')}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumber')}
-            </label>
-            <input
-              type="text"
-              value={bankForm.accountNumber}
-              onChange={(e) => setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
-              maxLength={20}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolder')}
-            </label>
-            <input
-              type="text"
-              value={bankForm.accountHolderName}
-              onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.document')}
-            </label>
-            <input
-              type="text"
-              value={bankForm.accountHolderDocument}
-              onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
-              maxLength={12}
-            />
-          </div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={bankForm.isDefault}
-              onChange={(e) => setBankForm(prev => ({ ...prev, isDefault: e.target.checked }))}
-              className="w-5 h-5 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-neutral-700 dark:text-neutral-300">
-              {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
-            </span>
-          </label>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => { setShowAddBankModal(false); resetBankForm(); }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
-              onClick={handleAddBankAccount}
-              disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Bank className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.paymentAccounts.modals.addBankAccount.adding') : t('landlordSettings.paymentAccounts.modals.addBankAccount.addButton')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add Digital Wallet Modal */}
-      <Modal open={showAddWalletModal} onClose={() => { setShowAddWalletModal(false); resetWalletForm(); }} title={t('landlordSettings.paymentAccounts.modals.addWallet.title')}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addWallet.wallet')}
-            </label>
-            <div className="relative">
-              <select
-                value={walletForm.walletCode}
-                onChange={(e) => setWalletForm(prev => ({ ...prev, walletCode: e.target.value as WalletCode }))}
-                className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">{t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')}</option>
-                {DIGITAL_WALLETS.map((wallet) => (
-                  <option key={wallet.code} value={wallet.code}>{wallet.name}</option>
-                ))}
-              </select>
-              <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addWallet.phoneNumber')}
-            </label>
-            <div className="flex gap-2">
-              <div className="w-16 h-12 px-3 border border-neutral-200 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-[#1f1f21] flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
-                +57
-              </div>
-              <input
-                type="text"
-                value={walletForm.phoneNumber}
-                onChange={(e) => setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
-                className="flex-1 h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-                placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
-                maxLength={10}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {t('landlordSettings.paymentAccounts.modals.addWallet.holderName')}
-            </label>
-            <input
-              type="text"
-              value={walletForm.holderName}
-              onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
-            />
-          </div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={walletForm.isDefault}
-              onChange={(e) => setWalletForm(prev => ({ ...prev, isDefault: e.target.checked }))}
-              className="w-5 h-5 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-neutral-700 dark:text-neutral-300">
-              {t('landlordSettings.paymentAccounts.modals.addWallet.setDefault')}
-            </span>
-          </label>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => { setShowAddWalletModal(false); resetWalletForm(); }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
-              onClick={handleAddWallet}
-              disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.paymentAccounts.modals.addWallet.adding') : t('landlordSettings.paymentAccounts.modals.addWallet.addButton')}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Payment Account Modal */}
-      <Modal open={showDeleteAccountModal} onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }} title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}>
-        <div className="space-y-4">
-          {editingAccount && (
-            <>
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
-                  </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                    {isBankAccount(editingAccount)
-                      ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
-                      : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
-                  </p>
-                </div>
-              </div>
-              {getPropertyCountForAccount(editingAccount.id) > 0 && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                  <p className="text-xs text-amber-800 dark:text-amber-200">
-                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
-                  </p>
-                </div>
-              )}
-              {editingAccount.isDefault && paymentAccounts.length > 1 && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                  <p className="text-xs text-amber-800 dark:text-amber-200">
-                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
-                  </p>
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
-                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-                >
-                  {t('landlordSettings.modals.cancel')}
-                </button>
-                <button
-                  onClick={handleDeletePaymentAccount}
-                  disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-                >
-                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
-                  {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </Modal>
+      </SettingsModal>
     </div>
   );
 }

@@ -27,7 +27,7 @@ import {
   ClipboardText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -109,7 +109,7 @@ interface PermissionCellProps {
 }
 
 function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: PermissionCellProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const ActionIcon = ACTION_ICONS[action];
 
   // Admin always has all permissions (disabled UI)
@@ -258,7 +258,7 @@ export function ConfigPermisos({
   onSave,
   isLoading = false,
 }: ConfigPermisosProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Local state for editing
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(initialPermissions);

@@ -17,7 +17,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
 // Timeline event types
@@ -106,7 +106,7 @@ export function ConsignacionTimeline({
   maxVisibleItems = 5,
 }: ConsignacionTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useTranslation();
+  const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useI18n();
 
   // Generate timeline events from consignacion data
   const events = useMemo(() => {

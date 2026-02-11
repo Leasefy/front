@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { FileText, PaperPlaneTilt, PenNib, CheckCircle, Clock, CaretDown, CaretUp, Globe, Monitor, Shield } from '@phosphor-icons/react';
@@ -101,7 +101,7 @@ interface AuditEventItemProps {
 }
 
 function AuditEventItem({ event, isLast, showDetails }: AuditEventItemProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const config = EVENT_CONFIG[event.type];
   const Icon = config.icon;
 

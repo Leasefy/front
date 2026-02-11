@@ -12,7 +12,7 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AgenteSelector } from './AgenteSelector';
 import type { Consignacion, Agente } from '@/lib/types/inmobiliaria';
@@ -37,7 +37,7 @@ export function AsignacionModal({
   agentes,
   onConfirm,
 }: AsignacionModalProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [selectedAgenteId, setSelectedAgenteId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, Key, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Gear, Lock, FileText, ShieldCheck, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
 // Modal Component with Leasefy style
@@ -67,7 +67,7 @@ const mockSessions = [
 export default function ConfiguracionPage() {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { t, locale, setLocale } = useTranslation();
+  const { t, locale, setLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
 
   // Ensure we only access theme on client side

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -103,7 +103,7 @@ interface ActaCardProps {
 }
 
 function ActaCard({ acta, onClick }: ActaCardProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const statusConfig: Record<ActaEntrega['status'], { label: string; className: string }> = {
     draft: {
       label: t('inmobiliaria.documentos.actas.status.draft'),
@@ -164,7 +164,7 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
  * Route: /panel/inmobiliaria/documentos
  */
 export default function DocumentosPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   // State
   const [activeTab, setActiveTab] = useState<DocTab>('documentos');

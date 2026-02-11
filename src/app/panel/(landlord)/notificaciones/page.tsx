@@ -30,7 +30,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   getLandlordNotifications,
@@ -143,7 +143,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
-  const { t, formatRelativeDate } = useTranslation();
+  const { t, formatRelativeDate } = useI18n();
   const router = useRouter();
   const [notifications, setNotifications] = useState<LandlordNotification[]>(getLandlordNotifications());
   const [filter, setFilter] = useState<FilterType>('all');

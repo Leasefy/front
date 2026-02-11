@@ -12,7 +12,7 @@ import {
   ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { PropietarioBankAccount } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 
@@ -33,7 +33,7 @@ export function PropietarioBankInfo({
   showFullDetails = false,
   className,
 }: PropietarioBankInfoProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [showAccount, setShowAccount] = useState(showFullDetails);
   const [copied, setCopied] = useState(false);
 
@@ -178,7 +178,7 @@ export function PropietarioBankInfoCompact({
   bankAccount: PropietarioBankAccount;
   className?: string;
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
   const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 

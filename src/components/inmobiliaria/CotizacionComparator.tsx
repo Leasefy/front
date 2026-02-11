@@ -21,7 +21,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   SolicitudMantenimiento,
   MantenimientoQuote,
@@ -280,7 +280,7 @@ export function CotizacionComparator({
   onRequestNewQuote,
   selectedQuoteId,
 }: CotizacionComparatorProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const typeInfo = getMantenimientoTypeInfo(solicitud.type);
   const analysis = useMemo(() => analyzeQuotes(solicitud.quotes), [solicitud.quotes]);
 

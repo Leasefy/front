@@ -32,7 +32,7 @@ export function OrganizationJsonLd() {
     },
     contactPoint: {
       "@type": "ContactPoint",
-      contactTextT: "customer service",
+      contactType: "customer service",
       email: "contacto@leasefy.co",
       availableLanguage: ["Spanish"],
     },
@@ -56,7 +56,7 @@ export function OrganizationJsonLd() {
 }
 
 // ============================================
-// Website Schema with MagnifyingGlassAction
+// Website Schema with SearchAction
 // ============================================
 export function WebsiteJsonLd() {
   const schema = {
@@ -66,9 +66,9 @@ export function WebsiteJsonLd() {
     url: siteUrl,
     description:
       "Marketplace de arriendos en Colombia con verificación de inquilinos y contratos digitales.",
-    inLanguage: "es-CL",
+    inLanguage: "es-CO",
     potentialAction: {
-      "@type": "MagnifyingGlassAction",
+      "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
         urlTemplate: `${siteUrl}/propiedades?q={search_term_string}`,
@@ -252,7 +252,7 @@ export function ArticleJsonLd({
     },
     articleSection: section,
     keywords: tags.join(", "),
-    inLanguage: "es-CL",
+    inLanguage: "es-CO",
   };
 
   return (
@@ -278,7 +278,7 @@ interface PropertyListingProps {
     neighborhood: string;
     region?: string;
   };
-  propertyTextT: string;
+  propertyType: string;
   bedrooms?: number;
   bathrooms?: number;
   areaSize?: number;
@@ -292,7 +292,7 @@ export function PropertyListingJsonLd({
   price,
   currency = "COP",
   address,
-  propertyTextT,
+  propertyType,
   bedrooms,
   bathrooms,
   areaSize,
@@ -323,8 +323,8 @@ export function PropertyListingJsonLd({
     additionalProperty: [
       {
         "@type": "PropertyValue",
-        name: "Property TextT",
-        value: propertyTextT,
+        name: "Property Type",
+        value: propertyType,
       },
       ...(bedrooms
         ? [
@@ -339,7 +339,7 @@ export function PropertyListingJsonLd({
         ? [
             {
               "@type": "PropertyValue",
-              name: "Bathtubrooms",
+              name: "Bathrooms",
               value: bathrooms,
             },
           ]
@@ -438,7 +438,7 @@ interface ServiceProps {
   url: string;
   provider?: string;
   areaServed?: string[];
-  serviceTextT: string;
+  serviceType: string;
 }
 
 export function ServiceJsonLd({
@@ -447,7 +447,7 @@ export function ServiceJsonLd({
   url,
   provider = "Leasefy",
   areaServed = ["Colombia"],
-  serviceTextT,
+  serviceType,
 }: ServiceProps) {
   const schema = {
     "@context": "https://schema.org",
@@ -464,7 +464,7 @@ export function ServiceJsonLd({
       "@type": "Country",
       name: area,
     })),
-    serviceTextT,
+    serviceType,
   };
 
   return (

@@ -11,7 +11,7 @@ import {
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { AgenteMetrics as AgenteMetricsType } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -70,7 +70,7 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
  * Displays 8 metrics in a 2x4 grid with color-coded performance indicators
  */
 export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   // Determine performance levels
   // Above average: conversionRate > 60%, avgDaysToClose < 25
   // Below average: conversionRate < 30%

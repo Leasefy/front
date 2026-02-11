@@ -16,7 +16,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 
@@ -55,7 +55,7 @@ export function CobroCard({
   onRegisterPayment,
   compact = false,
 }: CobroCardProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   const STATUS_LABELS: Record<CobroStatus, string> = useMemo(() => ({
     pending: t('inmobiliaria.cobros.card.statusLabels.pending'),

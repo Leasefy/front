@@ -13,7 +13,7 @@ import {
   CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteSelectorProps {
@@ -39,7 +39,7 @@ export function AgenteSelector({
   className,
   allowNoAgent = true,
 }: AgenteSelectorProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [zoneFilter, setZoneFilter] = useState<string>('all');
 

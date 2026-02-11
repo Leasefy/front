@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
 
 /**
@@ -21,7 +21,7 @@ import type { Property } from '@/lib/types/property';
 export default function InquilinoPage() {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
-  const { t, locale, formatCurrency: i18nFormatCurrency } = useTranslation();
+  const { t, locale, formatCurrency: i18nFormatCurrency } = useI18n();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');
 
   // Property detail sheet state

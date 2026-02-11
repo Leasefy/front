@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chat, ChatCircle, MagnifyingGlass, PaperPlaneTilt, Paperclip, DotsThreeVertical, Check, Checks, Info, Image, Smiley, ArrowLeft, X, House, Envelope, Calendar, Archive, BellSlash, TrashSimple, Flag, Buildings } from '@phosphor-icons/react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -210,7 +210,7 @@ function getInitials(name: string): string {
 // ============================================================================
 
 export default function MensajesPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [selectedId, setSelectedId] = useState('conv-1');
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);

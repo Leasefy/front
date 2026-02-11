@@ -12,7 +12,7 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -80,7 +80,7 @@ export function AgenteTable({
   onView,
   onEdit,
 }: AgenteTableProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);

@@ -30,7 +30,6 @@ function getDateGroup(date: Date): DateGroup {
 
 const GROUP_ORDER: DateGroup[] = ['Hoy', 'Ayer', 'Esta semana', 'Anterior'];
 
-/** Maps internal DateGroup keys to i18n translation keys for display */
 const DATE_GROUP_KEYS: Record<DateGroup, string> = {
   'Hoy': 'beta.conversations.today',
   'Ayer': 'beta.conversations.yesterday',
@@ -56,7 +55,7 @@ function groupByDate(
 }
 
 // ============================================================================
-// Components
+// ConversationItem
 // ============================================================================
 
 interface ConversationItemProps {
@@ -94,50 +93,42 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        'w-full text-left px-3 py-2.5 rounded-lg',
-        'transition-colors group relative',
+        'w-full text-left px-3 py-2 rounded-lg relative',
+        'transition-all duration-150',
         isActive
-          ? 'bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/20'
-          : 'hover:bg-neutral-50 dark:hover:bg-[#1a1a1c]'
+          ? 'bg-neutral-100 dark:bg-neutral-800'
+          : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
       )}
     >
-      <div className="flex items-start gap-2 min-w-0">
-        <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              'text-[13px] font-medium truncate',
-              isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-foreground'
-            )}
-          >
-            {summary.title}
-          </p>
-          <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-            {summary.preview}
-          </p>
-        </div>
-
-        {/* Delete button */}
-        {showDelete && (
-          <button
-            onClick={handleDelete}
-            className={cn(
-              'shrink-0 p-1 rounded-md transition-colors',
-              confirmDelete
-                ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
-                : 'hover:bg-neutral-200 dark:hover:bg-neutral-700 text-muted-foreground'
-            )}
-            title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
-          >
-            <Trash className="w-3.5 h-3.5" weight={confirmDelete ? 'fill' : 'regular'} />
-          </button>
+      <p
+        className={cn(
+          'text-[13px] truncate leading-snug pr-6',
+          isActive ? 'text-foreground font-medium' : 'text-foreground/80'
         )}
-      </div>
-
-      {/* Message count */}
-      {summary.messageCount > 0 && (
-        <p className="text-[11px] text-muted-foreground/60 mt-1">
-          {summary.messageCount} {summary.messageCount !== 1 ? t('beta.conversations.messages') : t('beta.conversations.message')}
+      >
+        {summary.title}
+      </p>
+      {summary.preview && (
+        <p className="text-[12px] text-muted-foreground/50 truncate mt-0.5 pr-6">
+          {summary.preview}
         </p>
+      )}
+
+      {/* Delete — appears on hover */}
+      {showDelete && (
+        <button
+          onClick={handleDelete}
+          className={cn(
+            'absolute right-2 top-1/2 -translate-y-1/2',
+            'p-1 rounded-md transition-colors',
+            confirmDelete
+              ? 'bg-red-100 dark:bg-red-500/20 text-red-500'
+              : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400'
+          )}
+          title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
+        >
+          <Trash className="w-3.5 h-3.5" weight={confirmDelete ? 'fill' : 'regular'} />
+        </button>
       )}
     </button>
   );
@@ -160,17 +151,16 @@ export function ConversationList() {
   } = useBetaChatContext();
 
   const grouped = useMemo(() => groupByDate(filteredSummaries), [filteredSummaries]);
-
   const isEmpty = filteredSummaries.length === 0;
 
   if (isLoading) return <ConversationListSkeleton />;
 
   return (
     <div className="flex flex-col gap-2 h-full">
-      {/* Search input */}
+      {/* Search */}
       <div className="relative">
         <MagnifyingGlass
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500"
           weight="regular"
         />
         <input
@@ -179,12 +169,12 @@ export function ConversationList() {
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
-            'w-full pl-8 pr-3 py-2 rounded-lg',
-            'text-[13px] placeholder:text-muted-foreground/50',
-            'bg-neutral-50 dark:bg-[#1a1a1c]',
-            'border border-neutral-200 dark:border-border',
-            'focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500/40',
-            'transition-colors'
+            'w-full pl-9 pr-3 py-2 rounded-xl',
+            'text-[13px] placeholder:text-neutral-400/60 dark:placeholder:text-neutral-500/60',
+            'bg-neutral-50/80 dark:bg-neutral-800/40',
+            'border-none',
+            'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+            'transition-all duration-150'
           )}
         />
       </div>
@@ -192,9 +182,9 @@ export function ConversationList() {
       {/* Conversation groups */}
       <div className="flex-1 overflow-y-auto space-y-3" role="list">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <ChatCircleDots className="w-8 h-8 mb-2 opacity-40" />
-            <p className="text-[13px]">
+          <div className="flex flex-col items-center justify-center py-10">
+            <ChatCircleDots className="w-8 h-8 mb-2 text-neutral-300 dark:text-neutral-600" />
+            <p className="text-[13px] text-neutral-400 dark:text-neutral-500">
               {searchQuery.trim()
                 ? t('beta.conversations.emptySearch')
                 : t('beta.conversations.noConversations')}
@@ -203,7 +193,7 @@ export function ConversationList() {
         ) : (
           grouped.map(({ group, items }) => (
             <div key={group} role="listitem">
-              <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1 mb-1.5">
+              <p className="text-[11px] font-semibold text-neutral-400/60 dark:text-neutral-500/60 uppercase tracking-widest px-2 mb-1">
                 {t(DATE_GROUP_KEYS[group])}
               </p>
               <div className="space-y-0.5">

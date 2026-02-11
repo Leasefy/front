@@ -56,27 +56,18 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "es_CL",
+    locale: "es_CO",
     url: siteUrl,
     siteName: "Leasefy",
     title: "Leasefy - Marketplace de Arriendos en Colombia",
     description:
       "Plataforma de arriendos con scoring de riesgo AI. Propietarios toman decisiones informadas sobre inquilinos en minutos.",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Leasefy - Plataforma de arriendos en Colombia",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Leasefy - Marketplace de Arriendos en Colombia",
     description:
       "Plataforma de arriendos con scoring de riesgo AI. Contratos digitales y pagos automatizados.",
-    images: ["/og-image.jpg"],
     creator: "@leasefy",
   },
   robots: {
@@ -98,7 +89,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
     languages: {
-      "es-CL": siteUrl,
+      "es-CO": siteUrl,
     },
   },
   category: "real estate",

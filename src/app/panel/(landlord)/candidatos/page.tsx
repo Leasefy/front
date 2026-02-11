@@ -14,7 +14,7 @@ import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Candidate } from '@/lib/types/candidate';
 
 type StatusFunnel = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
@@ -42,7 +42,7 @@ interface CandidateRow extends Candidate {
 
 function ScoringGuide() {
   const [open, setOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const SCORE_CATEGORIES = [
     { icon: Briefcase, labelKey: 'landlord.candidates.scoreCategoryEmployment', descKey: 'landlord.candidates.scoreCategoryEmploymentDesc', weight: '30%' },
@@ -146,7 +146,7 @@ function ScoringGuide() {
 
 export default function CandidatosPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [statusFunnel, setStatusFunnel] = useState<StatusFunnel>('all');
   const [riskFunnel, setRiskFunnel] = useState<RiskFunnel>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');

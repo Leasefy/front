@@ -5,24 +5,24 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { AppSwitcher } from './AppSwitcher';
 import { ConversationList } from './ConversationList';
+import { AgentActivityLog } from './AgentActivityLog';
 import { DecisionHistory } from './DecisionHistory';
 import { BriefingHistory } from './BriefingHistory';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 export type BetaTab = 'conversations' | 'agents' | 'decisions' | 'briefing' | 'settings';
 
-interface TabItem {
-  id: BetaTab;
+interface NavTab {
+  id: Exclude<BetaTab, 'settings'>;
   labelKey: string;
   icon: typeof ChatCircle;
 }
 
-const TAB_ITEMS: TabItem[] = [
+const NAV_TABS: NavTab[] = [
   { id: 'conversations', labelKey: 'beta.sidebar.conversations', icon: ChatCircle },
   { id: 'agents', labelKey: 'beta.sidebar.agents', icon: Lightning },
   { id: 'decisions', labelKey: 'beta.sidebar.decisions', icon: ListChecks },
   { id: 'briefing', labelKey: 'beta.sidebar.briefing', icon: Newspaper },
-  { id: 'settings', labelKey: 'beta.sidebar.settings', icon: GearSix },
 ];
 
 interface BetaSidebarProps {
@@ -33,19 +33,15 @@ interface BetaSidebarProps {
 }
 
 /**
- * BetaSidebar - Mission Control sidebar with tabs, conversation list, and AppSwitcher.
- *
- * When "Conversaciones" tab is active, shows the ConversationList below tabs.
- * Other tabs show placeholder content (future phases).
+ * BetaSidebar — Refined sidebar with brand header, compact tab bar,
+ * conversation list, and settings at the bottom.
  */
 export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange, className }: BetaSidebarProps) {
   const { t } = useI18n();
   const { createConversation, pendingDecisionsCount, hasNewBriefing, markBriefingSeen } = useBetaChatContext();
 
   const handleTabChange = (tab: BetaTab) => {
-    if (tab === 'briefing') {
-      markBriefingSeen();
-    }
+    if (tab === 'briefing') markBriefingSeen();
     onTabChange?.(tab);
   };
 
@@ -54,122 +50,107 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
       role="navigation"
       aria-label={t('beta.a11y.sidebarNav')}
       className={cn(
-        'flex flex-col w-[260px] h-full',
-        'bg-white dark:bg-card',
-        'border-r border-neutral-200 dark:border-border',
+        'flex flex-col w-[272px] h-full',
+        'bg-white dark:bg-[#141416]',
+        'border-r border-neutral-200/80 dark:border-neutral-800/60',
         className
       )}
     >
-      {/* AppSwitcher at top */}
-      <div className="px-3 pt-3 pb-2">
+      {/* Brand header */}
+      <div className="px-4 pt-4 pb-3">
         <AppSwitcher basePath={basePath} />
       </div>
 
-      {/* Separator */}
-      <div className="mx-3 border-b border-neutral-200 dark:border-border" />
+      {/* New conversation */}
+      <div className="px-4 pb-3">
+        <button
+          onClick={createConversation}
+          className={cn(
+            'w-full flex items-center justify-center gap-2',
+            'px-4 py-2.5 rounded-xl',
+            'text-[13px] font-medium',
+            'bg-neutral-900 dark:bg-white',
+            'text-white dark:text-neutral-900',
+            'hover:bg-neutral-800 dark:hover:bg-neutral-100',
+            'active:scale-[0.98]',
+            'transition-all duration-150'
+          )}
+        >
+          <Plus className="w-4 h-4" weight="bold" />
+          {t('beta.sidebar.newConversation')}
+        </button>
+      </div>
 
-      {/* Tab navigation */}
-      <nav className="px-3 py-3">
-        <div className="space-y-0.5" role="tablist" aria-label={t('beta.a11y.sidebarNav')}>
-          {TAB_ITEMS.map((tab) => {
+      {/* Compact icon tab bar */}
+      <div className="px-4 pb-2">
+        <div
+          className="flex items-center gap-0.5 p-1 rounded-xl bg-neutral-100/70 dark:bg-neutral-800/50"
+          role="tablist"
+          aria-label={t('beta.a11y.sidebarNav')}
+        >
+          {NAV_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const hasBadge = tab.id === 'decisions' && pendingDecisionsCount > 0;
+            const hasDot = tab.id === 'briefing' && hasNewBriefing;
+
             return (
               <button
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => handleTabChange(tab.id)}
+                title={t(tab.labelKey)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[14px]',
-                  'transition-colors',
+                  'relative flex-1 flex items-center justify-center',
+                  'py-2 rounded-lg',
+                  'transition-all duration-150',
                   isActive
-                    ? 'text-foreground font-medium bg-neutral-100 dark:bg-[#1f1f21]'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-[#1a1a1c]'
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground'
+                    : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
                 )}
               >
-                <Icon
-                  className={cn(
-                    'w-[18px] h-[18px]',
-                    isActive ? 'text-foreground' : 'text-muted-foreground'
-                  )}
-                  weight={isActive ? 'fill' : 'regular'}
-                />
-                <span className="flex-1 text-left">{t(tab.labelKey)}</span>
-                {tab.id === 'decisions' && pendingDecisionsCount > 0 && (
-                  <span
-                    className={cn(
-                      'inline-flex items-center justify-center',
-                      'min-w-[20px] h-5 px-1.5 rounded-full',
-                      'bg-indigo-500 text-white text-[11px] font-semibold',
-                      'transition-all duration-200',
-                      'animate-in fade-in zoom-in-75'
-                    )}
-                  >
+                <Icon className="w-[17px] h-[17px]" weight={isActive ? 'fill' : 'regular'} />
+                {hasBadge && (
+                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none">
                     {pendingDecisionsCount}
                   </span>
                 )}
-                {tab.id === 'briefing' && hasNewBriefing && (
-                  <span
-                    className={cn(
-                      'w-[6px] h-[6px] rounded-full',
-                      'bg-amber-500',
-                      'transition-all duration-200',
-                      'animate-in fade-in zoom-in-75'
-                    )}
-                  />
+                {hasDot && (
+                  <span className="absolute top-0.5 right-1.5 w-[5px] h-[5px] rounded-full bg-amber-500" />
                 )}
               </button>
             );
           })}
         </div>
-      </nav>
-
-      {/* Separator */}
-      <div className="mx-3 border-b border-neutral-200 dark:border-border" />
-
-      {/* Tab content area */}
-      <div className="flex-1 overflow-hidden px-3 py-3" role="tabpanel">
-        {activeTab === 'conversations' && <ConversationList />}
-        {activeTab === 'agents' && (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
-            {t('beta.agents.phase')}
-          </div>
-        )}
-        {activeTab === 'decisions' && <DecisionHistory />}
-        {activeTab === 'briefing' && (
-          <BriefingHistory />
-        )}
       </div>
 
-      {/* Bottom section: New conversation + Beta badge */}
-      <div className="px-3 pb-3 space-y-3">
-        {/* New conversation button */}
+      {/* Tab content */}
+      <div className="flex-1 overflow-hidden px-3 pt-1 pb-2" role="tabpanel">
+        {activeTab === 'conversations' && <ConversationList />}
+        {activeTab === 'agents' && <AgentActivityLog />}
+        {activeTab === 'decisions' && <DecisionHistory />}
+        {activeTab === 'briefing' && <BriefingHistory />}
+      </div>
+
+      {/* Bottom: settings + badge */}
+      <div className="px-3 pb-3 pt-1 border-t border-neutral-100 dark:border-neutral-800/50">
         <button
-          onClick={createConversation}
+          onClick={() => handleTabChange('settings')}
           className={cn(
-            'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl',
-            'text-[13px] font-medium',
-            'text-indigo-600 dark:text-indigo-400',
-            'bg-indigo-50 dark:bg-indigo-500/10',
-            'hover:bg-indigo-100 dark:hover:bg-indigo-500/20',
-            'border border-indigo-200/60 dark:border-indigo-500/20',
-            'transition-colors'
+            'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg',
+            'text-[13px] transition-colors duration-150',
+            activeTab === 'settings'
+              ? 'text-foreground font-medium bg-neutral-100 dark:bg-neutral-800'
+              : 'text-neutral-500 dark:text-neutral-400 hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}
         >
-          <Plus className="w-4 h-4" weight="bold" />
-          <span>{t('beta.sidebar.newConversation')}</span>
+          <GearSix className="w-4 h-4" weight={activeTab === 'settings' ? 'fill' : 'regular'} />
+          {t('beta.sidebar.settings')}
         </button>
 
-        {/* Beta badge */}
-        <div className="flex items-center justify-center">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5',
-              'bg-indigo-500/10 text-indigo-500',
-              'text-xs font-medium px-2.5 py-1 rounded-full'
-            )}
-          >
+        <div className="flex items-center justify-center mt-2">
+          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium">
             <Sparkle className="w-3 h-3" weight="fill" />
             {t('beta.badge')}
           </span>

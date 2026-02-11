@@ -28,7 +28,7 @@ import {
   ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +77,7 @@ export function ConfigFacturacion({
   onUpdatePaymentMethod,
   isLoading = false,
 }: ConfigFacturacionProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<BillingPlan | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);

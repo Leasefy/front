@@ -130,11 +130,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [persistUser]
   )
 
-  // Login with Google (mock - uses first tenant user)
-  const loginWithGoogle = useCallback(async () => {
+  // Social login helper (mock — both providers resolve to the same first tenant user)
+  // BUG: loginWithGoogle and loginWithApple produce identical results.
+  // This is a known mock-auth limitation — do NOT fix during refactor.
+  const socialLogin = useCallback(async () => {
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    // Mock: use first tenant user for social login
     const mockTenant = mockUsers.find((u) => u.role === 'tenant')
     if (mockTenant) {
       const userData: User = {
@@ -149,24 +150,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [persistUser])
 
-  // Login with Apple (mock - uses first tenant user)
-  const loginWithApple = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    // Mock: use first tenant user for social login
-    const mockTenant = mockUsers.find((u) => u.role === 'tenant')
-    if (mockTenant) {
-      const userData: User = {
-        id: mockTenant.id,
-        email: mockTenant.email,
-        name: mockTenant.name,
-        role: mockTenant.role,
-        avatar: mockTenant.avatar,
-      }
-      setUser(userData)
-      persistUser(userData)
-    }
-  }, [persistUser])
+  const loginWithGoogle = socialLogin
+  const loginWithApple = socialLogin
 
   // Logout
   const logout = useCallback(() => {

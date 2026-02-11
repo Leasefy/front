@@ -25,7 +25,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
@@ -224,7 +224,7 @@ export function DispersionDetail({
 }: DispersionDetailProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
 
   // Get propietario details
   const propietario = React.useMemo(() => {

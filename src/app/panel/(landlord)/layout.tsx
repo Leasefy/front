@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Sparkle } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
+// Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
-import { I18nProvider, useTranslation } from '@/lib/i18n';
+import { I18nProvider, useI18n } from '@/lib/i18n';
 import { MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
 import { cn } from '@/lib/utils';
 
@@ -60,12 +61,12 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     icon: Chat,
     badge: 3,
   },
-  // --- AI Beta section ---
-  {
-    label: 'AI Beta',
-    href: '/panel/beta',
-    icon: Sparkle,
-  },
+  // --- AI Beta section (hidden — re-enable when ready) ---
+  // {
+  //   label: 'AI Beta',
+  //   href: '/panel/beta',
+  //   icon: Sparkle,
+  // },
 ];
 
 interface PanelLayoutProps {
@@ -77,7 +78,7 @@ interface PanelLayoutProps {
  */
 function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const showUpgrade = MOCK_SUBSCRIPTION.planId === 'free';
 
   // Onboarding progress state

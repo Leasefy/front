@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import {
   type PipelineItem,
   type PipelineStage,
@@ -134,7 +134,7 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
  * Clean, minimal design following project conventions
  */
 export function PipelineDetail({ isOpen, onClose, item, onStageChange }: PipelineDetailProps) {
-  const { t, formatDate: formatDateI18n } = useTranslation();
+  const { t, formatDate: formatDateI18n } = useI18n();
   const [notes, setNotes] = useState('');
   const [isMoving, setIsMoving] = useState(false);
   const [isMarking, setIsMarking] = useState(false);

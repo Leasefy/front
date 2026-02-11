@@ -2,67 +2,20 @@
 
 import { Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useI18n } from '@/lib/i18n';
-
-interface TypingIndicatorProps {
-  className?: string;
-}
 
 /**
- * TypingIndicator - Animated bouncing dots shown while the AI is "thinking".
- *
- * Mirrors AssistantBubble layout (left-aligned, Sparkle avatar, "Leasefy AI" label)
- * but replaces message content with three staggered bouncing dots.
+ * TypingIndicator - Simple bounce dots matching the assistant icon style.
  */
-export function TypingIndicator({ className }: TypingIndicatorProps) {
-  const { t } = useI18n();
-
+export function TypingIndicator({ className }: { className?: string }) {
   return (
-    <div className={cn('flex items-end gap-2', className)}>
-      {/* AI avatar */}
-      <div
-        className={cn(
-          'flex-shrink-0 w-7 h-7 rounded-full',
-          'bg-indigo-50 dark:bg-indigo-500/10',
-          'flex items-center justify-center'
-        )}
-      >
-        <Sparkle
-          className="w-3.5 h-3.5 text-indigo-500"
-          weight="fill"
-        />
+    <div className={cn('flex gap-3', className)}>
+      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+        <Sparkle className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" weight="fill" />
       </div>
-
-      <div className="flex flex-col items-start">
-        {/* Label */}
-        <span className="text-[11px] font-medium text-indigo-500 mb-1 ml-1">
-          {t('beta.title')}
-        </span>
-
-        {/* Bubble with animated dots */}
-        <div
-          className={cn(
-            'px-4 py-3',
-            'bg-white dark:bg-card',
-            'border border-neutral-200 dark:border-border',
-            'rounded-2xl rounded-bl-sm'
-          )}
-        >
-          <span className="inline-flex items-center gap-1">
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce"
-              style={{ animationDelay: '0ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce"
-              style={{ animationDelay: '150ms' }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce"
-              style={{ animationDelay: '300ms' }}
-            />
-          </span>
-        </div>
+      <div className="flex items-center gap-1.5 py-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:0ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:150ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:300ms]" />
       </div>
     </div>
   );

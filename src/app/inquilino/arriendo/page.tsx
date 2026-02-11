@@ -7,7 +7,7 @@ import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, 
 
 import { getActiveLeasesForTenant, getNextPayment } from '@/lib/data/mock-leases';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -16,7 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
  * Tenant Leases Page - Landing Style (matching main dashboard)
  */
 export default function ArriendoPage() {
-  const { t, locale, formatCurrency } = useTranslation();
+  const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   const tenantId = 'user-tenant-1';

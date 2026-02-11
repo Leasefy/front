@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
 import { getCandidateById } from '@/lib/data/mock-candidates';
@@ -57,7 +57,7 @@ interface CandidateRow extends LandlordCandidate {
 // ============================================================================
 
 export default function PropertyCandidatesPage({ params }: PropertyCandidatesPageProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const { propertyId } = params;
   const router = useRouter();
 

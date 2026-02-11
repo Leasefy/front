@@ -27,7 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { useLenis } from '@/components/providers/SmoothScroll';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
@@ -113,7 +113,7 @@ function DroppableColumn({
   defaultCollapsed = false,
   maxVisibleCards = 3,
 }: DroppableColumnProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -413,7 +413,7 @@ export function PipelineBoard({
   onItemClick,
   onStageChange,
 }: PipelineBoardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 

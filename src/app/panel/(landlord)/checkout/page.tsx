@@ -11,13 +11,13 @@ import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Inner checkout component that uses search params
  */
 function CheckoutContent() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
 

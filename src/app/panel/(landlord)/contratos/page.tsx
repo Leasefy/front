@@ -10,7 +10,7 @@ import {
 } from '@/lib/data/mock-contracts';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs
@@ -57,7 +57,7 @@ function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorC
 // ============================================================================
 
 export default function ContratosPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const landlordId = 'landlord-001';
   const allContracts = getContractsForLandlord(landlordId);
   const pendingContracts = getPendingContracts(landlordId);

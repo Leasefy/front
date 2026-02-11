@@ -1,29 +1,22 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
-import { PaperPlaneTilt } from '@phosphor-icons/react';
+import { ArrowUp } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
 interface ChatInputProps {
-  /** Called when user sends a message */
   onSend: (text: string) => void;
-  /** Disable input (e.g. while AI is streaming) */
   disabled?: boolean;
   className?: string;
 }
 
-/** Maximum rows the textarea can grow to */
 const MAX_ROWS = 5;
-/** Line height in pixels for row calculation */
 const LINE_HEIGHT = 24;
 
 /**
- * ChatInput - Auto-resizing textarea with send button.
- *
- * Enter sends the message, Shift+Enter adds a newline.
- * Send button disabled when empty or disabled prop is true.
- * Auto-resizes from 1 row to MAX_ROWS, then scrolls internally.
+ * ChatInput - Clean bordered input with auto-resizing textarea.
+ * Enter sends, Shift+Enter for newline. Minimal design.
  */
 export function ChatInput({ onSend, disabled = false, className }: ChatInputProps) {
   const { t } = useI18n();
@@ -33,26 +26,20 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
   const isEmpty = value.trim().length === 0;
   const isDisabled = disabled || isEmpty;
 
-  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-
-    // Reset height to recalculate
     textarea.style.height = 'auto';
     const scrollHeight = textarea.scrollHeight;
-    const maxHeight = LINE_HEIGHT * MAX_ROWS + 16; // 16px for padding
+    const maxHeight = LINE_HEIGHT * MAX_ROWS + 16;
     textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
   }, [value]);
 
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
-
     onSend(trimmed);
     setValue('');
-
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -69,52 +56,60 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
   );
 
   return (
-    <div
-      className={cn(
-        'flex items-end gap-2',
-        'px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]',
-        'border-t border-neutral-200 dark:border-border',
-        'bg-white dark:bg-card',
-        className
-      )}
-    >
-      {/* Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={t('beta.chat.placeholder')}
-        disabled={disabled}
-        rows={1}
-        className={cn(
-          'flex-1 resize-none',
-          'bg-transparent',
-          'text-[14px] text-foreground placeholder:text-muted-foreground',
-          'focus:outline-none',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-          'py-2'
-        )}
-        style={{ lineHeight: `${LINE_HEIGHT}px` }}
-      />
+    <div className={cn('px-4 pb-4 pt-2', className)}>
+      <div className="max-w-3xl mx-auto">
+        <div
+          className={cn(
+            'flex items-end gap-2',
+            'px-4 py-2',
+            'rounded-2xl',
+            'bg-white dark:bg-neutral-900',
+            'border border-neutral-200 dark:border-neutral-700',
+            'shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
+            'focus-within:border-neutral-400 dark:focus-within:border-neutral-500',
+            'focus-within:shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:focus-within:shadow-[0_2px_20px_rgba(0,0,0,0.3)]',
+            'transition-all duration-200'
+          )}
+        >
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('beta.chat.placeholder')}
+            disabled={disabled}
+            rows={1}
+            className={cn(
+              'flex-1 resize-none',
+              'bg-transparent',
+              'text-[15px] leading-relaxed',
+              'text-foreground',
+              'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+              'focus:outline-none',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'py-1.5'
+            )}
+            style={{ lineHeight: `${LINE_HEIGHT}px` }}
+          />
 
-      {/* Send button */}
-      <button
-        onClick={handleSend}
-        disabled={isDisabled}
-        className={cn(
-          'flex-shrink-0',
-          'w-9 h-9 rounded-xl',
-          'flex items-center justify-center',
-          'transition-all duration-150',
-          isDisabled
-            ? 'bg-neutral-100 dark:bg-neutral-800 text-muted-foreground cursor-not-allowed'
-            : 'bg-indigo-500 text-white hover:bg-indigo-600 active:scale-95'
-        )}
-        aria-label={t('beta.chat.sendButton')}
-      >
-        <PaperPlaneTilt className="w-4 h-4" weight="fill" />
-      </button>
+          <button
+            onClick={handleSend}
+            disabled={isDisabled}
+            className={cn(
+              'flex-shrink-0',
+              'w-8 h-8 rounded-lg',
+              'flex items-center justify-center',
+              'transition-all duration-150',
+              isDisabled
+                ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
+                : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95'
+            )}
+            aria-label={t('beta.chat.sendButton')}
+          >
+            <ArrowUp className="w-4 h-4" weight="bold" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { getCandidatesByProperty } from '@/lib/data/mock-candidates';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
 import {
   DropdownList,
@@ -21,7 +21,7 @@ type ViewMode = 'grid' | 'list';
 type FunnelStatus = 'all' | 'available' | 'rented' | 'pending';
 
 export default function PropiedadesPage() {
-  const { t, formatCurrency: i18nFormatCurrency } = useTranslation();
+  const { t, formatCurrency: i18nFormatCurrency } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filterStatus, setFunnelStatus] = useState<FunnelStatus>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');

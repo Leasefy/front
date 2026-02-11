@@ -13,7 +13,7 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
 interface AgenteProfileProps {
@@ -68,7 +68,7 @@ const SPECIALIZATION_LABELS: Record<string, string> = {
  * Displays avatar, contact info, role, zone, commission split, and contact buttons
  */
 export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
-  const { t, formatDate: formatDateI18n } = useTranslation();
+  const { t, formatDate: formatDateI18n } = useI18n();
   const roleConfig = ROLE_CONFIG[agente.role];
   const statusConfig = STATUS_CONFIG[agente.status];
 

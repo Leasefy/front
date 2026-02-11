@@ -14,7 +14,7 @@ import {
   ListBullets,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { OcupacionReport, OcupacionZone } from '@/lib/types/inmobiliaria';
 
 interface OcupacionChartProps {
@@ -208,7 +208,7 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
  * Shows overall occupancy donut chart and zone breakdown
  */
 export function OcupacionChart({ data, variant = 'chart', className }: OcupacionChartProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [viewVariant, setViewVariant] = useState<'chart' | 'cards'>(variant);
 
   // Calculate trend

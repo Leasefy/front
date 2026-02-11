@@ -6,11 +6,11 @@ import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
 
 export function StepPricing() {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const { draft, updateDraft } = usePublish();
   const [hasAdminFee, setHasAdminFee] = useState(draft.adminFee > 0);
   const [hasDeposit, setHasDeposit] = useState(draft.deposit > 0);

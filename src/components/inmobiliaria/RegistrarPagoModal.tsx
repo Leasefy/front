@@ -22,7 +22,7 @@ import {
   DotsThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -79,7 +79,7 @@ export function RegistrarPagoModal({
   cobrosList,
   onSubmit,
 }: RegistrarPagoModalProps) {
-  const { t, locale, formatDate, formatCurrency } = useTranslation();
+  const { t, locale, formatDate, formatCurrency } = useI18n();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConfirmation, setShowConfirmation] = React.useState(false);
   const [selectedCobroId, setSelectedCobroId] = React.useState<string | null>(

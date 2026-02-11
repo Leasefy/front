@@ -4,7 +4,7 @@ import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Warning, WarningCircle, Bell, ClockCountdown, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 type MoraSeverity = 'warning' | 'critical' | 'severe';
@@ -84,7 +84,7 @@ export function MoraAlert({
   compact = false,
   className,
 }: MoraAlertProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Don't render if not late
   if (daysLate <= 0) return null;

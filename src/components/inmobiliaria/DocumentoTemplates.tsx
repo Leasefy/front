@@ -18,7 +18,7 @@ import {
   Code,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -100,7 +100,7 @@ export function DocumentoTemplates({
   onUseTemplate,
   isLoading = false,
 }: DocumentoTemplatesProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | 'all'>('all');
   const [previewTemplate, setPreviewTemplate] = useState<DocumentTemplate | null>(null);

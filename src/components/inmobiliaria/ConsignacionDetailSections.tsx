@@ -20,7 +20,7 @@ import {
   HouseLine,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -82,7 +82,7 @@ interface PropertyInfoSectionProps {
 }
 
 export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) {
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
 
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.propertyInfo')} icon={<Buildings className="w-4 h-4" />}>
@@ -143,7 +143,7 @@ interface PropietarioSectionProps {
 }
 
 export function PropietarioSection({ propietario }: PropietarioSectionProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   if (!propietario) {
     return (
@@ -235,7 +235,7 @@ interface AgenteSectionProps {
 }
 
 export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteSectionProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   if (!agente) {
     return (
@@ -355,7 +355,7 @@ interface CurrentLeaseSectionProps {
 }
 
 export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) {
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
   const hasLease = consignacion.availability === 'rented' && consignacion.currentTenantName;
 
   return (
@@ -426,7 +426,7 @@ interface DocumentsSectionProps {
 }
 
 export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSectionProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const hasPhotos = consignacion.photosUrls && consignacion.photosUrls.length > 0;
 
   return (

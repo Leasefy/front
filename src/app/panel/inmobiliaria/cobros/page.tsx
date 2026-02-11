@@ -13,7 +13,7 @@ import {
   Plus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   MOCK_COBROS,
   MOCK_CONSIGNACIONES,
@@ -51,7 +51,7 @@ function getCurrentMonth(): string {
  * Route: /panel/inmobiliaria/cobros
  */
 export default function CobrosPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const searchParams = useSearchParams();
 
   // State for cobros (local copy for optimistic updates)

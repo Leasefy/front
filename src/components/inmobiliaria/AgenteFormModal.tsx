@@ -15,7 +15,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { AgenteFormData, AgenteRole } from '@/lib/types/inmobiliaria';
 
 interface AgenteFormModalProps {
@@ -49,7 +49,7 @@ export function AgenteFormModal({
   onClose,
   onSubmit,
 }: AgenteFormModalProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);

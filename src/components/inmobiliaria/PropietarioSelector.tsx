@@ -10,7 +10,7 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioCard } from './PropietarioCard';
 import { PropietarioForm } from './PropietarioForm';
@@ -34,7 +34,7 @@ export function PropietarioSelector({
   newPropietarioData,
   className,
 }: PropietarioSelectorProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [showNewForm, setShowNewForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);

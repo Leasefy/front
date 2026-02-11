@@ -13,7 +13,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -32,7 +32,7 @@ function getStageInfo(stage: PipelineStage) {
  * Collapsible section showing leads in progress (excluding completed/lost)
  */
 export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Filter out completed and lost items

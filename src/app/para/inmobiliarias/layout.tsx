@@ -35,7 +35,7 @@ export default function InmobiliariasLayout({
         name="Software Inmobiliario para Arriendos"
         description="Plataforma completa de gestión de arriendos para inmobiliarias con CRM, scoring y automatización."
         url="/para/inmobiliarias"
-        serviceTextT="Property Management Software"
+        serviceType="Property Management Software"
         areaServed={["Colombia"]}
       />
       {children}

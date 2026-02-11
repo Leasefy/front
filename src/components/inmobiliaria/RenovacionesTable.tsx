@@ -19,7 +19,7 @@ import {
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import {
   DropdownList,
   DropdownListTrigger,
@@ -84,7 +84,7 @@ export function RenovacionesTable({
   onCalculateIPC,
   onViewHistory,
 }: RenovacionesTableProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [sortField, setSortField] = useState<SortField>('daysUntilExpiry');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');

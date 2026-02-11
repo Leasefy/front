@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -40,7 +40,7 @@ const ITEMS_PER_PAGE = 6;
  * Route: /panel/inmobiliaria/agentes
  */
 export default function AgentesPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const router = useRouter();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
@@ -453,7 +453,7 @@ export default function AgentesPage() {
 
 // Empty State Component
 function EmptyState() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   return (
     <div className="p-12 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">

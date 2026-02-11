@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { useTranslation } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================================
 // TextTs & Constants
@@ -51,7 +51,7 @@ const CITIES = [
 // ============================================================================
 
 function OnboardingPropietarioContent() {
-  const { locale } = useTranslation()
+  const { locale } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated } = useAuth()

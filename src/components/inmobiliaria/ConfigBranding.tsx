@@ -18,7 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { AgencyBranding } from '@/lib/types/inmobiliaria';
 import { getDefaultBranding } from '@/lib/types/inmobiliaria';
 
@@ -81,7 +81,7 @@ export function ConfigBranding({
   onSave,
   isLoading = false,
 }: ConfigBrandingProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<AgencyBranding>({ ...branding });
   const [isDragging, setIsDragging] = useState(false);

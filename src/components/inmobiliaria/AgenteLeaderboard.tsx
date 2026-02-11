@@ -15,7 +15,7 @@ import {
   CalendarBlank,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -44,7 +44,7 @@ function getMockTrend(agente: Agente): 'up' | 'down' | 'stable' {
  * Shows top performers with medals and trend indicators
  */
 export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
 

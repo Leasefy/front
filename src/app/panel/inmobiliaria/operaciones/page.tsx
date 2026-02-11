@@ -25,7 +25,7 @@ import {
   Kanban,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
@@ -156,7 +156,7 @@ function StatCard({
  * Route: /panel/inmobiliaria/operaciones
  */
 export default function OperacionesPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // State
   const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');

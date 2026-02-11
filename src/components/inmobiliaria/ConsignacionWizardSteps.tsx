@@ -23,7 +23,7 @@ import {
   Pencil,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Propietario, Agente, PropietarioFormData, ConsignacionFormData, InventoryItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
@@ -79,7 +79,7 @@ const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; labelKey: strin
 // ============================================================================
 
 export function StepSelectPropietario({ formData, updateFormData, propietarios }: StepProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <div className="space-y-6">
@@ -112,7 +112,7 @@ export function StepSelectPropietario({ formData, updateFormData, propietarios }
 // ============================================================================
 
 export function StepPropertyData({ formData, updateFormData }: StepProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleBlur = (field: string) => {
@@ -330,7 +330,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 // ============================================================================
 
 export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const commissionPercent = formData.commissionPercent ?? 10;
   const monthlyRent = formData.monthlyRent || 0;
   const agencyCommission = Math.round(monthlyRent * (commissionPercent / 100));
@@ -465,7 +465,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 // ============================================================================
 
 export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <div className="space-y-6">
@@ -493,7 +493,7 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
 // ============================================================================
 
 export function StepActaEntrega({ formData, updateFormData }: StepProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const inventoryItems = formData.inventoryItems || [];
 
   const addItem = () => {
@@ -694,7 +694,7 @@ export function StepConfirmation({
   agentes,
   onGoToStep,
 }: StepProps & { onGoToStep: (step: number) => void }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const inventoryItems = formData.inventoryItems || [];
 
   // Find propietario info

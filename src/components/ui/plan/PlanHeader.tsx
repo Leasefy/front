@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { getPlanById, MOCK_SUBSCRIPTION, PLANS } from '@/lib/data/mock-subscriptions';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
@@ -171,7 +171,7 @@ export function PlanHeader({
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [searchFocused, setMagnifyingGlassFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);

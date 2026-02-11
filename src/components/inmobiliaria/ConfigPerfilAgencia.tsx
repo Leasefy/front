@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type {
   InmobiliariaConfigExtended,
   AgencyContactInfo,
@@ -52,7 +52,7 @@ export function ConfigPerfilAgencia({
   onSave,
   isLoading = false,
 }: ConfigPerfilAgenciaProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

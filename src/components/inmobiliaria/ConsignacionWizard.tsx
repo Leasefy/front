@@ -17,7 +17,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
 import {
@@ -50,7 +50,7 @@ const STEPS = [
  */
 export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);

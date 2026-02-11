@@ -25,7 +25,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
@@ -530,7 +530,7 @@ export function ReporteViewer({
   filters,
   onExport,
 }: ReporteViewerProps) {
-  const { t, formatDate: fmtDate } = useTranslation();
+  const { t, formatDate: fmtDate } = useI18n();
   const [isExporting, setIsExporting] = React.useState(false);
 
   // Handle export

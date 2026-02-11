@@ -11,7 +11,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
@@ -41,7 +41,7 @@ export function PipelineColumn({
   defaultCollapsed = false,
   maxVisibleCards = 3,
 }: PipelineColumnProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasOverflow, setHasOverflow] = useState(false);

@@ -13,7 +13,7 @@ import {
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import {
   DropdownList,
   DropdownListContent,
@@ -97,7 +97,7 @@ export function ExportButton({
   error = null,
   className,
 }: ExportButtonProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [internalSuccess, setInternalSuccess] = React.useState(false);
   const sizeConfig = SIZE_CONFIG[size];
 

@@ -17,7 +17,7 @@ import {
   Funnel,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { CarteraReport, CarteraItem } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -86,7 +86,7 @@ export function CarteraEdadesTable({
   onViewCobro,
   onNotifyAgent,
 }: CarteraEdadesTableProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [sortField, setSortField] = useState<SortField>('daysLate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');

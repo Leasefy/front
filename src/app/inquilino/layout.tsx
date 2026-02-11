@@ -8,7 +8,7 @@ import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSid
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
-import { I18nProvider, useTranslation } from '@/lib/i18n';
+import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 // Define the setup steps - same as TenantDashboardEmpty (3 steps only, documents are requested during application)
@@ -24,7 +24,7 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
  * Hook to generate translated nav items
  */
 function useTenantNavItems() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
@@ -46,7 +46,7 @@ interface InquilinoLayoutProps {
 function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { hasArriendoPass } = useTenantProfile();
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const navItems = useTenantNavItems();
 
   // Onboarding progress state

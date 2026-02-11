@@ -11,7 +11,7 @@ import {
   getLandlordStats,
 } from '@/lib/data/mock-leases';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 // ============================================================================
 // TextTs
@@ -87,7 +87,7 @@ export default function LandlordLeasesPage() {
   const landlordId = 'landlord-001';
   const leases = getLeasesForLandlord(landlordId);
   const stats = getLandlordStats(landlordId);
-  const { t, formatCurrency } = useTranslation();
+  const { t, formatCurrency } = useI18n();
 
   const [activeTab, setActiveTab] = useState('all');
 

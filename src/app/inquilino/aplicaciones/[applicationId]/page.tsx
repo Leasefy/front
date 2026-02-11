@@ -12,13 +12,13 @@ import { getTenantApplicationById } from '@/lib/data/mock-tenant-applications';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Application Detail Page - Premium Leasefy Style
  */
 export default function ApplicationDetailPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
   const [copied, setCopied] = useState(false);

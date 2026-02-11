@@ -16,13 +16,13 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
-  Sparkle,
+  // Sparkle, — re-add when AI Beta nav item is uncommented
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
-import { I18nProvider, useTranslation } from '@/lib/i18n';
+import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 interface InmobiliariaLayoutProps {
@@ -34,7 +34,7 @@ interface InmobiliariaLayoutProps {
  */
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
-  const { locale, t } = useTranslation();
+  const { locale, t } = useI18n();
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => [
     {
@@ -99,12 +99,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: Chat,
       badge: 5,
     },
-    // --- AI Beta section ---
-    {
-      label: t('inmobiliaria.nav.aiBeta'),
-      href: '/panel/inmobiliaria/beta',
-      icon: Sparkle,
-    },
+    // --- AI Beta section (hidden — re-enable when ready) ---
+    // {
+    //   label: t('inmobiliaria.nav.aiBeta'),
+    //   href: '/panel/inmobiliaria/beta',
+    //   icon: Sparkle,
+    // },
   ], [t]);
 
   return (

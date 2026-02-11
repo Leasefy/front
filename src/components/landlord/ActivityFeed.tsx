@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { UserPlus, CheckCircle, Chat, FileText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Activity, ActivityType } from '@/lib/data/mock-activity';
 
 // Format relative time
@@ -41,7 +41,7 @@ interface ActivityItemProps {
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const Icon = activityIcons[activity.type];
 
   // Map activity types to accent colors

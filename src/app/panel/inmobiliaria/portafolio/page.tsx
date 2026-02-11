@@ -16,7 +16,7 @@ import {
   CaretRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import {
   MOCK_CONSIGNACIONES,
   MOCK_PROPIETARIOS,
@@ -36,7 +36,7 @@ const ITEMS_PER_PAGE = 12;
  * Route: /panel/inmobiliaria/portafolio
  */
 export default function PortafolioPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
@@ -412,7 +412,7 @@ export default function PortafolioPage() {
 
 // Empty State Component
 function EmptyState() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   return (
     <div className="p-12 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">

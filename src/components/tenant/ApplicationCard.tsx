@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { ApplicationStatusBadge } from './ApplicationStatusBadge';
 import type { TenantApplication } from '@/lib/types/tenant-application';
 import { canWithdraw } from '@/lib/types/tenant-application';
-import { cardStyles, borderRadius, transitions, hoverEffects, focusStates, borders } from '@/lib/design-tokens';
 
 export interface ApplicationCardProps {
   /** Application to display */
@@ -64,7 +63,7 @@ export function ApplicationCard({
       onClick={onClick}
       className={cn(
         'w-full text-left overflow-hidden',
-        cardStyles.interactive,
+        'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
         'group',
         className
       )}
@@ -91,7 +90,7 @@ export function ApplicationCard({
             <h3 className={cn(
               'text-sm sm:text-base font-medium truncate',
               'text-foreground group-hover:text-primary',
-              transitions.colors
+              'transition-colors duration-200 ease-out'
             )}>
               {title}
             </h3>
@@ -158,7 +157,7 @@ export function ApplicationCard({
           {/* Navigate indicator */}
           <CaretRight className={cn(
             'w-4 h-4 opacity-40 group-hover:opacity-60',
-            transitions.colors
+            'transition-colors duration-200 ease-out'
           )} />
         </div>
       </div>

@@ -14,7 +14,7 @@ import {
   Calendar,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { FlujoCajaReport, FlujoCajaMonth } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -270,7 +270,7 @@ export function FlujoCajaChart({
   onPeriodChange,
   className,
 }: FlujoCajaChartProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [viewVariant, setViewVariant] = useState<'chart' | 'table'>(variant);
 
   // Calculate trend vs previous period

@@ -16,7 +16,7 @@ import {
   Target,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   AnalyticsData,
   AnalyticsChart,
@@ -152,7 +152,7 @@ function KPISection({
   category: AdvancedKPI['category'];
   kpis: AdvancedKPI[];
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const config = SECTION_ICONS[category];
   const Icon = config.icon;
 
@@ -299,7 +299,7 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
 }
 
 function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const data = chart.datasets[0].data;
   const total = data.reduce((sum, val) => sum + val, 0);
   const colors = ['#10B981', '#FBBF24', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -410,7 +410,7 @@ export function AnalyticsDashboard({
   data,
   isLoading = false,
 }: AnalyticsDashboardProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   // Group KPIs by category
   const groupedKPIs = useMemo(() => {
     const groups: Record<AdvancedKPI['category'], AdvancedKPI[]> = {

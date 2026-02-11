@@ -26,7 +26,7 @@ import {
 } from '@phosphor-icons/react';
 import { IPC_HISTORICAL, getCurrentIPC, calculateNewRent, type IPCRecord } from '@/lib/data/mock-inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 
 // ============================================================================
 // Types
@@ -356,7 +356,7 @@ export function IPCCalculator({
   currentRent,
   onCalculate,
 }: IPCCalculatorProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const currentIPC = getCurrentIPC();
 
   return (

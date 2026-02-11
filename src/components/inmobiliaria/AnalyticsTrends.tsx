@@ -16,7 +16,7 @@ import {
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   TrendAnalysis,
   ComparisonPeriod,
@@ -52,7 +52,7 @@ function formatMetricValue(value: number, metricId: string): string {
  * Period comparison card
  */
 function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { comparison } = analysis;
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
@@ -133,7 +133,7 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
  * SVG Line chart with trend line
  */
 function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const chartWidth = 600;
@@ -387,7 +387,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
  * Seasonal patterns visualization
  */
 function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   // Create full 12-month array
   const allMonths = Array.from({ length: 12 }, (_, i) => {
     const existing = patterns.find((p) => p.month === i + 1);
@@ -514,7 +514,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
  * Anomalies table
  */
 function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; metricId: string }) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const isPercentMetric = metricId !== 'revenue' && metricId !== 'commissions';
 
   if (anomalies.length === 0) {
@@ -634,7 +634,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
  * Insights panel
  */
 function InsightsPanel({ insights }: { insights: string[] }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   return (
     <div className="p-6 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
       <div className="flex items-center gap-2 mb-4">
@@ -674,7 +674,7 @@ export function AnalyticsTrends({
   onPeriodChange,
   className,
 }: AnalyticsTrendsProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [activeMetric, setActiveMetric] = useState(selectedMetric || data[0]?.metricId || 'revenue');
   const [activePeriod, setActivePeriod] = useState<ComparisonPeriod>('previous_period');
   const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);

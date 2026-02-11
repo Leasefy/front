@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -103,7 +103,7 @@ function saveFavorites(favorites: Set<ReportId>): void {
  * Route: /panel/inmobiliaria/reportes
  */
 export default function ReportesPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {

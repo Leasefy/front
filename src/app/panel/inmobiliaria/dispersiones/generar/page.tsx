@@ -7,14 +7,14 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { DispersionWizard } from '@/components/inmobiliaria';
 import type { Dispersion } from '@/lib/types/inmobiliaria';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * GenerarDispersionesPage - Wrapper page for DispersionWizard
  * Route: /panel/inmobiliaria/dispersiones/generar
  */
 export default function GenerarDispersionesPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const router = useRouter();
 
   const handleComplete = (dispersiones: Dispersion[]) => {

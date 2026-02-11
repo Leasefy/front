@@ -14,7 +14,7 @@ import type {
   BetaPreferences,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
-import { getMockResponse } from '@/lib/data/mock-chat-responses';
+import { getMockResponse, getMockResponseMeta } from '@/lib/data/mock-chat-responses';
 import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
 import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
 import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
@@ -33,6 +33,8 @@ const LONG_PAUSE_MULTIPLIER = 6;
 const SHORT_PAUSE_MULTIPLIER = 3;
 
 const STORAGE_KEY = 'leasefy-beta-conversations';
+const STORAGE_VERSION_KEY = 'leasefy-beta-storage-version';
+const CURRENT_STORAGE_VERSION = 3; // v3 = Clean minimal Synapse-inspired redesign
 const PREFERENCES_STORAGE_KEY = 'leasefy-beta-preferences';
 const TITLE_MAX_LENGTH = 50;
 const PREVIEW_MAX_LENGTH = 80;
@@ -127,6 +129,13 @@ function deserializeConversations(json: string): Conversation[] {
 function loadFromStorage(): Conversation[] {
   if (typeof window === 'undefined') return [];
   try {
+    // Auto-migrate: clear old-format conversations when storage version changes
+    const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
+    if (storedVersion !== String(CURRENT_STORAGE_VERSION)) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
+      return [];
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     return deserializeConversations(stored);
@@ -180,6 +189,13 @@ export interface DecisionEntry {
   messageId: string;
 }
 
+/** An agent activity entry with context about its source conversation */
+export interface AgentActivityEntry {
+  activity: AgentActivityBlock;
+  conversationId: string;
+  conversationTitle: string;
+}
+
 export interface UseBetaChatReturn {
   // Loading state (false in mock, true during real API fetch)
   isLoading: boolean;
@@ -200,6 +216,9 @@ export interface UseBetaChatReturn {
   selectDecisionOption: (messageId: string, optionId: string) => void;
   pendingDecisionsCount: number;
   allDecisions: DecisionEntry[];
+
+  // Agent activity aggregation
+  allAgentActivities: AgentActivityEntry[];
 
   // Conversation management
   conversations: Conversation[];
@@ -289,6 +308,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // Store pending decision to attach after streaming completes
   const pendingDecisionRef = useRef<import('@/lib/types/beta-chat').PendingDecision | null>(null);
 
+  // Store pending response meta to attach after streaming completes
+  const pendingResponseMetaRef = useRef<import('@/lib/types/beta-chat').ResponseMeta | null>(null);
+
   // Sync activeConversationId on init when state initializers may differ
   useEffect(() => {
     if (!activeConversationId && conversations.length > 0) {
@@ -351,9 +373,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       const revealNextChar = () => {
         if (charIndexRef.current >= responseText.length) {
-          // Complete — also attach pending decision if any
+          // Complete — attach pending decision and response meta
           const decision = pendingDecisionRef.current;
           pendingDecisionRef.current = null;
+          const responseMeta = pendingResponseMetaRef.current;
+          pendingResponseMetaRef.current = null;
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id !== conversationId) return c;
@@ -366,6 +390,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                         content: responseText,
                         status: 'complete' as MessageStatus,
                         ...(decision ? { decision } : {}),
+                        ...(responseMeta ? { responseMeta } : {}),
                       }
                     : m
                 ),
@@ -639,6 +664,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         status: 'sent',
       };
 
+      const responseText = getMockResponse(trimmed);
+      const agentScenario = getMockAgentScenario(trimmed);
+      const decisionScenario = getMockDecisionScenario(trimmed);
+      const responseMeta = getMockResponseMeta(trimmed);
+
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
         id: assistantId,
@@ -646,6 +676,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         content: '',
         timestamp: new Date(),
         status: 'sending',
+        responseMeta,
       };
 
       // Update conversation with new messages + auto-title
@@ -666,12 +697,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setIsThinking(true);
       setStreamingContent('');
 
-      const responseText = getMockResponse(trimmed);
-      const agentScenario = getMockAgentScenario(trimmed);
-      const decisionScenario = getMockDecisionScenario(trimmed);
-
       // Store pending decision for attachment after streaming completes
       pendingDecisionRef.current = decisionScenario;
+      pendingResponseMetaRef.current = responseMeta;
 
       if (agentScenario && agentScenario.length > 0) {
         // Agents to dispatch — show agent execution before streaming
@@ -817,6 +845,20 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   ).length;
 
   // ========================================================================
+  // Agent activity aggregation (across all conversations)
+  // ========================================================================
+
+  const allAgentActivities: AgentActivityEntry[] = conversations.flatMap((c) =>
+    c.messages
+      .filter((m): m is ChatMessage & { agentActivity: AgentActivityBlock } => !!m.agentActivity)
+      .map((m) => ({
+        activity: m.agentActivity,
+        conversationId: c.id,
+        conversationTitle: c.title,
+      }))
+  );
+
+  // ========================================================================
   // Search / Summaries
   // ========================================================================
 
@@ -928,6 +970,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     selectDecisionOption,
     pendingDecisionsCount,
     allDecisions,
+
+    // Agent activity aggregation
+    allAgentActivities,
 
     // Conversation management
     conversations,

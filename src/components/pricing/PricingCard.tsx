@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Sparkle } from '@phosphor-icons/react';
 import type { Plan, BillingCycle, PlanId } from '@/lib/types/subscription';
-import { cardStyles, borderRadius, transitions, shadows, borders, hoverEffects } from '@/lib/design-tokens';
 
 export interface PricingCardProps {
   plan: Plan;
@@ -58,11 +57,11 @@ export function PricingCard({
     <div
       className={cn(
         'p-6 flex flex-col',
-        borderRadius.sm,
-        transitions.standard,
+        'rounded-sm',
+        'transition-all duration-300 ease-out',
         plan.highlighted
-          ? cardStyles.highlighted
-          : cn(cardStyles.base, hoverEffects.lift),
+          ? 'bg-card text-card-foreground border border-primary rounded-sm shadow-md ring-1 ring-primary'
+          : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         'relative',
         className
       )}

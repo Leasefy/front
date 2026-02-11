@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { CaretLeft, Buildings } from '@phosphor-icons/react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
 import { MOCK_PROPIETARIOS, MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
 
 export default function NuevaConsignacionPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#0c0c0d]">

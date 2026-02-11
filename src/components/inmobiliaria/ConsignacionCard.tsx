@@ -16,7 +16,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -57,7 +57,7 @@ export function ConsignacionCard({
   selected,
   variant = 'default',
 }: ConsignacionCardProps) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   // Availability status colors
   const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = useMemo(() => ({

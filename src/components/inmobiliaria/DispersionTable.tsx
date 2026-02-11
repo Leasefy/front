@@ -17,7 +17,7 @@ import {
   DownloadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import {
   getDispersionStatusColor,
@@ -58,7 +58,7 @@ export function DispersionTable({
   onDownloadExtracto,
   showSummary = false,
 }: DispersionTableProps) {
-  const { t, formatDate, formatCurrency } = useTranslation();
+  const { t, formatDate, formatCurrency } = useI18n();
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);

@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -28,7 +28,7 @@ import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
  * Route: /panel/inmobiliaria/agentes/[id]
  */
 export default function AgenteDetailPage() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const params = useParams();
   const agenteId = params.id as string;
 

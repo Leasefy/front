@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Users, CurrencyDollar, PawPrint, Shield, Info, CaretDown, CaretUp } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { useTranslation } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import type { RiskLevel } from '@/lib/auth/types'
 
@@ -47,7 +47,7 @@ const RISK_LEVELS: { value: RiskLevel; label: string; color: string; bgColor: st
 ]
 
 export function StepIdealTenant() {
-  const { locale } = useTranslation()
+  const { locale } = useI18n()
   const { draft, updateDraft } = useOnboarding()
   const [showRiskInfo, setShowRiskInfo] = useState(false)
 

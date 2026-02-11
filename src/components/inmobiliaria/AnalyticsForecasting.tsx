@@ -17,7 +17,7 @@ import {
   Funnel,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type {
   ForecastData,
   ForecastScenario,
@@ -74,7 +74,7 @@ function ForecastChart({
   activeScenarios: string[];
   horizon: number;
 }) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const [hoveredPoint, setHoveredPoint] = useState<{ type: string; index: number } | null>(null);
 
   const chartWidth = 700;
@@ -431,7 +431,7 @@ function ScenarioCard({
   onToggle: () => void;
   unit: string;
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const endValue = scenario.data[scenario.data.length - 1]?.predicted || 0;
   const color =
     scenario.id === 'optimistic'
@@ -507,7 +507,7 @@ function ScenarioCard({
  * Forecast details table
  */
 function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit: string }) {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-4">
@@ -597,7 +597,7 @@ function FactorsPanel({
 }: {
   factors: { name: string; impact: 'positive' | 'negative' | 'neutral'; weight: number }[];
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <div className="flex items-center gap-2 mb-4">
@@ -682,7 +682,7 @@ export function AnalyticsForecasting({
   const [activeHorizon, setActiveHorizon] = useState(horizon);
   const [activeScenarios, setActiveScenarios] = useState<string[]>(['conservative']);
   const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
 
   const currentForecast = useMemo(() => {
     return data.find((d) => d.metricId === activeMetric) || data[0];

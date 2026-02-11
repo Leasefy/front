@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
-import { useTranslation } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================================
 // Types & Constants
@@ -44,7 +44,7 @@ function OnboardingInmobiliariaContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
-  const { t } = useTranslation()
+  const { t } = useI18n()
   const returnUrl = searchParams.get('returnUrl')
 
   const PORTFOLIO_SIZES: { value: PortfolioSize; label: string; description: string }[] = useMemo(() => [

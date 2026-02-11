@@ -12,7 +12,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
 
 export interface CobroFiltersState {
@@ -53,7 +53,7 @@ export function CobroFilters({
   onFilterChange,
   cobroCountByStatus,
 }: CobroFiltersProps) {
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');

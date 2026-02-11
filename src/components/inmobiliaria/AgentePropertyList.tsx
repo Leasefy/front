@@ -18,7 +18,7 @@ import {
   Wrench,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n/use-translation';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -71,7 +71,7 @@ const AVAILABILITY_CONFIG: Record<PropertyAvailability, { label: string; bg: str
  * Collapsible section with property cards and navigation to detail page
  */
 export function AgentePropertyList({ consignaciones, onAssignProperty, className }: AgentePropertyListProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const availabilityLabels: Record<PropertyAvailability, string> = {

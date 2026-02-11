@@ -23,7 +23,7 @@ import {
   Timer,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -112,7 +112,7 @@ export function ConsignacionHeader({
 }: ConsignacionHeaderProps) {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const { t, formatDate } = useTranslation();
+  const { t, formatDate } = useI18n();
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
   const availability = AVAILABILITY_STYLES[consignacion.availability];

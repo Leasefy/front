@@ -10,6 +10,7 @@ import { FAQSection } from '@/components/home/FAQSection';
 import { CTASection } from '@/components/home/CTASection';
 import { Button } from '@/components/ui/button';
 import { CaretLeft, CaretRight, CheckCircle, Shield, Clock, Users, Lightning, Lock, CreditCard, Briefcase, Scales, UserCheck, Checks, Fingerprint, FileText, TrendUp, Check } from '@phosphor-icons/react';
+import { AgencyTierCard } from '@/components/pricing/AgencyTierCard';
 
 // Testimonials data
 const testimonials = [
@@ -75,7 +76,7 @@ export default function EvaluacionPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <Lightning className="w-3.5 h-3.5" />
                   Evaluación con inteligencia artificial
@@ -110,7 +111,7 @@ export default function EvaluacionPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Evaluar inquilino
                     </Button>
                   </Link>
@@ -449,7 +450,7 @@ export default function EvaluacionPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Verificación de Identidad
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -502,7 +503,7 @@ export default function EvaluacionPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Referencias Verificadas
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -543,11 +544,11 @@ export default function EvaluacionPage() {
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
                 <div className="relative z-10">
-                  <span className="text-[11px] font-medium text-white/30 uppercase tracking-wider mb-4 block">Paso 01</span>
+                  <span className="text-[11px] font-mono font-normal text-white/30 uppercase tracking-wider mb-4 block">Paso 01</span>
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <UserCheck className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Invita al candidato
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -556,7 +557,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Link único', 'Email automático', 'WhatsApp', 'Seguimiento'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -572,11 +573,11 @@ export default function EvaluacionPage() {
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <span className="text-[11px] font-medium text-foreground/30 uppercase tracking-wider mb-4 block">Paso 02</span>
+                  <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 02</span>
                   <div className="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center mb-6">
                     <FileText className="w-6 h-6 text-sand-700" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Completa el formulario
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -585,7 +586,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Datos personales', 'Info laboral', 'Referencias', 'Autorización'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -601,11 +602,11 @@ export default function EvaluacionPage() {
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <span className="text-[11px] font-medium text-foreground/30 uppercase tracking-wider mb-4 block">Paso 03</span>
+                  <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 03</span>
                   <div className="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center mb-6">
                     <Lightning className="w-6 h-6 text-sand-700" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Análisis automático
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -614,7 +615,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['DataCrédito', 'Registraduría', 'Policía', 'Score IA'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -639,13 +640,13 @@ export default function EvaluacionPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider mb-4 block">Paso 04</span>
+                    <span className="text-[11px] font-mono font-normal text-white/50 uppercase tracking-wider mb-4 block">Paso 04</span>
                     <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
                       <TrendUp className="w-6 h-6 text-white" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Recibe el reporte
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -653,7 +654,7 @@ export default function EvaluacionPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Score 0-1000', 'Semáforo de riesgo', 'PDF descargable'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -683,113 +684,32 @@ export default function EvaluacionPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-              {/* Evaluación Básica */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl p-6 flex flex-col border border-neutral-200 hover:shadow-lg transition-shadow"
-              >
-                <div className="mb-5">
-                  <h3 className="text-[15px] font-medium text-foreground">Evaluación Básica</h3>
-                  <p className="text-[12px] text-muted-foreground mt-1">Verificación rápida</p>
-                </div>
-                <div className="mb-6">
-                  <span className="text-[2rem] font-light text-foreground tracking-[-0.02em]">$24.900</span>
-                  <span className="text-muted-foreground text-[12px] ml-1">COP</span>
-                </div>
-                <ul className="space-y-3 flex-1 mb-6">
-                  {['Verificación de identidad', 'Historial crediticio (DataCrédito)', 'Score de riesgo con IA', 'Reporte PDF descargable'].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                      <span className="text-[13px] text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth">
-                  <Button variant="outline" className="w-full rounded-xl">
-                    Solicitar evaluación
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Evaluación Completa - Popular */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="relative bg-foreground text-background rounded-xl p-6 flex flex-col"
-              >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-amber-400 text-amber-950 text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1 uppercase tracking-wider">
-                    Más completo
-                  </span>
-                </div>
-                <div className="mb-5">
-                  <h3 className="text-[15px] font-medium">Evaluación Completa</h3>
-                  <p className="text-[12px] text-background/60 mt-1">Análisis profundo</p>
-                </div>
-                <div className="mb-6">
-                  <span className="text-[2rem] font-light tracking-[-0.02em]">$39.900</span>
-                  <span className="text-background/60 text-[12px] ml-1">COP</span>
-                </div>
-                <ul className="space-y-3 flex-1 mb-6">
-                  {['Todo en Básica', 'Verificación de antecedentes judiciales', 'Referencias laborales verificadas', 'Verificación de ingresos', 'Score IA avanzado con recomendación'].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-background/40 flex-shrink-0 mt-0.5" />
-                      <span className="text-[13px] text-background/70">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth">
-                  <Button className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl">
-                    Solicitar evaluación completa
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Arriendo Pass */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-xl p-6 flex flex-col border border-neutral-200 hover:shadow-lg transition-shadow"
-              >
-                <div className="mb-5">
-                  <h3 className="text-[15px] font-medium text-foreground">Arriendo Pass</h3>
-                  <p className="text-[12px] text-muted-foreground mt-1">Para inquilinos en búsqueda activa</p>
-                </div>
-                <div className="mb-6">
-                  <span className="text-[2rem] font-light text-foreground tracking-[-0.02em]">$59.900</span>
-                  <span className="text-muted-foreground text-[12px] ml-1">COP / 60 días</span>
-                </div>
-                <ul className="space-y-3 flex-1 mb-6">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                    <span className="text-[13px] text-muted-foreground">Todo en Evaluación Completa</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-[13px] text-foreground font-medium">Aplicaciones ilimitadas por 60 días</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                    <span className="text-[13px] text-foreground font-medium">Badge &quot;Inquilino Verificado&quot;</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                    <span className="text-[13px] text-muted-foreground">Prioridad con propietarios</span>
-                  </li>
-                </ul>
-                <Link href="/auth">
-                  <Button variant="outline" className="w-full rounded-xl">
-                    Obtener Arriendo Pass
-                  </Button>
-                </Link>
-              </motion.div>
+              <AgencyTierCard
+                name="Evaluación Básica"
+                price="24.900"
+                description="Verificación rápida"
+                features={['Verificación de identidad', 'Historial crediticio (DataCrédito)', 'Score de riesgo con IA', 'Reporte PDF descargable']}
+                ctaLabel="Solicitar evaluación"
+                ctaHref="/auth"
+              />
+              <AgencyTierCard
+                name="Evaluación Completa"
+                price="39.900"
+                description="Análisis profundo"
+                popular
+                features={['Todo en Básica', 'Verificación de antecedentes judiciales', 'Referencias laborales verificadas', 'Verificación de ingresos', 'Score IA avanzado con recomendación']}
+                ctaLabel="Solicitar evaluación"
+                ctaHref="/auth"
+              />
+              <AgencyTierCard
+                name="Arriendo Pass"
+                price="59.900"
+                period="COP / 60 días"
+                description="Para inquilinos en búsqueda activa"
+                features={['Todo en Evaluación Completa', 'Aplicaciones ilimitadas por 60 días', 'Badge "Inquilino Verificado"', 'Prioridad con propietarios']}
+                ctaLabel="Obtener Arriendo Pass"
+                ctaHref="/auth"
+              />
             </div>
 
             {/* B2B Banner */}

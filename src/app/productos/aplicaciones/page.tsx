@@ -75,7 +75,7 @@ export default function AplicacionesPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <ClipboardText className="w-3.5 h-3.5" />
                   Sistema de aplicaciones
@@ -108,7 +108,7 @@ export default function AplicacionesPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/propiedades">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Buscar propiedades
                     </Button>
                   </Link>
@@ -295,7 +295,7 @@ export default function AplicacionesPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Rechazo
                   </span>
                 </div>
@@ -329,7 +329,7 @@ export default function AplicacionesPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Tiempo
                   </span>
                 </div>
@@ -363,7 +363,7 @@ export default function AplicacionesPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Silencio
                   </span>
                 </div>
@@ -417,7 +417,7 @@ export default function AplicacionesPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Llena tus datos de nuevo{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -459,7 +459,7 @@ export default function AplicacionesPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}¿Recibieron mi aplicación?{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -501,7 +501,7 @@ export default function AplicacionesPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <Lightning className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Arriendo Pass
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -510,7 +510,7 @@ export default function AplicacionesPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Aplicaciones ilimitadas', '1 clic para aplicar', 'Score pre-calculado'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -529,7 +529,7 @@ export default function AplicacionesPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <SealCheck className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Verificación Completa
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -538,7 +538,7 @@ export default function AplicacionesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Identidad', 'Empleo', 'Ingresos', 'Referencias'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -557,7 +557,7 @@ export default function AplicacionesPage() {
                   <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
                     <Bell className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Tracking en Tiempo Real
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -566,7 +566,7 @@ export default function AplicacionesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Enviada', 'Vista', 'En revisión', 'Decidido'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -594,7 +594,7 @@ export default function AplicacionesPage() {
                     <Chat className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Chat Directo
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -602,7 +602,7 @@ export default function AplicacionesPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Mensajes instantáneos', 'Agendar visitas', 'Compartir docs'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -636,33 +636,34 @@ export default function AplicacionesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="bg-sand-50 rounded-xl p-6 min-h-[380px] flex flex-col"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3 }}
+                className="relative rounded-2xl border border-border bg-card p-6 flex flex-col transition-all duration-300 hover:border-indigo-600/30 hover:shadow-lg"
               >
-                <div className="flex items-start justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                    <ClipboardText className="w-6 h-6 text-foreground/70" />
+                <div className="flex items-start justify-between mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                    <ClipboardText className="w-5 h-5 text-foreground/70" />
                   </div>
-                  <div className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-3 py-1.5">
                     <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-[12px] font-medium text-foreground">5-8 min</span>
                   </div>
                 </div>
-                <h3 className="text-[20px] font-heading font-medium text-foreground mb-2">Aplicación Estándar</h3>
-                <p className="text-[14px] text-muted-foreground leading-relaxed mb-6 flex-1">
-                  Formulario completo para tu primera aplicación. Ideal si es tu primera vez usando la plataforma.
-                </p>
-                <div className="space-y-2.5 mb-6">
-                  {['Formulario guiado paso a paso', 'Verificación de documentos', 'Score de arrendatario'].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-emerald-600" />
-                      </div>
-                      <span className="text-[13px] text-foreground/80">{feature}</span>
-                    </div>
-                  ))}
+                <div className="mb-5">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground">Aplicación Estándar</h3>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    Formulario completo para tu primera aplicación. Ideal si es tu primera vez.
+                  </p>
                 </div>
-                <Button variant="outline" className="w-full h-11 rounded-xl">
+                <ul className="space-y-3 flex-1 mb-6">
+                  {['Formulario guiado paso a paso', 'Verificación de documentos', 'Score de arrendatario'].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="text-[13px] text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="outline" className="w-full rounded-xl">
                   Comenzar aplicación
                 </Button>
               </motion.div>
@@ -672,42 +673,41 @@ export default function AplicacionesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="relative bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl p-6 min-h-[380px] flex flex-col lg:-mt-4 lg:mb-4"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3 }}
+                className="relative rounded-2xl border border-indigo-600/50 bg-card p-6 flex flex-col transition-all duration-300 shadow-lg shadow-indigo-600/5"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent rounded-bl-full" />
-
-                <div className="absolute -top-3 left-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-medium text-indigo-600 shadow-md">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-indigo-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-indigo-600/25 inline-flex items-center gap-1.5">
                     <Sparkle className="w-3 h-3" />
                     Recomendado
                   </span>
                 </div>
 
-                <div className="flex items-start justify-between mb-6 pt-2">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                    <Lightning className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-5 pt-2">
+                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                    <Lightning className="w-5 h-5 text-foreground/70" />
                   </div>
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1.5">
-                    <Clock className="w-3.5 h-3.5 text-white/70" />
-                    <span className="text-[12px] font-medium text-white">{'< 1 min'}</span>
+                  <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-3 py-1.5">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-[12px] font-medium text-foreground">{'< 1 min'}</span>
                   </div>
                 </div>
-                <h3 className="text-[20px] font-heading font-medium text-white mb-2">Con Arriendo Pass</h3>
-                <p className="text-[14px] text-white/80 leading-relaxed mb-6 flex-1">
-                  Tu perfil verificado te permite aplicar a cualquier propiedad con un solo clic.
-                </p>
-                <div className="space-y-2.5 mb-6">
+                <div className="mb-5">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground">Con Arriendo Pass</h3>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    Tu perfil verificado te permite aplicar a cualquier propiedad con un solo clic.
+                  </p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-6">
                   {['Un clic para aplicar', 'Perfil pre-verificado', 'Aplicaciones ilimitadas'].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
-                      <span className="text-[13px] text-white/90">{feature}</span>
-                    </div>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="text-[13px] text-muted-foreground">{feature}</span>
+                    </li>
                   ))}
-                </div>
-                <Button className="w-full h-11 rounded-xl bg-white text-indigo-600 hover:bg-white/90 font-semibold">
+                </ul>
+                <Button className="w-full rounded-xl">
                   Obtener Arriendo Pass
                 </Button>
               </motion.div>
@@ -717,33 +717,34 @@ export default function AplicacionesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="bg-sand-50 rounded-xl p-6 min-h-[380px] flex flex-col"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3 }}
+                className="relative rounded-2xl border border-border bg-card p-6 flex flex-col transition-all duration-300 hover:border-indigo-600/30 hover:shadow-lg"
               >
-                <div className="flex items-start justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                    <Users className="w-6 h-6 text-foreground/70" />
+                <div className="flex items-start justify-between mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-foreground/70" />
                   </div>
-                  <div className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-3 py-1.5">
                     <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-[12px] font-medium text-foreground">8-10 min</span>
                   </div>
                 </div>
-                <h3 className="text-[20px] font-heading font-medium text-foreground mb-2">Aplicación Grupal</h3>
-                <p className="text-[14px] text-muted-foreground leading-relaxed mb-6 flex-1">
-                  Para roommates, parejas o familias que aplican juntos a una propiedad.
-                </p>
-                <div className="space-y-2.5 mb-6">
-                  {['Múltiples aplicantes', 'Score combinado', 'Documentos compartidos'].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-emerald-600" />
-                      </div>
-                      <span className="text-[13px] text-foreground/80">{feature}</span>
-                    </div>
-                  ))}
+                <div className="mb-5">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground">Aplicación Grupal</h3>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    Para roommates, parejas o familias que aplican juntos a una propiedad.
+                  </p>
                 </div>
-                <Button variant="outline" className="w-full h-11 rounded-xl">
+                <ul className="space-y-3 flex-1 mb-6">
+                  {['Múltiples aplicantes', 'Score combinado', 'Documentos compartidos'].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="text-[13px] text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="outline" className="w-full rounded-xl">
                   Aplicar en grupo
                 </Button>
               </motion.div>
@@ -771,7 +772,7 @@ export default function AplicacionesPage() {
                     <item.icon className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-medium text-foreground">{item.label}</p>
+                    <p className="text-[14px] font-mono uppercase font-normal text-foreground">{item.label}</p>
                     <p className="text-[12px] text-muted-foreground">{item.desc}</p>
                   </div>
                   <CaretRight className="w-4 h-4 text-muted-foreground" />

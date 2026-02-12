@@ -9,7 +9,8 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
-import { CaretLeft, CaretRight, CheckCircle, Shield, Umbrella, House, Money, Scales, Clock, FileText, Phone, Warning, SealCheck, Wallet, Gavel, HandCoins, ShieldCheck, Calendar, Checks, Lightning, Drop, Wrench, WarningCircle, Calculator, XCircle, TrendDown, Users, Sparkle } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CheckCircle, Shield, Umbrella, House, Money, Scales, Clock, FileText, Phone, Warning, SealCheck, Wallet, Gavel, HandCoins, ShieldCheck, Calendar, Checks, Lightning, Drop, Wrench, WarningCircle, Calculator, XCircle, TrendDown, Users } from '@phosphor-icons/react';
+import { AgencyTierCard } from '@/components/pricing/AgencyTierCard';
 
 // Testimonials data for insurance
 const testimonials = [
@@ -39,31 +40,6 @@ const testimonials = [
   },
 ];
 
-// Plans data
-const plans = [
-  {
-    name: 'Básico',
-    price: '2.5%',
-    priceLabel: 'del canon mensual',
-    coverage: '6 meses',
-    features: ['Impago de arriendo (6 meses)', 'Gastos legales básicos', 'Daños hasta $5M', 'Soporte telefónico'],
-  },
-  {
-    name: 'Plus',
-    price: '3.5%',
-    priceLabel: 'del canon mensual',
-    coverage: '12 meses',
-    popular: true,
-    features: ['Impago de arriendo (12 meses)', 'Gastos legales completos', 'Daños hasta $10M', 'Servicios públicos hasta $2M', 'Abogado dedicado'],
-  },
-  {
-    name: 'Premium',
-    price: '5%',
-    priceLabel: 'del canon mensual',
-    coverage: '12 meses + extras',
-    features: ['Todo en Plus', 'Daños hasta $20M', 'Servicios públicos hasta $5M', 'Lucro cesante (3 meses)', 'Gestor de caso personal', 'Pago en 24h'],
-  },
-];
 
 export default function SeguroPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,7 +77,7 @@ export default function SeguroPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   Seguro de arrendamiento
@@ -134,7 +110,7 @@ export default function SeguroPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Cotizar seguro
                     </Button>
                   </Link>
@@ -301,7 +277,7 @@ export default function SeguroPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Impago
                   </span>
                 </div>
@@ -335,7 +311,7 @@ export default function SeguroPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Legal
                   </span>
                 </div>
@@ -369,7 +345,7 @@ export default function SeguroPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Daños
                   </span>
                 </div>
@@ -432,7 +408,7 @@ export default function SeguroPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Ya van 3 meses sin pagar{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -477,7 +453,7 @@ export default function SeguroPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}El depósito no alcanza{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -519,7 +495,7 @@ export default function SeguroPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <Money className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Impago de Arriendo
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -528,7 +504,7 @@ export default function SeguroPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Hasta 12 meses', '$0 deducible', 'Pago en 48h'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -547,7 +523,7 @@ export default function SeguroPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <Gavel className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Gastos Legales
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -556,7 +532,7 @@ export default function SeguroPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Abogado dedicado', 'Honorarios incluidos', 'Proceso completo'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -575,7 +551,7 @@ export default function SeguroPage() {
                   <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
                     <House className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Daños al Inmueble
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -584,7 +560,7 @@ export default function SeguroPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Hasta $10M', 'Sin deducible', 'Reparación directa'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -612,7 +588,7 @@ export default function SeguroPage() {
                     <Drop className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Servicios Públicos
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -620,7 +596,7 @@ export default function SeguroPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Agua', 'Luz', 'Gas', 'Internet'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -664,12 +640,12 @@ export default function SeguroPage() {
                   className="bg-sand-50 rounded-xl p-6 min-h-[240px] flex flex-col"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-medium text-foreground/40 uppercase tracking-wider">Paso {step.number}</span>
+                    <span className="text-[11px] font-mono font-normal text-foreground/40 uppercase tracking-wider">Paso {step.number}</span>
                     <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
                       <step.icon className="w-5 h-5 text-foreground/60" />
                     </div>
                   </div>
-                  <h3 className="text-[18px] font-heading font-medium text-foreground mb-2">{step.title}</h3>
+                  <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">{step.title}</h3>
                   <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">{step.description}</p>
                 </motion.div>
               ))}
@@ -689,72 +665,56 @@ export default function SeguroPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 max-w-5xl mx-auto">
-              {plans.map((plan, i) => (
-                <motion.div
-                  key={plan.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`relative rounded-xl p-6 flex flex-col min-h-[420px] ${
-                    plan.popular
-                      ? 'bg-foreground text-white lg:-mt-4 lg:mb-4'
-                      : 'bg-white border border-neutral-200'
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-medium text-foreground shadow-md">
-                        <Sparkle className="w-3 h-3" />
-                        Recomendado
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="mb-6 pt-2">
-                    <h3 className={`text-[20px] font-heading font-medium ${plan.popular ? 'text-white' : 'text-foreground'}`}>
-                      {plan.name}
-                    </h3>
-                    <div className="mt-3">
-                      <span className={`text-[40px] font-heading font-medium tracking-tight ${plan.popular ? 'text-white' : 'text-foreground'}`}>
-                        {plan.price}
-                      </span>
-                      <span className={`text-[14px] ml-1 ${plan.popular ? 'text-white/60' : 'text-muted-foreground'}`}>
-                        {plan.priceLabel}
-                      </span>
-                    </div>
-                    <p className={`text-[13px] mt-1 ${plan.popular ? 'text-white/50' : 'text-muted-foreground'}`}>
-                      Cobertura: {plan.coverage}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mb-6 flex-1">
-                    {plan.features.map((feature, fi) => (
-                      <div key={fi} className="flex items-start gap-2.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          plan.popular ? 'bg-white/20' : 'bg-emerald-100'
-                        }`}>
-                          <CheckCircle className={`w-3 h-3 ${plan.popular ? 'text-white' : 'text-emerald-600'}`} />
-                        </div>
-                        <span className={`text-[13px] ${plan.popular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                          {feature}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button
-                    className={`w-full h-11 rounded-xl ${
-                      plan.popular
-                        ? 'bg-white text-foreground hover:bg-white/90 font-semibold'
-                        : 'bg-foreground text-white hover:bg-foreground/90'
-                    }`}
-                  >
-                    Cotizar plan
-                  </Button>
-                </motion.div>
-              ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+              <AgencyTierCard
+                name="Básico"
+                price="2.5%"
+                noCurrencySymbol
+                period="del canon mensual"
+                description="Cobertura: 6 meses"
+                features={[
+                  'Impago de arriendo (6 meses)',
+                  'Gastos legales básicos',
+                  'Daños hasta $5M',
+                  'Soporte telefónico',
+                ]}
+                ctaLabel="Cotizar plan"
+                ctaHref="/auth"
+              />
+              <AgencyTierCard
+                name="Plus"
+                price="3.5%"
+                noCurrencySymbol
+                period="del canon mensual"
+                description="Cobertura: 12 meses"
+                popular
+                features={[
+                  'Impago de arriendo (12 meses)',
+                  'Gastos legales completos',
+                  'Daños hasta $10M',
+                  'Servicios públicos hasta $2M',
+                  'Abogado dedicado',
+                ]}
+                ctaLabel="Cotizar plan"
+                ctaHref="/auth"
+              />
+              <AgencyTierCard
+                name="Premium"
+                price="5%"
+                noCurrencySymbol
+                period="del canon mensual"
+                description="Cobertura: 12 meses + extras"
+                features={[
+                  'Todo en Plus',
+                  'Daños hasta $20M',
+                  'Servicios públicos hasta $5M',
+                  'Lucro cesante (3 meses)',
+                  'Gestor de caso personal',
+                  'Pago en 24h',
+                ]}
+                ctaLabel="Cotizar plan"
+                ctaHref="/auth"
+              />
             </div>
           </div>
         </section>

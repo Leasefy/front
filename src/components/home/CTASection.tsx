@@ -40,7 +40,7 @@ export function CTASection() {
               <TrendUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Este mes</p>
+              <p className="text-[11px] font-mono font-normal text-muted-foreground uppercase tracking-wide">Este mes</p>
               <p className="text-lg font-bold text-foreground">+340 arriendos</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export function CTASection() {
               <Lightning className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tiempo promedio</p>
+              <p className="text-[11px] font-mono font-normal text-muted-foreground uppercase tracking-wide">Tiempo promedio</p>
               <p className="text-lg font-bold text-foreground">48 horas</p>
               <p className="text-[11px] text-muted-foreground">De aplicación a aprobación</p>
             </div>
@@ -117,7 +117,7 @@ export function CTASection() {
       >
         <div className="bg-white/90 backdrop-blur-xl rounded-full shadow-xl border border-white/50 px-4 py-2.5 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[12px] font-medium text-foreground">2,847 propiedades activas</span>
+          <span className="text-[12px] font-mono font-normal text-foreground uppercase">2,847 propiedades activas</span>
         </div>
       </motion.div>
 

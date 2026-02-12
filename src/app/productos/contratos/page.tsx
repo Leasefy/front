@@ -75,7 +75,7 @@ export default function ContratosPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   Contratos digitales con validez legal
@@ -108,7 +108,7 @@ export default function ContratosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Crear contrato gratis
                     </Button>
                   </Link>
@@ -278,7 +278,7 @@ export default function ContratosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Disputas
                   </span>
                 </div>
@@ -312,7 +312,7 @@ export default function ContratosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Tiempo
                   </span>
                 </div>
@@ -346,7 +346,7 @@ export default function ContratosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Pérdida
                   </span>
                 </div>
@@ -410,7 +410,7 @@ export default function ContratosPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     {'"'}La firma no es válida{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -460,7 +460,7 @@ export default function ContratosPage() {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     {'"'}Cláusula no incluida{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -502,7 +502,7 @@ export default function ContratosPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <FileText className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-white mb-3">
                     Editor de Contratos
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -511,7 +511,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['18 cláusulas legales', 'Ley 820/2003', 'Auto-completado'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -530,7 +530,7 @@ export default function ContratosPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <PenNib className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     Firma Digital Certificada
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -539,7 +539,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Ley 527/1999', 'Código OTP', 'Certificado'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -558,7 +558,7 @@ export default function ContratosPage() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                     <Cloud className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     Almacenamiento Seguro
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -567,7 +567,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['10 años', 'AES-256', 'Backup 24/7'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -595,7 +595,7 @@ export default function ContratosPage() {
                     <ClockCounterClockwise className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[17px] font-mono uppercase font-normal text-white mb-3">
                       Historial y Trazabilidad
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -603,7 +603,7 @@ export default function ContratosPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Timestamps', 'Geolocalización', 'Audit trail'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -649,38 +649,19 @@ export default function ContratosPage() {
                   className={`relative bg-sand-50 rounded-xl p-6 min-h-[180px] flex flex-col hover:shadow-lg transition-shadow cursor-pointer ${type.popular ? 'ring-2 ring-foreground/20' : ''}`}
                 >
                   {type.popular && (
-                    <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-medium uppercase tracking-wider bg-foreground text-white rounded-full">
+                    <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-mono font-normal uppercase tracking-wider bg-foreground text-white rounded-full">
                       Más usado
                     </span>
                   )}
                   <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4 shadow-sm">
                     <type.icon className="w-6 h-6 text-foreground/70" />
                   </div>
-                  <h3 className="text-[17px] font-heading font-medium text-foreground mb-1">{type.name}</h3>
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">{type.name}</h3>
                   <p className="text-[13px] text-muted-foreground flex-1">{type.description}</p>
-                  <div className="flex items-center gap-1 mt-4 text-[12px] text-foreground/60 font-medium">
-                    <span>Usar plantilla</span>
-                    <CaretRight className="w-4 h-4" />
-                  </div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Robottom CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="mt-12 text-center"
-            >
-              <p className="text-[14px] text-muted-foreground mb-4">¿Necesitas un contrato personalizado?</p>
-              <Link href="/auth">
-                <Button variant="outline" className="rounded-xl">
-                  Hablar con un abogado
-                </Button>
-              </Link>
-            </motion.div>
           </div>
         </section>
 
@@ -725,8 +706,8 @@ export default function ContratosPage() {
                       <Scales className="w-7 h-7 text-white" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">Marco Legal</span>
-                      <h3 className="text-[24px] font-heading font-medium text-white">Ley 820 de 2003</h3>
+                      <span className="text-[10px] font-mono font-normal text-emerald-400 uppercase tracking-wider">Marco Legal</span>
+                      <h3 className="text-[17px] font-mono uppercase font-normal text-white">Ley 820 de 2003</h3>
                     </div>
                   </div>
                   <div>
@@ -735,7 +716,7 @@ export default function ContratosPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['18 cláusulas', 'Actualización 2024', 'Vivienda urbana'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -759,8 +740,8 @@ export default function ContratosPage() {
                       <PenNib className="w-6 h-6 text-foreground/70" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-medium text-primary uppercase tracking-wider">Firma Digital</span>
-                      <h4 className="text-[17px] font-heading font-medium text-foreground">Ley 527 de 1999</h4>
+                      <span className="text-[10px] font-mono font-normal text-primary uppercase tracking-wider">Firma Digital</span>
+                      <h4 className="text-[17px] font-mono uppercase font-normal text-foreground">Ley 527 de 1999</h4>
                     </div>
                   </div>
                   <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
@@ -812,7 +793,7 @@ export default function ContratosPage() {
                 <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
                   <SealCheck className="w-5 h-5 text-emerald-600" />
                 </div>
-                <h4 className="text-[17px] font-heading font-medium text-foreground mb-2">Certificado Digital</h4>
+                <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Certificado Digital</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Cada contrato incluye certificado de autenticidad con hash único verificable.
                 </p>
@@ -833,7 +814,7 @@ export default function ContratosPage() {
                 <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <Clock className="w-5 h-5 text-primary" />
                 </div>
-                <h4 className="text-[17px] font-heading font-medium text-foreground mb-2">Timestamps Legales</h4>
+                <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Timestamps Legales</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Registro inmutable de fecha y hora de cada firma con validez probatoria.
                 </p>
@@ -855,7 +836,7 @@ export default function ContratosPage() {
                 <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
                   <Lock className="w-5 h-5 text-amber-600" />
                 </div>
-                <h4 className="text-[17px] font-heading font-medium text-foreground mb-2">Encriptación AES-256</h4>
+                <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Encriptación AES-256</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Datos personales protegidos con el estándar de encriptación más seguro.
                 </p>

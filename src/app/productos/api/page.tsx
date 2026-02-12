@@ -38,7 +38,7 @@ export default function APIPage() {
                 transition={{ delay: 0.1 }}
                 className="mb-6"
               >
-                <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground/70 bg-sand-100 rounded-full px-4 py-2">
+                <span className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-foreground/70 bg-sand-100 rounded-full px-4 py-2">
                   <Sparkle className="w-3.5 h-3.5" />
                   Próximamente
                 </span>

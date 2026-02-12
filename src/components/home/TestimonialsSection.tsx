@@ -151,7 +151,7 @@ export function TestimonialsSection() {
                       </div>
                       {testimonial.result && (
                         <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-md">
-                          <span className="text-[9px] font-semibold text-primary uppercase tracking-wide whitespace-nowrap">
+                          <span className="text-[9px] font-mono font-normal text-primary uppercase tracking-wide whitespace-nowrap">
                             {testimonial.result}
                           </span>
                         </div>

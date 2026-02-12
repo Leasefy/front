@@ -76,7 +76,7 @@ export default function InmobiliariasPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <Building className="w-3.5 h-3.5" />
                   Solución empresarial para inmobiliarias
@@ -109,7 +109,7 @@ export default function InmobiliariasPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Empezar prueba gratis
                     </Button>
                   </Link>
@@ -117,7 +117,7 @@ export default function InmobiliariasPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-mono uppercase font-normal h-12 px-6 rounded-xl"
                     >
                       Ver planes
                     </Button>
@@ -291,7 +291,7 @@ export default function InmobiliariasPage() {
                     </div>
                     <span className="text-white/60 text-xs font-medium">Problema #1</span>
                   </div>
-                  <h3 className="text-white text-xl font-semibold mb-1">Procesos manuales</h3>
+                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Procesos manuales</h3>
                   <p className="text-white/70 text-sm">Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.</p>
                 </div>
               </motion.div>
@@ -319,7 +319,7 @@ export default function InmobiliariasPage() {
                     </div>
                     <span className="text-white/60 text-xs font-medium">Problema #2</span>
                   </div>
-                  <h3 className="text-white text-xl font-semibold mb-1">Evaluaciones lentas</h3>
+                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Evaluaciones lentas</h3>
                   <p className="text-white/70 text-sm">Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.</p>
                 </div>
               </motion.div>
@@ -347,7 +347,7 @@ export default function InmobiliariasPage() {
                     </div>
                     <span className="text-white/60 text-xs font-medium">Problema #3</span>
                   </div>
-                  <h3 className="text-white text-xl font-semibold mb-1">Impagos frecuentes</h3>
+                  <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Impagos frecuentes</h3>
                   <p className="text-white/70 text-sm">Sin scoring predictivo, los impagos afectan tu rentabilidad.</p>
                 </div>
               </motion.div>
@@ -364,7 +364,7 @@ export default function InmobiliariasPage() {
                   <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-4">
                     <XCircle className="w-6 h-6 text-red-500" />
                   </div>
-                  <h3 className="text-foreground text-xl font-semibold mb-2">Sin integración</h3>
+                  <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Sin integración</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Tu ERP, CRM y sistemas de contabilidad no se hablan entre sí. Doble digitación y errores constantes.
                   </p>
@@ -393,7 +393,7 @@ export default function InmobiliariasPage() {
                   <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
                     <TrendUp className="w-6 h-6 text-amber-600" />
                   </div>
-                  <h3 className="text-foreground text-xl font-semibold mb-2">Escalabilidad limitada</h3>
+                  <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Escalabilidad limitada</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     Cada 50 propiedades nuevas, necesitas contratar más personal. Tu operación no escala eficientemente.
                   </p>
@@ -447,13 +447,13 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
                       <Users className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="text-white text-xl font-semibold mb-2">CRM de Candidatos</h3>
+                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">CRM de Candidatos</h3>
                     <p className="text-white/70 text-sm leading-relaxed mb-4">
                       Gestiona todos tus candidatos desde un solo panel con historial completo.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Pipeline', 'Historial', 'Chat', 'Reportes'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs">
+                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/80 text-xs font-mono uppercase font-normal">
                           {feature}
                         </span>
                       ))}
@@ -499,7 +499,7 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center mb-4">
                       <Cpu className="w-5 h-5 text-violet-600" />
                     </div>
-                    <h3 className="text-foreground text-xl font-semibold mb-2">Scoring con IA</h3>
+                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Scoring con IA</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                       Evalúa candidatos en segundos con 92% de precisión.
                     </p>
@@ -541,7 +541,7 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
                       <Buildings className="w-5 h-5 text-emerald-600" />
                     </div>
-                    <h3 className="text-foreground text-xl font-semibold mb-2">Multi-Propiedad</h3>
+                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Multi-Propiedad</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                       Gestiona cientos de propiedades por sucursal.
                     </p>
@@ -580,7 +580,7 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
                       <Code className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="text-white text-xl font-semibold mb-2">API REST Completa</h3>
+                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">API REST Completa</h3>
                     <p className="text-white/70 text-sm leading-relaxed mb-4">
                       Integra con tu ERP existente. Webhooks en tiempo real.
                     </p>
@@ -627,7 +627,7 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
                       <FileText className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h3 className="text-foreground text-lg font-semibold mb-2">Contratos Digitales</h3>
+                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos Digitales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Firma electrónica con validez legal. Genera contratos desde plantillas.
                     </p>
@@ -662,7 +662,7 @@ export default function InmobiliariasPage() {
                     <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
                       <Shield className="w-5 h-5 text-amber-600" />
                     </div>
-                    <h3 className="text-foreground text-lg font-semibold mb-2">Seguro de Arriendo</h3>
+                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Seguro de Arriendo</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Protección completa contra impagos. Cobertura desde el primer día.
                     </p>

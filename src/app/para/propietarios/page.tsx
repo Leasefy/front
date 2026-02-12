@@ -294,7 +294,7 @@ function PaymentVisual() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="text-[8px] text-muted-foreground font-medium uppercase tracking-wider block"
+          className="text-[8px] text-muted-foreground font-mono font-normal uppercase tracking-wider block"
         >
           Últimos pagos
         </motion.span>
@@ -533,7 +533,7 @@ function ContractVisual() {
                   >
                     <CheckCircle className="w-3 h-3 text-emerald-600" />
                   </motion.div>
-                  <span className="text-[5px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Legal</span>
+                  <span className="text-[5px] text-emerald-600 font-mono font-normal uppercase tracking-wider mt-0.5">Legal</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -767,7 +767,7 @@ export default function PropietariosPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <Lightning className="w-3.5 h-3.5" />
                   Plataforma #1 para propietarios en Colombia
@@ -800,7 +800,7 @@ export default function PropietariosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Comenzar gratis
                     </Button>
                   </Link>
@@ -975,7 +975,7 @@ export default function PropietariosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Impago
                   </span>
                 </div>
@@ -1008,7 +1008,7 @@ export default function PropietariosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Vacancia
                   </span>
                 </div>
@@ -1041,7 +1041,7 @@ export default function PropietariosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Desalojo
                   </span>
                 </div>
@@ -1103,7 +1103,7 @@ export default function PropietariosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Elegir a ciegas{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1161,7 +1161,7 @@ export default function PropietariosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}4 meses sin cobrar arriendo{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1203,7 +1203,7 @@ export default function PropietariosPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <Users className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Evaluación de Inquilinos
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -1212,7 +1212,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Score de riesgo IA', 'Verificación de identidad', 'Historial crediticio'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1231,7 +1231,7 @@ export default function PropietariosPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <Wallet className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Cobro Automático
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1240,7 +1240,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1259,7 +1259,7 @@ export default function PropietariosPage() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                     <FileText className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Contratos Digitales
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1268,7 +1268,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1295,7 +1295,7 @@ export default function PropietariosPage() {
                     <ShareNetwork className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Publicación Multi-Portal
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -1303,7 +1303,7 @@ export default function PropietariosPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['4 portales', 'Fotos optimizadas', 'Sin comisión'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}

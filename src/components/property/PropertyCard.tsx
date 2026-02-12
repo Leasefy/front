@@ -188,10 +188,10 @@ export function PropertyCard({
 
         {/* Glass badges — top left */}
         <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-          <span className="inline-flex items-center text-[11px] font-medium text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
+          <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
             En arriendo
           </span>
-          <span className="inline-flex items-center text-[11px] font-medium text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
+          <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
             {typeLabels[type] || type}
           </span>
         </div>

@@ -84,7 +84,7 @@ export function HowItWorksSection() {
 
                   {/* Content */}
                   <div className="space-y-3 flex-1">
-                    <h3 className="text-[22px] md:text-[26px] font-heading font-medium text-foreground tracking-[-1px]">
+                    <h3 className="font-mono uppercase text-[22px] md:text-[26px] font-normal text-foreground tracking-[-1px]">
                       {step.title}
                     </h3>
                     <p className="text-[14px] font-medium text-primary tracking-wide uppercase">

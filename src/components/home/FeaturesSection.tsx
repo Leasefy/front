@@ -126,7 +126,7 @@ function PaymentsVisual() {
   return (
     <div className="bg-card border border-border rounded-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <span className="text-xs font-mono font-normal text-muted-foreground uppercase tracking-wide">
           Febrero 2026
         </span>
         <span className="text-xs text-success-500 font-medium">3 de 3 pagados</span>
@@ -236,7 +236,7 @@ export function FeaturesSection() {
       <div className="container-platform max-w-[1200px]">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 rounded-full px-3 py-1 mb-4">
+          <span className="inline-flex items-center gap-1.5 text-xs font-mono font-normal text-primary bg-primary/10 rounded-full px-3 py-1 mb-4 uppercase tracking-wide">
             Para propietarios
           </span>
           <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-3">

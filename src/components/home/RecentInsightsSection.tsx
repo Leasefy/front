@@ -50,7 +50,7 @@ export function RecentInsightsSection() {
 
               <div className="absolute bottom-0 left-0 right-0 p-7 md:p-9">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/10 text-[11px] font-medium text-white/90 tracking-wide uppercase">
+                  <span className="inline-flex items-center px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/10 text-[11px] font-mono font-normal text-white/90 tracking-wide uppercase">
                     {blogPosts[0].category}
                   </span>
                   <span className="text-[12px] text-white/50">{blogPosts[0].date}</span>
@@ -98,7 +98,7 @@ export function RecentInsightsSection() {
                   {/* Content — right */}
                   <div className="flex flex-col justify-center py-4 pr-5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[11px] font-medium text-indigo-600 tracking-wide uppercase">
+                      <span className="text-[11px] font-mono font-normal text-indigo-600 tracking-wide uppercase">
                         {post.category}
                       </span>
                       <span className="text-[11px] text-muted-foreground">{post.readTime}</span>

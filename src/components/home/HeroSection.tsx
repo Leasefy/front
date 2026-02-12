@@ -274,7 +274,7 @@ export function HeroSection() {
                     </div>
                     <div>
                       <p
-                        className={`text-[13px] font-semibold transition-all duration-500 ${
+                        className={`font-mono uppercase text-[13px] font-normal transition-all duration-500 ${
                           isActive ? "text-white" : "text-white/50"
                         }`}
                       >

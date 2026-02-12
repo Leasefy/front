@@ -8,20 +8,20 @@ import { ArrowUpRight, SpinnerGap } from '@phosphor-icons/react'
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.97]",
+  "group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-mono font-normal uppercase tracking-wide transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-[0.97]",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/85 hover:shadow-md font-mono uppercase tracking-wide",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/85 hover:shadow-md",
         white:
-          "bg-white dark:bg-card text-foreground shadow-sm hover:bg-white/90 dark:hover:bg-card/90 hover:shadow-md font-mono uppercase tracking-wide",
+          "bg-white dark:bg-card text-foreground shadow-sm hover:bg-white/90 dark:hover:bg-card/90 hover:shadow-md",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/85 hover:shadow-md",
         outline:
           "border border-input bg-background text-foreground hover:bg-accent/10 hover:border-foreground/20",
         secondary:
-          "bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70 hover:border-border font-mono uppercase tracking-wide",
+          "bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70 hover:border-border",
         glass:
           "bg-white/15 text-white border border-white/20 hover:bg-white/25 backdrop-blur-sm",
         ghost:

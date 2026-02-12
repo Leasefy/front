@@ -141,7 +141,7 @@ export default function PricingPage() {
                           <Icon className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <p className="text-[13px] font-semibold text-white">{prop.label}</p>
+                          <p className="text-[13px] font-mono uppercase font-normal text-white">{prop.label}</p>
                           <p className="text-[12px] leading-relaxed mt-0.5 text-white/60">{prop.description}</p>
                         </div>
                       </div>
@@ -201,7 +201,7 @@ export default function PricingPage() {
                   <Shield className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-heading font-semibold text-foreground mb-1">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
                     Administración completa
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Nosotros cobramos y gestionamos todo</p>
@@ -241,7 +241,7 @@ export default function PricingPage() {
                   <House className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-heading font-semibold text-foreground mb-1">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
                     Yo administro
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Herramientas profesionales para ti</p>
@@ -281,7 +281,7 @@ export default function PricingPage() {
                   <UserCheck className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-heading font-semibold text-foreground mb-1">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
                     Evaluar inquilino
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Crédito, identidad, antecedentes</p>
@@ -322,7 +322,7 @@ export default function PricingPage() {
                   <Briefcase className="w-4 h-4 text-sand-700" />
                 </div>
                 <div className="mt-auto">
-                  <h3 className="text-[17px] font-heading font-semibold text-sand-900 mb-1">
+                  <h3 className="text-[17px] font-mono uppercase font-normal text-sand-900 mb-1">
                     Inmobiliarias
                   </h3>
                   <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio con tecnología</p>
@@ -373,7 +373,7 @@ export default function PricingPage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                   Administración completa
                 </span>
               </div>
@@ -394,7 +394,7 @@ export default function PricingPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <Calculator className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-[13px] font-medium text-foreground">Calculadora</span>
+                    <span className="text-[13px] font-mono uppercase font-normal text-foreground">Calculadora</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1 max-w-[180px]">
@@ -506,7 +506,7 @@ export default function PricingPage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                   Suscripciones DIY
                 </span>
               </div>
@@ -585,7 +585,7 @@ export default function PricingPage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Circle className="w-4 h-4 text-amber-500" />
-                <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                   Para inmobiliarias
                 </span>
               </div>
@@ -731,7 +731,7 @@ export default function PricingPage() {
           >
             <div className="flex items-center gap-2 mb-3">
               <Circle className="w-4 h-4 text-emerald-500" />
-              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+              <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                 Evaluación de inquilinos
               </span>
             </div>
@@ -882,7 +882,7 @@ export default function PricingPage() {
           >
             <div className="flex items-center gap-2 mb-3">
               <Circle className="w-4 h-4 text-primary" />
-              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
+              <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                 Beneficios
               </span>
             </div>
@@ -907,7 +907,7 @@ export default function PricingPage() {
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
                   <Shield className="w-5 h-5 text-emerald-600" />
                 </div>
-                <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+                <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                   Seguridad garantizada
                 </h3>
                 <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
@@ -943,7 +943,7 @@ export default function PricingPage() {
               <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
                 <Lightning className="w-5 h-5 text-amber-600" />
               </div>
-              <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+              <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                 Proceso rápido
               </h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
@@ -984,7 +984,7 @@ export default function PricingPage() {
               <div className="w-10 h-10 rounded-lg bg-neutral-200 flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
               </div>
-              <h3 className="text-[18px] font-heading font-semibold text-foreground mb-2">
+              <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                 Soporte experto
               </h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed">

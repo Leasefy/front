@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
 import type { TenantOnboardingData, PreferredContact, EmploymentType } from '@/lib/auth/types'
+import { apiClient } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth/use-auth'
 
 // ============================================================================
 // NOTA PARA BACKEND:
@@ -133,6 +135,7 @@ const TenantOnboardingContext = createContext<TenantOnboardingContextTextT | nul
 // ============================================================================
 
 export function TenantOnboardingProvider({ children }: { children: ReactNode }) {
+  const { refreshUser } = useAuth()
   const [draft, setDraft] = useState<TenantOnboardingDraft>(initialTenantOnboardingDraft)
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
@@ -239,14 +242,27 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   const submitOnboarding = useCallback(async () => {
     setIsSubmitting(true)
     try {
-      // Simulate API call to save onboarding data
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Split displayName into first/last for backend
+      const nameParts = (draft.displayName || '').trim().split(/\s+/)
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || firstName
+
+      // Call backend onboarding endpoint
+      await apiClient.post('/users/me/onboarding', {
+        firstName,
+        lastName,
+        phone: draft.phone || undefined,
+        userType: 'TENANT',
+      })
+
+      // Refresh user in auth context so role/onboardingCompleted updates
+      await refreshUser()
 
       // Mark all steps as completed
       const allSteps = [1, 2, 3]
       setCompletedSteps(allSteps)
 
-      // FloppyDisk completion status to localStorage (dashboard checks this)
+      // Save completion status to localStorage (dashboard sidebar checks this)
       const completionData = {
         draft,
         currentStep: totalSteps,
@@ -265,7 +281,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     } finally {
       setIsSubmitting(false)
     }
-  }, [completedSteps, totalSteps, draft])
+  }, [totalSteps, draft, refreshUser])
 
   const resetDraft = useCallback(() => {
     setDraft(initialTenantOnboardingDraft)

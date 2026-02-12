@@ -10,7 +10,7 @@ import type { AuthContextType } from './types'
  * Access authentication state and methods from any component.
  *
  * @example
- * const { user, isAuthenticated, login, logout } = useAuth()
+ * const { user, isAuthenticated, signInWithGoogle, signOut, logout, refreshUser } = useAuth()
  *
  * @throws Error if used outside of AuthProvider
  */

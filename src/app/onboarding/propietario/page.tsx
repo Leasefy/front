@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { apiClient } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth/use-auth'
 
 // ============================================================================
 // TextTs & Constants
@@ -50,6 +52,7 @@ const CITIES = [
 
 export default function OnboardingPropietarioPage() {
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -113,9 +116,23 @@ export default function OnboardingPropietarioPage() {
 
     setIsSubmitting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200))
+      // Split displayName into first/last for backend
+      const nameParts = data.displayName.trim().split(/\s+/)
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || firstName
 
-      // FloppyDisk to localStorage
+      // Call backend onboarding endpoint
+      await apiClient.post('/users/me/onboarding', {
+        firstName,
+        lastName,
+        phone: data.phone || undefined,
+        userType: 'LANDLORD',
+      })
+
+      // Refresh user in auth context so role/onboardingCompleted updates
+      await refreshUser()
+
+      // Save to localStorage for sidebar progress display
       const completionData = {
         draft: {
           displayName: data.displayName,

@@ -1,11 +1,32 @@
 /**
  * Auth Types - Type definitions for authentication system
  *
- * This is a frontend MVP with mock auth. Types are designed to be
- * compatible with real auth backends (Clerk, Auth.js, etc.).
+ * Frontend uses lowercase roles for UX.
+ * Backend uses uppercase roles (Prisma enum).
  */
 
+// ============================================================================
+// Roles
+// ============================================================================
+
+/** Frontend-facing role (used in UI logic, routes, etc.) */
 export type UserRole = 'tenant' | 'landlord'
+
+/** Backend role enum (matches Prisma/NestJS) */
+export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT'
+
+export function toBackendRole(role: UserRole): BackendRole {
+  return role === 'landlord' ? 'LANDLORD' : 'TENANT'
+}
+
+export function toFrontendRole(role: BackendRole): UserRole {
+  if (role === 'LANDLORD' || role === 'BOTH') return 'landlord'
+  return 'tenant'
+}
+
+// ============================================================================
+// Shared field types
+// ============================================================================
 
 export type PaymentMethod = 'bank_transfer' | 'pse' | 'nequi' | 'daviplata' | 'credit_card'
 export type RiskLevel = 'A' | 'B' | 'C' | 'D'
@@ -19,6 +40,10 @@ export type OnboardingStatus =
   | 'fully_setup'
 
 export type EmploymentType = 'employed' | 'self_employed' | 'freelancer' | 'student' | 'retired' | 'other'
+
+// ============================================================================
+// Onboarding data structures
+// ============================================================================
 
 export interface TenantOnboardingData {
   // Step 1 - Welcome & Profile
@@ -73,12 +98,21 @@ export interface OnboardingData {
   preferredPaymentDay?: number
 }
 
+// ============================================================================
+// User
+// ============================================================================
+
 export interface User {
   id: string
   email: string
   name: string
+  firstName?: string
+  lastName?: string
+  phone?: string
   avatar?: string
   role: UserRole
+  /** The raw backend role before frontend mapping */
+  backendRole?: BackendRole
   // Onboarding fields
   onboardingCompleted?: boolean
   onboardingStep?: number
@@ -87,6 +121,10 @@ export interface User {
   onboardingStatus?: OnboardingStatus
 }
 
+// ============================================================================
+// Auth state & context
+// ============================================================================
+
 export interface AuthState {
   user: User | null
   isAuthenticated: boolean
@@ -94,15 +132,15 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string; user?: User }>
-  loginWithGoogle: () => Promise<void>
-  loginWithApple: () => Promise<void>
-  logout: () => void
+  signInWithGoogle: () => Promise<void>
+  signOut: () => Promise<void>
+  /** Alias for signOut - backwards compatible */
+  logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 /**
- * Mock user type for testing login
+ * @deprecated Mock user type - kept for backwards compatibility during migration
  */
 export interface MockUser {
   id: string

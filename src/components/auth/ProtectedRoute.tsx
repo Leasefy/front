@@ -18,6 +18,7 @@ interface ProtectedRouteProps {
  *
  * Wraps content that requires authentication. Redirects to /auth
  * with return URL if user is not authenticated.
+ * Redirects to onboarding if user hasn't completed it.
  *
  * @example
  * // Any authenticated user
@@ -39,6 +40,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     if (!isAuthenticated) {
       const returnUrl = encodeURIComponent(pathname)
       router.replace(`/auth?returnUrl=${returnUrl}`)
+      return
+    }
+
+    // If user hasn't completed onboarding, redirect to role selection/onboarding
+    // Skip this check if already on an onboarding page
+    if (user && !user.onboardingCompleted && !pathname.startsWith('/onboarding')) {
+      router.replace('/onboarding/seleccionar-rol')
       return
     }
 
@@ -68,6 +76,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   // Not authenticated - will redirect
   if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Onboarding not completed - will redirect
+  if (user && !user.onboardingCompleted && !pathname.startsWith('/onboarding')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

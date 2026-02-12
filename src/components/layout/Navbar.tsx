@@ -122,7 +122,7 @@ export function Navbar() {
     )}>
       {/* Navbar bar with glass effect */}
       <div className={cn(
-        "rounded-2xl backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300",
+        "rounded-2xl backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-visible",
         isScrolled
           ? "bg-white/95 border border-border"
           : "bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10"
@@ -151,15 +151,16 @@ export function Navbar() {
                 size="sm"
                 hideArrow
                 asChild
+                className="font-mono text-[13px] uppercase tracking-wide"
               >
                 <Link href="/publicar">Publicar Inmueble</Link>
               </Button>
               <Link
                 href="/propiedades"
                 className={cn(
-                  "text-[15px] transition-colors",
+                  "font-mono text-[13px] uppercase tracking-wide transition-colors",
                   isActive('/propiedades')
-                    ? isScrolled ? "text-foreground font-medium" : "text-white font-medium"
+                    ? isScrolled ? "text-foreground" : "text-white"
                     : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
                 )}
               >
@@ -168,9 +169,9 @@ export function Navbar() {
               <Link
                 href="/pricing"
                 className={cn(
-                  "text-[15px] transition-colors",
+                  "font-mono text-[13px] uppercase tracking-wide transition-colors",
                   isActive('/pricing')
-                    ? isScrolled ? "text-foreground font-medium" : "text-white font-medium"
+                    ? isScrolled ? "text-foreground" : "text-white"
                     : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
                 )}
               >
@@ -182,9 +183,9 @@ export function Navbar() {
                 <button
                   onClick={() => { setIsParaQuienOpen(!isParaQuienOpen); setIsProductosOpen(false); }}
                   className={cn(
-                    "flex items-center gap-1 text-[15px] transition-colors",
+                    "flex items-center gap-1 font-mono text-[13px] uppercase tracking-wide transition-colors",
                     isActive('/para') || isParaQuienOpen
-                      ? isScrolled ? "text-foreground font-medium" : "text-white font-medium"
+                      ? isScrolled ? "text-foreground" : "text-white"
                       : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
                   )}
                   aria-expanded={isParaQuienOpen}
@@ -200,9 +201,9 @@ export function Navbar() {
                 <button
                   onClick={() => { setIsProductosOpen(!isProductosOpen); setIsParaQuienOpen(false); }}
                   className={cn(
-                    "flex items-center gap-1 text-[15px] transition-colors",
+                    "flex items-center gap-1 font-mono text-[13px] uppercase tracking-wide transition-colors",
                     isActive('/productos') || isProductosOpen
-                      ? isScrolled ? "text-foreground font-medium" : "text-white font-medium"
+                      ? isScrolled ? "text-foreground" : "text-white"
                       : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
                   )}
                   aria-expanded={isProductosOpen}

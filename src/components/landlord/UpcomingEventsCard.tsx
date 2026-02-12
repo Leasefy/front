@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Calendar, CreditCard, ArrowsClockwise, ClipboardText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { UpcomingEvent } from '@/lib/data/mock-dashboard';
 
 interface UpcomingEventsCardProps {
@@ -35,9 +36,9 @@ function formatDaysUntil(days: number): string {
   return `${months}mes`;
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale = 'es'): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('es-CO', {
+  return date.toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
     day: 'numeric',
     month: 'short',
   });
@@ -48,6 +49,7 @@ interface EventItemProps {
 }
 
 function EventItem({ event }: EventItemProps) {
+  const { locale } = useI18n();
   const Icon = eventIcons[event.type];
   const isOverdue = event.daysUntil < 0;
 
@@ -89,7 +91,7 @@ function EventItem({ event }: EventItemProps) {
           {formatDaysUntil(event.daysUntil)}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {formatDate(event.date)}
+          {formatDate(event.date, locale)}
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Buildings, House, Couch, Door, DoorOpen, MapPin, CurrencyDollar, Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import { COLOMBIAN_CITIES } from '@/lib/types/property'
 
@@ -38,11 +39,12 @@ const PROPERTY_TYPES = [
 ] as const
 
 export function StepFirstProperty() {
+  const { locale } = useI18n()
   const { draft, updateDraft } = useOnboarding()
 
   const formatPrice = (value: number | undefined) => {
     if (!value) return ''
-    return new Intl.NumberFormat('es-CO').format(value)
+    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US').format(value)
   }
 
   const parsePrice = (value: string) => {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { House, FileText, CreditCard, Folder, Chat, Heart, ArrowUpRight, MagnifyingGlass } from '@phosphor-icons/react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 type EmptyStateContext = 'rental' | 'applications' | 'payments' | 'documents' | 'messages' | 'saved';
 
@@ -100,7 +100,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
  * Used on sub-pages (arriendo, aplicaciones, pagos, etc.)
  */
 export function NoDataEmptyState({ context }: NoDataEmptyStateProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const config = EMPTY_STATE_CONFIG[context];
   const Icon = config.icon;
 

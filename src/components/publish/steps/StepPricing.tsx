@@ -9,13 +9,14 @@ import { Switch } from '@/components/ui/switch';
 import { formatCurrency } from '@/lib/format';
 
 export function StepPricing() {
+  const locale = 'es';
   const { draft, updateDraft } = usePublish();
   const [hasAdminFee, setHasAdminFee] = useState(draft.adminFee > 0);
   const [hasDeposit, setHasDeposit] = useState(draft.deposit > 0);
 
   const formatInputValue = (value: number) => {
     if (value === 0) return '';
-    return value.toLocaleString('es-CO');
+    return value.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US');
   };
 
   const parseInputValue = (value: string) => {

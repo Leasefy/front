@@ -4,14 +4,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, ArrowSquareOut, Chat } from '@phosphor-icons/react';
+import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, ArrowSquareOut, Chat } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
 import { getLeaseById, getPaymentsForLease, getNextPayment, PAYMENT_METHODS } from '@/lib/data/mock-leases';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 export default function LeaseDetailPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
   const leaseId = params.leaseId as string;
@@ -37,13 +38,11 @@ export default function LeaseDetailPage() {
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
             {locale === 'es' ? 'El arriendo que buscas no existe o no tienes acceso.' : 'The rental you are looking for does not exist or you do not have access.'}
           </p>
-          <Link
+          <BackButton
             href="/inquilino/arriendo"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'}
-          </Link>
+            label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'}
+            variant="pill"
+          />
         </motion.div>
       </div>
     );
@@ -113,14 +112,9 @@ export default function LeaseDetailPage() {
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
+          className="mb-6"
         >
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors mb-6 group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm">{locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'}</span>
-          </button>
+          <BackButton label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'} />
         </motion.div>
 
         {/* Hero Section - Property Card */}

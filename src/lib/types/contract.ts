@@ -206,6 +206,9 @@ export interface Contract {
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
 
+  // Non-negotiable clauses from tenant requirements
+  nonNegotiableClauses?: ContractClause[];
+
   // Custom terms (editable)
   specialConditions?: string;
 

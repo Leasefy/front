@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, House, Users, CreditCard, X, Shield, Money, SealCheck, Question, CaretRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,7 @@ const STEP_ICONS = {
 
 export function OnboardingShell({ children }: OnboardingShellProps) {
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
   const {
     currentStep,
     totalSteps,
@@ -76,7 +78,7 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
   }
 
   const handleSkip = () => {
-    router.push('/panel')
+    router.push(isAuthenticated ? '/panel' : '/')
   }
 
   return (

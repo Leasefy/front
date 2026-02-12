@@ -8,7 +8,7 @@ import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, Ar
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 // Setup steps definition
 interface SetupStep {
@@ -24,7 +24,7 @@ interface SetupStep {
 type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PerfilPage() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);

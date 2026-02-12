@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { borderRadius, transitions, hoverEffects, cardStyles, badgeStyles } from '@/lib/design-tokens';
 import { LevelBadge } from '@/components/score/LevelBadge';
 import { CandidateMetrics } from './CandidateMetrics';
 import { AISnippet } from './AISnippet';
@@ -161,7 +160,7 @@ export function CandidateCard({
 
   // Card styling based on status
   const cardClassName = cn(
-    cardStyles.interactive,
+    'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
     'flex flex-col',
     currentStatus === 'rejected' && 'opacity-60',
     currentStatus === 'approved' && 'ring-2 ring-emerald-200',
@@ -177,7 +176,7 @@ export function CandidateCard({
           {/* Photo Placeholder */}
           <div className={cn(
             'h-14 w-14 flex-shrink-0 overflow-hidden',
-            borderRadius.sm,
+            'rounded-sm',
             'bg-muted'
           )}>
             {candidate.photo ? (
@@ -206,7 +205,7 @@ export function CandidateCard({
               {currentStatus !== 'pending' && (
                 <span
                   className={cn(
-                    badgeStyles.pill,
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
                     'px-2 py-0.5 flex-shrink-0',
                     CANDIDATE_STATUS_COLORS[currentStatus]
                   )}

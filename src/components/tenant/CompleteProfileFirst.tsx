@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { UserCircle, ArrowRight, CheckCircle, ClipboardText } from '@phosphor-icons/react';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +44,7 @@ const CONTEXT_MESSAGES = {
  * Used on sub-pages (arriendo, aplicaciones, pagos, etc.) to encourage profile completion
  */
 export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirstProps) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
   const { progressPercentage, completedSteps, totalSteps } = useOnboardingStatus();
 
   const contextMessage = CONTEXT_MESSAGES[context];

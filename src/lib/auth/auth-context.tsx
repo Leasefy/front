@@ -124,6 +124,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = useCallback(async () => {
     const supabase = getSupabase()
     await supabase.auth.signOut()
+  const loginWithGoogle = socialLogin
+  const loginWithApple = socialLogin
+
+  // Logout
+  const logout = useCallback(() => {
     setUser(null)
   }, [])
 

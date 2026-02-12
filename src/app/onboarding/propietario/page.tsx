@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -50,8 +51,11 @@ const CITIES = [
 // Main Component
 // ============================================================================
 
-export default function OnboardingPropietarioPage() {
+function OnboardingPropietarioContent() {
+  const { locale } = useI18n()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnUrl = searchParams.get('returnUrl')
   const { refreshUser } = useAuth()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -96,12 +100,21 @@ export default function OnboardingPropietarioPage() {
     setData(prev => ({ ...prev, ...updates }))
   }
 
+  // When coming from publish wizard (returnUrl present), skip property step
+  const fromPublish = !!returnUrl
+  const totalSteps = fromPublish ? 1 : 2
+
   const isStep1Valid = data.displayName.trim().length > 0
   const isStep2Valid = data.propertyTextT !== null && data.propertyCity.trim().length > 0
 
   const handleNext = () => {
     if (step === 1 && isStep1Valid) {
-      setStep(2)
+      if (fromPublish) {
+        // Skip step 2 — property info already captured in publish wizard
+        handleSubmit()
+      } else {
+        setStep(2)
+      }
     }
   }
 
@@ -112,7 +125,7 @@ export default function OnboardingPropietarioPage() {
   }
 
   const handleSubmit = async () => {
-    if (!isStep2Valid) return
+    if (!fromPublish && !isStep2Valid) return
 
     setIsSubmitting(true)
     try {
@@ -138,11 +151,13 @@ export default function OnboardingPropietarioPage() {
           displayName: data.displayName,
           phone: data.phone,
           preferredContact: data.preferredContact,
-          propertyTextT: data.propertyTextT,
-          propertyCity: data.propertyCity,
-          rentPrice: data.expectedRent ? parseInt(data.expectedRent.replace(/\D/g, '')) : null,
+          ...(fromPublish ? {} : {
+            propertyTextT: data.propertyTextT,
+            propertyCity: data.propertyCity,
+            rentPrice: data.expectedRent ? parseInt(data.expectedRent.replace(/\D/g, '')) : null,
+          }),
         },
-        completedSteps: [1, 2],
+        completedSteps: fromPublish ? [1] : [1, 2],
         isComplete: true,
         completedAt: new Date().toISOString(),
       }
@@ -158,7 +173,7 @@ export default function OnboardingPropietarioPage() {
   }
 
   const handleSkip = () => {
-    router.push('/panel')
+    router.push(isAuthenticated ? (returnUrl || '/panel') : '/')
   }
 
   // Success Screen
@@ -180,19 +195,31 @@ export default function OnboardingPropietarioPage() {
             Tu perfil está configurado. Ahora puedes publicar tu propiedad y encontrar inquilinos verificados.
           </p>
           <div className="space-y-3">
-            <Link
-              href="/publicar"
-              className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-800 transition-colors"
-            >
-              Publicar mi propiedad
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/panel"
-              className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-white text-neutral-700 font-medium rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors"
-            >
-              Ir al panel
-            </Link>
+            {returnUrl ? (
+              <Link
+                href={returnUrl}
+                className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-800 transition-colors"
+              >
+                Ir al panel de propiedades
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/publicar"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-800 transition-colors"
+                >
+                  Publicar mi propiedad
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/panel"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-white text-neutral-700 font-medium rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                >
+                  Ir al panel
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
@@ -221,16 +248,20 @@ export default function OnboardingPropietarioPage() {
                 )}>
                   {step > 1 ? <Check className="w-4 h-4" /> : "1"}
                 </div>
-                <div className={cn(
-                  "w-12 h-0.5 transition-colors",
-                  step > 1 ? "bg-neutral-900" : "bg-neutral-200"
-                )} />
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
-                  step >= 2 ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-400"
-                )}>
-                  2
-                </div>
+                {!fromPublish && (
+                  <>
+                    <div className={cn(
+                      "w-12 h-0.5 transition-colors",
+                      step > 1 ? "bg-neutral-900" : "bg-neutral-200"
+                    )} />
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+                      step >= 2 ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-400"
+                    )}>
+                      2
+                    </div>
+                  </>
+                )}
               </div>
               <button
                 type="button"
@@ -287,64 +318,77 @@ export default function OnboardingPropietarioPage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Teléfono <span className="text-neutral-400 font-normal">(opcional)</span>
+                    Celular <span className="text-neutral-400 font-normal">(opcional)</span>
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={data.phone}
-                    onChange={(e) => updateData({ phone: e.target.value })}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, '')
+                      // Limit to 10 digits
+                      if (value.length <= 10) {
+                        // Format: 300 123 4567
+                        let formatted = value
+                        if (value.length > 3) {
+                          formatted = value.slice(0, 3) + ' ' + value.slice(3)
+                        }
+                        if (value.length > 6) {
+                          formatted = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6)
+                        }
+                        updateData({ phone: formatted })
+                      }
+                    }}
                     placeholder="300 123 4567"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
+                    maxLength={12}
+                    className={cn(
+                      "w-full px-4 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 transition-all",
+                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10
+                        ? "border-amber-300 focus:border-amber-400"
+                        : "border-neutral-200 focus:border-neutral-400"
+                    )}
                   />
                   <p className="text-xs text-neutral-400 mt-1.5">
                     Solo para notificaciones importantes de tu propiedad
                   </p>
+                  {data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      El número debe tener 10 dígitos
+                    </p>
+                  )}
                 </div>
 
-                {/* Preferred Contact */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-3">
-                    ¿Cómo prefieres que te contactemos?
-                  </label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 'whatsapp' as const, label: 'WhatsApp', icon: ChatCircle },
-                      { value: 'email' as const, label: 'Email', icon: Envelope },
-                      { value: 'phone' as const, label: 'Llamada', icon: Phone },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => updateData({ preferredContact: option.value })}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all",
-                          data.preferredContact === option.value
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
-                        )}
-                      >
-                        <option.icon className="w-4 h-4" />
-                        <span className="text-sm font-medium">{option.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Continue Button */}
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!isStep1Valid}
+                disabled={!isStep1Valid || isSubmitting}
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                  isStep1Valid
-                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                  isStep1Valid && !isSubmitting
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
-                Continuar
-                <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <SpinnerGap className="w-4 h-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : fromPublish ? (
+                  <>
+                    Comenzar
+                    <Rocket className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    Continuar
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </motion.div>
           ) : (
@@ -430,7 +474,7 @@ export default function OnboardingPropietarioPage() {
                       value={data.expectedRent}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '')
-                        const formatted = value ? parseInt(value).toLocaleString('es-CO') : ''
+                        const formatted = value ? parseInt(value).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''
                         updateData({ expectedRent: formatted })
                       }}
                       placeholder="2.500.000"
@@ -473,7 +517,7 @@ export default function OnboardingPropietarioPage() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid && !isSubmitting
-                      ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
@@ -495,5 +539,13 @@ export default function OnboardingPropietarioPage() {
         </AnimatePresence>
       </main>
     </div>
+  )
+}
+
+export default function OnboardingPropietarioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <OnboardingPropietarioContent />
+    </Suspense>
   )
 }

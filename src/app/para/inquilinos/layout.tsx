@@ -36,7 +36,7 @@ export default function InquilinosLayout({
         name="Búsqueda de Arriendo para Inquilinos"
         description="Plataforma para encontrar propiedades en arriendo verificadas con aplicación online y contratos digitales."
         url="/para/inquilinos"
-        serviceTextT="Real Estate MagnifyingGlass Service"
+        serviceType="Real Estate Search Service"
         areaServed={["Colombia"]}
       />
       {children}

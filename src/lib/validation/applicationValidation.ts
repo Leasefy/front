@@ -97,7 +97,7 @@ export function parseCurrency(value: string | number | undefined): number {
  */
 export function formatCurrencyInput(value: number | undefined): string {
   if (value === undefined || value === 0) return '';
-  return value.toLocaleString('es-CO');
+  return value.toLocaleString('es-CL');
 }
 
 // ============================================================================

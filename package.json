@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:seed": "npx prisma db seed",
     "db:reset": "npx prisma db push --force-reset && npm run db:seed",
     "db:generate": "npx prisma generate",
@@ -17,6 +19,9 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/client": "^7.2.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -62,6 +67,8 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.71.1",
     "react-map-gl": "^7.1.7",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "supercluster": "^8.0.1",
     "tailwind-merge": "^3.4.0",
@@ -72,13 +79,16 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.16",
     "eslint": "^8",
     "eslint-config-next": "14.2.21",
+    "happy-dom": "^20.6.0",
     "postcss": "^8.4.32",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

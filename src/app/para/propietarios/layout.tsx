@@ -36,7 +36,7 @@ export default function PropietariosLayout({
         name="Plataforma de Arriendo para Propietarios"
         description="Servicio completo para arrendar propiedades en Colombia con verificación de inquilinos, contratos digitales y pagos automáticos."
         url="/para/propietarios"
-        serviceTextT="Real Estate Rental Service"
+        serviceType="Real Estate Rental Service"
         areaServed={["Colombia"]}
       />
       <LocalBusinessJsonLd />

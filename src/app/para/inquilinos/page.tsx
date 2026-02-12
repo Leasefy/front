@@ -2,15 +2,17 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
 import { SectionLabel } from '@/components/ui/section-label';
-import { CaretLeft, CaretRight, CheckCircle, MagnifyingGlass, Sparkle, SealCheck, FileText, MapPin, Bed, Bathtub, ArrowsOut, Clock, Shield, Infinity as InfinityIcon, PenNib, Lock, Lightning, House } from '@phosphor-icons/react';
+import { Check, CheckCircle, MagnifyingGlass, Sparkle, SealCheck, FileText, MapPin, Bed, Bathtub, ArrowsOut, Clock, Shield, Infinity as InfinityIcon, PenNib, Lock, Lightning, House } from '@phosphor-icons/react';
+import { BentoCard } from '@/components/home/BentoCard';
+import { TestimonialCarousel } from '@/components/home/TestimonialCarousel';
 
 // Testimonials data
 const testimonials = [
@@ -769,88 +771,7 @@ function ContractVisual() {
   );
 }
 
-/* ================================================================
-   BENTO CARD
-   ================================================================ */
-import { Check } from '@phosphor-icons/react';
-
-function BentoCard({
-  title,
-  description,
-  benefits,
-  children,
-  index,
-  className = "",
-  dark = false,
-  outline = false,
-}: {
-  title: string;
-  description: string;
-  benefits?: string[];
-  children: React.ReactNode;
-  index: number;
-  className?: string;
-  dark?: boolean;
-  outline?: boolean;
-}) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
-  const bg = dark
-    ? "bg-indigo-950 hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
-    : outline
-      ? "bg-white hover:shadow-md"
-      : "bg-neutral-50 hover:shadow-lg";
-
-  const borderStyle = dark
-    ? "1px solid rgba(255,255,255,0.06)"
-    : "1px solid rgba(0,0,0,0.08)";
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`group flex flex-col overflow-hidden transition-shadow duration-500 ${bg} ${className}`}
-      style={{ border: borderStyle }}
-    >
-      <div className="px-6 pt-5 pb-0">
-        <h3 className={`text-[20px] sm:text-[24px] font-heading font-semibold tracking-tight leading-tight ${dark ? "text-white" : "text-foreground"}`}>
-          {title}
-        </h3>
-        <p className={`text-[12px] leading-relaxed mt-1 max-w-[380px] ${dark ? "text-white/40" : "text-muted-foreground"}`}>
-          {description}
-        </p>
-        {benefits && benefits.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
-            {benefits.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-1.5">
-                <Check className={`w-3 h-3 ${dark ? "text-emerald-400" : "text-foreground/40"}`} />
-                <span className={`text-[11px] ${dark ? "text-white/50" : "text-foreground/60"}`}>{benefit}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        {isInView && children}
-      </div>
-    </motion.div>
-  );
-}
-
 export default function InquilinosPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const nextTestimonial = () => {
-    setCurrentIndex((prev) => (prev + 2) % testimonials.length);
-  };
-
-  const prevTestimonial = () => {
-    setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
-  };
-
   return (
     <>
       <Navbar />
@@ -1399,97 +1320,22 @@ export default function InquilinosPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
-          <div className="container-platform py-[80px] pb-[100px]">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="lg:sticky lg:top-32"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-[6px] h-[6px] rounded-full bg-primary" />
-                  <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
-                    Testimonios
-                  </span>
-                </div>
-
-                <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
-                  Inquilinos que encontraron su hogar
-                </h2>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={prevTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Anterior testimonio"
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
-                    aria-label="Siguiente testimonio"
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </motion.div>
-
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <AnimatePresence mode="popLayout">
-                  {[0, 1].map((offset) => {
-                    const index = (currentIndex + offset) % testimonials.length;
-                    const testimonial = testimonials[index];
-                    return (
-                      <motion.div
-                        key={`${index}-${currentIndex}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-white rounded-xl p-8 flex flex-col"
-                      >
-                        <div className="mb-6">
-                          <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
-                          </svg>
-                        </div>
-
-                        <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-foreground mb-8 flex-grow">
-                          {testimonial.quote}
-                        </p>
-
-                        <div className="flex items-center gap-4">
-                          <div className="w-[52px] h-[52px] rounded-xl overflow-hidden bg-muted flex-shrink-0">
-                            <Image
-                              src={testimonial.image}
-                              alt={testimonial.author}
-                              width={52}
-                              height={52}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-[16px] font-normal text-foreground tracking-[-0.32px] leading-[21.6px]">
-                              {testimonial.author}
-                            </p>
-                            <p className="text-[16px] text-muted-foreground tracking-[-0.32px] leading-[21.6px]">
-                              {testimonial.role}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+        <TestimonialCarousel
+          testimonials={testimonials}
+          title={
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+                <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
+                  Testimonios
+                </span>
               </div>
-            </div>
-          </div>
-        </section>
+              <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+                Inquilinos que encontraron su hogar
+              </h2>
+            </>
+          }
+        />
 
         <FAQSection />
         <CTASection />

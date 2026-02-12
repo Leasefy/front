@@ -251,6 +251,36 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
         </div>
       </div>
 
+      {/* Non-Negotiable Clauses */}
+      {contract.nonNegotiableClauses && contract.nonNegotiableClauses.length > 0 && (
+        <div className="border-b border-border p-6">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Lock className="h-4 w-4 text-primary" />
+            Condiciones Innegociables del Arrendador
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Las siguientes condiciones fueron establecidas como requisitos innegociables por el arrendador
+            y forman parte vinculante del presente contrato.
+          </p>
+          <div className="space-y-4">
+            {contract.nonNegotiableClauses.map((clause) => (
+              <div
+                key={clause.id}
+                className="text-sm rounded-sm border border-primary/20 bg-primary/5 p-4"
+              >
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <Lock className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                  {clause.title}
+                </h4>
+                <p className="mt-1.5 text-muted-foreground leading-relaxed pl-[22px]">
+                  {clause.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Special Conditions */}
       {contract.specialConditions && (
         <div className="border-b border-border p-6">

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User, Briefcase, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 
@@ -80,7 +80,7 @@ const QUICK_ACTIONS = [
 ];
 
 export function TenantDashboardEmpty() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');

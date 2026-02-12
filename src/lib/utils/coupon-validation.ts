@@ -78,7 +78,7 @@ export function validateCoupon(
   if (coupon.minimumPurchase && price < coupon.minimumPurchase) {
     return {
       valid: false,
-      error: `Compra minima de $${coupon.minimumPurchase.toLocaleString('es-CO')} requerida`,
+      error: `Compra minima de $${coupon.minimumPurchase.toLocaleString('es-CL')} requerida`,
     };
   }
 
@@ -110,7 +110,7 @@ function calculateDiscount(coupon: Coupon): CouponDiscount {
       return {
         type: 'fixed',
         value: coupon.value,
-        description: `$${coupon.value.toLocaleString('es-CO')} de descuento`,
+        description: `$${coupon.value.toLocaleString('es-CL')} de descuento`,
       };
 
     case 'FREE_MONTHS':
@@ -187,10 +187,10 @@ export function formatDiscountDisplay(coupon: Coupon, originalPrice: number): st
         return 'Gratis';
       }
       const savings = calculateSavings(originalPrice, coupon);
-      return `-$${savings.toLocaleString('es-CO')}`;
+      return `-$${savings.toLocaleString('es-CL')}`;
 
     case 'FIXED_AMOUNT':
-      return `-$${coupon.value.toLocaleString('es-CO')}`;
+      return `-$${coupon.value.toLocaleString('es-CL')}`;
 
     case 'FREE_MONTHS':
     case 'FULL_ACCESS':

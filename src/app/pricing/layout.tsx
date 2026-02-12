@@ -1,21 +1,22 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Precios y Planes",
   description:
-    "Conoce los planes y precios de Leasefy. Desde gratis para propietarios individuales hasta soluciones enterprise para inmobiliarias. Sin comisiones ocultas.",
+    "Planes desde $0/mes para propietarios y desde $149.000/mes para inmobiliarias. Administración completa al 5-6% del arriendo. Sin contratos de permanencia.",
   keywords: [
-    "precios arriendo fácil",
-    "planes inmobiliaria",
-    "costo publicar propiedad",
+    "precios arriendos Colombia",
+    "planes administración arriendos",
+    "costo administración inmueble",
     "software inmobiliario precios",
     "gestión arriendos costo",
+    "administración arriendos porcentaje",
   ],
   openGraph: {
     title: "Precios y Planes | Leasefy",
     description:
-      "Planes flexibles para propietarios e inmobiliarias. Publica gratis o accede a herramientas avanzadas de gestión.",
+      "Planes transparentes para propietarios e inmobiliarias. Administración de arriendos desde 5% del arriendo mensual. Sin contratos de permanencia.",
     type: "website",
   },
   alternates: {

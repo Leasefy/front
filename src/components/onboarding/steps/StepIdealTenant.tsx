@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Users, CurrencyDollar, PawPrint, Shield, Info, CaretDown, CaretUp } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import type { RiskLevel } from '@/lib/auth/types'
 
@@ -46,6 +47,7 @@ const RISK_LEVELS: { value: RiskLevel; label: string; color: string; bgColor: st
 ]
 
 export function StepIdealTenant() {
+  const { locale } = useI18n()
   const { draft, updateDraft } = useOnboarding()
   const [showRiskInfo, setShowRiskInfo] = useState(false)
 
@@ -127,7 +129,7 @@ export function StepIdealTenant() {
             <p className="text-xs text-neutral-600">
               Si tu arriendo es <span className="font-semibold">$2.000.000</span>, el inquilino debe ganar mínimo{' '}
               <span className="font-semibold text-indigo-600">
-                ${new Intl.NumberFormat('es-CO').format(2000000 * draft.minIncomeRatio)}
+                ${new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US').format(2000000 * draft.minIncomeRatio)}
               </span>{' '}
               mensuales.
             </p>

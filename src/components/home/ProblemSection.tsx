@@ -2,28 +2,12 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion } from "framer-motion";
 
-// Premium spring animation config
-const widgetVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 30,
-    scale: 0.92,
-  },
-  visible: (delay: number) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 20,
-      mass: 1,
-      delay: delay,
-    }
-  }),
-};
+// Glass widget styles — always fully opaque so backdrop-filter works on every frame
+const glassWidgetClass =
+  "rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] border border-white/25 px-5 py-4 max-w-[260px] bg-white/15 backdrop-blur-xl";
+
 
 /**
  * ProblemSection - Meridian-inspired editorial layout
@@ -71,7 +55,21 @@ export function ProblemSection() {
         </motion.div>
 
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent z-[2]" />
+
+        {/* Hero tagline - Bottom Left (only during video) */}
+        <motion.div
+          initial={{ opacity: 1 }}
+          animate={{ opacity: videoEnded ? 0 : 1 }}
+          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          className="absolute bottom-16 left-6 md:bottom-20 md:left-8 z-[3] max-w-2xl"
+          style={{ pointerEvents: videoEnded ? "none" : "auto" }}
+        >
+          <h2 className="text-[36px] sm:text-[48px] md:text-[56px] font-medium text-white leading-[1.15] tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]">
+            Arrienda seguro,<br />
+            sin complicaciones.
+          </h2>
+        </motion.div>
 
         {/* Leasefy Logo - Top Left */}
         <div className="absolute top-6 left-6 md:top-8 md:left-8 z-[3]">
@@ -82,66 +80,63 @@ export function ProblemSection() {
           />
         </div>
 
-        {/* Floating widgets - only appear after video ends */}
-        <AnimatePresence>
-          {videoEnded && (
-            <>
-              {/* Widget 1 - Left */}
-              <motion.div
-                variants={widgetVariants}
-                initial="hidden"
-                animate="visible"
-                custom={0.3}
-                className="absolute bottom-[30%] left-[8%] md:left-[12%] z-[3]"
-              >
-                <div className="bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl border border-white/15 px-5 py-4 max-w-[260px]">
-                  <p className="text-[15px] text-white font-medium leading-snug">
-                    3-6 meses buscando apartamento
-                  </p>
-                  <p className="text-[12px] text-white/70 mt-1.5 leading-relaxed">
-                    El proceso tradicional es agotador y frustrante.
-                  </p>
-                </div>
-              </motion.div>
+        {/* Floating glass widgets — always rendered, transform-only entrance (no opacity) */}
+        {/* Widget 1 - Left */}
+        <div
+          className={`absolute bottom-[30%] left-[8%] md:left-[12%] z-[3] transition-[transform,visibility] duration-700 ease-out ${
+            videoEnded
+              ? "visible translate-y-0 scale-100"
+              : "invisible translate-y-5 scale-[0.92]"
+          }`}
+          style={{ transitionDelay: videoEnded ? "0.2s" : "0s" }}
+        >
+          <div className={glassWidgetClass}>
+            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+              3-6 meses buscando apartamento
+            </p>
+            <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
+              El proceso tradicional es agotador y frustrante.
+            </p>
+          </div>
+        </div>
 
-              {/* Widget 2 - Top Right */}
-              <motion.div
-                variants={widgetVariants}
-                initial="hidden"
-                animate="visible"
-                custom={0.5}
-                className="absolute top-[25%] right-[8%] md:right-[12%] z-[3]"
-              >
-                <div className="bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl border border-white/15 px-5 py-4 max-w-[260px]">
-                  <p className="text-[15px] text-white font-medium leading-snug">
-                    40% de impago sin verificación
-                  </p>
-                  <p className="text-[12px] text-white/70 mt-1.5 leading-relaxed">
-                    Sin verificación real, los propietarios asumen todo el riesgo.
-                  </p>
-                </div>
-              </motion.div>
+        {/* Widget 2 - Top Right */}
+        <div
+          className={`absolute top-[25%] right-[8%] md:right-[12%] z-[3] transition-[transform,visibility] duration-700 ease-out ${
+            videoEnded
+              ? "visible translate-y-0 scale-100"
+              : "invisible translate-y-5 scale-[0.92]"
+          }`}
+          style={{ transitionDelay: videoEnded ? "0.45s" : "0s" }}
+        >
+          <div className={glassWidgetClass}>
+            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+              40% de impago sin verificación
+            </p>
+            <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
+              Sin verificación real, los propietarios asumen todo el riesgo.
+            </p>
+          </div>
+        </div>
 
-              {/* Widget 3 - Bottom Right */}
-              <motion.div
-                variants={widgetVariants}
-                initial="hidden"
-                animate="visible"
-                custom={0.7}
-                className="absolute bottom-[15%] right-[15%] md:right-[20%] z-[3]"
-              >
-                <div className="bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl border border-white/15 px-5 py-4 max-w-[260px]">
-                  <p className="text-[15px] text-white font-medium leading-snug">
-                    +$6M en comisiones
-                  </p>
-                  <p className="text-[12px] text-white/70 mt-1.5 leading-relaxed">
-                    Depósitos, comisiones y costos ocultos que no necesitas pagar.
-                  </p>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+        {/* Widget 3 - Bottom Right */}
+        <div
+          className={`absolute bottom-[15%] right-[15%] md:right-[20%] z-[3] transition-[transform,visibility] duration-700 ease-out ${
+            videoEnded
+              ? "visible translate-y-0 scale-100"
+              : "invisible translate-y-5 scale-[0.92]"
+          }`}
+          style={{ transitionDelay: videoEnded ? "0.7s" : "0s" }}
+        >
+          <div className={glassWidgetClass}>
+            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+              +$6M en comisiones
+            </p>
+            <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
+              Depósitos, comisiones y costos ocultos que no necesitas pagar.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Section 2: Stats cards with real people - Meridian style */}

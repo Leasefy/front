@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bed, Bathtub, CornersOut, Car, Building, Calendar, Stack, ArrowsOut } from '@phosphor-icons/react';
+import { Bed, Bathtub, CornersOut, Car, Building, Calendar, Stack, ArrowsOut, CaretDown } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -102,20 +102,49 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
   const currentYear = new Date().getFullYear();
   const [open, setOpen] = useState(false);
   const [localValue, setLocalValue] = useState(String(value));
-  const [isFocused, setIsFocused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const closingRef = useRef(false);
 
   useEffect(() => {
-    if (!isFocused && !open) setLocalValue(String(value));
-  }, [value, isFocused, open]);
+    if (!open) setLocalValue(String(value));
+  }, [value, open]);
 
-  // Scroll to selected year when grid opens
+  // Click outside to close
   useEffect(() => {
-    if (open && gridRef.current) {
-      const selected = gridRef.current.querySelector('[data-selected="true"]');
-      if (selected) selected.scrollIntoView({ block: "center", behavior: "instant" });
-    }
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        commit(localValue);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open, localValue]);
+
+  // Scroll to selected year when grid opens + trap scroll inside dropdown
+  useEffect(() => {
+    if (!open || !gridRef.current) return;
+    const el = gridRef.current;
+    const selected = el.querySelector('[data-selected="true"]');
+    if (selected) selected.scrollIntoView({ block: "center", behavior: "instant" });
+
+    const handleWheel = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const atTop = scrollTop <= 0 && e.deltaY < 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0;
+      if (atTop || atBottom) {
+        e.preventDefault();
+      }
+      e.stopPropagation();
+    };
+    const handleTouch = (e: TouchEvent) => { e.stopPropagation(); };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('touchmove', handleTouch, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('touchmove', handleTouch);
+    };
   }, [open]);
 
   const commit = (raw: string) => {
@@ -138,14 +167,13 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
         <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
         Año de construcción
       </Label>
-      <div className="relative max-w-[200px]">
+      <div ref={containerRef} className="relative max-w-[200px]">
         <Input
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
           value={localValue}
           onFocus={(e) => {
-            setIsFocused(true);
             setOpen(true);
             e.target.select();
           }}
@@ -153,32 +181,25 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
             const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
             setLocalValue(raw);
           }}
-          onBlur={() => {
-            setIsFocused(false);
-            // Delay to check if focus moved to the grid
-            setTimeout(() => {
-              if (!closingRef.current && gridRef.current && !gridRef.current.matches(":hover")) {
-                setOpen(false);
-                commit(localValue);
-              }
-              closingRef.current = false;
-            }, 150);
-          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               commit(localValue);
               setOpen(false);
               (e.target as HTMLInputElement).blur();
             }
+            if (e.key === "Escape") {
+              setOpen(false);
+              (e.target as HTMLInputElement).blur();
+            }
           }}
-          className="text-center rounded-xl border-neutral-200 dark:border-neutral-700"
+          className="text-center pr-9 rounded-xl border-neutral-200 dark:border-neutral-700"
         />
+        <CaretDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
 
         {open && (
           <div
             ref={gridRef}
-            onMouseDown={(e) => e.preventDefault()}
-            className="absolute z-20 top-full mt-1 left-0 right-0 bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 shadow-lg max-h-[240px] overflow-y-auto p-2 rounded-xl"
+            className="absolute z-20 top-full mt-1 left-0 right-0 bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 shadow-lg max-h-[240px] overflow-y-auto overscroll-contain p-2 rounded-xl"
           >
             <div className="grid grid-cols-4 gap-1">
               {years.map((year) => (
@@ -187,7 +208,6 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
                   type="button"
                   data-selected={year === value}
                   onClick={() => {
-                    closingRef.current = true;
                     onChange(year);
                     setLocalValue(String(year));
                     setOpen(false);
@@ -195,7 +215,7 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
                   className={cn(
                     "py-1.5 text-[13px] font-medium transition-colors rounded-lg",
                     year === value
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-primary text-white"
                       : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   )}
                 >

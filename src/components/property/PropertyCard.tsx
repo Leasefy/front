@@ -229,8 +229,8 @@ export function PropertyCard({
             className={cn(
               'absolute bottom-3 right-3 z-10 text-[11px] font-medium rounded-full px-2.5 py-1 border backdrop-blur-xl',
               qualification.qualifies
-                ? 'bg-emerald-500/20 text-white border-emerald-400/30'
-                : 'bg-amber-500/20 text-white border-amber-400/30'
+                ? 'bg-[hsl(var(--success-500)/0.2)] text-white border-[hsl(var(--success-500)/0.3)]'
+                : 'bg-[hsl(var(--warning-500)/0.2)] text-white border-[hsl(var(--warning-500)/0.3)]'
             )}
           >
             {qualification.qualifies ? 'Califica' : 'Fuera de presupuesto'}

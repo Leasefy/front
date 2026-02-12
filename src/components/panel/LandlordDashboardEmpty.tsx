@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Plus, Play, CreditCard, CaretRight, Check, ArrowRight, Shield, Lightning, Users, Buildings, Clock, TrendUp, X, VideoCamera, FileText, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 
@@ -76,7 +76,7 @@ const getSetupSteps = (hasProperty: boolean): SetupStep[] => [
 // ============================================================================
 
 function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClose: () => void; onComplete: () => void }) {
-  const { locale } = useTranslation();
+  const { locale } = useI18n();
 
   if (!open) return null;
 
@@ -137,7 +137,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
 // ============================================================================
 
 export function LandlordDashboardEmpty() {
-  const { t, locale } = useTranslation();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Propietario' : 'Owner');

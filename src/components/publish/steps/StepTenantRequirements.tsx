@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Lock, LockKeyOpen, LockOpen } from '@phosphor-icons/react';
+import { Check, Lock, LockOpen } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import {
   TenantRequirements,
@@ -46,8 +46,8 @@ function RequirementSection({
 }: RequirementSectionProps) {
   return (
     <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#2a2a2c]">
-      <div className="flex items-start justify-between mb-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
           <h4 className="text-sm font-medium text-neutral-900 dark:text-white">
             {title}
           </h4>
@@ -57,28 +57,34 @@ function RequirementSection({
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onToggleNonNegotiable}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200',
-            isNonNegotiable
-              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-          )}
-        >
-          {isNonNegotiable ? (
-            <>
-              <Lock className="w-3 h-3" />
-              Innegociable
-            </>
-          ) : (
-            <>
-              <LockOpen className="w-3 h-3" />
-              Preferido
-            </>
-          )}
-        </button>
+        <div className="flex items-center shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-0.5">
+          <button
+            type="button"
+            onClick={() => { if (isNonNegotiable) onToggleNonNegotiable(); }}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              !isNonNegotiable
+                ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
+            )}
+          >
+            <LockOpen className="w-3 h-3" />
+            Preferido
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (!isNonNegotiable) onToggleNonNegotiable(); }}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              isNonNegotiable
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
+            )}
+          >
+            <Lock className="w-3 h-3" />
+            Innegociable
+          </button>
+        </div>
       </div>
       {children}
     </div>

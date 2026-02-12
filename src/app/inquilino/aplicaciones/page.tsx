@@ -9,7 +9,7 @@ import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, 
 import { getActiveApplications, getCompletedApplications } from '@/lib/data/mock-tenant-applications';
 import { mockProperties } from '@/lib/data/mock-properties';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -20,7 +20,7 @@ const ITEMS_PER_PAGE = 4;
  * Tenant Applications Page - Landing Style with List/Grid views and Pagination
  */
 export default function AplicacionesPage() {
-  const { t, locale, formatCurrency } = useTranslation();
+  const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');

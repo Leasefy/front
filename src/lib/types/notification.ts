@@ -452,7 +452,7 @@ export function formatNotificationTime(createdAt: string): string {
   if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
   if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} ${Math.floor(diffDays / 7) === 1 ? 'semana' : 'semanas'}`;
-  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
 export function getNotificationIcon(type: string): string {

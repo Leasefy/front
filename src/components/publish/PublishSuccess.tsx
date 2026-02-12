@@ -4,15 +4,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
+import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
+import { useAuth } from '@/lib/auth/use-auth';
+import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { PLANS, AGENCY_PLANS } from '@/lib/data/mock-subscriptions';
 import confetti from 'canvas-confetti';
 
 export function PublishSuccess() {
   const { draft } = usePublish();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [countdown, setCountdown] = useState(5);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Mark property as published in localStorage for onboarding progress
   useEffect(() => {
@@ -71,8 +76,10 @@ export function PublishSuccess() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-redirect countdown
+  // Auto-redirect countdown (only for authenticated users)
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -85,13 +92,12 @@ export function PublishSuccess() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [router, isAuthenticated]);
 
-  const planLabels = {
-    free: 'Plan Gratis',
-    pro: 'Plan Propietario',
-    business: 'Plan Inmobiliaria',
-  };
+  const planLabels = Object.fromEntries([
+    ...PLANS.map((p) => [p.id, `Plan ${p.name}`]),
+    ...AGENCY_PLANS.map((p) => [p.id, `Plan ${p.name}`]),
+  ]);
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center p-4">
@@ -206,7 +212,7 @@ export function PublishSuccess() {
               <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-xl text-center">
                 <Sparkle className="w-4 h-4 mx-auto text-indigo-600 dark:text-indigo-400 mb-1" />
                 <p className="text-xs font-semibold text-neutral-900 dark:text-white">
-                  {draft.selectedPlan ? planLabels[draft.selectedPlan as keyof typeof planLabels] : 'Plan'}
+                  {draft.selectedPlan ? planLabels[draft.selectedPlan] ?? 'Plan' : 'Plan'}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">Activo</p>
               </div>
@@ -219,13 +225,24 @@ export function PublishSuccess() {
               transition={{ delay: 0.5 }}
               className="space-y-3 pt-2"
             >
-              <Link
-                href="/panel/propiedades"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                Ver mi propiedad en el panel
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  href="/panel/propiedades"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  Ver mi propiedad en el panel
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Ver mi propiedad en el panel
+                </button>
+              )}
 
               <button
                 type="button"
@@ -247,13 +264,26 @@ export function PublishSuccess() {
                 Publicar otro inmueble
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                Redirigiendo en {countdown}s...
-              </span>
+              {isAuthenticated ? (
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Redirigiendo en {countdown}s...
+                </span>
+              ) : (
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Inicia sesion para acceder al panel
+                </span>
+              )}
             </div>
           </div>
         </div>
       </motion.div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        defaultRole={draft.ownerType === 'inmobiliaria' ? 'agency' : 'landlord'}
+        returnUrl={draft.ownerType === 'inmobiliaria' ? '/panel/inmobiliaria' : '/panel/propiedades'}
+      />
     </div>
   );
 }

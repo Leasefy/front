@@ -2,11 +2,12 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, Briefcase, House, Shield, Clock, Lightning, CheckCircle, Info, Lock, Eye, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
-import { useTranslation } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 
 interface TenantOnboardingShellProps {
   children: React.ReactNode
@@ -76,7 +77,8 @@ const STEP_WHY_CONTENT = {
 
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
-  const { locale } = useTranslation()
+  const { isAuthenticated } = useAuth()
+  const { locale } = useI18n()
   const {
     currentStep,
     totalSteps,
@@ -154,7 +156,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
   }
 
   const handleSkip = () => {
-    router.push('/inquilino')
+    router.push(isAuthenticated ? '/inquilino' : '/')
   }
 
   return (

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { UserPlus, CheckCircle, Chat, FileText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { Activity, ActivityType } from '@/lib/data/mock-activity';
 
 // Format relative time
-function formatRelativeTime(isoDate: string): string {
+function formatRelativeTime(isoDate: string, locale = 'es'): string {
   const date = new Date(isoDate);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -24,7 +25,7 @@ function formatRelativeTime(isoDate: string): string {
   if (diffDays < 7) {
     return `${diffDays}d`;
   }
-  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'short' });
 }
 
 // Icon by activity type
@@ -40,6 +41,7 @@ interface ActivityItemProps {
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
+  const { locale } = useI18n();
   const Icon = activityIcons[activity.type];
 
   // Map activity types to accent colors
@@ -73,7 +75,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
 
       {/* Time badge */}
       <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
-        {formatRelativeTime(activity.timestamp)}
+        {formatRelativeTime(activity.timestamp, locale)}
       </span>
     </div>
   );

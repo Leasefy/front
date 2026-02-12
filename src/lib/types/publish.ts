@@ -172,7 +172,8 @@ export interface PropertyDraft {
   tenantRequirements: TenantRequirements;
 
   // Step 9: Plan Selection
-  selectedPlan: 'free' | 'pro' | 'business' | '';
+  ownerType: 'propietario' | 'inmobiliaria' | '';
+  selectedPlan: 'free' | 'pro' | 'business' | 'starter' | 'growth' | 'agency-business' | 'enterprise' | '';
 }
 
 export interface PublishStep {
@@ -258,5 +259,6 @@ export const initialPropertyDraft: PropertyDraft = {
   title: '',
   description: '',
   tenantRequirements: initialTenantRequirements,
+  ownerType: '',
   selectedPlan: '',
 };

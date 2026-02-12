@@ -207,7 +207,7 @@ export function StepPersonal() {
           onChange={(e) =>
             handleInputChange(
               'timeAtCurrentAddress',
-              e.target.value ? parseInt(e.target.value, 10) : 0
+              e.target.value === '' ? '' : parseInt(e.target.value, 10)
             )
           }
           onBlur={() => handleBlur('timeAtCurrentAddress')}
@@ -252,7 +252,7 @@ export function StepPersonal() {
             onChange={(e) =>
               handleInputChange(
                 'dependents',
-                e.target.value ? parseInt(e.target.value, 10) : 0
+                e.target.value === '' ? '' : parseInt(e.target.value, 10)
               )
             }
             onBlur={() => handleBlur('dependents')}

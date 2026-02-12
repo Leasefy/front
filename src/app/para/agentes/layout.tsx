@@ -34,7 +34,7 @@ export default function AgentesLayout({
         name="Herramientas para Agentes Inmobiliarios"
         description="Plataforma de herramientas para agentes inmobiliarios independientes que gestionan arriendos."
         url="/para/agentes"
-        serviceTextT="Real Estate Agent Tools"
+        serviceType="Real Estate Agent Tools"
         areaServed={["Colombia"]}
       />
       {children}

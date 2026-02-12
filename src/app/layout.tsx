@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, DM_Sans, DM_Mono } from "next/font/google";
+import { Manrope, DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -18,10 +18,10 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
 });
 
-const dmMono = DM_Mono({
+const spaceMono = Space_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "700"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -109,7 +109,7 @@ export default function RootLayout({
         <OrganizationJsonLd />
         <WebsiteJsonLd />
       </head>
-      <body className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${dmSans.variable} ${spaceMono.variable} font-sans antialiased`}>
         {/* Skip link for keyboard/screen reader users */}
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal

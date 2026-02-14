@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Property } from '@/lib/types/property';
-import { mockProperties } from '@/lib/data/mock-properties';
 
 const STORAGE_KEY = 'arriendo-facil-wishlist';
 
@@ -17,8 +16,8 @@ interface WishlistContextTextT {
   addToWishlist: (propertyId: string) => void;
   /** Remove a property from wishlist */
   removeFromWishlist: (propertyId: string) => void;
-  /** Get all wishlisted properties with full data */
-  getWishlistedProperties: () => Property[];
+  /** Get all wishlisted properties from provided array */
+  getWishlistedProperties: (properties: Property[]) => Property[];
   /** Count of wishlisted properties */
   count: number;
 }
@@ -81,10 +80,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     setWishlist((prev) => prev.filter((id) => id !== propertyId));
   }, []);
 
-  const getWishlistedProperties = useCallback(() => {
-    // In a real app, this would fetch from API
-    // For now, filter from mock data
-    return mockProperties.filter((p) => wishlist.includes(p.id));
+  const getWishlistedProperties = useCallback((properties: Property[]) => {
+    return properties.filter((p) => wishlist.includes(p.id));
   }, [wishlist]);
 
   return (

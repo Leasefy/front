@@ -16,6 +16,8 @@ export function StepPhotos() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { addPhotoFiles, removePhotoFile: removeFile, reorderPhotoFiles } = usePublish();
+
   const processFiles = useCallback((files: FileList | File[]) => {
     setError(null);
     const fileArray = Array.from(files);
@@ -40,10 +42,11 @@ export function StepPhotos() {
     }
 
     if (validFiles.length > 0) {
-      const urls = validFiles.map((f) => URL.createObjectURL(f));
+      // addPhotoFiles stores File objects and returns blob URLs
+      const urls = addPhotoFiles(validFiles);
       updateDraft({ photos: [...draft.photos, ...urls] });
     }
-  }, [draft.photos, updateDraft]);
+  }, [draft.photos, updateDraft, addPhotoFiles]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -76,6 +79,7 @@ export function StepPhotos() {
     if (url.startsWith('blob:')) URL.revokeObjectURL(url);
     const updated = draft.photos.filter((_, i) => i !== index);
     updateDraft({ photos: updated });
+    removeFile(index);
   };
 
   // Drag-to-reorder
@@ -90,6 +94,7 @@ export function StepPhotos() {
     const [removed] = updated.splice(draggedIndex, 1);
     updated.splice(index, 0, removed);
     updateDraft({ photos: updated });
+    reorderPhotoFiles(draggedIndex, index);
     setDraggedIndex(index);
   };
 

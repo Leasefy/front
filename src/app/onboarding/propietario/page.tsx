@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api/client'
-import { useAuth } from '@/lib/auth/use-auth'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================================
 // TextTs & Constants
@@ -56,7 +56,7 @@ function OnboardingPropietarioContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnUrl = searchParams.get('returnUrl')
-  const { refreshUser } = useAuth()
+  const { refreshUser, isAuthenticated } = useAuth()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)

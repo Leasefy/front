@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sparkle, CaretLeft, CaretRight, ArrowUpRight, Info, TrendUp } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperties } from '@/lib/hooks/useProperties';
 import {
   useTenantProfile,
   RISK_LEVEL_COLORS,
@@ -39,11 +39,14 @@ export function RecommendedProperties({
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch properties from API
+  const { properties: allProperties } = useProperties({ limit: 100 });
+
   // Calculate recommendations
   const recommendations = useMemo(() => {
-    if (!profile) return [];
-    return getRecommendedProperties(mockProperties, profile, limit);
-  }, [profile, limit]);
+    if (!profile || allProperties.length === 0) return [];
+    return getRecommendedProperties(allProperties, profile, limit);
+  }, [profile, allProperties, limit]);
 
   // Scroll handlers
   const scroll = (direction: 'left' | 'right') => {

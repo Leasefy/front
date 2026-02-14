@@ -29,6 +29,7 @@ import {
 } from '@/lib/validation/applicationValidation';
 import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
+import { applicationsApi } from '@/lib/api/applications.service';
 
 // ============================================================================
 // Local storage key
@@ -84,6 +85,7 @@ interface ApplicationContextValue {
   // Actions
   clearApplication: () => void;
   submitApplication: () => Promise<void>;
+  submissionError: string | null;
 
   // Computed values
   completedSteps: number[];
@@ -146,6 +148,7 @@ export function ApplicationProvider({
   });
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
   const [attemptedAdvance, setAttemptedAdvance] = useState(false);
@@ -327,12 +330,71 @@ export function ApplicationProvider({
 
   const submitApplication = useCallback(async () => {
     setIsLoading(true);
+    setSubmissionError(null);
     try {
-      // In frontend-only mode, simulate submission
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // 1. Create application via API
+      const created = await applicationsApi.create({
+        propertyId,
+        // Personal
+        fullName: application.personal.fullName,
+        documentType: application.personal.documentType,
+        documentNumber: application.personal.documentNumber,
+        dateOfBirth: application.personal.dateOfBirth,
+        phone: application.personal.phone,
+        email: application.personal.email,
+        currentAddress: application.personal.currentAddress,
+        timeAtCurrentAddress: application.personal.timeAtCurrentAddress,
+        maritalStatus: application.personal.maritalStatus,
+        dependents: application.personal.dependents,
+        // Employment
+        employmentStatus: application.employment.employmentStatus,
+        companyName: application.employment.companyName,
+        industry: application.employment.industry,
+        position: application.employment.position,
+        contractType: application.employment.contractType,
+        timeAtJob: application.employment.timeAtJob,
+        employerPhone: application.employment.employerPhone,
+        employerAddress: application.employment.employerAddress,
+        // Income
+        monthlySalary: application.income.monthlySalary,
+        additionalIncome: application.income.additionalIncome,
+        additionalIncomeSource: application.income.additionalIncomeSource,
+        totalMonthlyIncome: application.income.totalMonthlyIncome,
+        monthlyObligations: application.income.monthlyObligations,
+        availableForRent: application.income.availableForRent,
+        // References
+        references: application.references as Record<string, unknown>,
+        // Co-signer
+        hasCoSigner: application.hasCoSigner,
+        coSigner: application.coSigner as unknown as Record<string, unknown>,
+        // Agent attribution
+        agentCode: (application as Application & { agentCode?: string }).agentCode,
+        linkCode: (application as Application & { linkCode?: string }).linkCode,
+      });
+
+      // 2. Upload documents
+      const docs = application.documents;
+      const docEntries: Array<{ file: File | null | undefined; type: string }> = [
+        { file: docs.idDocument?.file, type: 'id_document' },
+        { file: docs.incomeProof?.file, type: 'income_proof' },
+        { file: docs.employmentLetter?.file, type: 'employment_letter' },
+        { file: docs.bankStatements?.file, type: 'bank_statements' },
+        { file: docs.creditReport?.file, type: 'credit_report' },
+      ];
+
+      for (const { file, type } of docEntries) {
+        if (file) {
+          try {
+            await applicationsApi.uploadDocument(file, type);
+          } catch {
+            console.error(`Failed to upload document: ${type}`);
+          }
+        }
+      }
 
       setApplication((prev) => ({
         ...prev,
+        id: created.id,
         status: 'submitted',
         updatedAt: new Date().toISOString(),
       }));
@@ -344,10 +406,13 @@ export function ApplicationProvider({
           contextLogger.error('Failed to clear application from localStorage after submission', error);
         },
       });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
+      setSubmissionError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [propertyId]);
+  }, [propertyId, application]);
 
   // ========================================================================
   // Computed: completed steps
@@ -442,6 +507,7 @@ export function ApplicationProvider({
 
     clearApplication,
     submitApplication,
+    submissionError,
 
     completedSteps,
     isStepCompleted,

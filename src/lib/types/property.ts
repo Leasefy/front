@@ -66,6 +66,9 @@ export interface Property {
   bathrooms: number;
   area: number; // m²
   floor?: number;
+  parkingSpaces?: number;
+  stratum?: number;
+  yearBuilt?: number;
 
   // Amenities
   amenities: PropertyAmenity[];

@@ -43,7 +43,7 @@ interface OnboardingData {
 function OnboardingInmobiliariaContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const { t } = useI18n()
   const returnUrl = searchParams.get('returnUrl')
 
@@ -170,12 +170,11 @@ function OnboardingInmobiliariaContent() {
     setAuthError(null)
 
     try {
-      // Register the user
-      const result = await register(data.contactPerson, data.email, data.password, 'agency')
-
-      if (!result.success) {
-        setAuthError(result.error || t('inmobiliaria.onboarding.register.errors.createAccount'))
-        setIsSubmitting(false)
+      // If not authenticated, trigger Google sign-in
+      if (!isAuthenticated) {
+        // Save draft before redirecting to Google OAuth
+        localStorage.setItem('plan_onboarding_agency_draft', JSON.stringify(data))
+        await signInWithGoogle()
         return
       }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -8,14 +8,15 @@ import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileTex
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
-import { getLandlordProperty, getCandidatesForProperty } from '@/lib/data/mock-landlord-data';
-import { getCandidateById } from '@/lib/data/mock-candidates';
+import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
+import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
+import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
+import { landlordApi } from '@/lib/api/landlord.service';
 import { getVisitsForProperty } from '@/lib/data/mock-visits';
 import { getContractsForProperty } from '@/lib/data/mock-contracts';
 import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
@@ -35,6 +36,10 @@ import type { Candidate } from '@/lib/types/candidate';
 import { RISK_LEVELS } from '@/lib/types/risk-score';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
 import { DEFAULT_AVAILABILITY_SCHEDULE, type AvailabilitySchedule } from '@/lib/types/property';
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+}
 
 // ============================================================================
 // TextTs
@@ -61,20 +66,24 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const { propertyId } = params;
   const router = useRouter();
 
-  // Get property and candidates data
-  const property = getLandlordProperty(propertyId);
-  const initialCandidates = getCandidatesForProperty(propertyId);
-  const propertyVisits = getVisitsForProperty(propertyId);
+  // Fetch property with candidates from API
+  const { property, isLoading: propertyLoading } = useLandlordProperty(propertyId);
+  const { candidates: apiCandidates, isLoading: candidatesLoading, refetch: refetchCandidates } = useCandidates({ propertyId });
+  const { decide } = useCandidateDecision();
 
-  // Check for active contract on this property
+  // Visits and contracts still use mock data (will be migrated in later phases)
+  const propertyVisits = getVisitsForProperty(propertyId);
   const propertyContracts = getContractsForProperty(propertyId);
   const activeContract = propertyContracts.find(c => c.status === 'active');
+
+  const isLoading = propertyLoading || candidatesLoading;
 
   // State for tabs
   const [activeTab, setActiveTab] = useState('all');
 
-  // State for candidate list
-  const [candidates, setCandidates] = useState(initialCandidates);
+  // Use API candidates as local state for optimistic updates
+  const [candidates, setCandidates] = useState(apiCandidates);
+  useEffect(() => { setCandidates(apiCandidates); }, [apiCandidates]);
 
   // State for detail drawer
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
@@ -84,7 +93,23 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const [secondaryView, setSecondaryView] = useState<'profile' | 'documents' | null>(null);
 
   // State for document preview modal
-  const [previewDoc, setPreviewDoc] = useState<{ name: string; subtitle: string; verified: boolean } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; subtitle: string; verified: boolean; url?: string; size?: number; mimeType?: string; createdAt?: string } | null>(null);
+
+  // Fetch real documents for selected candidate
+  const { documents: candidateDocuments, isLoading: isLoadingDocs } = useCandidateDocuments(
+    selectedCandidate?.id
+  );
+
+  // Map document types to display labels
+  const DOC_TYPE_LABELS: Record<string, { name: string; subtitle: string }> = {
+    id_document: { name: 'Documento de identidad', subtitle: 'Cédula de ciudadanía' },
+    income_proof: { name: 'Comprobante de ingresos', subtitle: 'Últimos 3 meses' },
+    employment_letter: { name: 'Carta laboral', subtitle: 'Certificación de empleo' },
+    bank_statements: { name: 'Extractos bancarios', subtitle: 'Últimos 3 meses' },
+    credit_report: { name: 'Reporte crediticio', subtitle: 'Historial de crédito' },
+  };
+
+  const EXPECTED_DOC_TYPES = ['id_document', 'income_proof', 'employment_letter', 'bank_statements'];
 
   // State for availability schedule
   const [availabilitySchedule, setAvailabilitySchedule] = useState<AvailabilitySchedule>(
@@ -223,12 +248,14 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   ];
 
   // Handle view details - open drawer with full candidate data
-  const handleRowClick = useCallback((row: CandidateRow) => {
-    const fullCandidate = getCandidateById(row.id);
-    if (fullCandidate) {
+  const handleRowClick = useCallback(async (row: CandidateRow) => {
+    try {
+      const fullCandidate = await landlordApi.getCandidate(row.id);
       setSelectedCandidate(fullCandidate);
       setIsDetailOpen(true);
       setSecondaryView(null);
+    } catch {
+      toast.error('Error cargando detalles del candidato');
     }
   }, []);
 
@@ -239,51 +266,61 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
     setTimeout(() => setSelectedCandidate(null), 300);
   }, []);
 
-  // Handle decision - update candidate status and take appropriate action
+  // Handle decision - update candidate status via API and take appropriate action
   const handleDecision = useCallback(
-    (candidateId: string, newStatus: LandlordCandidateStatus) => {
+    async (candidateId: string, newStatus: LandlordCandidateStatus) => {
       const candidate = candidates.find(c => c.id === candidateId);
 
-      // Update local state
-      setCandidates((prev) =>
-        prev.map((c) =>
-          c.id === candidateId
-            ? { ...c, status: newStatus, statusChangedAt: new Date().toISOString() }
-            : c
-        )
-      );
+      // Map to API decision format
+      const decisionMap: Record<LandlordCandidateStatus, 'pre-approved' | 'approved' | 'rejected' | 'more-info'> = {
+        'pending': 'more-info',
+        'pre-approved': 'pre-approved',
+        'approved': 'approved',
+        'rejected': 'rejected',
+        'more-info': 'more-info',
+      };
 
-      // Handle each status differently
-      if (newStatus === 'approved') {
-        // Navigate to contract flow
-        handleCloseDetail();
-        toast.success('Candidato aprobado', {
-          description: `Iniciando proceso de contrato con ${candidate?.fullName}`,
-        });
-        // Navigate to contract page - use ?new=true to always start fresh
-        router.push(`/panel/${propertyId}/contract/${candidateId}?new=true`);
-      } else if (newStatus === 'pre-approved') {
-        // Pre-approval - keep in list but show next steps
-        handleCloseDetail();
-        toast.success('Candidato pre-aprobado', {
-          description: `${candidate?.fullName} ha sido pre-aprobado. Puedes continuar revisando otros candidatos o aprobar definitivamente.`,
-          duration: 5000,
-        });
-      } else if (newStatus === 'rejected') {
-        // Rejection
-        handleCloseDetail();
-        toast('Candidato rechazado', {
-          description: `${candidate?.fullName} ha sido rechazado y notificado.`,
-          icon: '❌',
-        });
-      } else {
-        handleCloseDetail();
-        toast.info('Estado actualizado', {
-          description: `El estado de ${candidate?.fullName} ha sido actualizado.`,
-        });
+      const result = await decide(candidateId, { decision: decisionMap[newStatus] });
+
+      if (result) {
+        // Optimistic local update
+        setCandidates((prev) =>
+          prev.map((c) =>
+            c.id === candidateId
+              ? { ...c, status: newStatus, statusChangedAt: new Date().toISOString() }
+              : c
+          )
+        );
+
+        if (newStatus === 'approved') {
+          handleCloseDetail();
+          toast.success('Candidato aprobado', {
+            description: `Iniciando proceso de contrato con ${candidate?.fullName}`,
+          });
+          router.push(`/panel/${propertyId}/contract/${candidateId}?new=true`);
+        } else if (newStatus === 'pre-approved') {
+          handleCloseDetail();
+          toast.success('Candidato pre-aprobado', {
+            description: `${candidate?.fullName} ha sido pre-aprobado. Puedes continuar revisando otros candidatos o aprobar definitivamente.`,
+            duration: 5000,
+          });
+        } else if (newStatus === 'rejected') {
+          handleCloseDetail();
+          toast('Candidato rechazado', {
+            description: `${candidate?.fullName} ha sido rechazado y notificado.`,
+            icon: '❌',
+          });
+        } else {
+          handleCloseDetail();
+          toast.info('Estado actualizado', {
+            description: `El estado de ${candidate?.fullName} ha sido actualizado.`,
+          });
+        }
+
+        refetchCandidates();
       }
     },
-    [handleCloseDetail, candidates, router, propertyId]
+    [handleCloseDetail, candidates, router, propertyId, decide, refetchCandidates]
   );
 
   // Quick actions for detail sheet
@@ -589,45 +626,108 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       </div>
     ) : (
       <div className="space-y-3">
-        {[
-          { key: 'hasIdDocument' as const, name: 'Documento de identidad', subtitle: 'Cédula de ciudadanía' },
-          { key: 'hasIncomeProof' as const, name: 'Comprobante de ingresos', subtitle: 'Últimos 3 meses' },
-          { key: 'hasEmploymentLetter' as const, name: 'Carta laboral', subtitle: 'Certificación de empleo' },
-          { key: 'hasBankStatements' as const, name: 'Extractos bancarios', subtitle: 'Últimos 3 meses' },
-        ].map((doc) => {
-          const verified = !!selectedCandidate[doc.key];
-          return (
-            <button
-              key={doc.key}
-              type="button"
-              onClick={() => setPreviewDoc({ name: doc.name, subtitle: doc.subtitle, verified })}
-              className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${verified ? 'bg-emerald-50 hover:bg-emerald-100/60' : 'bg-muted hover:bg-muted/80'}`}
-            >
-              <div className="flex items-center gap-3">
-                <FileText className={`w-5 h-5 ${verified ? 'text-emerald-600' : 'text-muted-foreground'}`} />
-                <div>
-                  <p className="text-sm font-medium text-plan-primary">{doc.name}</p>
-                  <p className="text-xs text-plan-secondary">{doc.subtitle}</p>
-                </div>
-              </div>
-              {verified ? (
-                <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
-              ) : (
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
-              )}
-            </button>
-          );
-        })}
-        <div className="mt-4 p-3 bg-muted rounded">
-          <p className="text-sm text-plan-secondary">
-            <span className="font-medium text-plan-primary">
-              {[selectedCandidate.hasIdDocument, selectedCandidate.hasIncomeProof, selectedCandidate.hasEmploymentLetter, selectedCandidate.hasBankStatements].filter(Boolean).length}
-            </span> de 4 documentos verificados
-          </p>
-        </div>
+        {isLoadingDocs ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {EXPECTED_DOC_TYPES.map((docType) => {
+              const realDoc = candidateDocuments.find(d => d.type === docType);
+              const labels = DOC_TYPE_LABELS[docType] ?? { name: docType, subtitle: '' };
+              const verified = !!realDoc?.verified;
+              const uploaded = !!realDoc;
+              return (
+                <button
+                  key={docType}
+                  type="button"
+                  onClick={() => setPreviewDoc({
+                    name: labels.name,
+                    subtitle: labels.subtitle,
+                    verified,
+                    url: realDoc?.url,
+                    size: realDoc?.size,
+                    mimeType: realDoc?.mimeType,
+                    createdAt: realDoc?.createdAt,
+                  })}
+                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-emerald-50 hover:bg-emerald-100/60' : 'bg-blue-50 hover:bg-blue-100/60') : 'bg-muted hover:bg-muted/80'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className={`w-5 h-5 ${verified ? 'text-emerald-600' : uploaded ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                    <div>
+                      <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
+                      <p className="text-xs text-plan-secondary">{realDoc ? realDoc.fileName : labels.subtitle}</p>
+                    </div>
+                  </div>
+                  {verified ? (
+                    <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
+                  ) : uploaded ? (
+                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Subido</span>
+                  ) : (
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
+                  )}
+                </button>
+              );
+            })}
+            {/* Show extra docs not in EXPECTED_DOC_TYPES */}
+            {candidateDocuments
+              .filter(d => !EXPECTED_DOC_TYPES.includes(d.type))
+              .map((doc) => {
+                const labels = DOC_TYPE_LABELS[doc.type] ?? { name: doc.fileName, subtitle: doc.type };
+                return (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => setPreviewDoc({
+                      name: labels.name,
+                      subtitle: labels.subtitle,
+                      verified: doc.verified,
+                      url: doc.url,
+                      size: doc.size,
+                      mimeType: doc.mimeType,
+                      createdAt: doc.createdAt,
+                    })}
+                    className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${doc.verified ? 'bg-emerald-50 hover:bg-emerald-100/60' : 'bg-blue-50 hover:bg-blue-100/60'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className={`w-5 h-5 ${doc.verified ? 'text-emerald-600' : 'text-blue-600'}`} />
+                      <div>
+                        <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
+                        <p className="text-xs text-plan-secondary">{doc.fileName}</p>
+                      </div>
+                    </div>
+                    {doc.verified ? (
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
+                    ) : (
+                      <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Subido</span>
+                    )}
+                  </button>
+                );
+              })}
+            <div className="mt-4 p-3 bg-muted rounded">
+              <p className="text-sm text-plan-secondary">
+                <span className="font-medium text-plan-primary">
+                  {candidateDocuments.length}
+                </span> de {EXPECTED_DOC_TYPES.length} documentos subidos
+                {candidateDocuments.filter(d => d.verified).length > 0 && (
+                  <> · <span className="text-emerald-600">{candidateDocuments.filter(d => d.verified).length} verificados</span></>
+                )}
+              </p>
+            </div>
+          </>
+        )}
       </div>
     ),
   } : undefined;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Property not found
   if (!property) {
@@ -1070,45 +1170,44 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
             {/* Document preview area */}
             <div className="flex-1 overflow-auto p-6">
-              {previewDoc.verified ? (
+              {previewDoc.url ? (
                 <div className="space-y-5">
                   {/* Status */}
-                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
-                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Documento verificado</p>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400">Verificación automática completada</p>
+                  {previewDoc.verified && (
+                    <div className="flex items-center gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+                      <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Documento verificado</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">Verificación automática completada</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Mock document preview */}
+                  {/* Document preview - show image or file icon */}
                   <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-8 flex flex-col items-center justify-center min-h-[280px]">
-                    <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-500 mb-3" />
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{previewDoc.name}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">PDF · Subido el 15 ene, 2026</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">245 KB · 2 páginas</p>
-                  </div>
-
-                  {/* Details */}
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 font-mono uppercase tracking-wider">Detalles de verificación</p>
-                    <div className="space-y-2.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">Estado</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Aprobado</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">Fecha de carga</span>
-                        <span className="text-neutral-900 dark:text-white">15 ene, 2026</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">Verificado el</span>
-                        <span className="text-neutral-900 dark:text-white">16 ene, 2026</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">Método</span>
-                        <span className="text-neutral-900 dark:text-white">Verificación automática</span>
-                      </div>
+                    {previewDoc.mimeType?.startsWith('image/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-lg object-contain" />
+                    ) : previewDoc.mimeType === 'application/pdf' ? (
+                      <iframe src={previewDoc.url} className="w-full min-h-[400px] rounded-lg" title={previewDoc.name} />
+                    ) : (
+                      <>
+                        <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-500 mb-3" />
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{previewDoc.name}</p>
+                      </>
+                    )}
+                    <div className="mt-3 text-center">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {previewDoc.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'}
+                        {previewDoc.createdAt && ` · Subido el ${new Date(previewDoc.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                      </p>
+                      {previewDoc.size != null && (
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {previewDoc.size > 1024 * 1024
+                            ? `${(previewDoc.size / (1024 * 1024)).toFixed(1)} MB`
+                            : `${Math.round(previewDoc.size / 1024)} KB`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1126,19 +1225,21 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             </div>
 
             {/* Footer */}
-            {previewDoc.verified && (
+            {previewDoc.url && (
               <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 flex gap-3">
-                <button
-                  type="button"
+                <a
+                  href={previewDoc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
                   onClick={() => {
                     toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
-                    setPreviewDoc(null);
                   }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Descargar
-                </button>
+                </a>
                 <button
                   type="button"
                   onClick={() => setPreviewDoc(null)}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sparkle, ArrowLeft, TrendUp, Shield, SealCheck, Funnel, CaretDown, CaretLeft, CaretRight, Crosshair, Lightning, Medal, GridFour, List, Target, Trophy } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperties } from '@/lib/hooks/useProperties';
 import {
   useTenantProfile,
   RISK_LEVEL_COLORS,
@@ -52,11 +52,14 @@ export default function ParaTiPage() {
     setSheetOpen(false);
   };
 
+  // Fetch all available properties from API
+  const { properties: allProperties, isLoading: propertiesLoading } = useProperties({ limit: 100 });
+
   // Get all recommendations (no limit)
   const allRecommendations = useMemo(() => {
-    if (!profile) return [];
-    return getRecommendedProperties(mockProperties, profile);
-  }, [profile]);
+    if (!profile || allProperties.length === 0) return [];
+    return getRecommendedProperties(allProperties, profile);
+  }, [profile, allProperties]);
 
   // Apply filters and sorting
   const filteredRecommendations = useMemo(() => {

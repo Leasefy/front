@@ -9,6 +9,7 @@ import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
+import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import type { Property } from '@/lib/types/property';
@@ -17,13 +18,14 @@ export default function GuardadosPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { getWishlistedProperties, removeFromWishlist, count } = useWishlist();
+  const { properties: allProperties } = useFeaturedProperties(100);
 
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Only show wishlist if onboarding is complete
-  const properties = isOnboardingComplete ? getWishlistedProperties() : [];
+  const properties = isOnboardingComplete ? getWishlistedProperties(allProperties) : [];
   const displayCount = isOnboardingComplete ? count : 0;
 
   const handleViewProperty = (property: Property) => {

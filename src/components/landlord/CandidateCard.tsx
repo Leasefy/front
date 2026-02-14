@@ -19,7 +19,6 @@ import {
   type LandlordCandidateStatus,
 } from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
-import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 
 // ============================================================================
 // TextTs
@@ -28,6 +27,8 @@ import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 export interface CandidateCardProps {
   /** The candidate to display */
   candidate: LandlordCandidate;
+  /** Optional full candidate data for metrics display */
+  fullCandidate?: Candidate;
   /** Property ID for contract generation */
   propertyId: string;
   /** All candidate IDs for this property (for pre-approval limit check) */
@@ -43,13 +44,6 @@ export interface CandidateCardProps {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Get full candidate data from mock candidates for extra info
- */
-function getFullCandidateData(candidateId: string): Candidate | undefined {
-  return MOCK_CANDIDATES.find((c) => c.id === candidateId);
-}
 
 /**
  * Derive history rating from candidate data
@@ -86,6 +80,7 @@ function getClockCounterClockwiseRating(
  */
 export function CandidateCard({
   candidate,
+  fullCandidate,
   propertyId,
   allCandidateIds = [],
   onViewDetails,
@@ -104,10 +99,7 @@ export function CandidateCard({
   const preApprovedCount = getPreApprovedCount(allCandidateIds);
   const canStillPreApprove = canPreApprove(allCandidateIds);
 
-  // Get full candidate data for metrics
-  const fullCandidate = getFullCandidateData(candidate.id);
-
-  // Calculate metrics
+  // Calculate metrics from full candidate data (when available from API)
   const employmentMonths = fullCandidate?.timeAtJob || 0;
   const monthlyIncome = fullCandidate?.totalIncome || 0;
   const historyRating = fullCandidate

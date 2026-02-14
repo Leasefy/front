@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb } from '@phosphor-icons/react';
 
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
@@ -73,7 +73,7 @@ export default function InquilinoPage() {
   // ==========================================================================
 
   // Featured properties for recommendation (always show)
-  const featuredProperties = mockProperties.slice(0, 4);
+  const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
 
   // Loading state
   if (isOnboardingComplete === null) {

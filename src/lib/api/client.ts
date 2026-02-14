@@ -28,8 +28,10 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers = await getAuthHeaders()
+async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
+  const headers: Record<string, string> = token
+    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    : await getAuthHeaders()
 
   const res = await fetch(`${BACKEND_URL}${path}`, {
     method,
@@ -38,10 +40,6 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   })
 
   if (res.status === 401) {
-    // Session expired or invalid - redirect to auth
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth'
-    }
     throw new ApiError(401, 'No autorizado')
   }
 
@@ -59,10 +57,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: string, token?: string) => request<T>('GET', path, undefined, token),
+  post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
+  patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
+  delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),
 }
 /**
  * Leasefy AI API client.

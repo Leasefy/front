@@ -14,7 +14,7 @@ import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
 import { SocialProofBanner } from '@/components/property/SocialProof';
 import { useWishlist } from '@/lib/hooks/useWishlist';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperty } from '@/lib/hooks/useProperties';
 import { formatCurrency, formatArea } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -40,14 +40,45 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
     setGalleryOpen(true);
   }, []);
 
+  // Fetch property from API
+  const { property, isLoading: propertyLoading, error: propertyError } = useProperty(resolvedParams.id);
+
   // Scroll to top on page load and when property changes
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [resolvedParams.id]);
 
-  const property = mockProperties.find((p) => p.id === resolvedParams.id);
+  // Loading state
+  if (propertyLoading) {
+    return (
+      <>
+        <Navbar />
+        <main id="main-content" className="min-h-screen bg-background">
+          <div className="pt-20 container-platform">
+            <div className="animate-pulse space-y-6">
+              <div className="h-[45vh] md:h-[65vh] bg-neutral-100 rounded-2xl" />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 py-10">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="h-4 bg-neutral-100 rounded w-40" />
+                  <div className="h-8 bg-neutral-100 rounded w-3/4" />
+                  <div className="h-10 bg-neutral-100 rounded w-48" />
+                  <div className="grid grid-cols-4 gap-3 mt-6">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-neutral-100 rounded-xl" />)}
+                  </div>
+                </div>
+                <div className="lg:col-span-5 hidden lg:block">
+                  <div className="h-64 bg-neutral-100 rounded-2xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
-  if (!property) {
+  if (!property || propertyError) {
     return (
       <>
         <Navbar />

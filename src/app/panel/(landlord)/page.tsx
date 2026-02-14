@@ -8,9 +8,9 @@ import { motion } from 'framer-motion';
 import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
-import { LANDLORD_PROPERTIES } from '@/lib/data/mock-landlord-data';
+import { useLandlordProperties, useLandlordDashboard } from '@/lib/hooks/useLandlord';
 import { getRecentActivities } from '@/lib/data/mock-activity';
-import { getDashboardData, formatCurrency } from '@/lib/data/mock-dashboard';
+import { getDashboardData } from '@/lib/data/mock-dashboard';
 import { getUpcomingVisits } from '@/lib/data/mock-visits';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit } from '@/lib/types/visit';
@@ -192,7 +192,11 @@ export default function PanelPage() {
     return <SetupDashboard onDismiss={handleDismissSetup} />;
   }
 
-  const properties = LANDLORD_PROPERTIES;
+  // Real API data for properties
+  const { properties: apiProperties, isLoading: propertiesLoading } = useLandlordProperties();
+  const properties = apiProperties;
+
+  // These still use mock data (will be migrated in later phases)
   const recentActivities = getRecentActivities(5);
   const dashboardData = getDashboardData();
   const upcomingVisits = getUpcomingVisits();

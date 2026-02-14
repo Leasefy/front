@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
+import { propertiesApi } from '@/lib/api/properties.service';
 
 interface PublishContextTextT {
   // State
@@ -11,6 +12,14 @@ interface PublishContextTextT {
   completedSteps: number[];
   isSubmitting: boolean;
   isComplete: boolean;
+  submissionError: string | null;
+  createdPropertyId: string | null;
+
+  // Photo files (File objects for upload)
+  photoFiles: File[];
+  addPhotoFiles: (files: File[]) => string[];
+  removePhotoFile: (index: number) => void;
+  reorderPhotoFiles: (fromIndex: number, toIndex: number) => void;
 
   // Actions
   updateDraft: (updates: Partial<PropertyDraft>) => void;
@@ -33,8 +42,33 @@ export function PublishProvider({ children }: { children: ReactNode }) {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const photoFilesRef = useRef<File[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const totalSteps = PUBLISH_STEPS.length;
+
+  // Photo file management (keeps File objects in sync with draft.photos blob URLs)
+  const addPhotoFiles = useCallback((files: File[]): string[] => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    photoFilesRef.current = [...photoFilesRef.current, ...files];
+    setPhotoFiles([...photoFilesRef.current]);
+    return urls;
+  }, []);
+
+  const removePhotoFile = useCallback((index: number) => {
+    photoFilesRef.current = photoFilesRef.current.filter((_, i) => i !== index);
+    setPhotoFiles([...photoFilesRef.current]);
+  }, []);
+
+  const reorderPhotoFiles = useCallback((fromIndex: number, toIndex: number) => {
+    const updated = [...photoFilesRef.current];
+    const [removed] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, removed);
+    photoFilesRef.current = updated;
+    setPhotoFiles([...photoFilesRef.current]);
+  }, []);
 
   const updateDraft = useCallback((updates: Partial<PropertyDraft>) => {
     setDraft(prev => ({ ...prev, ...updates }));
@@ -94,20 +128,61 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const submitProperty = useCallback(async () => {
     setIsSubmitting(true);
+    setSubmissionError(null);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // In real app, would call API to create property
+      // 1. Create property via API
+      const created = await propertiesApi.create({
+        title: draft.title,
+        description: draft.description,
+        type: draft.type,
+        status: 'AVAILABLE',
+        city: draft.city,
+        neighborhood: draft.neighborhood,
+        address: draft.address,
+        monthlyRent: draft.monthlyRent,
+        bedrooms: draft.bedrooms,
+        bathrooms: draft.bathrooms,
+        area: draft.area,
+        adminFee: draft.adminFee || undefined,
+        deposit: draft.deposit || undefined,
+        floor: draft.floor || undefined,
+        parkingSpaces: draft.parkingSpaces || undefined,
+        stratum: draft.stratum || undefined,
+        yearBuilt: draft.yearBuilt || undefined,
+        amenities: draft.amenities.length > 0 ? draft.amenities : undefined,
+      });
+
+      // 2. Upload photos sequentially
+      const files = photoFilesRef.current;
+      for (const file of files) {
+        try {
+          await propertiesApi.uploadImage(created.id, file);
+        } catch {
+          // Continue uploading remaining photos even if one fails
+          console.error(`Failed to upload image: ${file.name}`);
+        }
+      }
+
+      setCreatedPropertyId(created.id);
       setIsComplete(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al publicar la propiedad';
+      setSubmissionError(message);
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  }, [draft]);
 
   const resetDraft = useCallback(() => {
     setDraft(initialPropertyDraft);
     setCurrentStep(1);
     setCompletedSteps([]);
+    setSubmissionError(null);
+    setCreatedPropertyId(null);
+    setIsComplete(false);
+    // Clean up blob URLs
+    photoFilesRef.current = [];
+    setPhotoFiles([]);
   }, []);
 
   const value: PublishContextTextT = {
@@ -117,6 +192,12 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     completedSteps,
     isSubmitting,
     isComplete,
+    submissionError,
+    createdPropertyId,
+    photoFiles,
+    addPhotoFiles,
+    removePhotoFile,
+    reorderPhotoFiles,
     updateDraft,
     nextStep,
     prevStep,

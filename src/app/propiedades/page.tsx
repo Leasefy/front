@@ -9,8 +9,10 @@ import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
 import { PropertyMap, MapToggle } from '@/components/map';
 import { useWishlist } from '@/lib/hooks/useWishlist';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperties } from '@/lib/hooks/useProperties';
 import { cn } from '@/lib/utils';
+import type { PropertyFiltersParams } from '@/lib/api/properties.types';
+import type { Property } from '@/lib/types/property';
 
 /**
  * Property listing page with full-height split layout
@@ -49,14 +51,13 @@ export default function PropiedadesPage() {
 function PropiedadesContent() {
   const searchParams = useSearchParams();
   const heroQuery = searchParams.get('q');
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [aiMagnifyingGlassQuery, setAiMagnifyingGlassQuery] = useState(heroQuery || '');
   const [isAiMagnifyingGlassing, setIsAiMagnifyingGlassing] = useState(false);
   const [showAiResults, setShowAiResults] = useState(false);
-  const [aiResults, setAiResults] = useState<typeof mockProperties>([]);
+  const [aiResults, setAiResults] = useState<Property[]>([]);
   const [mapKey, setMapKey] = useState(0);
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
@@ -70,14 +71,32 @@ function PropiedadesContent() {
   const [selectedTextT, setSelectedTextT] = useState<string | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
 
+  // Build API filters from UI state
+  const apiFilters = useMemo<PropertyFiltersParams>(() => {
+    const filters: PropertyFiltersParams = { limit: 100 };
+    if (selectedCity) filters.city = selectedCity;
+    if (selectedBedrooms) {
+      if (selectedBedrooms !== '4+') {
+        filters.bedrooms = parseInt(selectedBedrooms);
+      }
+      // 4+ handled client-side after fetch
+    }
+    if (selectedTextT) {
+      filters.propertyType = selectedTextT.toUpperCase() as PropertyFiltersParams['propertyType'];
+    }
+    if (selectedPrice) {
+      const [min, max] = selectedPrice.split('-').map(Number);
+      filters.minPrice = min;
+      filters.maxPrice = max;
+    }
+    return filters;
+  }, [selectedCity, selectedBedrooms, selectedTextT, selectedPrice]);
+
+  // Fetch properties from API
+  const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
+
   // Use wishlist hook
   const { isWishlisted, toggleWishlist } = useWishlist();
-
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => setIsInitialLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Force map reload on mount to fix intermittent loading
   useEffect(() => {
@@ -85,8 +104,8 @@ function PropiedadesContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle AI search
-  const handleAiMagnifyingGlass = useCallback((query: string) => {
+  // Handle AI search via backend naturalQuery
+  const handleAiMagnifyingGlass = useCallback(async (query: string) => {
     if (!query.trim()) {
       setShowAiResults(false);
       setAiResults([]);
@@ -96,15 +115,17 @@ function PropiedadesContent() {
     setIsAiMagnifyingGlassing(true);
     setShowAiResults(false);
 
-    // Simulate AI processing and return random results
-    setTimeout(() => {
-      setIsAiMagnifyingGlassing(false);
-      // Get random 4-8 properties as "AI results"
-      const shuffled = [...mockProperties].sort(() => 0.5 - Math.random());
-      const resultCount = Math.floor(Math.random() * 5) + 4;
-      setAiResults(shuffled.slice(0, resultCount));
+    try {
+      const { propertiesApi } = await import('@/lib/api/properties.service');
+      const result = await propertiesApi.list({ naturalQuery: query, limit: 20 });
+      setAiResults(result.data);
       setShowAiResults(true);
-    }, 1800);
+    } catch {
+      setAiResults([]);
+      setShowAiResults(true);
+    } finally {
+      setIsAiMagnifyingGlassing(false);
+    }
   }, []);
 
   // Auto-trigger AI search from hero query param
@@ -115,32 +136,16 @@ function PropiedadesContent() {
     }
   }, [heroQuery, handleAiMagnifyingGlass]);
 
-  // Funnel and sort properties
+  // Client-side: handle 4+ bedrooms filter and sorting (API handles other filters)
   const filteredProperties = useMemo(() => {
-    let result = [...mockProperties];
+    let result = [...apiProperties];
 
-    // Apply filters
-    if (selectedCity) {
-      result = result.filter(p => p.city === selectedCity);
-    }
-    if (selectedBedrooms) {
-      if (selectedBedrooms === '4+') {
-        result = result.filter(p => p.bedrooms >= 4);
-      } else {
-        result = result.filter(p => p.bedrooms === parseInt(selectedBedrooms));
-      }
-    }
-    if (selectedTextT) {
-      result = result.filter(p => p.type === selectedTextT);
-    }
-    if (selectedPrice) {
-      const [min, max] = selectedPrice.split('-').map(Number);
-      result = result.filter(p => {
-        return p.monthlyRent >= min && p.monthlyRent <= max;
-      });
+    // 4+ bedrooms is handled client-side since API does exact match
+    if (selectedBedrooms === '4+') {
+      result = result.filter(p => p.bedrooms >= 4);
     }
 
-    // Apply sorting
+    // Apply client-side sorting
     result.sort((a, b) => {
       switch (sortBy) {
         case 'price_asc':
@@ -155,7 +160,7 @@ function PropiedadesContent() {
     });
 
     return result;
-  }, [selectedCity, selectedBedrooms, selectedTextT, selectedPrice, sortBy]);
+  }, [apiProperties, selectedBedrooms, sortBy]);
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
   const hasActiveFunnels = selectedCity || selectedBedrooms || selectedTextT || selectedPrice;

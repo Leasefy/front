@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Check, SpinnerGap, PaperPlaneTilt } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, Check, SpinnerGap, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { PUBLISH_STEPS } from '@/lib/types/publish';
@@ -22,6 +22,7 @@ export function PublishShell({ children }: PublishShellProps) {
     submitProperty,
     isSubmitting,
     canProceed,
+    submissionError,
   } = usePublish();
 
   const currentStepConfig = PUBLISH_STEPS[currentStep - 1];
@@ -207,6 +208,14 @@ export function PublishShell({ children }: PublishShellProps) {
               <div className="px-4 py-6 lg:px-6 lg:py-8">
                 {children}
               </div>
+
+              {/* Error message */}
+              {submissionError && (
+                <div className="mx-4 mb-4 lg:mx-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-2">
+                  <WarningCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700 dark:text-red-300">{submissionError}</p>
+                </div>
+              )}
 
               {/* Compass */}
               <div className="px-4 pb-6 lg:px-6 lg:pb-8">

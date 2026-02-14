@@ -5,9 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Eye, PencilSimple, DotsThreeVertical, Users, CurrencyDollar, MagnifyingGlass, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { mockProperties } from '@/lib/data/mock-properties';
-import { getCandidatesByProperty } from '@/lib/data/mock-candidates';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useLandlordProperties } from '@/lib/hooks/useLandlord';
 import { useI18n } from '@/lib/i18n';
 import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
 import {
@@ -26,9 +24,8 @@ export default function PropiedadesPage() {
   const [filterStatus, setFunnelStatus] = useState<FunnelStatus>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
 
-  // Funnel properties by landlord (simulating logged-in user)
-  const landlordId = 'landlord-001';
-  const myProperties = mockProperties.filter(p => p.landlordId === landlordId);
+  // Fetch landlord properties with candidate counts from API
+  const { properties: myProperties, isLoading: isLoadingProperties } = useLandlordProperties();
 
   // Apply filters
   const filteredProperties = myProperties.filter(p => {
@@ -196,7 +193,7 @@ export default function PropiedadesPage() {
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProperties.map((property) => {
-                const candidates = getCandidatesByProperty(property.id);
+                const candidateCount = property.candidateCount ?? 0;
                 return (
                   <Link
                     key={property.id}
@@ -280,10 +277,10 @@ export default function PropiedadesPage() {
                           </p>
                           <p className="text-xs text-neutral-400">/{t('landlord.properties.perMonth')}</p>
                         </div>
-                        {candidates.length > 0 && (
+                        {candidateCount > 0 && (
                           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm font-medium text-indigo-600 dark:text-indigo-400">
                             <Users className="w-3.5 h-3.5" />
-                            {candidates.length !== 1 ? t('landlord.properties.candidatesCountPlural', { count: candidates.length }) : t('landlord.properties.candidatesCount', { count: candidates.length })}
+                            {candidateCount !== 1 ? t('landlord.properties.candidatesCountPlural', { count: candidateCount }) : t('landlord.properties.candidatesCount', { count: candidateCount })}
                           </span>
                         )}
                       </div>
@@ -296,7 +293,7 @@ export default function PropiedadesPage() {
             /* List View */
             <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               {filteredProperties.map((property, index) => {
-                const candidates = getCandidatesByProperty(property.id);
+                const candidateCount = property.candidateCount ?? 0;
                 return (
                   <Link
                     key={property.id}
@@ -353,10 +350,10 @@ export default function PropiedadesPage() {
                     </div>
 
                     {/* Candidates */}
-                    {candidates.length > 0 && (
+                    {candidateCount > 0 && (
                       <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm font-medium text-indigo-600 dark:text-indigo-400">
                         <Users className="w-3.5 h-3.5" />
-                        {candidates.length}
+                        {candidateCount}
                       </span>
                     )}
 

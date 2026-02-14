@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
 import { ConfirmationScreen, generateTrackingCode } from '@/components/wizard/ConfirmationScreen';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperty } from '@/lib/hooks/useProperties';
 import type { Property } from '@/lib/types/property';
 
 // Step components
@@ -40,7 +40,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Handle both Promise and direct params (Next.js version compatibility)
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const searchParams = useSearchParams();
-  const property = mockProperties.find((p) => p.id === resolvedParams.propertyId);
+  const { property, isLoading, error } = useProperty(resolvedParams.propertyId);
 
   // Get pre-filled name and email from URL params (lead capture)
   const initialName = searchParams.get('name') || '';
@@ -50,8 +50,17 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   const agentCode = searchParams.get('ref') || undefined;
   const linkCode = searchParams.get('link') || undefined;
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // 404 handling
-  if (!property) {
+  if (!property || error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">

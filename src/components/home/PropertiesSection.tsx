@@ -1,10 +1,12 @@
+'use client';
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/property/PropertyCard";
-import { mockProperties } from "@/lib/data/mock-properties";
+import { useFeaturedProperties } from "@/lib/hooks/useProperties";
 
 export function PropertiesSection() {
-  const displayedProperties = mockProperties.slice(0, 6);
+  const { properties, isLoading } = useFeaturedProperties(6);
 
   return (
     <section className="bg-white pt-16 md:pt-24 pb-24 md:pb-32 relative -mt-px">
@@ -26,9 +28,17 @@ export function PropertiesSection() {
 
         {/* Property Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
-          {displayedProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse space-y-4">
+                  <div className="aspect-[4/3] bg-neutral-100 rounded-2xl" />
+                  <div className="h-4 bg-neutral-100 rounded w-3/4" />
+                  <div className="h-4 bg-neutral-100 rounded w-1/2" />
+                </div>
+              ))
+            : properties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
         </div>
 
         {/* Load More Button */}

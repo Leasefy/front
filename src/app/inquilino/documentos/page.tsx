@@ -1,247 +1,133 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, File, SealCheck, House, X, CaretLeft, CaretRight, FolderOpen, ArrowUpRight } from '@phosphor-icons/react';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useMyApplications } from '@/lib/hooks/useApplications';
+import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 
-// Mock documents data
-const mockDocuments = [
-  {
-    id: '1',
-    name: 'Contrato de Arriendo',
-    type: 'contract',
-    property: 'Departamento Providencia',
-    date: '2024-01-15',
-    size: '2.4 MB',
-    status: 'signed',
-    icon: SealCheck,
-    previewUrl: '/documents/contrato-arriendo.pdf',
-  },
-  {
-    id: '2',
-    name: 'Comprobante de Pago - Enero 2024',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2024-01-05',
-    size: '156 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-enero-2024.pdf',
-  },
-  {
-    id: '3',
-    name: 'Comprobante de Pago - Diciembre 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-12-05',
-    size: '148 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-diciembre-2023.pdf',
-  },
-  {
-    id: '4',
-    name: 'Anexo de Contrato - Mascotas',
-    type: 'contract',
-    property: 'Departamento Providencia',
-    date: '2024-01-20',
-    size: '890 KB',
-    status: 'pending',
-    icon: File,
-    previewUrl: '/documents/anexo-mascotas.pdf',
-  },
-  {
-    id: '5',
-    name: 'Inventario de Entrega',
-    type: 'inventory',
-    property: 'Departamento Providencia',
-    date: '2024-01-15',
-    size: '3.1 MB',
-    status: 'signed',
-    icon: SealCheck,
-    previewUrl: '/documents/inventario-entrega.pdf',
-  },
-  {
-    id: '6',
-    name: 'Comprobante de Pago - Noviembre 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-11-05',
-    size: '152 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-noviembre-2023.pdf',
-  },
-  {
-    id: '7',
-    name: 'Comprobante de Pago - Octubre 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-10-05',
-    size: '149 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-octubre-2023.pdf',
-  },
-  {
-    id: '8',
-    name: 'Comprobante de Pago - Septiembre 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-09-05',
-    size: '151 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-septiembre-2023.pdf',
-  },
-  {
-    id: '9',
-    name: 'Comprobante de Pago - Agosto 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-08-05',
-    size: '147 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-agosto-2023.pdf',
-  },
-  {
-    id: '10',
-    name: 'Comprobante de Pago - Julio 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-07-05',
-    size: '153 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-julio-2023.pdf',
-  },
-  {
-    id: '11',
-    name: 'Comprobante de Pago - Junio 2023',
-    type: 'receipt',
-    property: 'Departamento Providencia',
-    date: '2023-06-05',
-    size: '150 KB',
-    status: 'available',
-    icon: FileText,
-    previewUrl: '/documents/comprobante-junio-2023.pdf',
-  },
-  {
-    id: '12',
-    name: 'Inventario de Entrega - Anexo Fotos',
-    type: 'inventory',
-    property: 'Departamento Providencia',
-    date: '2024-01-15',
-    size: '8.2 MB',
-    status: 'signed',
-    icon: SealCheck,
-    previewUrl: '/documents/inventario-fotos.pdf',
-  },
-];
+// Document type labels and icons
+const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof FileText }> = {
+  id_document: { label: 'Documento de identidad', labelEn: 'ID Document', icon: IdentificationCard },
+  income_proof: { label: 'Comprobante de ingresos', labelEn: 'Income Proof', icon: Money },
+  employment_letter: { label: 'Carta laboral', labelEn: 'Employment Letter', icon: Briefcase },
+  bank_statements: { label: 'Extractos bancarios', labelEn: 'Bank Statements', icon: Bank },
+  credit_report: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
+};
 
 const ITEMS_PER_PAGE = 6;
 
-type Document = (typeof mockDocuments)[number];
-
-// documentTextTs moved inside component to access translations
-
 /**
- * Tenant Documents Page - Leasefy Brand Style
+ * Tenant Documents Page - Connected to Real API
+ * Shows documents from the tenant's applications
  */
 export default function DocumentosPage() {
   const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const [searchQuery, setMagnifyingGlassQuery] = useState('');
+  const { applications, isLoading: isLoadingApps } = useMyApplications();
+
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
-  const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<DocumentItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Only show real documents if onboarding is complete
-  const documents = isOnboardingComplete ? mockDocuments : [];
+  // Fetch documents for all applications
+  const fetchAllDocuments = useCallback(async () => {
+    if (!applications.length) {
+      setDocuments([]);
+      return;
+    }
+    setIsLoadingDocs(true);
+    try {
+      const allDocs = await Promise.all(
+        applications.map((app) => documentsApi.getByApplication(app.id).catch(() => []))
+      );
+      setDocuments(allDocs.flat());
+    } catch {
+      setDocuments([]);
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  }, [applications]);
 
-  const documentTextTs = [
+  useEffect(() => {
+    if (isOnboardingComplete && applications.length > 0) {
+      fetchAllDocuments();
+    }
+  }, [isOnboardingComplete, applications, fetchAllDocuments]);
+
+  const isLoading = isOnboardingLoading || isLoadingApps || isLoadingDocs;
+
+  // Get unique document types for filter pills
+  const docTypes = Array.from(new Set(documents.map((d) => d.type)));
+
+  const filterCategories = [
     { value: 'all', label: t('documents.categories.all'), icon: FolderOpen },
-    { value: 'contract', label: t('documents.categories.contracts'), icon: SealCheck },
-    { value: 'receipt', label: t('documents.categories.receipts'), icon: FileText },
-    { value: 'inventory', label: locale === 'es' ? 'Inventarios' : 'Inventories', icon: File },
+    ...docTypes.map((type) => ({
+      value: type,
+      label: locale === 'es'
+        ? (DOC_TYPE_CONFIG[type]?.label ?? type)
+        : (DOC_TYPE_CONFIG[type]?.labelEn ?? type),
+      icon: DOC_TYPE_CONFIG[type]?.icon ?? FileText,
+    })),
   ];
 
   const filteredDocuments = documents.filter((doc) => {
-    const matchesMagnifyingGlass = doc.name
+    const matchesSearch = doc.fileName
       .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+      .includes(searchQuery.toLowerCase())
+      || (DOC_TYPE_CONFIG[doc.type]?.label ?? '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'all' || doc.type === selectedType;
-    return matchesMagnifyingGlass && matchesType;
+    return matchesSearch && matchesType;
   });
 
-  // Pagination calculations
+  // Pagination
   const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
+  const paginatedDocuments = filteredDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Reset to page 1 when filters change
-  const handleFunnelChange = (type: string) => {
+  const handleFilterChange = (type: string) => {
     setSelectedType(type);
     setCurrentPage(1);
   };
 
-  const handleMagnifyingGlassChange = (query: string) => {
-    setMagnifyingGlassQuery(query);
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
   };
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'signed':
-        return {
-          label: locale === 'es' ? 'Firmado' : 'Signed',
-          bgColor: 'bg-emerald-100',
-          textColor: 'text-emerald-700',
-          icon: CheckCircle,
-        };
-      case 'pending':
-        return {
-          label: t('common.pending'),
-          bgColor: 'bg-amber-100',
-          textColor: 'text-amber-700',
-          icon: Clock,
-        };
-      default:
-        return {
-          label: locale === 'es' ? 'Disponible' : 'Available',
-          bgColor: 'bg-indigo-100',
-          textColor: 'text-indigo-700',
-          icon: FileText,
-        };
-    }
-  };
+  const getDocLabel = (type: string) =>
+    locale === 'es'
+      ? (DOC_TYPE_CONFIG[type]?.label ?? type)
+      : (DOC_TYPE_CONFIG[type]?.labelEn ?? type);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+  const getDocIcon = (type: string) => DOC_TYPE_CONFIG[type]?.icon ?? FileText;
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
-  };
 
-  // Count stats
-  const signedCount = documents.filter((d) => d.status === 'signed').length;
-  const pendingCount = documents.filter(
-    (d) => d.status === 'pending'
-  ).length;
-  const availableCount = documents.filter(
-    (d) => d.status === 'available'
-  ).length;
+  const formatSize = (bytes: number) =>
+    bytes > 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.round(bytes / 1024)} KB`;
+
+  // Stats
+  const verifiedCount = documents.filter((d) => d.verified).length;
+  const pendingCount = documents.filter((d) => !d.verified).length;
 
   // Loading state
-  if (isOnboardingLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -282,9 +168,9 @@ export default function DocumentosPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8"
         >
-          {/* Total Documents */}
+          {/* Total */}
           <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
             <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
               <FolderOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -296,16 +182,20 @@ export default function DocumentosPage() {
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('nav.documents')}</p>
           </div>
 
-          {/* Signed */}
+          {/* Verified */}
           <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
             <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
               <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Firmados' : 'Signed'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {signedCount}
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+              {locale === 'es' ? 'Verificados' : 'Verified'}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Completos' : 'Complete'}</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {verifiedCount}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              {locale === 'es' ? 'Aprobados' : 'Approved'}
+            </p>
           </div>
 
           {/* Pending */}
@@ -317,63 +207,55 @@ export default function DocumentosPage() {
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {pendingCount}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Por firmar' : 'To sign'}</p>
-          </div>
-
-          {/* Available */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <FileText className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-            </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Disponibles' : 'Available'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {availableCount}
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              {locale === 'es' ? 'En revisión' : 'Under review'}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Para descargar' : 'To download'}</p>
           </div>
         </motion.div>
 
-        {/* Funnels */}
+        {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row gap-4 mb-6"
         >
-          {/* MagnifyingGlass */}
+          {/* Search */}
           <div className="relative flex-1">
             <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
               type="text"
-              placeholder={locale === 'es' ? 'Buscar documento...' : 'MagnifyingGlass document...'}
+              placeholder={locale === 'es' ? 'Buscar documento...' : 'Search document...'}
               value={searchQuery}
-              onChange={(e) => handleMagnifyingGlassChange(e.target.value)}
-              aria-label={locale === 'es' ? 'Buscar documento' : 'MagnifyingGlass document'}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
               className="w-full pl-12 pr-4 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
             />
           </div>
 
           {/* Type Filter Pills */}
-          <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
-            {documentTextTs.map((type) => {
-              const IconComponent = type.icon;
-              return (
-                <button
-                  key={type.value}
-                  onClick={() => handleFunnelChange(type.value)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all',
-                    selectedType === type.value
-                      ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-                  )}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  <span className="hidden sm:inline">{type.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {filterCategories.length > 1 && (
+            <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit overflow-x-auto">
+              {filterCategories.map((cat) => {
+                const IconComponent = cat.icon;
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => handleFilterChange(cat.value)}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
+                      selectedType === cat.value
+                        ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    )}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span className="hidden sm:inline">{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </motion.div>
 
         {/* Documents Grid */}
@@ -396,18 +278,18 @@ export default function DocumentosPage() {
           {documents.length === 0 ? (
             <EmptyState
               icon={FolderOpen}
-              title="No hay documentos"
-              description="Cuando subas documentos o recibas contratos, aparecerán aquí organizados."
-              action={{ label: "Ver aplicaciones", href: "/inquilino/aplicaciones" }}
+              title={locale === 'es' ? 'No hay documentos' : 'No documents'}
+              description={locale === 'es'
+                ? 'Cuando subas documentos en tus aplicaciones, aparecerán aquí organizados.'
+                : 'When you upload documents in your applications, they will appear here.'}
+              action={{ label: locale === 'es' ? 'Ver aplicaciones' : 'View applications', href: '/inquilino/aplicaciones' }}
             />
           ) : filteredDocuments.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <AnimatePresence mode="popLayout">
                   {paginatedDocuments.map((doc, index) => {
-                    const Icon = doc.icon;
-                    const statusConfig = getStatusConfig(doc.status);
-                    const StatusIcon = statusConfig.icon;
+                    const Icon = getDocIcon(doc.type);
 
                     return (
                       <motion.div
@@ -427,31 +309,35 @@ export default function DocumentosPage() {
                             <span
                               className={cn(
                                 'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
-                                statusConfig.bgColor,
-                                statusConfig.textColor
+                                doc.verified
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-amber-100 text-amber-700'
                               )}
                             >
-                              <StatusIcon className="w-3 h-3" />
-                              {statusConfig.label}
+                              {doc.verified ? (
+                                <><CheckCircle className="w-3 h-3" /> {locale === 'es' ? 'Verificado' : 'Verified'}</>
+                              ) : (
+                                <><Clock className="w-3 h-3" /> {locale === 'es' ? 'En revisión' : 'Under review'}</>
+                              )}
                             </span>
                           </div>
 
                           <h3 className="font-semibold text-neutral-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {doc.name}
+                            {getDocLabel(doc.type)}
                           </h3>
 
                           <div className="space-y-1.5">
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-                              <House className="w-3 h-3" />
-                              {doc.property}
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                              <FileText className="w-3 h-3 flex-shrink-0" />
+                              {doc.fileName}
                             </p>
                             <div className="flex items-center justify-between">
                               <p className="text-xs text-neutral-400 flex items-center gap-1.5">
                                 <Calendar className="w-3 h-3" />
-                                {formatDate(doc.date)}
+                                {formatDate(doc.createdAt)}
                               </p>
                               <span className="text-xs text-neutral-400">
-                                {doc.size}
+                                {formatSize(doc.size)}
                               </span>
                             </div>
                           </div>
@@ -467,10 +353,16 @@ export default function DocumentosPage() {
                             {t('documents.view')}
                           </button>
                           <div className="w-px h-8 bg-neutral-100 dark:bg-neutral-700" />
-                          <button className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          >
                             <Download className="w-4 h-4" />
                             {t('documents.download')}
-                          </button>
+                          </a>
                         </div>
                       </motion.div>
                     );
@@ -493,26 +385,22 @@ export default function DocumentosPage() {
                   >
                     <CaretLeft className="w-5 h-5" />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={cn(
-                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
-                          currentPage === page
-                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                        )}
-                      >
-                        {page}
-                      </button>
-                    )
-                  )}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                        currentPage === page
+                          ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))}
                   <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className={cn(
                       'p-2 rounded-full transition-all',
@@ -527,7 +415,6 @@ export default function DocumentosPage() {
               )}
             </>
           ) : (
-            /* No results from search/filter */
             <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-12 text-center">
               <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
                 <FileText className="w-8 h-8 text-neutral-400" />
@@ -573,28 +460,28 @@ export default function DocumentosPage() {
               <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <viewingDocument.icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                    {(() => { const DocIcon = getDocIcon(viewingDocument.type); return <DocIcon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />; })()}
                   </div>
                   <div>
                     <h3 className="font-semibold text-neutral-900 dark:text-white">
-                      {viewingDocument.name}
+                      {getDocLabel(viewingDocument.type)}
                     </h3>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {viewingDocument.property} •{' '}
-                      {formatDate(viewingDocument.date)} • {viewingDocument.size}
+                      {viewingDocument.fileName} · {formatDate(viewingDocument.createdAt)} · {formatSize(viewingDocument.size)}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      alert((locale === 'es' ? 'Descarga iniciada: ' : 'Download started: ') + viewingDocument.name);
-                    }}
+                  <a
+                    href={viewingDocument.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
                     className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     {t('documents.download')}
-                  </button>
+                  </a>
                   <button
                     onClick={() => setViewingDocument(null)}
                     className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
@@ -606,198 +493,41 @@ export default function DocumentosPage() {
 
               {/* Document Preview Area */}
               <div className="flex-1 bg-stone-50 dark:bg-[#0f0f10] p-6 overflow-auto">
-                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-2xl shadow-sm p-8">
-                  <div className="w-full max-w-2xl mx-auto">
-                    {/* Document Header */}
-                    <div className="text-center mb-8 pb-6 border-b border-neutral-200 dark:border-neutral-700">
-                      <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-                        {viewingDocument.name}
-                      </h2>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                        {locale === 'es' ? 'Propiedad' : 'Property'}: {viewingDocument.property}
+                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-2xl shadow-sm flex items-center justify-center min-h-[400px]">
+                  {viewingDocument.mimeType?.startsWith('image/') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={viewingDocument.url}
+                      alt={getDocLabel(viewingDocument.type)}
+                      className="max-w-full max-h-[60vh] rounded-lg object-contain"
+                    />
+                  ) : viewingDocument.mimeType === 'application/pdf' ? (
+                    <iframe
+                      src={viewingDocument.url}
+                      className="w-full h-full min-h-[500px] rounded-lg"
+                      title={getDocLabel(viewingDocument.type)}
+                    />
+                  ) : (
+                    <div className="text-center p-8">
+                      <FileText className="w-16 h-16 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                      <p className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
+                        {viewingDocument.fileName}
                       </p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+                        {viewingDocument.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'} · {formatSize(viewingDocument.size)}
+                      </p>
+                      <a
+                        href={viewingDocument.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-medium transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        {locale === 'es' ? 'Descargar archivo' : 'Download file'}
+                      </a>
                     </div>
-
-                    {/* Mock Document Content */}
-                    {viewingDocument.type === 'contract' && (
-                      <div className="space-y-4 text-sm text-neutral-700 dark:text-neutral-300">
-                        <p className="font-semibold text-center text-neutral-900 dark:text-white mb-6">
-                          {locale === 'es' ? 'CONTRATO DE ARRENDAMIENTO' : 'LEASE AGREEMENT'}
-                        </p>
-                        <p>
-                          {locale === 'es'
-                            ? `En Santiago de Chile, a ${formatDate(viewingDocument.date)}, entre el ARRENDADOR y el ARRENDATARIO, se ha convenido el siguiente contrato de arrendamiento:`
-                            : `In Santiago, Chile, on ${formatDate(viewingDocument.date)}, between the LANDLORD and the TENANT, the following lease agreement has been entered into:`}
-                        </p>
-                        <p>
-                          <strong>{locale === 'es' ? 'PRIMERO' : 'FIRST'}:</strong> {locale === 'es'
-                            ? `El arrendador entrega en arrendamiento al arrendatario la propiedad ubicada en ${viewingDocument.property}.`
-                            : `The landlord leases to the tenant the property located at ${viewingDocument.property}.`}
-                        </p>
-                        <p>
-                          <strong>{locale === 'es' ? 'SEGUNDO' : 'SECOND'}:</strong> {locale === 'es'
-                            ? 'El precio del arrendamiento será pagado mensualmente dentro de los primeros 5 días de cada mes.'
-                            : 'The rent shall be paid monthly within the first 5 days of each month.'}
-                        </p>
-                        <p>
-                          <strong>{locale === 'es' ? 'TERCERO' : 'THIRD'}:</strong> {locale === 'es'
-                            ? 'El presente contrato tendrá una duración de 12 meses, renovable de forma automática por períodos iguales.'
-                            : 'This contract shall have a duration of 12 months, automatically renewable for equal periods.'}
-                        </p>
-                        <div className="pt-8 mt-8 border-t border-neutral-200 dark:border-neutral-700">
-                          <div className="grid grid-cols-2 gap-8 text-center">
-                            <div>
-                              <div className="border-t border-neutral-900 dark:border-white pt-2 mx-8">
-                                <p className="font-medium text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? 'Arrendador' : 'Landlord'}
-                                </p>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="border-t border-neutral-900 dark:border-white pt-2 mx-8">
-                                <p className="font-medium text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? 'Arrendatario' : 'Tenant'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {viewingDocument.type === 'receipt' && (
-                      <div className="space-y-4">
-                        <div className="text-center">
-                          <p className="font-semibold text-lg text-neutral-900 dark:text-white mb-1">
-                            {locale === 'es' ? 'COMPROBANTE DE PAGO' : 'PAYMENT RECEIPT'}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {locale === 'es' ? 'N°' : 'No.'} {viewingDocument.id.padStart(6, '0')}
-                          </p>
-                        </div>
-                        <div className="bg-stone-50 dark:bg-[#2a2a2c] rounded-2xl p-5 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Propiedad' : 'Property'}:</span>
-                            <span className="font-medium text-neutral-900 dark:text-white">
-                              {viewingDocument.property}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500 dark:text-neutral-400">
-                              {locale === 'es' ? 'Fecha de pago' : 'Payment date'}:
-                            </span>
-                            <span className="font-medium text-neutral-900 dark:text-white">
-                              {formatDate(viewingDocument.date)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Concepto' : 'Concept'}:</span>
-                            <span className="font-medium text-neutral-900 dark:text-white">
-                              {locale === 'es' ? 'Arriendo mensual' : 'Monthly rent'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between pt-3 border-t border-neutral-200 dark:border-neutral-700">
-                            <span className="font-semibold text-neutral-900 dark:text-white">
-                              {locale === 'es' ? 'Total pagado' : 'Total paid'}:
-                            </span>
-                            <span className="font-bold text-xl text-neutral-900 dark:text-white">
-                              $850.000
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-center pt-4">
-                          <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-2">
-                            <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-                          </div>
-                          <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {viewingDocument.type === 'inventory' && (
-                      <div className="space-y-4 text-sm">
-                        <p className="font-semibold text-center text-neutral-900 dark:text-white mb-6">
-                          {locale === 'es' ? 'INVENTARIO DE ENTREGA' : 'DELIVERY INVENTORY'}
-                        </p>
-                        <p className="text-neutral-500 dark:text-neutral-400 text-center mb-4">
-                          {locale === 'es' ? 'Fecha' : 'Date'}: {formatDate(viewingDocument.date)}
-                        </p>
-                        <div className="overflow-x-auto rounded-2xl border border-neutral-200 dark:border-neutral-700">
-                          <table className="w-full min-w-[320px]">
-                            <thead>
-                              <tr className="bg-stone-50 dark:bg-[#2a2a2c]">
-                                <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? 'Item' : 'Item'}
-                                </th>
-                                <th className="px-4 py-3 text-center font-semibold text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? 'Cantidad' : 'Quantity'}
-                                </th>
-                                <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? 'Estado' : 'Condition'}
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                              <tr>
-                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                                  {locale === 'es' ? 'Llaves' : 'Keys'}
-                                </td>
-                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
-                                  3
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
-                                    {locale === 'es' ? 'Buen estado' : 'Good condition'}
-                                  </span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                                  {locale === 'es' ? 'Control remoto portón' : 'Gate remote control'}
-                                </td>
-                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
-                                  1
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
-                                    {locale === 'es' ? 'Buen estado' : 'Good condition'}
-                                  </span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                                  {locale === 'es' ? 'Refrigerador' : 'Refrigerator'}
-                                </td>
-                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
-                                  1
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
-                                    {locale === 'es' ? 'Funcionando' : 'Working'}
-                                  </span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                                  {locale === 'es' ? 'Cocina' : 'Stove'}
-                                </td>
-                                <td className="px-4 py-3 text-center text-neutral-700 dark:text-neutral-300">
-                                  1
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full">
-                                    {locale === 'es' ? 'Funcionando' : 'Working'}
-                                  </span>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </motion.div>

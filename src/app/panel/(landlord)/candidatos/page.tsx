@@ -7,8 +7,7 @@ import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText,
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
-import { getAllCandidates, getCandidateById } from '@/lib/data/mock-candidates';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useCandidates, useCandidate, useCandidateDecision } from '@/lib/hooks/useLandlord';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
@@ -20,24 +19,21 @@ import type { Candidate } from '@/lib/types/candidate';
 type StatusFunnel = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
 type RiskFunnel = 'all' | 'A' | 'B' | 'C' | 'D';
 
-// Simulated status for candidates
-const candidateStatuses: Record<string, StatusFunnel> = {
-  'cand-001': 'approved',
-  'cand-002': 'reviewing',
-  'cand-003': 'new',
-  'cand-004': 'reviewing',
-  'cand-005': 'new',
-  'cand-006': 'new',
-  'cand-007': 'reviewing',
-  'cand-008': 'rejected',
-  'cand-009': 'new',
-  'cand-010': 'reviewing',
-  'cand-011': 'rejected',
-  'cand-012': 'new',
+// Map LandlordCandidateStatus to StatusFunnel for display
+const STATUS_TO_FUNNEL: Record<string, StatusFunnel> = {
+  'pending': 'new',
+  'pre-approved': 'reviewing',
+  'approved': 'approved',
+  'rejected': 'rejected',
+  'more-info': 'reviewing',
 };
 
 interface CandidateRow extends Candidate {
   status: StatusFunnel;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
 function ScoringGuide() {
@@ -153,12 +149,51 @@ export default function CandidatosPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const allCandidates = getAllCandidates();
+  // Fetch candidates from API
+  const { candidates: landlordCandidates, stats, isLoading, error, refetch } = useCandidates();
+  const { decide } = useCandidateDecision();
+
+  // Map to Candidate type for display (extend with default values for full Candidate fields)
+  const allCandidates: (Candidate & { _status: StatusFunnel })[] = landlordCandidates.map(lc => ({
+    id: lc.id,
+    fullName: lc.fullName,
+    photo: lc.photo,
+    age: lc.age,
+    occupation: lc.occupation,
+    riskLevel: lc.riskLevel,
+    numericScore: lc.numericScore,
+    appliedAt: lc.appliedAt,
+    propertyId: lc.propertyId,
+    applicationId: '',
+    documentType: 'cc' as const,
+    documentNumber: '',
+    dateOfBirth: '',
+    phone: '',
+    email: '',
+    currentAddress: '',
+    timeAtCurrentAddress: 0,
+    maritalStatus: 'single' as const,
+    dependents: 0,
+    employmentStatus: 'employed' as const,
+    monthlySalary: 0,
+    additionalIncome: 0,
+    totalIncome: 0,
+    monthlyObligations: 0,
+    availableForRent: 0,
+    riskScore: { level: lc.riskLevel, numericScore: lc.numericScore, categories: [], drivers: [], flags: [], suggestedConditions: [], aiExplanation: '' },
+    previousLandlordsCount: 0,
+    employmentReferencesCount: 0,
+    personalReferencesCount: 0,
+    hasIdDocument: false,
+    hasIncomeProof: false,
+    hasEmploymentLetter: false,
+    hasBankStatements: false,
+    _status: STATUS_TO_FUNNEL[lc.status] || 'new',
+  }));
 
   // Apply filters
   const filteredCandidates = allCandidates.filter(c => {
-    const status = candidateStatuses[c.id] || 'new';
-    if (statusFunnel !== 'all' && status !== statusFunnel) return false;
+    if (statusFunnel !== 'all' && c._status !== statusFunnel) return false;
     if (riskFunnel !== 'all' && c.riskLevel !== riskFunnel) return false;
     if (searchQuery &&
         !c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -169,17 +204,17 @@ export default function CandidatosPage() {
 
   // Count by status
   const statusCounts = {
-    all: allCandidates.length,
-    new: allCandidates.filter(c => (candidateStatuses[c.id] || 'new') === 'new').length,
-    reviewing: allCandidates.filter(c => candidateStatuses[c.id] === 'reviewing').length,
-    approved: allCandidates.filter(c => candidateStatuses[c.id] === 'approved').length,
-    rejected: allCandidates.filter(c => candidateStatuses[c.id] === 'rejected').length,
+    all: stats.total,
+    new: stats.pending,
+    reviewing: allCandidates.filter(c => c._status === 'reviewing').length,
+    approved: stats.approved,
+    rejected: stats.rejected,
   };
 
   // Transform for table
   const tableData: CandidateRow[] = filteredCandidates.map(c => ({
     ...c,
-    status: candidateStatuses[c.id] || 'new',
+    status: c._status,
   }));
 
   // Map status to Plan status type
@@ -288,21 +323,28 @@ export default function CandidatosPage() {
     setSheetOpen(true);
   };
 
-  const handleApprove = (candidate: Candidate) => {
+  const handleApprove = async (candidate: Candidate) => {
+    const result = await decide(candidate.id, { decision: 'approved' });
     setSheetOpen(false);
-    toast.success(t('landlord.candidates.approvedToast'), {
-      description: t('landlord.candidates.approvedToastDesc', { name: candidate.fullName }),
-    });
-    // Use ?new=true to always start fresh contract flow
-    router.push(`/panel/${candidate.propertyId}/contract/${candidate.id}?new=true`);
+    if (result) {
+      toast.success(t('landlord.candidates.approvedToast'), {
+        description: t('landlord.candidates.approvedToastDesc', { name: candidate.fullName }),
+      });
+      refetch();
+      router.push(`/panel/${candidate.propertyId}/contract/${candidate.id}?new=true`);
+    }
   };
 
-  const handleReject = (candidate: Candidate) => {
+  const handleReject = async (candidate: Candidate) => {
+    const result = await decide(candidate.id, { decision: 'rejected' });
     setSheetOpen(false);
-    toast(t('landlord.candidates.rejectedToast'), {
-      description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
-      icon: '❌',
-    });
+    if (result) {
+      toast(t('landlord.candidates.rejectedToast'), {
+        description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
+        icon: '❌',
+      });
+      refetch();
+    }
   };
 
   // Quick actions for detail sheet
@@ -581,8 +623,25 @@ export default function CandidatosPage() {
           </div>
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && !isLoading && (
+          <div className="rounded-xl border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20 p-6 text-center">
+            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+            <button onClick={refetch} className="mt-3 text-sm font-medium text-red-600 hover:text-red-700 underline">
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* Table with Pagination */}
-        {allCandidates.length === 0 ? (
+        {!isLoading && !error && allCandidates.length === 0 ? (
           <EmptyState
             icon={Users}
             title={t('landlord.candidates.emptyTitle')}
@@ -618,8 +677,8 @@ export default function CandidatosPage() {
           profile={{
             name: selectedCandidate.fullName,
             subtitle: selectedCandidate.occupation,
-            status: getStatusType(candidateStatuses[selectedCandidate.id] || 'new'),
-            statusLabel: getStatusLabel(candidateStatuses[selectedCandidate.id] || 'new'),
+            status: getStatusType(allCandidates.find(c => c.id === selectedCandidate.id)?._status || 'new'),
+            statusLabel: getStatusLabel(allCandidates.find(c => c.id === selectedCandidate.id)?._status || 'new'),
           }}
           contact={{
             email: selectedCandidate.email,

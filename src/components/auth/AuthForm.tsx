@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
-import { House, Key, Briefcase, SpinnerGap, ArrowLeft, Envelope, CheckCircle, ArrowRight, Check, MagnifyingGlass, Buildings, Storefront } from '@phosphor-icons/react';
+import { Key, Briefcase, SpinnerGap, ArrowLeft, Envelope, CheckCircle, Check, MagnifyingGlass } from '@phosphor-icons/react';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
 
@@ -64,21 +65,13 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-interface AuthFormProps {
-  className?: string;
-  onSuccess?: () => void;
-}
-
 /**
- * Auth form - Google OAuth only
- * Handles sign in via Supabase Google OAuth
+ * Auth form with Google OAuth and role selection
  */
-export function AuthForm({ className, onSuccess }: AuthFormProps) {
-  const { signInWithGoogle } = useAuth();
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { signInWithGoogle } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = React.useState<'tenant' | 'landlord' | 'agency' | null>(null);
@@ -146,54 +139,22 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   };
 
-  const getRedirectUrl = (role: 'tenant' | 'landlord' | 'agency', isNewUser: boolean = false) => {
-    if (returnUrl && returnUrl !== '/') {
-      return decodeURIComponent(returnUrl);
-    }
-    if (role === 'agency') {
-      return isNewUser ? '/onboarding/inmobiliaria' : '/panel/inmobiliaria';
-    }
-    if (role === 'landlord') {
-      return isNewUser ? '/onboarding/propietario' : '/panel';
-    }
-    return isNewUser ? '/onboarding/inquilino' : '/inquilino';
-  };
-
-  const handleLoginSubmit = async (data: LoginFormData) => {
-
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await login(data.email, data.password);
-      if (result.success && result.user) {
-        onSuccess?.();
-        const needsOnboarding = result.user.onboardingCompleted === false;
-        router.push(getRedirectUrl(result.user.role, needsOnboarding));
-      } else {
-        setError(result.error || 'Error al iniciar sesión');
-      }
+      await signInWithGoogle();
+      onSuccess?.();
     } catch {
-      setError('Ocurrió un error. Intenta de nuevo.');
+      setError('Error con el inicio de sesión. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // For social login, redirect to register to select role first
-      setMode('register');
-      await signInWithGoogle();
-      onSuccess?.();
-      // Supabase will redirect to /auth/callback, no need to router.push
-    } catch {
-      setError('Error con el inicio de sesión social');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLoginSubmit = async (_data: LoginFormData) => {
+    // Email/password login delegates to Google OAuth for now
+    await handleGoogleLogin();
   };
 
   const handleForgotPasswordSubmit = async (data: ForgotPasswordFormData) => {
@@ -256,12 +217,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'register' && '¿Cómo usarás Leasefy?'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && '¡Revisa tu correo!'}
-          Bienvenido a Leasefy
         </h1>
         <p className="text-[14px] text-muted-foreground mt-2">
-          Inicia sesión para encontrar o arrendar tu propiedad ideal
-        </p>
-      </div>
           {mode === 'login' && 'Ingresa a tu cuenta para continuar'}
           {mode === 'register' && 'Selecciona tu perfil para personalizar tu experiencia'}
           {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña'}
@@ -315,12 +272,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <>
               <button
                 type="button"
-                onClick={handleSocialLogin}
+                onClick={handleGoogleLogin}
                 disabled={isLoading}
                 className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <GoogleIcon className="w-5 h-5" />
-                <span className="text-[14px] font-medium text-foreground">Continuar con Google</span>
+                {isLoading ? (
+                  <SpinnerGap className="w-5 h-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <GoogleIcon className="w-5 h-5" />
+                )}
+                <span className="text-[14px] font-medium text-foreground">
+                  {isLoading ? 'Conectando...' : 'Continuar con Google'}
+                </span>
               </button>
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
@@ -386,12 +349,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <Button type="submit" size="lg" disabled={isLoading} className="w-full h-12 text-[14px] rounded-xl">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Ingresando...</>) : 'Iniciar sesión'}
             </Button>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                <span className="font-medium text-foreground">Demo:</span> landlord@ / tenant@ / agency@example.com<br />
-                Contraseña: password123
-              </p>
-            </div>
           </motion.form>
         )}
 
@@ -573,33 +530,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Google button */}
-      <button
-        type="button"
-        onClick={handleGoogleLogin}
-        disabled={isLoading}
-        className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoading ? (
-          <SpinnerGap className="w-5 h-5 animate-spin text-muted-foreground" />
-        ) : (
-          <GoogleIcon className="w-5 h-5" />
-        )}
-        <span className="text-[14px] font-medium text-foreground">
-          {isLoading ? 'Conectando...' : 'Continuar con Google'}
-        </span>
-      </button>
-
-      {/* Error message */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20"
-        >
-          <p className="text-[13px] text-destructive">{error}</p>
-        </motion.div>
-      )}
 
       {/* Info text */}
       <p className="text-[12px] text-muted-foreground text-center mt-6 leading-relaxed">

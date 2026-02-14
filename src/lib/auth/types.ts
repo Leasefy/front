@@ -10,24 +10,21 @@
 // ============================================================================
 
 /** Frontend-facing role (used in UI logic, routes, etc.) */
-export type UserRole = 'tenant' | 'landlord'
+export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
 export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT'
 
 export function toBackendRole(role: UserRole): BackendRole {
+  if (role === 'agency') return 'AGENT'
   return role === 'landlord' ? 'LANDLORD' : 'TENANT'
 }
 
 export function toFrontendRole(role: BackendRole): UserRole {
+  if (role === 'AGENT') return 'agency'
   if (role === 'LANDLORD' || role === 'BOTH') return 'landlord'
   return 'tenant'
 }
-
-// ============================================================================
-// Shared field types
-// ============================================================================
-export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 export type PaymentMethod = 'bank_transfer' | 'pse' | 'nequi' | 'daviplata' | 'credit_card'
 export type RiskLevel = 'A' | 'B' | 'C' | 'D'

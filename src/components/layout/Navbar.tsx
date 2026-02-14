@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { List, X, User, SignOut, SquaresFour, FileText, CaretDown, House, Key, MagnifyingGlass, Bank, Medal, ShieldCheck, Wallet, PencilLine, Tray, ShieldPlus, ArrowRight, Terminal, Trophy } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/use-auth";
@@ -56,6 +56,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   // Check if we're on a page without a dark hero (should always show solid navbar)
   // Includes both /propiedades (listing) and /propiedades/[id] (detail pages)
@@ -88,10 +89,11 @@ export function Navbar() {
     return pathname === path || pathname.startsWith(path + '/');
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setIsUserListOpen(false);
     setIsMobileListOpen(false);
+    router.push('/auth');
   };
 
   // Get dashboard link based on user role

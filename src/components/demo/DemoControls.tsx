@@ -1,12 +1,12 @@
 'use client';
 
-import { RefreshCw } from 'lucide-react';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export type DisplayVariant = 'compact' | 'full' | 'embedded';
@@ -57,13 +57,13 @@ export function DemoControls({
   return (
     <div
       className={cn(
-        'rounded-[2px] border border-slate-200 bg-white p-4 space-y-4',
+        'rounded-sm border border-border bg-card p-4 space-y-4',
         className
       )}
     >
       {/* Variant Selection */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">Variante</Label>
+        <Label className="text-sm font-medium text-foreground">Variante</Label>
         <div className="grid grid-cols-3 gap-2">
           {variants.map((v) => (
             <button
@@ -71,10 +71,10 @@ export function DemoControls({
               type="button"
               onClick={() => onVariantChange(v.value)}
               className={cn(
-                'flex flex-col items-start px-3 py-2 rounded-[2px] border text-left transition-colors min-w-0',
+                'flex flex-col items-start px-3 py-2 rounded-sm border text-left transition-colors min-w-0',
                 variant === v.value
                   ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                  : 'border-border hover:border-border text-foreground'
               )}
             >
               <span className="text-sm font-medium truncate w-full">{v.label}</span>
@@ -85,16 +85,16 @@ export function DemoControls({
       </div>
 
       {/* Animation Controls */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+      <div className="flex items-center justify-between border-t border-border pt-4">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={animationEnabled}
               onChange={onAnimationToggle}
-              className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm text-slate-700">Animacion</span>
+            <span className="text-sm text-foreground">Animacion</span>
           </label>
         </div>
         <Button
@@ -104,7 +104,7 @@ export function DemoControls({
           disabled={!animationEnabled}
           className="gap-2"
         >
-          <RefreshCw className="h-3 w-3" />
+          <ArrowsClockwise className="h-3 w-3" />
           Repetir
         </Button>
       </div>

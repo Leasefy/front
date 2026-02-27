@@ -34,12 +34,12 @@ export function RiskGauge({
       <div className={cn('w-full', className)}>
         <div
           className={cn(
-            'bg-slate-100 rounded-full overflow-hidden',
+            'bg-muted rounded-full overflow-hidden',
             size === 'sm' ? 'h-1.5' : 'h-2'
           )}
         />
         {showLabels && (
-          <p className="text-xs text-slate-400 mt-1.5">Sin candidatos</p>
+          <p className="text-xs text-muted-foreground mt-1.5">Sin candidatos</p>
         )}
       </div>
     );
@@ -91,7 +91,7 @@ export function RiskGauge({
           {levelA > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-muted-foreground">
                 {levelA} nivel A
               </span>
             </div>
@@ -99,7 +99,7 @@ export function RiskGauge({
           {levelB > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-muted-foreground">
                 {levelB} nivel B
               </span>
             </div>
@@ -107,7 +107,7 @@ export function RiskGauge({
           {levelC > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-muted-foreground">
                 {levelC} nivel C
               </span>
             </div>
@@ -115,7 +115,7 @@ export function RiskGauge({
           {levelD > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-muted-foreground">
                 {levelD} nivel D
               </span>
             </div>

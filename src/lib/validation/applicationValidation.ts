@@ -97,7 +97,7 @@ export function parseCurrency(value: string | number | undefined): number {
  */
 export function formatCurrencyInput(value: number | undefined): string {
   if (value === undefined || value === 0) return '';
-  return value.toLocaleString('es-CO');
+  return value.toLocaleString('es-CL');
 }
 
 // ============================================================================
@@ -132,7 +132,7 @@ export function validatePersonalStep(data: Partial<PersonalInfo>): ValidationRes
   if (!data.dateOfBirth) {
     errors.dateOfBirth = 'Fecha de nacimiento requerida';
   } else if (!isAdult(data.dateOfBirth)) {
-    errors.dateOfBirth = 'Debes ser mayor de 18 anos';
+    errors.dateOfBirth = 'Debes ser mayor de 18 años';
   }
 
   // Phone - required, Colombian format

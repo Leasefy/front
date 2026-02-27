@@ -1,8 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Check, Info } from 'lucide-react';
-import { PAYMENT_METHODS } from '@/lib/data/mock-leases';
+import { Check, Info } from '@phosphor-icons/react';
+import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import type { PaymentMethod } from '@/lib/types/lease';
 
 interface PaymentMethodSelectorProps {
@@ -23,11 +23,11 @@ export function PaymentMethodSelector({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">
-          Metodo de pago
+        <label className="text-sm font-medium text-foreground">
+          Método de pago
         </label>
-        <span className="text-xs text-slate-400">
-          Selecciona como deseas pagar
+        <span className="text-xs text-muted-foreground">
+          Selecciona cómo deseas pagar
         </span>
       </div>
 
@@ -43,13 +43,13 @@ export function PaymentMethodSelector({
               disabled={isDisabled}
               type="button"
               className={cn(
-                'relative flex items-start gap-3 p-4 rounded-[2px] border text-left transition-all',
+                'relative flex items-start gap-3 p-4 rounded-sm border text-left transition-all',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected && method.enabled
                   ? 'border-primary bg-primary/5 shadow-sm'
                   : method.enabled
-                  ? 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+                  ? 'border-border hover:border-border hover:bg-muted'
+                  : 'border-border bg-muted opacity-60 cursor-not-allowed'
               )}
             >
               {/* Icon */}
@@ -68,7 +68,7 @@ export function PaymentMethodSelector({
                   <p
                     className={cn(
                       'font-medium',
-                      isDisabled ? 'text-slate-400' : 'text-slate-900'
+                      isDisabled ? 'text-muted-foreground' : 'text-foreground'
                     )}
                   >
                     {method.name}
@@ -82,13 +82,13 @@ export function PaymentMethodSelector({
                 <p
                   className={cn(
                     'text-xs mt-0.5',
-                    isDisabled ? 'text-slate-300' : 'text-slate-500'
+                    isDisabled ? 'text-muted-foreground' : 'text-muted-foreground'
                   )}
                 >
                   {method.description}
                 </p>
                 {method.processingTime && method.enabled && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {method.processingTime}
                   </p>
                 )}
@@ -103,8 +103,8 @@ export function PaymentMethodSelector({
 
               {/* Coming soon badge */}
               {isDisabled && (
-                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-slate-200 text-slate-500 rounded">
-                  Proximamente
+                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
+                  Próximamente
                 </span>
               )}
             </button>
@@ -113,11 +113,11 @@ export function PaymentMethodSelector({
       </div>
 
       {/* Info note */}
-      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-[2px] text-xs text-blue-700">
+      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-sm text-xs text-blue-700">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
-          Tu pago sera procesado de forma segura. Recibiras confirmacion por
-          correo electronico una vez completado.
+          Tu pago será procesado de forma segura. Recibirás confirmación por
+          correo electrónico una vez completado.
         </p>
       </div>
     </div>

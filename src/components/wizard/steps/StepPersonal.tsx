@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { User, FileText, Calendar, Phone, MapPin, Users, Heart, Mail } from 'lucide-react';
+import { User, FileText, Calendar, Phone, MapPin, Users, Heart, Envelope } from '@phosphor-icons/react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   DOCUMENT_TYPES,
@@ -64,7 +64,7 @@ export function StepPersonal() {
       >
         <LightInput
           id="fullName"
-          placeholder="Como aparece en tu documento"
+          placeholder="Cómo aparece en tu documento"
           value={personal.fullName || ''}
           onChange={(e) => handleInputChange('fullName', e.target.value)}
           onBlur={() => handleBlur('fullName')}
@@ -75,7 +75,7 @@ export function StepPersonal() {
 
       {/* Email */}
       <FormField
-        label="Correo electronico"
+        label="Correo electrónico"
         htmlFor="email"
         error={getError('email')}
         required
@@ -87,12 +87,12 @@ export function StepPersonal() {
           value={personal.email || ''}
           onChange={(e) => handleInputChange('email', e.target.value)}
           onBlur={() => handleBlur('email')}
-          icon={<Mail className="h-4 w-4" />}
+          icon={<Envelope className="h-4 w-4" />}
           hasError={!!getError('email')}
         />
       </FormField>
 
-      {/* Document Type and Number - Grid */}
+      {/* Document TextT and Number - Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Tipo de documento"
@@ -113,7 +113,7 @@ export function StepPersonal() {
         </FormField>
 
         <FormField
-          label="Numero de documento"
+          label="Número de documento"
           htmlFor="documentNumber"
           error={getError('documentNumber')}
           required
@@ -153,7 +153,7 @@ export function StepPersonal() {
         </FormField>
 
         <FormField
-          label="Telefono celular"
+          label="Teléfono celular"
           htmlFor="phone"
           error={getError('phone')}
           required
@@ -175,14 +175,14 @@ export function StepPersonal() {
 
       {/* Current Address */}
       <FormField
-        label="Direccion actual"
+        label="Dirección actual"
         htmlFor="currentAddress"
         error={getError('currentAddress')}
         required
       >
         <LightInput
           id="currentAddress"
-          placeholder="Calle, numero, barrio, ciudad"
+          placeholder="Calle, número, barrio, ciudad"
           value={personal.currentAddress || ''}
           onChange={(e) => handleInputChange('currentAddress', e.target.value)}
           onBlur={() => handleBlur('currentAddress')}
@@ -193,7 +193,7 @@ export function StepPersonal() {
 
       {/* Time at Current Address */}
       <FormField
-        label="Tiempo en direccion actual"
+        label="Tiempo en dirección actual"
         htmlFor="timeAtCurrentAddress"
         error={getError('timeAtCurrentAddress')}
         hint="En meses"
@@ -207,7 +207,7 @@ export function StepPersonal() {
           onChange={(e) =>
             handleInputChange(
               'timeAtCurrentAddress',
-              e.target.value ? parseInt(e.target.value, 10) : 0
+              e.target.value === '' ? '' : parseInt(e.target.value, 10)
             )
           }
           onBlur={() => handleBlur('timeAtCurrentAddress')}
@@ -237,7 +237,7 @@ export function StepPersonal() {
         </FormField>
 
         <FormField
-          label="Numero de dependientes"
+          label="Número de dependientes"
           htmlFor="dependents"
           error={getError('dependents')}
           hint="Personas que dependen de ti"
@@ -252,7 +252,7 @@ export function StepPersonal() {
             onChange={(e) =>
               handleInputChange(
                 'dependents',
-                e.target.value ? parseInt(e.target.value, 10) : 0
+                e.target.value === '' ? '' : parseInt(e.target.value, 10)
               )
             }
             onBlur={() => handleBlur('dependents')}

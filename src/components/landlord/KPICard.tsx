@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
+import { TrendUp, TrendDown } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 
@@ -47,7 +48,7 @@ function useAnimatedCounter(end: number, duration: number = 1000) {
 export interface KPICardProps {
   title: string;
   value: number;
-  icon: LucideIcon;
+  icon: Icon;
   variant?: 'default' | 'primary' | 'warning' | 'success' | 'info';
   trend?: {
     value: number;
@@ -74,27 +75,27 @@ export function KPICard({
 
   const variantStyles = {
     default: {
-      bg: 'bg-white',
-      icon: 'bg-slate-100 text-slate-600',
-      value: 'text-slate-900',
+      bg: 'bg-card',
+      icon: 'bg-muted text-muted-foreground',
+      value: 'text-foreground',
     },
     primary: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-primary/10 text-primary',
       value: 'text-primary',
     },
     warning: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-amber-50 text-amber-600',
       value: 'text-amber-600',
     },
     success: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-emerald-50 text-emerald-600',
       value: 'text-emerald-600',
     },
     info: {
-      bg: 'bg-white',
+      bg: 'bg-card',
       icon: 'bg-blue-50 text-blue-600',
       value: 'text-blue-600',
     },
@@ -105,9 +106,9 @@ export function KPICard({
   const content = (
     <div
       className={cn(
-        'relative p-5 rounded-[2px] border border-slate-100 shadow-sm',
+        'relative p-5 rounded-sm border border-border shadow-sm',
         'transition-all duration-200 ease-out',
-        href && 'hover:shadow-md hover:border-slate-200 cursor-pointer',
+        href && 'hover:shadow-md hover:border-border cursor-pointer',
         styles.bg,
         className
       )}
@@ -115,7 +116,7 @@ export function KPICard({
       {/* Icon */}
       <div
         className={cn(
-          'w-10 h-10 rounded-[2px] flex items-center justify-center mb-4',
+          'w-10 h-10 rounded-sm flex items-center justify-center mb-4',
           styles.icon
         )}
       >
@@ -133,7 +134,7 @@ export function KPICard({
       </p>
 
       {/* Title */}
-      <p className="text-sm text-slate-500 mt-1">{title}</p>
+      <p className="text-sm text-muted-foreground mt-1">{title}</p>
 
       {/* Trend indicator */}
       {trend && (
@@ -144,9 +145,9 @@ export function KPICard({
           )}
         >
           {trend.isPositive ? (
-            <TrendingUp className="w-3.5 h-3.5" />
+            <TrendUp className="w-3.5 h-3.5" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5" />
+            <TrendDown className="w-3.5 h-3.5" />
           )}
           <span>{trend.value}%</span>
         </div>

@@ -1,12 +1,12 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { RISK_LEVEL_COLORS } from '@/lib/constants/risk-levels';
 import type { RiskLevel } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface KeyDriversProps {

@@ -12,19 +12,19 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function PropertyDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Hero Image Grid Skeleton */}
       <section className="pt-28 md:pt-32">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 h-[50vh] md:h-[70vh]">
             {/* Main large image */}
-            <div className="md:col-span-2 relative overflow-hidden rounded-[2px]">
+            <div className="md:col-span-2 relative overflow-hidden rounded-sm">
               <Skeleton className="h-full w-full" />
             </div>
             {/* Side images stack */}
             <div className="hidden md:grid grid-rows-2 gap-3 md:gap-4">
-              <Skeleton className="w-full h-full rounded-[2px]" />
-              <Skeleton className="w-full h-full rounded-[2px]" />
+              <Skeleton className="w-full h-full rounded-sm" />
+              <Skeleton className="w-full h-full rounded-sm" />
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@ export function PropertyDetailSkeleton() {
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-black/10">
+            <div className="grid grid-cols-4 gap-4 mb-10 py-6 border-y border-border">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i}>
                   <Skeleton className="h-3 w-12 mb-2" />
@@ -74,9 +74,9 @@ export function PropertyDetailSkeleton() {
             </div>
 
             {/* Accordion Sections */}
-            <div className="border-t border-black/10">
+            <div className="border-t border-border">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="border-b border-black/10 py-5">
+                <div key={i} className="border-b border-border py-5">
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-4 w-40" />
                     <Skeleton className="h-5 w-5" />
@@ -90,7 +90,7 @@ export function PropertyDetailSkeleton() {
               <Skeleton className="h-4 w-16 mb-4" />
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="aspect-[4/3] rounded-[2px]" />
+                  <Skeleton key={i} className="aspect-[4/3] rounded-sm" />
                 ))}
               </div>
             </div>
@@ -98,16 +98,16 @@ export function PropertyDetailSkeleton() {
             {/* Map Placeholder */}
             <div className="mt-12">
               <Skeleton className="h-4 w-32 mb-4" />
-              <Skeleton className="aspect-[16/9] rounded-[2px]" />
+              <Skeleton className="aspect-[16/9] rounded-sm" />
             </div>
           </div>
 
           {/* Right Column - Sticky CTA */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
-              <div className="border border-black/10 p-6">
+              <div className="border border-border p-6">
                 {/* Agent Header */}
-                <div className="flex items-center justify-between mb-6 pb-6 border-b border-black/10">
+                <div className="flex items-center justify-between mb-6 pb-6 border-b border-border">
                   <div className="space-y-1">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-3 w-32" />
@@ -120,8 +120,8 @@ export function PropertyDetailSkeleton() {
 
                 {/* Form Fields */}
                 <div className="space-y-3 mb-4">
-                  <Skeleton className="h-11 w-full rounded-[2px]" />
-                  <Skeleton className="h-11 w-full rounded-[2px]" />
+                  <Skeleton className="h-11 w-full rounded-sm" />
+                  <Skeleton className="h-11 w-full rounded-sm" />
                 </div>
 
                 {/* CTA Button */}

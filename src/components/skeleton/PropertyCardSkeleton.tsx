@@ -12,14 +12,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function PropertyCardSkeleton() {
   return (
     <div className="group block">
-      {/* Image container - matches aspect-[4/3] rounded-[2px] */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[2px]">
+      {/* Image container - matches aspect-[4/3] rounded-sm */}
+      <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
         <Skeleton className="h-full w-full" />
 
         {/* Badge placeholders - top left */}
         <div className="absolute top-3 left-3 flex gap-2">
-          <Skeleton className="h-6 w-20 rounded-[2px] bg-white/50" />
-          <Skeleton className="h-6 w-24 rounded-[2px] bg-white/50" />
+          <Skeleton className="h-6 w-20 rounded-sm bg-white/50" />
+          <Skeleton className="h-6 w-24 rounded-sm bg-white/50" />
         </div>
       </div>
 
@@ -38,7 +38,7 @@ export function PropertyCardSkeleton() {
         </div>
 
         {/* Features row - icons with text */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-1.5">
             <Skeleton className="h-4 w-4" />
             <Skeleton className="h-3 w-12" />

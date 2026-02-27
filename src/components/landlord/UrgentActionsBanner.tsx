@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import type { UrgentAction } from '@/lib/data/mock-dashboard';
+import type { DashboardUrgentAction } from '@/lib/api/landlord.types';
 
 interface UrgentActionsBannerProps {
-  actions: UrgentAction[];
+  actions: DashboardUrgentAction[];
   className?: string;
 }
 
@@ -23,20 +23,20 @@ export function UrgentActionsBanner({ actions, className }: UrgentActionsBannerP
   const otherActions = actions.filter(a => a.priority !== 'high');
 
   return (
-    <div className={cn('text-sm text-slate-500', className)}>
+    <div className={cn('text-sm text-muted-foreground', className)}>
       {highPriority.length > 0 && (
         <p className="mb-1">
-          <span className="text-slate-400">Requiere atencion: </span>
+          <span className="text-muted-foreground">Requiere atencion: </span>
           {highPriority.map((action, index) => (
             <span key={action.id}>
               <Link
                 href={action.href}
-                className="text-slate-700 hover:text-slate-900 underline underline-offset-2"
+                className="text-foreground hover:text-foreground underline underline-offset-2"
               >
                 {action.count} {action.title.toLowerCase()}
               </Link>
               {index < highPriority.length - 1 && (
-                <span className="text-slate-300 mx-2">·</span>
+                <span className="text-muted-foreground mx-2">·</span>
               )}
             </span>
           ))}
@@ -44,17 +44,17 @@ export function UrgentActionsBanner({ actions, className }: UrgentActionsBannerP
       )}
       {otherActions.length > 0 && (
         <p>
-          <span className="text-slate-400">Pendiente: </span>
+          <span className="text-muted-foreground">Pendiente: </span>
           {otherActions.map((action, index) => (
             <span key={action.id}>
               <Link
                 href={action.href}
-                className="text-slate-600 hover:text-slate-800 underline underline-offset-2"
+                className="text-muted-foreground hover:text-foreground underline underline-offset-2"
               >
                 {action.count} {action.title.toLowerCase()}
               </Link>
               {index < otherActions.length - 1 && (
-                <span className="text-slate-300 mx-2">·</span>
+                <span className="text-muted-foreground mx-2">·</span>
               )}
             </span>
           ))}

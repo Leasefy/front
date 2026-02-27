@@ -1,20 +1,28 @@
 'use client';
 
 import Image from 'next/image';
-import { MapPin, Calendar, Hash, ChevronRight, X } from 'lucide-react';
+import { MapPin, Calendar, Hash, CaretRight, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDate, formatCurrency } from '@/lib/format';
-import { mockProperties } from '@/lib/data/mock-properties';
 import { Button } from '@/components/ui/button';
 import { ApplicationStatusBadge } from './ApplicationStatusBadge';
 import type { TenantApplication } from '@/lib/types/tenant-application';
 import { canWithdraw } from '@/lib/types/tenant-application';
-import { cardStyles, borderRadius, transitions, hoverEffects, focusStates, borders } from '@/lib/design-tokens';
+
+export interface ApplicationCardProperty {
+  title: string;
+  thumbnailUrl: string;
+  monthlyRent: number;
+  neighborhood: string;
+  city: string;
+}
 
 export interface ApplicationCardProps {
   /** Application to display */
   application: TenantApplication;
+  /** Property data (pass directly instead of looking up from mock) */
+  property?: ApplicationCardProperty | null;
   /** Callback when card is clicked */
   onClick?: () => void;
   /** Callback when user wants to withdraw */
@@ -32,19 +40,17 @@ export interface ApplicationCardProps {
  * |                      | Location                   |
  * |                      | $ 2.500.000/mes            |
  * +--------------------------------------------------+
- * | Enviada: 18 ene 2026 | Codigo: AF-K7N3P2   [>]   |
+ * | Enviada: 18 ene 2026 | Código: AF-K7N3P2   [>]   |
  * +--------------------------------------------------+
  */
 export function ApplicationCard({
   application,
+  property,
   onClick,
   onWithdraw,
   className,
 }: ApplicationCardProps) {
-  const { id, propertyId, status, submittedAt, trackingCode } = application;
-
-  // Find the property for this application
-  const property = mockProperties.find((p) => p.id === propertyId);
+  const { id, status, submittedAt, trackingCode } = application;
 
   if (!property) {
     return null;
@@ -64,7 +70,7 @@ export function ApplicationCard({
       onClick={onClick}
       className={cn(
         'w-full text-left overflow-hidden',
-        cardStyles.interactive,
+        'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
         'group',
         className
       )}
@@ -91,7 +97,7 @@ export function ApplicationCard({
             <h3 className={cn(
               'text-sm sm:text-base font-medium truncate',
               'text-foreground group-hover:text-primary',
-              transitions.colors
+              'transition-colors duration-200 ease-out'
             )}>
               {title}
             </h3>
@@ -156,9 +162,9 @@ export function ApplicationCard({
           )}
 
           {/* Navigate indicator */}
-          <ChevronRight className={cn(
+          <CaretRight className={cn(
             'w-4 h-4 opacity-40 group-hover:opacity-60',
-            transitions.colors
+            'transition-colors duration-200 ease-out'
           )} />
         </div>
       </div>

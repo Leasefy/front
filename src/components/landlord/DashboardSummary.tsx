@@ -1,12 +1,12 @@
 'use client';
 
-import { Users, Clock, CheckCircle2, Award } from 'lucide-react';
+import { Users, Clock, CheckCircle, Medal, Trophy } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import type { DashboardSummary as DashboardSummaryType } from '@/lib/types/landlord';
+import type { DashboardSummary as DashboardSummaryTextT } from '@/lib/types/landlord';
 
 export interface DashboardSummaryProps {
-  summary: DashboardSummaryType;
+  summary: DashboardSummaryTextT;
   className?: string;
 }
 
@@ -19,14 +19,14 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   const variantStyles = {
-    default: 'bg-white border-slate-100 text-slate-900',
+    default: 'bg-card border-border text-foreground',
     pending: 'bg-amber-50/50 border-amber-100 text-amber-700',
     'pre-approved': 'bg-blue-50/50 border-blue-100 text-blue-700',
     approved: 'bg-emerald-50/50 border-emerald-100 text-emerald-700',
   };
 
   const iconStyles = {
-    default: 'text-slate-400',
+    default: 'text-muted-foreground',
     pending: 'text-amber-500',
     'pre-approved': 'text-blue-500',
     approved: 'text-emerald-500',
@@ -35,7 +35,7 @@ function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-4 p-4 rounded-[2px] border',
+        'flex items-center gap-4 p-4 rounded-sm border',
         variantStyles[variant]
       )}
     >
@@ -48,7 +48,7 @@ function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
         </p>
         <p className={cn(
           'text-sm truncate',
-          variant === 'default' ? 'text-slate-500' : 'opacity-80'
+          variant === 'default' ? 'text-muted-foreground' : 'opacity-80'
         )}>
           {label}
         </p>
@@ -92,14 +92,14 @@ export function DashboardSummary({ summary, className }: DashboardSummaryProps) 
       />
 
       <StatCard
-        icon={<CheckCircle2 className="w-6 h-6" />}
+        icon={<CheckCircle className="w-6 h-6" />}
         label="Pre-aprobados"
         value={preApproved}
         variant="pre-approved"
       />
 
       <StatCard
-        icon={<Award className="w-6 h-6" />}
+        icon={<Trophy className="w-6 h-6" />}
         label="Aprobados"
         value={approved}
         variant="approved"

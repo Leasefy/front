@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function ApplicationCardSkeleton() {
   return (
-    <div className="w-full bg-white border border-slate-200 rounded-[2px] overflow-hidden">
+    <div className="w-full bg-card border border-border rounded-sm overflow-hidden">
       {/* Main content row */}
       <div className="flex">
         {/* Property thumbnail */}
@@ -40,7 +40,7 @@ export function ApplicationCardSkeleton() {
       </div>
 
       {/* Footer row */}
-      <div className="px-3 sm:px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
+      <div className="px-3 sm:px-4 py-2.5 border-t border-border bg-muted/50 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {/* Submitted date */}
           <div className="flex items-center gap-1.5 min-w-0">

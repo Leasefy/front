@@ -36,12 +36,12 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
  * Format: "bg-[color]-100 text-[color]-700"
  */
 export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> = {
-  submitted: 'bg-slate-100 text-slate-700',
-  under_review: 'bg-blue-100 text-blue-700',
-  pre_approved: 'bg-sky-100 text-sky-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-  withdrawn: 'bg-amber-100 text-amber-700',
+  submitted: 'bg-muted text-foreground',
+  under_review: 'bg-plan-status-blue-bg text-plan-status-blue',
+  pre_approved: 'bg-plan-status-purple-bg text-plan-status-purple',
+  approved: 'bg-plan-status-green-bg text-plan-status-green',
+  rejected: 'bg-plan-status-red-bg text-plan-status-red',
+  withdrawn: 'bg-plan-status-yellow-bg text-plan-status-yellow',
 };
 
 // ============================================================================

@@ -1,10 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Bed, Maximize2, Users, CheckCircle2 } from 'lucide-react';
+import { MapPin, Bed, CornersOut, Users, CheckCircle, ArrowsOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/ui/back-button';
 import { formatCurrency } from '@/lib/format';
 import { RiskGauge } from './RiskGauge';
 import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
@@ -53,16 +53,10 @@ export function PropertyHeader({
   const preApprovedCount = getPreApprovedCount(allCandidateIds);
 
   return (
-    <div className={cn('bg-white rounded-[2px] border border-slate-100 overflow-hidden', className)}>
+    <div className={cn('bg-card rounded-sm border border-border overflow-hidden', className)}>
       {/* Back Navigation */}
-      <div className="px-4 sm:px-6 py-3 border-b border-slate-100">
-        <Link
-          href="/panel"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a mis propiedades
-        </Link>
+      <div className="px-4 sm:px-6 py-3 border-b border-border">
+        <BackButton href="/panel" label="Volver a mis propiedades" />
       </div>
 
       {/* Content */}
@@ -83,12 +77,12 @@ export function PropertyHeader({
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             {/* Left: Title and details */}
             <div className="flex-1">
-              <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
                 {title}
               </h1>
 
               {/* Location */}
-              <div className="flex items-center gap-1.5 mt-2 text-slate-500">
+              <div className="flex items-center gap-1.5 mt-2 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
                 <span className="text-sm">
                   {neighborhood}, {city}
@@ -96,22 +90,22 @@ export function PropertyHeader({
               </div>
 
               {/* Property specs */}
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-slate-600">
+              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <Bed className="w-4 h-4 text-slate-400" />
+                  <Bed className="w-4 h-4 text-muted-foreground" />
                   <span>{bedrooms} hab.</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Maximize2 className="w-4 h-4 text-slate-400" />
+                  <ArrowsOut className="w-4 h-4 text-muted-foreground" />
                   <span>{area} m²</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-slate-400" />
+                  <Users className="w-4 h-4 text-muted-foreground" />
                   <span>{candidates.length} candidatos</span>
                 </div>
                 {preApprovedCount > 0 && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-medium">
                       {preApprovedCount}/{MAX_PRE_APPROVALS} pre-aprobados
                     </span>
@@ -122,17 +116,17 @@ export function PropertyHeader({
 
             {/* Right: Price */}
             <div className="lg:text-right">
-              <p className="text-2xl font-bold text-slate-900 tracking-tight">
+              <p className="text-2xl font-bold text-foreground tracking-tight">
                 {formatCurrency(monthlyRent)}
-                <span className="text-slate-400 text-base font-normal">/mes</span>
+                <span className="text-muted-foreground text-base font-normal">/mes</span>
               </p>
             </div>
           </div>
 
           {/* Risk distribution */}
           {candidates.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-2">
+            <div className="mt-5 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">
                 Distribucion de riesgo de candidatos
               </p>
               <RiskGauge distribution={riskDistribution} showLabels />

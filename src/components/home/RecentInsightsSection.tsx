@@ -3,132 +3,124 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { SectionLabel } from "@/components/ui/section-label";
+import { ArrowUpRight } from '@phosphor-icons/react';
+import { blogPosts } from "@/lib/data/blog-posts";
 
-const blogPosts = [
-  {
-    title: "Las mejores formas de invertir en propiedades en Colombia",
-    category: "Inversiones",
-    date: "Jul 10, 2024",
-    image: "https://images.pexels.com/photos/7578939/pexels-photo-7578939.jpeg?auto=compress&cs=tinysrgb&w=800",
-    href: "/blog/invertir-propiedades-colombia",
-  },
-  {
-    title: "Lo que los vendedores deben saber antes de publicar",
-    category: "Inmobiliario",
-    date: "Jun 19, 2025",
-    image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800",
-    href: "/blog/vendedores-consejos",
-  },
-  {
-    title: "Por que Colombia sigue siendo la mejor opcion para nuevos residentes",
-    category: "Inmobiliario",
-    date: "Sep 5, 2024",
-    image: "https://images.pexels.com/photos/6899260/pexels-photo-6899260.jpeg?auto=compress&cs=tinysrgb&w=800",
-    href: "/blog/colombia-mejor-opcion",
-  },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.1, 0.25, 1] as const,
-    },
-  },
-};
-
-/**
- * RecentInsightsSection - Luxterra pixel-perfect clone
- * Exact CSS values extracted from Luxterra
- */
 export function RecentInsightsSection() {
   return (
-    <section className="bg-white overflow-hidden">
-      <div className="mx-auto max-w-[1356px] px-8 py-[90px] pb-[100px]">
-        {/* Header - Centered */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center text-center gap-[10px] mb-[60px]"
-        >
-          {/* Label with purple dot */}
-          <div className="flex items-center gap-2">
-            <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
-            <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
-              Blog
-            </span>
+    <section className="bg-white py-20 md:py-28">
+      <div className="container-platform">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-14 md:mb-16">
+          <div>
+            <SectionLabel className="mb-4">Blog</SectionLabel>
+            <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic">
+              Artículos recientes
+            </h2>
           </div>
+          <Link
+            href="/blog"
+            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-indigo-600 transition-colors group"
+          >
+            Ver todos los artículos
+            <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
+        </div>
 
-          {/* Main heading - 58px, -4.176px letter-spacing */}
-          <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05]">
-            Articulos recientes
-          </h2>
+        {/* Bento blog grid: first post hero (7col), rest stacked (5col) */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          {/* Hero post — left, tall */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5 }}
+            className="md:col-span-7 md:row-span-2"
+          >
+            <Link href={blogPosts[0].href} className="group relative block h-[400px] md:h-full min-h-[500px] overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.06)" }}>
+              <Image
+                src={blogPosts[0].image}
+                alt={blogPosts[0].title}
+                fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 58vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
 
-          {/* Description - 18px, -0.72px letter-spacing, max-width 400px */}
-          <p className="text-[18px] tracking-[-0.72px] leading-[24px] text-black/70 max-w-[400px]">
-            Compartimos actualizaciones practicas y guias sobre el mercado inmobiliario colombiano
-          </p>
-        </motion.div>
-
-        {/* Blog Cards Grid - 3 columns with gap */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-[20px]"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-        >
-          {blogPosts.map((post) => (
-            <motion.div key={post.title} variants={cardVariants}>
-              <Link href={post.href} className="group block">
-                {/* Post Image - aspect ratio 4:3 */}
-                <div className="relative aspect-[4/3] mb-[20px] overflow-hidden rounded-[2px] bg-gray-100">
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
+              <div className="absolute bottom-0 left-0 right-0 p-7 md:p-9">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/10 text-[11px] font-mono font-normal text-white/90 tracking-wide uppercase">
+                    {blogPosts[0].category}
+                  </span>
+                  <span className="text-[12px] text-white/50">{blogPosts[0].date}</span>
+                  <span className="text-[12px] text-white/40">·</span>
+                  <span className="text-[12px] text-white/50">{blogPosts[0].readTime}</span>
                 </div>
 
-                {/* Post Meta - category pill + dot + date */}
-                <div className="flex items-center gap-[8px] mb-[12px]">
-                  {/* Category - 15px, -0.15px letter-spacing */}
-                  <span className="inline-flex items-center px-[12px] py-[4px] rounded-[2px] bg-black/5 text-[15px] tracking-[-0.15px] leading-[20px] text-[#111112]">
-                    {post.category}
-                  </span>
-                  {/* Dot separator */}
-                  <span className="w-[4px] h-[4px] rounded-full bg-black/30" />
-                  {/* Date - 15px, -0.15px letter-spacing, black/70% */}
-                  <span className="text-[15px] tracking-[-0.15px] leading-[20px] text-black/70">
-                    {post.date}
-                  </span>
-                </div>
-
-                {/* Post Title - 26px, -1.352px letter-spacing */}
-                <h3 className="text-[26px] font-normal text-[#111112] tracking-[-1.352px] leading-[29.9px] group-hover:text-black/70 transition-colors">
-                  {post.title}
+                <h3 className="text-[1.5rem] md:text-[2rem] font-heading font-medium text-white tracking-[-0.02em] leading-tight mb-2 max-w-lg">
+                  {blogPosts[0].title}
                 </h3>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
+                <p className="text-[14px] text-white/60 leading-relaxed max-w-md">
+                  {blogPosts[0].excerpt}
+                </p>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* Right column — 3 stacked vertical cards */}
+          <div className="md:col-span-5 md:row-span-2 flex flex-col gap-4">
+            {blogPosts.slice(1).map((post, index) => (
+              <motion.div
+                key={post.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.45, delay: (index + 1) * 0.08 }}
+                className="flex-1"
+              >
+                <Link
+                  href={post.href}
+                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-neutral-50"
+                  style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                >
+                  {/* Image — left, fixed width, full card height */}
+                  <div className="relative w-[160px] flex-shrink-0 overflow-hidden">
+                    <Image
+                      src={post.image}
+                      alt={post.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="160px"
+                    />
+                  </div>
+
+                  {/* Content — right */}
+                  <div className="flex flex-col justify-center py-4 pr-5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[11px] font-mono font-normal text-indigo-600 tracking-wide uppercase">
+                        {post.category}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">{post.readTime}</span>
+                    </div>
+
+                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors duration-300 mb-2">
+                      {post.title}
+                    </h3>
+
+                    <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2 mb-2">
+                      {post.excerpt}
+                    </p>
+
+                    <span className="text-[11px] text-muted-foreground/70">
+                      {post.date}
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

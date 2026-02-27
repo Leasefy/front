@@ -3,13 +3,13 @@
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
 import { ConfirmationScreen, generateTrackingCode } from '@/components/wizard/ConfirmationScreen';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useProperty } from '@/lib/hooks/useProperties';
 import type { Property } from '@/lib/types/property';
 
 // Step components
@@ -40,21 +40,34 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Handle both Promise and direct params (Next.js version compatibility)
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const searchParams = useSearchParams();
-  const property = mockProperties.find((p) => p.id === resolvedParams.propertyId);
+  const { property, isLoading, error } = useProperty(resolvedParams.propertyId);
 
   // Get pre-filled name and email from URL params (lead capture)
   const initialName = searchParams.get('name') || '';
   const initialEmail = searchParams.get('email') || '';
 
-  // 404 handling
-  if (!property) {
+  // Get agent attribution from URL params (shareable links)
+  const agentCode = searchParams.get('ref') || undefined;
+  const linkCode = searchParams.get('link') || undefined;
+
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 404 handling
+  if (!property || error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Propiedad no encontrada
           </h1>
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-muted-foreground">
             La propiedad que buscas no existe o ha sido removida.
           </p>
           <Link href="/propiedades">
@@ -71,13 +84,13 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Property not available for applications
   if (property.status !== 'available') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Propiedad no disponible
           </h1>
-          <p className="mt-2 text-gray-500">
-            Esta propiedad ya no esta disponible para aplicaciones.
+          <p className="mt-2 text-muted-foreground">
+            Esta propiedad ya no está disponible para aplicaciones.
           </p>
           <Link href="/propiedades">
             <Button className="mt-6">
@@ -95,6 +108,8 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       propertyId={property.id}
       initialName={initialName}
       initialEmail={initialEmail}
+      agentCode={agentCode}
+      linkCode={linkCode}
     >
       <WizardContent property={property} />
     </ApplicationProvider>

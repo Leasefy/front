@@ -1,9 +1,9 @@
-import { Home } from 'lucide-react';
+import { House } from '@phosphor-icons/react';
 import { EmptyState } from './empty-state';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface NotFoundProps {
@@ -28,21 +28,21 @@ export interface NotFoundProps {
  * NotFound - 404 state component for missing resources
  *
  * Features:
- * - Home icon indicating navigation
+ * - House icon indicating navigation
  * - Customizable title and description
  * - Default action to return to properties
  * - Built on EmptyState for consistency
  */
 export function NotFound({
   title = 'Propiedad no encontrada',
-  description = 'Esta propiedad ya no esta disponible o la URL es incorrecta.',
+  description = 'Esta propiedad ya no está disponible o la URL es incorrecta.',
   action = { label: 'Ver todas las propiedades', href: '/propiedades' },
   className,
 }: NotFoundProps) {
   return (
     <div className={cn('min-h-[400px] flex items-center justify-center', className)}>
       <EmptyState
-        icon={Home}
+        icon={House}
         title={title}
         description={description}
         action={action}

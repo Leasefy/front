@@ -6,6 +6,9 @@
 // Plan identifiers
 export type PlanId = 'free' | 'pro' | 'business';
 
+// Agency plan identifiers
+export type AgencyPlanId = 'starter' | 'growth' | 'agency-business' | 'enterprise';
+
 // Billing options
 export type BillingCycle = 'monthly' | 'yearly';
 
@@ -103,6 +106,25 @@ export interface PlanComparisonRow {
   free: boolean | string | number;
   pro: boolean | string | number;
   business: boolean | string | number;
+}
+
+/**
+ * Agency subscription plan definition
+ */
+export interface AgencyPlan {
+  id: AgencyPlanId;
+  name: string;
+  description: string;
+  price: {
+    monthly: number | null; // null = custom pricing
+  };
+  limits: {
+    properties: number | null; // null = unlimited
+    users: number | null;
+  };
+  features: string[];
+  highlighted?: boolean;
+  badge?: string;
 }
 
 /**

@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, Clock, Search, Bell, FileText, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 interface ConfirmationScreenProps {
@@ -24,21 +24,21 @@ interface ConfirmationScreenProps {
  */
 export function ConfirmationScreen({ property, trackingCode }: ConfirmationScreenProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-white rounded-[2px] border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-sm border border-border shadow-sm overflow-hidden">
           {/* Success header */}
           <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+              <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Aplicacion enviada!
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Aplicación enviada!
             </h1>
-            <p className="text-gray-600">
-              Tu aplicacion para{' '}
-              <span className="font-medium text-gray-900">
+            <p className="text-muted-foreground">
+              Tu aplicación para{' '}
+              <span className="font-medium text-foreground">
                 {property.title}
               </span>{' '}
               ha sido recibida.
@@ -47,28 +47,28 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
 
           {/* Next steps */}
           <div className="px-6 py-6">
-            <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
               <FileText className="h-4 w-4 text-blue-600" />
-              Que sigue:
+              ¿Qué sigue?
             </h2>
 
             <div className="space-y-4">
               <TimelineItem
-                icon={<Search className="h-4 w-4" />}
-                title="Verificacion de documentos"
-                description="Revisaremos tus documentos en las proximas 24 horas."
+                icon={<MagnifyingGlass className="h-4 w-4" />}
+                title="Verificación de documentos"
+                description="Revisaremos tus documentos en las próximas 24 horas."
                 number={1}
               />
               <TimelineItem
                 icon={<Clock className="h-4 w-4" />}
-                title="Evaluacion AI"
-                description="Nuestro sistema evaluara tu perfil de riesgo automaticamente."
+                title="Evaluación AI"
+                description="Nuestro sistema evaluará tu perfil de riesgo automáticamente."
                 number={2}
               />
               <TimelineItem
                 icon={<Bell className="h-4 w-4" />}
                 title="Resultado"
-                description="Te contactaremos por email y WhatsApp con la decision."
+                description="Te contactaremos por email y WhatsApp con la decisión."
                 number={3}
                 isLast
               />
@@ -76,35 +76,29 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
           </div>
 
           {/* Tracking code */}
-          <div className="mx-6 mb-6 p-4 bg-gray-50 border border-gray-200 rounded-[2px]">
-            <p className="text-xs text-gray-500 mb-1">Codigo de seguimiento</p>
-            <p className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+          <div className="mx-6 mb-6 p-4 bg-muted border border-border rounded-sm">
+            <p className="text-xs text-muted-foreground mb-1">Código de seguimiento</p>
+            <p className="text-lg font-mono font-bold text-foreground tracking-wider">
               {trackingCode}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Guarda este codigo para consultar el estado de tu aplicacion.
+            <p className="text-xs text-muted-foreground mt-1">
+              Guarda este código para consultar el estado de tu aplicación.
             </p>
           </div>
 
           {/* Actions */}
-          <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-            <Link href="/mis-aplicaciones" className="flex-1">
-              <Button variant="outline" className="w-full">
-                Ver mis aplicaciones
-              </Button>
-            </Link>
-            <Link href="/propiedades" className="flex-1">
+          <div className="px-6 pb-6">
+            <Link href="/onboarding/inquilino" className="block">
               <Button className="w-full">
-                Volver a propiedades
-                <ArrowRight className="h-4 w-4 ml-2" />
+                Ver mi aplicación
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Save indicator */}
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Los datos de esta aplicacion han sido guardados.
+        {/* FloppyDisk indicator */}
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Los datos de esta aplicación han sido guardados.
         </p>
       </div>
     </div>
@@ -134,7 +128,7 @@ function TimelineItem({
     <div className="relative flex gap-4">
       {/* Timeline line */}
       {!isLast && (
-        <div className="absolute left-4 top-10 bottom-0 w-px bg-gray-200" />
+        <div className="absolute left-4 top-10 bottom-0 w-px bg-muted" />
       )}
 
       {/* Number circle */}
@@ -147,10 +141,10 @@ function TimelineItem({
       {/* Content */}
       <div className="flex-1 pb-4">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-gray-400">{icon}</span>
-          <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+          <span className="text-muted-foreground">{icon}</span>
+          <h3 className="text-sm font-medium text-foreground">{title}</h3>
         </div>
-        <p className="text-sm text-gray-600">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   );

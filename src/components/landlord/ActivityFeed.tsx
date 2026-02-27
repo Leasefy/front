@@ -1,18 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  UserPlus,
-  CheckCircle2,
-  MessageSquare,
-  FileText,
-} from 'lucide-react';
+import { UserPlus, CheckCircle, Chat, FileText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import type { Activity, ActivityType } from '@/lib/data/mock-activity';
+import { useI18n } from '@/lib/i18n';
+import type { DashboardActivity } from '@/lib/api/landlord.types';
+
+type ActivityType = DashboardActivity['type'];
 
 // Format relative time
-function formatRelativeTime(isoDate: string): string {
+function formatRelativeTime(isoDate: string, locale = 'es'): string {
   const date = new Date(isoDate);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -29,44 +27,57 @@ function formatRelativeTime(isoDate: string): string {
   if (diffDays < 7) {
     return `${diffDays}d`;
   }
-  return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'short' });
 }
 
 // Icon by activity type
 const activityIcons: Record<ActivityType, typeof UserPlus> = {
   application: UserPlus,
-  status_change: CheckCircle2,
-  message: MessageSquare,
+  status_change: CheckCircle,
+  message: Chat,
   document: FileText,
 };
 
 interface ActivityItemProps {
-  activity: Activity;
+  activity: DashboardActivity;
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
+  const { locale } = useI18n();
   const Icon = activityIcons[activity.type];
 
+  // Map activity types to accent colors
+  const typeColors: Record<ActivityType, string> = {
+    application: 'bg-[black]/10 text-[black]',
+    status_change: 'bg-emerald-50 text-emerald-600',
+    message: 'bg-blue-50 text-blue-600',
+    document: 'bg-amber-50 text-amber-600',
+  };
+
   const content = (
-    <div className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors -mx-2 px-2 rounded-[2px]">
-      {/* Icon */}
-      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon className="w-4 h-4 text-slate-400" />
+    <div className="group flex items-start gap-4 py-4 px-3 -mx-3 rounded-sm hover:bg-muted/80 transition-all duration-300 cursor-pointer">
+      {/* Icon with colored background */}
+      <div className={cn(
+        'w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0',
+        'transition-transform duration-300 group-hover:scale-110',
+        typeColors[activity.type]
+      )}>
+        <Icon className="w-4 h-4" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-700 font-medium">
+        <p className="text-sm text-foreground font-medium group-hover:text-foreground transition-colors">
           {activity.title}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-1 truncate">
           {activity.description}
         </p>
       </div>
 
-      {/* Time */}
-      <span className="text-xs text-slate-300 flex-shrink-0">
-        {formatRelativeTime(activity.timestamp)}
+      {/* Time badge */}
+      <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
+        {formatRelativeTime(activity.timestamp, locale)}
       </span>
     </div>
   );
@@ -83,7 +94,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
 }
 
 interface ActivityFeedProps {
-  activities: Activity[];
+  activities: DashboardActivity[];
   className?: string;
   showViewAll?: boolean;
 }
@@ -99,7 +110,7 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   if (activities.length === 0) {
     return (
-      <div className={cn('text-sm text-slate-400 text-center py-8', className)}>
+      <div className={cn('text-sm text-muted-foreground text-center py-8', className)}>
         No hay actividad reciente
       </div>
     );

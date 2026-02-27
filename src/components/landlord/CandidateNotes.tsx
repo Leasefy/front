@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Pencil, Check } from 'lucide-react';
+import { Pencil, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useDecisions } from '@/lib/context/DecisionContext';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateNotesProps {
@@ -108,7 +108,7 @@ export function CandidateNotes({
           className={cn(
             'flex items-start gap-2 text-left text-sm transition-colors',
             hasNote
-              ? 'text-slate-600 hover:text-slate-800'
+              ? 'text-muted-foreground hover:text-foreground'
               : 'text-muted-foreground hover:text-foreground',
             className
           )}

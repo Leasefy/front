@@ -1,11 +1,11 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { RiskFlag } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface RiskFlagsProps {
@@ -30,9 +30,9 @@ export interface RiskFlagsProps {
  */
 const SEVERITY_STYLES = {
   low: {
-    dot: 'bg-slate-400',
-    text: 'text-slate-600',
-    icon: 'text-slate-400',
+    dot: 'bg-muted-foreground',
+    text: 'text-muted-foreground',
+    icon: 'text-muted-foreground',
   },
   medium: {
     dot: 'bg-amber-400',
@@ -103,7 +103,7 @@ export function RiskFlags({
     >
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <Warning className="h-4 w-4 text-amber-500" />
         <h4 className="text-sm font-medium text-foreground">Aspectos a considerar</h4>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, MessageCircle, Eye } from 'lucide-react';
+import { Check, X, ChatCircle, Eye } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { useDecisions, MAX_PRE_APPROVALS } from '@/lib/context/DecisionContext';
 import type { LandlordCandidateStatus } from '@/lib/types/landlord';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface DecisionButtonsProps {
@@ -50,8 +50,8 @@ export function DecisionButtons({
     }
 
     if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
-      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
-        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      toast.error(`Máximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobación de otro candidato primero.',
       });
       return;
     }
@@ -76,7 +76,7 @@ export function DecisionButtons({
         break;
       case 'more-info':
         toast.info('Solicitud enviada', {
-          description: 'El candidato recibira una notificacion.',
+          description: 'El candidato recibirá una notificación.',
         });
         break;
     }
@@ -94,9 +94,8 @@ export function DecisionButtons({
         {/* Primary: Aprobar (black) */}
         <Button
           size="sm"
-          variant={currentStatus === 'approved' ? 'default' : 'default'}
+          variant="default"
           disabled={isUpdating}
-          showArrow={false}
           className={cn(
             'flex-1',
             currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
@@ -146,8 +145,7 @@ export function DecisionButtons({
         size="lg"
         variant="default"
         disabled={isUpdating}
-        showArrow={false}
-        className={cn(
+                className={cn(
           'w-full',
           currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
         )}
@@ -175,12 +173,9 @@ export function DecisionButtons({
 
         <Button
           size="sm"
-          variant="outline"
+          variant={currentStatus === 'rejected' ? 'destructive' : 'outline'}
           disabled={isUpdating}
-          className={cn(
-            'w-full',
-            currentStatus === 'rejected' && 'bg-red-50 border-red-200 text-red-700'
-          )}
+          className="w-full"
           onClick={() => handleDecision('rejected')}
         >
           <X className="mr-1.5 h-3.5 w-3.5" />
@@ -192,12 +187,12 @@ export function DecisionButtons({
           variant="outline"
           disabled={isUpdating}
           className={cn(
-            'w-full text-slate-600',
+            'w-full text-muted-foreground',
             currentStatus === 'more-info' && 'bg-amber-50 border-amber-200 text-amber-700'
           )}
           onClick={() => handleDecision('more-info')}
         >
-          <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+          <ChatCircle className="mr-1.5 h-3.5 w-3.5" />
           Más info
         </Button>
       </div>

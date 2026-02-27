@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export interface ImageCarouselProps {
@@ -72,7 +72,7 @@ export function ImageCarousel({
       <div
         className={cn(
           'relative bg-muted flex items-center justify-center',
-          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-[2px]',
+          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-sm',
           className
         )}
       >
@@ -96,7 +96,7 @@ export function ImageCarousel({
           'relative overflow-hidden bg-muted',
           isHero
             ? 'h-[50vh] md:h-[70vh] cursor-pointer group'
-            : 'aspect-[4/3] rounded-[2px]'
+            : 'aspect-[4/3] rounded-sm'
         )}
         onClick={isHero ? handleImageClick : undefined}
         role={isHero && onImageClick ? 'button' : undefined}
@@ -149,13 +149,13 @@ export function ImageCarousel({
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black text-xs font-medium tracking-tight rounded-[2px] hover:bg-gray-100 transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
           >
             Ver todas las imagenes ({totalImages})
           </button>
         )}
 
-        {/* Navigation arrows */}
+        {/* Compass arrows */}
         {hasMultipleImages && (
           <>
             <button
@@ -170,7 +170,7 @@ export function ImageCarousel({
               )}
               aria-label="Imagen anterior"
             >
-              <ChevronLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-gray-800')} />
+              <CaretLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
             <button
               onClick={(e) => {
@@ -184,7 +184,7 @@ export function ImageCarousel({
               )}
               aria-label="Siguiente imagen"
             >
-              <ChevronRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-gray-800')} />
+              <CaretRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
             </button>
           </>
         )}
@@ -198,7 +198,7 @@ export function ImageCarousel({
               key={index}
               onClick={() => goToIndex(index)}
               className={cn(
-                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-[2px] transition-all',
+                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-sm transition-all',
                 'hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary',
                 index === currentIndex
                   ? 'ring-2 ring-primary'
@@ -230,7 +230,7 @@ export function ImageCarousel({
                 'h-2 w-2 rounded-full transition-all',
                 index === currentIndex
                   ? 'bg-primary w-4'
-                  : 'bg-gray-300 hover:bg-gray-400'
+                  : 'bg-border hover:bg-muted-foreground'
               )}
               aria-label={`Ir a imagen ${index + 1}`}
             />

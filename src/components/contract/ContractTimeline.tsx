@@ -2,11 +2,11 @@
 
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
-import { Check, Circle, Clock } from 'lucide-react';
+import { Check, Circle, Clock } from '@phosphor-icons/react';
 import type { ContractStep } from '@/lib/types/contract';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ContractTimelineProps {
@@ -46,7 +46,7 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
                   step.status === 'completed' && 'bg-emerald-500 text-white',
                   step.status === 'current' && 'bg-primary text-white ring-4 ring-primary/20',
-                  step.status === 'pending' && 'bg-slate-200 text-slate-400'
+                  step.status === 'pending' && 'bg-muted text-muted-foreground'
                 )}
               >
                 {step.status === 'completed' ? (
@@ -63,7 +63,7 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                 <div
                   className={cn(
                     'mt-2 h-12 w-0.5 transition-colors',
-                    step.status === 'completed' ? 'bg-emerald-500' : 'bg-slate-200'
+                    step.status === 'completed' ? 'bg-emerald-500' : 'bg-muted'
                   )}
                   aria-hidden="true"
                 />
@@ -77,7 +77,7 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                   'text-sm font-medium transition-colors',
                   step.status === 'completed' && 'text-emerald-700',
                   step.status === 'current' && 'text-foreground',
-                  step.status === 'pending' && 'text-slate-400'
+                  step.status === 'pending' && 'text-muted-foreground'
                 )}
               >
                 {step.title}
@@ -85,13 +85,13 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
               <p
                 className={cn(
                   'mt-1 text-xs',
-                  step.status === 'pending' ? 'text-slate-300' : 'text-slate-500'
+                  step.status === 'pending' ? 'text-muted-foreground' : 'text-muted-foreground'
                 )}
               >
                 {step.description}
               </p>
               {step.completedAt && (
-                <p className="mt-1 text-xs text-slate-400">{formatDate(step.completedAt)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatDate(step.completedAt)}</p>
               )}
             </div>
           </div>

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Upload, File, X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, File, X, Check, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 interface DocumentUploadProps {
@@ -45,17 +45,17 @@ export function DocumentUpload({
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
   // Validate file type
-  const isValidType = useCallback(
+  const isValidTextT = useCallback(
     (file: File): boolean => {
-      const acceptedTypes = accept.split(',').map((t) => t.trim().toLowerCase());
+      const acceptedTextTs = accept.split(',').map((t) => t.trim().toLowerCase());
       const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-      const fileMimeType = file.type.toLowerCase();
+      const fileMimeTextT = file.type.toLowerCase();
 
-      return acceptedTypes.some((type) => {
+      return acceptedTextTs.some((type) => {
         if (type.startsWith('.')) {
           return fileExtension === type;
         }
-        return fileMimeType === type || fileMimeType.startsWith(type.replace('*', ''));
+        return fileMimeTextT === type || fileMimeTextT.startsWith(type.replace('*', ''));
       });
     },
     [accept]
@@ -67,7 +67,7 @@ export function DocumentUpload({
       setUploadError('');
 
       // Validate file type
-      if (!isValidType(file)) {
+      if (!isValidTextT(file)) {
         setUploadError('Tipo de archivo no permitido');
         setState('error');
         return;
@@ -94,7 +94,7 @@ export function DocumentUpload({
       });
       setState('success');
     },
-    [isValidType, maxSizeBytes, maxSizeMB, onChange]
+    [isValidTextT, maxSizeBytes, maxSizeMB, onChange]
   );
 
   // Handle drop event
@@ -163,7 +163,7 @@ export function DocumentUpload({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-black/70">
+      <label className="block text-sm font-medium text-foreground/70">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -171,16 +171,16 @@ export function DocumentUpload({
       {/* Upload zone or file preview */}
       {state === 'success' && hasFile ? (
         // Compact file preview - Luxterra style
-        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-[2px]">
+        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-sm">
           <div className="flex-shrink-0">
             <File className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-black truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {value?.fileName}
             </p>
             {value?.file && (
-              <p className="text-xs text-black/40">
+              <p className="text-xs text-muted-foreground">
                 {formatFileSize(value.file.size)}
               </p>
             )}
@@ -190,7 +190,7 @@ export function DocumentUpload({
             <button
               type="button"
               onClick={handleRemove}
-              className="h-8 w-8 flex items-center justify-center rounded-[2px] text-black/30 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Eliminar</span>
@@ -205,11 +205,11 @@ export function DocumentUpload({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'relative border-2 border-dashed rounded-[2px] p-6 text-center cursor-pointer transition-colors',
-            state === 'dragging' && 'border-black/40 bg-black/[0.02]',
-            state === 'uploading' && 'border-black/10 bg-black/[0.02] cursor-wait',
+            'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
+            state === 'dragging' && 'border-border bg-black/[0.02]',
+            state === 'uploading' && 'border-border bg-black/[0.02] cursor-wait',
             state === 'error' && 'border-red-300 bg-red-50/50',
-            state === 'idle' && 'border-black/10 hover:border-black/20 hover:bg-black/[0.02]'
+            state === 'idle' && 'border-border hover:border-border hover:bg-black/[0.02]'
           )}
         >
           <input
@@ -222,12 +222,12 @@ export function DocumentUpload({
 
           {state === 'uploading' ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 text-black/40 animate-spin" />
-              <p className="text-sm text-black/60">Subiendo...</p>
+              <SpinnerGap className="h-8 w-8 text-muted-foreground animate-spin" />
+              <p className="text-sm text-muted-foreground">Subiendo...</p>
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
-              <AlertCircle className="h-8 w-8 text-red-500" />
+              <WarningCircle className="h-8 w-8 text-red-500" />
               <p className="text-sm text-red-600">{displayError}</p>
               <button
                 type="button"
@@ -238,8 +238,8 @@ export function DocumentUpload({
                 }}
                 className={cn(
                   'inline-flex items-center px-3 py-1.5 text-xs font-medium',
-                  'rounded-[2px] border border-black/10 bg-white',
-                  'text-black/70 hover:text-black hover:border-black/20',
+                  'rounded-sm border border-border bg-card',
+                  'text-foreground/70 hover:text-foreground hover:border-border',
                   'transition-colors'
                 )}
               >
@@ -251,17 +251,17 @@ export function DocumentUpload({
               <Upload
                 className={cn(
                   'h-8 w-8',
-                  state === 'dragging' ? 'text-black/60' : 'text-black/30'
+                  state === 'dragging' ? 'text-muted-foreground' : 'text-muted-foreground'
                 )}
               />
               <div>
-                <p className="text-sm text-black/60">
-                  <span className="font-medium text-black hover:underline">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground hover:underline">
                     Haz clic para subir
                   </span>{' '}
                   o arrastra tu archivo
                 </p>
-                <p className="text-xs text-black/40 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {accept
                     .split(',')
                     .map((t) => t.replace('.', '').toUpperCase())
@@ -276,7 +276,7 @@ export function DocumentUpload({
 
       {/* Hint text */}
       {hint && !displayError && state !== 'error' && (
-        <p className="text-xs text-black/40">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       )}
 
       {/* External error (from form validation) */}

@@ -1,5 +1,5 @@
 /**
- * Seed Data for Arriendo Facil
+ * Seed Data for Leasefy
  *
  * Realistic Colombian rental market data for testing and demos.
  * Includes properties across 5 major cities, landlords, and tenants
@@ -187,7 +187,7 @@ export const landlords: SeedUser[] = [
     id: 'landlord_01',
     clerkId: 'clerk_landlord_01',
     email: 'carlos.rodriguez@gmail.com',
-    name: 'Carlos Rodriguez Martinez',
+    name: 'Nicolás Rodriguez Martinez',
     phone: '+573001234567',
     role: UserRole.LANDLORD,
   },
@@ -958,7 +958,7 @@ export const applications: SeedApplication[] = [
     currentAddressMonths: 12,
     previousLandlord: 'Martha Rodriguez',
     previousLandlordPhone: '+573009990011',
-    personalRefName: 'Carlos Mejia',
+    personalRefName: 'Nicolás Mejia',
     personalRefPhone: '+573010001122',
     personalRefRelation: 'Amigo',
     identityDocUrl: 'https://utfs.io/f/placeholder-id-5.pdf',

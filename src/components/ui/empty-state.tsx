@@ -1,10 +1,11 @@
-import { LucideIcon } from 'lucide-react';
+import type { Icon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface EmptyStateAction {
@@ -14,7 +15,7 @@ export interface EmptyStateAction {
 
 export interface EmptyStateProps {
   /** Icon to display */
-  icon: LucideIcon;
+  icon: Icon;
   /** Main title text */
   title: string;
   /** Description text */
@@ -46,29 +47,29 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center py-12 px-4 text-center',
-        className
-      )}
-    >
-      {/* Icon Container */}
-      <div className="rounded-full bg-slate-100 p-4 mb-4">
-        <Icon className="h-8 w-8 text-slate-400" />
-      </div>
+    <Card className={cn('border border-dashed border-border bg-muted/50', className)}>
+      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        {/* Icon Container - Premium gradient background */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-[black]/10 rounded-sm blur-xl" />
+          <div className="relative rounded-sm bg-gradient-to-br from-black/10 to-[black]/5 p-5 border border-[black]/10">
+            <Icon className="h-8 w-8 text-[black]" />
+          </div>
+        </div>
 
-      {/* Title */}
-      <h3 className="text-lg font-medium text-slate-900 mb-2">{title}</h3>
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
 
-      {/* Description */}
-      <p className="text-sm text-slate-500 mb-6 max-w-sm">{description}</p>
+        {/* Description */}
+        <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">{description}</p>
 
-      {/* Optional CTA */}
-      {action && (
-        <Button asChild>
-          <Link href={action.href}>{action.label}</Link>
-        </Button>
-      )}
-    </div>
+        {/* Optional CTA */}
+        {action && (
+          <Button asChild>
+            <Link href={action.href}>{action.label}</Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

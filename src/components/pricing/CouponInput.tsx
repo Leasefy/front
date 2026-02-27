@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tag, X, Check, Loader2 } from 'lucide-react';
-import { validateCoupon } from '@/lib/utils/coupon-validation';
+import { Tag, X, Check, SpinnerGap } from '@phosphor-icons/react';
+import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { PlanId } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 
@@ -43,10 +43,7 @@ export function CouponInput({
     setIsLoading(true);
     setError(null);
 
-    // Simulate API call delay for realistic UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const result = validateCoupon(code.trim(), planId, price);
+    const result = await subscriptionsApi.validateCoupon(code.trim(), planId);
 
     if (result.valid && result.coupon && result.discount) {
       onApplyCoupon({
@@ -79,7 +76,7 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className={cn('', className)}>
-        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-[2px] p-3">
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-sm p-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -95,8 +92,8 @@ export function CouponInput({
           </div>
           <button
             onClick={handleRemove}
-            className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
-            aria-label="Quitar cupon"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
+            aria-label="Quitar cupón"
           >
             <X className="w-4 h-4" />
           </button>
@@ -110,13 +107,13 @@ export function CouponInput({
     <div className={cn('', className)}>
       <label
         htmlFor="coupon-code"
-        className="text-sm font-medium text-slate-700 mb-2 block"
+        className="text-sm font-medium text-foreground mb-2 block"
       >
-        ¿Tienes un cupon?
+        ¿Tienes un cupón?
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             id="coupon-code"
             value={code}
@@ -125,7 +122,7 @@ export function CouponInput({
               setError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Ingresa tu codigo"
+            placeholder="Ingresa tu código"
             className={cn(
               'pl-10',
               error && 'border-red-300 focus-visible:ring-red-500'
@@ -144,7 +141,7 @@ export function CouponInput({
           className="shrink-0"
         >
           {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <SpinnerGap className="w-4 h-4 animate-spin" />
           ) : (
             'Aplicar'
           )}
@@ -157,7 +154,7 @@ export function CouponInput({
       )}
 
       {/* Example coupon hint for testing */}
-      <p className="text-xs text-slate-400 mt-2">
+      <p className="text-xs text-muted-foreground mt-2">
         Prueba: LAUNCH100, VERANO20, GRATIS3
       </p>
     </div>

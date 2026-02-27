@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { SpinnerGap, MagnifyingGlass } from '@phosphor-icons/react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
@@ -81,7 +81,8 @@ export function PropertyGrid({
   // Show skeleton grid when loading
   if (externalLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8" role="status" aria-label="Cargando propiedades">
+        <span className="sr-only">Cargando propiedades...</span>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
             <PropertyCardSkeleton key={index} />
@@ -94,9 +95,9 @@ export function PropertyGrid({
   if (properties.length === 0) {
     return (
       <EmptyState
-        icon={Search}
+        icon={MagnifyingGlass}
         title="No encontramos propiedades"
-        description="Intenta ajustar los filtros para ver mas opciones."
+        description="Intenta ajustar los filtros para ver más opciones."
         action={{ label: 'Limpiar filtros', href: '/propiedades' }}
       />
     );
@@ -125,25 +126,25 @@ export function PropertyGrid({
         ))}
       </div>
 
-      {/* Load More Section */}
+      {/* Load More Section - Left aligned */}
       {hasMore && (
-        <div className="flex flex-col items-center gap-4 pt-4">
+        <div className="flex flex-col items-start gap-4 pt-4">
           <Button
             variant="outline"
             size="lg"
             onClick={handleLoadMore}
             disabled={isLoadingMore}
-            className="min-w-[200px] text-sm tracking-tight"
+            className="text-sm font-mono uppercase font-normal tracking-tight"
           >
             {isLoadingMore ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <SpinnerGap className="w-4 h-4 mr-2 animate-spin" />
                 Cargando...
               </>
             ) : (
               <>
-                Cargar mas
-                <span className="ml-2 text-gray-500">
+                Cargar más
+                <span className="ml-2 text-muted-foreground">
                   ({remainingCount} {remainingCount === 1 ? 'propiedad' : 'propiedades'})
                 </span>
               </>
@@ -151,13 +152,13 @@ export function PropertyGrid({
           </Button>
 
           {/* Progress indicator */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 tracking-tight">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground tracking-tight">
             <span>
               Mostrando {displayedProperties.length} de {properties.length}
             </span>
-            <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-gray-400 rounded-full transition-all duration-300"
+                className="h-full bg-muted-foreground rounded-full transition-all duration-300"
                 style={{ width: `${(displayedProperties.length / properties.length) * 100}%` }}
               />
             </div>
@@ -165,10 +166,10 @@ export function PropertyGrid({
         </div>
       )}
 
-      {/* End of results indicator */}
+      {/* End of results indicator - Left aligned */}
       {!hasMore && properties.length > INITIAL_ITEMS && (
-        <div className="flex justify-center pt-4">
-          <p className="text-xs text-gray-500 tracking-tight">
+        <div className="flex justify-start pt-4">
+          <p className="text-xs text-muted-foreground tracking-tight">
             Has visto todas las propiedades disponibles
           </p>
         </div>

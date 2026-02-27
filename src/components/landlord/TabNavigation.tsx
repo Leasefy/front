@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 export interface Tab {
   id: string;
@@ -18,7 +19,7 @@ interface TabNavigationProps {
 }
 
 /**
- * Tab Navigation - Horizontal tabs with counts
+ * Tab Compass - Premium horizontal tabs with animated indicator
  * Used in property detail page
  */
 export function TabNavigation({
@@ -28,54 +29,54 @@ export function TabNavigation({
   className,
 }: TabNavigationProps) {
   return (
-    <div className={cn('border-b border-slate-200', className)}>
-      <nav className="flex gap-8" aria-label="Tabs">
-        {tabs.map((tab) => {
-          const isActive = tab.id === activeTab;
-          const isDisabled = tab.disabled;
+    <Tabs value={activeTab} onValueChange={onTabChange} className={className}>
+      <TabsList className="w-full justify-start border-b border-border/80 rounded-none bg-transparent h-auto p-0 gap-1">
+        {tabs.map((tab) => (
+          <TabsTrigger
+            key={tab.id}
+            value={tab.id}
+            disabled={tab.disabled}
+            className={cn(
+              'relative py-4 px-4 rounded-none transition-all duration-300',
+              'data-[state=active]:shadow-none data-[state=active]:bg-transparent',
+              'data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground',
+              'data-[state=active]:text-foreground',
+              'data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed',
+              'group'
+            )}
+          >
+            <span className="flex items-center gap-2.5 font-medium">
+              {tab.label}
+              {tab.count !== undefined && (
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
+                    activeTab === tab.id
+                      ? 'bg-primary text-white'
+                      : 'bg-muted text-muted-foreground group-hover:bg-muted'
+                  )}
+                >
+                  {tab.count}
+                </Badge>
+              )}
+            </span>
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => !isDisabled && onTabChange(tab.id)}
-              disabled={isDisabled}
+            {/* Animated bottom indicator */}
+            <span
               className={cn(
-                'relative py-3 text-sm font-medium transition-colors',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-                isActive
-                  ? 'text-primary'
-                  : isDisabled
-                  ? 'text-slate-300 cursor-not-allowed'
-                  : 'text-slate-500 hover:text-slate-700'
+                'absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full',
+                'bg-primary',
+                'transition-all duration-300 ease-out',
+                activeTab === tab.id
+                  ? 'opacity-100 scale-x-100'
+                  : 'opacity-0 scale-x-0'
               )}
-            >
-              <span className="flex items-center gap-2">
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-full',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : isDisabled
-                        ? 'bg-slate-100 text-slate-300'
-                        : 'bg-slate-100 text-slate-600'
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </span>
-
-              {/* Active indicator */}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+            />
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 

@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { borderRadius, transitions, hoverEffects, cardStyles, badgeStyles } from '@/lib/design-tokens';
 import { LevelBadge } from '@/components/score/LevelBadge';
 import { CandidateMetrics } from './CandidateMetrics';
 import { AISnippet } from './AISnippet';
@@ -20,15 +19,16 @@ import {
   type LandlordCandidateStatus,
 } from '@/lib/types/landlord';
 import type { Candidate } from '@/lib/types/candidate';
-import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateCardProps {
   /** The candidate to display */
   candidate: LandlordCandidate;
+  /** Optional full candidate data for metrics display */
+  fullCandidate?: Candidate;
   /** Property ID for contract generation */
   propertyId: string;
   /** All candidate IDs for this property (for pre-approval limit check) */
@@ -46,16 +46,9 @@ export interface CandidateCardProps {
 // ============================================================================
 
 /**
- * Get full candidate data from mock candidates for extra info
- */
-function getFullCandidateData(candidateId: string): Candidate | undefined {
-  return MOCK_CANDIDATES.find((c) => c.id === candidateId);
-}
-
-/**
  * Derive history rating from candidate data
  */
-function getHistoryRating(
+function getClockCounterClockwiseRating(
   candidate: Candidate
 ): 'positive' | 'mixed' | 'limited' {
   if (candidate.previousLandlordsCount >= 2) {
@@ -87,6 +80,7 @@ function getHistoryRating(
  */
 export function CandidateCard({
   candidate,
+  fullCandidate,
   propertyId,
   allCandidateIds = [],
   onViewDetails,
@@ -105,14 +99,11 @@ export function CandidateCard({
   const preApprovedCount = getPreApprovedCount(allCandidateIds);
   const canStillPreApprove = canPreApprove(allCandidateIds);
 
-  // Get full candidate data for metrics
-  const fullCandidate = getFullCandidateData(candidate.id);
-
-  // Calculate metrics
+  // Calculate metrics from full candidate data (when available from API)
   const employmentMonths = fullCandidate?.timeAtJob || 0;
   const monthlyIncome = fullCandidate?.totalIncome || 0;
   const historyRating = fullCandidate
-    ? getHistoryRating(fullCandidate)
+    ? getClockCounterClockwiseRating(fullCandidate)
     : 'limited';
   const aiExplanation = fullCandidate?.riskScore.aiExplanation || '';
 
@@ -128,8 +119,8 @@ export function CandidateCard({
 
     // Check pre-approval limit
     if (status === 'pre-approved' && !canStillPreApprove && currentStatus !== 'pre-approved') {
-      toast.error(`Maximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
-        description: 'Debes rechazar o quitar la pre-aprobacion de otro candidato primero.',
+      toast.error(`Máximo ${MAX_PRE_APPROVALS} pre-aprobados`, {
+        description: 'Debes rechazar o quitar la pre-aprobación de otro candidato primero.',
       });
       return;
     }
@@ -161,7 +152,7 @@ export function CandidateCard({
 
   // Card styling based on status
   const cardClassName = cn(
-    cardStyles.interactive,
+    'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
     'flex flex-col',
     currentStatus === 'rejected' && 'opacity-60',
     currentStatus === 'approved' && 'ring-2 ring-emerald-200',
@@ -177,7 +168,7 @@ export function CandidateCard({
           {/* Photo Placeholder */}
           <div className={cn(
             'h-14 w-14 flex-shrink-0 overflow-hidden',
-            borderRadius.sm,
+            'rounded-sm',
             'bg-muted'
           )}>
             {candidate.photo ? (
@@ -186,7 +177,7 @@ export function CandidateCard({
                 style={{ backgroundImage: `url(${candidate.photo})` }}
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-xl font-medium text-slate-400">
+              <div className="flex h-full w-full items-center justify-center text-xl font-medium text-muted-foreground">
                 {candidate.fullName
                   .split(' ')
                   .slice(0, 2)
@@ -199,14 +190,14 @@ export function CandidateCard({
           {/* Name and Occupation */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900 truncate">
+              <h3 className="font-semibold text-foreground truncate">
                 {candidate.fullName.split(' ').slice(0, 2).join(' ')}
               </h3>
               {/* Status Badge */}
               {currentStatus !== 'pending' && (
                 <span
                   className={cn(
-                    badgeStyles.pill,
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
                     'px-2 py-0.5 flex-shrink-0',
                     CANDIDATE_STATUS_COLORS[currentStatus]
                   )}
@@ -215,10 +206,10 @@ export function CandidateCard({
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-600 truncate">
+            <p className="text-sm text-muted-foreground truncate">
               {candidate.occupation}
             </p>
-            <p className="text-xs text-slate-500">{candidate.age} anos</p>
+            <p className="text-xs text-muted-foreground">{candidate.age} años</p>
           </div>
 
           {/* Risk Badge */}
@@ -250,7 +241,6 @@ export function CandidateCard({
           <Button
             size="sm"
             variant="default"
-            showArrow={false}
             className={cn(
               'flex-1',
               currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'

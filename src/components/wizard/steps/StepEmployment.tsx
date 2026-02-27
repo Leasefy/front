@@ -1,15 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import {
-  Briefcase,
-  Building2,
-  Factory,
-  FileText,
-  Clock,
-  Phone,
-  MapPin,
-} from 'lucide-react';
+import { Briefcase, Buildings, Factory, FileText, Clock, Phone, MapPin } from '@phosphor-icons/react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   EMPLOYMENT_STATUS_OPTIONS,
@@ -99,7 +91,7 @@ export function StepEmployment() {
     <div className="space-y-6">
       {/* Employment Status */}
       <FormField
-        label="Situacion laboral"
+        label="Situación laboral"
         htmlFor="employmentStatus"
         error={getError('employmentStatus')}
         required
@@ -110,7 +102,7 @@ export function StepEmployment() {
           onChange={handleStatusChange}
           onBlur={() => handleBlur('employmentStatus')}
           options={EMPLOYMENT_STATUS_OPTIONS}
-          placeholder="Selecciona tu situacion"
+          placeholder="Selecciona tu situación"
           icon={<Briefcase className="h-4 w-4" />}
           hasError={!!getError('employmentStatus')}
         />
@@ -118,24 +110,24 @@ export function StepEmployment() {
 
       {/* Status-specific messages */}
       {employment.employmentStatus === 'unemployed' && (
-        <div className="p-4 bg-amber-50/50 border border-amber-200/50 rounded-[2px]">
+        <div className="p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
           <p className="text-sm text-amber-800">
-            Estar desempleado no descalifica tu aplicacion. Podras incluir otras
+            Estar desempleado no descalifica tu aplicación. Podrás incluir otras
             fuentes de ingreso en el siguiente paso.
           </p>
         </div>
       )}
 
       {employment.employmentStatus === 'retired' && (
-        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-[2px]">
+        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
           <p className="text-sm text-blue-800">
-            Como pensionado, tu pension mensual se registrara en el paso de ingresos.
+            Como pensionado, tu pensión mensual se registrará en el paso de ingresos.
           </p>
         </div>
       )}
 
       {employment.employmentStatus === 'student' && (
-        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-[2px]">
+        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
           <p className="text-sm text-blue-800">
             Si eres estudiante, puedes registrar ingresos de trabajo de medio tiempo
             o apoyo familiar en el siguiente paso.
@@ -146,9 +138,9 @@ export function StepEmployment() {
       {/* Job Details Section - Only shown for employed/self-employed */}
       {showJobDetails && (
         <>
-          <div className="border-t border-black/5 pt-6">
-            <h3 className="text-sm font-medium text-black mb-4">
-              Informacion del empleo
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-medium text-foreground mb-4">
+              Información del empleo
             </h3>
           </div>
 
@@ -165,7 +157,7 @@ export function StepEmployment() {
               value={employment.companyName || ''}
               onChange={(e) => handleInputChange('companyName', e.target.value)}
               onBlur={() => handleBlur('companyName')}
-              icon={<Building2 className="h-4 w-4" />}
+              icon={<Buildings className="h-4 w-4" />}
               hasError={!!getError('companyName')}
             />
           </FormField>
@@ -208,7 +200,7 @@ export function StepEmployment() {
             </FormField>
           </div>
 
-          {/* Contract Type and Time at Job - Grid */}
+          {/* Contract TextT and Time at Job - Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {employment.employmentStatus === 'employed' && (
               <FormField
@@ -230,7 +222,7 @@ export function StepEmployment() {
             )}
 
             <FormField
-              label="Antiguedad en el trabajo"
+              label="Antigüedad en el trabajo"
               htmlFor="timeAtJob"
               error={getError('timeAtJob')}
               hint="En meses"
@@ -256,18 +248,18 @@ export function StepEmployment() {
           </div>
 
           {/* Employer Contact - Optional */}
-          <div className="border-t border-black/5 pt-6">
-            <h3 className="text-sm font-medium text-black mb-1">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-medium text-foreground mb-1">
               Contacto del empleador
             </h3>
-            <p className="text-xs text-black/40 mb-4">
-              Opcional - para verificacion de empleo
+            <p className="text-xs text-muted-foreground mb-4">
+              Opcional - para verificación de empleo
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
-              label="Telefono del empleador"
+              label="Teléfono del empleador"
               htmlFor="employerPhone"
               error={getError('employerPhone')}
             >
@@ -289,13 +281,13 @@ export function StepEmployment() {
             </FormField>
 
             <FormField
-              label="Direccion del empleador"
+              label="Dirección del empleador"
               htmlFor="employerAddress"
               error={getError('employerAddress')}
             >
               <LightInput
                 id="employerAddress"
-                placeholder="Ciudad, direccion"
+                placeholder="Ciudad, dirección"
                 value={employment.employerAddress || ''}
                 onChange={(e) => handleInputChange('employerAddress', e.target.value)}
                 onBlur={() => handleBlur('employerAddress')}

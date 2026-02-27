@@ -5,7 +5,7 @@ import type { RiskLevel } from '@/lib/types/risk-score';
 import { RISK_LEVEL_COLORS, RISK_LEVEL_LABELS } from '@/lib/constants/risk-levels';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface LevelBadgeProps {

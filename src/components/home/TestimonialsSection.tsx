@@ -3,35 +3,39 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 const testimonials = [
   {
     quote:
-      "Arriendo Facil hizo que nuestra busqueda de apartamento fuera increiblemente simple. Su guia, respuesta rapida y conocimiento local nos ayudaron a asegurar el lugar perfecto mucho mas rapido.",
-    author: "Maria Rodriguez",
-    role: "Inquilina",
+      "En 5 días encontré apartamento. Me rechazaron 3 veces antes, aquí me aprobaron en 48 horas. El scoring AI mostró mi perfil real.",
+    author: "María Rodríguez",
+    role: "Inquilina · Chapinero",
+    result: "Aprobada en 48h",
     image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
   {
     quote:
-      "Nos sentimos apoyados en cada paso. Consejos claros, actualizaciones rapidas y cuidado genuino hicieron que toda la experiencia de arriendo fuera suave y sin estres.",
-    author: "Carlos Martinez",
-    role: "Propietario",
+      "Tenía mi apartamento vacío 4 meses. Lo publiqué acá y en 2 semanas ya tenía inquilino verificado. Lleva 8 meses pagando puntual.",
+    author: "Nicolás Martínez",
+    role: "Propietario · 3 propiedades",
+    result: "0 meses vacancia",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
   {
     quote:
-      "La evaluacion de riesgo AI me dio la confianza para tomar decisiones rapidas sobre inquilinos. Ahorro tiempo y tengo tranquilidad total.",
-    author: "Ana Gomez",
-    role: "Propietaria",
+      "Como inversionista, necesitaba escalar. Antes perdía 2 días evaluando inquilinos. Ahora el scoring me da todo en minutos.",
+    author: "Ana Gómez",
+    role: "Inversionista · 8 propiedades",
+    result: "100% ocupación",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
   {
     quote:
-      "Excelente servicio, encontraron el apartamento ideal para mi familia en tiempo record. El equipo fue muy profesional.",
-    author: "Diego Fernandez",
-    role: "Inquilino",
+      "Soy independiente, siempre me pedían codeudor. Aquí evaluaron mis ingresos reales y me aprobaron. Firmé desde mi celular.",
+    author: "Diego Fernández",
+    role: "Freelancer · Medellín",
+    result: "Sin codeudor",
     image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
 ];
@@ -52,10 +56,10 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="bg-[#f5f5f5] overflow-hidden">
-      <div className="mx-auto max-w-[1356px] px-8 py-[80px] pb-[100px]">
+    <section className="bg-muted overflow-hidden">
+      <div className="container-platform py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-          {/* Left - Header & Navigation */}
+          {/* Left - Header & Compass */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -65,38 +69,38 @@ export function TestimonialsSection() {
           >
             {/* Label with purple dot */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
-              <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-black/60">
-                Testimonios
+              <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+              <span className="text-[16px] tracking-[-0.32px] leading-[21.6px] text-muted-foreground">
+                Resultados reales
               </span>
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05] mb-10">
-              Lo que dicen nuestros clientes
+            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+              Historias de éxito
             </h2>
 
-            {/* Navigation arrows - Luxterra style */}
+            {/* Compass arrows - Luxterra style */}
             <div className="flex gap-3">
               <button
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-[#111112] hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
                 aria-label="Anterior testimonio"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <CaretLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-[#111112] hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
                 aria-label="Siguiente testimonio"
               >
-                <ChevronRight className="w-5 h-5" />
+                <CaretRight className="w-5 h-5" />
               </button>
             </div>
           </motion.div>
 
           {/* Right - Testimonial Cards */}
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
             <AnimatePresence mode="popLayout">
               {[0, 1].map((offset) => {
                 const index = (currentIndex + offset) % testimonials.length;
@@ -108,12 +112,12 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, delay: offset * 0.1 }}
-                    className="bg-white rounded-[2px] p-8 flex flex-col"
+                    className="bg-white rounded-2xl p-8 flex flex-col h-[300px]"
                   >
                     {/* Quote icon */}
-                    <div className="mb-6">
+                    <div className="mb-4">
                       <svg
-                        className="w-10 h-10 text-black/15"
+                        className="w-8 h-8 text-muted-foreground/50"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -121,32 +125,37 @@ export function TestimonialsSection() {
                       </svg>
                     </div>
 
-                    {/* Quote text - 24px, -0.96px letter-spacing */}
-                    <p className="text-[24px] tracking-[-0.96px] leading-[29.28px] text-[#111112] mb-8 flex-grow">
+                    {/* Quote text */}
+                    <p className="text-[20px] tracking-[-0.5px] leading-[1.35] text-foreground flex-1">
                       {testimonial.quote}
                     </p>
 
-                    {/* Author info - Luxterra exact styles */}
-                    <div className="flex items-center gap-4">
-                      <div className="w-[52px] h-[52px] rounded-[2px] overflow-hidden bg-gray-100 flex-shrink-0">
+                    {/* Author info */}
+                    <div className="flex items-center gap-3 mt-auto pt-4 border-t border-border/50">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                         <Image
                           src={testimonial.image}
                           alt={testimonial.author}
-                          width={52}
-                          height={52}
+                          width={40}
+                          height={40}
                           className="object-cover w-full h-full"
                         />
                       </div>
-                      <div>
-                        {/* Author name - 16px, -0.32px letter-spacing */}
-                        <p className="text-[16px] font-normal text-[#111112] tracking-[-0.32px] leading-[21.6px]">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-medium text-foreground leading-tight">
                           {testimonial.author}
                         </p>
-                        {/* Author role - 16px, -0.32px letter-spacing, black/62% */}
-                        <p className="text-[16px] text-black/[0.62] tracking-[-0.32px] leading-[21.6px]">
+                        <p className="text-[12px] text-muted-foreground leading-tight">
                           {testimonial.role}
                         </p>
                       </div>
+                      {testimonial.result && (
+                        <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-md">
+                          <span className="text-[9px] font-mono font-normal text-primary uppercase tracking-wide whitespace-nowrap">
+                            {testimonial.result}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );

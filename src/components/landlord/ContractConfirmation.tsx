@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FileText, X } from 'lucide-react';
+import { FileText, X } from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ContractConfirmationProps {

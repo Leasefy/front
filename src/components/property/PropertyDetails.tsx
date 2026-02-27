@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Bed, Bath, Maximize, Building2, MapPin, DollarSign } from 'lucide-react';
+import { Heart, Bed, Bathtub, ArrowsOut, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -47,7 +47,7 @@ export function PropertyDetails({
     apartment: 'Apartamento',
     house: 'Casa',
     studio: 'Estudio',
-    room: 'Habitacion',
+    room: 'Habitación',
   };
 
   // Map status to Spanish
@@ -98,7 +98,7 @@ export function PropertyDetails({
       </div>
 
       {/* Price section */}
-      <div className="rounded-[2px] border bg-card p-4">
+      <div className="rounded-sm border bg-card p-4">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold text-foreground">
             {formatCurrency(monthlyRent)}
@@ -109,12 +109,12 @@ export function PropertyDetails({
         <div className="mt-4 space-y-2 text-sm">
           {adminFee > 0 && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Administracion</span>
+              <span className="text-muted-foreground">Administración</span>
               <span className="font-medium">{formatCurrency(adminFee)}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Deposito</span>
+            <span className="text-muted-foreground">Depósito</span>
             <span className="font-medium">{formatCurrency(deposit)}</span>
           </div>
           <div className="border-t pt-2">
@@ -129,8 +129,8 @@ export function PropertyDetails({
       </div>
 
       {/* Features section */}
-      <div className="rounded-[2px] border bg-card p-4">
-        <h2 className="mb-4 font-semibold text-foreground">Caracteristicas</h2>
+      <div className="rounded-sm border bg-card p-4">
+        <h2 className="mb-4 font-semibold text-foreground">Características</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-muted p-2">
@@ -139,34 +139,34 @@ export function PropertyDetails({
             <div>
               <p className="text-lg font-semibold">{bedrooms}</p>
               <p className="text-sm text-muted-foreground">
-                {bedrooms === 1 ? 'Habitacion' : 'Habitaciones'}
+                {bedrooms === 1 ? 'Habitación' : 'Habitaciones'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-muted p-2">
-              <Bath className="h-5 w-5 text-muted-foreground" />
+              <Bathtub className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <p className="text-lg font-semibold">{bathrooms}</p>
               <p className="text-sm text-muted-foreground">
-                {bathrooms === 1 ? 'Bano' : 'Banos'}
+                {bathrooms === 1 ? 'Baño' : 'Baños'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-muted p-2">
-              <Maximize className="h-5 w-5 text-muted-foreground" />
+              <ArrowsOut className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <p className="text-lg font-semibold">{formatArea(area)}</p>
-              <p className="text-sm text-muted-foreground">Area</p>
+              <p className="text-sm text-muted-foreground">Área</p>
             </div>
           </div>
           {floor !== undefined && (
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-muted p-2">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <Buildings className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-lg font-semibold">{floor}</p>
@@ -179,7 +179,7 @@ export function PropertyDetails({
 
       {/* Amenities section */}
       {amenities.length > 0 && (
-        <div className="rounded-[2px] border bg-card p-4">
+        <div className="rounded-sm border bg-card p-4">
           <h2 className="mb-4 font-semibold text-foreground">Comodidades</h2>
           <div className="flex flex-wrap gap-2">
             {amenities.map((amenity) => (
@@ -192,8 +192,8 @@ export function PropertyDetails({
       )}
 
       {/* Description section */}
-      <div className="rounded-[2px] border bg-card p-4">
-        <h2 className="mb-4 font-semibold text-foreground">Descripcion</h2>
+      <div className="rounded-sm border bg-card p-4">
+        <h2 className="mb-4 font-semibold text-foreground">Descripción</h2>
         <p className="text-muted-foreground leading-relaxed">{description}</p>
       </div>
     </div>

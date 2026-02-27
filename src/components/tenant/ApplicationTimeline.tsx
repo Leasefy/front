@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  FileText,
-  Send,
-  CheckCircle2,
-  Search,
-  Clock,
-  XCircle,
-  LogOut,
-} from 'lucide-react';
+import { FileText, PaperPlaneTilt, CheckCircle, MagnifyingGlass, Clock, XCircle, SignOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/format';
@@ -24,41 +16,41 @@ export interface ApplicationTimelineProps {
  */
 const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
   created: FileText,
-  submitted: Send,
-  documents_verified: CheckCircle2,
-  under_review: Search,
+  submitted: PaperPlaneTilt,
+  documents_verified: CheckCircle,
+  under_review: MagnifyingGlass,
   pre_approved: Clock,
-  approved: CheckCircle2,
+  approved: CheckCircle,
   rejected: XCircle,
-  withdrawn: LogOut,
+  withdrawn: SignOut,
 };
 
 /**
  * Color classes for each event type
  */
 const EVENT_COLORS: Record<ApplicationEventType, string> = {
-  created: 'text-slate-400 bg-slate-100',
+  created: 'text-muted-foreground bg-muted',
   submitted: 'text-blue-600 bg-blue-100',
   documents_verified: 'text-sky-600 bg-sky-100',
   under_review: 'text-blue-600 bg-blue-100',
   pre_approved: 'text-amber-600 bg-amber-100',
   approved: 'text-emerald-600 bg-emerald-100',
   rejected: 'text-red-600 bg-red-100',
-  withdrawn: 'text-slate-500 bg-slate-100',
+  withdrawn: 'text-muted-foreground bg-muted',
 };
 
 /**
  * Line color for connecting timeline items
  */
 const EVENT_LINE_COLORS: Record<ApplicationEventType, string> = {
-  created: 'bg-slate-200',
+  created: 'bg-muted',
   submitted: 'bg-blue-200',
   documents_verified: 'bg-sky-200',
   under_review: 'bg-blue-200',
   pre_approved: 'bg-amber-200',
   approved: 'bg-emerald-200',
   rejected: 'bg-red-200',
-  withdrawn: 'bg-slate-200',
+  withdrawn: 'bg-muted',
 };
 
 /**
@@ -117,12 +109,12 @@ export function ApplicationTimeline({
             {/* Content column */}
             <div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
               {/* Event title */}
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-foreground">
                 {event.description}
               </p>
 
               {/* Timestamp */}
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {formatDateTime(event.timestamp)}
               </p>
             </div>
@@ -132,7 +124,7 @@ export function ApplicationTimeline({
 
       {/* Empty state */}
       {events.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-4">
+        <p className="text-sm text-muted-foreground text-center py-4">
           No hay eventos para mostrar
         </p>
       )}

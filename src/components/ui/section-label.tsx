@@ -9,21 +9,26 @@ interface SectionLabelProps {
 }
 
 const dotColors: Record<DotVariant, string> = {
-  default: 'bg-current opacity-50',
-  warning: 'bg-amber-500',
-  info: 'bg-blue-500',
-  success: 'bg-emerald-500',
+  default: 'bg-primary',
+  warning: 'bg-plan-status-yellow',
+  info: 'bg-plan-status-blue',
+  success: 'bg-plan-status-green',
 };
 
 /**
- * Section label component - Luxterra style
- * 12px text with colored dot indicator
+ * Section label component - Premium styling
+ * 12px uppercase text with colored dot indicator
  */
 export function SectionLabel({ children, className, dotVariant = 'default' }: SectionLabelProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <span className={cn("h-1.5 w-1.5 rounded-full", dotColors[dotVariant])} />
-      <span className="text-xs tracking-tight">{children}</span>
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <span className={cn(
+        "h-2 w-2 rounded-full",
+        dotColors[dotVariant]
+      )} />
+      <span className="text-xs font-normal font-mono uppercase tracking-wider text-muted-foreground">
+        {children}
+      </span>
     </div>
   );
 }

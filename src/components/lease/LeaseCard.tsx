@@ -6,17 +6,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cardStyles, borderRadius, transitions, borders, badgeStyles, hoverEffects } from '@/lib/design-tokens';
-import {
-  MapPin,
-  Calendar,
-  MessageCircle,
-  FileText,
-  CreditCard,
-  User,
-  Phone,
-  Mail,
-} from 'lucide-react';
+import { MapPin, Calendar, ChatCircle, FileText, CreditCard, User, Phone, Envelope } from '@phosphor-icons/react';
 import type { Lease } from '@/lib/types/lease';
 
 interface LeaseCardProps {
@@ -29,23 +19,23 @@ interface LeaseCardProps {
 
 const statusConfig: Record<
   Lease['status'],
-  { label: string; className: string }
+  { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' }
 > = {
   active: {
     label: 'Activo',
-    className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    variant: 'success',
   },
   ending_soon: {
-    label: 'Proximo a vencer',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
+    label: 'Próximo a vencer',
+    variant: 'warning',
   },
   ended: {
     label: 'Finalizado',
-    className: 'bg-slate-100 text-slate-600 border-slate-200',
+    variant: 'secondary',
   },
   terminated: {
     label: 'Terminado',
-    className: 'bg-red-100 text-red-700 border-red-200',
+    variant: 'destructive',
   },
 };
 
@@ -78,12 +68,12 @@ export function LeaseCard({
       onClick={onSelect}
       className={cn(
         'overflow-hidden',
-        borderRadius.sm,
-        transitions.standard,
+        'rounded-sm',
+        'transition-all duration-300 ease-out',
         onSelect && 'cursor-pointer',
         isSelected
-          ? cardStyles.selected
-          : cn(cardStyles.base, hoverEffects.lift),
+          ? 'bg-card text-card-foreground border border-primary rounded-sm shadow-elevated ring-2 ring-primary/20'
+          : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         className
       )}
     >
@@ -97,10 +87,8 @@ export function LeaseCard({
             className="object-cover"
           />
           <Badge
-            className={cn(
-              'absolute top-3 left-3 border',
-              status.className
-            )}
+            variant={status.variant}
+            className="absolute top-3 left-3"
           >
             {status.label}
           </Badge>
@@ -128,12 +116,12 @@ export function LeaseCard({
           </div>
 
           {/* Contact info */}
-          <div className={cn('p-3 mb-4', borderRadius.sm, 'bg-muted/50')}>
-            <p className={cn('text-xs font-medium uppercase tracking-wide mb-2', 'text-muted-foreground')}>
+          <div className={cn('p-3 mb-4', 'rounded-sm', 'bg-muted/50')}>
+            <p className={cn('text-xs font-medium font-mono uppercase tracking-wider mb-2', 'text-muted-foreground')}>
               {contactLabel}
             </p>
             <div className="flex items-center gap-3">
-              <div className={cn('w-10 h-10', borderRadius.full, 'bg-muted flex items-center justify-center shrink-0')}>
+              <div className={cn('w-10 h-10', 'rounded-full', 'bg-muted flex items-center justify-center shrink-0')}>
                 <User className={cn('w-5 h-5', 'text-muted-foreground')} />
               </div>
               <div className="min-w-0 flex-1">
@@ -146,7 +134,7 @@ export function LeaseCard({
                     {contactPhone}
                   </span>
                   <span className="flex items-center gap-1 truncate">
-                    <Mail className="w-3 h-3" />
+                    <Envelope className="w-3 h-3" />
                     {contactEmail}
                   </span>
                 </div>
@@ -163,12 +151,12 @@ export function LeaseCard({
               </span>
             </div>
             {lease.status === 'active' && daysRemaining > 0 && (
-              <span className={cn('text-xs px-2 py-0.5', borderRadius.sm, 'bg-muted text-foreground')}>
-                {daysRemaining} dias restantes
+              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-muted text-foreground')}>
+                {daysRemaining} días restantes
               </span>
             )}
             {lease.status === 'ending_soon' && (
-              <span className={cn('text-xs px-2 py-0.5', borderRadius.sm, 'bg-amber-100 text-amber-700')}>
+              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-amber-100 text-amber-700')}>
                 Vence pronto
               </span>
             )}
@@ -177,7 +165,7 @@ export function LeaseCard({
           {/* Quick actions */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="gap-2">
-              <MessageCircle className="w-4 h-4" />
+              <ChatCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Mensaje</span>
             </Button>
             {lease.contractUrl && (
@@ -187,7 +175,7 @@ export function LeaseCard({
               </Button>
             )}
             {view === 'tenant' && lease.status === 'active' && (
-              <Link href={`/mi-arriendo/${lease.id}/pagar`}>
+              <Link href={`/inquilino/pagos`}>
                 <Button size="sm" className="gap-2">
                   <CreditCard className="w-4 h-4" />
                   Pagar renta

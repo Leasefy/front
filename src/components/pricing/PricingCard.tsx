@@ -4,9 +4,8 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Sparkles } from 'lucide-react';
+import { Check, X, Sparkle } from '@phosphor-icons/react';
 import type { Plan, BillingCycle, PlanId } from '@/lib/types/subscription';
-import { cardStyles, borderRadius, transitions, shadows, borders, hoverEffects } from '@/lib/design-tokens';
 
 export interface PricingCardProps {
   plan: Plan;
@@ -58,11 +57,11 @@ export function PricingCard({
     <div
       className={cn(
         'p-6 flex flex-col',
-        borderRadius.sm,
-        transitions.standard,
+        'rounded-sm',
+        'transition-all duration-300 ease-out',
         plan.highlighted
-          ? cardStyles.highlighted
-          : cn(cardStyles.base, hoverEffects.lift),
+          ? 'bg-card text-card-foreground border border-primary rounded-sm shadow-md ring-1 ring-primary'
+          : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         'relative',
         className
       )}
@@ -70,8 +69,8 @@ export function PricingCard({
       {/* Popular badge - positioned absolutely */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-white hover:bg-primary shadow-sm">
-            <Sparkles className="w-3 h-3 mr-1" />
+          <Badge variant="default">
+            <Sparkle className="w-3 h-3 mr-1" />
             {plan.badge}
           </Badge>
         </div>
@@ -117,7 +116,7 @@ export function PricingCard({
             {feature.included ? (
               <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
             ) : (
-              <X className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />
+              <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
             )}
             <span
               className={cn(
@@ -127,7 +126,7 @@ export function PricingCard({
             >
               {feature.name}
               {feature.included && feature.limit && feature.limit !== 'unlimited' && (
-                <span className="text-slate-400"> ({feature.limit})</span>
+                <span className="text-muted-foreground"> ({feature.limit})</span>
               )}
               {feature.included && feature.limit === 'unlimited' && (
                 <span className="text-emerald-600 text-xs ml-1">(ilimitado)</span>

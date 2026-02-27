@@ -1,65 +1,82 @@
 'use client';
 
-import { useState, useCallback, KeyboardEvent, useRef, useEffect } from 'react';
-import { Sparkles, ArrowRight, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useCallback, KeyboardEvent, useRef } from 'react';
+import { ArrowUp, MapPin, Bed, House, ArrowSquareOut, X } from '@phosphor-icons/react';
 
-/**
- * Example search queries for user guidance
- * Varied examples showing different search patterns
- */
-const EXAMPLE_QUERIES = [
-  'Apartamento en Bogota con 2 habitaciones',
-  'Casa con piscina en Medellin',
-  'Estudio economico en Chapinero',
-  '3 habitaciones cerca al parque',
-];
+/** Sparkle icon with 3 four-pointed stars */
+function SparkleGradient({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="sparkles-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#3B82F6" />
+        </linearGradient>
+      </defs>
+      {/* Large star - centered */}
+      <path
+        d="M10 16c0-3.5 2.5-6 6-6c-3.5 0-6-2.5-6-6c0 3.5-2.5 6-6 6c3.5 0 6 2.5 6 6z"
+        fill="url(#sparkles-gradient)"
+      />
+      {/* Small star top-right */}
+      <path
+        d="M18 9c0-1.5 1-2.5 2.5-2.5c-1.5 0-2.5-1-2.5-2.5c0 1.5-1 2.5-2.5 2.5c1.5 0 2.5 1 2.5 2.5z"
+        fill="url(#sparkles-gradient)"
+      />
+      {/* Medium star bottom-right */}
+      <path
+        d="M19 20c0-2 1.5-3.5 3.5-3.5c-2 0-3.5-1.5-3.5-3.5c0 2-1.5 3.5-3.5 3.5c2 0 3.5 1.5 3.5 3.5z"
+        fill="url(#sparkles-gradient)"
+      />
+    </svg>
+  );
+}
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import type { Property } from '@/lib/types/property';
 
 interface AISearchInputProps {
-  /** Current search value */
   value: string;
-  /** Callback when search value changes */
   onChange: (value: string) => void;
-  /** Callback when search is submitted */
-  onSearch: (query: string) => void;
-  /** Optional placeholder override */
+  onMagnifyingGlass: (query: string) => void;
+  onClear?: () => void;
   placeholder?: string;
-  /** Optional CSS classes */
   className?: string;
-  /** Whether search is currently processing */
-  isSearching?: boolean;
+  isMagnifyingGlassing?: boolean;
+  /** AI search results to display */
+  results?: Property[];
+  /** Whether to show results panel */
+  showResults?: boolean;
 }
 
 /**
- * ChatGPT-style natural language search input
- * Large, conversational input with AI indicator, animations, and loading states
+ * Modern AI search input with results panel
  */
 export function AISearchInput({
   value,
   onChange,
-  onSearch,
-  placeholder = 'Describe tu hogar ideal...',
+  onMagnifyingGlass,
+  onClear,
+  placeholder = 'Describe el inmueble que buscas...',
   className,
-  isSearching = false,
+  isMagnifyingGlassing = false,
+  results = [],
+  showResults = false,
 }: AISearchInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
-    }
-  }, [value]);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = useCallback(() => {
-    if (value.trim() && !isSearching) {
-      setHasSearched(true);
-      onSearch(value.trim());
+    if (value.trim() && !isMagnifyingGlassing) {
+      onMagnifyingGlass(value.trim());
     }
-  }, [value, onSearch, isSearching]);
+  }, [value, onMagnifyingGlass, isMagnifyingGlassing]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -71,158 +88,230 @@ export function AISearchInput({
     [handleSubmit]
   );
 
-  const handleExampleClick = useCallback(
-    (example: string) => {
-      onChange(example);
-      setHasSearched(true);
-      onSearch(example);
-    },
-    [onChange, onSearch]
-  );
-
-  const handleClear = useCallback(() => {
-    onChange('');
-    setHasSearched(false);
-    onSearch('');
-    textareaRef.current?.focus();
-  }, [onChange, onSearch]);
+  const formatPrice = (price?: number) => {
+    if (!price) return '$--';
+    if (price >= 1000000) {
+      return `$${(price / 1000000).toFixed(1)}M`;
+    }
+    return `$${price.toLocaleString()}`;
+  };
 
   return (
-    <div className={cn('w-full', className)}>
-      {/* Main Search Box - ChatGPT style */}
+    <div className={cn('w-full max-w-2xl', className)}>
+      {/* Main MagnifyingGlass Container */}
       <div
         className={cn(
-          'relative bg-white rounded-[2px] border transition-all duration-300',
+          'relative bg-white dark:bg-card border transition-all duration-300 overflow-visible',
+          'rounded-2xl',
           isFocused
-            ? 'border-gray-400 shadow-lg'
-            : 'border-gray-200 hover:border-gray-300 shadow-sm'
+            ? 'border-primary/30 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-2 ring-primary/10'
+            : 'border-border shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-border'
         )}
       >
-        {/* AI Indicator */}
-        <div className="absolute left-4 top-4 flex items-center gap-2">
-          <div className={cn(
-            'w-8 h-8 rounded-[2px] bg-[#111112] flex items-center justify-center',
-            isSearching && 'animate-pulse-subtle'
-          )}>
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-        </div>
+        {/* Top Row - Textarea */}
+        <div className="relative px-5 pt-5 pb-3">
+          <div className="flex items-start gap-4">
+            {/* AI Sparkle Icon */}
+            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-indigo-500/10 rounded-xl">
+              {isMagnifyingGlassing ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                >
+                  <SparkleGradient className="w-5 h-5" />
+                </motion.div>
+              ) : (
+                <SparkleGradient className="w-5 h-5" />
+              )}
+            </div>
 
-        {/* Textarea Input */}
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={placeholder}
-          rows={1}
-          disabled={isSearching}
-          className={cn(
-            'w-full pl-16 pr-28 py-4 text-base resize-none min-h-[56px]',
-            'border-0 focus:ring-0 focus:outline-none',
-            'placeholder:text-gray-400 text-gray-900',
-            'leading-relaxed tracking-tight',
-            'disabled:bg-white disabled:cursor-not-allowed'
-          )}
-        />
-
-        {/* Action Buttons */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          {value && !isSearching && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-[2px] hover:bg-gray-100"
-              aria-label="Limpiar busqueda"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!value.trim() || isSearching}
-            className={cn(
-              'px-4 py-2.5 rounded-[2px] text-sm font-medium tracking-tight',
-              'transition-all duration-200',
-              'flex items-center gap-2',
-              value.trim() && !isSearching
-                ? 'bg-gray-900 text-white hover:bg-gray-800 active:scale-95'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            )}
-          >
-            Buscar
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Loading State */}
-      {isSearching && (
-        <div className="mt-4 flex items-center gap-3 animate-fade-in-up">
-          <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
-            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
-            <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
-          </div>
-          <span className="text-sm text-gray-500 tracking-tight">
-            Buscando el inmueble de tus suenos...
-          </span>
-        </div>
-      )}
-
-      {/* Example Chips - Only show when no search active */}
-      {!hasSearched && !isSearching && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 animate-fade-in-up">
-          <span className="text-xs text-gray-500 tracking-tight">Prueba:</span>
-          {EXAMPLE_QUERIES.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => handleExampleClick(example)}
+            {/* Textarea */}
+            <textarea
+              ref={inputRef}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={placeholder}
+              aria-label="Búsqueda inteligente de propiedades"
+              disabled={isMagnifyingGlassing}
+              rows={2}
               className={cn(
-                'px-3 py-1.5 text-xs text-gray-600 tracking-tight',
-                'bg-white border border-gray-200 rounded-[2px]',
-                'hover:bg-gray-50 hover:border-gray-300 transition-all duration-200',
-                'active:scale-95'
+                'flex-1 bg-transparent border-0 outline-none resize-none',
+                'text-[15px] text-foreground placeholder:text-muted-foreground/70',
+                'leading-relaxed',
+                'disabled:cursor-not-allowed min-h-[52px]'
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Robottom Row - Clear + PaperPlaneTilt Button */}
+        <div className="px-5 pb-4 flex items-center justify-between">
+          <p className="text-[11px] text-muted-foreground/60">Pulsa Enter para buscar</p>
+          <div className="flex items-center gap-2">
+            {/* Clear button - shows when there's text or results */}
+            {(value.trim() || showResults) && !isMagnifyingGlassing && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  onClear?.();
+                }}
+                className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all text-muted-foreground hover:text-foreground hover:bg-neutral-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!value.trim() || isMagnifyingGlassing}
+              className={cn(
+                'flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
+                value.trim() && !isMagnifyingGlassing
+                  ? 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                  : 'bg-neutral-100 text-muted-foreground/50 cursor-not-allowed'
               )}
             >
-              {example}
+              <ArrowUp className="w-4 h-4" />
             </button>
-          ))}
+          </div>
         </div>
-      )}
 
-      {/* Active Search Indicator */}
-      {hasSearched && !isSearching && value && (
-        <div className="mt-4 flex items-center gap-2 animate-fade-in-up">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          <span className="text-xs text-gray-500 tracking-tight">
-            Mostrando resultados para &quot;{value}&quot;
-          </span>
-          <button
-            onClick={handleClear}
-            className="text-xs text-gray-900 hover:text-gray-700 tracking-tight hover:underline"
-          >
-            Nueva busqueda
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+        {/* Loading State */}
+        <AnimatePresence>
+          {isMagnifyingGlassing && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-border/50 overflow-hidden"
+            >
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <SparkleGradient className="w-4 h-4" />
+                    </motion.div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-foreground">
+                      Analizando tu búsqueda...
+                    </p>
+                    {/* Progress bar */}
+                    <div className="h-1 bg-neutral-100 rounded-full overflow-hidden mt-2">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full"
+                        initial={{ width: '0%' }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 1.8, ease: 'easeInOut' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-/**
- * Typing dots animation component
- */
-export function TypingDots({ className }: { className?: string }) {
-  return (
-    <div className={cn('flex items-center gap-1', className)}>
-      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
-      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
-      <span className="w-2 h-2 rounded-full bg-gray-900 typing-dot" />
+        {/* AI Results Panel */}
+        <AnimatePresence>
+          {showResults && !isMagnifyingGlassing && results.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="border-t border-border/50 overflow-hidden"
+            >
+              <div className="p-5">
+                {/* AI Response Header */}
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-success-50 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-success-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground">
+                      Encontré <span className="text-success-600">{results.length} propiedades</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Basado en: &ldquo;{value}&rdquo;
+                    </p>
+                  </div>
+                </div>
+
+                {/* Results Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {results.slice(0, 4).map((property, index) => (
+                    <motion.div
+                      key={property.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Link
+                        href={`/propiedades/${property.id}`}
+                        className="group flex gap-3 p-3 bg-neutral-50 hover:bg-neutral-100 rounded-xl border border-border/50 hover:border-border transition-all"
+                      >
+                        {/* Property Image */}
+                        <div className="w-16 h-16 rounded-lg bg-neutral-200 flex-shrink-0 overflow-hidden">
+                          {property.images?.[0] ? (
+                            <img
+                              src={property.images[0]}
+                              alt={property.title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <House className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Property Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {property.title}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-primary flex-shrink-0" />
+                            {property.neighborhood || property.city || 'Sin ubicación'}
+                          </p>
+                          <div className="flex items-baseline gap-1.5 mt-1.5">
+                            <span className="text-[14px] font-bold text-foreground">
+                              {formatPrice(property.monthlyRent)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              /mes
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* View All Link */}
+                {results.length > 4 && (
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <button className="text-[13px] text-primary hover:text-primary/80 font-medium transition-colors">
+                      Ver las {results.length} propiedades encontradas →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }

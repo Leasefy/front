@@ -6,27 +6,27 @@ import { motion } from "framer-motion";
 
 const agents = [
   {
-    name: "Sofia Martinez",
+    name: "Sofía Martínez",
     role: "Consultora de Propiedades",
-    locations: "Bogota, Medellin",
+    locations: "Bogotá, Medellín",
     image: "https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
     href: "/agentes/sofia-martinez",
   },
   {
-    name: "Carlos Ramirez",
+    name: "Nicolás Ramírez",
     role: "Asesor Inmobiliario",
-    locations: "Medellin, Cali",
+    locations: "Medellín, Cali",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
     href: "/agentes/carlos-ramirez",
   },
   {
-    name: "Valentina Lopez",
+    name: "Valentina López",
     role: "Especialista en Inversiones",
-    locations: "Cartagena, Bogota",
+    locations: "Cartagena, Bogotá",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=600",
     linkedin: "#",
     twitter: "#",
@@ -64,7 +64,7 @@ export function TopAgentsSection() {
   return (
     <section className="bg-white overflow-hidden">
       {/* Container - matches Luxterra */}
-      <div className="mx-auto max-w-[1356px] px-8 py-[90px] pb-[100px]">
+      <div className="container-platform py-[90px] pb-[100px]">
         {/* Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -77,8 +77,8 @@ export function TopAgentsSection() {
           <div className="flex items-center gap-4 w-full max-w-[600px]">
             <div className="flex-1 h-px bg-black/10" />
             <div className="flex items-center gap-2">
-              <span className="w-[6px] h-[6px] rounded-full bg-[#111112]" />
-              <span className="text-[16px] leading-[21.6px] tracking-[-0.32px] text-black/60">
+              <span className="w-[6px] h-[6px] rounded-full bg-primary" />
+              <span className="text-[16px] leading-[21.6px] tracking-[-0.32px] text-muted-foreground">
                 Agentes
               </span>
             </div>
@@ -86,7 +86,7 @@ export function TopAgentsSection() {
           </div>
 
           {/* Main heading - 58px, letter-spacing -4.176px */}
-          <h2 className="text-[40px] md:text-[58px] font-normal text-[#111112] tracking-[-4.176px] leading-[1.05]">
+          <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05]">
             Nuestros mejores agentes
           </h2>
         </motion.div>
@@ -106,7 +106,7 @@ export function TopAgentsSection() {
               className="group"
             >
               {/* Agent Photo - aspect ratio close to Luxterra */}
-              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-[2px] bg-gray-100">
+              <div className="relative aspect-[1/1.04] mb-[20px] overflow-hidden rounded-sm bg-muted">
                 <Image
                   src={agent.image}
                   alt={agent.name}
@@ -121,13 +121,13 @@ export function TopAgentsSection() {
                 {/* Name and Social Links */}
                 <div className="flex items-center justify-between mb-[2px]">
                   {/* Name - 19px, -0.76px letter-spacing */}
-                  <h3 className="text-[19px] font-normal text-[#111112] tracking-[-0.76px] leading-[25.27px]">
+                  <h3 className="text-[19px] font-heading font-normal text-foreground tracking-[-0.76px] leading-[25.27px]">
                     {agent.name}
                   </h3>
                   <div className="flex gap-[12px]">
                     <a
                       href={agent.linkedin}
-                      className="text-black/40 hover:text-black/70 transition-colors"
+                      className="text-muted-foreground hover:text-foreground/70 transition-colors"
                       aria-label="LinkedIn"
                     >
                       <svg className="w-[16px] h-[16px]" fill="currentColor" viewBox="0 0 24 24">
@@ -136,7 +136,7 @@ export function TopAgentsSection() {
                     </a>
                     <a
                       href={agent.twitter}
-                      className="text-black/40 hover:text-black/70 transition-colors"
+                      className="text-muted-foreground hover:text-foreground/70 transition-colors"
                       aria-label="X (Twitter)"
                     >
                       <svg className="w-[16px] h-[16px]" fill="currentColor" viewBox="0 0 24 24">
@@ -147,26 +147,26 @@ export function TopAgentsSection() {
                 </div>
 
                 {/* Role - 15px, -0.15px letter-spacing, black/70% */}
-                <p className="text-[15px] tracking-[-0.15px] leading-[20px] text-black/70 mb-[2px]">
+                <p className="text-[15px] tracking-[-0.15px] leading-[20px] text-foreground/70 mb-[2px]">
                   {agent.role}
                 </p>
 
                 {/* Locations - 15px, lighter color */}
-                <p className="text-[15px] tracking-[-0.15px] leading-[20px] text-black/40 mb-[16px]">
+                <p className="text-[15px] tracking-[-0.15px] leading-[20px] text-muted-foreground mb-[16px]">
                   {agent.locations}
                 </p>
 
                 {/* More Info Button - Luxterra style with border */}
                 <Link
                   href={agent.href}
-                  className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-[2px] border border-black/20 text-[15px] text-[#111112] tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors w-fit group/btn overflow-hidden"
+                  className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-border text-[15px] text-foreground tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors w-fit group/btn overflow-hidden"
                 >
                   <span className="relative overflow-hidden h-[20px]">
                     <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
-                      Mas info
+                      Más info
                     </span>
                     <span className="block absolute top-full transition-transform duration-300 group-hover/btn:-translate-y-full">
-                      Mas info
+                      Más info
                     </span>
                   </span>
                 </Link>

@@ -1,0 +1,460 @@
+'use client';
+
+import * as React from 'react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import {
+  Bell,
+  Gear,
+  Envelope,
+  DeviceMobile,
+  WhatsappLogo,
+  Calendar,
+  Warning,
+  Check,
+  X,
+  Info,
+} from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+
+// Available day options for pre-vencimiento
+const DAYS_BEFORE_OPTIONS = [1, 3, 5, 7] as const;
+
+// Available day options for post-vencimiento
+const DAYS_AFTER_OPTIONS = [1, 3, 7, 15, 30] as const;
+
+// Notification channels
+type Channel = 'email' | 'sms' | 'whatsapp';
+
+const CHANNELS: { value: Channel; label: string; icon: React.ElementType }[] = [
+  { value: 'email', label: 'Email', icon: Envelope },
+  { value: 'sms', label: 'SMS', icon: DeviceMobile },
+  { value: 'whatsapp', label: 'WhatsApp', icon: WhatsappLogo },
+];
+
+export interface RecordatorioConfigData {
+  daysBefore: number[];
+  daysAfter: number[];
+  channels: Channel[];
+}
+
+interface RecordatorioConfigProps {
+  isOpen: boolean;
+  onClose: () => void;
+  config: RecordatorioConfigData;
+  onSave: (config: RecordatorioConfigData) => void;
+}
+
+// Message template previews (these contain dynamic placeholders, not translatable)
+const PRE_VENCIMIENTO_TEMPLATE = `Hola {inquilino},
+
+Te recordamos que el pago de tu arriendo en {propiedad} vence el {fecha}.
+
+Monto a pagar: {monto}
+
+Puedes realizar tu pago por transferencia, PSE o en efectivo.
+
+Gracias,
+Arriendos Premium`;
+
+const MORA_TEMPLATE = `Hola {inquilino},
+
+Tu pago del arriendo en {propiedad} se encuentra vencido desde el {fecha}.
+
+Monto pendiente: {monto} (incluye intereses por mora)
+
+Por favor realiza tu pago lo antes posible para evitar acciones adicionales.
+
+Gracias,
+Arriendos Premium`;
+
+/**
+ * DaySelector - Multi-select component for day selection
+ */
+function DaySelector({
+  options,
+  selected,
+  onChange,
+  label,
+}: {
+  options: readonly number[];
+  selected: number[];
+  onChange: (days: number[]) => void;
+  label: string;
+}) {
+  const { t } = useI18n();
+
+  const toggleDay = (day: number) => {
+    if (selected.includes(day)) {
+      onChange(selected.filter((d) => d !== day));
+    } else {
+      onChange([...selected, day].sort((a, b) => a - b));
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium text-foreground">{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((day) => {
+          const isSelected = selected.includes(day);
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => toggleDay(day)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                isSelected
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-700'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              {day === 1
+                ? t('inmobiliaria.cobros.recordatorioConfig.day', { count: day })
+                : t('inmobiliaria.cobros.recordatorioConfig.days', { count: day })}
+              {isSelected && <Check className="inline-block w-3.5 h-3.5 ml-1" />}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length === 0 && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Info className="w-3.5 h-3.5" />
+          {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneDay')}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * ChannelToggle - Switch component for notification channel
+ */
+function ChannelToggle({
+  channel,
+  enabled,
+  onChange,
+}: {
+  channel: (typeof CHANNELS)[number];
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const Icon = channel.icon;
+
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between p-4 rounded-xl border transition-colors',
+        enabled
+          ? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-900/20'
+          : 'border-border bg-card'
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            'w-10 h-10 rounded-lg flex items-center justify-center',
+            enabled
+              ? 'bg-indigo-100 dark:bg-indigo-900/30'
+              : 'bg-muted'
+          )}
+        >
+          <Icon
+            className={cn(
+              'w-5 h-5',
+              enabled
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : 'text-muted-foreground'
+            )}
+          />
+        </div>
+        <span
+          className={cn(
+            'font-medium',
+            enabled ? 'text-foreground' : 'text-muted-foreground'
+          )}
+        >
+          {channel.label}
+        </span>
+      </div>
+      <Switch checked={enabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+/**
+ * MessagePreview - Shows template with variables highlighted
+ */
+function MessagePreview({
+  title,
+  template,
+}: {
+  title: string;
+  template: string;
+}) {
+  // Highlight variables in template
+  const highlightedTemplate = template.replace(
+    /\{([^}]+)\}/g,
+    '<span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium">{$1}</span>'
+  );
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-foreground">{title}</label>
+      <div className="p-4 rounded-xl border border-border bg-muted/30">
+        <p
+          className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: highlightedTemplate }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * RecordatorioConfig - Configuration panel for reminder settings
+ * Allows setting reminder days, channels, and viewing templates
+ */
+export function RecordatorioConfig({
+  isOpen,
+  onClose,
+  config,
+  onSave,
+}: RecordatorioConfigProps) {
+  const { t } = useI18n();
+  const [localConfig, setLocalConfig] = React.useState<RecordatorioConfigData>(config);
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  // Reset local config when opening
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalConfig(config);
+    }
+  }, [isOpen, config]);
+
+  // Handle days before change
+  const handleDaysBeforeChange = (days: number[]) => {
+    setLocalConfig((prev) => ({ ...prev, daysBefore: days }));
+  };
+
+  // Handle days after change
+  const handleDaysAfterChange = (days: number[]) => {
+    setLocalConfig((prev) => ({ ...prev, daysAfter: days }));
+  };
+
+  // Handle channel toggle
+  const handleChannelToggle = (channel: Channel, enabled: boolean) => {
+    setLocalConfig((prev) => ({
+      ...prev,
+      channels: enabled
+        ? [...prev.channels, channel]
+        : prev.channels.filter((c) => c !== channel),
+    }));
+  };
+
+  // Validate config
+  const isValid =
+    localConfig.daysBefore.length > 0 &&
+    localConfig.daysAfter.length > 0 &&
+    localConfig.channels.length > 0;
+
+  // Handle save
+  const handleSave = async () => {
+    if (!isValid) return;
+
+    setIsSaving(true);
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    onSave(localConfig);
+
+    toast.success(t('inmobiliaria.cobros.toasts.configSaved'), {
+      description: t('inmobiliaria.cobros.toasts.configSavedDesc'),
+    });
+
+    setIsSaving(false);
+    onClose();
+  };
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader className="mb-6">
+          <SheetTitle className="flex items-center gap-2">
+            <Gear className="w-5 h-5 text-indigo-600" />
+            {t('inmobiliaria.cobros.recordatorioConfig.title')}
+          </SheetTitle>
+          <SheetDescription>
+            {t('inmobiliaria.cobros.recordatorioConfig.description')}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="space-y-8">
+          {/* Pre-vencimiento Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-foreground">
+                {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
+              </h3>
+            </div>
+            <DaySelector
+              options={DAYS_BEFORE_OPTIONS}
+              selected={localConfig.daysBefore}
+              onChange={handleDaysBeforeChange}
+              label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
+            />
+          </motion.section>
+
+          {/* Post-vencimiento Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <Warning className="w-4 h-4 text-amber-600" />
+              <h3 className="text-sm font-semibold text-foreground">
+                {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
+              </h3>
+            </div>
+            <DaySelector
+              options={DAYS_AFTER_OPTIONS}
+              selected={localConfig.daysAfter}
+              onChange={handleDaysAfterChange}
+              label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
+            />
+          </motion.section>
+
+          {/* Notification Channels Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <Bell className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-foreground">
+                {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {CHANNELS.map((channel) => (
+                <ChannelToggle
+                  key={channel.value}
+                  channel={channel}
+                  enabled={localConfig.channels.includes(channel.value)}
+                  onChange={(enabled) => handleChannelToggle(channel.value, enabled)}
+                />
+              ))}
+            </div>
+            {localConfig.channels.length === 0 && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <Warning className="w-3.5 h-3.5" />
+                {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
+              </p>
+            )}
+          </motion.section>
+
+          {/* Message Templates Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <Envelope className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-foreground">
+                {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
+              </h3>
+            </div>
+            <MessagePreview
+              title={t('inmobiliaria.cobros.recordatorioConfig.preExpiryTemplate')}
+              template={PRE_VENCIMIENTO_TEMPLATE}
+            />
+            <MessagePreview
+              title={t('inmobiliaria.cobros.recordatorioConfig.overdueTemplate')}
+              template={MORA_TEMPLATE}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
+            </p>
+          </motion.section>
+
+          {/* Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex gap-3 pt-4 border-t border-border"
+          >
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              {t('inmobiliaria.cobros.recordatorioConfig.cancel')}
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleSave}
+              disabled={!isValid || isSaving}
+            >
+              {isSaving ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  {t('inmobiliaria.cobros.recordatorioConfig.saving')}
+                </span>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  {t('inmobiliaria.cobros.recordatorioConfig.save')}
+                </>
+              )}
+            </Button>
+          </motion.div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export default RecordatorioConfig;

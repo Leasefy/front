@@ -62,7 +62,7 @@ const LONG_PAUSE_MULTIPLIER = 6;
  *   text: "Hello, world! How are you?",
  *   speed: 40,
  *   delay: 500,
- *   onComplete: () => console.log('Done!')
+ *   onComplete: () => { // animation complete }
  * });
  *
  * return <p>{displayText}</p>;

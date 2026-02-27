@@ -1,16 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import {
-  User,
-  Briefcase,
-  DollarSign,
-  Users,
-  FileText,
-  Pencil,
-  Check,
-  AlertCircle,
-} from 'lucide-react';
+import { User, Briefcase, CurrencyDollar, Users, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
@@ -80,14 +71,14 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-[2px]">
-          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
+          <WarningCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-amber-800 font-medium">
-              Algunos pasos estan incompletos
+              Algunos pasos están incompletos
             </p>
             <p className="text-xs text-amber-700/80 mt-1">
-              Completa todos los pasos antes de enviar tu aplicacion.
+              Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
         </div>
@@ -95,22 +86,22 @@ export function StepReview() {
 
       {/* Personal Information Summary */}
       <SummaryCard
-        icon={<User className="h-5 w-5 text-black/60" />}
-        title="Informacion Personal"
+        icon={<User className="h-5 w-5 text-muted-foreground" />}
+        title="Información Personal"
         onEdit={() => goToStep(1)}
       >
         <div className="space-y-1.5 text-sm">
-          <p className="font-medium text-black">{personal.fullName || '-'}</p>
-          <p className="text-black/60">
+          <p className="font-medium text-foreground">{personal.fullName || '-'}</p>
+          <p className="text-muted-foreground">
             {getOptionLabel(DOCUMENT_TYPES, personal.documentType)} {personal.documentNumber || ''}
           </p>
-          <p className="text-black/60">
+          <p className="text-muted-foreground">
             {personal.email || '-'} | {personal.phone || '-'}
           </p>
-          <p className="text-black/60">{personal.currentAddress || '-'}</p>
+          <p className="text-muted-foreground">{personal.currentAddress || '-'}</p>
           {personal.timeAtCurrentAddress !== undefined && personal.timeAtCurrentAddress > 0 && (
-            <p className="text-black/40 text-xs">
-              {personal.timeAtCurrentAddress} meses en direccion actual
+            <p className="text-muted-foreground text-xs">
+              {personal.timeAtCurrentAddress} meses en dirección actual
             </p>
           )}
         </div>
@@ -118,25 +109,25 @@ export function StepReview() {
 
       {/* Employment Summary */}
       <SummaryCard
-        icon={<Briefcase className="h-5 w-5 text-black/60" />}
+        icon={<Briefcase className="h-5 w-5 text-muted-foreground" />}
         title="Empleo"
         onEdit={() => goToStep(2)}
       >
         <div className="space-y-1.5 text-sm">
-          <p className="font-medium text-black">
+          <p className="font-medium text-foreground">
             {getOptionLabel(EMPLOYMENT_STATUS_OPTIONS, employment.employmentStatus)}
             {employment.contractType &&
               ` - ${getOptionLabel(CONTRACT_TYPE_OPTIONS, employment.contractType)}`}
           </p>
           {employment.companyName && (
-            <p className="text-black/60">{employment.companyName}</p>
+            <p className="text-muted-foreground">{employment.companyName}</p>
           )}
           {employment.position && (
-            <p className="text-black/60">{employment.position}</p>
+            <p className="text-muted-foreground">{employment.position}</p>
           )}
           {employment.timeAtJob !== undefined && employment.timeAtJob > 0 && (
-            <p className="text-black/40 text-xs">
-              {employment.timeAtJob} meses de antiguedad
+            <p className="text-muted-foreground text-xs">
+              {employment.timeAtJob} meses de antigüedad
             </p>
           )}
         </div>
@@ -144,35 +135,35 @@ export function StepReview() {
 
       {/* Income Summary */}
       <SummaryCard
-        icon={<DollarSign className="h-5 w-5 text-black/60" />}
+        icon={<CurrencyDollar className="h-5 w-5 text-muted-foreground" />}
         title="Ingresos"
         onEdit={() => goToStep(3)}
       >
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-black/60">Salario:</span>
-            <span className="font-medium text-black">
+            <span className="text-muted-foreground">Salario:</span>
+            <span className="font-medium text-foreground">
               {income.monthlySalary ? formatCurrency(income.monthlySalary) : '-'}
             </span>
           </div>
           {income.additionalIncome !== undefined && income.additionalIncome > 0 && (
             <div className="flex justify-between">
-              <span className="text-black/60">Adicional:</span>
-              <span className="font-medium text-black">
+              <span className="text-muted-foreground">Adicional:</span>
+              <span className="font-medium text-foreground">
                 {formatCurrency(income.additionalIncome)}
               </span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-black/60">Obligaciones:</span>
+            <span className="text-muted-foreground">Obligaciones:</span>
             <span className="font-medium text-red-600">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
             </span>
           </div>
-          <div className="border-t border-black/5 pt-2 flex justify-between">
-            <span className="text-black font-medium">Disponible:</span>
+          <div className="border-t border-border pt-2 flex justify-between">
+            <span className="text-foreground font-medium">Disponible:</span>
             <span className="font-semibold text-emerald-600">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
@@ -182,11 +173,11 @@ export function StepReview() {
 
       {/* References Summary */}
       <SummaryCard
-        icon={<Users className="h-5 w-5 text-black/60" />}
+        icon={<Users className="h-5 w-5 text-muted-foreground" />}
         title="Referencias"
         onEdit={() => goToStep(4)}
       >
-        <div className="space-y-1.5 text-sm text-black/60">
+        <div className="space-y-1.5 text-sm text-muted-foreground">
           <p className="flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-500" />
             {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
@@ -207,11 +198,11 @@ export function StepReview() {
 
       {/* Documents Summary */}
       <SummaryCard
-        icon={<FileText className="h-5 w-5 text-black/60" />}
+        icon={<FileText className="h-5 w-5 text-muted-foreground" />}
         title="Documentos"
         onEdit={() => goToStep(5)}
       >
-        <div className="space-y-1.5 text-sm text-black/60">
+        <div className="space-y-1.5 text-sm text-muted-foreground">
           <DocumentStatus
             label="Documento de identidad"
             uploaded={!!documents.idDocument?.fileName || !!documents.idDocument?.file}
@@ -231,14 +222,14 @@ export function StepReview() {
             uploaded={!!documents.bankStatements?.fileName || !!documents.bankStatements?.file}
           />
           <DocumentStatus
-            label="Reporte de credito"
+            label="Reporte de crédito"
             uploaded={!!documents.creditReport?.fileName || !!documents.creditReport?.file}
           />
         </div>
       </SummaryCard>
 
       {/* Terms and Conditions */}
-      <div className="border-t border-black/5 pt-6 space-y-4">
+      <div className="border-t border-border pt-6 space-y-4">
         <div className="space-y-3">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
@@ -247,9 +238,9 @@ export function StepReview() {
               checked={acceptTerms}
               onChange={(e) => handleTermsChange(e.target.checked)}
               className={cn(
-                'mt-0.5 h-4 w-4 rounded-[2px] border border-black/20',
-                'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
-                'checked:bg-black checked:border-black',
+                'mt-0.5 h-4 w-4 rounded-sm border border-border',
+                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
+                'checked:bg-primary checked:border-primary',
                 'appearance-none cursor-pointer relative',
                 'after:content-[""] after:absolute after:hidden',
                 'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
@@ -257,9 +248,9 @@ export function StepReview() {
                 'checked:after:block'
               )}
             />
-            <span className="text-sm text-black/70">
+            <span className="text-sm text-foreground/70">
               Acepto los{' '}
-              <a href="#" className="text-black underline hover:no-underline">
+              <a href="/terminos" className="text-foreground underline hover:no-underline">
                 terminos y condiciones
               </a>{' '}
               del servicio
@@ -273,9 +264,9 @@ export function StepReview() {
               checked={authorizeVerification}
               onChange={(e) => handleAuthorizationChange(e.target.checked)}
               className={cn(
-                'mt-0.5 h-4 w-4 rounded-[2px] border border-black/20',
-                'focus:ring-2 focus:ring-black/10 focus:ring-offset-0',
-                'checked:bg-black checked:border-black',
+                'mt-0.5 h-4 w-4 rounded-sm border border-border',
+                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
+                'checked:bg-primary checked:border-primary',
                 'appearance-none cursor-pointer relative',
                 'after:content-[""] after:absolute after:hidden',
                 'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
@@ -283,16 +274,16 @@ export function StepReview() {
                 'checked:after:block'
               )}
             />
-            <span className="text-sm text-black/70">
-              Autorizo la verificacion de mis datos personales, laborales y
+            <span className="text-sm text-foreground/70">
+              Autorizo la verificación de mis datos personales, laborales y
               crediticios
             </span>
           </label>
         </div>
 
         {!acceptTerms || !authorizeVerification ? (
-          <p className="text-xs text-black/40">
-            Acepta los terminos y autoriza la verificacion para continuar.
+          <p className="text-xs text-muted-foreground">
+            Acepta los términos y autoriza la verificación para continuar.
           </p>
         ) : null}
       </div>
@@ -313,19 +304,19 @@ interface SummaryCardProps {
 
 function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
   return (
-    <div className="bg-white border border-black/5 rounded-[2px] overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-black/5">
+    <div className="bg-card border border-border rounded-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-border">
         <div className="flex items-center gap-2">
           {icon}
-          <h4 className="text-sm font-medium text-black">{title}</h4>
+          <h4 className="text-sm font-medium text-foreground">{title}</h4>
         </div>
         <button
           type="button"
           onClick={onEdit}
           className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-            'text-black/60 hover:text-black',
-            'rounded-[2px] hover:bg-black/5 transition-colors'
+            'text-muted-foreground hover:text-foreground',
+            'rounded-sm hover:bg-black/5 transition-colors'
           )}
         >
           <Pencil className="h-3.5 w-3.5" />

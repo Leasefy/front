@@ -1,13 +1,95 @@
+/**
+ * UI Components Index
+ *
+ * Central export for all UI components.
+ * Import from '@/components/ui' for cleaner imports.
+ *
+ * @example
+ * import { Button, Avatar, Progress, toast } from '@/components/ui';
+ */
+
 // ============================================================================
-// UI Components - Central Export
+// Core Components (Radix-based)
 // ============================================================================
 
-// Empty and Error States
-export { EmptyState } from './empty-state';
-export type { EmptyStateProps, EmptyStateAction } from './empty-state';
+export * from './accordion';
+export * from './alert';
+export * from './alert-dialog';
+export * from './badge';
+export * from './button';
+export * from './card';
+export * from './checkbox';
+export * from './dialog';
+export * from './dropdown-menu';
+export * from './input';
+export * from './label';
+export * from './popover';
+export * from './select';
+export * from './separator';
+export * from './sheet';
+export * from './skeleton';
+export * from './table';
+export * from './tabs';
+export * from './textarea';
+export * from './tooltip';
 
-export { ErrorState } from './error-state';
-export type { ErrorStateProps } from './error-state';
+// ============================================================================
+// Feedback & Status
+// ============================================================================
 
-export { NotFound } from './not-found';
-export type { NotFoundProps } from './not-found';
+export * from './toast';
+export * from './progress';
+export * from './spinner';
+
+// ============================================================================
+// Navigation
+// ============================================================================
+
+export * from './breadcrumb';
+export * from './pagination';
+
+// ============================================================================
+// Data Display
+// ============================================================================
+
+export * from './avatar';
+export * from './kbd';
+export * from './divider';
+
+// ============================================================================
+// Layout
+// ============================================================================
+
+export * from './aspect-ratio';
+export * from './scroll-area';
+export * from './collapsible';
+
+// ============================================================================
+// Overlays
+// ============================================================================
+
+export * from './hover-card';
+
+// ============================================================================
+// Form Components
+// ============================================================================
+
+export * from './slider';
+export * from './toggle-group';
+export * from './switch';
+
+// ============================================================================
+// Accessibility
+// ============================================================================
+
+export * from './visually-hidden';
+
+// ============================================================================
+// Utility Components
+// ============================================================================
+
+export * from './animated-counter';
+export * from './empty-state';
+export * from './error-state';
+export * from './not-found';
+export * from './section-label';

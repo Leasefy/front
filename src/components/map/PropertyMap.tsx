@@ -103,13 +103,17 @@ export function PropertyMap({
     [getClusterExpansionZoom]
   );
 
-  // Pan to hovered property from list (only when zoomed in enough)
+  // Fly to hovered property from list (Airbnb-style)
   useEffect(() => {
-    if (hoveredPropertyId && mapRef.current && zoom >= ZOOM_LEVELS.city) {
+    if (hoveredPropertyId && mapRef.current) {
       const property = properties.find((p) => p.id === hoveredPropertyId);
       if (property) {
-        mapRef.current.panTo([property.longitude, property.latitude], {
-          duration: 300,
+        // Fly to property with smooth animation and zoom to neighborhood level
+        mapRef.current.flyTo({
+          center: [property.longitude, property.latitude],
+          zoom: Math.max(zoom, ZOOM_LEVELS.neighborhood), // At least neighborhood zoom
+          duration: 600,
+          essential: true,
         });
       }
     }

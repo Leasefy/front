@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Users } from 'lucide-react';
+import { Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CandidateCard } from './CandidateCard';
@@ -10,7 +10,7 @@ import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/lan
 import type { RiskLevel } from '@/lib/types/risk-score';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface CandidateListProps {
@@ -155,14 +155,14 @@ export function CandidateList({
     return (
       <div
         className={cn(
-          'rounded-[2px] border border-dashed border-slate-300 bg-slate-50',
+          'rounded-sm border border-dashed border-border bg-muted',
           className
         )}
       >
         <EmptyState
           icon={Users}
-          title="Sin candidatos aun"
-          description="Los candidatos apareceran aqui cuando apliquen a esta propiedad."
+          title="Sin candidatos aún"
+          description="Los candidatos aparecerán aquí cuando apliquen a esta propiedad."
         />
       </div>
     );
@@ -191,7 +191,7 @@ export function CandidateList({
                 >
                   {level}
                 </span>
-                <h3 className="text-sm font-medium text-slate-700">
+                <h3 className="text-sm font-medium text-foreground">
                   {LEVEL_LABELS[level]} ({levelCandidates.length})
                 </h3>
               </div>

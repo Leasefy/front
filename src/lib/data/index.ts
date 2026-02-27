@@ -1,12 +1,9 @@
 /**
- * Central export point for all mock data
+ * Central export point for data modules
  */
 
-// Property mock data
-export * from './mock-properties';
-
-// AI explanation templates
+// AI explanation templates (used by demo/score)
 export * from './mock-explanations';
 
-// Candidate mock data
+// Candidate data (used by demo/score)
 export * from './mock-candidates';

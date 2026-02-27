@@ -15,11 +15,11 @@ import type { RiskLevel } from '@/lib/types/risk-score';
  * Tone: Confident, reassuring, highlights strengths
  */
 export const LEVEL_A_EXPLANATIONS = [
-  `Basado en lo que veo, este candidato tiene un perfil excelente. Su estabilidad laboral de mas de 3 anos en la misma empresa y sus ingresos consistentes demuestran responsabilidad financiera. El historial de arrendamientos anteriores es positivo, con referencias que confirman pagos puntuales. No identifico banderas rojas significativas.`,
+  `Basado en lo que veo, este candidato tiene un perfil excelente. Su estabilidad laboral de mas de 3 años en la misma empresa y sus ingresos consistentes demuestran responsabilidad financiera. El historial de arrendamientos anteriores es positivo, con referencias que confirman pagos puntuales. No identifico banderas rojas significativas.`,
 
   `Este es un perfil muy solido. Los ingresos son holgados respecto al arriendo (el ratio esta muy por debajo del 30% recomendado), y la estabilidad laboral en una empresa reconocida es un excelente indicador. Las referencias personales y laborales respaldan el perfil. Puede proceder con confianza.`,
 
-  `Me genera mucha confianza este candidato. Tiene un contrato laboral indefinido con 4 anos de antiguedad, sus obligaciones financieras son minimas, y el margen entre sus ingresos y el arriendo es muy saludable. Las referencias de arrendadores anteriores son todas positivas.`,
+  `Me genera mucha confianza este candidato. Tiene un contrato laboral indefinido con 4 años de antiguedad, sus obligaciones financieras son minimas, y el margen entre sus ingresos y el arriendo es muy saludable. Las referencias de arrendadores anteriores son todas positivas.`,
 
   `Un perfil ejemplar en varios aspectos. La combinacion de empleo estable, buenos ingresos, bajo nivel de obligaciones y referencias verificables hace de este candidato una opcion muy segura. El historial crediticio informal (pagos de servicios, arriendos anteriores) es impecable.`,
 ];
@@ -35,7 +35,7 @@ export const LEVEL_B_EXPLANATIONS = [
 
   `Me parece un buen candidato. Su situacion laboral como independiente es estable segun los documentos de ingresos de los ultimos 6 meses, y el promedio de ingresos es consistente. Sugeriria solicitar un mes adicional de extractos bancarios para mayor seguridad.`,
 
-  `Perfil positivo en general. La estabilidad en su residencia actual (2 anos) es un buen indicador. Los ingresos son suficientes, aunque el ratio de obligaciones es ligeramente mayor al ideal. Verificar la referencia del arrendador actual seria prudente.`,
+  `Perfil positivo en general. La estabilidad en su residencia actual (2 años) es un buen indicador. Los ingresos son suficientes, aunque el ratio de obligaciones es ligeramente mayor al ideal. Verificar la referencia del arrendador actual seria prudente.`,
 
   `Veo un candidato confiable. El empleo de termino fijo tiene renovacion reciente (hace 3 meses), lo cual muestra continuidad. Los ingresos son buenos y las referencias personales son solidas. Solo noto que no tiene historial de arrendamiento previo, lo cual es menor.`,
 ];
@@ -47,11 +47,11 @@ export const LEVEL_B_EXPLANATIONS = [
 export const LEVEL_C_EXPLANATIONS = [
   `Veo algunos aspectos a considerar con este candidato. Si bien los ingresos son suficientes, el ratio de obligaciones es algo elevado (cerca del 35%). El historial laboral muestra cambios frecuentes. Sugeriria considerar un deposito adicional o un codeudor para mitigar el riesgo.`,
 
-  `Este perfil presenta factores mixtos. La situacion laboral actual es estable, pero el tiempo en el empleo es corto (4 meses) y hay un gap de empleo en el ultimo ano. Los ingresos son justos para el arriendo. Recomiendo solicitar un codeudor con mejor perfil.`,
+  `Este perfil presenta factores mixtos. La situacion laboral actual es estable, pero el tiempo en el empleo es corto (4 meses) y hay un gap de empleo en el último año. Los ingresos son justos para el arriendo. Recomiendo solicitar un codeudor con mejor perfil.`,
 
   `Hay aspectos positivos y otros que merecen atencion. Como freelancer, los ingresos son variables - los ultimos 3 meses muestran fluctuacion del 40%. Sin embargo, tiene buenas referencias personales y un historial de arrendamiento sin problemas. Un deposito mayor seria prudente.`,
 
-  `Debo senalar algunas consideraciones. El candidato tiene capacidad de pago, pero las obligaciones actuales (credito de vehiculo y tarjetas) limitan su margen. Ademas, el contrato laboral es de prestacion de servicios sin historial largo. Sugiero condiciones adicionales de garantia.`,
+  `Debo señalar algunas consideraciones. El candidato tiene capacidad de pago, pero las obligaciones actuales (credito de vehiculo y tarjetas) limitan su margen. Ademas, el contrato laboral es de prestacion de servicios sin historial largo. Sugiero condiciones adicionales de garantia.`,
 
   `Perfil con factores a evaluar. Los ingresos principales provienen de comisiones de ventas, lo cual genera variabilidad. El promedio de los ultimos 6 meses cubre el arriendo, pero meses individuales no. Considere requerir un deposito de 2 meses o un codeudor.`,
 ];
@@ -114,8 +114,8 @@ export function getExplanationByIndex(level: RiskLevel, index: number): string {
  */
 export const POSITIVE_DRIVERS = {
   stability: {
-    longTermJob: 'Estabilidad laboral de mas de X anos',
-    longTermResidence: 'Residencia estable por X anos',
+    longTermJob: 'Estabilidad laboral de mas de X años',
+    longTermResidence: 'Residencia estable por X años',
     indefiniteContract: 'Contrato laboral indefinido',
     consistentIncome: 'Ingresos consistentes documentados',
   },
@@ -149,7 +149,7 @@ export const CONCERN_PHRASES = {
   },
   history: {
     noRentalHistory: 'Sin historial de arrendamiento previo',
-    shortRentals: 'Arrendamientos anteriores de corta duracion',
+    shortRentals: 'Arrendamientos anteriores de corta duración',
     earlyTermination: 'Terminacion anticipada en arriendo previo',
   },
 };

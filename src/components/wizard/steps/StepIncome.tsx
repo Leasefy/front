@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { DollarSign, Wallet, CreditCard, PiggyBank } from 'lucide-react';
+import { CurrencyDollar, Wallet, CreditCard, PiggyBank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
@@ -179,7 +179,7 @@ export function StepIncome() {
         label="Obligaciones mensuales"
         htmlFor="monthlyObligations"
         error={getError('monthlyObligations')}
-        hint="Creditos, deudas, cuotas de vehiculo, otros arriendos, pensiones alimenticias"
+        hint="Créditos, deudas, cuotas de vehículo, otros arriendos, pensiones alimenticias"
         required
       >
         <CurrencyInput
@@ -196,11 +196,11 @@ export function StepIncome() {
       {/* Capacity Summary Card */}
       {totalIncome > 0 && (
         <div className={cn(
-          'mt-8 p-5 border rounded-[2px]',
+          'mt-8 p-5 border rounded-sm',
           capacityStyles[capacityLevel]
         )}>
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
+            <CurrencyDollar className="h-4 w-4" />
             Tu capacidad de pago
           </h3>
 
@@ -225,7 +225,7 @@ export function StepIncome() {
           {availableForRent > 0 && (
             <div className="mt-4 pt-4 border-t border-current/10">
               <p className="text-xs opacity-70 mb-2">
-                Regla del 30%: El arriendo no deberia superar el 30% de tu
+                Regla del 30%: El arriendo no debería superar el 30% de tu
                 disponibilidad
               </p>
               <div className="flex justify-between items-center">
@@ -295,12 +295,12 @@ function CurrencyInput({
   return (
     <div className="relative">
       {icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
           {icon}
         </div>
       )}
       <span className={cn(
-        "absolute top-1/2 -translate-y-1/2 text-black/60 text-sm font-medium",
+        "absolute top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium",
         icon ? 'left-11' : 'left-4'
       )}>
         $
@@ -314,10 +314,10 @@ function CurrencyInput({
         onChange={onChange}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 rounded-[2px]',
-          'bg-black/5 text-black placeholder:text-black/40',
-          'border border-black/10',
-          'focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20',
+          'w-full h-12 rounded-sm',
+          'bg-black/5 text-foreground placeholder:text-muted-foreground',
+          'border border-border',
+          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
           'transition-colors',
           icon ? 'pl-16' : 'pl-9',
           'pr-4',

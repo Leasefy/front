@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { LevelBadge } from './LevelBadge';
@@ -11,7 +11,7 @@ import { RISK_LEVEL_COLORS, RISK_LEVEL_LABELS } from '@/lib/constants/risk-level
 import type { Candidate } from '@/lib/types/candidate';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface RiskScoreDisplayProps {
@@ -137,8 +137,8 @@ export function RiskScoreDisplay({
 
   const Wrapper = isEmbedded ? 'div' : Card;
   const wrapperProps = isEmbedded
-    ? { className: cn('space-y-6', className) }
-    : { className: cn('p-6 space-y-6', className) };
+    ? { className: cn('space-y-6', className), 'aria-live': 'polite' as const }
+    : { className: cn('p-6 space-y-6', className), 'aria-live': 'polite' as const };
 
   return (
     <Wrapper {...wrapperProps}>
@@ -192,12 +192,13 @@ export function RiskScoreDisplay({
           <button
             type="button"
             onClick={() => setShowBreakdown(!showBreakdown)}
+            aria-expanded={showBreakdown}
             className={cn(
               'flex items-center gap-2 text-sm text-muted-foreground',
               'hover:text-foreground transition-colors w-full'
             )}
           >
-            <ChevronDown
+            <CaretDown
               className={cn(
                 'h-4 w-4 transition-transform duration-200',
                 showBreakdown && 'rotate-180'

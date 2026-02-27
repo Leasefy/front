@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Check, X } from 'lucide-react';
+import { Warning, Check, X } from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,11 @@ import {
 import { Button } from '@/components/ui/button';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface DecisionConfirmationProps {
-  /** Type of action requiring confirmation */
+  /** TextT of action requiring confirmation */
   action: 'reject' | 'approve';
   /** Name of the candidate */
   candidateName: string;
@@ -62,7 +62,7 @@ export function DecisionConfirmation({
               }`}
             >
               {isReject ? (
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Warning className="h-5 w-5 text-red-600" />
               ) : (
                 <Check className="h-5 w-5 text-emerald-600" />
               )}
@@ -76,14 +76,14 @@ export function DecisionConfirmation({
         <DialogDescription className="py-4 text-base">
           {isReject ? (
             <>
-              Esta seguro de rechazar a <strong>{firstName}</strong>? Esta
-              accion cambiara el estado del candidato y sera visible en su
+              ¿Está seguro de rechazar a <strong>{firstName}</strong>? Esta
+              acción cambiará el estado del candidato y será visible en su
               historial.
             </>
           ) : (
             <>
-              Esta seguro de aprobar a <strong>{firstName}</strong>? Esto
-              indicara que el candidato ha sido seleccionado para el arriendo.
+              ¿Está seguro de aprobar a <strong>{firstName}</strong>? Esto
+              indicará que el candidato ha sido seleccionado para el arriendo.
             </>
           )}
         </DialogDescription>

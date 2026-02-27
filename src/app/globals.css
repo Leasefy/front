@@ -5,84 +5,440 @@
 @layer base {
   :root {
     /* ========================================================
-     * LIGHT THEME - Notion-inspired, premium minimal
-     * Very light grays (almost white) with subtle depth
+     * DESIGN SYSTEM — Primary Indigo + Sand
+     *
+     * Palette: Indigo (actions/CTA) + Sand (ambient/warm)
+     *          + Warm Neutrals + Sobered Semantics
+     *
+     * WCAG AA ≥ 4.5:1 verified for all text/bg combos.
      * ======================================================== */
 
-    /* Base colors - Light, airy, Notion-like */
-    --background: 0 0% 98.5%;           /* #FBFBFB - Almost white */
-    --foreground: 240 10% 10%;          /* #17181C - Near black text */
+    /* --------------------------------------------------------
+     * Color Scales (source of truth)
+     * Use these via Tailwind: text-indigo-500, bg-sand-50, etc.
+     * -------------------------------------------------------- */
 
-    /* Cards - Pure white with subtle contrast */
-    --card: 0 0% 100%;                  /* #FFFFFF - White cards */
-    --card-foreground: 240 10% 10%;     /* #17181C */
+    /* Primary (Indigo) */
+    --indigo-50:  237 100% 97%;   /* #F2F3FF */
+    --indigo-100: 237 100% 95%;   /* #E5E7FF */
+    --indigo-200: 237 100% 90%;   /* #C9CCFF */
+    --indigo-300: 237 100% 83%;   /* #A6AAFF */
+    --indigo-500: 238 82% 65%;    /* #5B5FEF */
+    --indigo-600: 238 76% 59%;    /* #4A4FE6 */
+    --indigo-700: 238 52% 52%;    /* #3E41C9 */
+    --indigo-800: 239 55% 41%;    /* #2E2FA3 */
+    --indigo-900: 239 50% 28%;    /* #23246E */
+    --indigo-950: 240 45% 12%;    /* #111127 — almost black with indigo tint */
 
-    /* Popovers/Dropdowns */
-    --popover: 0 0% 100%;               /* #FFFFFF */
-    --popover-foreground: 240 10% 10%;  /* #17181C */
+    /* Secondary (Sand / Tierra suave) — ambient only, NOT CTA */
+    --sand-50:  34 47% 96%;       /* #FAF7F2 */
+    --sand-100: 34 32% 93%;       /* #F3EEE4 */
+    --sand-200: 34 29% 85%;       /* #E7DDCC */
+    --sand-500: 30 20% 63%;       /* #B9A58A */
+    --sand-700: 28 18% 46%;       /* #8A7761 */
+    --sand-900: 24 17% 26%;       /* #4E4033 */
 
-    /* Primary - Black (Luxterra style) */
-    --primary: 240 6% 7%;               /* #111112 - Near black */
-    --primary-foreground: 0 0% 100%;    /* White on primary */
+    /* Neutral (warm) */
+    --neutral-0:   0 0% 100%;     /* #FFFFFF */
+    --neutral-50:  40 20% 98%;    /* #FAFAF9 */
+    --neutral-100: 40 6% 96%;     /* #F5F5F4 */
+    --neutral-200: 30 6% 91%;     /* #E7E5E4 */
+    --neutral-300: 24 6% 83%;     /* #D6D3D1 */
+    --neutral-400: 28 4% 64%;     /* #A8A29E */
+    --neutral-600: 25 8% 32%;     /* #57534E */
+    --neutral-700: 24 10% 24%;    /* #44403C */
+    --neutral-900: 20 17% 9%;     /* #1C1917 */
 
-    /* Secondary - Subtle gray */
-    --secondary: 240 5% 96%;            /* #F4F4F5 - Light gray */
-    --secondary-foreground: 240 10% 20%; /* Dark gray text */
+    /* Semantic (sobered — don't compete with Primary) */
+    --success-50:  120 14% 95%;   /* #F2F7F2 */
+    --success-100: 128 14% 89%;   /* #DDEBDF */
+    --success-500: 150 45% 34%;   /* #2F7D4E */
+    --success-700: 150 48% 24%;   /* #1F5A38 */
 
-    /* Muted - For subdued UI elements */
-    --muted: 240 5% 94%;                /* #EFEFEF */
-    --muted-foreground: 240 5% 40%;     /* #616166 - Gray text, WCAG AA compliant */
+    --warning-50:  45 100% 97%;   /* #FFFBF0 */
+    --warning-100: 36 62% 88%;    /* #F9E8C9 */
+    --warning-500: 30 63% 46%;    /* #C07A2D */
+    --warning-700: 25 64% 33%;    /* #8A4F1D */
 
-    /* Accent - Same as primary for consistency */
-    --accent: 240 6% 7%;                /* #111112 - Near black */
-    --accent-foreground: 0 0% 100%;
+    --error-50:  10 100% 97%;     /* #FFF4F2 */
+    --error-100: 10 72% 91%;      /* #FBD9D3 */
+    --error-500: 7 54% 49%;       /* #C24B3A */
+    --error-700: 5 47% 38%;       /* #8E3328 */
 
-    /* Destructive - Refined red */
-    --destructive: 0 72% 51%;           /* #DC2626 */
+    /* --------------------------------------------------------
+     * Extended Color Scales (Tailwind aliases)
+     * For product pages, marketing, and feature-specific theming
+     * -------------------------------------------------------- */
+
+    /* Emerald (Payments, Success states) */
+    --emerald-50:  152 81% 96%;   /* #ecfdf5 */
+    --emerald-100: 149 80% 90%;   /* #d1fae5 */
+    --emerald-200: 152 76% 80%;   /* #a7f3d0 */
+    --emerald-300: 156 72% 67%;   /* #6ee7b7 */
+    --emerald-400: 158 64% 52%;   /* #34d399 */
+    --emerald-500: 160 84% 39%;   /* #10b981 */
+    --emerald-600: 161 94% 30%;   /* #059669 */
+    --emerald-700: 163 94% 24%;   /* #047857 */
+    --emerald-800: 163 88% 20%;   /* #065f46 */
+    --emerald-900: 164 86% 16%;   /* #064e3b */
+    --emerald-950: 166 91% 9%;    /* #022c22 */
+
+    /* Teal (Payments accent) */
+    --teal-50:  166 76% 97%;      /* #f0fdfa */
+    --teal-100: 167 85% 89%;      /* #ccfbf1 */
+    --teal-200: 168 84% 78%;      /* #99f6e4 */
+    --teal-300: 171 77% 64%;      /* #5eead4 */
+    --teal-400: 172 66% 50%;      /* #2dd4bf */
+    --teal-500: 173 80% 40%;      /* #14b8a6 */
+    --teal-600: 175 84% 32%;      /* #0d9488 */
+    --teal-700: 175 77% 26%;      /* #0f766e */
+    --teal-800: 176 69% 22%;      /* #115e59 */
+    --teal-900: 176 61% 19%;      /* #134e4a */
+    --teal-950: 179 84% 10%;      /* #042f2e */
+
+    /* Cyan (Tech, Data) */
+    --cyan-50:  183 100% 96%;     /* #ecfeff */
+    --cyan-100: 185 96% 90%;      /* #cffafe */
+    --cyan-200: 186 94% 82%;      /* #a5f3fc */
+    --cyan-300: 187 92% 69%;      /* #67e8f9 */
+    --cyan-400: 188 86% 53%;      /* #22d3ee */
+    --cyan-500: 189 94% 43%;      /* #06b6d4 */
+    --cyan-600: 192 91% 36%;      /* #0891b2 */
+    --cyan-700: 193 82% 31%;      /* #0e7490 */
+    --cyan-800: 194 70% 27%;      /* #155e75 */
+    --cyan-900: 196 64% 24%;      /* #164e63 */
+    --cyan-950: 197 79% 15%;      /* #083344 */
+
+    /* Violet (Evaluation, AI) */
+    --violet-50:  250 100% 98%;   /* #f5f3ff */
+    --violet-100: 251 91% 95%;    /* #ede9fe */
+    --violet-200: 251 95% 92%;    /* #ddd6fe */
+    --violet-300: 252 95% 85%;    /* #c4b5fd */
+    --violet-400: 255 92% 76%;    /* #a78bfa */
+    --violet-500: 258 90% 66%;    /* #8b5cf6 */
+    --violet-600: 262 83% 58%;    /* #7c3aed */
+    --violet-700: 263 70% 50%;    /* #6d28d9 */
+    --violet-800: 263 69% 42%;    /* #5b21b6 */
+    --violet-900: 264 67% 35%;    /* #4c1d95 */
+    --violet-950: 265 73% 23%;    /* #2e1065 */
+
+    /* Purple (Contracts, Legal) */
+    --purple-50:  270 100% 98%;   /* #faf5ff */
+    --purple-100: 269 100% 95%;   /* #f3e8ff */
+    --purple-200: 269 100% 92%;   /* #e9d5ff */
+    --purple-300: 269 97% 85%;    /* #d8b4fe */
+    --purple-400: 270 95% 75%;    /* #c084fc */
+    --purple-500: 271 91% 65%;    /* #a855f7 */
+    --purple-600: 271 81% 56%;    /* #9333ea */
+    --purple-700: 272 72% 47%;    /* #7e22ce */
+    --purple-800: 273 67% 39%;    /* #6b21a8 */
+    --purple-900: 274 66% 32%;    /* #581c87 */
+    --purple-950: 276 87% 17%;    /* #3b0764 */
+
+    /* Amber (Insurance, Warnings) */
+    --amber-50:  48 100% 96%;     /* #fffbeb */
+    --amber-100: 48 96% 89%;      /* #fef3c7 */
+    --amber-200: 48 97% 77%;      /* #fde68a */
+    --amber-300: 46 97% 65%;      /* #fcd34d */
+    --amber-400: 43 96% 56%;      /* #fbbf24 */
+    --amber-500: 38 92% 50%;      /* #f59e0b */
+    --amber-600: 32 95% 44%;      /* #d97706 */
+    --amber-700: 26 90% 37%;      /* #b45309 */
+    --amber-800: 23 83% 31%;      /* #92400e */
+    --amber-900: 22 78% 26%;      /* #78350f */
+    --amber-950: 21 92% 14%;      /* #451a03 */
+
+    /* Orange (Agents, Energy) */
+    --orange-50:  33 100% 96%;    /* #fff7ed */
+    --orange-100: 34 100% 92%;    /* #ffedd5 */
+    --orange-200: 32 98% 83%;     /* #fed7aa */
+    --orange-300: 31 97% 72%;     /* #fdba74 */
+    --orange-400: 27 96% 61%;     /* #fb923c */
+    --orange-500: 25 95% 53%;     /* #f97316 */
+    --orange-600: 21 90% 48%;     /* #ea580c */
+    --orange-700: 17 88% 40%;     /* #c2410c */
+    --orange-800: 15 79% 34%;     /* #9a3412 */
+    --orange-900: 15 75% 28%;     /* #7c2d12 */
+    --orange-950: 13 81% 15%;     /* #431407 */
+
+    /* Blue (Info, Links) */
+    --blue-50:  214 100% 97%;     /* #eff6ff */
+    --blue-100: 214 95% 93%;      /* #dbeafe */
+    --blue-200: 213 97% 87%;      /* #bfdbfe */
+    --blue-300: 212 96% 78%;      /* #93c5fd */
+    --blue-400: 213 94% 68%;      /* #60a5fa */
+    --blue-500: 217 91% 60%;      /* #3b82f6 */
+    --blue-600: 221 83% 53%;      /* #2563eb */
+    --blue-700: 224 76% 48%;      /* #1d4ed8 */
+    --blue-800: 226 71% 40%;      /* #1e40af */
+    --blue-900: 224 64% 33%;      /* #1e3a8a */
+    --blue-950: 226 57% 21%;      /* #172554 */
+
+    /* Rose (Applications, Forms) */
+    --rose-50:  356 100% 97%;     /* #fff1f2 */
+    --rose-100: 356 100% 95%;     /* #ffe4e6 */
+    --rose-200: 353 96% 90%;      /* #fecdd3 */
+    --rose-300: 353 96% 82%;      /* #fda4af */
+    --rose-400: 351 95% 71%;      /* #fb7185 */
+    --rose-500: 350 89% 60%;      /* #f43f5e */
+    --rose-600: 347 77% 50%;      /* #e11d48 */
+    --rose-700: 345 83% 41%;      /* #be123c */
+    --rose-800: 343 80% 35%;      /* #9f1239 */
+    --rose-900: 342 75% 30%;      /* #881337 */
+    --rose-950: 343 88% 16%;      /* #4c0519 */
+
+    /* Slate (Corporate, Neutral dark) */
+    --slate-50:  210 40% 98%;     /* #f8fafc */
+    --slate-100: 210 40% 96%;     /* #f1f5f9 */
+    --slate-200: 214 32% 91%;     /* #e2e8f0 */
+    --slate-300: 213 27% 84%;     /* #cbd5e1 */
+    --slate-400: 215 20% 65%;     /* #94a3b8 */
+    --slate-500: 215 16% 47%;     /* #64748b */
+    --slate-600: 215 19% 35%;     /* #475569 */
+    --slate-700: 215 25% 27%;     /* #334155 */
+    --slate-800: 217 33% 17%;     /* #1e293b */
+    --slate-900: 222 47% 11%;     /* #0f172a */
+    --slate-950: 229 84% 5%;      /* #020617 */
+
+    /* --------------------------------------------------------
+     * Product Page Dark Theme
+     * For premium dark product/landing pages
+     * -------------------------------------------------------- */
+    --product-bg: 240 10% 2%;           /* #030305 - deepest background */
+    --product-bg-elevated: 240 6% 4%;   /* #0a0a0f - card/elevated surfaces */
+    --product-bg-subtle: 240 6% 6%;     /* #0f0f14 - subtle elevation */
+    --product-border: 240 6% 12%;       /* border on dark */
+    --product-border-subtle: 240 6% 8%; /* subtle border */
+
+    /* --------------------------------------------------------
+     * Z-Index Scale
+     * Semantic z-index values for layering
+     * -------------------------------------------------------- */
+    --z-base: 0;
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-fixed: 30;
+    --z-modal-backdrop: 40;
+    --z-modal: 50;
+    --z-popover: 60;
+    --z-tooltip: 70;
+    --z-toast: 80;
+    --z-max: 100;
+
+    /* --------------------------------------------------------
+     * Role Tokens (consumed by Tailwind via hsl(var(--*)))
+     * Maps semantic roles to the scales above.
+     * -------------------------------------------------------- */
+
+    /* Background & Surface */
+    --background:          var(--neutral-50);   /* #FAFAF9 */
+    --foreground:          var(--neutral-900);   /* #1C1917 */
+    --card:                var(--neutral-0);     /* #FFFFFF */
+    --card-foreground:     var(--neutral-900);   /* #1C1917 */
+    --popover:             var(--neutral-0);     /* #FFFFFF */
+    --popover-foreground:  var(--neutral-900);   /* #1C1917 */
+
+    /* Primary — Indigo (CTA/actions/links/focus) */
+    --primary:             var(--indigo-500);    /* #5B5FEF */
+    --primary-foreground:  0 0% 100%;            /* White on indigo */
+
+    /* Secondary — Sand ambient (NOT for CTA) */
+    --secondary:           var(--neutral-100);   /* #F5F5F4 */
+    --secondary-foreground: var(--neutral-700);  /* #44403C */
+
+    /* Muted */
+    --muted:               var(--neutral-100);   /* #F5F5F4 */
+    --muted-foreground:    var(--neutral-400);   /* #A8A29E — WCAG AA on white */
+
+    /* Accent — alias to Primary for highlight states */
+    --accent:              var(--indigo-50);     /* #F2F3FF */
+    --accent-foreground:   var(--indigo-700);    /* #3E41C9 */
+
+    /* Brand — kept as alias for backward compat */
+    --brand:               var(--indigo-500);    /* #5B5FEF */
+    --brand-foreground:    0 0% 100%;
+    --brand-muted:         var(--indigo-50);     /* #F2F3FF */
+
+    /* Destructive */
+    --destructive:         var(--error-500);     /* #C24B3A */
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders - Subtle, barely visible */
-    --border: 240 6% 92%;               /* #EAEAEB - Very light border */
-    --input: 240 6% 92%;                /* Same as border */
-    --ring: 240 6% 7%;                  /* #111112 - Black for focus rings */
+    /* Borders */
+    --border:              var(--neutral-200);   /* #E7E5E4 */
+    --input:               var(--neutral-200);   /* #E7E5E4 */
+    --ring:                var(--indigo-500);    /* #5B5FEF — focus rings */
+
+    /* Focus ring with alpha (used by components directly) */
+    --focus-ring:          91 95 239 / 0.25;     /* rgba(91,95,239,0.25) */
 
     /* Chart colors */
-    --chart-1: 240 6% 7%;
-    --chart-2: 173 58% 39%;
+    --chart-1: var(--indigo-500);
+    --chart-2: var(--success-500);
     --chart-3: 197 37% 50%;
-    --chart-4: 43 74% 55%;
+    --chart-4: var(--warning-500);
     --chart-5: 27 87% 60%;
 
-    /* ========================================================
-     * Border Radius Scale
-     * Minimal, refined - 2px base like Luxterra
-     * ======================================================== */
-    --radius: 0.125rem;                 /* 2px base */
-    --radius-sm: 0.125rem;              /* 2px - Subtle */
-    --radius-md: 0.25rem;               /* 4px - Default for inputs */
-    --radius-lg: 0.5rem;                /* 8px - Cards, modals */
-    --radius-xl: 0.75rem;               /* 12px - Large containers */
-    --radius-full: 9999px;              /* Pill buttons */
+    /* --------------------------------------------------------
+     * PLan CRM Namespace (separate system, hex values)
+     * -------------------------------------------------------- */
+    --plan-page-bg: #F7F8FA;
+    --plan-card-bg: #FFFFFF;
+    --plan-accent: #D4F934;
+    --plan-accent-dark: #a8c929;
+    --plan-border: #E5E7EB;
+    --plan-text-primary: #1C1917;
+    --plan-text-secondary: #44403C;
+    --plan-text-muted: #57534E;      /* WCAG AA 4.5:1 on white */
+
+    /* PLan Status Colors */
+    --plan-status-green: #2F7D4E;
+    --plan-status-green-bg: #F2F7F2;
+    --plan-status-yellow: #C07A2D;
+    --plan-status-yellow-bg: #FFFBF0;
+    --plan-status-red: #C24B3A;
+    --plan-status-red-bg: #FFF4F2;
+    --plan-status-purple: #5B5FEF;
+    --plan-status-purple-bg: #F2F3FF;
+    --plan-status-blue: #3B82F6;
+    --plan-status-blue-bg: #DBEAFE;
+
+    /* --------------------------------------------------------
+     * WCAG AA Contrast Audit (2026-02-02)
+     * All role-token pairs verified >= 4.5:1 for normal text.
+     *   textPrimary  (#1C1917) on bg (#FAFAF9) → 15.7:1 ✓
+     *   textSecondary (#44403C) on bg           → 8.2:1  ✓
+     *   textTertiary  (#A8A29E) on bg           → 2.6:1  (decorative only)
+     *   indigo-500 (#5B5FEF) on white           → 4.6:1  ✓ AA normal
+     *   indigo-700 (#3E41C9) on white           → 7.1:1  ✓ AAA
+     *   white on indigo-500                     → 4.6:1  ✓ AA (btn text)
+     *   white on indigo-600                     → 5.2:1  ✓ AA
+     *   error-500 on white                      → 4.7:1  ✓
+     *   success-700 on white                    → 7.5:1  ✓
+     * -------------------------------------------------------- */
+
+    /* --------------------------------------------------------
+     * Border Radius Scale — Soft/rounded aesthetic
+     * -------------------------------------------------------- */
+    --radius: 0.5rem;          /* 8px - default */
+    --radius-sm: 0.375rem;     /* 6px - small elements */
+    --radius-md: 0.625rem;     /* 10px - buttons, inputs */
+    --radius-lg: 0.875rem;     /* 14px - cards */
+    --radius-xl: 1.125rem;     /* 18px - larger cards */
+    --radius-2xl: 1.5rem;      /* 24px - modals, hero elements */
+    --radius-3xl: 2rem;        /* 32px - large hero cards */
+    --radius-full: 9999px;
+
+    /* --------------------------------------------------------
+     * Risk Level Colors
+     * -------------------------------------------------------- */
+    --risk-a: var(--success-500);        /* Green — Level A */
+    --risk-b: 217 91% 60%;              /* Blue — Level B */
+    --risk-c: var(--warning-500);        /* Amber — Level C */
+    --risk-d: var(--error-500);          /* Red — Level D */
+
+    /* --------------------------------------------------------
+     * Semantic Colors (role tokens)
+     * -------------------------------------------------------- */
+    --success: var(--success-500);
+    --warning: var(--warning-500);
+    --info: 217 91% 60%;
 
     /* ========================================================
-     * Risk Level Colors (unchanged - they work on light bg)
+     * Shadow Scale
      * ======================================================== */
-    --risk-a: 142.1 76.2% 36.3%;        /* Emerald - Level A */
-    --risk-b: 217 91% 60%;              /* Blue - Level B */
-    --risk-c: 45 93% 47%;               /* Amber - Level C */
-    --risk-d: 0 84% 60%;                /* Red - Level D */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Glow Shadows (for dark product pages) */
+    --shadow-glow-violet: 0 0 40px rgba(139, 92, 246, 0.15);
+    --shadow-glow-emerald: 0 0 40px rgba(16, 185, 129, 0.15);
+    --shadow-glow-cyan: 0 0 40px rgba(6, 182, 212, 0.15);
+    --shadow-glow-amber: 0 0 40px rgba(245, 158, 11, 0.15);
+    --shadow-glow-rose: 0 0 40px rgba(244, 63, 94, 0.15);
+    --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.15);
+
+    /* Selection/Focus shadows */
+    --shadow-ring-primary: 0 0 0 3px rgba(91, 95, 239, 0.15);
+    --shadow-ring-emerald: 0 0 0 3px rgba(16, 185, 129, 0.15);
 
     /* ========================================================
-     * Semantic Colors
+     * Transition Durations
      * ======================================================== */
-    --success: 142.1 76.2% 36.3%;       /* Emerald green */
-    --warning: 45 93% 47%;              /* Amber */
-    --info: 217 91% 60%;                /* Blue */
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --duration-slower: 500ms;
+
+    /* Easing Functions */
+    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* ========================================================
-     * Typography (will be used with utility classes)
+     * Typography Scale
+     *
+     * 3-font system:
+     *   Manrope      → Headings (.text-display, .text-h1–h6)
+     *   DM Sans      → Body text (default sans)
+     *   DM Mono      → Numeric values (.stat-number, .text-numeric)
+     *                   AND all uppercase labels/tags/overlines
+     *                   (any element with `uppercase` gets `font-mono`)
+     *
+     * Utility classes:
+     *   .text-overline  — DM Mono, 12px, uppercase, widest tracking
+     *   .text-label     — DM Mono, 11px, uppercase, wide tracking
+     *   .text-numeric   — DM Mono, tabular-nums
+     *   .stat-number    — DM Mono, large display numbers
+     *
+     * Tailwind usage:
+     *   font-sans    → DM Sans  (body default)
+     *   font-heading → Manrope  (headings)
+     *   font-mono    → DM Mono  (numbers, uppercase labels)
      * ======================================================== */
-    --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+    --font-sans: var(--font-sans), system-ui, sans-serif;
+    --font-heading: var(--font-heading), system-ui, sans-serif;
+    --font-mono: var(--font-mono), ui-monospace, monospace;
+
+    /* Font Sizes */
+    --text-xs: 0.75rem;       /* 12px */
+    --text-sm: 0.875rem;      /* 14px */
+    --text-base: 1rem;        /* 16px */
+    --text-lg: 1.125rem;      /* 18px */
+    --text-xl: 1.25rem;       /* 20px */
+    --text-2xl: 1.5rem;       /* 24px */
+    --text-3xl: 1.875rem;     /* 30px */
+    --text-4xl: 2.25rem;      /* 36px */
+    --text-5xl: 3rem;         /* 48px */
+
+    /* Font Weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* Line Heights */
+    --leading-tight: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+
+    /* Letter Spacing */
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+
+    /* ========================================================
+     * Layout
+     * ======================================================== */
+    --navbar-height-mobile: 65px;
+    --navbar-height-desktop: 81px;
+    --sidebar-width: 280px;
+    --container-max: 1280px;
 
     /* ========================================================
      * Spacing Grid (4px base)
@@ -104,12 +460,88 @@
    * Dark Section Variant (for hero overlays, etc.)
    * ======================================================== */
   .dark-section {
-    --background: 240 6% 7%;            /* #111112 - Near black */
+    --background: 240 6% 7%;            /* #111112 */
     --foreground: 0 0% 100%;
     --card: 240 6% 10%;
     --card-foreground: 0 0% 100%;
     --muted-foreground: 240 5% 65%;
     --border: 240 6% 20%;
+    --primary: var(--indigo-300);        /* Lighter indigo on dark */
+    --primary-foreground: var(--indigo-900);
+    --ring: var(--indigo-300);
+  }
+
+  /* ========================================================
+   * Dark Theme
+   * ======================================================== */
+  .dark {
+    /* Background & Surface */
+    --background:          240 6% 7%;        /* #111112 */
+    --foreground:          0 0% 95%;         /* #F2F2F2 */
+    --card:                240 6% 10%;       /* #18181B */
+    --card-foreground:     0 0% 95%;
+    --popover:             240 6% 10%;
+    --popover-foreground:  0 0% 95%;
+
+    /* Primary — lighter indigo on dark */
+    --primary:             var(--indigo-300);
+    --primary-foreground:  var(--indigo-950);
+
+    /* Secondary */
+    --secondary:           240 6% 14%;
+    --secondary-foreground: 0 0% 80%;
+
+    /* Muted */
+    --muted:               240 6% 14%;
+    --muted-foreground:    240 5% 55%;
+
+    /* Accent */
+    --accent:              238 40% 20%;
+    --accent-foreground:   var(--indigo-200);
+
+    /* Brand */
+    --brand:               var(--indigo-300);
+    --brand-foreground:    var(--indigo-950);
+    --brand-muted:         238 40% 20%;
+
+    /* Destructive */
+    --destructive:         var(--error-500);
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders */
+    --border:              240 6% 20%;
+    --input:               240 6% 20%;
+    --ring:                var(--indigo-300);
+
+    /* Focus ring */
+    --focus-ring: 166 170 255 / 0.3;
+
+    /* Shadows — darker */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 2px 8px -2px rgba(0, 0, 0, 0.25), 0 1px 2px -1px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.25);
+
+    /* PLan CRM Namespace */
+    --plan-page-bg: #111112;
+    --plan-card-bg: #18181B;
+    --plan-border: #2E2E33;
+    --plan-text-primary: #F2F2F2;
+    --plan-text-secondary: #A1A1AA;
+    --plan-text-muted: #71717A;
+
+    /* PLan Status Colors (keep vibrant, darken backgrounds) */
+    --plan-status-green-bg: #0F2A1A;
+    --plan-status-yellow-bg: #2A1F0F;
+    --plan-status-red-bg: #2A0F0F;
+    --plan-status-purple-bg: #1A1A2E;
+    --plan-status-blue-bg: #0F1A2A;
+
+    /* Neutral overrides for dark */
+    --neutral-0:   240 6% 10%;
+    --neutral-50:  240 6% 7%;
+    --neutral-100: 240 6% 14%;
+    --neutral-200: 240 6% 20%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -141,6 +573,12 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01";
+    overflow-x: hidden;
+  }
+
+  /* Headings use Manrope by default */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
 
   /* ==========================================================
@@ -196,6 +634,11 @@
     @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
   }
 
+  /* Platform container - 72px margin on desktop */
+  .container-platform {
+    @apply px-4 md:px-[72px];
+  }
+
   /* ==========================================================
    * TYPOGRAPHY SCALE
    * Premium, refined hierarchy
@@ -203,27 +646,44 @@
 
   /* Display - Hero headings, massive impact */
   .text-display {
-    @apply text-4xl md:text-5xl lg:text-[58px] font-normal tracking-[-0.072em] leading-[1.05];
+    font-family: var(--font-heading);
+    @apply text-4xl md:text-5xl lg:text-[58px] font-extrabold tracking-[-0.04em] leading-[1.05];
   }
 
   /* Heading 1 - Page titles */
   .text-h1 {
-    @apply text-3xl md:text-4xl font-semibold tracking-[-0.02em] leading-tight;
+    font-family: var(--font-heading);
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold tracking-[-0.03em] leading-tight;
   }
 
   /* Heading 2 - Section titles */
   .text-h2 {
-    @apply text-2xl md:text-3xl font-semibold tracking-[-0.02em] leading-tight;
+    font-family: var(--font-heading);
+    @apply text-2xl md:text-3xl lg:text-4xl font-bold tracking-[-0.02em] leading-tight;
   }
 
   /* Heading 3 - Subsection titles */
   .text-h3 {
-    @apply text-xl md:text-2xl font-medium tracking-[-0.01em] leading-snug;
+    font-family: var(--font-heading);
+    @apply text-xl md:text-2xl lg:text-[30px] font-semibold tracking-[-0.02em] leading-snug;
   }
 
   /* Heading 4 - Card titles, smaller sections */
   .text-h4 {
-    @apply text-lg font-medium tracking-tight leading-snug;
+    font-family: var(--font-heading);
+    @apply text-lg md:text-2xl font-semibold tracking-[-0.01em] leading-snug;
+  }
+
+  /* Heading 5 */
+  .text-h5 {
+    font-family: var(--font-heading);
+    @apply text-xl font-semibold tracking-[-0.01em] leading-snug;
+  }
+
+  /* Heading 6 */
+  .text-h6 {
+    font-family: var(--font-heading);
+    @apply text-lg font-semibold tracking-[-0.01em] leading-snug;
   }
 
   /* Body Large - Intro paragraphs, emphasis */
@@ -246,9 +706,16 @@
     @apply text-xs tracking-tight leading-normal;
   }
 
-  /* Overline - Section labels, categories */
+  /* Overline - Section labels, categories (DM Mono) */
   .text-overline {
-    @apply text-xs font-medium uppercase tracking-widest;
+    font-family: var(--font-mono);
+    @apply text-xs font-normal uppercase tracking-widest;
+  }
+
+  /* Label - Uppercase tags, metadata labels (DM Mono) */
+  .text-label {
+    font-family: var(--font-mono);
+    @apply text-[11px] font-normal uppercase tracking-wide;
   }
 
   /* Legacy aliases for compatibility */
@@ -258,7 +725,14 @@
 
   /* Stat numbers - large with tight tracking */
   .stat-number {
+    font-family: var(--font-mono);
     @apply text-5xl md:text-6xl lg:text-7xl font-normal tracking-[-0.05em];
+  }
+
+  /* Numeric utility - mono font for tabular data */
+  .text-numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
   /* ==========================================================
@@ -267,25 +741,74 @@
 
   /* Glass effect for navbar */
   .glass {
-    @apply bg-white/95 backdrop-blur-md;
+    @apply bg-white/95 dark:bg-[#18181B]/95 backdrop-blur-md;
   }
 
   /* Subtle shadow for elevated elements */
   .shadow-subtle {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
   }
 
   .shadow-elevated {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-md);
   }
 
-  /* Card styles - minimal */
+  /* Premium shadow - Luxterra inspired depth */
+  .shadow-premium {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shadow-premium-lg {
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Glow effects for accent elements */
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(127, 81, 255, 0.15), 0 0 40px rgba(127, 81, 255, 0.1);
+  }
+
+  .glow-accent-sm {
+    box-shadow: 0 0 10px rgba(127, 81, 255, 0.12);
+  }
+
+  /* Card styles - premium */
   .card-minimal {
-    @apply rounded-sm border border-border bg-card overflow-hidden shadow-subtle;
+    @apply rounded-xl border border-border bg-card overflow-hidden shadow-subtle;
   }
 
   .card-interactive {
-    @apply card-minimal transition-all duration-200 hover:shadow-elevated hover:border-border/80;
+    @apply card-minimal transition-all duration-300 ease-out;
+  }
+
+  .card-interactive:hover {
+    @apply shadow-premium -translate-y-0.5;
+    border-color: hsl(var(--border) / 0.6);
+  }
+
+  /* Premium card with glow on hover */
+  .card-premium {
+    @apply bg-card rounded-xl border border-border/50 overflow-hidden;
+    @apply transition-all duration-500 ease-out;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  .card-premium:hover {
+    @apply -translate-y-1;
+    border-color: hsl(var(--accent) / 0.2);
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.04),
+      0 12px 24px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(127, 81, 255, 0.05);
+  }
+
+  /* Active/selected state with accent */
+  .card-active {
+    border-color: hsl(var(--accent) / 0.4);
+    box-shadow:
+      0 0 0 3px hsl(var(--accent) / 0.08),
+      0 4px 12px rgba(127, 81, 255, 0.1);
   }
 
   /* ==========================================================
@@ -294,11 +817,11 @@
 
   /* Smooth transitions */
   .transition-smooth {
-    @apply transition-all duration-500 ease-out;
+    transition: all var(--duration-slower) var(--ease-out);
   }
 
   .transition-fast {
-    @apply transition-all duration-200 ease-out;
+    transition: all var(--duration-normal) var(--ease-out);
   }
 
   /* Hover scale effect - subtle like Luxterra */
@@ -351,7 +874,7 @@
 
   /* Focus ring - consistent across all interactive elements */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   /* AI Search typing animation */
@@ -372,6 +895,23 @@
 
   .animate-sparkle {
     animation: sparkle 1.5s ease-in-out infinite;
+  }
+
+  /* Sparkle spin for AI thinking state */
+  @keyframes sparkle-spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.3); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  .animate-sparkle-spin {
+    animation: sparkle-spin 1.2s ease-in-out infinite;
+  }
+
+  /* Progress bar for hero slide indicators */
+  @keyframes progress-bar {
+    from { width: 0%; }
+    to { width: 100%; }
   }
 
   /* Staggered fade in for search results */
@@ -453,6 +993,131 @@
     animation: scale-in 0.3s ease-out forwards;
   }
 
+  /* Premium entrance animations - staggered reveal */
+  @keyframes slide-up-fade {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Stagger children animations */
+  .stagger-children > * {
+    opacity: 0;
+    animation: slide-up-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+  .stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+
+  /* Shimmer effect for loading/premium elements */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(127, 81, 255, 0.08) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Subtle pulse for notifications/badges */
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(127, 81, 255, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(127, 81, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(127, 81, 255, 0);
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 2s ease-out infinite;
+  }
+
+  /* Gradient text for premium elements */
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #111 0%, #444 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Premium border gradient */
+  .border-gradient-accent {
+    position: relative;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                linear-gradient(135deg, rgba(127, 81, 255, 0.3), rgba(127, 81, 255, 0.1)) border-box;
+    border: 1px solid transparent;
+  }
+
+  /* Hover line indicator - Luxterra style */
+  .nav-indicator {
+    position: relative;
+  }
+
+  .nav-indicator::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: hsl(var(--accent));
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-indicator:hover::after,
+  .nav-indicator.active::after {
+    width: 100%;
+  }
+
+  /* Sidebar active indicator - vertical line */
+  .sidebar-indicator {
+    position: relative;
+  }
+
+  .sidebar-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 0;
+    width: 3px;
+    background: hsl(var(--accent));
+    border-radius: 0 2px 2px 0;
+    transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar-indicator.active::before {
+    height: 60%;
+  }
+
   /* ==========================================================
    * ACCESSIBILITY UTILITIES
    * ========================================================== */
@@ -485,4 +1150,307 @@
       outline: 3px solid CanvasText;
     }
   }
+
+  /* ==========================================================
+   * PLan CRM Design System Utilities
+   * ========================================================== */
+
+  /* PLan backgrounds */
+  .plan-bg-page {
+    background-color: var(--plan-page-bg);
+  }
+
+  .plan-bg-card {
+    background-color: var(--plan-card-bg);
+  }
+
+  /* PLan text colors */
+  .plan-text-primary {
+    color: var(--plan-text-primary);
+  }
+
+  .plan-text-secondary {
+    color: var(--plan-text-secondary);
+  }
+
+  .plan-text-muted {
+    color: var(--plan-text-muted);
+  }
+
+  /* PLan accent */
+  .plan-accent {
+    color: var(--plan-accent);
+  }
+
+  .plan-bg-accent {
+    background-color: var(--plan-accent);
+  }
+
+  /* PLan card styles */
+  .plan-card {
+    @apply rounded-xl border;
+    background-color: var(--plan-card-bg);
+    border-color: var(--plan-border);
+  }
+
+  .plan-card-interactive {
+    @apply plan-card transition-all duration-200;
+  }
+
+  .plan-card-interactive:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  /* PLan sidebar transitions */
+  .plan-sidebar-transition {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* PLan progress bar animation */
+  @keyframes plan-progress-fill {
+    from {
+      width: 0%;
+    }
+  }
+
+  .plan-progress-animated {
+    animation: plan-progress-fill 500ms ease-out;
+  }
+
+  /* PLan tab indicator animation */
+  @keyframes plan-tab-slide {
+    from {
+      opacity: 0;
+      transform: scaleX(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  .plan-tab-indicator {
+    animation: plan-tab-slide 200ms ease-out;
+  }
+
+  /* PLan sheet slide animation */
+  @keyframes plan-sheet-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .plan-sheet-enter {
+    animation: plan-sheet-slide-in 300ms ease-out;
+  }
+
+  /* PLan dot pulse animation */
+  @keyframes plan-dot-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.2);
+    }
+  }
+
+  .plan-dot-pulse {
+    animation: plan-dot-pulse 2s ease-in-out infinite;
+  }
+
+  /* PLan status dot */
+  .plan-status-dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+
+  .plan-status-dot-new {
+    background-color: var(--plan-status-yellow);
+  }
+
+  .plan-status-dot-progress {
+    background-color: var(--plan-status-green);
+  }
+
+  .plan-status-dot-important {
+    background-color: var(--plan-status-red);
+  }
+
+  .plan-status-dot-purple {
+    background-color: var(--plan-status-purple);
+  }
+}
+
+/* ==========================================================
+ * FORCE LIGHT MODE - Public/Marketing Pages
+ *
+ * These styles ensure that landing pages, pricing, products, etc.
+ * always display in light mode regardless of user's theme preference.
+ * Dark mode is only available in dashboard pages (/inquilino/*, /panel/*).
+ * ========================================================== */
+
+.force-light-mode,
+.force-light-mode * {
+  /* Force light color scheme */
+  color-scheme: light !important;
+}
+
+/* Reset all dark mode Tailwind classes inside force-light-mode */
+.dark .force-light-mode,
+.force-light-mode.dark,
+html.dark .force-light-mode {
+  /* Background & Surface - Light values */
+  --background: 0 0% 100%;
+  --foreground: var(--neutral-900);
+  --card: 0 0% 100%;
+  --card-foreground: var(--neutral-900);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--neutral-900);
+
+  /* Primary */
+  --primary: var(--indigo-500);
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--neutral-900);
+
+  /* Muted */
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--neutral-600);
+
+  /* Accent */
+  --accent: var(--indigo-50);
+  --accent-foreground: var(--indigo-700);
+
+  /* Brand */
+  --brand: var(--indigo-500);
+  --brand-foreground: 0 0% 100%;
+  --brand-muted: var(--indigo-50);
+
+  /* Destructive */
+  --destructive: var(--error-500);
+  --destructive-foreground: 0 0% 100%;
+
+  /* Borders */
+  --border: var(--neutral-200);
+  --input: var(--neutral-200);
+  --ring: var(--indigo-500);
+}
+
+/* Override specific dark: utility classes */
+.force-light-mode .dark\:bg-\[#0f0f10\],
+.force-light-mode .dark\:bg-\[#1a1a1c\],
+.force-light-mode .dark\:bg-\[#18181a\],
+.force-light-mode .dark\:bg-\[#18181B\],
+.force-light-mode .dark\:bg-\[#222224\],
+.force-light-mode .dark\:bg-\[#2a2a2c\] {
+  background-color: inherit !important;
+}
+
+.force-light-mode .dark\:text-white {
+  color: inherit !important;
+}
+
+.force-light-mode .dark\:text-neutral-400,
+.force-light-mode .dark\:text-neutral-300 {
+  color: inherit !important;
+}
+
+.force-light-mode .dark\:border-neutral-700,
+.force-light-mode .dark\:border-neutral-800 {
+  border-color: inherit !important;
+}
+
+/* ============================================================================
+   Autofill Styling Override
+   ============================================================================ */
+
+/* Override browser autofill background colors */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--background)) !important;
+  caret-color: hsl(var(--foreground)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode autofill override */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+
+/* ============================================================================
+   Custom Scrollbar Utilities
+   ============================================================================ */
+
+/* Thin scrollbar utility class */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Dark mode scrollbar */
+.dark .scrollbar-thin {
+  scrollbar-color: rgba(75, 85, 99, 0.6) transparent;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.6);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.8);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

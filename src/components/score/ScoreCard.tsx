@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { LevelBadge } from './LevelBadge';
@@ -8,7 +8,7 @@ import type { RiskScore } from '@/lib/types/risk-score';
 import { RISK_LEVEL_COLORS, RISK_LEVEL_LABELS } from '@/lib/constants/risk-levels';
 
 // ============================================================================
-// Types
+// TextTs
 // ============================================================================
 
 export interface ScoreCardProps {
@@ -49,7 +49,7 @@ export interface ScoreCardProps {
  * └─────────────────────────────────┘
  *
  * Design specs:
- * - Card with subtle border, rounded-[2px] (Luxterra)
+ * - Card with subtle border, rounded-sm (Luxterra)
  * - Badge centered or left-aligned depending on variant
  * - Quick drivers as checkmarks
  * - Subtle background matching level color

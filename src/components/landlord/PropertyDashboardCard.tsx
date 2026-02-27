@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Users, Clock, AlertCircle } from 'lucide-react';
+import { Users, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
@@ -73,92 +73,99 @@ export function PropertyDashboardCard({
       href={`/panel/${id}`}
       className={cn('group block', className)}
     >
-      {/* Card container with white background */}
-      <div className="bg-white rounded-[2px] border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Image container with candidate count badge */}
+      {/* Card container - Premium design with subtle glow on hover */}
+      <div className="relative bg-card rounded-sm border border-border/60 overflow-hidden transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08),0_0_0_1px_rgba(127,81,255,0.05)]">
+        {/* Image container with gradient overlay */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <Image
             src={thumbnailUrl}
             alt={title}
             fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
 
-          {/* Candidate count badge - bottom right */}
-          <div className="absolute bottom-3 right-3">
+          {/* Premium gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+
+          {/* Candidate count badge - floating design */}
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <Badge
               variant="default"
-              className="bg-white/95 text-slate-900 hover:bg-white shadow-sm px-3 py-1.5 text-sm font-medium"
+              className="bg-white/95 backdrop-blur-sm text-foreground hover:bg-white shadow-lg shadow-black/10 px-3 py-2 text-sm font-semibold rounded-sm border-0"
             >
-              <Users className="w-4 h-4 mr-1.5" />
+              <Users className="w-4 h-4 mr-2 text-[black]" />
               {candidateCount} {candidateCount === 1 ? 'candidato' : 'candidatos'}
             </Badge>
+
+            {/* Price tag on image */}
+            <div className="bg-black/80 backdrop-blur-sm text-white px-3 py-2 rounded-sm">
+              <span className="font-semibold">{formatCurrency(monthlyRent)}</span>
+              <span className="text-white/60 text-xs ml-1">/mes</span>
+            </div>
           </div>
 
           {/* Property status overlay if no candidates */}
           {candidateCount === 0 && (
-            <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-              <span className="bg-white text-slate-700 text-xs px-4 py-2 rounded-[2px]">
+            <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
+              <span className="bg-white/95 backdrop-blur-sm text-foreground text-sm px-5 py-2.5 rounded-sm font-medium shadow-lg">
                 Sin candidatos
               </span>
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="p-4">
-          {/* Title and price row */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-base font-medium text-slate-900 group-hover:text-primary transition-colors tracking-tight truncate">
-                {title}
-              </h3>
-              <p className="text-sm text-slate-500 mt-0.5 tracking-tight truncate">
-                {neighborhood}, {city}
-              </p>
-            </div>
-            <p className="text-base font-medium text-slate-900 whitespace-nowrap tracking-tight">
-              {formatCurrency(monthlyRent)}
-              <span className="text-slate-400 text-sm font-normal">/mes</span>
+        {/* Content - cleaner layout */}
+        <div className="p-5">
+          {/* Title and location */}
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-[black] transition-colors duration-300 truncate">
+              {title}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1 truncate">
+              {neighborhood}, {city}
             </p>
           </div>
 
-          {/* Risk Gauge */}
+          {/* Risk Gauge - improved */}
           {candidateCount > 0 && (
-            <div className="mt-4">
+            <div className="mb-4">
               <RiskGaugeMini distribution={riskDistribution} />
             </div>
           )}
 
-          {/* Status badges row */}
+          {/* Status badges row - modernized */}
           {candidateCount > 0 && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 pt-4 border-t border-border">
               {/* Pending count */}
               {pendingCount > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-[2px]">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-2 text-xs text-foreground bg-muted/80 px-3 py-2 rounded-sm font-medium">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>{pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}</span>
                 </div>
               )}
 
-              {/* Urgent badge */}
+              {/* Urgent badge - with subtle pulse */}
               {hasUrgent && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-[2px]">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-sm font-medium">
+                  <WarningCircle className="w-3.5 h-3.5 animate-pulse" />
                   <span>Urgente</span>
                 </div>
               )}
 
-              {/* All reviewed indicator when no pending */}
+              {/* All reviewed indicator */}
               {pendingCount === 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span>Todo revisado</span>
                 </div>
               )}
             </div>
           )}
         </div>
+
+        {/* Hover accent line at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-black to-purple-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
       </div>
     </Link>
   );

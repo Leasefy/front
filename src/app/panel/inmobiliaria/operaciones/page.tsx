@@ -1,0 +1,716 @@
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import {
+  Wrench,
+  ArrowsClockwise,
+  Calculator,
+  Plus,
+  ClockCounterClockwise,
+  HouseLine,
+  Warning,
+  CurrencyDollar,
+  Funnel,
+  CheckCircle,
+  Clock,
+  TrendUp,
+  ChartLine,
+  Buildings,
+  CalendarBlank,
+  CaretDown,
+  MagnifyingGlass,
+  SquaresFour,
+  Kanban,
+} from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import type {
+  Renovacion,
+  SolicitudMantenimiento,
+  MantenimientoStatus,
+  Consignacion,
+} from '@/lib/types/inmobiliaria';
+import { formatCurrency, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
+import { getCurrentIPC } from '@/lib/constants/inmobiliaria-data';
+import {
+  useMantenimientos,
+  useRenovaciones,
+  useConsignaciones,
+  mantenimientoApi,
+  renovacionesApi,
+} from '@/lib/hooks/useInmobiliaria';
+import {
+  RenovacionesTable,
+  RenovacionWorkflow,
+  IPCCalculator,
+  MantenimientoList,
+  MantenimientoKanban,
+  MantenimientoForm,
+  MantenimientoViewer,
+  type MantenimientoFormData,
+} from '@/components/inmobiliaria';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc';
+type MantenimientoViewMode = 'cards' | 'kanban';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function getQuickStats(renovaciones: Renovacion[], mantenimientos: SolicitudMantenimiento[]) {
+  const pendingRenovaciones = renovaciones.filter((r) =>
+    ['pending', 'notified', 'negotiating'].includes(r.status)
+  );
+  const criticalRenovaciones = pendingRenovaciones.filter((r) => r.urgencyBucket === '0-30');
+  const urgentRenovaciones = pendingRenovaciones.filter((r) => r.urgencyBucket === '31-60');
+
+  const activeMantenimientos = mantenimientos.filter((m) =>
+    ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
+  );
+  const quotedMantenimientos = mantenimientos.filter((m) => m.status === 'quoted');
+
+  const currentIPC = getCurrentIPC();
+
+  return {
+    renovaciones: {
+      pending: pendingRenovaciones.length,
+      critical: criticalRenovaciones.length,
+      urgent: urgentRenovaciones.length,
+    },
+    mantenimiento: {
+      active: activeMantenimientos.length,
+      quoted: quotedMantenimientos.length,
+    },
+    ipc: {
+      currentRate: currentIPC.rate,
+      description: currentIPC.description,
+    },
+  };
+}
+
+// ============================================================================
+// Stat Card Component
+// ============================================================================
+
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  subValue?: string;
+  subValueColor?: 'warning' | 'info' | 'default';
+  bgColor: string;
+  iconColor: string;
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  subValue,
+  subValueColor = 'default',
+  bgColor,
+  iconColor,
+}: StatCardProps) {
+  const subValueColors = {
+    warning: 'text-amber-600 dark:text-amber-400 font-medium',
+    info: 'text-blue-600 dark:text-blue-400',
+    default: 'text-muted-foreground',
+  };
+
+  return (
+    <div className="p-4 rounded-xl border border-border bg-card">
+      <div className="flex items-center gap-3">
+        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', bgColor)}>
+          <Icon className={cn('w-5 h-5', iconColor)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-xs text-muted-foreground">{label}</p>
+          {subValue && (
+            <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
+              {subValue}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * OperacionesPage - Operations center for the inmobiliaria module
+ * Route: /panel/inmobiliaria/operaciones
+ */
+export default function OperacionesPage() {
+  const { t } = useI18n();
+
+  // API Hooks
+  const {
+    renovaciones: renovacionesData,
+    isLoading: isLoadingRenovaciones,
+    error: renovacionesError,
+    refetch: refetchRenovaciones,
+    setData: setRenovacionesData,
+  } = useRenovaciones();
+  const {
+    mantenimientos: mantenimientosData,
+    isLoading: isLoadingMantenimientos,
+    error: mantenimientosError,
+    refetch: refetchMantenimientos,
+    setData: setMantenimientosData,
+  } = useMantenimientos();
+  const {
+    consignaciones: consignacionesData,
+    isLoading: isLoadingConsignaciones,
+    error: consignacionesError,
+  } = useConsignaciones();
+
+  // State
+  const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
+  const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
+
+  // Use API data or fallback to empty arrays
+  const renovaciones = renovacionesData ?? [];
+  const mantenimientos = mantenimientosData ?? [];
+  const consignaciones = consignacionesData ?? [];
+
+  // Modal states
+  const [selectedRenovacion, setSelectedRenovacion] = useState<Renovacion | null>(null);
+  const [isRenovacionWorkflowOpen, setIsRenovacionWorkflowOpen] = useState(false);
+  const [selectedMantenimiento, setSelectedMantenimiento] = useState<SolicitudMantenimiento | null>(null);
+  const [isMantenimientoViewerOpen, setIsMantenimientoViewerOpen] = useState(false);
+  const [isMantenimientoFormOpen, setIsMantenimientoFormOpen] = useState(false);
+  const [isSubmittingMantenimiento, setIsSubmittingMantenimiento] = useState(false);
+
+  // Calculate quick stats
+  const stats = useMemo(
+    () => getQuickStats(renovaciones, mantenimientos),
+    [renovaciones, mantenimientos]
+  );
+
+  // Handlers - Renovaciones
+  const handleStartRenewal = useCallback((renovacion: Renovacion) => {
+    setSelectedRenovacion(renovacion);
+    setIsRenovacionWorkflowOpen(true);
+  }, []);
+
+  const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
+    try {
+      await renovacionesApi.updateStatus(renovacion.id, 'notified');
+      toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
+        description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
+      });
+      // Update local state
+      setRenovacionesData((prev) =>
+        prev ? prev.map((r) =>
+          r.id === renovacion.id
+            ? { ...r, status: 'notified' as const, notifiedAt: new Date().toISOString() }
+            : r
+        ) : []
+      );
+    } catch (error) {
+      toast.error('Error al notificar inquilino');
+    }
+  }, [t, setRenovacionesData]);
+
+  const handleViewRenovacionDetails = useCallback((renovacion: Renovacion) => {
+    setSelectedRenovacion(renovacion);
+    setIsRenovacionWorkflowOpen(true);
+  }, []);
+
+  const handleCalculateIPC = useCallback((renovacion: Renovacion) => {
+    setActiveTab('ipc');
+  }, []);
+
+  const handleViewRenovacionHistory = useCallback((renovacion: Renovacion) => {
+    setSelectedRenovacion(renovacion);
+    setIsRenovacionWorkflowOpen(true);
+  }, []);
+
+  const handleRenovacionWorkflowClose = useCallback(() => {
+    setIsRenovacionWorkflowOpen(false);
+    setTimeout(() => setSelectedRenovacion(null), 300);
+  }, []);
+
+  // Handlers - Mantenimiento
+  const handleViewMantenimiento = useCallback((solicitud: SolicitudMantenimiento) => {
+    setSelectedMantenimiento(solicitud);
+    setIsMantenimientoViewerOpen(true);
+  }, []);
+
+  const handleNewMantenimiento = useCallback(() => {
+    setIsMantenimientoFormOpen(true);
+  }, []);
+
+  const handleMantenimientoFormSubmit = useCallback(async (data: MantenimientoFormData) => {
+    setIsSubmittingMantenimiento(true);
+
+    try {
+      const consignacion = consignaciones.find((c) => c.id === data.consignacionId);
+
+      const newSolicitud = await mantenimientoApi.create({
+        consignacionId: data.consignacionId,
+        type: data.type,
+        priority: data.priority,
+        title: data.title,
+        description: data.description,
+        photoUrls: data.photoUrls,
+        paidBy: data.paidBy,
+      });
+
+      // Update local state
+      setMantenimientosData((prev) => [newSolicitud, ...(prev ?? [])]);
+
+      setIsSubmittingMantenimiento(false);
+      setIsMantenimientoFormOpen(false);
+      toast.success(t('inmobiliaria.operaciones.toasts.requestCreated'), {
+        description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
+      });
+    } catch (error) {
+      toast.error('Error al crear solicitud de mantenimiento');
+      setIsSubmittingMantenimiento(false);
+    }
+  }, [consignaciones, t, setMantenimientosData]);
+
+  const handleMantenimientoFormCancel = useCallback(() => {
+    setIsMantenimientoFormOpen(false);
+  }, []);
+
+  const handleMantenimientoViewerClose = useCallback(() => {
+    setIsMantenimientoViewerOpen(false);
+    setTimeout(() => setSelectedMantenimiento(null), 300);
+  }, []);
+
+  const handleMantenimientoStatusChange = useCallback(
+    async (solicitudId: string, newStatus: MantenimientoStatus) => {
+      try {
+        await mantenimientoApi.updateStatus(solicitudId, newStatus);
+
+        // Update local state
+        setMantenimientosData((prev) =>
+          prev ? prev.map((m) =>
+            m.id === solicitudId
+              ? {
+                  ...m,
+                  status: newStatus,
+                  updatedAt: new Date().toISOString(),
+                  completedAt: newStatus === 'completed' ? new Date().toISOString() : m.completedAt,
+                }
+              : m
+          ) : []
+        );
+
+        const statusLabels: Record<MantenimientoStatus, string> = {
+          reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
+          quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
+          approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
+          in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
+          completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
+          cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
+        };
+
+        toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
+
+        if (newStatus === 'cancelled' || newStatus === 'completed') {
+          handleMantenimientoViewerClose();
+        }
+      } catch (error) {
+        toast.error('Error al actualizar estado de mantenimiento');
+      }
+    },
+    [t, setMantenimientosData, handleMantenimientoViewerClose]
+  );
+
+  const handleApproveQuote = useCallback(async (solicitudId: string, quoteId: string) => {
+    try {
+      await mantenimientoApi.approveQuote(solicitudId, quoteId);
+
+      // Update local state
+      setMantenimientosData((prev) =>
+        prev ? prev.map((m) => {
+          if (m.id !== solicitudId) return m;
+          const quote = m.quotes.find((q) => q.id === quoteId);
+          return {
+            ...m,
+            selectedQuoteId: quoteId,
+            approvedAmount: quote?.amount,
+            status: 'approved' as const,
+            updatedAt: new Date().toISOString(),
+          };
+        }) : []
+      );
+
+      toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
+    } catch (error) {
+      toast.error('Error al aprobar cotización');
+    }
+  }, [t, setMantenimientosData]);
+
+  const handleAddNote = useCallback((solicitudId: string, note: string) => {
+    toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
+  }, [t]);
+
+  const handleRequestQuote = useCallback((solicitudId: string) => {
+    toast.info(t('inmobiliaria.operaciones.toasts.featureInDevelopment'), {
+      description: t('inmobiliaria.operaciones.toasts.featureInDevelopmentDesc'),
+    });
+  }, []);
+
+  // Consignaciones for form (rented properties only)
+  const rentedConsignaciones = useMemo(
+    () => consignaciones.filter((c) => c.availability === 'rented'),
+    [consignaciones]
+  );
+
+  // Show loading state
+  const isLoading = isLoadingRenovaciones || isLoadingMantenimientos || isLoadingConsignaciones;
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.operaciones.title')}</h1>
+          <p className="text-muted-foreground mt-1">
+            {t('inmobiliaria.operaciones.subtitle')}
+          </p>
+        </div>
+      </div>
+
+      {/* Error states */}
+      {(renovacionesError || mantenimientosError || consignacionesError) && (
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+          <p className="text-sm text-destructive">
+            Error al cargar datos. Por favor, intenta de nuevo.
+          </p>
+        </div>
+      )}
+
+      {/* Quick Stats - Informational Only */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-8 bg-muted rounded w-12" />
+                  <div className="h-3 bg-muted rounded w-24" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <StatCard
+            icon={ClockCounterClockwise}
+            label={t('inmobiliaria.operaciones.stats.pendingRenewals')}
+            value={stats.renovaciones.pending}
+            subValue={
+              stats.renovaciones.critical > 0
+                ? t('inmobiliaria.operaciones.stats.criticalCount', { count: stats.renovaciones.critical })
+                : undefined
+            }
+            subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
+            bgColor="bg-amber-100 dark:bg-amber-900/30"
+            iconColor="text-amber-600 dark:text-amber-400"
+          />
+          <StatCard
+            icon={Wrench}
+            label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
+            value={stats.mantenimiento.active}
+            subValue={
+              stats.mantenimiento.quoted > 0
+                ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.mantenimiento.quoted })
+                : undefined
+            }
+            subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
+            bgColor="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            icon={CurrencyDollar}
+            label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
+            value={stats.mantenimiento.quoted}
+            bgColor="bg-violet-100 dark:bg-violet-900/30"
+            iconColor="text-violet-600 dark:text-violet-400"
+          />
+          <StatCard
+            icon={TrendUp}
+            label={t('inmobiliaria.operaciones.stats.currentIPC')}
+            value={`${stats.ipc.currentRate.toFixed(2)}%`}
+            subValue={stats.ipc.description}
+            bgColor="bg-emerald-100 dark:bg-emerald-900/30"
+            iconColor="text-emerald-600 dark:text-emerald-400"
+          />
+        </motion.div>
+      )}
+
+      {/* Unified Tabs Container */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-xl border border-border bg-card"
+      >
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+          {/* Tab Header */}
+          <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
+            <TabsList className="bg-muted/50 p-1 rounded-lg">
+              <TabsTrigger
+                value="renovaciones"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <ClockCounterClockwise className="w-4 h-4 mr-2" />
+                {t('inmobiliaria.operaciones.tabs.renovaciones')}
+                {stats.renovaciones.pending > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                    {stats.renovaciones.pending}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="mantenimiento"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Wrench className="w-4 h-4 mr-2" />
+                {t('inmobiliaria.operaciones.tabs.mantenimiento')}
+                {stats.mantenimiento.active > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                    {stats.mantenimiento.active}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="ipc"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                {t('inmobiliaria.operaciones.tabs.ipc')}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Tab-specific Actions */}
+            <AnimatePresence mode="wait">
+              {activeTab === 'mantenimiento' && (
+                <motion.button
+                  key="new-mant"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  onClick={handleNewMantenimiento}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('inmobiliaria.operaciones.maintenance.new')}
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Renovaciones Tab */}
+          <TabsContent value="renovaciones" className="mt-0">
+            <RenovacionesTable
+              data={renovaciones}
+              onStartRenewal={handleStartRenewal}
+              onNotifyTenant={handleNotifyTenant}
+              onViewDetails={handleViewRenovacionDetails}
+              onCalculateIPC={handleCalculateIPC}
+              onViewHistory={handleViewRenovacionHistory}
+            />
+          </TabsContent>
+
+          {/* Mantenimiento Tab */}
+          <TabsContent value="mantenimiento" className="mt-0">
+            {/* View Toggle */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
+                  </span>
+                  {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
+                  {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
+                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+                <button
+                  onClick={() => setMantenimientoView('kanban')}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                    mantenimientoView === 'kanban'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Kanban className="w-4 h-4" />
+                  {t('inmobiliaria.operaciones.maintenance.kanbanView')}
+                </button>
+                <button
+                  onClick={() => setMantenimientoView('cards')}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                    mantenimientoView === 'cards'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <SquaresFour className="w-4 h-4" />
+                  {t('inmobiliaria.operaciones.maintenance.listView')}
+                </button>
+              </div>
+            </div>
+
+            {/* Content based on view mode */}
+            <AnimatePresence mode="wait">
+              {mantenimientoView === 'kanban' ? (
+                <motion.div
+                  key="kanban"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="p-5"
+                >
+                  <MantenimientoKanban
+                    data={mantenimientos}
+                    onViewDetails={handleViewMantenimiento}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="cards"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <MantenimientoList
+                    data={mantenimientos}
+                    onViewDetails={handleViewMantenimiento}
+                    onComplete={(s) => handleMantenimientoStatusChange(s.id, 'completed')}
+                    onCancel={(s) => handleMantenimientoStatusChange(s.id, 'cancelled')}
+                    minimal
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </TabsContent>
+
+          {/* IPC Tab */}
+          <TabsContent value="ipc" className="mt-0 p-5">
+            <IPCCalculator
+              onCalculate={(result) => {
+                toast.success(t('inmobiliaria.operaciones.toasts.calculationComplete'), {
+                  description: t('inmobiliaria.operaciones.toasts.newRent', { amount: formatCurrency(result.newRent) }),
+                });
+              }}
+            />
+          </TabsContent>
+        </Tabs>
+      </motion.div>
+
+      {/* Renovacion Workflow Sheet */}
+      {selectedRenovacion && (
+        <RenovacionWorkflow
+          renovacion={selectedRenovacion}
+          open={isRenovacionWorkflowOpen}
+          onClose={handleRenovacionWorkflowClose}
+          onStepComplete={async (newStatus) => {
+            try {
+              await renovacionesApi.updateStatus(selectedRenovacion.id, newStatus);
+              // Update local state
+              setRenovacionesData((prev) =>
+                prev ? prev.map((r) =>
+                  r.id === selectedRenovacion.id
+                    ? { ...r, status: newStatus, updatedAt: new Date().toISOString() }
+                    : r
+                ) : []
+              );
+              toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
+            } catch (error) {
+              toast.error('Error al actualizar renovación');
+            }
+          }}
+          onTerminate={async (reason) => {
+            try {
+              await renovacionesApi.updateStatus(selectedRenovacion.id, 'terminated');
+              // Update local state
+              setRenovacionesData((prev) =>
+                prev ? prev.map((r) =>
+                  r.id === selectedRenovacion.id
+                    ? { ...r, status: 'terminated' as const, updatedAt: new Date().toISOString() }
+                    : r
+                ) : []
+              );
+              handleRenovacionWorkflowClose();
+              toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
+            } catch (error) {
+              toast.error('Error al terminar renovación');
+            }
+          }}
+          onNoteAdd={async (note) => {
+            try {
+              await renovacionesApi.addNote(selectedRenovacion.id, note);
+              toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
+            } catch (error) {
+              toast.error('Error al agregar nota');
+            }
+          }}
+        />
+      )}
+
+      {/* Mantenimiento Viewer Sheet */}
+      <MantenimientoViewer
+        solicitud={selectedMantenimiento}
+        isOpen={isMantenimientoViewerOpen}
+        onClose={handleMantenimientoViewerClose}
+        onStatusChange={handleMantenimientoStatusChange}
+        onApproveQuote={handleApproveQuote}
+        onAddNote={handleAddNote}
+        onRequestQuote={handleRequestQuote}
+      />
+
+      {/* Mantenimiento Form Sheet */}
+      <Sheet open={isMantenimientoFormOpen} onOpenChange={setIsMantenimientoFormOpen}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{t('inmobiliaria.operaciones.maintenance.newRequest')}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <MantenimientoForm
+              consignaciones={rentedConsignaciones}
+              onSubmit={handleMantenimientoFormSubmit}
+              onCancel={handleMantenimientoFormCancel}
+              isSubmitting={isSubmittingMantenimiento}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

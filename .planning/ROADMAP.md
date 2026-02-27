@@ -1,228 +1,290 @@
-# Roadmap: Arriendo Fácil
+# Roadmap: Leasefy
 
 ## Overview
 
-Frontend experience para marketplace de arriendos en Colombia con Risk Score AI. El backend será desarrollado por otra persona basándose en esta experiencia. Enfoque: UX premium con mock data realista.
+Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde propietarios e inmobiliarias hablan con un orquestador que despacha agentes especializados. Este roadmap cubre el frontend de la experiencia Beta — la interfaz conversacional, visualización de agentes, sistema de decisiones y briefings. El backend (orquestador, agentes, memoria) lo construye un desarrollador independiente usando nuestra documentación.
 
 ## Milestones
 
-- ✅ **v1.0 Frontend MVP** - Phases 1-9 (complete)
-- ✅ **v1.1 Post-Approval Flow** - Phase 10 (complete)
+- ✅ **v1.0 Frontend MVP** - Phases 1-11 (shipped 2026-01-29)
+- ✅ **v2.0 Design System & QA** - Phases 12-16 (shipped 2026-02-02)
+- ✅ **v3.0 Inmobiliaria Module** - Inmobiliaria 1-10 (shipped 2026-02-08)
+- ✅ **v3.1 Landing & SEO** - i18n, pricing, SEO (shipped 2026-02-10)
+- ✅ **v4.0 AI Agent Platform Beta** - Phases 17-25 (shipped 2026-02-10)
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+- Phases 1-16: v1.0-v2.0 (complete)
+- Inmobiliaria 1-10: v3.0 (complete)
+- Phases 17-25: v4.0 AI Agent Platform Beta (current)
 
-- [x] **Phase 1: Foundation & Design System** - Project setup, UI components, mock data structure
-- [x] **Phase 2: Property Catalog** - Listings, filters, wishlist, property detail
-- [x] **Phase 3: Application Wizard** - Multi-step form, document upload UI, review
-- [x] **Phase 4: Risk Score Display** - AI explanation UI, conversational scoring, level badges
-- [x] **Phase 5: Landlord Dashboard** - Candidates view, score details, decision UI
-- [x] **Phase 6: Tenant Tracking** - My applications, timeline, status display
-- [x] **Phase 7: UX Polish** - Skeletons, empty states, animations, responsive
-- [x] **Phase 8: Authentication UI** - Login, register, social auth, split-layout design
-- [x] **Phase 9: Interactive Map** - Airbnb-style map with clustering, price markers, filter sync
-- [x] **Phase 10: Post-Approval Flow** - Contracts, payments, pricing, coupons, post-rental views
+- [x] **Phase 1-16**: v1.0-v2.0 complete (see collapsed details below)
+- [x] **Inmobiliaria 1-10**: v3.0 complete
+- [x] **Phase 17: Beta Sidebar Integration** - Add Beta section to both dashboards with AI-optimized layout
+- [x] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
+- [x] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
+- [x] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
+- [x] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
+- [x] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
+- [x] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
+- [x] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
+- [x] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
 
 ## Phase Details
 
-### Phase 1: Foundation & Design System
-**Goal**: Project configured with design system and mock data ready
-**Depends on**: Nothing (first phase)
-**Success Criteria** (what must be TRUE):
-  1. `npm run dev` starts development server without errors
-  2. `npm run build` completes successfully
-  3. Design system components ready (Button, Card, Input, Badge, etc.)
-  4. Mock data files with realistic Colombian properties, candidates, scores
-  5. TypeScript types defined for all data structures
-  6. Basic layout with navigation shell
-**Research**: Unlikely (established patterns)
-**Plans**: TBD
+<details>
+<summary>✅ v1.0 Frontend MVP (Phases 1-11) — SHIPPED 2026-01-29</summary>
 
-### Phase 2: Property Catalog
-**Goal**: Users can discover and explore available properties
-**Depends on**: Phase 1
-**Success Criteria** (what must be TRUE):
-  1. Property listing page with grid of cards
-  2. Filter sidebar: city, price range, bedrooms, amenities
-  3. Property cards show: photo, price, location, key features
-  4. Wishlist functionality (localStorage)
-  5. Property detail page with image carousel
-  6. Sticky "Postularme" CTA on detail page
-  7. Responsive design (mobile-first)
-**Research**: Unlikely (standard UI patterns)
-**Plans**: TBD
+### Phase 1-11
+All phases complete. Property catalog, application wizard, risk score display, landlord/tenant dashboards, contracts, pricing, maps, auth UI, UX polish.
 
-### Phase 3: Application Wizard
-**Goal**: Complete application flow experience
-**Depends on**: Phase 2
-**Success Criteria** (what must be TRUE):
-  1. Multi-step wizard (6 steps): Personal → Employment → Income → References → Documents → Review
-  2. Progress indicator showing current step
-  3. Form validation with clear error messages
-  4. Document upload UI with preview (mock - no real upload)
-  5. Review step showing all entered information
-  6. Submit confirmation with success state
-  7. Form state persists in localStorage (resume capability)
-**Research**: Likely (React Hook Form wizard patterns)
-**Research topics**: Multi-step form UX, Zustand/localStorage persistence
-**Plans**: TBD
+</details>
 
-### Phase 4: Risk Score Display
-**Goal**: Premium AI scoring visualization - THE core differentiator
-**Depends on**: Phase 3
-**Success Criteria** (what must be TRUE):
-  1. Score card with A/B/C/D level badge (prominent but not dominant)
-  2. **Conversational AI explanation** - "Basado en lo que veo, este candidato..."
-  3. Asesor de confianza tone - professional but warm
-  4. Key drivers displayed as supporting points
-  5. Risk flags shown as subtle warnings (not alarmist)
-  6. Suggested conditions based on profile
-  7. Score breakdown by category (collapsible detail)
-**Research**: Likely (conversational UI patterns, AI explanation UX)
-**Research topics**: Explainable AI UX patterns, conversational interfaces
-**Plans**: TBD
+<details>
+<summary>✅ v2.0 Design System & QA (Phases 12-16) — SHIPPED 2026-02-02</summary>
 
-### Phase 5: Landlord Dashboard
-**Goal**: Landlords can evaluate and decide on candidates
-**Depends on**: Phase 4
-**Success Criteria** (what must be TRUE):
-  1. Dashboard showing properties with application counts
-  2. Candidates list per property (ranked by score)
-  3. Candidate card: photo, name, score badge, key metrics
-  4. Candidate detail modal/page with full AI explanation
-  5. Decision buttons: Pre-aprobar, Aprobar, Rechazar
-  6. Notes functionality (UI only, localStorage)
-  7. Request more info action (UI state only)
-**Research**: Unlikely (builds on Phase 4 patterns)
-**Plans**: TBD
+### Phase 12-16
+Design tokens, component redesign, QA functionality/visual audit, responsive/a11y audit, contract UX.
 
-### Phase 6: Tenant Tracking
-**Goal**: Tenants can track their application status
-**Depends on**: Phase 3, Phase 5
-**Success Criteria** (what must be TRUE):
-  1. "Mis Postulaciones" page listing all applications
-  2. Application card: property thumbnail, status badge, date
-  3. Timeline view of application events
-  4. Status states: Enviada, En revisión, Pre-aprobada, Aprobada, Rechazada
-  5. Detail view with current status explanation
-  6. Withdraw application action (UI state change)
-**Research**: Unlikely (standard tracking patterns)
-**Plans**: TBD
+</details>
 
-### Phase 7: UX Polish
-**Goal**: Premium, polished experience across all flows
-**Depends on**: Phase 2, Phase 5, Phase 6
-**Success Criteria** (what must be TRUE):
-  1. Skeleton loaders for all list/detail views
-  2. Empty states with helpful messaging and CTAs
-  3. Smooth page transitions and micro-interactions
-  4. Loading states for all async-looking operations
-  5. Error states with recovery options
-  6. Responsive breakpoints tested (mobile, tablet, desktop)
-  7. Accessibility audit passed (keyboard nav, screen reader)
-**Research**: Unlikely (UI polish patterns)
-**Plans**: TBD
+<details>
+<summary>✅ v3.0 Inmobiliaria Module (10 phases) — SHIPPED 2026-02-08</summary>
 
-### Phase 8: Authentication UI
-**Goal**: Beautiful, minimal auth experience with split-layout design
-**Depends on**: Phase 1, Phase 7 (design system)
-**Success Criteria** (what must be TRUE):
-  1. Split-layout design: property image with testimonial overlay (left), form (right)
-  2. Login/Register toggle tabs switching between modes
-  3. Social login buttons: Google, Apple (UI only, mock auth)
-  4. Email/password form with validation
-  5. Clean, minimal design following Luxterra aesthetic (NO glass effects)
-  6. Responsive: stacked layout on mobile, split on desktop
-  7. Auth state management (localStorage mock, ready for real auth)
-  8. Protected route patterns for dashboard/panel pages
-**Research**: Unlikely (standard auth UI patterns)
-**Plans**: TBD
+### Inmobiliaria 1-10
+Dashboard KPIs, propietarios, consignaciones, agentes, pipeline, cobros, dispersiones, reportes, operaciones, configuracion/docs/analytics.
 
-### Phase 9: Interactive Map
-**Goal**: Airbnb-style interactive map for property discovery
-**Depends on**: Phase 2 (Property Catalog)
-**Success Criteria** (what must be TRUE):
-  1. Split layout: property list (left) + interactive map (right) on desktop
-  2. Map shows property markers with rent price labels (e.g., "$2.5M")
-  3. Marker clustering: zoom out shows cluster counts, zoom in shows individual markers
-  4. Click marker to filter/highlight that property in the list
-  5. Map bounds sync: moving map filters visible properties
-  6. Responsive: map toggle button on mobile (show/hide map)
-  7. Smooth animations and interactions (Airbnb-quality UX)
-  8. Works with existing filter system
-**Research**: Likely (map library selection: Mapbox vs Google Maps vs Leaflet)
-**Research topics**: react-map-gl, supercluster for clustering, Mapbox pricing
-**Plans**: TBD
+</details>
 
-### Phase 10: Post-Approval Flow
-**Goal**: Complete the rental journey from candidate approval to active lease
-**Depends on**: Phase 5 (Landlord Dashboard)
+<details>
+<summary>✅ v3.1 Landing & SEO — SHIPPED 2026-02-10</summary>
+
+i18n across entire codebase (ES/EN), pricing page redesign, SEO optimization (OG images, metadata, JSON-LD), locale fix.
+
+</details>
+
+### ✅ v4.0 AI Agent Platform Beta
+
+**Milestone Goal:** Interfaz conversacional AI en sección "Beta" de los dashboards existentes. El usuario habla con un orquestador que despacha agentes especializados. Frontend completo con mock data; documentación completa para que el backend developer implemente el orquestador y agentes con Claude API.
+
+#### Phase 17: Beta Sidebar Integration
+**Goal**: Beta section integrada en ambos dashboards sin romper funcionalidad existente
+**Depends on**: Nothing (first v4.0 phase)
+**Requirements**: BETA-01, BETA-02, BETA-03, BETA-04, BETA-05, BETA-06
 **Success Criteria** (what must be TRUE):
-  1. Contract generation UI with template selection
-  2. Deel-style sequential signature flow (landlord first, then tenant)
-  3. Insurance policy options presented during signing
-  4. Pricing page with Free/Pro/Business tiers
-  5. Subscription selection and checkout UI (mock)
-  6. Coupon system with percentage, fixed amount, and free trial support
-  7. Post-contract landlord dashboard (active lease view, payment tracking)
-  8. Post-contract tenant dashboard (my lease, payment history, documents)
-  9. Payment method selection UI (PSE, cards, Nequi)
-**Research**: Completed (see POST_APPROVAL_STRATEGY.md)
-**Research topics**: Deel contract UX, Colombian e-signature law, rental pricing models
-**Plans**:
-  - PLAN-01: Contract Generation & Signing UI
-  - PLAN-02: Pricing Page & Subscription Plans
-  - PLAN-03: Coupon System
-  - PLAN-04: Post-Contract Dashboards
+  1. Sidebar de propietarios muestra item "Beta" con ícono AI/sparkle
+  2. Sidebar de inmobiliarias muestra item "Beta" con ícono AI/sparkle
+  3. Rutas /panel/beta y /panel/inmobiliaria/beta cargan layout dedicado
+  4. Layout Beta tiene estructura optimizada para chat (no el layout estándar de páginas)
+  5. Badge "Beta" visible indicando estado experimental
+  6. Todas las páginas existentes del dashboard siguen funcionando sin cambios
+**Research**: Likely (chat layout patterns, Claude Code-style UX)
+**Research topics**: Chat-first layouts, sidebar integration patterns for AI assistants
+**Plans**: 2 plans
+
+Plans:
+- [x] 17-01: Sidebar nav items + route structure for Beta in both dashboards
+- [x] 17-02: Beta layout shell with chat-optimized structure
+
+#### Phase 18: Chat Interface
+**Goal**: Experiencia de chat conversacional completa con streaming y markdown
+**Depends on**: Phase 17
+**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-08, CHAT-09, CHAT-10
+**Success Criteria** (what must be TRUE):
+  1. Usuario puede escribir mensaje y enviarlo (Enter o botón)
+  2. Mensajes del usuario aparecen como burbujas a la derecha
+  3. Respuestas del asistente aparecen a la izquierda con branding Leasefy AI
+  4. Texto del asistente aparece con efecto streaming (carácter por carácter)
+  5. Respuestas soportan markdown (negritas, listas, tablas)
+  6. Indicador de "escribiendo" visible mientras AI procesa
+  7. Chat auto-scroll al último mensaje
+  8. Mensaje de bienvenida con prompts sugeridos para nuevos usuarios
+**Research**: Likely (SSE streaming patterns, markdown rendering in React)
+**Research topics**: react-markdown, SSE client patterns, Vercel AI SDK chat hooks
+**Plans**: 3 plans
+
+Plans:
+- [x] 18-01: Chat input component + message bubble components
+- [x] 18-02: Streaming text renderer + markdown support
+- [x] 18-03: Welcome state, suggested prompts, auto-scroll, typing indicator
+
+#### Phase 19: Conversation Management
+**Goal**: Historial de conversaciones navegable con búsqueda
+**Depends on**: Phase 18
+**Requirements**: CONV-01, CONV-02, CONV-03, CONV-04, CONV-05, CONV-06
+**Success Criteria** (what must be TRUE):
+  1. Panel lateral muestra lista de conversaciones pasadas
+  2. Botón "Nueva conversación" crea thread limpio
+  3. Títulos auto-generados del primer mensaje del usuario
+  4. Conversaciones agrupadas por fecha (Hoy, Ayer, Esta semana, Anterior)
+  5. Acción de eliminar conversación con confirmación
+  6. Búsqueda filtra conversaciones por texto
+**Research**: Unlikely (standard list/search UI patterns)
+**Plans**: 2 plans
+
+Plans:
+- [x] 19-01: Conversation list panel with date grouping and search
+- [x] 19-02: New conversation, delete, title generation
+
+#### Phase 20: Agent Activity Display
+**Goal**: Visualización clara de qué agentes están ejecutando y sus resultados
+**Depends on**: Phase 18
+**Requirements**: AGNT-01, AGNT-02, AGNT-03, AGNT-04, AGNT-05, AGNT-06
+**Success Criteria** (what must be TRUE):
+  1. Indicador visual cuando el orquestador está despachando agentes
+  2. Badges con nombre e ícono de cada agente (Cobranza, Pipeline, Documentos, etc.)
+  3. Estado de ejecución visible (ejecutando/completado/fallido) inline
+  4. Cards de resultado del agente colapsables dentro de la conversación
+  5. Múltiples agentes pueden mostrarse ejecutando simultáneamente
+  6. Estado de error con opción de reintentar
+**Research**: Likely (agent visualization patterns, real-time status updates)
+**Research topics**: Tool use visualization, Claude Code-style agent indicators, SSE event patterns
+**Plans**: 2 plans
+
+Plans:
+- [x] 20-01: Agent execution indicators + status badges
+- [x] 20-02: Agent result cards (collapsible, inline) + error states
+
+#### Phase 21: Decision System
+**Goal**: Sistema de decisiones pendientes donde AI presenta opciones y usuario decide
+**Depends on**: Phase 18
+**Requirements**: DCSN-01, DCSN-02, DCSN-03, DCSN-04, DCSN-05, DCSN-06
+**Success Criteria** (what must be TRUE):
+  1. Cards de decisión pendiente con 2-4 opciones integradas en el chat
+  2. Cada opción muestra indicador de recomendación AI
+  3. Usuario puede seleccionar opción que se envía como respuesta
+  4. Cards de decisión se vuelven read-only después de seleccionar
+  5. Contador de decisiones pendientes visible en sidebar
+  6. Historial de decisiones accesible
+**Research**: Unlikely (card-based selection UI, existing shadcn patterns)
+**Plans**: 2 plans
+
+Plans:
+- [x] 21-01: Decision card component with options, recommendations, selection
+- [x] 21-02: Decision counter badge, history view, read-only state
+
+#### Phase 22: Briefing Display
+**Goal**: Briefings diarios/semanales del AI con resumen ejecutivo y acciones
+**Depends on**: Phase 18
+**Requirements**: BRFG-01, BRFG-02, BRFG-03, BRFG-04, BRFG-05, BRFG-06
+**Success Criteria** (what must be TRUE):
+  1. Card de briefing diario visible al tope de la sección Beta
+  2. Secciones del briefing: cobros, pipeline, mantenimiento, decisiones pendientes
+  3. Cada sección expandible/colapsable
+  4. Acciones tipo "Cuéntame más sobre cobros" abren chat con contexto
+  5. Badge de notificación cuando hay nuevo briefing
+  6. Briefings históricos navegables por fecha
+**Research**: Unlikely (dashboard card patterns, existing component library)
+**Plans**: 2 plans
+
+Plans:
+- [x] 22-01: Briefing card with sections (cobros, pipeline, maint, decisions)
+- [x] 22-02: Briefing history, notification badge, chat integration actions
+
+#### Phase 23: Preferences & Autonomy
+**Goal**: Configuración de autonomía AI y preferencias del usuario
+**Depends on**: Phase 17
+**Requirements**: PREF-01, PREF-02, PREF-03, PREF-04, PREF-05
+**Success Criteria** (what must be TRUE):
+  1. Página de configuración de autonomía por categoría de agente
+  2. Toggles auto/preguntar-primero/manual para cada tipo de agente
+  3. Preferencias de notificación configurables
+  4. Selector de tono de comunicación (formal/casual/profesional)
+  5. Umbrales configurables (tolerancia mora, límites presupuesto mantenimiento)
+**Research**: Unlikely (form/settings page patterns, existing config pages in inmobiliaria)
+**Plans**: 2 plans
+
+Plans:
+- [x] 23-01: Autonomy settings page with per-agent toggles
+- [x] 23-02: Notification preferences, tone selector, threshold settings
+
+#### Phase 24: API Client & Backend Documentation
+**Goal**: Capa de integración frontend-backend completa + documentación para backend dev
+**Depends on**: Phase 18, Phase 20, Phase 21, Phase 22, Phase 23
+**Requirements**: APIC-01, APIC-02, APIC-03, APIC-04, APIC-05, APIC-06, DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, DOCS-08
+**Success Criteria** (what must be TRUE):
+  1. Módulo de API client con TypeScript types para todos los endpoints
+  2. Cliente SSE/streaming funcional para respuestas de chat en tiempo real
+  3. Mock API responses que simulan comportamiento realista del orquestador
+  4. Simulación de ejecución de agentes (delays, status updates)
+  5. Flag de entorno para cambiar entre mock y API real
+  6. Documento docs/BACKEND-API-V4.md con spec OpenAPI-style completa
+  7. AI-AGENT-ARCHITECTURE.md actualizado con contrato exacto del frontend
+**Research**: Likely (SSE patterns, Vercel AI SDK, OpenAPI spec format)
+**Research topics**: Vercel AI SDK streaming, EventSource API, OpenAPI 3.0 spec patterns
+**Plans**: 3 plans
+
+Plans:
+- [x] 24-01: API client module + TypeScript types + environment switching
+- [x] 24-02: SSE streaming client + mock API layer with agent simulation
+- [x] 24-03: Backend API documentation (OpenAPI spec + architecture update)
+
+#### Phase 25: Polish & QA
+**Goal**: Beta section pulida, accesible, responsive, i18n, sin errores
+**Depends on**: All previous v4.0 phases
+**Requirements**: PLSH-01, PLSH-02, PLSH-03, PLSH-04, PLSH-05, PLSH-06, PLSH-07
+**Success Criteria** (what must be TRUE):
+  1. Dark mode funcional en toda la UI de Beta
+  2. Experiencia mobile: chat full-screen, conversaciones como drawer
+  3. Todos los strings Beta disponibles en ES y EN
+  4. Atajos de teclado: Cmd+K nueva conversación, Esc cerrar
+  5. Accesibilidad: screen reader, focus management, ARIA labels
+  6. Loading states y error boundaries en todas las páginas Beta
+  7. TypeScript strict, zero warnings en build
+**Research**: Unlikely (established QA patterns from v2.0)
+**Plans**: 3 plans
+
+Plans:
+- [x] 25-01: Dark mode + responsive mobile chat
+- [x] 25-02: i18n strings + keyboard shortcuts + accessibility
+- [x] 25-03: Loading states, error boundaries, TypeScript strict, build validation
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Design System | 4/4 | Complete | 2026-01-18 |
-| 2. Property Catalog | 2/2 | Complete | 2026-01-18 |
-| 3. Application Wizard | 5/5 | Complete | 2026-01-19 |
-| 4. Risk Score Display | 4/4 | Complete | 2026-01-19 |
-| 5. Landlord Dashboard | 3/3 | Complete | 2026-01-19 |
-| 6. Tenant Tracking | 2/2 | Complete | 2026-01-19 |
-| 7. UX Polish | 6/6 | Complete | 2026-01-20 |
-| 8. Authentication UI | 2/2 | Complete | 2026-01-19 |
-| 9. Interactive Map | 2/2 | Complete | 2026-01-20 |
-| 10. Post-Approval Flow | 5/5 | Complete | 2026-01-20 |
+| 17. Beta Sidebar Integration | 2/2 | Complete | 2026-02-10 |
+| 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
+| 19. Conversation Management | 2/2 | Complete | 2026-02-10 |
+| 20. Agent Activity Display | 2/2 | Complete | 2026-02-10 |
+| 21. Decision System | 2/2 | Complete | 2026-02-10 |
+| 22. Briefing Display | 2/2 | Complete | 2026-02-10 |
+| 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
+| 24. API Client & Backend Docs | 3/3 | Complete | 2026-02-10 |
+| 25. Polish & QA | 3/3 | Complete | 2026-02-10 |
 
 ## Notes
 
-### What's NOT in scope (backend responsibility)
-- Database setup and migrations
-- API endpoints
-- Authentication backend (Clerk webhooks, user sync)
-- Scoring algorithm implementation
-- File upload to cloud storage
-- Email notifications
-- State machine enforcement
+### What We Build (Frontend)
+- Chat UI with streaming, markdown, conversation management
+- Agent execution visualization (badges, spinners, result cards)
+- Decision system (pending options, selection, history)
+- Briefing display (daily summary, sections, actions)
+- Preferences & autonomy settings
+- Mock API layer simulating real backend behavior
+- All Beta UI components
 
-### Mock Data Strategy
-All screens work with realistic mock data:
-- 15+ properties across Colombian cities
-- 10+ candidate profiles with varied risk levels
-- Pre-calculated scores with explanations
-- Sample application data in different states
+### What Backend Dev Builds (Using Our Docs)
+- Claude API orchestrator with tool use
+- Specialized agents (cobranza, pipeline, mantenimiento, documentos, comunicación, proactivo)
+- 3-level memory system (short/medium/long term)
+- WhatsApp gateway via Twilio
+- Real database models and migrations
+- SSE/streaming endpoints
+- Background jobs for proactive briefings
+- Architecture reference: `docs/AI-AGENT-ARCHITECTURE.md`
 
-### Integration Points (for backend developer)
-When backend is ready, these need API connections:
-- Property listing and filtering
-- Application submission
-- Score retrieval
-- Status updates
-- User authentication state
+### Mock Data Strategy (v4.0)
+- Mock conversations with realistic Colombian rental scenarios
+- Mock agent executions with simulated delays (1-3s per agent)
+- Mock briefing data with cobros, pipeline, mantenimiento summaries
+- Mock decisions: "Renovar contrato?", "Aprobar candidato score 78?", "Autorizar reparación $450K?"
+- Environment flag (`NEXT_PUBLIC_USE_MOCK_API=true`) for seamless switch to real backend
 
 ---
-*Roadmap created: 2026-01-18*
-*Last updated: 2026-01-20 (Phase 10 Post-Approval Flow complete)*
-*Vision: FRONTEND-VISION.md*
+*Roadmap created: 2026-01-18 (v1.0)*
+*Last updated: 2026-02-10 (v4.0 AI Agent Platform Beta)*

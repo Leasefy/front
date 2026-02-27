@@ -10,7 +10,7 @@
 /**
  * Types of rental contracts
  */
-export type ContractType = 'basico' | 'amoblado' | 'compartido';
+export type ContractType = 'basico' | 'amoblado' | 'compartido' | 'custom';
 
 /**
  * Contract status throughout the signing flow
@@ -39,6 +39,7 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   basico: 'Contrato Basico',
   amoblado: 'Contrato Amoblado',
   compartido: 'Contrato Compartido',
+  custom: 'Contrato Propio',
 };
 
 /**
@@ -48,6 +49,7 @@ export const CONTRACT_TYPE_DESCRIPTIONS: Record<ContractType, string> = {
   basico: 'Arriendo estandar sin muebles. Ideal para inquilinos que tienen sus propios muebles.',
   amoblado: 'Arriendo con muebles incluidos. Incluye inventario detallado de bienes.',
   compartido: 'Arriendo de habitacion con areas comunes compartidas.',
+  custom: 'Sube tu propio contrato en formato PDF. Se usara como base para el proceso de firma.',
 };
 
 /**
@@ -66,12 +68,12 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
  * Status badge colors for contract status
  */
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
-  draft: 'bg-slate-100 text-slate-700',
-  pending_landlord: 'bg-amber-100 text-amber-700',
-  pending_tenant: 'bg-blue-100 text-blue-700',
-  active: 'bg-emerald-100 text-emerald-700',
-  expired: 'bg-gray-100 text-gray-500',
-  cancelled: 'bg-red-100 text-red-700',
+  draft: 'bg-muted text-foreground',
+  pending_landlord: 'bg-plan-status-yellow-bg text-plan-status-yellow',
+  pending_tenant: 'bg-plan-status-blue-bg text-plan-status-blue',
+  active: 'bg-plan-status-green-bg text-plan-status-green',
+  expired: 'bg-muted text-muted-foreground',
+  cancelled: 'bg-plan-status-red-bg text-plan-status-red',
 };
 
 // ============================================================================
@@ -117,6 +119,45 @@ export interface Signature {
   ipAddress: string;     // IP for legal record
   userAgent: string;     // Browser info for legal record
   status: SignatureStatus;
+  otpVerified: boolean;       // Whether OTP verification was completed
+  otpVerifiedAt?: string;     // ISO date string when OTP was verified
+}
+
+// ============================================================================
+// Audit Trail
+// ============================================================================
+
+/**
+ * Types of audit events in contract lifecycle
+ */
+export type ContractAuditEventType =
+  | 'created'
+  | 'sent_to_landlord'
+  | 'landlord_signed'
+  | 'sent_to_tenant'
+  | 'tenant_signed'
+  | 'activated';
+
+/**
+ * Audit event metadata
+ */
+export interface ContractAuditEventMetadata {
+  userId?: string;
+  userName?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  otpVerified?: boolean;
+}
+
+/**
+ * Individual audit event in contract history
+ */
+export interface ContractAuditEvent {
+  id: string;
+  contractId: string;
+  type: ContractAuditEventType;
+  timestamp: string;        // ISO date string
+  metadata: ContractAuditEventMetadata;
 }
 
 // ============================================================================
@@ -165,12 +206,20 @@ export interface Contract {
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
 
+  // Non-negotiable clauses from tenant requirements
+  nonNegotiableClauses?: ContractClause[];
+
   // Custom terms (editable)
   specialConditions?: string;
 
   // Metadata
   createdAt: string;
   updatedAt: string;
+
+  // Audit & Certification
+  auditTrail: ContractAuditEvent[];
+  certificateId?: string;        // e.g., CERT-{contractId}-{timestamp}
+  documentHash?: string;         // SHA-256 hash of the PDF
 }
 
 // ============================================================================

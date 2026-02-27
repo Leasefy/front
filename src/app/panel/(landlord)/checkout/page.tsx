@@ -6,7 +6,7 @@ import { CreditCard, Lock, Check, Buildings } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { CouponInput, PriceSummary } from '@/components/pricing';
-import { getPlanById } from '@/lib/data/mock-subscriptions';
+import { getPlanById } from '@/lib/constants/subscription-plans';
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';

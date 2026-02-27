@@ -28,7 +28,7 @@ import {
   PropietarioTable,
   PropietarioForm,
 } from '@/components/inmobiliaria';
-import { MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
+import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -165,7 +165,13 @@ export default function PropietariosPage() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [propietarios, setPropietarios] = useState<Propietario[]>(MOCK_PROPIETARIOS);
+  const { propietarios: apiPropietarios } = usePropietarios();
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+
+  // Sync with API data
+  useEffect(() => {
+    if (apiPropietarios.length > 0) setPropietarios(apiPropietarios);
+  }, [apiPropietarios]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);

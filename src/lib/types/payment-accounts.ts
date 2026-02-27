@@ -148,8 +148,8 @@ export function maskAccountNumber(accountNumber: string): string {
   return '****' + accountNumber.slice(-4);
 }
 
-export function maskPhoneNumber(phone: string): string {
-  if (phone.length <= 6) return phone;
+export function maskPhoneNumber(phone: string | null | undefined): string {
+  if (!phone || phone.length <= 6) return phone || '';
   return phone.slice(0, 3) + '****' + phone.slice(-3);
 }
 

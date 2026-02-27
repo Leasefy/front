@@ -8,8 +8,8 @@ import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, Curre
 import { usePublish } from '@/lib/context/PublishContext';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { PLANS, AGENCY_PLANS } from '@/lib/data/mock-subscriptions';
+import { formatCurrency } from '@/lib/format';
+import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
 
 export function PublishSuccess() {

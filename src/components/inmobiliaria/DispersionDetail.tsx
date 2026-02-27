@@ -36,10 +36,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { getDispersionStatusColor } from '@/lib/types/inmobiliaria';
-import { MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
+import { usePropietarios, useInmobiliariaConfig, propietariosApi } from '@/lib/hooks/useInmobiliaria';
 import { ComisionDesglose } from './ComisionDesglose';
 import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
-import { generateExtractoPropietario } from '@/lib/data/mock-inmobiliaria';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -225,12 +224,14 @@ export function DispersionDetail({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
   const { t, formatDate, formatCurrency } = useI18n();
+  const { config } = useInmobiliariaConfig();
 
   // Get propietario details
+  const { propietarios } = usePropietarios();
   const propietario = React.useMemo(() => {
     if (!dispersion) return null;
-    return MOCK_PROPIETARIOS.find((p) => p.id === dispersion.propietarioId);
-  }, [dispersion]);
+    return propietarios.find((p) => p.id === dispersion.propietarioId) ?? null;
+  }, [dispersion, propietarios]);
 
   // Handle process dispersion
   const handleProcess = async () => {
@@ -265,9 +266,9 @@ export function DispersionDetail({
     setIsDownloadingPDF(true);
     try {
       // Generate extracto data
-      const extracto = generateExtractoPropietario(dispersion.propietarioId, dispersion.month);
-      if (extracto) {
-        downloadExtractoPDF(extracto);
+      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
+      if (extracto && config) {
+        downloadExtractoPDF(extracto, config, propietario);
         toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
           description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
         });

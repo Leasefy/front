@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Shield, Camera, Star, Wrench, Check, Plus } from '@phosphor-icons/react';
-import type { AddOn } from '@/lib/data/mock-subscriptions';
+import type { AddOn } from '@/lib/constants/subscription-plans';
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   shield: Shield,

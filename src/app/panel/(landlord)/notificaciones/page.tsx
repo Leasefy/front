@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,11 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  getLandlordNotifications,
-  getUnreadCount,
-  getLandlordFilterOptions,
-} from '@/lib/data/mock-notifications';
+import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
 import type { LandlordNotification, LandlordNotificationCategory } from '@/lib/types/notification';
 
@@ -145,39 +141,23 @@ function NotificationSkeleton() {
 export default function NotificacionesPage() {
   const { t, formatRelativeDate } = useI18n();
   const router = useRouter();
-  const [notifications, setNotifications] = useState<LandlordNotification[]>(getLandlordNotifications());
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useLandlordNotifications();
   const [filter, setFilter] = useState<FilterType>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [hideRead, setHideRead] = useState(false);
 
-  // Simulate loading state
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const unreadCount = getUnreadCount(notifications);
-
-  const filteredNotifications = notifications.filter((n) => {
+  const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
+  const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
     return n.category === filter || (filter === 'payment' && n.category === 'alert');
   });
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
-  };
 
   const handleNotificationClick = (notification: LandlordNotification) => {
     if (!notification.read) {
@@ -422,7 +402,7 @@ export default function NotificacionesPage() {
           {notifications.length > 0 && (
             <button
               onClick={() =>
-                setNotifications(notifications.filter((n) => !n.read))
+                setHideRead(true)
               }
               className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
             >

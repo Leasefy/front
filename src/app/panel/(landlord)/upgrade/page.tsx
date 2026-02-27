@@ -6,11 +6,8 @@ import { CreditCard, CheckCircle, WarningCircle, Shield, Sparkle, Lightning, Loc
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
-import {
-  MOCK_SUBSCRIPTION,
-  getPlanById,
-  getYearlySavings,
-} from '@/lib/data/mock-subscriptions';
+import { getPlanById, getYearlySavings } from '@/lib/constants/subscription-plans';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import { cn } from '@/lib/utils';
@@ -23,15 +20,17 @@ import { useI18n } from '@/lib/i18n';
 export default function UpgradePage() {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const { subscription } = useMySubscription();
+  const currentPlanId = subscription?.planId ?? 'free';
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const currentPlan = getPlanById(MOCK_SUBSCRIPTION.planId);
+  const currentPlan = getPlanById(currentPlanId);
   const newPlan = selectedPlan ? getPlanById(selectedPlan) : null;
 
   const handleSelectPlan = (planId: PlanId) => {
-    if (planId !== MOCK_SUBSCRIPTION.planId) {
+    if (planId !== currentPlanId) {
       setSelectedPlan(planId);
     }
   };
@@ -50,10 +49,10 @@ export default function UpgradePage() {
 
   const canUpgrade =
     selectedPlan &&
-    selectedPlan !== MOCK_SUBSCRIPTION.planId &&
+    selectedPlan !== currentPlanId &&
     (selectedPlan !== 'free' ||
-      MOCK_SUBSCRIPTION.planId === 'business' ||
-      MOCK_SUBSCRIPTION.planId === 'pro');
+      currentPlanId === 'business' ||
+      currentPlanId === 'pro');
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
@@ -114,7 +113,7 @@ export default function UpgradePage() {
                     <>
                       {t('landlord.upgrade.nextPayment')} <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(currentPlan.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
                       <span className="font-medium text-neutral-900 dark:text-white">
-                        {new Date(MOCK_SUBSCRIPTION.currentPeriodEnd).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                        {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                           day: 'numeric',
                           month: 'long',
                         })}
@@ -184,7 +183,7 @@ export default function UpgradePage() {
 
         {/* Pricing table */}
         <PricingTable
-          currentPlanId={MOCK_SUBSCRIPTION.planId}
+          currentPlanId={currentPlanId}
           onSelectPlan={handleSelectPlan}
         />
 

@@ -10,7 +10,7 @@ import { PlanSidebar, NavItem, ProfileCompletionStep } from '@/components/ui/pla
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
-import { MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 
 // Define the setup steps - same as LandlordDashboardEmpty
@@ -79,11 +79,13 @@ interface PanelLayoutProps {
 function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { t, locale } = useI18n();
-  const showUpgrade = MOCK_SUBSCRIPTION.planId === 'free';
+  const { subscription } = useMySubscription();
+  const showUpgrade = subscription?.planId === 'free';
 
   // Onboarding progress state
   const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(LANDLORD_SETUP_STEPS);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   // Load onboarding progress from localStorage
   useEffect(() => {
@@ -92,6 +94,14 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
+
+          // If onboarding was fully completed, hide the widget
+          if (parsed.isComplete) {
+            setOnboardingComplete(true);
+            setIsLoaded(true);
+            return;
+          }
+
           const completedStepIds = parsed.completedSteps || [];
           setOnboardingSteps(LANDLORD_SETUP_STEPS.map(step => ({
             ...step,
@@ -144,7 +154,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"
         upgradeLabel="Mejorar Plan"
-        profileCompletion={isLoaded ? {
+        profileCompletion={isLoaded && !onboardingComplete ? {
           percentage,
           href: '/onboarding/propietario',
           label: locale === 'es' ? 'Completa tu cuenta' : 'Complete your account',

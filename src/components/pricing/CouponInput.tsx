@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tag, X, Check, SpinnerGap } from '@phosphor-icons/react';
-import { validateCoupon } from '@/lib/utils/coupon-validation';
+import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { PlanId } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 
@@ -43,10 +43,7 @@ export function CouponInput({
     setIsLoading(true);
     setError(null);
 
-    // Simulate API call delay for realistic UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const result = validateCoupon(code.trim(), planId, price);
+    const result = await subscriptionsApi.validateCoupon(code.trim(), planId);
 
     if (result.valid && result.coupon && result.discount) {
       onApplyCoupon({
@@ -57,7 +54,7 @@ export function CouponInput({
       });
       setCode('');
     } else {
-      setError(result.error || 'Cupón no válido');
+      setError(result.error || 'Cupon no valido');
     }
 
     setIsLoading(false);

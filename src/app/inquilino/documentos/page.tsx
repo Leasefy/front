@@ -80,10 +80,9 @@ export default function DocumentosPage() {
   ];
 
   const filteredDocuments = documents.filter((doc) => {
-    const matchesSearch = doc.fileName
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-      || (DOC_TYPE_CONFIG[doc.type]?.label ?? '').toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = (doc.fileName ?? '').toLowerCase().includes(query)
+      || (DOC_TYPE_CONFIG[doc.type]?.label ?? '').toLowerCase().includes(query);
     const matchesType = selectedType === 'all' || doc.type === selectedType;
     return matchesSearch && matchesType;
   });

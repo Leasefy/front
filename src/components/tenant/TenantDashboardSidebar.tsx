@@ -7,6 +7,7 @@ import { SquaresFour, House, FileMagnifyingGlass, CreditCard, FileText, Chat, Ge
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -15,7 +16,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { label: string; href: string; icon: typeof SquaresFour; exact?: boolean; badge?: number }[] = [
   { label: 'Panel', href: '/inquilino', icon: SquaresFour, exact: true },
   { label: 'Mi Arriendo', href: '/inquilino/arriendo', icon: House },
   { label: 'Aplicaciones', href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
@@ -49,7 +50,17 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
       )}
     >
       <Icon className="w-[18px] h-[18px]" />
-      <span>{item.label}</span>
+      <span className="flex-1">{item.label}</span>
+      {item.badge && item.badge > 0 && (
+        <span className={cn(
+          'text-xs px-2 py-0.5 rounded-full font-medium',
+          isActive
+            ? 'bg-foreground text-white'
+            : 'bg-muted text-muted-foreground'
+        )}>
+          {item.badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -57,6 +68,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { unreadCount } = useUnreadMessages();
 
   const isActive = (item: (typeof NAV_ITEMS)[0]) => {
     if (item.exact) return pathname === item.href;
@@ -79,14 +91,19 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
       {/* Compass */}
       <nav className="flex-1 px-3 space-y-0.5">
-        {NAV_ITEMS.map((item) => (
-          <NavItem
-            key={item.href}
-            item={item}
-            isActive={isActive(item)}
-            onClick={onItemClick}
-          />
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const dynamicItem = item.href === '/inquilino/mensajes' && unreadCount > 0
+            ? { ...item, badge: unreadCount }
+            : item;
+          return (
+            <NavItem
+              key={item.href}
+              item={dynamicItem}
+              isActive={isActive(item)}
+              onClick={onItemClick}
+            />
+          );
+        })}
       </nav>
 
       {/* Profile completion widget */}

@@ -12,8 +12,8 @@ import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates 
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { landlordApi } from '@/lib/api/landlord.service';
-import { getVisitsForProperty } from '@/lib/data/mock-visits';
-import { getContractsForProperty } from '@/lib/data/mock-contracts';
+import { useVisits } from '@/lib/hooks/useVisits';
+import { useContracts } from '@/lib/hooks/useContracts';
 import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
@@ -71,8 +71,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const { candidates: apiCandidates, isLoading: candidatesLoading, refetch: refetchCandidates } = useCandidates({ propertyId });
   const { decide } = useCandidateDecision();
 
-  // Visits and contracts still use mock data (will be migrated in later phases)
-  const propertyVisits = getVisitsForProperty(propertyId);
+  // Visits from real API
+  const { getForProperty } = useVisits();
+  const propertyVisits = getForProperty(propertyId);
+  const { getForProperty: getContractsForProperty } = useContracts();
   const propertyContracts = getContractsForProperty(propertyId);
   const activeContract = propertyContracts.find(c => c.status === 'active');
 

@@ -5,7 +5,7 @@ import { landlordApi } from '@/lib/api/landlord.service';
 import type { Candidate } from '@/lib/types/candidate';
 import type { LandlordCandidate, LandlordProperty, DashboardSummary } from '@/lib/types/landlord';
 import type { RiskScore } from '@/lib/types/risk-score';
-import type { BackendLandlordDashboard, BackendCandidateNote, CandidateDecisionDto } from '@/lib/api/landlord.types';
+import type { BackendCandidateNote, CandidateDecisionDto, DashboardData } from '@/lib/api/landlord.types';
 
 // ============================================================================
 // useCandidates - list candidates with filters
@@ -297,7 +297,7 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
 // ============================================================================
 
 export function useLandlordDashboard() {
-  const [dashboard, setDashboard] = useState<BackendLandlordDashboard | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -305,7 +305,7 @@ export function useLandlordDashboard() {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await landlordApi.getDashboard();
+      const result = await landlordApi.getDashboardForDisplay();
       setDashboard(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando dashboard';

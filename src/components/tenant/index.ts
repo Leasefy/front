@@ -11,5 +11,3 @@ export type { ApplicationStatusBadgeProps } from './ApplicationStatusBadge';
 export { ApplicationTimeline } from './ApplicationTimeline';
 export type { ApplicationTimelineProps } from './ApplicationTimeline';
 
-export { ApplicationDetail } from './ApplicationDetail';
-export type { ApplicationDetailProps } from './ApplicationDetail';

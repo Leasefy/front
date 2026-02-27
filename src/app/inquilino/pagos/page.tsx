@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, X, CheckCircle, Shield, Buildings, SpinnerGap, ArrowUpRight, CaretRight, CaretLeft, Receipt, Wallet, Download } from '@phosphor-icons/react';
 
-import { getActiveLeasesForTenant, getPaymentsForLease, getNextPayment } from '@/lib/data/mock-leases';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -32,28 +31,29 @@ export default function PagosPage() {
   const { t, locale, formatCurrency: formatCurrencyI18n } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const tenantId = 'user-tenant-1';
-  // Only fetch real data if onboarding is complete
-  const activeLeases = isOnboardingComplete ? getActiveLeasesForTenant(tenantId) : [];
+  const { getActive, isLoading: leasesLoading, error: leasesError, refetch: refetchLeases } = useLeases();
+  const { payments: rawPayments, isLoading: paymentsLoading, getNextPayment } = useMyPayments();
+
+  const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentStep, setPaymentStep] = useState<PaymentStep>('confirm');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const allPayments: PaymentRow[] = [];
-  activeLeases.forEach(lease => {
-    const payments = getPaymentsForLease(lease.id);
-    payments.forEach(payment => {
-      allPayments.push({
-        ...payment,
+  // Build enriched payment rows from leases + payments
+  const leaseMap = new Map(activeLeases.map(l => [l.id, l]));
+  const allPayments: PaymentRow[] = rawPayments
+    .filter(p => leaseMap.has(p.leaseId))
+    .map(p => {
+      const lease = leaseMap.get(p.leaseId)!;
+      return {
+        ...p,
         propertyTitle: lease.propertyTitle,
         propertyThumbnail: lease.propertyThumbnail,
-      });
-    });
-  });
-
-  allPayments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      };
+    })
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 
   const nextPayment = primaryLease ? getNextPayment(primaryLease.id) : undefined;
 
@@ -152,7 +152,7 @@ export default function PagosPage() {
   };
 
   // Loading state
-  if (isOnboardingLoading) {
+  if (isOnboardingLoading || leasesLoading || paymentsLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />

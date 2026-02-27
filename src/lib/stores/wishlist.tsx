@@ -1,7 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import type { Property } from '@/lib/types/property';
+import { wishlistsApi } from '@/lib/api/wishlists.service';
+import { apiClient } from '@/lib/api/client';
+import { getSupabase } from '@/lib/supabase/client';
 
 const STORAGE_KEY = 'arriendo-facil-wishlist';
 
@@ -27,25 +30,57 @@ const WishlistContext = createContext<WishlistContextTextT | null>(null);
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const isAuthenticated = useRef(false);
 
-  // Load from localStorage on mount
+  // Load wishlist: try API first (authenticated), fallback to localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setWishlist(parsed);
+    async function loadWishlist() {
+      // Check if user is authenticated
+      try {
+        const supabase = getSupabase();
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) {
+          isAuthenticated.current = true;
+          // Check user role — wishlists are TENANT-only
+          try {
+            const user = await apiClient.get<{ role: string }>('/users/me');
+            if (user.role === 'LANDLORD') {
+              setIsLoaded(true);
+              return;
+            }
+          } catch { /* proceed to try wishlists anyway */ }
+          const ids = await wishlistsApi.getMine();
+          setWishlist(ids);
+          // Sync localStorage with API data
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+          } catch { /* ignore */ }
+          setIsLoaded(true);
+          return;
         }
+      } catch {
+        // API failed, fall through to localStorage
       }
-    } catch {
-      // Invalid JSON or localStorage not available
-      console.warn('Could not load wishlist from localStorage');
+
+      // Fallback: load from localStorage
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            setWishlist(parsed);
+          }
+        }
+      } catch {
+        console.warn('Could not load wishlist from localStorage');
+      }
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
+
+    loadWishlist();
   }, []);
 
-  // FloppyDisk to localStorage whenever wishlist changes
+  // Save to localStorage whenever wishlist changes (always, as cache)
   useEffect(() => {
     if (isLoaded) {
       try {
@@ -62,7 +97,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const toggleWishlist = useCallback((propertyId: string) => {
     setWishlist((prev) => {
-      if (prev.includes(propertyId)) {
+      const removing = prev.includes(propertyId);
+      // Fire-and-forget API sync
+      if (isAuthenticated.current) {
+        if (removing) {
+          wishlistsApi.remove(propertyId).catch(() => {});
+        } else {
+          wishlistsApi.add(propertyId).catch(() => {});
+        }
+      }
+      if (removing) {
         return prev.filter((id) => id !== propertyId);
       }
       return [...prev, propertyId];
@@ -72,11 +116,17 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const addToWishlist = useCallback((propertyId: string) => {
     setWishlist((prev) => {
       if (prev.includes(propertyId)) return prev;
+      if (isAuthenticated.current) {
+        wishlistsApi.add(propertyId).catch(() => {});
+      }
       return [...prev, propertyId];
     });
   }, []);
 
   const removeFromWishlist = useCallback((propertyId: string) => {
+    if (isAuthenticated.current) {
+      wishlistsApi.remove(propertyId).catch(() => {});
+    }
     setWishlist((prev) => prev.filter((id) => id !== propertyId));
   }, []);
 

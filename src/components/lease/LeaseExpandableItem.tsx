@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
+import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
+import { useLeasePayments } from '@/lib/hooks/useLeases';
 import type { Lease, Payment } from '@/lib/types/lease';
 
 interface LeaseExpandableItemProps {
   lease: Lease;
-  payments: Payment[];
 }
 
 /**
@@ -54,9 +54,14 @@ function PaymentStatus({ status }: { status: Payment['status'] }) {
 /**
  * LeaseExpandableItem - Expandable lease row with payment history
  */
-export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProps) {
+export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
+
+  // Lazy-load payments only when expanded
+  const { payments, isLoading: paymentsLoading } = useLeasePayments(
+    isExpanded ? lease.id : null
+  );
 
   const handleMessage = () => {
     router.push(`/panel/mensajes?to=${lease.tenantId}`);
@@ -246,36 +251,42 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
               <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
                 Resumen de pagos
               </p>
-              <div className="space-y-3.5">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Total pagos</span>
-                  <span className="text-sm text-neutral-900 dark:text-white font-medium">{payments.length}</span>
+              {paymentsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <SpinnerGap className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
                 </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Pagados</span>
-                  <span className="text-sm text-neutral-900 dark:text-white">
-                    {payments.filter(p => p.status === 'paid').length}
-                  </span>
+              ) : (
+                <div className="space-y-3.5">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Total pagos</span>
+                    <span className="text-sm text-neutral-900 dark:text-white font-medium">{payments.length}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Pagados</span>
+                    <span className="text-sm text-neutral-900 dark:text-white">
+                      {payments.filter(p => p.status === 'paid').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</span>
+                    <span className={cn(
+                      'text-sm',
+                      pendingCount > 0 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-900 dark:text-white'
+                    )}>
+                      {pendingCount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Atrasados</span>
+                    <span className={cn(
+                      'text-sm',
+                      lateCount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : 'text-neutral-900 dark:text-white'
+                    )}>
+                      {lateCount}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</span>
-                  <span className={cn(
-                    'text-sm',
-                    pendingCount > 0 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-900 dark:text-white'
-                  )}>
-                    {pendingCount}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Atrasados</span>
-                  <span className={cn(
-                    'text-sm',
-                    lateCount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : 'text-neutral-900 dark:text-white'
-                  )}>
-                    {lateCount}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -288,7 +299,11 @@ export function LeaseExpandableItem({ lease, payments }: LeaseExpandableItemProp
                 </span>
               </div>
 
-              {payments.length === 0 ? (
+              {paymentsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <SpinnerGap className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                </div>
+              ) : payments.length === 0 ? (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 p-5 text-center">
                   No hay pagos registrados
                 </p>

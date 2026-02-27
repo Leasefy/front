@@ -2,246 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Chat, ChatCircle, MagnifyingGlass, PaperPlaneTilt, Paperclip, DotsThreeVertical, Check, Checks, Info, Image, Smiley, ArrowLeft, X, House, Envelope, Calendar, Archive, BellSlash, TrashSimple, Flag } from '@phosphor-icons/react';
+import { Chat, ChatCircle, MagnifyingGlass, PaperPlaneTilt, Paperclip, DotsThreeVertical, Check, Checks, Info, Image, Smiley, ArrowLeft, X, House, Envelope, Archive, BellSlash, Flag } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
-import { NoDataEmptyState } from '@/components/tenant/NoDataEmptyState';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useConversations, useChat } from '@/lib/hooks/useMessages';
+import type { ChatConversation } from '@/lib/api/messages.types';
 
 // ============================================================================
-// TextTs
+// Helpers
 // ============================================================================
-
-interface Message {
-  id: string;
-  senderId: 'me' | 'other';
-  content: string;
-  timestamp: string;
-  read: boolean;
-}
-
-interface Conversation {
-  id: string;
-  name: string;
-  avatar: string;
-  role: string;
-  property: string;
-  lastMessage: string;
-  timestamp: string;
-  unread: number;
-  online: boolean;
-  email?: string;
-  memberSince?: string;
-}
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const initialConversations: Conversation[] = [
-  {
-    id: 'conv-1',
-    name: 'Nicolás García',
-    avatar: '/images/avatars/avatar-1.jpg',
-    role: 'Propietario',
-    property: 'Departamento Providencia',
-    lastMessage: 'Perfecto, quedamos así entonces. Gracias!',
-    timestamp: '10:30',
-    unread: 2,
-    online: true,
-    email: 'nicolas.garcia@email.com',
-    memberSince: 'Enero 2023',
-  },
-  {
-    id: 'conv-2',
-    name: 'María López',
-    avatar: '/images/avatars/avatar-2.jpg',
-    role: 'Administradora',
-    property: 'Departamento Providencia',
-    lastMessage: 'El técnico pasará mañana entre 10 y 12.',
-    timestamp: 'Ayer',
-    unread: 0,
-    online: false,
-    email: 'maria.lopez@inmobiliaria.com',
-    memberSince: 'Marzo 2022',
-  },
-  {
-    id: 'conv-3',
-    name: 'Soporte Leasefy',
-    avatar: '/images/avatars/avatar-3.jpg',
-    role: 'Sistema',
-    property: '',
-    lastMessage: 'Tu solicitud ha sido procesada correctamente.',
-    timestamp: 'Ayer',
-    unread: 0,
-    online: true,
-    email: 'soporte@leasefy.co',
-    memberSince: 'Siempre disponible',
-  },
-  {
-    id: 'conv-4',
-    name: 'Pedro Gonzalez',
-    avatar: '/images/avatars/avatar-4.jpg',
-    role: 'Propietario',
-    property: 'Casa Las Condes',
-    lastMessage: 'Te envío el inventario actualizado.',
-    timestamp: 'Lun',
-    unread: 1,
-    online: false,
-    email: 'pedro.gonzalez@email.com',
-    memberSince: 'Junio 2023',
-  },
-];
-
-const initialMessages: Record<string, Message[]> = {
-  'conv-1': [
-    {
-      id: 'msg-1',
-      senderId: 'other',
-      content:
-        'Hola María, ¿cómo estás? Quería consultarte sobre el pago del próximo mes.',
-      timestamp: '10:15',
-      read: true,
-    },
-    {
-      id: 'msg-2',
-      senderId: 'me',
-      content: 'Hola Nicolás! Todo bien, gracias. Sí, dime, ¿qué necesitas saber?',
-      timestamp: '10:18',
-      read: true,
-    },
-    {
-      id: 'msg-3',
-      senderId: 'other',
-      content: 'Quería confirmar si el monto será el mismo y la fecha de pago.',
-      timestamp: '10:20',
-      read: true,
-    },
-    {
-      id: 'msg-4',
-      senderId: 'me',
-      content:
-        'Sí, el monto es el mismo ($650.000) y el pago lo haré el día 5 como siempre.',
-      timestamp: '10:25',
-      read: true,
-    },
-    {
-      id: 'msg-5',
-      senderId: 'other',
-      content:
-        'Perfecto, también quería avisarte que el próximo mes viene el técnico a revisar la calefacción.',
-      timestamp: '10:28',
-      read: true,
-    },
-    {
-      id: 'msg-6',
-      senderId: 'me',
-      content: 'Genial, ¿ya tienen fecha definida? Para coordinar estar en casa.',
-      timestamp: '10:29',
-      read: true,
-    },
-    {
-      id: 'msg-7',
-      senderId: 'other',
-      content: 'Perfecto, quedamos así entonces. Gracias!',
-      timestamp: '10:30',
-      read: false,
-    },
-  ],
-  'conv-2': [
-    {
-      id: 'ml-1',
-      senderId: 'other',
-      content:
-        'Hola, te informo que reportamos el problema de la cañería al propietario.',
-      timestamp: '09:00',
-      read: true,
-    },
-    {
-      id: 'ml-2',
-      senderId: 'me',
-      content: 'Gracias María, ¿cuándo podrían enviar al técnico?',
-      timestamp: '09:30',
-      read: true,
-    },
-    {
-      id: 'ml-3',
-      senderId: 'other',
-      content: 'El técnico pasará mañana entre 10 y 12.',
-      timestamp: '14:00',
-      read: true,
-    },
-  ],
-  'conv-3': [
-    {
-      id: 'sa-1',
-      senderId: 'other',
-      content: 'Bienvenido a Leasefy. Tu cuenta ha sido creada exitosamente.',
-      timestamp: '09:00',
-      read: true,
-    },
-    {
-      id: 'sa-2',
-      senderId: 'other',
-      content: 'Tu solicitud ha sido procesada correctamente.',
-      timestamp: '10:00',
-      read: true,
-    },
-  ],
-  'conv-4': [
-    {
-      id: 'pg-1',
-      senderId: 'other',
-      content:
-        'Hola, soy Pedro. Quería coordinar la entrega del departamento.',
-      timestamp: '11:00',
-      read: true,
-    },
-    {
-      id: 'pg-2',
-      senderId: 'me',
-      content: 'Hola Pedro, claro. ¿Qué día le queda bien?',
-      timestamp: '11:30',
-      read: true,
-    },
-    {
-      id: 'pg-3',
-      senderId: 'other',
-      content: 'Te envío el inventario actualizado.',
-      timestamp: '16:00',
-      read: false,
-    },
-  ],
-};
-
-const autoReplies: Record<string, string[]> = {
-  'conv-1': [
-    'Perfecto, quedo atento entonces.',
-    'Gracias por la información.',
-    'Entendido, cualquier cosa te aviso.',
-    'Dale, nos coordinamos.',
-  ],
-  'conv-2': [
-    'Listo, te confirmo el horario.',
-    'Gracias, quedo pendiente.',
-    'Perfecto, nos vemos mañana entonces.',
-    'Entendido.',
-  ],
-  'conv-3': [],
-  'conv-4': [
-    'Perfecto, lo reviso.',
-    'Gracias por enviarlo.',
-    'Entendido, cualquier duda te escribo.',
-    'Listo.',
-  ],
-};
-
-function getTimeNow(): string {
-  const d = new Date();
-  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-}
 
 function getInitials(name: string): string {
   return name
@@ -252,26 +24,64 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function formatMessageTime(isoStr: string): string {
+  const date = new Date(isoStr);
+  return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ============================================================================
+// Loading skeletons
+// ============================================================================
+
+function ConversationsSkeleton() {
+  return (
+    <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="flex items-start gap-3 px-4 py-4 animate-pulse">
+          <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-28 bg-neutral-200 dark:bg-neutral-700 rounded" />
+              <div className="h-3 w-10 bg-neutral-200 dark:bg-neutral-700 rounded" />
+            </div>
+            <div className="h-3 w-36 bg-neutral-200 dark:bg-neutral-700 rounded" />
+            <div className="h-3 w-48 bg-neutral-200 dark:bg-neutral-700 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MessagesSkeleton() {
+  return (
+    <div className="space-y-4 p-6 animate-pulse">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-start' : 'justify-end')}>
+          <div className={cn(
+            'h-12 rounded-2xl',
+            i % 2 === 0
+              ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-md'
+              : 'w-2/5 bg-indigo-100 dark:bg-indigo-900/30 rounded-br-md'
+          )} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ============================================================================
 // Component
 // ============================================================================
 
-/**
- * Tenant Messages Page - Leasefy Brand Style
- */
 export default function MensajesPage() {
   const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  const { conversations, totalUnread, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
 
-  // Only show conversations if onboarding is complete
-  const [conversations, setConversations] =
-    useState<Conversation[]>(isOnboardingComplete ? initialConversations : []);
-  const [selectedId, setSelectedId] = useState('conv-1');
-  const [messagesMap, setMessagesMap] =
-    useState<Record<string, Message[]>>(initialMessages);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
-  const [searchQuery, setMagnifyingGlassQuery] = useState('');
-  const [replyCounters, setReplyCounters] = useState<Record<string, number>>({});
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
@@ -279,16 +89,24 @@ export default function MensajesPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
 
-  const selectedConversation = conversations.find((c) => c.id === selectedId)!;
-  const messages = messagesMap[selectedId] || [];
+  const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedApplicationId);
+
+  // Auto-select first conversation
+  useEffect(() => {
+    if (!selectedApplicationId && conversations.length > 0) {
+      setSelectedApplicationId(conversations[0].applicationId);
+    }
+  }, [conversations, selectedApplicationId]);
+
+  const selectedConversation: ChatConversation | undefined = conversations.find(
+    (c) => c.applicationId === selectedApplicationId,
+  );
 
   const filteredConversations = conversations.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.property.toLowerCase().includes(searchQuery.toLowerCase())
+      c.property.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -309,129 +127,44 @@ export default function MensajesPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectConversation = useCallback((id: string) => {
-    setSelectedId(id);
-    setShowMobileChat(true);
-    setShowInfoPanel(false);
-    setShowOptionsList(false);
-    setMessagesMap((prev) => {
-      const msgs = prev[id];
-      if (!msgs) return prev;
-      return {
-        ...prev,
-        [id]: msgs.map((m) =>
-          m.senderId === 'other' ? { ...m, read: true } : m
-        ),
-      };
-    });
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
-    );
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, []);
+  const handleSelectConversation = useCallback(
+    (conv: ChatConversation) => {
+      setSelectedApplicationId(conv.applicationId);
+      setShowMobileChat(true);
+      setShowInfoPanel(false);
+      setShowOptionsList(false);
+      markAsRead();
+      setTimeout(() => refetchConversations(), 500);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    },
+    [markAsRead, refetchConversations],
+  );
 
-  const handlePaperPlaneTiltMessage = useCallback(() => {
+  const handleSendMessage = useCallback(async () => {
     const text = messageText.trim();
-    if (!text) return;
-
-    const now = getTimeNow();
-    const newMsg: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: 'me',
-      content: text,
-      timestamp: now,
-      read: false,
-    };
-
-    setMessagesMap((prev) => ({
-      ...prev,
-      [selectedId]: [...(prev[selectedId] || []), newMsg],
-    }));
-
-    setConversations((prev) => {
-      const updated = prev.map((c) =>
-        c.id === selectedId ? { ...c, lastMessage: text, timestamp: now } : c
-      );
-      const target = updated.find((c) => c.id === selectedId)!;
-      return [target, ...updated.filter((c) => c.id !== selectedId)];
-    });
-
+    if (!text || isSending) return;
     setMessageText('');
+    await sendMessage(text);
+    refetchConversations();
+  }, [messageText, isSending, sendMessage, refetchConversations]);
 
-    const replies = autoReplies[selectedId];
-    if (replies && replies.length > 0) {
-      const idx = (replyCounters[selectedId] || 0) % replies.length;
-      const replyText = replies[idx];
-      setReplyCounters((prev) => ({ ...prev, [selectedId]: idx + 1 }));
-
-      const delay = 1000 + Math.random() * 2000;
-      setTimeout(() => {
-        const replyTime = getTimeNow();
-        const replyMsg: Message = {
-          id: `reply-${Date.now()}`,
-          senderId: 'other',
-          content: replyText,
-          timestamp: replyTime,
-          read: true,
-        };
-
-        setMessagesMap((prev) => ({
-          ...prev,
-          [selectedId]: [...(prev[selectedId] || []), replyMsg],
-        }));
-
-        setConversations((prev) => {
-          const updated = prev.map((c) =>
-            c.id === selectedId
-              ? { ...c, lastMessage: replyText, timestamp: replyTime }
-              : c
-          );
-          const target = updated.find((c) => c.id === selectedId)!;
-          return [target, ...updated.filter((c) => c.id !== selectedId)];
-        });
-
-        setMessagesMap((prev) => ({
-          ...prev,
-          [selectedId]: (prev[selectedId] || []).map((m) =>
-            m.senderId === 'me' ? { ...m, read: true } : m
-          ),
-        }));
-      }, delay);
-    }
-  }, [messageText, selectedId, replyCounters]);
-
-  // List Actions
   const handleArchive = () => {
     setShowOptionsList(false);
-    // In a real app, this would archive the conversation
     alert(locale === 'es'
-      ? `Conversación con ${selectedConversation.name} archivada`
-      : `Conversation with ${selectedConversation.name} archived`);
+      ? `Conversacion con ${selectedConversation?.name} archivada`
+      : `Conversation with ${selectedConversation?.name} archived`);
   };
 
   const handleMute = () => {
     setShowOptionsList(false);
     alert(locale === 'es'
-      ? `Notificaciones de ${selectedConversation.name} silenciadas`
-      : `Notifications from ${selectedConversation.name} muted`);
+      ? `Notificaciones de ${selectedConversation?.name} silenciadas`
+      : `Notifications from ${selectedConversation?.name} muted`);
   };
 
   const handleReport = () => {
     setShowOptionsList(false);
-    alert(locale === 'es' ? 'Conversación reportada' : 'Conversation reported');
-  };
-
-  const handleDelete = () => {
-    setShowOptionsList(false);
-    if (confirm(locale === 'es'
-      ? `¿Eliminar conversación con ${selectedConversation.name}?`
-      : `Delete conversation with ${selectedConversation.name}?`)) {
-      setConversations((prev) => prev.filter((c) => c.id !== selectedId));
-      const remaining = conversations.filter((c) => c.id !== selectedId);
-      if (remaining.length > 0) {
-        setSelectedId(remaining[0].id);
-      }
-    }
+    alert(locale === 'es' ? 'Conversacion reportada' : 'Conversation reported');
   };
 
   // Loading state
@@ -449,34 +182,6 @@ export default function MensajesPage() {
       <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="messages" />
-        </div>
-      </div>
-    );
-  }
-
-  // Show empty state if onboarding complete but no conversations
-  if (conversations.length === 0) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          {/* Header */}
-          <motion.header
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
-              {t('messages.title')}
-            </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-              {t('messages.subtitle')}
-            </p>
-          </motion.header>
-          <EmptyState
-            icon={ChatCircle}
-            title="No hay conversaciones"
-            description="Cuando te comuniques con propietarios sobre propiedades, tus conversaciones aparecerán aquí."
-          />
         </div>
       </div>
     );
@@ -523,19 +228,19 @@ export default function MensajesPage() {
             <div
               className={cn(
                 'w-full md:w-80 lg:w-96 border-r border-neutral-100 dark:border-neutral-700 flex flex-col bg-stone-50/50 dark:bg-[#0f0f10]/50',
-                showMobileChat && 'hidden md:flex'
+                showMobileChat && 'hidden md:flex',
               )}
             >
-              {/* MagnifyingGlass Header */}
+              {/* Search Header */}
               <div className="p-4 border-b border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
                 <div className="relative">
                   <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
-                    placeholder={locale === 'es' ? 'Buscar conversación...' : 'MagnifyingGlass conversation...'}
-                    aria-label={locale === 'es' ? 'Buscar conversación' : 'MagnifyingGlass conversation'}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={locale === 'es' ? 'Buscar conversacion...' : 'Search conversation...'}
+                    aria-label={locale === 'es' ? 'Buscar conversacion' : 'Search conversation'}
                     className="w-full h-11 pl-11 pr-4 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>
@@ -543,7 +248,9 @@ export default function MensajesPage() {
 
               {/* Conversations */}
               <div className="flex-1 overflow-y-auto">
-                {filteredConversations.length === 0 ? (
+                {isLoadingConversations ? (
+                  <ConversationsSkeleton />
+                ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                     <div className="w-14 h-14 rounded-full bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
                       <Chat className="w-6 h-6 text-neutral-400" />
@@ -554,7 +261,7 @@ export default function MensajesPage() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
-                        : (locale === 'es' ? 'Tus mensajes aparecerán aquí' : 'Your messages will appear here')}
+                        : (locale === 'es' ? 'Cuando te comuniques con propietarios, tus conversaciones apareceran aqui.' : 'When you communicate with landlords, your conversations will appear here.')}
                     </p>
                   </div>
                 ) : (
@@ -565,23 +272,18 @@ export default function MensajesPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        onClick={() =>
-                          handleSelectConversation(conversation.id)
-                        }
+                        onClick={() => handleSelectConversation(conversation)}
                         className={cn(
                           'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
-                          selectedId === conversation.id
+                          selectedApplicationId === conversation.applicationId
                             ? 'bg-white dark:bg-[#1a1a1c] border-l-2 border-l-indigo-500'
-                            : 'hover:bg-white/80 dark:hover:bg-[#1a1a1c]/80'
+                            : 'hover:bg-white/80 dark:hover:bg-[#1a1a1c]/80',
                         )}
                       >
                         <div className="relative flex-shrink-0">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm overflow-hidden">
                             {getInitials(conversation.name)}
                           </div>
-                          {conversation.online && (
-                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-[#1a1a1c] rounded-full" />
-                          )}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -589,37 +291,37 @@ export default function MensajesPage() {
                             <p
                               className={cn(
                                 'truncate text-sm',
-                                conversation.unread > 0
+                                conversation.unreadCount > 0
                                   ? 'font-semibold text-neutral-900 dark:text-white'
-                                  : 'font-medium text-neutral-900 dark:text-white'
+                                  : 'font-medium text-neutral-900 dark:text-white',
                               )}
                             >
                               {conversation.name}
                             </p>
                             <span className="text-xs text-neutral-400 flex-shrink-0 ml-2">
-                              {conversation.timestamp}
+                              {conversation.lastMessageTime}
                             </span>
                           </div>
                           <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-1">
                             {conversation.property
-                              ? `${conversation.role} • ${conversation.property}`
+                              ? `${conversation.role} · ${conversation.property}`
                               : conversation.role}
                           </p>
                           <p
                             className={cn(
                               'text-sm truncate',
-                              conversation.unread > 0
+                              conversation.unreadCount > 0
                                 ? 'text-neutral-900 dark:text-white font-medium'
-                                : 'text-neutral-500 dark:text-neutral-400'
+                                : 'text-neutral-500 dark:text-neutral-400',
                             )}
                           >
                             {conversation.lastMessage}
                           </p>
                         </div>
 
-                        {conversation.unread > 0 && (
+                        {conversation.unreadCount > 0 && (
                           <span className="w-5 h-5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
-                            {conversation.unread}
+                            {conversation.unreadCount}
                           </span>
                         )}
                       </motion.button>
@@ -633,379 +335,337 @@ export default function MensajesPage() {
             <div
               className={cn(
                 'flex-1 flex flex-col bg-white dark:bg-[#1a1a1c]',
-                !showMobileChat && 'hidden md:flex'
+                !showMobileChat && 'hidden md:flex',
               )}
             >
-              {/* Chat Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowMobileChat(false)}
-                    className="md:hidden p-2 -ml-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-400"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
-                  <div className="relative">
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
-                      {getInitials(selectedConversation.name)}
-                    </div>
-                    {selectedConversation.online && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#1a1a1c] rounded-full" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-neutral-900 dark:text-white">
-                      {selectedConversation.name}
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {selectedConversation.online ? (
-                        <span className="text-emerald-600 dark:text-emerald-400">{locale === 'es' ? 'En línea' : 'Online'}</span>
-                      ) : (
-                        locale === 'es' ? 'Desconectado' : 'Offline'
-                      )}
-                      {selectedConversation.property &&
-                        ` • ${selectedConversation.property}`}
-                    </p>
-                  </div>
+              {!selectedConversation ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <EmptyState
+                    icon={ChatCircle}
+                    title={locale === 'es' ? 'Sin mensajes' : 'No messages'}
+                    description={locale === 'es' ? 'Selecciona una conversacion para ver los mensajes.' : 'Select a conversation to view messages.'}
+                  />
                 </div>
-                <div className="flex items-center gap-1">
-                  {/* Info Button */}
-                  <button
-                    onClick={() => setShowInfoPanel(!showInfoPanel)}
-                    className={cn(
-                      'p-2.5 rounded-full transition-colors',
-                      showInfoPanel
-                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                    )}
-                    aria-label={locale === 'es' ? 'Información' : 'Information'}
-                  >
-                    <Info className="w-5 h-5" />
-                  </button>
+              ) : (
+                <>
+                  {/* Chat Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setShowMobileChat(false)}
+                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-400"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
+                        {getInitials(selectedConversation.name)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-neutral-900 dark:text-white">
+                          {selectedConversation.name}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {selectedConversation.role}
+                          {selectedConversation.property &&
+                            ` · ${selectedConversation.property}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setShowInfoPanel(!showInfoPanel)}
+                        className={cn(
+                          'p-2.5 rounded-full transition-colors',
+                          showInfoPanel
+                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]',
+                        )}
+                        aria-label={locale === 'es' ? 'Informacion' : 'Information'}
+                      >
+                        <Info className="w-5 h-5" />
+                      </button>
 
-                  {/* More Options Button */}
-                  <div className="relative" ref={optionsListRef}>
-                    <button
-                      onClick={() => setShowOptionsList(!showOptionsList)}
-                      className={cn(
-                        'p-2.5 rounded-full transition-colors',
-                        showOptionsList
-                          ? 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
-                          : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                      )}
-                      aria-label={locale === 'es' ? 'Más opciones' : 'More options'}
-                    >
-                      <DotsThreeVertical className="w-5 h-5" />
-                    </button>
-
-                    {/* Options Dropdown */}
-                    <AnimatePresence>
-                      {showOptionsList && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50"
+                      <div className="relative" ref={optionsListRef}>
+                        <button
+                          onClick={() => setShowOptionsList(!showOptionsList)}
+                          className={cn(
+                            'p-2.5 rounded-full transition-colors',
+                            showOptionsList
+                              ? 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
+                              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]',
+                          )}
+                          aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
                         >
+                          <DotsThreeVertical className="w-5 h-5" />
+                        </button>
+
+                        <AnimatePresence>
+                          {showOptionsList && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50"
+                            >
+                              <button
+                                onClick={handleArchive}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                              >
+                                <Archive className="w-4 h-4 text-neutral-400" />
+                                {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
+                              </button>
+                              <button
+                                onClick={handleMute}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                              >
+                                <BellSlash className="w-4 h-4 text-neutral-400" />
+                                {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
+                              </button>
+                              <button
+                                onClick={handleReport}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                              >
+                                <Flag className="w-4 h-4 text-neutral-400" />
+                                {locale === 'es' ? 'Reportar' : 'Report'}
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Chat Content */}
+                  <div className="flex-1 flex overflow-hidden">
+                    {/* Messages Area */}
+                    <div
+                      className={cn(
+                        'flex-1 flex flex-col',
+                        showInfoPanel && 'hidden lg:flex',
+                      )}
+                    >
+                      <div className="flex-1 overflow-y-auto p-6 bg-stone-50/50 dark:bg-[#0f0f10]/50">
+                        {isLoadingMessages ? (
+                          <MessagesSkeleton />
+                        ) : messages.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <div className="w-14 h-14 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
+                              <ChatCircle className="w-6 h-6 text-neutral-400" />
+                            </div>
+                            <p className="font-medium text-neutral-900 dark:text-white mb-1">
+                              {locale === 'es' ? 'Sin mensajes' : 'No messages'}
+                            </p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
+                              {locale === 'es'
+                                ? 'Envia un mensaje para iniciar la conversacion.'
+                                : 'Send a message to start the conversation.'}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <AnimatePresence initial={false}>
+                              {messages.map((message, index) => (
+                                <motion.div
+                                  key={message.id}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: index * 0.02 }}
+                                  className={cn(
+                                    'flex',
+                                    message.isMine ? 'justify-end' : 'justify-start',
+                                  )}
+                                >
+                                  <div
+                                    className={cn(
+                                      'max-w-[75%] px-4 py-3 rounded-2xl',
+                                      message.isMine
+                                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100 border border-indigo-200 dark:border-indigo-800/50 rounded-br-md'
+                                        : 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-md shadow-sm',
+                                    )}
+                                  >
+                                    <p className="text-sm leading-relaxed">{message.content}</p>
+                                    <div
+                                      className={cn(
+                                        'flex items-center justify-end gap-1.5 mt-1.5',
+                                        message.isMine
+                                          ? 'text-indigo-500 dark:text-indigo-400'
+                                          : 'text-neutral-400',
+                                      )}
+                                    >
+                                      <span className="text-[11px]">
+                                        {formatMessageTime(message.createdAt)}
+                                      </span>
+                                      {message.isMine &&
+                                        (message.readAt ? (
+                                          <Checks className="w-3.5 h-3.5 text-indigo-200" />
+                                        ) : (
+                                          <Check className="w-3.5 h-3.5" />
+                                        ))}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                      </div>
+
+                      {/* Message Input */}
+                      <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <button
+                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
+                            >
+                              <Paperclip className="w-5 h-5" />
+                            </button>
+                            <button
+                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
+                            >
+                              <Image className="w-5 h-5" />
+                            </button>
+                          </div>
+                          <div className="flex-1 relative">
+                            <input
+                              ref={inputRef}
+                              type="text"
+                              value={messageText}
+                              onChange={(e) => setMessageText(e.target.value)}
+                              onKeyDown={(e) =>
+                                e.key === 'Enter' && handleSendMessage()
+                              }
+                              placeholder={locale === 'es' ? 'Escribe un mensaje...' : 'Type a message...'}
+                              aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
+                              className="w-full h-12 pl-5 pr-12 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                            />
+                            <button
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                              aria-label="Emoji"
+                            >
+                              <Smiley className="w-5 h-5" />
+                            </button>
+                          </div>
                           <button
-                            onClick={handleArchive}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                            onClick={handleSendMessage}
+                            disabled={!messageText.trim() || isSending}
+                            aria-label={locale === 'es' ? 'Enviar mensaje' : 'Send message'}
+                            className={cn(
+                              'p-3 rounded-full transition-all',
+                              messageText.trim() && !isSending
+                                ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
+                                : 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed',
+                            )}
                           >
-                            <Archive className="w-4 h-4 text-neutral-400" />
-                            {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
+                            <PaperPlaneTilt className="w-5 h-5" />
                           </button>
-                          <button
-                            onClick={handleMute}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
-                          >
-                            <BellSlash className="w-4 h-4 text-neutral-400" />
-                            {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                          </button>
-                          <button
-                            onClick={handleReport}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
-                          >
-                            <Flag className="w-4 h-4 text-neutral-400" />
-                            {locale === 'es' ? 'Reportar' : 'Report'}
-                          </button>
-                          <div className="h-px bg-neutral-100 dark:bg-neutral-700 my-2" />
-                          <button
-                            onClick={handleDelete}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            <TrashSimple className="w-4 h-4" />
-                            {locale === 'es' ? 'Eliminar conversación' : 'Delete conversation'}
-                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info Panel */}
+                    <AnimatePresence>
+                      {showInfoPanel && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.2 }}
+                          className="w-full lg:w-80 border-l border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-y-auto"
+                        >
+                          {/* Panel Header */}
+                          <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-700">
+                            <h3 className="font-semibold text-neutral-900 dark:text-white">
+                              {locale === 'es' ? 'Informacion' : 'Information'}
+                            </h3>
+                            <button
+                              onClick={() => setShowInfoPanel(false)}
+                              className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Contact Info */}
+                          <div className="p-6">
+                            <div className="text-center mb-6">
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-2xl mx-auto mb-3">
+                                {getInitials(selectedConversation.name)}
+                              </div>
+                              <h4 className="font-semibold text-neutral-900 dark:text-white text-lg">
+                                {selectedConversation.name}
+                              </h4>
+                              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                                {selectedConversation.role}
+                              </p>
+                            </div>
+
+                            <div className="space-y-4">
+                              {selectedConversation.property && (
+                                <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
+                                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
+                                    <House className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+                                      {locale === 'es' ? 'Propiedad' : 'Property'}
+                                    </p>
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                      {selectedConversation.property}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {selectedConversation.email && (
+                                <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
+                                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
+                                    <Envelope className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+                                      {locale === 'es' ? 'Correo' : 'Email'}
+                                    </p>
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                      {selectedConversation.email}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-700">
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+                                {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
+                              </p>
+                              <div className="space-y-2">
+                                <button
+                                  onClick={handleMute}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                >
+                                  <BellSlash className="w-4 h-4 text-neutral-400" />
+                                  {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
+                                </button>
+                                <button
+                                  onClick={handleArchive}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                >
+                                  <Archive className="w-4 h-4 text-neutral-400" />
+                                  {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                </div>
-              </div>
-
-              {/* Main Chat Content */}
-              <div className="flex-1 flex overflow-hidden">
-                {/* Messages Area */}
-                <div
-                  className={cn(
-                    'flex-1 flex flex-col',
-                    showInfoPanel && 'hidden lg:flex'
-                  )}
-                >
-                  <div className="flex-1 overflow-y-auto p-6 bg-stone-50/50 dark:bg-[#0f0f10]/50">
-                    {/* Date Separator */}
-                    <div className="flex items-center justify-center mb-6">
-                      <span className="px-4 py-1.5 bg-white dark:bg-[#2a2a2c] text-xs text-neutral-500 dark:text-neutral-400 rounded-full shadow-sm border border-neutral-100 dark:border-neutral-700">
-                        {locale === 'es' ? 'Hoy' : 'Today'}
-                      </span>
-                    </div>
-
-                    {/* Messages */}
-                    <div className="space-y-4">
-                      {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                          <div className="w-14 h-14 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
-                            <ChatCircle className="w-6 h-6 text-neutral-400" />
-                          </div>
-                          <p className="font-medium text-neutral-900 dark:text-white mb-1">
-                            {locale === 'es' ? 'Sin mensajes' : 'No messages'}
-                          </p>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
-                            {locale === 'es'
-                              ? 'Envía un mensaje para iniciar la conversación.'
-                              : 'Send a message to start the conversation.'}
-                          </p>
-                        </div>
-                      ) : (
-                        <AnimatePresence initial={false}>
-                          {messages.map((message, index) => (
-                            <motion.div
-                              key={message.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.02 }}
-                              className={cn(
-                                'flex',
-                                message.senderId === 'me'
-                                  ? 'justify-end'
-                                  : 'justify-start'
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  'max-w-[75%] px-4 py-3 rounded-2xl',
-                                  message.senderId === 'me'
-                                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100 border border-indigo-200 dark:border-indigo-800/50 rounded-br-md'
-                                    : 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-md shadow-sm'
-                                )}
-                              >
-                                <p className="text-sm leading-relaxed">
-                                  {message.content}
-                                </p>
-                                <div
-                                  className={cn(
-                                    'flex items-center justify-end gap-1.5 mt-1.5',
-                                    message.senderId === 'me'
-                                      ? 'text-indigo-500 dark:text-indigo-400'
-                                      : 'text-neutral-400'
-                                  )}
-                                >
-                                  <span className="text-[11px]">
-                                    {message.timestamp}
-                                  </span>
-                                  {message.senderId === 'me' &&
-                                    (message.read ? (
-                                      <Checks className="w-3.5 h-3.5 text-indigo-200" />
-                                    ) : (
-                                      <Check className="w-3.5 h-3.5" />
-                                    ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                      )}
-                    </div>
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* Message Input */}
-                  <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
-                          aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
-                        >
-                          <Paperclip className="w-5 h-5" />
-                        </button>
-                        <button
-                          className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
-                          aria-label={locale === 'es' ? 'Enviar imagen' : 'PaperPlaneTilt image'}
-                        >
-                          <Image className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 relative">
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          value={messageText}
-                          onChange={(e) => setMessageText(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === 'Enter' && handlePaperPlaneTiltMessage()
-                          }
-                          placeholder={locale === 'es' ? 'Escribe un mensaje...' : 'Type a message...'}
-                          aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
-                          className="w-full h-12 pl-5 pr-12 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                        />
-                        <button
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                          aria-label="Emoji"
-                        >
-                          <Smiley className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={handlePaperPlaneTiltMessage}
-                        disabled={!messageText.trim()}
-                        aria-label={locale === 'es' ? 'Enviar mensaje' : 'PaperPlaneTilt message'}
-                        className={cn(
-                          'p-3 rounded-full transition-all',
-                          messageText.trim()
-                            ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
-                            : 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        )}
-                      >
-                        <PaperPlaneTilt className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info Panel */}
-                <AnimatePresence>
-                  {showInfoPanel && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.2 }}
-                      className="w-full lg:w-80 border-l border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-y-auto"
-                    >
-                      {/* Panel Header */}
-                      <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-700">
-                        <h3 className="font-semibold text-neutral-900 dark:text-white">
-                          {locale === 'es' ? 'Información' : 'Information'}
-                        </h3>
-                        <button
-                          onClick={() => setShowInfoPanel(false)}
-                          className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Contact Info */}
-                      <div className="p-6">
-                        {/* Avatar & Name */}
-                        <div className="text-center mb-6">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-2xl mx-auto mb-3">
-                            {getInitials(selectedConversation.name)}
-                          </div>
-                          <h4 className="font-semibold text-neutral-900 dark:text-white text-lg">
-                            {selectedConversation.name}
-                          </h4>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                            {selectedConversation.role}
-                          </p>
-                          {selectedConversation.online && (
-                            <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                              {locale === 'es' ? 'En línea' : 'Online'}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Details */}
-                        <div className="space-y-4">
-                          {selectedConversation.property && (
-                            <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
-                              <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
-                                <House className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  {locale === 'es' ? 'Propiedad' : 'Property'}
-                                </p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  {selectedConversation.property}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {selectedConversation.email && (
-                            <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
-                              <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
-                                <Envelope className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  {locale === 'es' ? 'Correo' : 'Email'}
-                                </p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  {selectedConversation.email}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {selectedConversation.memberSince && (
-                            <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
-                              <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
-                                <Calendar className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                                  {locale === 'es' ? 'Miembro desde' : 'Member since'}
-                                </p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  {selectedConversation.memberSince}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Quick Actions */}
-                        <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-700">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
-                            {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
-                          </p>
-                          <div className="space-y-2">
-                            <button
-                              onClick={handleMute}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
-                            >
-                              <BellSlash className="w-4 h-4 text-neutral-400" />
-                              {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                            </button>
-                            <button
-                              onClick={handleArchive}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
-                            >
-                              <Archive className="w-4 h-4 text-neutral-400" />
-                              {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

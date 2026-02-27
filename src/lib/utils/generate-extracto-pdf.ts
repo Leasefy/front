@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
-import type { ExtractoPropietario, CobroStatus } from '@/lib/types/inmobiliaria';
-import { MOCK_INMOBILIARIA_CONFIG, MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
+import type { ExtractoPropietario, CobroStatus, InmobiliariaConfig, Propietario } from '@/lib/types/inmobiliaria';
 
 /**
  * Format currency in Chilean Peso format
@@ -51,16 +50,17 @@ function getStatusLabel(status: CobroStatus): string {
 /**
  * Generate PDF for propietario extracto (owner statement)
  */
-export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): jsPDF {
+export function generateExtractoPropietarioPDF(
+  extracto: ExtractoPropietario,
+  config: Pick<InmobiliariaConfig, 'name' | 'nit' | 'address' | 'city' | 'phone' | 'email'>,
+  propietario?: Propietario | null,
+): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'letter' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
   let y = 20;
-
-  // Get propietario for additional details
-  const propietario = MOCK_PROPIETARIOS.find((p) => p.id === extracto.propietarioId);
 
   // Helper to check if we need a new page
   const checkPage = (needed: number) => {
@@ -80,18 +80,18 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 64, 175); // indigo-700
-  doc.text(MOCK_INMOBILIARIA_CONFIG.name, margin, y);
+  doc.text(config.name, margin, y);
   y += 5;
 
   // Company details
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
-  doc.text(`NIT: ${MOCK_INMOBILIARIA_CONFIG.nit}`, margin, y);
+  doc.text(`NIT: ${config.nit}`, margin, y);
   y += 3.5;
-  doc.text(`${MOCK_INMOBILIARIA_CONFIG.address}, ${MOCK_INMOBILIARIA_CONFIG.city}`, margin, y);
+  doc.text(`${config.address}, ${config.city}`, margin, y);
   y += 3.5;
-  doc.text(`${MOCK_INMOBILIARIA_CONFIG.phone} | ${MOCK_INMOBILIARIA_CONFIG.email}`, margin, y);
+  doc.text(`${config.phone} | ${config.email}`, margin, y);
   y += 8;
 
   // Divider line
@@ -396,7 +396,7 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(130);
   doc.text(
-    `${MOCK_INMOBILIARIA_CONFIG.name} - NIT ${MOCK_INMOBILIARIA_CONFIG.nit}`,
+    `${config.name} - NIT ${config.nit}`,
     pageWidth / 2,
     footerY,
     { align: 'center' }
@@ -414,8 +414,12 @@ export function generateExtractoPropietarioPDF(extracto: ExtractoPropietario): j
 /**
  * Download extracto as PDF file
  */
-export function downloadExtractoPDF(extracto: ExtractoPropietario): void {
-  const doc = generateExtractoPropietarioPDF(extracto);
+export function downloadExtractoPDF(
+  extracto: ExtractoPropietario,
+  config: Pick<InmobiliariaConfig, 'name' | 'nit' | 'address' | 'city' | 'phone' | 'email'>,
+  propietario?: Propietario | null,
+): void {
+  const doc = generateExtractoPropietarioPDF(extracto, config, propietario);
   const safeFileName = extracto.propietarioName
     .replace(/[^a-zA-Z0-9\s]/g, '')
     .replace(/\s+/g, '-')

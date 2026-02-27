@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
-  getConsignacionById,
-  getPropietarioById,
-  getAgenteById,
-} from '@/lib/data/mock-inmobiliaria';
+  useConsignacion,
+  usePropietario,
+  useAgente,
+} from '@/lib/hooks/useInmobiliaria';
 import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
 
 // Components
@@ -158,19 +158,13 @@ export default function ConsignacionDetailPage() {
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
 
   // Fetch data
-  const initialConsignacion = useMemo(() => getConsignacionById(consignacionId), [consignacionId]);
+  const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
 
   // Use local state for consignacion to allow updates after edit
-  const consignacion = consignacionData || initialConsignacion;
+  const consignacion = consignacionData || fetchedConsignacion;
 
-  const propietario = useMemo(
-    () => (consignacion ? getPropietarioById(consignacion.propietarioId) : undefined),
-    [consignacion]
-  );
-  const agente = useMemo(
-    () => (consignacion ? getAgenteById(consignacion.agenteId) : undefined),
-    [consignacion]
-  );
+  const { propietario } = usePropietario(consignacion?.propietarioId);
+  const { agente } = useAgente(consignacion?.agenteId);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -322,7 +316,7 @@ export default function ConsignacionDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <PropietarioSection propietario={propietario} />
+            <PropietarioSection propietario={propietario ?? undefined} />
           </motion.div>
 
           <motion.div
@@ -331,7 +325,7 @@ export default function ConsignacionDetailPage() {
             transition={{ delay: 0.2 }}
           >
             <AgenteSection
-              agente={agente}
+              agente={agente ?? undefined}
               commissionPercent={consignacion.commissionPercent}
               onReassign={handleReassignAgent}
             />

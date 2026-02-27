@@ -5,10 +5,10 @@ import { Calendar, CreditCard, ArrowsClockwise, ClipboardText } from '@phosphor-
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import type { UpcomingEvent } from '@/lib/data/mock-dashboard';
+import type { DashboardUpcomingEvent } from '@/lib/api/landlord.types';
 
 interface UpcomingEventsCardProps {
-  events: UpcomingEvent[];
+  events: DashboardUpcomingEvent[];
   className?: string;
   maxEvents?: number;
 }
@@ -45,7 +45,7 @@ function formatDate(dateStr: string, locale = 'es'): string {
 }
 
 interface EventItemProps {
-  event: UpcomingEvent;
+  event: DashboardUpcomingEvent;
 }
 
 function EventItem({ event }: EventItemProps) {

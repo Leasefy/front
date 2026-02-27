@@ -35,7 +35,7 @@ import {
   getRenovacionStatusLabel,
   formatCurrency,
 } from '@/lib/types/inmobiliaria';
-import { getCurrentIPC, calculateNewRent } from '@/lib/data/mock-inmobiliaria';
+import { getCurrentIPC, calculateNewRent } from '@/lib/constants/inmobiliaria-data';
 
 // ============================================================================
 // Types

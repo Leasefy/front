@@ -6,6 +6,7 @@ import { Sparkle, CaretLeft, CaretRight, ArrowUpRight, Info, TrendUp } from '@ph
 
 import { cn } from '@/lib/utils';
 import { useProperties } from '@/lib/hooks/useProperties';
+import { useRecommendations } from '@/lib/hooks/useRecommendations';
 import {
   useTenantProfile,
   RISK_LEVEL_COLORS,
@@ -39,14 +40,20 @@ export function RecommendedProperties({
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch properties from API
-  const { properties: allProperties } = useProperties({ limit: 100 });
+  // Try backend recommendations first
+  const { recommendations: apiRecommendations, source } = useRecommendations(limit);
 
-  // Calculate recommendations
+  // Fetch properties for client-side fallback
+  const { properties: allProperties } = useProperties({ limit: source === 'client' ? 100 : 0 });
+
+  // Use API recommendations if available, otherwise compute client-side
   const recommendations = useMemo(() => {
+    if (source === 'api' && apiRecommendations.length > 0) {
+      return apiRecommendations;
+    }
     if (!profile || allProperties.length === 0) return [];
     return getRecommendedProperties(allProperties, profile, limit);
-  }, [profile, allProperties, limit]);
+  }, [source, apiRecommendations, profile, allProperties, limit]);
 
   // Scroll handlers
   const scroll = (direction: 'left' | 'right') => {

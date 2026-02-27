@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { CaretLeft, Buildings } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
-import { MOCK_PROPIETARIOS, MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
+import { usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 
 export default function NuevaConsignacionPage() {
   const { t } = useI18n();
+  const { propietarios } = usePropietarios();
+  const { agentes } = useAgentes();
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#0c0c0d]">
@@ -41,8 +43,8 @@ export default function NuevaConsignacionPage() {
 
         {/* Wizard */}
         <ConsignacionWizard
-          propietarios={MOCK_PROPIETARIOS}
-          agentes={MOCK_AGENTES}
+          propietarios={propietarios}
+          agentes={agentes}
         />
       </div>
     </div>

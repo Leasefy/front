@@ -3,8 +3,7 @@
  * Wraps apiClient for application-specific operations
  */
 
-import { apiClient } from './client';
-import { getSupabase } from '@/lib/supabase/client';
+import { apiClient, getAccessToken } from './client';
 import type {
   BackendApplication,
   BackendDocument,
@@ -12,8 +11,30 @@ import type {
   PaginatedApplications,
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
+import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+
+// ============================================================================
+// Tenant Application View (display type for tenant pages)
+// ============================================================================
+
+export interface TenantApplicationView {
+  id: string;
+  propertyId: string;
+  status: TenantApplicationStatus;
+  trackingCode: string;
+  submittedAt: string;
+  updatedAt: string;
+  property: {
+    id: string;
+    title: string;
+    thumbnail: string;
+    city: string;
+    neighborhood: string;
+    monthlyRent: number;
+  } | null;
+}
 
 // ============================================================================
 // Status mapping
@@ -27,6 +48,17 @@ const STATUS_MAP: Record<string, Application['status']> = {
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'rejected',
+};
+
+const STATUS_TO_TENANT_MAP: Record<string, TenantApplicationStatus> = {
+  DRAFT: 'submitted',
+  SUBMITTED: 'submitted',
+  UNDER_REVIEW: 'under_review',
+  INFO_REQUESTED: 'under_review',
+  PRE_APPROVED: 'pre_approved',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  WITHDRAWN: 'withdrawn',
 };
 
 // ============================================================================
@@ -82,6 +114,32 @@ export function mapBackendApplication(ba: BackendApplication): Application {
   };
 }
 
+function generateTrackingCode(id: string): string {
+  return 'AF-' + id.replace(/-/g, '').slice(0, 6).toUpperCase();
+}
+
+function mapToTenantView(ba: BackendApplication): TenantApplicationView {
+  const firstImage = ba.property?.images?.[0];
+  return {
+    id: ba.id,
+    propertyId: ba.propertyId,
+    status: STATUS_TO_TENANT_MAP[ba.status] ?? 'submitted',
+    trackingCode: generateTrackingCode(ba.id),
+    submittedAt: ba.createdAt,
+    updatedAt: ba.updatedAt,
+    property: ba.property
+      ? {
+          id: ba.property.id,
+          title: ba.property.title,
+          thumbnail: firstImage?.url || '/placeholder-property.jpg',
+          city: ba.property.city,
+          neighborhood: ba.property.neighborhood,
+          monthlyRent: ba.property.monthlyRent,
+        }
+      : null,
+  };
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -99,10 +157,22 @@ export const applicationsApi = {
     return result.map(mapBackendApplication);
   },
 
+  /** Get my applications mapped for tenant display pages */
+  async getMineForDisplay(): Promise<TenantApplicationView[]> {
+    const result = await apiClient.get<BackendApplication[]>('/applications/mine');
+    return result.map(mapToTenantView);
+  },
+
   /** Get a single application by ID */
   async getById(id: string): Promise<Application> {
     const ba = await apiClient.get<BackendApplication>(`/applications/${id}`);
     return mapBackendApplication(ba);
+  },
+
+  /** Get a single application mapped for tenant display */
+  async getByIdForDisplay(id: string): Promise<TenantApplicationView> {
+    const ba = await apiClient.get<BackendApplication>(`/applications/${id}`);
+    return mapToTenantView(ba);
   },
 
   /** Get applications for a property (landlord view) */
@@ -128,9 +198,7 @@ export const applicationsApi = {
     file: File,
     type: string
   ): Promise<BackendDocument> {
-    const supabase = getSupabase();
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = getAccessToken();
 
     const formData = new FormData();
     formData.append('file', file);

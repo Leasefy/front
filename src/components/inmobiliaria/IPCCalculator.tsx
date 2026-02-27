@@ -24,7 +24,7 @@ import {
   Percent,
   Link as LinkIcon,
 } from '@phosphor-icons/react';
-import { IPC_HISTORICAL, getCurrentIPC, calculateNewRent, type IPCRecord } from '@/lib/data/mock-inmobiliaria';
+import { IPC_HISTORICAL, getCurrentIPC, calculateNewRent, type IPCRecord } from '@/lib/constants/inmobiliaria-data';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 

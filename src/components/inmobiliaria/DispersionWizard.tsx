@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -24,14 +24,14 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { Dispersion, Cobro, DispersionItem, DispersionStatus } from '@/lib/types/inmobiliaria';
+import type { Dispersion, Cobro, DispersionItem, DispersionStatus, Propietario, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
-  MOCK_COBROS,
-  MOCK_PROPIETARIOS,
-  MOCK_CONSIGNACIONES,
-  MOCK_DISPERSIONES,
-} from '@/lib/data/mock-inmobiliaria';
+  useCobros,
+  usePropietarios,
+  useConsignaciones,
+  useDispersiones,
+} from '@/lib/hooks/useInmobiliaria';
 import { ComisionDesglose } from './ComisionDesglose';
 
 interface DispersionWizardProps {
@@ -114,7 +114,11 @@ function formatMonth(month: string): string {
 /**
  * Group cobros by propietario and calculate commissions
  */
-function calculateDispersionDrafts(cobros: Cobro[]): DispersionDraft[] {
+function calculateDispersionDrafts(
+  cobros: Cobro[],
+  propietarios: Propietario[],
+  consignaciones: Consignacion[],
+): DispersionDraft[] {
   // Group paid cobros by propietario
   const grouped = cobros
     .filter((c) => c.status === 'paid')
@@ -129,10 +133,10 @@ function calculateDispersionDrafts(cobros: Cobro[]): DispersionDraft[] {
 
   // Calculate drafts
   return Object.entries(grouped).map(([propietarioId, propCobros]) => {
-    const propietario = MOCK_PROPIETARIOS.find((p) => p.id === propietarioId);
+    const propietario = propietarios.find((p) => p.id === propietarioId);
 
     const items = propCobros.map((cobro) => {
-      const consignacion = MOCK_CONSIGNACIONES.find((c) => c.id === cobro.consignacionId);
+      const consignacion = consignaciones.find((c) => c.id === cobro.consignacionId);
       const commissionPercent = consignacion?.commissionPercent || 10;
       const commissionAmount = Math.round(cobro.paidAmount * (commissionPercent / 100));
       const netAmount = cobro.paidAmount - commissionAmount;
@@ -176,36 +180,45 @@ export function DispersionWizard({
 
   const recentMonths = useMemo(() => getRecentMonths(12), []);
 
-  // Wizard state
-  const [state, setState] = useState<WizardState>(() => {
-    const month = initialMonth || getCurrentMonth();
-    const cobrosRecibidos = MOCK_COBROS.filter(
-      (c) => c.month === month && c.status === 'paid'
-    );
-    const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos);
+  // Fetch data from API
+  const { cobros: allCobros } = useCobros();
+  const { propietarios } = usePropietarios();
+  const { consignaciones } = useConsignaciones();
+  const { dispersiones: allDispersiones } = useDispersiones();
 
-    return {
-      month,
-      cobrosRecibidos,
-      dispersionDrafts,
-      selectedForApproval: [],
-      generatedDispersiones: [],
-    };
+  // Wizard state
+  const [state, setState] = useState<WizardState>({
+    month: initialMonth || getCurrentMonth(),
+    cobrosRecibidos: [],
+    dispersionDrafts: [],
+    selectedForApproval: [],
+    generatedDispersiones: [],
   });
+
+  // Update drafts when data loads or month changes
+  useEffect(() => {
+    if (allCobros.length > 0) {
+      const cobrosRecibidos = allCobros.filter(
+        (c) => c.month === state.month && c.status === 'paid'
+      );
+      const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
+      setState((prev) => ({ ...prev, cobrosRecibidos, dispersionDrafts }));
+    }
+  }, [allCobros, propietarios, consignaciones, state.month]);
 
   // Check if dispersiones already exist for the month
   const existingDispersiones = useMemo(() => {
-    return MOCK_DISPERSIONES.filter((d) => d.month === state.month);
-  }, [state.month]);
+    return allDispersiones.filter((d) => d.month === state.month);
+  }, [state.month, allDispersiones]);
 
   const hasExistingDispersiones = existingDispersiones.length > 0;
 
   // Update cobros when month changes
   const handleMonthChange = useCallback((month: string) => {
-    const cobrosRecibidos = MOCK_COBROS.filter(
+    const cobrosRecibidos = allCobros.filter(
       (c) => c.month === month && c.status === 'paid'
     );
-    const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos);
+    const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
 
     setState((prev) => ({
       ...prev,
@@ -215,7 +228,7 @@ export function DispersionWizard({
       selectedForApproval: [],
       generatedDispersiones: [],
     }));
-  }, []);
+  }, [allCobros, propietarios, consignaciones]);
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -240,7 +253,7 @@ export function DispersionWizard({
   // Generate dispersiones from drafts
   const generateDispersiones = useCallback(() => {
     const newDispersiones: Dispersion[] = state.dispersionDrafts.map((draft, index) => {
-      const propietario = MOCK_PROPIETARIOS.find((p) => p.id === draft.propietarioId);
+      const propietario = propietarios.find((p) => p.id === draft.propietarioId);
 
       return {
         id: `disp-gen-${state.month}-${index + 1}`,
@@ -426,7 +439,7 @@ export function DispersionWizard({
             <div className="grid grid-cols-3 gap-3">
               {recentMonths.map((month) => {
                 const isSelected = state.month === month.value;
-                const hasExisting = MOCK_DISPERSIONES.some(
+                const hasExisting = allDispersiones.some(
                   (d) => d.month === month.value
                 );
 

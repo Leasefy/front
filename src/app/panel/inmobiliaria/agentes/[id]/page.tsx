@@ -12,10 +12,10 @@ import {
   Clock,
 } from '@phosphor-icons/react';
 import {
-  getAgenteById,
-  getConsignacionesForAgente,
-  getPipelineItemsForAgente,
-} from '@/lib/data/mock-inmobiliaria';
+  useAgente,
+  useAgenteConsignaciones,
+  useAgentePipeline,
+} from '@/lib/hooks/useInmobiliaria';
 
 // Components
 import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
@@ -33,15 +33,9 @@ export default function AgenteDetailPage() {
   const agenteId = params.id as string;
 
   // Fetch data
-  const agente = useMemo(() => getAgenteById(agenteId), [agenteId]);
-  const consignaciones = useMemo(
-    () => (agente ? getConsignacionesForAgente(agenteId) : []),
-    [agente, agenteId]
-  );
-  const pipelineItems = useMemo(
-    () => (agente ? getPipelineItemsForAgente(agenteId) : []),
-    [agente, agenteId]
-  );
+  const { agente } = useAgente(agenteId);
+  const { consignaciones } = useAgenteConsignaciones(agenteId);
+  const { pipelineItems } = useAgentePipeline(agenteId);
 
   // Handlers
   const handleEdit = useCallback(() => {

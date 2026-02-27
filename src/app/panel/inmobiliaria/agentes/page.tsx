@@ -20,7 +20,7 @@ import {
   UsersThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
+import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
@@ -42,6 +42,7 @@ const ITEMS_PER_PAGE = 6;
 export default function AgentesPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const { agentes: allAgentes } = useAgentes();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
     { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
@@ -61,7 +62,7 @@ export default function AgentesPage() {
 
   // Filter agentes
   const filteredAgentes = useMemo(() => {
-    let result = [...MOCK_AGENTES];
+    let result = [...allAgentes];
 
     // Search filter
     if (filters.search) {
@@ -98,17 +99,17 @@ export default function AgentesPage() {
     });
 
     return result;
-  }, [filters]);
+  }, [filters, allAgentes]);
 
   // Calculate stats from all agentes (not filtered)
   const stats = useMemo(() => {
-    const total = MOCK_AGENTES.length;
-    const active = MOCK_AGENTES.filter((a) => a.status === 'active').length;
-    const closedThisMonth = MOCK_AGENTES.reduce((sum, a) => sum + a.metrics.closedThisMonth, 0);
-    const commissionsThisMonth = MOCK_AGENTES.reduce((sum, a) => sum + a.metrics.commissionsThisMonth, 0);
+    const total = allAgentes.length;
+    const active = allAgentes.filter((a) => a.status === 'active').length;
+    const closedThisMonth = allAgentes.reduce((sum, a) => sum + a.metrics.closedThisMonth, 0);
+    const commissionsThisMonth = allAgentes.reduce((sum, a) => sum + a.metrics.commissionsThisMonth, 0);
 
     return { total, active, closedThisMonth, commissionsThisMonth };
-  }, []);
+  }, [allAgentes]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAgentes.length / ITEMS_PER_PAGE);
@@ -125,11 +126,11 @@ export default function AgentesPage() {
   }, []);
 
   // Handlers
-  const handleView = useCallback((agente: typeof MOCK_AGENTES[0]) => {
+  const handleView = useCallback((agente: typeof allAgentes[0]) => {
     router.push(`/panel/inmobiliaria/agentes/${agente.id}`);
   }, [router]);
 
-  const handleEdit = useCallback((agente: typeof MOCK_AGENTES[0]) => {
+  const handleEdit = useCallback((agente: typeof allAgentes[0]) => {
     toast.info(t('inmobiliaria.agentes.toasts.editTitle', { name: agente.name }), {
       description: t('inmobiliaria.agentes.toasts.editDesc'),
     });
@@ -315,7 +316,7 @@ export default function AgentesPage() {
               <AgenteFilters
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
-                agentes={MOCK_AGENTES}
+                agentes={allAgentes}
               />
 
               {/* Content */}
@@ -423,7 +424,7 @@ export default function AgentesPage() {
               exit={{ opacity: 0 }}
               className="p-4"
             >
-              <AgenteLeaderboard agentes={MOCK_AGENTES} />
+              <AgenteLeaderboard agentes={allAgentes} />
             </motion.div>
           )}
 
@@ -435,7 +436,7 @@ export default function AgentesPage() {
               exit={{ opacity: 0 }}
               className="p-4"
             >
-              <AgenteWorkloadChart agentes={MOCK_AGENTES} />
+              <AgenteWorkloadChart agentes={allAgentes} />
             </motion.div>
           )}
         </AnimatePresence>

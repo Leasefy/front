@@ -3,8 +3,7 @@
  * Endpoints for fetching, uploading, downloading, and deleting documents
  */
 
-import { apiClient } from './client';
-import { getSupabase } from '@/lib/supabase/client';
+import { apiClient, getAccessToken } from './client';
 import type { BackendDocumentFull, UploadDocumentDto } from './documents.types';
 import type { BackendDocument } from './applications.types';
 
@@ -29,11 +28,11 @@ export interface DocumentItem {
 function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
   return {
     id: bd.id,
-    type: bd.type,
-    fileName: bd.fileName,
-    url: bd.url,
-    mimeType: bd.mimeType,
-    size: bd.size,
+    type: bd.type ?? 'other',
+    fileName: bd.fileName ?? 'documento',
+    url: bd.url ?? '',
+    mimeType: bd.mimeType ?? 'application/octet-stream',
+    size: bd.size ?? 0,
     verified: 'verified' in bd ? !!bd.verified : false,
     createdAt: bd.createdAt,
     applicationId: bd.applicationId,
@@ -59,19 +58,18 @@ export const documentsApi = {
     return docs.map(mapDocument);
   },
 
-  /** Get documents for a candidate (by candidateId which maps to applicationId) */
+  /** Get documents for a candidate (applicationId) via the application documents endpoint */
   async getByCandidateApplication(candidateId: string): Promise<DocumentItem[]> {
+    // Backend: GET /applications/:applicationId/documents
     const docs = await apiClient.get<BackendDocument[]>(
-      `/candidates/${candidateId}/documents`
+      `/applications/${candidateId}/documents`
     );
     return docs.map(mapDocument);
   },
 
   /** Upload a general document (multipart) */
   async upload(dto: UploadDocumentDto): Promise<DocumentItem> {
-    const supabase = getSupabase();
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = getAccessToken();
 
     const formData = new FormData();
     formData.append('file', dto.file);

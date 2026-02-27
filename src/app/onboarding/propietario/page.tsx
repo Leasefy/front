@@ -135,15 +135,21 @@ function OnboardingPropietarioContent() {
       const lastName = nameParts.slice(1).join(' ') || firstName
 
       // Call backend onboarding endpoint
+      // Strip spaces from phone — backend expects 3XXXXXXXXX or +573XXXXXXXXX
+      const rawPhone = data.phone?.replace(/\s/g, '') || ''
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
-        phone: data.phone || undefined,
+        phone: rawPhone.length >= 10 ? rawPhone : undefined,
         userType: 'LANDLORD',
       })
 
       // Refresh user in auth context so role/onboardingCompleted updates
-      await refreshUser()
+      // Fire-and-forget: don't await because supabase.auth.getSession() can hang
+      // when called right after a state change. The critical API call already succeeded.
+      refreshUser().catch((err) =>
+        console.warn('refreshUser failed after onboarding (non-blocking):', err)
+      )
 
       // Save to localStorage for sidebar progress display
       const completionData = {
@@ -175,6 +181,15 @@ function OnboardingPropietarioContent() {
   const handleSkip = () => {
     router.push(isAuthenticated ? (returnUrl || '/panel') : '/')
   }
+
+  // Auto-redirect after onboarding completes
+  useEffect(() => {
+    if (isComplete) {
+      const destination = returnUrl || '/panel'
+      const timer = setTimeout(() => router.push(destination), 2500)
+      return () => clearTimeout(timer)
+    }
+  }, [isComplete, returnUrl, router])
 
   // Success Screen
   if (isComplete) {

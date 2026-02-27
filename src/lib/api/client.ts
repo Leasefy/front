@@ -1,6 +1,22 @@
-import { getSupabase } from '@/lib/supabase/client'
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
+
+// ============================================================================
+// Token store — written by AuthProvider, read by apiClient
+// Avoids calling supabase.auth.getSession() on every request (which hangs
+// when invoked right after onAuthStateChange).
+// ============================================================================
+
+let _accessToken: string | null = null
+
+/** Called by AuthProvider whenever the session changes */
+export function setAccessToken(token: string | null) {
+  _accessToken = token
+}
+
+/** Get the current stored token (for external use) */
+export function getAccessToken(): string | null {
+  return _accessToken
+}
 
 export class ApiError extends Error {
   constructor(
@@ -12,28 +28,26 @@ export class ApiError extends Error {
   }
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const supabase = getSupabase()
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-
+function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
+  if (_accessToken) {
+    headers['Authorization'] = `Bearer ${_accessToken}`
   }
 
   return headers
 }
 
 async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
+  const url = `${BACKEND_URL}${path}`
+
   const headers: Record<string, string> = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    : await getAuthHeaders()
+    : getAuthHeaders()
 
-  const res = await fetch(`${BACKEND_URL}${path}`, {
+  const res = await fetch(url, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -48,12 +62,17 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
   }
 
-  // Handle 204 No Content
+  // Handle empty responses (204 No Content, 201 with no body, etc.)
   if (res.status === 204) {
     return undefined as T
   }
 
-  return res.json()
+  const text = await res.text()
+  if (!text) {
+    return undefined as T
+  }
+
+  return JSON.parse(text)
 }
 
 export const apiClient = {

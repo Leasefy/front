@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { SquaresFour, House, FileMagnifyingGlass, CreditCard, FileText, Chat } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -30,6 +30,7 @@ function useTenantNavItems() {
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
     { label: t('nav.myRental'), href: '/inquilino/arriendo', icon: House },
     { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
+    { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
     { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
     { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: 2 },

@@ -162,6 +162,12 @@ function PropiedadesContent() {
     return result;
   }, [apiProperties, selectedBedrooms, sortBy]);
 
+  // Properties with valid coordinates for the map (exclude lat/lng 0,0 = null from backend)
+  const mappableProperties = useMemo(
+    () => filteredProperties.filter(p => p.latitude !== 0 || p.longitude !== 0),
+    [filteredProperties]
+  );
+
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
   const hasActiveFunnels = selectedCity || selectedBedrooms || selectedTextT || selectedPrice;
 
@@ -455,7 +461,7 @@ function PropiedadesContent() {
         >
           <PropertyMap
             key={mapKey}
-            properties={filteredProperties}
+            properties={mappableProperties}
             selectedPropertyId={selectedPropertyId}
             hoveredPropertyId={hoveredPropertyId}
             onPropertySelect={handlePropertySelect}

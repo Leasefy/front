@@ -7,11 +7,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { useLandlordProperties, useLandlordDashboard } from '@/lib/hooks/useLandlord';
-import { getRecentActivities } from '@/lib/data/mock-activity';
-import { getDashboardData } from '@/lib/data/mock-dashboard';
-import { getUpcomingVisits } from '@/lib/data/mock-visits';
+import { useVisits } from '@/lib/hooks/useVisits';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit } from '@/lib/types/visit';
 import { useAuth } from '@/lib/auth';
@@ -21,9 +20,9 @@ import { PlanDetailSheet, DetailSection } from '@/components/ui/plan/PlanDetailS
 import { SetupDashboard } from '@/components/panel/SetupDashboard';
 import { LandlordDashboardEmpty } from '@/components/panel/LandlordDashboardEmpty';
 import type { LandlordProperty } from '@/lib/types/landlord';
-import type { UrgentAction, UpcomingEvent } from '@/lib/data/mock-dashboard';
+import type { DashboardUrgentAction, DashboardUpcomingEvent, DashboardData } from '@/lib/api/landlord.types';
 
-const ACTION_ICONS: Record<UrgentAction['type'], React.ElementType> = {
+const ACTION_ICONS: Record<DashboardUrgentAction['type'], React.ElementType> = {
   signature: FileText,
   late_payment: CreditCard,
   pending_review: UserCheck,
@@ -31,7 +30,7 @@ const ACTION_ICONS: Record<UrgentAction['type'], React.ElementType> = {
   pending_visit: CalendarBlank,
 };
 
-function UrgentActionsBanner({ actions }: { actions: UrgentAction[] }) {
+function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) {
   const [expanded, setExpanded] = useState(false);
   const { t } = useI18n();
 
@@ -128,6 +127,11 @@ export default function PanelPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
+  const { getUpcoming: getUpcomingVisitsFromApi } = useVisits();
+
+  // ALL hooks must be called before any conditional returns (React rules of hooks)
+  const { properties: apiProperties, isLoading: propertiesLoading } = useLandlordProperties();
+  const { dashboard, isLoading: dashboardLoading } = useLandlordDashboard();
 
   // Check if coming from onboarding or if user hasn't completed onboarding
   const isSetupMode = searchParams.get('setup') === 'true';
@@ -173,33 +177,23 @@ export default function PanelPage() {
     router.replace('/panel');
   };
 
-  // Loading state while checking onboarding status
-  if (isOnboardingComplete === null) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Show empty state if onboarding is not complete
-  if (!isOnboardingComplete) {
-    return <LandlordDashboardEmpty />;
-  }
-
-  // Show setup dashboard if in setup mode
-  if (showSetupDashboard) {
-    return <SetupDashboard onDismiss={handleDismissSetup} />;
-  }
-
-  // Real API data for properties
-  const { properties: apiProperties, isLoading: propertiesLoading } = useLandlordProperties();
   const properties = apiProperties;
+  const upcomingVisits = getUpcomingVisitsFromApi();
 
-  // These still use mock data (will be migrated in later phases)
-  const recentActivities = getRecentActivities(5);
-  const dashboardData = getDashboardData();
-  const upcomingVisits = getUpcomingVisits();
+  // Show empty/setup state ONLY after API has finished loading and returned 0 properties.
+  // While loading, always show the dashboard layout with skeletons (never the empty state).
+  const apiFinished = !propertiesLoading;
+  const hasNoProperties = apiFinished && properties.length === 0;
+
+  if (hasNoProperties) {
+    // Empty state only when we're sure there are no properties
+    if (!isOnboardingComplete) {
+      return <LandlordDashboardEmpty />;
+    }
+    if (showSetupDashboard) {
+      return <SetupDashboard onDismiss={handleDismissSetup} />;
+    }
+  }
 
   // Calculate risk distribution for properties
   const calculateRiskDistribution = (property: LandlordProperty) => {
@@ -220,6 +214,23 @@ export default function PanelPage() {
       day: 'numeric',
       month: 'short',
     });
+  };
+
+  // Unified loading flag — true while data is still being fetched
+  const isLoading = propertiesLoading || dashboardLoading;
+
+  // Fallback dashboard data when the endpoint fails or hasn't loaded yet
+  const dashboardData: DashboardData = dashboard ?? {
+    financial: {
+      monthlyIncome: properties.reduce((sum, p) => sum + (p.monthlyRent || 0), 0),
+      activeLeases: 0,
+      collectionRate: 100,
+      pendingPayments: 0,
+    },
+    urgentActions: [],
+    upcomingEvents: [],
+    recentActivity: [],
+    riskDistribution: { A: 0, B: 0, C: 0, D: 0 },
   };
 
   return (
@@ -243,30 +254,35 @@ export default function PanelPage() {
         </motion.header>
 
         {/* Stats Grid - Landing Style */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {/* Monthly Income - Featured Card */}
           <div className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-200/50 dark:border-emerald-800/30 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
                 <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
-                <TrendUp className="w-3 h-3" />
-                +12%
-              </span>
+              {!isLoading && (
+                <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
+                  <TrendUp className="w-3 h-3" />
+                  +12%
+                </span>
+              )}
             </div>
             <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-1">{t('landlord.dashboard.monthlyIncome')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
-            </p>
-            <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
-              {t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-9 w-36 rounded-lg bg-emerald-200/50 dark:bg-emerald-800/30" />
+            ) : (
+              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
+              </p>
+            )}
+            {isLoading ? (
+              <Skeleton className="h-4 w-24 mt-2 rounded bg-emerald-200/50 dark:bg-emerald-800/30" />
+            ) : (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
+                {t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
+              </p>
+            )}
           </div>
 
           {/* Properties */}
@@ -275,12 +291,20 @@ export default function PanelPage() {
               <Buildings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.properties')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {properties.length}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-              {dashboardData.financial.activeLeases} {t('landlord.dashboard.rented')}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-9 w-12 rounded-lg" />
+            ) : (
+              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                {properties.length}
+              </p>
+            )}
+            {isLoading ? (
+              <Skeleton className="h-4 w-20 mt-2 rounded" />
+            ) : (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                {dashboardData.financial.activeLeases} {t('landlord.dashboard.rented')}
+              </p>
+            )}
           </div>
 
           {/* Candidates */}
@@ -289,15 +313,23 @@ export default function PanelPage() {
               <Users className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.candidates')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {totalCandidates}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-              {pendingReviews > 0 && (
-                <span className="text-amber-600 dark:text-amber-400 font-medium">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
-              )}
-              {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-9 w-12 rounded-lg" />
+            ) : (
+              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                {totalCandidates}
+              </p>
+            )}
+            {isLoading ? (
+              <Skeleton className="h-4 w-28 mt-2 rounded" />
+            ) : (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                {pendingReviews > 0 && (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
+                )}
+                {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
+              </p>
+            )}
           </div>
 
           {/* Collection Rate */}
@@ -306,19 +338,28 @@ export default function PanelPage() {
               <ChartBar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.collectionRate')}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-                {dashboardData.financial.collectionRate}%
-              </p>
-              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
-                {t('landlord.dashboard.excellent')}
-              </span>
-            </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
-              {t('landlord.dashboard.thisMonth')}
-            </p>
+            {isLoading ? (
+              <>
+                <Skeleton className="h-9 w-20 rounded-lg" />
+                <Skeleton className="h-4 w-16 mt-2 rounded" />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                    {dashboardData.financial.collectionRate}%
+                  </p>
+                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
+                    {t('landlord.dashboard.excellent')}
+                  </span>
+                </div>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                  {t('landlord.dashboard.thisMonth')}
+                </p>
+              </>
+            )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Urgent Actions Banner */}
         {dashboardData.urgentActions.length > 0 && (
@@ -346,7 +387,30 @@ export default function PanelPage() {
                 </Link>
               </div>
 
-              {properties.length > 0 ? (
+              {propertiesLoading ? (
+                <div className="space-y-4">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="rounded-xl bg-stone-100 dark:bg-[#1a1a1c] overflow-hidden">
+                      <div className="flex flex-col sm:flex-row">
+                        <Skeleton className="w-full sm:w-48 h-36 rounded-none" />
+                        <div className="flex-1 p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2">
+                              <Skeleton className="h-5 w-44 rounded" />
+                              <Skeleton className="h-4 w-32 rounded" />
+                            </div>
+                            <Skeleton className="h-6 w-24 rounded" />
+                          </div>
+                          <div className="pt-4 border-t border-stone-200 dark:border-neutral-700 flex gap-3">
+                            <Skeleton className="h-8 w-16 rounded-xl" />
+                            <Skeleton className="h-8 w-24 rounded-xl" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : properties.length > 0 ? (
                 <div className="space-y-4">
                   {properties.slice(0, 3).map((property, index) => {
                     const riskDist = calculateRiskDistribution(property);
@@ -360,7 +424,7 @@ export default function PanelPage() {
                         key={property.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 + index * 0.05 }}
+                        transition={{ delay: 0.1 + index * 0.05 }}
                       >
                         <Link href={`/panel/${property.id}`}>
                           <div className="group relative overflow-hidden rounded-xl bg-stone-100 dark:bg-[#1a1a1c] hover:shadow-lg transition-all duration-300">
@@ -505,30 +569,47 @@ export default function PanelPage() {
               </div>
 
               <div className="bg-stone-50 dark:bg-[#1a1a1c] rounded-xl overflow-hidden divide-y divide-stone-100 dark:divide-neutral-800">
-                {recentActivities.slice(0, 5).map((activity, index) => (
-                  <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm flex-shrink-0">
-                      {activity.type === 'application' && <FileText className="w-5 h-5 text-blue-500" />}
-                      {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-                      {activity.type === 'message' && <Chat className="w-5 h-5 text-purple-500" />}
-                      {activity.type === 'document' && <FileText className="w-5 h-5 text-amber-500" />}
-                      {!['application', 'status_change', 'message', 'document'].includes(activity.type) && (
-                        <Bell className="w-5 h-5 text-neutral-500" />
-                      )}
+                {dashboardLoading ? (
+                  [0, 1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4 p-4">
+                      <Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-48 rounded" />
+                        <Skeleton className="h-3 w-32 rounded" />
+                      </div>
+                      <Skeleton className="h-3 w-14 rounded" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                        {activity.description}
-                      </p>
+                  ))
+                ) : dashboardData.recentActivity.length > 0 ? (
+                  dashboardData.recentActivity.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm flex-shrink-0">
+                        {activity.type === 'application' && <FileText className="w-5 h-5 text-blue-500" />}
+                        {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                        {activity.type === 'message' && <Chat className="w-5 h-5 text-purple-500" />}
+                        {activity.type === 'document' && <FileText className="w-5 h-5 text-amber-500" />}
+                        {!['application', 'status_change', 'message', 'document'].includes(activity.type) && (
+                          <Bell className="w-5 h-5 text-neutral-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                          {activity.description}
+                        </p>
+                      </div>
+                      <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
+                        {activity.timestamp}
+                      </span>
                     </div>
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
-                      {activity.timestamp}
-                    </span>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
+                    Sin actividad reciente
                   </div>
-                ))}
+                )}
               </div>
             </motion.section>
           </div>
@@ -547,39 +628,55 @@ export default function PanelPage() {
                 <Wallet className="w-4 h-4" />
                 {t('landlord.dashboard.financialSummary')}
               </div>
-              <p className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-                {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
-              </p>
-              <p className="text-neutral-600 dark:text-neutral-400 text-sm mt-1">
-                {t('landlord.dashboard.incomeThisMonth')}
-              </p>
-
-              <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.collectionRateLabel')}</span>
-                  <span className="text-neutral-900 dark:text-white font-medium">{dashboardData.financial.collectionRate}%</span>
-                </div>
-                <div className="h-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-500 rounded-full transition-all"
-                    style={{ width: `${dashboardData.financial.collectionRate}%` }}
-                  />
-                </div>
-                {dashboardData.financial.pendingPayments > 0 && (
-                  <div className="flex items-center justify-between text-sm pt-2">
-                    <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.pendingPayments')}</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-medium">{dashboardData.financial.pendingPayments}</span>
+              {dashboardLoading ? (
+                <>
+                  <Skeleton className="h-9 w-36 rounded-lg bg-indigo-200/30 dark:bg-indigo-800/20" />
+                  <Skeleton className="h-4 w-28 mt-1 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
+                  <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-24 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
+                      <Skeleton className="h-4 w-10 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full bg-indigo-200/30 dark:bg-indigo-800/20" />
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                    {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
+                  </p>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-sm mt-1">
+                    {t('landlord.dashboard.incomeThisMonth')}
+                  </p>
 
-              <Link
-                href="/panel/leases"
-                className="inline-flex items-center gap-1.5 mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
-              >
-                {t('landlord.dashboard.viewDetails')}
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
+                  <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.collectionRateLabel')}</span>
+                      <span className="text-neutral-900 dark:text-white font-medium">{dashboardData.financial.collectionRate}%</span>
+                    </div>
+                    <div className="h-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full transition-all"
+                        style={{ width: `${dashboardData.financial.collectionRate}%` }}
+                      />
+                    </div>
+                    {dashboardData.financial.pendingPayments > 0 && (
+                      <div className="flex items-center justify-between text-sm pt-2">
+                        <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.pendingPayments')}</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">{dashboardData.financial.pendingPayments}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Link
+                    href="/panel/leases"
+                    className="inline-flex items-center gap-1.5 mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                  >
+                    {t('landlord.dashboard.viewDetails')}
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
             </motion.div>
 
             {/* Quick Actions */}
@@ -780,9 +877,9 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
 // Upcoming Events Card
 // ============================================================================
 
-function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
+function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
   const { t, locale, formatDate: i18nFmtDate } = useI18n();
-  const [selected, setSelected] = useState<UpcomingEvent | null>(null);
+  const [selected, setSelected] = useState<DashboardUpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {
     payment_due: 'bg-indigo-500',

@@ -6,7 +6,7 @@ import { Users, UserPlus, PencilSimple, SpinnerGap } from '@phosphor-icons/react
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
-import { getTeamMembers } from '@/lib/data/mock-team';
+import { useTeamMembers } from '@/lib/hooks/useSettings';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
@@ -14,8 +14,9 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Team state
-  const [teamMembersList, setTeamMembersList] = useState(getTeamMembers());
+  // Real team data from backend
+  const { members: teamMembersList, invite, update, remove } = useTeamMembers();
+
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditMemberModal, setShowEditMemberModal] = useState(false);
   const [editingMember, setEditingMember] = useState<{ id: string; name?: string; email: string; role: TeamRole } | null>(null);
@@ -29,32 +30,44 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setShowInviteModal(false);
-    setInviteForm({ email: '', role: 'viewer' });
-    toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
+    try {
+      await invite(inviteForm.email, inviteForm.role);
+      setShowInviteModal(false);
+      setInviteForm({ email: '', role: 'viewer' });
+      toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al enviar invitación');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    setTeamMembersList(prev => prev.filter(m => m.id !== memberId));
-    toast.success(t('landlordSettings.toasts.memberRemoved'));
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      await remove(memberId);
+      toast.success(t('landlordSettings.toasts.memberRemoved'));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al eliminar miembro');
+    }
   };
 
   const handleEditMember = async () => {
     if (!editingMember) return;
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setTeamMembersList(prev => prev.map(m =>
-      m.id === editingMember.id
-        ? { ...m, name: editMemberForm.name || m.name, role: editMemberForm.role }
-        : m
-    ));
-    setIsLoading(false);
-    setShowEditMemberModal(false);
-    setEditingMember(null);
-    setEditMemberForm({ name: '', role: 'viewer' });
-    toast.success(t('landlordSettings.toasts.memberUpdated'));
+    try {
+      await update(editingMember.id, {
+        name: editMemberForm.name || undefined,
+        role: editMemberForm.role,
+      });
+      setShowEditMemberModal(false);
+      setEditingMember(null);
+      setEditMemberForm({ name: '', role: 'viewer' });
+      toast.success(t('landlordSettings.toasts.memberUpdated'));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al actualizar miembro');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -131,6 +144,11 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               </div>
             </div>
           ))}
+          {teamMembersList.length === 0 && (
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlordSettings.team.noMembers') || 'No hay miembros en el equipo'}</p>
+            </div>
+          )}
         </div>
       </motion.section>
 

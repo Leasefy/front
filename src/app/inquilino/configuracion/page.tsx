@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, Key, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Gear, Lock, FileText, ShieldCheck, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 
 // Modal Component with Leasefy style
 function Modal({
@@ -82,7 +83,6 @@ export default function ConfiguracionPage() {
     smsNotifications: false,
     paymentReminders: true,
     marketingEmails: false,
-    twoFactorAuth: false,
   });
 
   // Modal states
@@ -90,7 +90,6 @@ export default function ConfiguracionPage() {
   const [showSessionsModal, setShowSessionsModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
 
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
@@ -99,10 +98,6 @@ export default function ConfiguracionPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const handleToggle = (key: keyof typeof settings) => {
-    if (key === 'twoFactorAuth') {
-      setShow2FAModal(true);
-      return;
-    }
     setGear(prev => ({ ...prev, [key]: !prev[key] }));
     toast.success(t('common.success'));
   };
@@ -158,15 +153,6 @@ export default function ConfiguracionPage() {
     setIsLoading(false);
     toast.success('Cuenta eliminada. Serás redirigido...');
     setTimeout(() => router.push('/'), 2000);
-  };
-
-  const handleEnable2FA = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setGear(prev => ({ ...prev, twoFactorAuth: true }));
-    setShow2FAModal(false);
-    toast.success('Autenticación de dos factores activada');
   };
 
   const handleResetOnboarding = () => {
@@ -273,14 +259,7 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
-                <SettingToggle
-                  icon={ShieldCheck}
-                  title={t('settings.account.twoFactor')}
-                  description={settings.twoFactorAuth ? (locale === 'es' ? 'Activada' : 'Enabled') : (locale === 'es' ? 'Capa extra de seguridad' : 'Extra layer of security')}
-                  enabled={settings.twoFactorAuth}
-                  onToggle={() => handleToggle('twoFactorAuth')}
-                  accent={settings.twoFactorAuth ? 'emerald' : undefined}
-                />
+                <MfaSetupSection />
                 <SettingLink
                   icon={Lock}
                   title={t('settings.account.changePassword')}
@@ -568,69 +547,6 @@ export default function ConfiguracionPage() {
               {isLoading ? 'Procesando...' : 'Solicitar datos'}
             </button>
           </div>
-        </div>
-      </Modal>
-
-      {/* 2FA Modal */}
-      <Modal open={show2FAModal} onClose={() => setShow2FAModal(false)} title="Autenticación de dos factores">
-        <div className="space-y-4">
-          {!settings.twoFactorAuth ? (
-            <>
-              <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-emerald-900/50 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                    La autenticación de dos factores añade una capa extra de seguridad. Necesitarás tu teléfono para iniciar sesión.
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                Te enviaremos un código de verificación por SMS cada vez que inicies sesión desde un nuevo dispositivo.
-              </p>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleEnable2FA}
-                  disabled={isLoading}
-                  className="flex-1 py-3 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
-                >
-                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                  {isLoading ? 'Activando...' : 'Activar 2FA'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                  <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">
-                  La autenticación de dos factores está activada
-                </p>
-              </div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                Tu cuenta está protegida con verificación en dos pasos.
-              </p>
-              <button
-                onClick={() => {
-                  setGear(prev => ({ ...prev, twoFactorAuth: false }));
-                  setShow2FAModal(false);
-                  toast.success('Autenticación de dos factores desactivada');
-                }}
-                className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                Desactivar 2FA
-              </button>
-            </>
-          )}
         </div>
       </Modal>
 

@@ -30,7 +30,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -73,6 +73,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       return
     }
 
+    // If MFA is required, redirect to MFA verify page
+    if (mfaRequired && !pathname.startsWith('/auth/mfa-verify')) {
+      router.replace('/auth/mfa-verify')
+      return
+    }
+
     // Check role restriction
     if (allowedRoles && effectiveUser && !allowedRoles.includes(effectiveUser.role as 'tenant' | 'landlord' | 'agency')) {
       // User is authenticated but doesn't have required role
@@ -85,7 +91,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         router.replace('/inquilino')
       }
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -118,6 +124,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">Redirigiendo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // MFA required - will redirect to verify page
+  if (mfaRequired && !pathname.startsWith('/auth/mfa-verify')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
         </div>
       </div>
     )

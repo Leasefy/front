@@ -4,7 +4,8 @@ import { createContext, useCallback, useEffect, useState, type ReactNode } from 
 import type { User, AuthContextType } from './types'
 import { toFrontendRole } from './types'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError } from '@/lib/api/client'
+import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
+import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
 
 /**
@@ -62,6 +63,7 @@ function mapSupabaseUser(session: Session): User {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [mfaRequired, setMfaRequired] = useState(false)
 
   /** Fetch the user profile from the backend, fallback to Supabase session */
   const fetchUser = useCallback(async (session?: Session | null): Promise<User | null> => {
@@ -85,9 +87,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
-    const userData = await fetchUser()
+    const supabase = getSupabase()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      setAccessToken(session.access_token)
+    }
+    const userData = await fetchUser(session)
     setUser(userData)
   }, [fetchUser])
+
+  /** Check MFA assurance level and update mfaRequired state */
+  const checkMfaLevel = useCallback(async () => {
+    const supabase = getSupabase()
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
+        setMfaRequired(true)
+      } else if (aal?.currentLevel === 'aal2') {
+        setMfaRequired(false)
+      }
+    } catch {
+      // MFA not available — ignore
+    }
+  }, [])
+
+  const setMfaVerified = useCallback(() => {
+    setMfaRequired(false)
+  }, [])
 
   // Initialize auth on mount
   useEffect(() => {
@@ -99,9 +125,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { data: { session }, error } = await supabase.auth.getSession()
         console.log('[Auth] getSession result:', { hasSession: !!session, error, userId: session?.user?.id })
         if (session) {
+          setAccessToken(session.access_token)
           const userData = await fetchUser(session)
           console.log('[Auth] fetchUser result:', userData)
           setUser(userData)
+          await checkMfaLevel()
+          // Register FCM token on initial session load
+          if (userData?.onboardingCompleted) {
+            requestNotificationPermission().catch(() => {})
+          }
         } else {
           console.log('[Auth] No session found - user not logged in')
         }
@@ -119,15 +151,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       async (event, session) => {
         console.log('[Auth] onAuthStateChange:', event, { hasSession: !!session })
         if (event === 'SIGNED_IN' && session) {
+          setAccessToken(session.access_token)
           const userData = await fetchUser(session)
           setUser(userData)
           setIsLoading(false)
+          await checkMfaLevel()
+          // Register FCM token after successful login with completed onboarding
+          if (userData?.onboardingCompleted) {
+            requestNotificationPermission().catch(() => {})
+          }
         } else if (event === 'SIGNED_OUT') {
+          setAccessToken(null)
           setUser(null)
+          setMfaRequired(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
+          setAccessToken(session.access_token)
           const userData = await fetchUser(session)
           setUser(userData)
+          await checkMfaLevel()
         }
       }
     )
@@ -135,7 +177,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [fetchUser])
+  }, [fetchUser, checkMfaLevel])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -153,8 +195,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
+    // Remove FCM token before signing out (while we still have auth)
+    await removeFcmToken().catch(() => {})
     const supabase = getSupabase()
     await supabase.auth.signOut()
+    setAccessToken(null)
     setUser(null)
   }, [])
 
@@ -162,10 +207,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     isAuthenticated: !!user,
     isLoading,
+    mfaRequired,
     signInWithGoogle,
     signOut,
     logout: signOut,
     refreshUser,
+    setMfaVerified,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

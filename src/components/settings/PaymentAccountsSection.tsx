@@ -21,36 +21,50 @@ import {
   maskPhoneNumber,
   isBankAccount,
 } from '@/lib/types/payment-accounts';
-import {
-  getPaymentAccounts,
-  getPropertyCountForAccount,
-  MOCK_PROPERTY_ASSIGNMENTS,
-} from '@/lib/data/mock-payment-accounts';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { paymentMethodsApi } from '@/lib/api/payment-methods.service';
+import { useMyProperties } from '@/lib/hooks/useProperties';
 import { SettingsModal } from './SettingsModal';
 
 export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Payment accounts state
-  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>(getPaymentAccounts());
+  // Payment accounts state - loaded from API
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [accountMethodType, setAccountMethodType] = useState<'bank' | 'wallet'>('bank');
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<PaymentAccount | null>(null);
 
   // Property assignments state (maps accountId -> propertyId[])
-  const [propertyAssignments, setPropertyAssignments] = useState<Record<string, string[]>>(() => {
-    const map: Record<string, string[]> = {};
-    MOCK_PROPERTY_ASSIGNMENTS.forEach((a) => {
-      if (a.accountId) {
-        if (!map[a.accountId]) map[a.accountId] = [];
-        map[a.accountId].push(a.propertyId);
+  const [propertyAssignments, setPropertyAssignments] = useState<Record<string, string[]>>({});
+
+  // Load payment accounts and assignments from API
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const [accounts, assignments] = await Promise.all([
+          paymentMethodsApi.getAll(),
+          paymentMethodsApi.getAssignments(),
+        ]);
+        if (cancelled) return;
+        setPaymentAccounts(accounts);
+        const map: Record<string, string[]> = {};
+        assignments.forEach((a) => {
+          if (a.accountId) {
+            if (!map[a.accountId]) map[a.accountId] = [];
+            map[a.accountId].push(a.propertyId);
+          }
+        });
+        setPropertyAssignments(map);
+      } catch {
+        // API not available yet - start with empty state
       }
-    });
-    return map;
-  });
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   // Selected properties for new account
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
@@ -91,8 +105,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     }
   }, [showPropertyDropdown]);
 
-  // Get landlord's properties
-  const landlordProperties = mockProperties.filter(p => p.landlordId === 'landlord-001');
+  // Get landlord's properties from API
+  const { properties: landlordProperties } = useMyProperties();
+
+  // Get count of properties assigned to a specific account
+  const getPropertyCountForAccount = (accountId: string): number => {
+    return (propertyAssignments[accountId] || []).length;
+  };
 
   // Get property names assigned to an account
   const getAssignedPropertyNames = (accountId: string): string[] => {
@@ -137,56 +156,61 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     if (!validateForm()) return;
     setFieldErrors({});
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    let newAccount: PaymentAccount;
+    try {
+      let accountData: Partial<PaymentAccount>;
 
-    if (accountMethodType === 'bank') {
-      const bank = COLOMBIAN_BANKS.find(b => b.code === bankForm.bankCode);
-      newAccount = {
-        id: `account-${Date.now()}`,
-        type: 'bank',
-        bankCode: bankForm.bankCode as BankCode,
-        bankName: bank?.name || '',
-        accountType: bankForm.accountType as AccountType,
-        accountNumber: bankForm.accountNumber,
-        accountHolderName: bankForm.accountHolderName,
-        accountHolderDocument: bankForm.accountHolderDocument,
-        isDefault: bankForm.isDefault || paymentAccounts.length === 0,
-        createdAt: new Date().toISOString(),
-      } as BankAccount;
-    } else {
-      const wallet = DIGITAL_WALLETS.find(w => w.code === walletForm.walletCode);
-      newAccount = {
-        id: `wallet-${Date.now()}`,
-        type: 'wallet',
-        walletCode: walletForm.walletCode as WalletCode,
-        walletName: wallet?.name || '',
-        phoneNumber: walletForm.phoneNumber,
-        holderName: walletForm.holderName,
-        isDefault: walletForm.isDefault || paymentAccounts.length === 0,
-        createdAt: new Date().toISOString(),
-      } as DigitalWallet;
+      if (accountMethodType === 'bank') {
+        const bank = COLOMBIAN_BANKS.find(b => b.code === bankForm.bankCode);
+        accountData = {
+          type: 'bank',
+          bankCode: bankForm.bankCode as BankCode,
+          bankName: bank?.name || '',
+          accountType: bankForm.accountType as AccountType,
+          accountNumber: bankForm.accountNumber,
+          accountHolderName: bankForm.accountHolderName,
+          accountHolderDocument: bankForm.accountHolderDocument,
+          isDefault: bankForm.isDefault || paymentAccounts.length === 0,
+        } as Partial<BankAccount>;
+      } else {
+        const wallet = DIGITAL_WALLETS.find(w => w.code === walletForm.walletCode);
+        accountData = {
+          type: 'wallet',
+          walletCode: walletForm.walletCode as WalletCode,
+          walletName: wallet?.name || '',
+          phoneNumber: walletForm.phoneNumber,
+          holderName: walletForm.holderName,
+          isDefault: walletForm.isDefault || paymentAccounts.length === 0,
+        } as Partial<DigitalWallet>;
+      }
+
+      const newAccount = await paymentMethodsApi.create(accountData);
+
+      if (newAccount.isDefault) {
+        setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newAccount));
+      } else {
+        setPaymentAccounts(prev => [...prev, newAccount]);
+      }
+
+      // Update property assignments if any selected
+      if (selectedPropertyIds.length > 0) {
+        for (const propId of selectedPropertyIds) {
+          await paymentMethodsApi.assignProperty(newAccount.id, propId);
+        }
+        setPropertyAssignments(prev => ({
+          ...prev,
+          [newAccount.id]: selectedPropertyIds,
+        }));
+      }
+
+      setShowAddAccountModal(false);
+      resetForms();
+      toast.success(t('landlordSettings.toasts.accountAdded'));
+    } catch {
+      toast.error(t('landlordSettings.toasts.errorAddingAccount'));
+    } finally {
+      setIsLoading(false);
     }
-
-    if (newAccount.isDefault) {
-      setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newAccount));
-    } else {
-      setPaymentAccounts(prev => [...prev, newAccount]);
-    }
-
-    // Update property assignments if any selected
-    if (selectedPropertyIds.length > 0) {
-      setPropertyAssignments(prev => ({
-        ...prev,
-        [newAccount.id]: selectedPropertyIds,
-      }));
-    }
-
-    setIsLoading(false);
-    setShowAddAccountModal(false);
-    resetForms();
-    toast.success(t('landlordSettings.toasts.accountAdded'));
   };
 
   const handleSetDefaultAccount = (accountId: string) => {
@@ -209,17 +233,22 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setPaymentAccounts(prev => prev.filter(a => a.id !== editingAccount.id));
-    setPropertyAssignments(prev => {
-      const next = { ...prev };
-      delete next[editingAccount.id];
-      return next;
-    });
-    setIsLoading(false);
-    setShowDeleteAccountModal(false);
-    setEditingAccount(null);
-    toast.success(t('landlordSettings.toasts.accountDeleted'));
+    try {
+      await paymentMethodsApi.delete(editingAccount.id);
+      setPaymentAccounts(prev => prev.filter(a => a.id !== editingAccount.id));
+      setPropertyAssignments(prev => {
+        const next = { ...prev };
+        delete next[editingAccount.id];
+        return next;
+      });
+      setShowDeleteAccountModal(false);
+      setEditingAccount(null);
+      toast.success(t('landlordSettings.toasts.accountDeleted'));
+    } catch {
+      toast.error(t('landlordSettings.toasts.errorDeletingAccount'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getAccountDisplayInfo = (account: PaymentAccount) => {

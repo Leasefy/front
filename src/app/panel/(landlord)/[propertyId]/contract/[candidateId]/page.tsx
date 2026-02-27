@@ -13,15 +13,10 @@ import { SignatureForm } from '@/components/contract/SignatureForm';
 import { InsuranceSelector } from '@/components/contract/InsuranceSelector';
 import { AuditTrail } from '@/components/contract/AuditTrail';
 import type { SelectedInsurance } from '@/lib/types/insurance';
-import {
-  getContractById,
-  getTemplateById,
-  createContractFromTemplate,
-  CONTRACT_TEMPLATES,
-} from '@/lib/data/mock-contracts';
-import { MOCK_CANDIDATES } from '@/lib/data/mock-candidates';
-import { mockProperties } from '@/lib/data/mock-properties';
-import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS, CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
+import { CONTRACT_TEMPLATES, getTemplateById } from '@/lib/constants/contract-templates';
+import { useContracts, useContractActions } from '@/lib/hooks/useContracts';
+import { useLandlordProperty, useCandidate } from '@/lib/hooks/useLandlord';
+import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS } from '@/lib/types/contract';
 import type { Contract, ContractType } from '@/lib/types/contract';
 
 // ============================================================================
@@ -245,11 +240,17 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   // Check if we should force starting fresh (new contract flow)
   const forceNew = searchParams.get('new') === 'true';
 
+  // Fetch real data from API
+  const { property, isLoading: propertyLoading } = useLandlordProperty(propertyId);
+  const { candidate, isLoading: candidateLoading } = useCandidate(candidateId);
+  const { getByPropertyAndTenant, refetch: refetchContracts } = useContracts();
+  const actions = useContractActions();
+
   // State
   const [contract, setContract] = useState<Contract | null>(null);
   const [selectedType, setSelectedType] = useState<ContractType | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [selectedInsurance, setSelectedInsurance] = useState<SelectedInsurance>({
     policyId: null,
@@ -260,67 +261,57 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   // Get existing contract or null (skip if forceNew is true)
   useEffect(() => {
     if (forceNew) {
-      // Start fresh - don't load existing contract
       setContract(null);
       return;
     }
-    const existingContract = getContractById(propertyId, candidateId);
+    const existingContract = getByPropertyAndTenant(propertyId, candidateId);
     if (existingContract) {
       setContract(existingContract);
     }
-  }, [propertyId, candidateId, forceNew]);
+  }, [propertyId, candidateId, forceNew, getByPropertyAndTenant]);
 
-  // Get property and candidate info
-  const property = mockProperties.find((p) => p.id === propertyId);
-  const candidate = MOCK_CANDIDATES.find((c) => c.id === candidateId);
-
-  // Handle contract creation
-  const handleCreateContract = () => {
+  // Handle contract creation via API
+  const handleCreateContract = async () => {
     if (!selectedType) return;
 
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newContract = createContractFromTemplate(propertyId, candidateId, selectedType);
-      if (newContract) {
-        setContract(newContract);
-      }
-      setIsLoading(false);
-    }, 1000);
+    setIsCreating(true);
+    const newContract = await actions.create({
+      propertyId,
+      tenantId: candidateId,
+      templateType: selectedType,
+    });
+    if (newContract) {
+      setContract(newContract);
+      refetchContracts();
+    }
+    setIsCreating(false);
   };
 
-  // Handle signing (with OTP verification status)
+  // Handle signing via API
   const handleSign = async (otpVerified: boolean = false) => {
     if (!contract) return;
 
     setIsSigning(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const now = new Date().toISOString();
-
-    // Update contract status (mock)
-    const updatedContract: Contract = {
-      ...contract,
-      status: contract.status === 'pending_landlord' ? 'pending_tenant' : 'active',
-      landlordSignature:
-        contract.status === 'pending_landlord'
-          ? {
-              signedAt: now,
-              signedBy: contract.landlordName,
-              signerId: contract.landlordId,
-              ipAddress: '190.85.23.145',
-              userAgent: navigator.userAgent,
-              status: 'signed',
-              otpVerified: otpVerified,
-              otpVerifiedAt: otpVerified ? now : undefined,
-            }
-          : contract.landlordSignature,
-    };
-
-    setContract(updatedContract);
+    const updated = await actions.sign(contract.id, { otpVerified });
+    if (updated) {
+      setContract(updated);
+      refetchContracts();
+    }
     setIsSigning(false);
   };
+
+  // Loading state
+  if (propertyLoading || candidateLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-center justify-center py-24">
+            <SpinnerGap className="h-8 w-8 animate-spin text-neutral-400 dark:text-neutral-500" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Not found state
   if (!property || !candidate) {
@@ -527,7 +518,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                 <div className="mt-6 lg:w-[calc(66.666%-12px)]">
                   <button
                     onClick={handleCreateContract}
-                    disabled={!selectedType || (selectedType === 'custom' && !uploadedFile) || isLoading}
+                    disabled={!selectedType || (selectedType === 'custom' && !uploadedFile) || isCreating}
                     className={cn(
                       'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all',
                       selectedType
@@ -535,7 +526,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                         : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                     )}
                   >
-                    {isLoading ? (
+                    {isCreating ? (
                       <>
                         <SpinnerGap className="h-4 w-4 animate-spin" />
                         {selectedType === 'custom' ? 'Procesando contrato...' : 'Generando contrato...'}

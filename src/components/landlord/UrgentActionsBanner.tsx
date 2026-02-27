@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import type { UrgentAction } from '@/lib/data/mock-dashboard';
+import type { DashboardUrgentAction } from '@/lib/api/landlord.types';
 
 interface UrgentActionsBannerProps {
-  actions: UrgentAction[];
+  actions: DashboardUrgentAction[];
   className?: string;
 }
 

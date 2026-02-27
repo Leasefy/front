@@ -5,15 +5,24 @@ import { MapPin, Calendar, Hash, CaretRight, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDate, formatCurrency } from '@/lib/format';
-import { mockProperties } from '@/lib/data/mock-properties';
 import { Button } from '@/components/ui/button';
 import { ApplicationStatusBadge } from './ApplicationStatusBadge';
 import type { TenantApplication } from '@/lib/types/tenant-application';
 import { canWithdraw } from '@/lib/types/tenant-application';
 
+export interface ApplicationCardProperty {
+  title: string;
+  thumbnailUrl: string;
+  monthlyRent: number;
+  neighborhood: string;
+  city: string;
+}
+
 export interface ApplicationCardProps {
   /** Application to display */
   application: TenantApplication;
+  /** Property data (pass directly instead of looking up from mock) */
+  property?: ApplicationCardProperty | null;
   /** Callback when card is clicked */
   onClick?: () => void;
   /** Callback when user wants to withdraw */
@@ -36,14 +45,12 @@ export interface ApplicationCardProps {
  */
 export function ApplicationCard({
   application,
+  property,
   onClick,
   onWithdraw,
   className,
 }: ApplicationCardProps) {
-  const { id, propertyId, status, submittedAt, trackingCode } = application;
-
-  // Find the property for this application
-  const property = mockProperties.find((p) => p.id === propertyId);
+  const { id, status, submittedAt, trackingCode } = application;
 
   if (!property) {
     return null;

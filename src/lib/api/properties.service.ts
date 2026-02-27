@@ -3,12 +3,11 @@
  * Wraps apiClient with property-specific mapper logic
  */
 
-import { apiClient } from './client';
+import { apiClient, getAccessToken } from './client';
 import { mapBackendProperty, TYPE_TO_BACKEND } from './properties.mapper';
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
 import type { Property } from '@/lib/types/property';
 import type { PaginationMeta } from './properties.types';
-import { getSupabase } from '@/lib/supabase/client';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -113,9 +112,7 @@ export const propertiesApi = {
 
   /** Upload an image (multipart - uses fetch directly for FormData) */
   async uploadImage(propertyId: string, file: File): Promise<{ id: string; url: string; order: number }> {
-    const supabase = getSupabase();
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = getAccessToken();
 
     const formData = new FormData();
     formData.append('file', file);

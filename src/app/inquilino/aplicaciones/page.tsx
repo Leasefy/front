@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets } from '@phosphor-icons/react';
 
-import { getActiveApplications, getCompletedApplications } from '@/lib/data/mock-tenant-applications';
-import { mockProperties } from '@/lib/data/mock-properties';
+import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -22,18 +21,11 @@ const ITEMS_PER_PAGE = 4;
 export default function AplicacionesPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  const { active: activeApplications, completed: completedApplications, isLoading: isAppsLoading, error } = useTenantApplications();
 
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Only fetch real data if onboarding is complete
-  const activeApplications = isOnboardingComplete ? getActiveApplications() : [];
-  const completedApplications = isOnboardingComplete ? getCompletedApplications() : [];
-
-  const getPropertyForApplication = (propertyId: string) => {
-    return mockProperties.find(p => p.id === propertyId);
-  };
 
   const formatShortDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -95,7 +87,7 @@ export default function AplicacionesPage() {
   };
 
   // Loading state
-  if (isOnboardingLoading) {
+  if (isOnboardingLoading || isAppsLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -109,6 +101,22 @@ export default function AplicacionesPage() {
       <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="applications" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <EmptyState
+            icon={XCircle}
+            title={locale === 'es' ? 'Error al cargar aplicaciones' : 'Error loading applications'}
+            description={error}
+            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/aplicaciones' }}
+          />
         </div>
       </div>
     );
@@ -263,7 +271,6 @@ export default function AplicacionesPage() {
               {viewMode === 'list' && (
                 <div className="space-y-4">
                   {paginatedApplications.map((application, index) => {
-                    const property = getPropertyForApplication(application.propertyId);
                     const status = statusConfig[application.status] || statusConfig.submitted;
                     const StatusIcon = status.icon;
 
@@ -280,8 +287,8 @@ export default function AplicacionesPage() {
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
                                 <Image
-                                  src={property?.images[0] || '/placeholder-property.jpg'}
-                                  alt={property?.title || 'Propiedad'}
+                                  src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                  alt={application.property?.title || 'Propiedad'}
                                   fill
                                   quality={90}
                                   sizes="(max-width: 1024px) 100vw, 288px"
@@ -304,16 +311,16 @@ export default function AplicacionesPage() {
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
                                     <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                      {property?.title || 'Propiedad'}
+                                      {application.property?.title || 'Propiedad'}
                                     </h3>
                                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
-                                      {property?.neighborhood}, {property?.city}
+                                      {application.property?.neighborhood}, {application.property?.city}
                                     </p>
                                   </div>
                                   <div className="sm:text-right">
                                     <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                                      {formatCurrency(property?.monthlyRent || 0)}
+                                      {formatCurrency(application.property?.monthlyRent || 0)}
                                     </p>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
                                   </div>
@@ -400,7 +407,6 @@ export default function AplicacionesPage() {
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                   {paginatedApplications.map((application, index) => {
-                    const property = getPropertyForApplication(application.propertyId);
                     const status = statusConfig[application.status] || statusConfig.submitted;
                     const StatusIcon = status.icon;
 
@@ -416,8 +422,8 @@ export default function AplicacionesPage() {
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
-                                src={property?.images[0] || '/placeholder-property.jpg'}
-                                alt={property?.title || 'Propiedad'}
+                                src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                alt={application.property?.title || 'Propiedad'}
                                 fill
                                 quality={90}
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -438,16 +444,16 @@ export default function AplicacionesPage() {
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
                                 <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1 mb-1">
-                                  {property?.title || 'Propiedad'}
+                                  {application.property?.title || 'Propiedad'}
                                 </h3>
                                 <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mb-3">
                                   <MapPin className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{property?.neighborhood}, {property?.city}</span>
+                                  <span className="truncate">{application.property?.neighborhood}, {application.property?.city}</span>
                                 </p>
 
                                 <div className="flex items-center justify-between mb-3">
                                   <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                                    {formatCurrency(property?.monthlyRent || 0)}
+                                    {formatCurrency(application.property?.monthlyRent || 0)}
                                     <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/mes</span>
                                   </p>
                                   <span className="text-xs font-mono text-neutral-400">

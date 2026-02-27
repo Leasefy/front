@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 import { useCandidates, useCandidate, useCandidateDecision } from '@/lib/hooks/useLandlord';
+import { DocumentAnalysisSection } from '@/components/landlord/DocumentAnalysisSection';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
@@ -410,6 +411,13 @@ export default function CandidatosPage() {
             </div>
           )}
         </div>
+      ),
+    },
+    {
+      id: 'ai-analysis',
+      title: 'Analisis IA de documentos',
+      content: (
+        <DocumentAnalysisSection applicationId={candidate.applicationId || candidate.id} />
       ),
     },
     {

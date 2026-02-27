@@ -172,6 +172,54 @@ export interface BackendActivityItem {
 }
 
 // ============================================================================
+// Display types (mapped from backend for UI consumption)
+// ============================================================================
+
+export interface DashboardUrgentAction {
+  id: string;
+  type: 'signature' | 'late_payment' | 'pending_review' | 'ending_lease' | 'pending_visit';
+  title: string;
+  description: string;
+  count: number;
+  href: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface DashboardUpcomingEvent {
+  id: string;
+  type: 'lease_ending' | 'payment_due' | 'contract_renewal' | 'inspection';
+  title: string;
+  description: string;
+  date: string;
+  daysUntil: number;
+  href?: string;
+}
+
+export interface DashboardActivity {
+  id: string;
+  type: 'application' | 'status_change' | 'message' | 'document';
+  title: string;
+  description: string;
+  timestamp: string;
+  propertyId?: string;
+}
+
+export interface DashboardFinancialStats {
+  monthlyIncome: number;
+  activeLeases: number;
+  collectionRate: number;
+  pendingPayments: number;
+}
+
+export interface DashboardData {
+  financial: DashboardFinancialStats;
+  urgentActions: DashboardUrgentAction[];
+  upcomingEvents: DashboardUpcomingEvent[];
+  recentActivity: DashboardActivity[];
+  riskDistribution: { A: number; B: number; C: number; D: number };
+}
+
+// ============================================================================
 // Candidate list response (from GET /candidates)
 // ============================================================================
 

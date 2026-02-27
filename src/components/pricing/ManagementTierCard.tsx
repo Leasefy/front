@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { Check, Sparkle, Shield, Star } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import type { ManagementTier } from '@/lib/data/mock-subscriptions';
+import type { ManagementTier } from '@/lib/constants/subscription-plans';
 
 export interface ManagementTierCardProps {
   tier: ManagementTier;

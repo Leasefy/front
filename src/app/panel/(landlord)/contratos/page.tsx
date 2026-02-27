@@ -1,13 +1,10 @@
 'use client';
 
-import { FileText, Clock, CheckCircle, WarningCircle, Pen } from '@phosphor-icons/react';
+import { FileText, Clock, CheckCircle, WarningCircle, Pen, SpinnerGap } from '@phosphor-icons/react';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  getContractsForLandlord,
-  getPendingContracts,
-  getActiveContracts,
-} from '@/lib/data/mock-contracts';
+import { ErrorState } from '@/components/ui/error-state';
+import { useContracts } from '@/lib/hooks/useContracts';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -58,13 +55,25 @@ function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorC
 
 export default function ContratosPage() {
   const { t } = useI18n();
-  const landlordId = 'landlord-001';
-  const allContracts = getContractsForLandlord(landlordId);
-  const pendingContracts = getPendingContracts(landlordId);
-  const activeContracts = getActiveContracts(landlordId);
+  const { contracts: allContracts, isLoading, error, refetch } = useContracts();
 
-  const needsAction = pendingContracts.filter((c) => c.status === 'pending_landlord');
-  const awaitingTenant = pendingContracts.filter((c) => c.status === 'pending_tenant');
+  const pendingContracts = useMemo(() =>
+    allContracts.filter(c => c.status === 'pending_landlord' || c.status === 'pending_tenant' || c.status === 'draft'),
+    [allContracts]
+  );
+  const activeContracts = useMemo(() =>
+    allContracts.filter(c => c.status === 'active'),
+    [allContracts]
+  );
+
+  const needsAction = useMemo(() =>
+    pendingContracts.filter((c) => c.status === 'pending_landlord'),
+    [pendingContracts]
+  );
+  const awaitingTenant = useMemo(() =>
+    pendingContracts.filter((c) => c.status === 'pending_tenant'),
+    [pendingContracts]
+  );
 
   const [activeTab, setActiveTab] = useState('all');
 
@@ -84,6 +93,28 @@ export default function ContratosPage() {
     { id: 'awaiting', label: t('landlord.contracts.tabAwaiting'), count: awaitingTenant.length },
     { id: 'active', label: t('landlord.contracts.tabActive'), count: activeContracts.length },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <SpinnerGap className="h-8 w-8 animate-spin text-neutral-400 dark:text-neutral-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <ErrorState
+            title="Error cargando contratos"
+            description={error}
+            onRetry={refetch}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">

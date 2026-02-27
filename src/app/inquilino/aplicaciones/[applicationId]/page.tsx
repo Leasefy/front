@@ -4,32 +4,131 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, WarningCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, House, Bed, Bathtub, ArrowsOut, Buildings, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti, PenNib } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { BackButton } from '@/components/ui/back-button';
-import { getTenantApplicationById } from '@/lib/data/mock-tenant-applications';
-import { mockProperties } from '@/lib/data/mock-properties';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useTenantApplication } from '@/lib/hooks/useApplications';
+import { useContracts } from '@/lib/hooks/useContracts';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+
+/**
+ * Generate a status-based timeline for display
+ */
+function generateTimelineFromStatus(
+  status: string,
+  submittedAt: string,
+  locale: string
+) {
+  const events: Array<{ id: string; type: string; timestamp: string; description: string }> = [];
+  const baseDate = new Date(submittedAt);
+  let eventId = 1;
+
+  // Created event
+  const createdDate = new Date(baseDate);
+  createdDate.setHours(createdDate.getHours() - 2);
+  events.push({
+    id: `evt-${eventId++}`,
+    type: 'created',
+    timestamp: createdDate.toISOString(),
+    description: locale === 'es' ? 'Solicitud iniciada' : 'Application started',
+  });
+
+  // Submitted
+  events.push({
+    id: `evt-${eventId++}`,
+    type: 'submitted',
+    timestamp: baseDate.toISOString(),
+    description: locale === 'es' ? 'Solicitud enviada al propietario' : 'Application submitted to landlord',
+  });
+
+  if (status === 'submitted') return events;
+
+  if (status === 'withdrawn') {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 1);
+    events.push({
+      id: `evt-${eventId++}`,
+      type: 'withdrawn',
+      timestamp: d.toISOString(),
+      description: locale === 'es' ? 'Solicitud retirada por el inquilino' : 'Application withdrawn by tenant',
+    });
+    return events;
+  }
+
+  // Under review
+  const reviewDate = new Date(baseDate);
+  reviewDate.setDate(reviewDate.getDate() + 1);
+  events.push({
+    id: `evt-${eventId++}`,
+    type: 'under_review',
+    timestamp: reviewDate.toISOString(),
+    description: locale === 'es' ? 'El propietario está revisando tu solicitud' : 'Landlord is reviewing your application',
+  });
+  if (status === 'under_review') return events;
+
+  // Pre-approved
+  if (status === 'pre_approved' || status === 'approved') {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 3);
+    events.push({
+      id: `evt-${eventId++}`,
+      type: 'pre_approved',
+      timestamp: d.toISOString(),
+      description: locale === 'es' ? 'Pre-aprobación otorgada' : 'Pre-approval granted',
+    });
+  }
+  if (status === 'pre_approved') return events;
+
+  if (status === 'approved') {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 5);
+    events.push({
+      id: `evt-${eventId++}`,
+      type: 'approved',
+      timestamp: d.toISOString(),
+      description: locale === 'es' ? '¡Tu solicitud ha sido aprobada!' : 'Your application has been approved!',
+    });
+  }
+
+  if (status === 'rejected') {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 4);
+    events.push({
+      id: `evt-${eventId++}`,
+      type: 'rejected',
+      timestamp: d.toISOString(),
+      description: locale === 'es' ? 'Lo sentimos, tu solicitud no fue aprobada' : 'Sorry, your application was not approved',
+    });
+  }
+
+  return events;
+}
 
 /**
  * Application Detail Page - Premium Leasefy Style
  */
 export default function ApplicationDetailPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   const applicationId = params.applicationId as string;
-  const application = getTenantApplicationById(applicationId);
-  const property = application
-    ? mockProperties.find((p) => p.id === application.propertyId)
-    : null;
+  const { application, isLoading, error } = useTenantApplication(applicationId);
+  const { contracts } = useContracts();
 
-  if (!application || !property) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!application || error) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
         <motion.div
@@ -44,9 +143,9 @@ export default function ApplicationDetailPage() {
             {locale === 'es' ? 'Aplicación no encontrada' : 'Application not found'}
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-            {locale === 'es'
+            {error || (locale === 'es'
               ? 'No pudimos encontrar esta aplicación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
-              : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.'}
+              : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.')}
           </p>
           <button
             onClick={() => router.push('/inquilino/aplicaciones')}
@@ -59,6 +158,8 @@ export default function ApplicationDetailPage() {
       </div>
     );
   }
+
+  const property = application.property;
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof CheckCircle }> = {
     submitted: { label: locale === 'es' ? 'Enviada' : 'Submitted', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: PaperPlaneTilt },
@@ -138,6 +239,14 @@ export default function ApplicationDetailPage() {
   const status = statusConfig[application.status] || statusConfig.submitted;
   const StatusIcon = status.icon;
 
+  // Find pending_tenant contract for this application's property
+  const pendingContract = application.status === 'approved' && property
+    ? contracts.find(c => c.propertyId === property.id && c.status === 'pending_tenant')
+    : null;
+
+  // Generate timeline from status
+  const events = generateTimelineFromStatus(application.status, application.submittedAt, locale);
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -161,8 +270,8 @@ export default function ApplicationDetailPage() {
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
               <Image
-                src={property.images[0]}
-                alt={property.title}
+                src={property?.thumbnail || '/placeholder-property.jpg'}
+                alt={property?.title || 'Propiedad'}
                 fill
                 className="object-cover"
                 priority
@@ -202,15 +311,17 @@ export default function ApplicationDetailPage() {
               </div>
 
               {/* Property Info */}
-              <Link href={`/propiedades/${property.id}`} className="group">
-                <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
-                  {property.title}
-                </h1>
-                <p className="text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-4">
-                  <MapPin className="w-4 h-4" />
-                  {property.address}, {property.neighborhood}
-                </p>
-              </Link>
+              {property && (
+                <Link href={`/propiedades/${property.id}`} className="group">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                    {property.title}
+                  </h1>
+                  <p className="text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-4">
+                    <MapPin className="w-4 h-4" />
+                    {property.neighborhood}, {property.city}
+                  </p>
+                </Link>
+              )}
 
               {/* Price and Date */}
               <div className="flex flex-wrap items-center gap-6 mb-6">
@@ -219,7 +330,7 @@ export default function ApplicationDetailPage() {
                     {locale === 'es' ? 'Arriendo mensual' : 'Monthly rent'}
                   </p>
                   <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                    {formatCurrency(property.monthlyRent)}
+                    {formatCurrency(property?.monthlyRent || 0)}
                   </p>
                 </div>
                 <div className="h-10 w-px bg-stone-200 dark:bg-neutral-700 hidden sm:block" />
@@ -282,23 +393,50 @@ export default function ApplicationDetailPage() {
 
               {/* Final Status Message */}
               {application.status === 'approved' && (
-                <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                      <Confetti className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-emerald-800 dark:text-emerald-300">
-                        {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
-                      </p>
-                      <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
-                        {locale === 'es'
-                          ? 'El propietario te contactará para coordinar la firma del contrato.'
-                          : 'The landlord will contact you to coordinate the contract signing.'}
-                      </p>
+                pendingContract ? (
+                  <div className="mt-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <PenNib className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-indigo-800 dark:text-indigo-300">
+                          {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
+                        </p>
+                        <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                          {locale === 'es'
+                            ? 'El propietario ya firmó el contrato. Solo falta tu firma para activarlo.'
+                            : 'The landlord has signed the contract. Only your signature is needed to activate it.'}
+                        </p>
+                        <Link
+                          href={`/inquilino/contratos/${pendingContract.id}/firmar`}
+                          className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+                        >
+                          <PenNib className="w-4 h-4" />
+                          {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <Confetti className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                          {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
+                        </p>
+                        <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                          {locale === 'es'
+                            ? 'El propietario te contactará para coordinar la firma del contrato.'
+                            : 'The landlord will contact you to coordinate the contract signing.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
 
               {application.status === 'rejected' && (
@@ -344,7 +482,7 @@ export default function ApplicationDetailPage() {
 
                 {/* Events */}
                 <div className="space-y-6">
-                  {[...application.events].reverse().map((event, index) => {
+                  {[...events].reverse().map((event, index) => {
                     const EventIcon = getEventIcon(event.type);
                     const isFirst = index === 0;
 
@@ -386,56 +524,50 @@ export default function ApplicationDetailPage() {
               </div>
             </motion.section>
 
-            {/* Property Details Card */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6"
-            >
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
-                {locale === 'es' ? 'Detalles de la propiedad' : 'Property details'}
-              </h2>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#222224]">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-2">
-                    <Buildings className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Tipo' : 'Type'}</p>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white capitalize">{property.type}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#222224]">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-2">
-                    <Bed className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Habitaciones' : 'Bedrooms'}</p>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{property.bedrooms}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#222224]">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-2">
-                    <Bathtub className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Baños' : 'Bathtubrooms'}</p>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{property.bathrooms}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#222224]">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-2">
-                    <ArrowsOut className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Área' : 'Area'}</p>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{property.area} m²</p>
-                </div>
-              </div>
-
-              <Link
-                href={`/propiedades/${property.id}`}
-                className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-full border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] hover:border-neutral-300 dark:hover:border-neutral-500 transition-colors"
+            {/* Property Info Card */}
+            {property && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6"
               >
-                {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            </motion.section>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+                  {locale === 'es' ? 'Propiedad' : 'Property'}
+                </h2>
+
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
+                    <Image
+                      src={property.thumbnail}
+                      alt={property.title}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-neutral-900 dark:text-white">{property.title}</h3>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {property.neighborhood}, {property.city}
+                    </p>
+                    <p className="text-lg font-bold text-neutral-900 dark:text-white mt-1">
+                      {formatCurrency(property.monthlyRent)}
+                      <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/mes</span>
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/propiedades/${property.id}`}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] hover:border-neutral-300 dark:hover:border-neutral-500 transition-colors"
+                >
+                  {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              </motion.section>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -464,7 +596,7 @@ export default function ApplicationDetailPage() {
                       {locale === 'es' ? 'Contactar propietario' : 'Contact landlord'}
                     </p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {locale === 'es' ? 'Envía un mensaje' : 'PaperPlaneTilt a message'}
+                      {locale === 'es' ? 'Envía un mensaje' : 'Send a message'}
                     </p>
                   </div>
                 </button>
@@ -589,7 +721,7 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
                     {locale === 'es' ? 'Ubicación' : 'Location'}
                   </span>
-                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{property.city}</span>
+                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{property?.city || '-'}</span>
                 </div>
               </div>
             </motion.div>

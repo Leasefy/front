@@ -4,8 +4,8 @@ import { Check, Buildings, User, EnvelopeSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PLANS, AGENCY_PLANS } from '@/lib/data/mock-subscriptions';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import { formatCurrency } from '@/lib/format';
 
 const PLAN_ICONS: Record<string, string> = {
   free: '⚡', pro: '✨', business: '🏢',

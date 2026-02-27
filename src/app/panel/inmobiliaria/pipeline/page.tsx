@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Funnel,
@@ -12,10 +12,11 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
-  MOCK_PIPELINE_ITEMS,
-  MOCK_AGENTES,
-  MOCK_CONSIGNACIONES,
-} from '@/lib/data/mock-inmobiliaria';
+  usePipelineItems,
+  useAgentes,
+  useConsignaciones,
+  pipelineApi,
+} from '@/lib/hooks/useInmobiliaria';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import {
   PipelineBoard,
@@ -23,6 +24,7 @@ import {
   PipelineDetail,
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
@@ -31,8 +33,13 @@ import {
 export default function PipelinePage() {
   const { t } = useI18n();
 
+  // Fetch data from API
+  const { pipelineItems, isLoading, refetch } = usePipelineItems();
+  const { agentes } = useAgentes();
+  const { consignaciones } = useConsignaciones();
+
   // State for pipeline items (local copy for optimistic updates)
-  const [items, setItems] = useState<PipelineItem[]>(MOCK_PIPELINE_ITEMS);
+  const [items, setItems] = useState<PipelineItem[]>([]);
 
   // State for selected item (detail modal)
   const [selectedItem, setSelectedItem] = useState<PipelineItem | null>(null);
@@ -46,6 +53,13 @@ export default function PipelinePage() {
     dateTo: undefined,
     search: undefined,
   });
+
+  // Sync API data to local state for optimistic updates
+  useEffect(() => {
+    if (pipelineItems.length > 0) {
+      setItems(pipelineItems);
+    }
+  }, [pipelineItems]);
 
   // Calculate stats from all items
   const stats = useMemo(() => {
@@ -119,7 +133,8 @@ export default function PipelinePage() {
   }, []);
 
   // Handle stage change from drag-and-drop or detail modal
-  const handleStageChange = useCallback((itemId: string, newStage: PipelineStage) => {
+  const handleStageChange = useCallback(async (itemId: string, newStage: PipelineStage) => {
+    // Optimistic update
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
@@ -146,7 +161,18 @@ export default function PipelinePage() {
           }
         : prev
     );
-  }, []);
+
+    // Call API to persist the change
+    try {
+      await pipelineApi.moveStage(itemId, newStage);
+      // Refetch to get the latest data
+      refetch();
+    } catch (error) {
+      console.error('Error moving pipeline item:', error);
+      // Revert optimistic update on error
+      refetch();
+    }
+  }, [refetch]);
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: PipelineFiltersState) => {
@@ -159,6 +185,25 @@ export default function PipelinePage() {
     // Delay clearing selected item for smooth animation
     setTimeout(() => setSelectedItem(null), 300);
   }, []);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            {t('inmobiliaria.pipeline.title')}
+          </h1>
+          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+            {t('inmobiliaria.pipeline.subtitle')}
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -282,8 +327,8 @@ export default function PipelinePage() {
 
         {/* Filters */}
         <PipelineFilters
-          agentes={MOCK_AGENTES}
-          consignaciones={MOCK_CONSIGNACIONES}
+          agentes={agentes}
+          consignaciones={consignaciones}
           filters={filters}
           onFilterChange={handleFilterChange}
         />

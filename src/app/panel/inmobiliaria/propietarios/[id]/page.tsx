@@ -41,10 +41,10 @@ import {
   PropietarioForm,
 } from '@/components/inmobiliaria';
 import {
-  MOCK_PROPIETARIOS,
-  MOCK_CONSIGNACIONES,
-  MOCK_DISPERSIONES,
-} from '@/lib/data/mock-inmobiliaria';
+  usePropietario,
+  useConsignaciones,
+  useDispersiones,
+} from '@/lib/hooks/useInmobiliaria';
 import type { Propietario, PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -305,23 +305,20 @@ export default function PropietarioDetailPage() {
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
-  // Find propietario and keep local state for updates
-  const initialPropietario = useMemo(
-    () => MOCK_PROPIETARIOS.find((p) => p.id === id),
-    [id]
-  );
-  const [propietario, setPropietario] = useState(initialPropietario);
+  // Fetch propietario and keep local state for updates
+  const { propietario: fetchedPropietario } = usePropietario(id);
+  const [propietario, setPropietario] = useState(fetchedPropietario);
 
-  // Find related data
-  const consignaciones = useMemo(
-    () => MOCK_CONSIGNACIONES.filter((c) => c.propietarioId === id),
-    [id]
-  );
+  // Update local state when fetched data changes
+  useEffect(() => {
+    if (fetchedPropietario) {
+      setPropietario(fetchedPropietario);
+    }
+  }, [fetchedPropietario]);
 
-  const dispersiones = useMemo(
-    () => MOCK_DISPERSIONES.filter((d) => d.propietarioId === id),
-    [id]
-  );
+  // Fetch related data
+  const { consignaciones } = useConsignaciones({ propietarioId: id });
+  const { dispersiones } = useDispersiones({ propietarioId: id });
 
   if (!propietario) {
     return (

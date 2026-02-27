@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPlaneTilt, Phone, Envelope } from '@phosphor-icons/react';
 import type { Contract } from '@/lib/types/contract';
 import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
-import { getTemplateById } from '@/lib/data/mock-contracts';
+import { getTemplateById } from '@/lib/constants/contract-templates';
 import { generateContractPdf } from '@/lib/utils/generate-contract-pdf';
 
 interface ContractExpandableItemProps {

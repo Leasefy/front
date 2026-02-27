@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -16,10 +16,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
-  MOCK_DISPERSIONES,
-  MOCK_PROPIETARIOS,
-  generateExtractoPropietario,
-} from '@/lib/data/mock-inmobiliaria';
+  useDispersiones,
+  usePropietarios,
+  useInmobiliariaConfig,
+  dispersionesApi,
+  propietariosApi,
+} from '@/lib/hooks/useInmobiliaria';
 import type { Dispersion, DispersionStatus, DispersionSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
@@ -68,9 +70,6 @@ function getCurrentMonth(): string {
 export default function DispersionesPage() {
   const { t, locale } = useI18n();
 
-  // State for dispersiones (local copy for optimistic updates)
-  const [dispersiones, setDispersiones] = useState<Dispersion[]>(MOCK_DISPERSIONES);
-
   // State for filters
   const [filters, setFilters] = useState<DispersionFiltersState>({
     month: getCurrentMonth(),
@@ -78,6 +77,26 @@ export default function DispersionesPage() {
     propietarioId: 'all',
     search: '',
   });
+
+  // Fetch dispersiones from API with current filters
+  const {
+    dispersiones: apiDispersiones,
+    isLoading: dispersionesLoading,
+    error: dispersionesError,
+    refetch: refetchDispersiones,
+    setData: setDispersiones,
+  } = useDispersiones({
+    month: filters.month,
+    status: filters.status !== 'all' ? filters.status : undefined,
+    propietarioId: filters.propietarioId !== 'all' ? filters.propietarioId : undefined,
+  });
+
+  // Fetch propietarios for dropdown
+  const { propietarios } = usePropietarios();
+  const { config } = useInmobiliariaConfig();
+
+  // Use API data or empty array while loading
+  const dispersiones = apiDispersiones ?? [];
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -91,30 +110,15 @@ export default function DispersionesPage() {
   const [extractoDispersion, setExtractoDispersion] = useState<Dispersion | null>(null);
   const [isExtractoOpen, setIsExtractoOpen] = useState(false);
 
-  // Filter dispersiones based on current filters
+  // Apply client-side search filter only (API already filters by month, status, propietarioId)
   const filteredDispersiones = useMemo(() => {
-    let result = dispersiones.filter((d) => d.month === filters.month);
+    if (!filters.search) return dispersiones;
 
-    // Filter by status
-    if (filters.status !== 'all') {
-      result = result.filter((d) => d.status === filters.status);
-    }
-
-    // Filter by propietario
-    if (filters.propietarioId !== 'all') {
-      result = result.filter((d) => d.propietarioId === filters.propietarioId);
-    }
-
-    // Filter by search (propietario name)
-    if (filters.search) {
-      const query = filters.search.toLowerCase();
-      result = result.filter((d) =>
-        d.propietarioName.toLowerCase().includes(query)
-      );
-    }
-
-    return result;
-  }, [dispersiones, filters]);
+    const query = filters.search.toLowerCase();
+    return dispersiones.filter((d) =>
+      d.propietarioName.toLowerCase().includes(query)
+    );
+  }, [dispersiones, filters.search]);
 
   // Pagination
   const totalPages = Math.ceil(filteredDispersiones.length / ITEMS_PER_PAGE);
@@ -124,39 +128,57 @@ export default function DispersionesPage() {
     return filteredDispersiones.slice(start, end);
   }, [filteredDispersiones, currentPage]);
 
-  // Calculate summary for selected month
-  const summary: DispersionSummary = useMemo(() => {
-    const monthDispersiones = dispersiones.filter((d) => d.month === filters.month);
+  // Fetch summary for selected month
+  const [summary, setSummary] = useState<DispersionSummary>({
+    month: filters.month,
+    totalToDisburse: 0,
+    totalCommissions: 0,
+    dispersionsPending: 0,
+    dispersionsCompleted: 0,
+    dispersionsFailed: 0,
+  });
 
-    return {
-      month: filters.month,
-      totalToDisburse: monthDispersiones.reduce((sum, d) => sum + d.netToPropietario, 0),
-      totalCommissions: monthDispersiones.reduce((sum, d) => sum + d.totalCommission, 0),
-      dispersionsPending: monthDispersiones.filter((d) => d.status === 'pending').length,
-      dispersionsCompleted: monthDispersiones.filter((d) => d.status === 'completed').length,
-      dispersionsFailed: monthDispersiones.filter((d) => d.status === 'failed').length,
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const data = await dispersionesApi.getSummary(filters.month);
+        setSummary(data);
+      } catch (error) {
+        // Calculate from local data as fallback
+        const monthDispersiones = dispersiones.filter((d) => d.month === filters.month);
+        setSummary({
+          month: filters.month,
+          totalToDisburse: monthDispersiones.reduce((sum, d) => sum + d.netToPropietario, 0),
+          totalCommissions: monthDispersiones.reduce((sum, d) => sum + d.totalCommission, 0),
+          dispersionsPending: monthDispersiones.filter((d) => d.status === 'pending').length,
+          dispersionsCompleted: monthDispersiones.filter((d) => d.status === 'completed').length,
+          dispersionsFailed: monthDispersiones.filter((d) => d.status === 'failed').length,
+        });
+      }
     };
-  }, [dispersiones, filters.month]);
+    fetchSummary();
+  }, [filters.month, dispersiones]);
 
-  // Count dispersiones by status for tabs
+  // Count dispersiones by status for tabs (hybrid: summary + calculated processing)
   const statusCounts = useMemo(() => {
-    const monthDispersiones = dispersiones.filter((d) => d.month === filters.month);
+    const processingCount = dispersiones.filter((d) => d.status === 'processing').length;
+    const total = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed + processingCount;
     return {
-      all: monthDispersiones.length,
-      pending: monthDispersiones.filter((d) => d.status === 'pending').length,
-      processing: monthDispersiones.filter((d) => d.status === 'processing').length,
-      completed: monthDispersiones.filter((d) => d.status === 'completed').length,
-      failed: monthDispersiones.filter((d) => d.status === 'failed').length,
+      all: total,
+      pending: summary.dispersionsPending,
+      processing: processingCount,
+      completed: summary.dispersionsCompleted,
+      failed: summary.dispersionsFailed,
     };
-  }, [dispersiones, filters.month]);
+  }, [summary, dispersiones]);
 
   // Propietarios for filter dropdown
   const propietarioOptions = useMemo(() => {
-    return MOCK_PROPIETARIOS.map((p) => ({
+    return propietarios.map((p) => ({
       id: p.id,
       name: p.name,
     }));
-  }, []);
+  }, [propietarios]);
 
   // Handle dispersion click - open detail modal
   const handleDispersionClick = useCallback((dispersion: Dispersion) => {
@@ -166,50 +188,45 @@ export default function DispersionesPage() {
 
   // Handle process dispersion
   const handleProcessDispersion = useCallback(async (dispersion: Dispersion) => {
-    // Step 1: Set to processing
-    setDispersiones((prev) =>
-      prev.map((d) =>
-        d.id === dispersion.id
-          ? {
-              ...d,
-              status: 'processing' as DispersionStatus,
-              updatedAt: new Date().toISOString(),
-            }
-          : d
-      )
-    );
+    try {
+      // Optimistic update: Set to processing
+      setDispersiones((prev) =>
+        prev?.map((d) =>
+          d.id === dispersion.id
+            ? {
+                ...d,
+                status: 'processing' as DispersionStatus,
+                updatedAt: new Date().toISOString(),
+              }
+            : d
+        ) ?? []
+      );
 
-    toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), {
-      id: `process-${dispersion.id}`,
-    });
+      toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), {
+        id: `process-${dispersion.id}`,
+      });
 
-    // Simulate transfer delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call API to process dispersion
+      await dispersionesApi.process(dispersion.id);
 
-    // Step 2: Mark as completed
-    const transferRef = `TRF-${filters.month.replace('-', '')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      // Refetch to get updated status from server
+      await refetchDispersiones();
 
-    setDispersiones((prev) =>
-      prev.map((d) =>
-        d.id === dispersion.id
-          ? {
-              ...d,
-              status: 'completed' as DispersionStatus,
-              processedAt: new Date().toISOString(),
-              transferReference: transferRef,
-              updatedAt: new Date().toISOString(),
-            }
-          : d
-      )
-    );
+      toast.success(t('inmobiliaria.dispersiones.toasts.processed'), {
+        id: `process-${dispersion.id}`,
+        description: t('inmobiliaria.dispersiones.toasts.transferSent', { name: dispersion.propietarioName }),
+      });
 
-    toast.success(t('inmobiliaria.dispersiones.toasts.processed'), {
-      id: `process-${dispersion.id}`,
-      description: t('inmobiliaria.dispersiones.toasts.transferSent', { name: dispersion.propietarioName }),
-    });
-
-    setIsDetailOpen(false);
-  }, [filters.month, t]);
+      setIsDetailOpen(false);
+    } catch (error) {
+      // Revert optimistic update on error
+      await refetchDispersiones();
+      toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
+        id: `process-${dispersion.id}`,
+        description: error instanceof Error ? error.message : 'Error al procesar dispersión',
+      });
+    }
+  }, [t, refetchDispersiones, setDispersiones]);
 
   // Handle retry failed dispersion
   const handleRetryDispersion = useCallback(async (dispersion: Dispersion) => {
@@ -222,48 +239,43 @@ export default function DispersionesPage() {
     const pending = filteredDispersiones.filter((d) => d.status === 'pending');
     if (pending.length === 0) return;
 
-    toast.loading(t('inmobiliaria.dispersiones.toasts.processingBatch', { count: pending.length }), {
-      id: 'process-all',
-    });
+    try {
+      toast.loading(t('inmobiliaria.dispersiones.toasts.processingBatch', { count: pending.length }), {
+        id: 'process-all',
+      });
 
-    // Set all to processing
-    setDispersiones((prev) =>
-      prev.map((d) =>
-        pending.find((p) => p.id === d.id)
-          ? {
-              ...d,
-              status: 'processing' as DispersionStatus,
-              updatedAt: new Date().toISOString(),
-            }
-          : d
-      )
-    );
+      // Optimistic update: Set all to processing
+      setDispersiones((prev) =>
+        prev?.map((d) =>
+          pending.find((p) => p.id === d.id)
+            ? {
+                ...d,
+                status: 'processing' as DispersionStatus,
+                updatedAt: new Date().toISOString(),
+              }
+            : d
+        ) ?? []
+      );
 
-    // Simulate batch processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Process all dispersiones via API
+      await Promise.all(pending.map((d) => dispersionesApi.process(d.id)));
 
-    // Mark all as completed
-    setDispersiones((prev) =>
-      prev.map((d) => {
-        const isPending = pending.find((p) => p.id === d.id);
-        if (isPending) {
-          return {
-            ...d,
-            status: 'completed' as DispersionStatus,
-            processedAt: new Date().toISOString(),
-            transferReference: `TRF-${filters.month.replace('-', '')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return d;
-      })
-    );
+      // Refetch to get updated data
+      await refetchDispersiones();
 
-    toast.success(t('inmobiliaria.dispersiones.toasts.batchCompleted'), {
-      id: 'process-all',
-      description: t('inmobiliaria.dispersiones.toasts.batchCompletedDesc', { count: pending.length }),
-    });
-  }, [filteredDispersiones, filters.month, t]);
+      toast.success(t('inmobiliaria.dispersiones.toasts.batchCompleted'), {
+        id: 'process-all',
+        description: t('inmobiliaria.dispersiones.toasts.batchCompletedDesc', { count: pending.length }),
+      });
+    } catch (error) {
+      // Revert on error
+      await refetchDispersiones();
+      toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
+        id: 'process-all',
+        description: error instanceof Error ? error.message : 'Error al procesar dispersiones',
+      });
+    }
+  }, [filteredDispersiones, t, refetchDispersiones, setDispersiones]);
 
   // Handle view extracto
   const handleViewExtracto = useCallback((dispersion: Dispersion) => {
@@ -273,17 +285,25 @@ export default function DispersionesPage() {
   }, []);
 
   // Handle download extracto PDF
-  const handleDownloadExtracto = useCallback((dispersion: Dispersion) => {
-    const extracto = generateExtractoPropietario(dispersion.propietarioId, dispersion.month);
-    if (extracto) {
-      downloadExtractoPDF(extracto);
-      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
-        description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
+  const handleDownloadExtracto = useCallback(async (dispersion: Dispersion) => {
+    if (!config) return;
+    try {
+      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
+      const propietario = propietarios.find((p) => p.id === dispersion.propietarioId);
+      if (extracto) {
+        downloadExtractoPDF(extracto, config, propietario);
+        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+          description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
+        });
+      } else {
+        toast.error(t('inmobiliaria.dispersiones.toasts.error'));
+      }
+    } catch (error) {
+      toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
+        description: error instanceof Error ? error.message : 'Error al generar extracto',
       });
-    } else {
-      toast.error(t('inmobiliaria.dispersiones.toasts.error'));
     }
-  }, [t]);
+  }, [t, config, propietarios]);
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {
@@ -309,11 +329,30 @@ export default function DispersionesPage() {
     setTimeout(() => setExtractoDispersion(null), 300);
   }, []);
 
-  // Generate extracto data for modal
-  const extractoData = useMemo(() => {
-    if (!extractoDispersion) return null;
-    return generateExtractoPropietario(extractoDispersion.propietarioId, extractoDispersion.month);
-  }, [extractoDispersion]);
+  // Fetch extracto data for modal when dispersion is selected
+  const [extractoData, setExtractoData] = useState<any>(null);
+  const [extractoLoading, setExtractoLoading] = useState(false);
+
+  // Load extracto when modal opens
+  useEffect(() => {
+    if (extractoDispersion && isExtractoOpen) {
+      const loadExtracto = async () => {
+        try {
+          setExtractoLoading(true);
+          const data = await propietariosApi.getExtracto(extractoDispersion.propietarioId, extractoDispersion.month);
+          setExtractoData(data);
+        } catch (error) {
+          toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
+            description: 'Error al cargar extracto',
+          });
+          setExtractoData(null);
+        } finally {
+          setExtractoLoading(false);
+        }
+      };
+      loadExtracto();
+    }
+  }, [extractoDispersion, isExtractoOpen, t]);
 
   // Format month for display
   const monthDisplay = new Date(filters.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {

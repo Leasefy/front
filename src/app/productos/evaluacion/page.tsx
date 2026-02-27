@@ -109,7 +109,7 @@ export default function EvaluacionPage() {
                   transition={{ delay: 0.3 }}
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
-                  <Link href="/auth">
+                  <Link href="/panel/candidatos">
                     <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
                       Evaluar inquilino
                     </Button>

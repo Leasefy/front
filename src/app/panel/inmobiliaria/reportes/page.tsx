@@ -16,15 +16,16 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import {
-  MOCK_REPORTS,
-  generateComisionesAgenteReport,
-  generateOcupacionReport,
-  generateVencimientosReport,
-  generateFlujoCajaReport,
-  generateCarteraReport,
-} from '@/lib/data/mock-inmobiliaria';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
+import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
+import {
+  useCarteraReport,
+  useOcupacionReport,
+  useComisionesReport,
+  useVencimientosReport,
+  useFlujoCajaReport,
+  reportesApi,
+} from '@/lib/hooks/useInmobiliaria';
 import {
   ReporteCard,
   ReporteFilters,
@@ -38,8 +39,6 @@ import {
   exportFlujoCaja,
   exportOcupacion,
 } from '@/lib/utils/generate-report-excel';
-import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
-
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
 
@@ -79,9 +78,9 @@ function loadFavorites(): Set<ReportId> {
     // Ignore errors
   }
 
-  // Default favorites from mock data
+  // Default favorites from report definitions
   return new Set(
-    MOCK_REPORTS.filter((r) => r.isFavorite).map((r) => r.id)
+    REPORT_DEFINITIONS.filter((r) => r.isFavorite).map((r) => r.id)
   );
 }
 
@@ -105,9 +104,17 @@ function saveFavorites(favorites: Set<ReportId>): void {
 export default function ReportesPage() {
   const { t, locale } = useI18n();
 
+  // API Hooks for report data
+  const carteraReport = useCarteraReport();
+  const ocupacionReport = useOcupacionReport();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const comisionesReport = useComisionesReport(currentMonth);
+  const vencimientosReport = useVencimientosReport();
+  const flujoCajaReport = useFlujoCajaReport('semester');
+
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
-    return MOCK_REPORTS.map((r) => ({ ...r }));
+    return REPORT_DEFINITIONS.map((r) => ({ ...r }));
   });
 
   // State for filters
@@ -291,36 +298,48 @@ export default function ReportesPage() {
   const handleExportReport = useCallback(
     async (report: ReportDefinition, format: 'pdf' | 'excel') => {
       try {
-        // Get current month for data generation
-        const currentMonth = new Date().toISOString().slice(0, 7);
-
         if (format === 'excel') {
           // Generate and export based on report type
           switch (report.id) {
             case 'cartera-edades': {
-              const data = generateCarteraReport();
-              exportCarteraEdades(data);
+              if (!carteraReport.report) {
+                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
+                return;
+              }
+              exportCarteraEdades(carteraReport.report);
               break;
             }
             case 'comisiones-agente':
             case 'rendimiento-agentes': {
-              const data = generateComisionesAgenteReport(currentMonth);
-              exportComisionesAgente(data);
+              if (!comisionesReport.report) {
+                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
+                return;
+              }
+              exportComisionesAgente(comisionesReport.report);
               break;
             }
             case 'vencimientos': {
-              const data = generateVencimientosReport();
-              exportVencimientos(data);
+              if (!vencimientosReport.report) {
+                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
+                return;
+              }
+              exportVencimientos(vencimientosReport.report);
               break;
             }
             case 'flujo-caja': {
-              const data = generateFlujoCajaReport('semester');
-              exportFlujoCaja(data);
+              if (!flujoCajaReport.report) {
+                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
+                return;
+              }
+              exportFlujoCaja(flujoCajaReport.report);
               break;
             }
             case 'ocupacion-portafolio': {
-              const data = generateOcupacionReport();
-              exportOcupacion(data);
+              if (!ocupacionReport.report) {
+                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
+                return;
+              }
+              exportOcupacion(ocupacionReport.report);
               break;
             }
             default:
@@ -354,7 +373,7 @@ export default function ReportesPage() {
         });
       }
     },
-    [t]
+    [t, carteraReport.report, comisionesReport.report, vencimientosReport.report, flujoCajaReport.report, ocupacionReport.report]
   );
 
   // Handle viewer export

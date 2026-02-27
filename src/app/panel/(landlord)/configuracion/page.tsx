@@ -5,31 +5,26 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, DeviceMobile, DeviceTablet, Laptop, Lock, ShieldCheck, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
-import { getPlanById, MOCK_SUBSCRIPTION } from '@/lib/data/mock-subscriptions';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
-import { MOCK_LEASES } from '@/lib/data/mock-leases';
-import { getPendingVisitCount } from '@/lib/data/mock-visits';
+import { getPlanById } from '@/lib/constants/subscription-plans';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/format';
+import { useLeases } from '@/lib/hooks/useLeases';
+import { useVisits } from '@/lib/hooks/useVisits';
+import { useNotificationSettings } from '@/lib/hooks/useSettings';
+import { settingsApi } from '@/lib/api/settings.service';
+import { getSupabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { SettingsModal } from '@/components/settings/SettingsModal';
 import { SettingToggle } from '@/components/settings/SettingToggle';
 import { SettingLink } from '@/components/settings/SettingLink';
 import { PaymentAccountsSection } from '@/components/settings/PaymentAccountsSection';
 import { TeamManagementSection } from '@/components/settings/TeamManagementSection';
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const mockSessions = [
-  { id: '1', device: 'Chrome en MacOS', location: 'Bogotá, Colombia', current: true, lastActive: 'Ahora', deviceType: 'desktop' as const },
-  { id: '2', device: 'App iOS', location: 'Bogotá, Colombia', current: false, lastActive: 'Hace 2 horas', deviceType: 'mobile' as const },
-  { id: '3', device: 'Safari en iPad', location: 'Medellín, Colombia', current: false, lastActive: 'Hace 1 día', deviceType: 'tablet' as const },
-];
+import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import type { NotificationSettings } from '@/lib/api/settings.service';
 
 // ============================================================================
 // Main Component
@@ -40,47 +35,51 @@ export default function ConfiguracionPage() {
   const { user } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
+  const { stats: visitStats } = useVisits();
+  const { getActive: getActiveLeases } = useLeases();
   const [mounted, setMounted] = useState(false);
+
+  // Real notification settings from backend
+  const { settings: notifSettings, updateSetting } = useNotificationSettings();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Gear state
-  const [settings, setGear] = useState({
-    emailNewApplication: true,
-    emailPaymentReceived: true,
-    emailContractReminder: true,
-    pushNewMessage: true,
-    pushApplicationStatus: true,
-    smsUrgent: false,
-    marketingEmails: false,
-    twoFactorAuth: false,
-  });
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSessionsModal, setShowSessionsModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
 
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const currentPlan = getPlanById(MOCK_SUBSCRIPTION.planId);
+  const { subscription } = useMySubscription();
+  const currentPlanId = subscription?.planId ?? 'free';
+  const currentPlan = getPlanById(currentPlanId);
+
+  // Map UI toggle keys to backend notification setting keys
+  const notifKeyMap: Record<string, keyof NotificationSettings> = {
+    emailNewApplication: 'emailApplications',
+    emailPaymentReceived: 'emailPayments',
+    emailContractReminder: 'emailContracts',
+    pushNewMessage: 'emailMessages',
+    marketingEmails: 'emailMarketing',
+  };
 
   // Handlers
-  const handleToggle = (key: keyof typeof settings) => {
-    if (key === 'twoFactorAuth') {
-      setShow2FAModal(true);
-      return;
+  const handleNotifToggle = async (uiKey: string) => {
+    const backendKey = notifKeyMap[uiKey];
+    if (!backendKey) return;
+    try {
+      await updateSetting(backendKey, !notifSettings[backendKey]);
+      toast.success(t('landlordSettings.toasts.settingsUpdated'));
+    } catch {
+      toast.error('Error al actualizar configuración');
     }
-    setGear(prev => ({ ...prev, [key]: !prev[key] }));
-    toast.success(t('landlordSettings.toasts.settingsUpdated'));
   };
 
   const handleDarkModeToggle = () => {
@@ -99,24 +98,54 @@ export default function ConfiguracionPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', new: '', confirm: '' });
-    toast.success(t('landlordSettings.toasts.passwordUpdated'));
+    try {
+      const supabase = getSupabase();
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.new });
+      if (error) throw error;
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      toast.success(t('landlordSettings.toasts.passwordUpdated'));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al cambiar contraseña');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCloseSession = (sessionId: string) => {
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast.success(t('landlordSettings.toasts.sessionClosed'));
+  const handleCloseAllSessions = async () => {
+    try {
+      const supabase = getSupabase();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) throw error;
+      toast.success(t('landlordSettings.toasts.allSessionsClosed'));
+      // Global signout logs out the current session too, redirect to auth
+      setTimeout(() => router.push('/auth'), 1000);
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al cerrar sesiones');
+    }
   };
 
   const handleDownloadData = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    setShowDownloadModal(false);
-    toast.success(t('landlordSettings.toasts.dataRequestSent'));
+    try {
+      const data = await settingsApi.requestDataExport();
+      // Download as JSON file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leasefy-datos-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setShowDownloadModal(false);
+      toast.success(t('landlordSettings.toasts.dataRequestSent'));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al exportar datos');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -125,19 +154,18 @@ export default function ConfiguracionPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    toast.success(t('landlordSettings.toasts.accountDeleted'));
-    setTimeout(() => router.push('/'), 2000);
-  };
-
-  const handleEnable2FA = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setGear(prev => ({ ...prev, twoFactorAuth: true }));
-    setShow2FAModal(false);
-    toast.success(t('landlordSettings.toasts.twoFactorEnabled'));
+    try {
+      await settingsApi.deleteAccount();
+      // Sign out from Supabase after soft-delete
+      const supabase = getSupabase();
+      await supabase.auth.signOut();
+      toast.success(t('landlordSettings.toasts.accountDeleted'));
+      setTimeout(() => router.push('/'), 2000);
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al eliminar cuenta');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetOnboarding = () => {
@@ -147,17 +175,11 @@ export default function ConfiguracionPage() {
     setTimeout(() => router.push('/panel'), 500);
   };
 
-  const getDeviceIcon = (type: 'desktop' | 'mobile' | 'tablet') => {
-    switch (type) {
-      case 'mobile': return DeviceMobile;
-      case 'tablet': return DeviceTablet;
-      default: return Laptop;
-    }
-  };
+  // Derive current session info from browser
+  const currentSessionDevice = typeof navigator !== 'undefined' ? navigator.userAgent.split('(')[1]?.split(')')[0] || 'Navegador actual' : 'Navegador actual';
 
   // Account deletion blockers
-  const activeLeases = MOCK_LEASES.filter(l => l.status === 'active' || l.status === 'ending_soon');
-  const pendingVisits = getPendingVisitCount();
+  const activeLeases = getActiveLeases();
   const hasCriticalBlockers = activeLeases.length > 0;
 
   return (
@@ -195,9 +217,9 @@ export default function ConfiguracionPage() {
                     <p className="text-indigo-600/70 dark:text-indigo-300/70 text-sm">{t('landlordSettings.subscription.currentPlan')}</p>
                     <p className="text-xl font-semibold text-indigo-900 dark:text-indigo-100">{currentPlan.name}</p>
                     <p className="text-indigo-600/60 dark:text-indigo-300/60 text-sm">
-                      {MOCK_SUBSCRIPTION.planId === 'free'
+                      {currentPlanId === 'free'
                         ? t('landlordSettings.subscription.freePlan')
-                        : `${formatCurrency(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
+                        : `${formatCurrencyUtil(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
                     </p>
                   </div>
                 </div>
@@ -215,7 +237,7 @@ export default function ConfiguracionPage() {
                     <p className="text-xs text-indigo-600/60 dark:text-indigo-300/60">{t('landlordSettings.subscription.contracts')}</p>
                   </div>
                 </div>
-                {MOCK_SUBSCRIPTION.planId !== 'business' && (
+                {currentPlanId !== 'business' && (
                   <Link
                     href="/panel/upgrade"
                     className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2"
@@ -251,36 +273,36 @@ export default function ConfiguracionPage() {
                 icon={Envelope}
                 title={t('landlordSettings.notifications.newApplication')}
                 description={t('landlordSettings.notifications.newApplicationDesc')}
-                enabled={settings.emailNewApplication}
-                onToggle={() => handleToggle('emailNewApplication')}
+                enabled={notifSettings.emailApplications}
+                onToggle={() => handleNotifToggle('emailNewApplication')}
               />
               <SettingToggle
                 icon={CreditCard}
                 title={t('landlordSettings.notifications.paymentReceived')}
                 description={t('landlordSettings.notifications.paymentReceivedDesc')}
-                enabled={settings.emailPaymentReceived}
-                onToggle={() => handleToggle('emailPaymentReceived')}
+                enabled={notifSettings.emailPayments}
+                onToggle={() => handleNotifToggle('emailPaymentReceived')}
               />
               <SettingToggle
                 icon={FileText}
                 title={t('landlordSettings.notifications.contractReminders')}
                 description={t('landlordSettings.notifications.contractRemindersDesc')}
-                enabled={settings.emailContractReminder}
-                onToggle={() => handleToggle('emailContractReminder')}
+                enabled={notifSettings.emailContracts}
+                onToggle={() => handleNotifToggle('emailContractReminder')}
               />
               <SettingToggle
                 icon={Bell}
                 title={t('landlordSettings.notifications.newMessages')}
                 description={t('landlordSettings.notifications.newMessagesDesc')}
-                enabled={settings.pushNewMessage}
-                onToggle={() => handleToggle('pushNewMessage')}
+                enabled={notifSettings.emailMessages}
+                onToggle={() => handleNotifToggle('pushNewMessage')}
               />
               <SettingToggle
                 icon={Tag}
                 title={t('landlordSettings.notifications.promotionalEmails')}
                 description={t('landlordSettings.notifications.promotionalEmailsDesc')}
-                enabled={settings.marketingEmails}
-                onToggle={() => handleToggle('marketingEmails')}
+                enabled={notifSettings.emailMarketing}
+                onToggle={() => handleNotifToggle('marketingEmails')}
               />
             </div>
           </motion.section>
@@ -312,14 +334,7 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
-                <SettingToggle
-                  icon={ShieldCheck}
-                  title={t('landlordSettings.security.twoFactorAuth')}
-                  description={settings.twoFactorAuth ? t('landlordSettings.security.enabled') : t('landlordSettings.security.extraSecurity')}
-                  enabled={settings.twoFactorAuth}
-                  onToggle={() => handleToggle('twoFactorAuth')}
-                  accent={settings.twoFactorAuth ? 'emerald' : undefined}
-                />
+                <MfaSetupSection />
                 <SettingLink
                   icon={Lock}
                   title={t('landlordSettings.security.changePassword')}
@@ -329,9 +344,8 @@ export default function ConfiguracionPage() {
                 <SettingLink
                   icon={Monitor}
                   title={t('landlordSettings.security.activeSessions')}
-                  description={`${sessions.length} ${sessions.length !== 1 ? t('landlordSettings.security.devices') : t('landlordSettings.security.device')}`}
+                  description={`1 ${t('landlordSettings.security.device')}`}
                   onClick={() => setShowSessionsModal(true)}
-                  badge={sessions.length > 1 ? `${sessions.length}` : undefined}
                 />
               </div>
             </motion.section>
@@ -539,43 +553,26 @@ export default function ConfiguracionPage() {
       {/* Sessions Modal */}
       <SettingsModal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
         <div className="space-y-3">
-          {sessions.map((session) => {
-            const DeviceIcon = getDeviceIcon(session.deviceType);
-            return (
-              <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <DeviceIcon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.device}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{session.location} · {session.lastActive}</p>
-                  </div>
-                </div>
-                {session.current ? (
-                  <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">{t('landlordSettings.modals.sessions.current')}</span>
-                ) : (
-                  <button
-                    onClick={() => handleCloseSession(session.id)}
-                    className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline"
-                  >
-                    {t('landlordSettings.modals.sessions.close')}
-                  </button>
-                )}
+          {/* Current session (derived from browser) */}
+          <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                <Laptop className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
               </div>
-            );
-          })}
-          {sessions.length > 1 && (
-            <button
-              onClick={() => {
-                setSessions(prev => prev.filter(s => s.current));
-                toast.success(t('landlordSettings.toasts.allSessionsClosed'));
-              }}
-              className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              {t('landlordSettings.modals.sessions.closeAll')}
-            </button>
-          )}
+              <div>
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">{currentSessionDevice}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.modals.sessions.current')}</p>
+              </div>
+            </div>
+            <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">{t('landlordSettings.modals.sessions.current')}</span>
+          </div>
+          {/* Close all sessions (signs out everywhere) */}
+          <button
+            onClick={handleCloseAllSessions}
+            className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            {t('landlordSettings.modals.sessions.closeAll')}
+          </button>
         </div>
       </SettingsModal>
 
@@ -619,69 +616,6 @@ export default function ConfiguracionPage() {
               {isLoading ? t('landlordSettings.modals.downloadData.processing') : t('landlordSettings.modals.downloadData.requestData')}
             </button>
           </div>
-        </div>
-      </SettingsModal>
-
-      {/* 2FA Modal */}
-      <SettingsModal open={show2FAModal} onClose={() => setShow2FAModal(false)} title={t('landlordSettings.modals.twoFactor.title')}>
-        <div className="space-y-4">
-          {!settings.twoFactorAuth ? (
-            <>
-              <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-emerald-900/50 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                    {t('landlordSettings.modals.twoFactor.description')}
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                {t('landlordSettings.modals.twoFactor.smsNote')}
-              </p>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShow2FAModal(false)}
-                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-                >
-                  {t('landlordSettings.modals.cancel')}
-                </button>
-                <button
-                  onClick={handleEnable2FA}
-                  disabled={isLoading}
-                  className="flex-1 py-3 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
-                >
-                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                  {isLoading ? t('landlordSettings.modals.twoFactor.enabling') : t('landlordSettings.modals.twoFactor.enable')}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                  <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">
-                  {t('landlordSettings.modals.twoFactor.enabled')}
-                </p>
-              </div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                {t('landlordSettings.modals.twoFactor.protected')}
-              </p>
-              <button
-                onClick={() => {
-                  setGear(prev => ({ ...prev, twoFactorAuth: false }));
-                  setShow2FAModal(false);
-                  toast.success(t('landlordSettings.toasts.twoFactorDisabled'));
-                }}
-                className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                {t('landlordSettings.modals.twoFactor.disable')}
-              </button>
-            </>
-          )}
         </div>
       </SettingsModal>
 

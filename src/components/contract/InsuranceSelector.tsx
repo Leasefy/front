@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Check, Shield, ShieldCheck, ShieldSlash, Wrench, Scales, Clock, Sparkle } from '@phosphor-icons/react';
-import { INSURANCE_POLICIES } from '@/lib/data/mock-insurance';
+import { INSURANCE_POLICIES } from '@/lib/constants/insurance-policies';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 
 // ============================================================================

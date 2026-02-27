@@ -35,12 +35,12 @@ import {
   ConfigFacturacion,
 } from '@/components/inmobiliaria';
 import {
-  MOCK_INMOBILIARIA_CONFIG_EXTENDED,
-  MOCK_AGENCY_USERS,
-  MOCK_INTEGRATIONS,
-  MOCK_BILLING,
-  MOCK_INVOICES,
-} from '@/lib/data/mock-inmobiliaria';
+  useInmobiliariaConfig,
+  useAgencyUsers,
+  useAgencyIntegrations,
+  useAgencyBilling,
+  inmobiliariaConfigApi,
+} from '@/lib/hooks/useInmobiliaria';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import type {
   InmobiliariaConfigExtended,
@@ -89,11 +89,14 @@ const TAB_ICONS: Record<ConfigTab, React.ElementType> = {
  * Route: /panel/inmobiliaria/configuracion
  */
 export default function ConfiguracionPage() {
+  // API Hooks
+  const { config, isLoading: configLoading, refetch: refetchConfig } = useInmobiliariaConfig();
+  const { users, isLoading: usersLoading, refetch: refetchUsers } = useAgencyUsers();
+  const { integrations, isLoading: integrationsLoading, refetch: refetchIntegrations } = useAgencyIntegrations();
+  const { billing, invoices, isLoading: billingLoading } = useAgencyBilling();
+
   // State
   const [activeTab, setActiveTab] = useState<ConfigTab>('perfil');
-  const [config, setConfig] = useState<InmobiliariaConfigExtended>(MOCK_INMOBILIARIA_CONFIG_EXTENDED);
-  const [users, setUsers] = useState<AgencyUser[]>(MOCK_AGENCY_USERS);
-  const [integrations, setIntegrations] = useState<AgencyIntegration[]>(MOCK_INTEGRATIONS);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
@@ -135,62 +138,92 @@ export default function ConfiguracionPage() {
   // Handlers - Perfil
   // -------------------------------------------------------------------------
 
-  const handleSaveConfig = (newConfig: InmobiliariaConfigExtended) => {
-    setConfig(newConfig);
-    toast.success(t('inmobiliaria.config.toasts.configSaved'), {
-      description: t('inmobiliaria.config.toasts.configSavedDesc'),
-    });
+  const handleSaveConfig = async (newConfig: InmobiliariaConfigExtended) => {
+    try {
+      await inmobiliariaConfigApi.update(newConfig);
+      await refetchConfig();
+      toast.success(t('inmobiliaria.config.toasts.configSaved'), {
+        description: t('inmobiliaria.config.toasts.configSavedDesc'),
+      });
+    } catch (error) {
+      toast.error('Error al guardar configuración');
+    }
   };
 
   // -------------------------------------------------------------------------
   // Handlers - Branding
   // -------------------------------------------------------------------------
 
-  const handleSaveBranding = (branding: AgencyBranding) => {
-    setConfig((prev) => ({ ...prev, branding }));
-    toast.success(t('inmobiliaria.config.toasts.brandingSaved'), {
-      description: t('inmobiliaria.config.toasts.brandingSavedDesc'),
-    });
+  const handleSaveBranding = async (branding: AgencyBranding) => {
+    try {
+      await inmobiliariaConfigApi.updateBranding(branding);
+      await refetchConfig();
+      toast.success(t('inmobiliaria.config.toasts.brandingSaved'), {
+        description: t('inmobiliaria.config.toasts.brandingSavedDesc'),
+      });
+    } catch (error) {
+      toast.error('Error al guardar branding');
+    }
   };
 
   // -------------------------------------------------------------------------
   // Handlers - Usuarios
   // -------------------------------------------------------------------------
 
-  const handleInviteUser = () => {
-    toast.info(t('inmobiliaria.config.toasts.inviteSent'), {
-      description: t('inmobiliaria.config.toasts.inviteSentDesc'),
-    });
+  const handleInviteUser = async () => {
+    try {
+      // TODO: Open invite modal to get email and role
+      toast.info(t('inmobiliaria.config.toasts.inviteSent'), {
+        description: t('inmobiliaria.config.toasts.inviteSentDesc'),
+      });
+    } catch (error) {
+      toast.error('Error al invitar usuario');
+    }
   };
 
-  const handleUpdateRole = (userId: string, role: AgencyRole) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role } : u))
-    );
-    toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
+  const handleUpdateRole = async (userId: string, role: AgencyRole) => {
+    try {
+      await inmobiliariaConfigApi.updateUser(userId, { role });
+      await refetchUsers();
+      toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
+    } catch (error) {
+      toast.error('Error al actualizar rol');
+    }
   };
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id !== userId) return u;
-        const newStatus: AgencyUser['status'] = u.status === 'active' ? 'inactive' : 'active';
-        return { ...u, status: newStatus };
-      })
-    );
-    toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
+  const handleToggleStatus = async (userId: string) => {
+    try {
+      const user = users.find((u) => u.id === userId);
+      if (!user) return;
+      const newStatus: AgencyUser['status'] = user.status === 'active' ? 'inactive' : 'active';
+      await inmobiliariaConfigApi.updateUser(userId, { status: newStatus });
+      await refetchUsers();
+      toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
+    } catch (error) {
+      toast.error('Error al actualizar estado');
+    }
   };
 
-  const handleResendInvite = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
-      description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
-    });
+  const handleResendInvite = async (userId: string) => {
+    try {
+      const user = users.find((u) => u.id === userId);
+      // TODO: API endpoint for resend invite
+      toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
+        description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
+      });
+    } catch (error) {
+      toast.error('Error al reenviar invitación');
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-    toast.success(t('inmobiliaria.config.toasts.userDeleted'));
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await inmobiliariaConfigApi.deleteUser(userId);
+      await refetchUsers();
+      toast.success(t('inmobiliaria.config.toasts.userDeleted'));
+    } catch (error) {
+      toast.error('Error al eliminar usuario');
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -208,18 +241,28 @@ export default function ConfiguracionPage() {
   // Handlers - Integraciones
   // -------------------------------------------------------------------------
 
-  const handleToggleIntegration = (integrationId: string, enabled: boolean) => {
-    setIntegrations((prev) =>
-      prev.map((i) => (i.id === integrationId ? { ...i, isEnabled: enabled } : i))
-    );
-    toast.success(enabled ? t('inmobiliaria.config.toasts.integrationEnabled') : t('inmobiliaria.config.toasts.integrationDisabled'));
+  const handleToggleIntegration = async (integrationId: string, enabled: boolean) => {
+    try {
+      await inmobiliariaConfigApi.toggleIntegration(integrationId, enabled);
+      await refetchIntegrations();
+      toast.success(enabled ? t('inmobiliaria.config.toasts.integrationEnabled') : t('inmobiliaria.config.toasts.integrationDisabled'));
+    } catch (error) {
+      toast.error('Error al actualizar integración');
+    }
   };
 
-  const handleConfigureIntegration = (integrationId: string, config: Record<string, string>) => {
-    const integration = integrations.find((i) => i.id === integrationId);
-    toast.info(t('inmobiliaria.config.toasts.configureIntegration'), {
-      description: t('inmobiliaria.config.toasts.configureIntegrationDesc', { name: integration?.name || integrationId }),
-    });
+  const handleConfigureIntegration = async (integrationId: string, config: Record<string, string>) => {
+    try {
+      const integration = integrations.find((i) => i.id === integrationId);
+      // TODO: Add API endpoint for updating integration config
+      // await inmobiliariaConfigApi.configureIntegration(integrationId, config);
+      await refetchIntegrations();
+      toast.info(t('inmobiliaria.config.toasts.configureIntegration'), {
+        description: t('inmobiliaria.config.toasts.configureIntegrationDesc', { name: integration?.name || integrationId }),
+      });
+    } catch (error) {
+      toast.error('Error al configurar integración');
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -235,6 +278,9 @@ export default function ConfiguracionPage() {
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+
+  // Show loading state for main data
+  const isLoading = configLoading || usersLoading || integrationsLoading || billingLoading;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -285,24 +331,46 @@ export default function ConfiguracionPage() {
       >
         {/* Perfil Tab */}
         {activeTab === 'perfil' && (
-          <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
+          configLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          ) : config ? (
+            <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">No hay configuración disponible</div>
+          )
         )}
 
         {/* Branding Tab */}
         {activeTab === 'branding' && (
-          <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
+          configLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          ) : config?.branding ? (
+            <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">No hay información de branding</div>
+          )
         )}
 
         {/* Usuarios Tab */}
         {activeTab === 'usuarios' && (
-          <ConfigUsuarios
-            users={users}
-            onInvite={handleInviteUser}
-            onUpdateRole={handleUpdateRole}
-            onToggleStatus={handleToggleStatus}
-            onResendInvite={handleResendInvite}
-            onDelete={handleDeleteUser}
-          />
+          usersLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          ) : (
+            <ConfigUsuarios
+              users={users}
+              onInvite={handleInviteUser}
+              onUpdateRole={handleUpdateRole}
+              onToggleStatus={handleToggleStatus}
+              onResendInvite={handleResendInvite}
+              onDelete={handleDeleteUser}
+            />
+          )
         )}
 
         {/* Permisos Tab */}
@@ -312,20 +380,34 @@ export default function ConfiguracionPage() {
 
         {/* Integraciones Tab */}
         {activeTab === 'integraciones' && (
-          <ConfigIntegraciones
-            integrations={integrations}
-            onToggle={handleToggleIntegration}
-            onConfigure={handleConfigureIntegration}
-          />
+          integrationsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          ) : (
+            <ConfigIntegraciones
+              integrations={integrations}
+              onToggle={handleToggleIntegration}
+              onConfigure={handleConfigureIntegration}
+            />
+          )
         )}
 
         {/* Facturacion Tab */}
         {activeTab === 'facturacion' && (
-          <ConfigFacturacion
-            billing={MOCK_BILLING}
-            invoices={MOCK_INVOICES}
-            onUpdatePaymentMethod={handleUpdatePaymentMethod}
-          />
+          billingLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          ) : billing ? (
+            <ConfigFacturacion
+              billing={billing}
+              invoices={invoices}
+              onUpdatePaymentMethod={handleUpdatePaymentMethod}
+            />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">No hay información de facturación</div>
+          )
         )}
 
         {/* Notificaciones Tab */}

@@ -37,14 +37,17 @@ import type {
   Renovacion,
   SolicitudMantenimiento,
   MantenimientoStatus,
+  Consignacion,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
+import { getCurrentIPC } from '@/lib/constants/inmobiliaria-data';
 import {
-  MOCK_RENOVACIONES,
-  MOCK_MANTENIMIENTOS,
-  getCurrentIPC,
-  MOCK_CONSIGNACIONES,
-} from '@/lib/data/mock-inmobiliaria';
+  useMantenimientos,
+  useRenovaciones,
+  useConsignaciones,
+  mantenimientoApi,
+  renovacionesApi,
+} from '@/lib/hooks/useInmobiliaria';
 import {
   RenovacionesTable,
   RenovacionWorkflow,
@@ -158,11 +161,35 @@ function StatCard({
 export default function OperacionesPage() {
   const { t } = useI18n();
 
+  // API Hooks
+  const {
+    renovaciones: renovacionesData,
+    isLoading: isLoadingRenovaciones,
+    error: renovacionesError,
+    refetch: refetchRenovaciones,
+    setData: setRenovacionesData,
+  } = useRenovaciones();
+  const {
+    mantenimientos: mantenimientosData,
+    isLoading: isLoadingMantenimientos,
+    error: mantenimientosError,
+    refetch: refetchMantenimientos,
+    setData: setMantenimientosData,
+  } = useMantenimientos();
+  const {
+    consignaciones: consignacionesData,
+    isLoading: isLoadingConsignaciones,
+    error: consignacionesError,
+  } = useConsignaciones();
+
   // State
   const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
-  const [renovaciones, setRenovaciones] = useState<Renovacion[]>(MOCK_RENOVACIONES);
-  const [mantenimientos, setMantenimientos] = useState<SolicitudMantenimiento[]>(MOCK_MANTENIMIENTOS);
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
+
+  // Use API data or fallback to empty arrays
+  const renovaciones = renovacionesData ?? [];
+  const mantenimientos = mantenimientosData ?? [];
+  const consignaciones = consignacionesData ?? [];
 
   // Modal states
   const [selectedRenovacion, setSelectedRenovacion] = useState<Renovacion | null>(null);
@@ -184,19 +211,24 @@ export default function OperacionesPage() {
     setIsRenovacionWorkflowOpen(true);
   }, []);
 
-  const handleNotifyTenant = useCallback((renovacion: Renovacion) => {
-    toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
-      description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
-    });
-    // Update status to notified
-    setRenovaciones((prev) =>
-      prev.map((r) =>
-        r.id === renovacion.id
-          ? { ...r, status: 'notified' as const, notifiedAt: new Date().toISOString() }
-          : r
-      )
-    );
-  }, []);
+  const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
+    try {
+      await renovacionesApi.updateStatus(renovacion.id, 'notified');
+      toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
+        description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
+      });
+      // Update local state
+      setRenovacionesData((prev) =>
+        prev ? prev.map((r) =>
+          r.id === renovacion.id
+            ? { ...r, status: 'notified' as const, notifiedAt: new Date().toISOString() }
+            : r
+        ) : []
+      );
+    } catch (error) {
+      toast.error('Error al notificar inquilino');
+    }
+  }, [t, setRenovacionesData]);
 
   const handleViewRenovacionDetails = useCallback((renovacion: Renovacion) => {
     setSelectedRenovacion(renovacion);
@@ -227,45 +259,35 @@ export default function OperacionesPage() {
     setIsMantenimientoFormOpen(true);
   }, []);
 
-  const handleMantenimientoFormSubmit = useCallback((data: MantenimientoFormData) => {
+  const handleMantenimientoFormSubmit = useCallback(async (data: MantenimientoFormData) => {
     setIsSubmittingMantenimiento(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const newSolicitud: SolicitudMantenimiento = {
-        id: `mant-${Date.now()}`,
+    try {
+      const consignacion = consignaciones.find((c) => c.id === data.consignacionId);
+
+      const newSolicitud = await mantenimientoApi.create({
         consignacionId: data.consignacionId,
-        propertyId: MOCK_CONSIGNACIONES.find((c) => c.id === data.consignacionId)?.propertyId || '',
-        propietarioId: MOCK_CONSIGNACIONES.find((c) => c.id === data.consignacionId)?.propietarioId || '',
-        tenantId: 'tenant-new',
-        agenteId: 'agent-001',
-        propertyTitle:
-          MOCK_CONSIGNACIONES.find((c) => c.id === data.consignacionId)?.propertyTitle || '',
-        propertyAddress:
-          MOCK_CONSIGNACIONES.find((c) => c.id === data.consignacionId)?.propertyAddress || '',
-        tenantName:
-          MOCK_CONSIGNACIONES.find((c) => c.id === data.consignacionId)?.currentTenantName || 'Nuevo inquilino',
-        propietarioName: 'Propietario',
         type: data.type,
         priority: data.priority,
         title: data.title,
         description: data.description,
         photoUrls: data.photoUrls,
-        status: 'reported',
-        quotes: [],
         paidBy: data.paidBy,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      });
 
-      setMantenimientos((prev) => [newSolicitud, ...prev]);
+      // Update local state
+      setMantenimientosData((prev) => [newSolicitud, ...(prev ?? [])]);
+
       setIsSubmittingMantenimiento(false);
       setIsMantenimientoFormOpen(false);
       toast.success(t('inmobiliaria.operaciones.toasts.requestCreated'), {
         description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
       });
-    }, 1000);
-  }, []);
+    } catch (error) {
+      toast.error('Error al crear solicitud de mantenimiento');
+      setIsSubmittingMantenimiento(false);
+    }
+  }, [consignaciones, t, setMantenimientosData]);
 
   const handleMantenimientoFormCancel = useCallback(() => {
     setIsMantenimientoFormOpen(false);
@@ -277,54 +299,69 @@ export default function OperacionesPage() {
   }, []);
 
   const handleMantenimientoStatusChange = useCallback(
-    (solicitudId: string, newStatus: MantenimientoStatus) => {
-      setMantenimientos((prev) =>
-        prev.map((m) =>
-          m.id === solicitudId
-            ? {
-                ...m,
-                status: newStatus,
-                updatedAt: new Date().toISOString(),
-                completedAt: newStatus === 'completed' ? new Date().toISOString() : m.completedAt,
-              }
-            : m
-        )
-      );
+    async (solicitudId: string, newStatus: MantenimientoStatus) => {
+      try {
+        await mantenimientoApi.updateStatus(solicitudId, newStatus);
 
-      const statusLabels: Record<MantenimientoStatus, string> = {
-        reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
-        quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
-        approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
-        in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
-        completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
-        cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
-      };
+        // Update local state
+        setMantenimientosData((prev) =>
+          prev ? prev.map((m) =>
+            m.id === solicitudId
+              ? {
+                  ...m,
+                  status: newStatus,
+                  updatedAt: new Date().toISOString(),
+                  completedAt: newStatus === 'completed' ? new Date().toISOString() : m.completedAt,
+                }
+              : m
+          ) : []
+        );
 
-      toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
+        const statusLabels: Record<MantenimientoStatus, string> = {
+          reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
+          quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
+          approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
+          in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
+          completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
+          cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
+        };
 
-      if (newStatus === 'cancelled' || newStatus === 'completed') {
-        handleMantenimientoViewerClose();
+        toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
+
+        if (newStatus === 'cancelled' || newStatus === 'completed') {
+          handleMantenimientoViewerClose();
+        }
+      } catch (error) {
+        toast.error('Error al actualizar estado de mantenimiento');
       }
     },
-    [handleMantenimientoViewerClose]
+    [t, setMantenimientosData, handleMantenimientoViewerClose]
   );
 
-  const handleApproveQuote = useCallback((solicitudId: string, quoteId: string) => {
-    setMantenimientos((prev) =>
-      prev.map((m) => {
-        if (m.id !== solicitudId) return m;
-        const quote = m.quotes.find((q) => q.id === quoteId);
-        return {
-          ...m,
-          selectedQuoteId: quoteId,
-          approvedAmount: quote?.amount,
-          status: 'approved' as const,
-          updatedAt: new Date().toISOString(),
-        };
-      })
-    );
-    toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
-  }, []);
+  const handleApproveQuote = useCallback(async (solicitudId: string, quoteId: string) => {
+    try {
+      await mantenimientoApi.approveQuote(solicitudId, quoteId);
+
+      // Update local state
+      setMantenimientosData((prev) =>
+        prev ? prev.map((m) => {
+          if (m.id !== solicitudId) return m;
+          const quote = m.quotes.find((q) => q.id === quoteId);
+          return {
+            ...m,
+            selectedQuoteId: quoteId,
+            approvedAmount: quote?.amount,
+            status: 'approved' as const,
+            updatedAt: new Date().toISOString(),
+          };
+        }) : []
+      );
+
+      toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
+    } catch (error) {
+      toast.error('Error al aprobar cotización');
+    }
+  }, [t, setMantenimientosData]);
 
   const handleAddNote = useCallback((solicitudId: string, note: string) => {
     toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
@@ -338,9 +375,12 @@ export default function OperacionesPage() {
 
   // Consignaciones for form (rented properties only)
   const rentedConsignaciones = useMemo(
-    () => MOCK_CONSIGNACIONES.filter((c) => c.availability === 'rented'),
-    []
+    () => consignaciones.filter((c) => c.availability === 'rented'),
+    [consignaciones]
   );
+
+  // Show loading state
+  const isLoading = isLoadingRenovaciones || isLoadingMantenimientos || isLoadingConsignaciones;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -354,54 +394,79 @@ export default function OperacionesPage() {
         </div>
       </div>
 
+      {/* Error states */}
+      {(renovacionesError || mantenimientosError || consignacionesError) && (
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+          <p className="text-sm text-destructive">
+            Error al cargar datos. Por favor, intenta de nuevo.
+          </p>
+        </div>
+      )}
+
       {/* Quick Stats - Informational Only */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-      >
-        <StatCard
-          icon={ClockCounterClockwise}
-          label={t('inmobiliaria.operaciones.stats.pendingRenewals')}
-          value={stats.renovaciones.pending}
-          subValue={
-            stats.renovaciones.critical > 0
-              ? t('inmobiliaria.operaciones.stats.criticalCount', { count: stats.renovaciones.critical })
-              : undefined
-          }
-          subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
-          bgColor="bg-amber-100 dark:bg-amber-900/30"
-          iconColor="text-amber-600 dark:text-amber-400"
-        />
-        <StatCard
-          icon={Wrench}
-          label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
-          value={stats.mantenimiento.active}
-          subValue={
-            stats.mantenimiento.quoted > 0
-              ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.mantenimiento.quoted })
-              : undefined
-          }
-          subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
-          bgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconColor="text-blue-600 dark:text-blue-400"
-        />
-        <StatCard
-          icon={CurrencyDollar}
-          label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
-          value={stats.mantenimiento.quoted}
-          bgColor="bg-violet-100 dark:bg-violet-900/30"
-          iconColor="text-violet-600 dark:text-violet-400"
-        />
-        <StatCard
-          icon={TrendUp}
-          label={t('inmobiliaria.operaciones.stats.currentIPC')}
-          value={`${stats.ipc.currentRate.toFixed(2)}%`}
-          subValue={stats.ipc.description}
-          bgColor="bg-emerald-100 dark:bg-emerald-900/30"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-        />
-      </motion.div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-8 bg-muted rounded w-12" />
+                  <div className="h-3 bg-muted rounded w-24" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <StatCard
+            icon={ClockCounterClockwise}
+            label={t('inmobiliaria.operaciones.stats.pendingRenewals')}
+            value={stats.renovaciones.pending}
+            subValue={
+              stats.renovaciones.critical > 0
+                ? t('inmobiliaria.operaciones.stats.criticalCount', { count: stats.renovaciones.critical })
+                : undefined
+            }
+            subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
+            bgColor="bg-amber-100 dark:bg-amber-900/30"
+            iconColor="text-amber-600 dark:text-amber-400"
+          />
+          <StatCard
+            icon={Wrench}
+            label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
+            value={stats.mantenimiento.active}
+            subValue={
+              stats.mantenimiento.quoted > 0
+                ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.mantenimiento.quoted })
+                : undefined
+            }
+            subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
+            bgColor="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            icon={CurrencyDollar}
+            label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
+            value={stats.mantenimiento.quoted}
+            bgColor="bg-violet-100 dark:bg-violet-900/30"
+            iconColor="text-violet-600 dark:text-violet-400"
+          />
+          <StatCard
+            icon={TrendUp}
+            label={t('inmobiliaria.operaciones.stats.currentIPC')}
+            value={`${stats.ipc.currentRate.toFixed(2)}%`}
+            subValue={stats.ipc.description}
+            bgColor="bg-emerald-100 dark:bg-emerald-900/30"
+            iconColor="text-emerald-600 dark:text-emerald-400"
+          />
+        </motion.div>
+      )}
 
       {/* Unified Tabs Container */}
       <motion.div
@@ -575,29 +640,46 @@ export default function OperacionesPage() {
           renovacion={selectedRenovacion}
           open={isRenovacionWorkflowOpen}
           onClose={handleRenovacionWorkflowClose}
-          onStepComplete={(newStatus) => {
-            setRenovaciones((prev) =>
-              prev.map((r) =>
-                r.id === selectedRenovacion.id
-                  ? { ...r, status: newStatus, updatedAt: new Date().toISOString() }
-                  : r
-              )
-            );
-            toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
+          onStepComplete={async (newStatus) => {
+            try {
+              await renovacionesApi.updateStatus(selectedRenovacion.id, newStatus);
+              // Update local state
+              setRenovacionesData((prev) =>
+                prev ? prev.map((r) =>
+                  r.id === selectedRenovacion.id
+                    ? { ...r, status: newStatus, updatedAt: new Date().toISOString() }
+                    : r
+                ) : []
+              );
+              toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
+            } catch (error) {
+              toast.error('Error al actualizar renovación');
+            }
           }}
-          onTerminate={(reason) => {
-            setRenovaciones((prev) =>
-              prev.map((r) =>
-                r.id === selectedRenovacion.id
-                  ? { ...r, status: 'terminated' as const, updatedAt: new Date().toISOString() }
-                  : r
-              )
-            );
-            handleRenovacionWorkflowClose();
-            toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
+          onTerminate={async (reason) => {
+            try {
+              await renovacionesApi.updateStatus(selectedRenovacion.id, 'terminated');
+              // Update local state
+              setRenovacionesData((prev) =>
+                prev ? prev.map((r) =>
+                  r.id === selectedRenovacion.id
+                    ? { ...r, status: 'terminated' as const, updatedAt: new Date().toISOString() }
+                    : r
+                ) : []
+              );
+              handleRenovacionWorkflowClose();
+              toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
+            } catch (error) {
+              toast.error('Error al terminar renovación');
+            }
           }}
-          onNoteAdd={(note) => {
-            toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
+          onNoteAdd={async (note) => {
+            try {
+              await renovacionesApi.addNote(selectedRenovacion.id, note);
+              toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
+            } catch (error) {
+              toast.error('Error al agregar nota');
+            }
           }}
         />
       )}

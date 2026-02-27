@@ -15,12 +15,13 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
-  MOCK_COBROS,
-  MOCK_CONSIGNACIONES,
-  MOCK_PROPIETARIOS,
-  calculateCobroSummary,
-  MOCK_INMOBILIARIA_CONFIG,
-} from '@/lib/data/mock-inmobiliaria';
+  useCobros,
+  useCobroSummary,
+  useConsignaciones,
+  usePropietarios,
+  useInmobiliariaConfig,
+  cobrosApi,
+} from '@/lib/hooks/useInmobiliaria';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
 import {
   CobroResumen,
@@ -54,9 +55,6 @@ export default function CobrosPage() {
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
 
-  // State for cobros (local copy for optimistic updates)
-  const [cobros, setCobros] = useState<Cobro[]>(MOCK_COBROS);
-
   // State for filters
   const [filters, setFilters] = useState<CobroFiltersState>({
     month: getCurrentMonth(),
@@ -65,6 +63,35 @@ export default function CobrosPage() {
     propietarioId: undefined,
     search: undefined,
   });
+
+  // Fetch cobros from API
+  const {
+    cobros: apiCobros,
+    isLoading: cobrosLoading,
+    error: cobrosError,
+    refetch: refetchCobros,
+    setData: setCobrosData,
+  } = useCobros({
+    month: filters.month,
+    status: filters.status === 'all' ? undefined : filters.status,
+    propietarioId: filters.propietarioId,
+  });
+
+  // Fetch summary from API
+  const {
+    summary: apiSummary,
+    isLoading: summaryLoading,
+    refetch: refetchSummary,
+  } = useCobroSummary(filters.month);
+
+  // Fetch consignaciones for filters
+  const { consignaciones, isLoading: consignacionesLoading } = useConsignaciones();
+
+  // Fetch propietarios for filters
+  const { propietarios, isLoading: propietariosLoading } = usePropietarios();
+
+  // Fetch config for reminder defaults
+  const { config: inmobiliariaConfig, isLoading: configLoading } = useInmobiliariaConfig();
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -79,12 +106,23 @@ export default function CobrosPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-  // State for reminder config
+  // State for reminder config (initialized from API config)
   const [reminderConfig, setReminderConfig] = useState<RecordatorioConfigData>({
-    daysBefore: MOCK_INMOBILIARIA_CONFIG.reminderDaysBefore,
-    daysAfter: MOCK_INMOBILIARIA_CONFIG.reminderDaysAfter,
+    daysBefore: inmobiliariaConfig?.reminderDaysBefore ?? [5],
+    daysAfter: inmobiliariaConfig?.reminderDaysAfter ?? [3],
     channels: ['email', 'whatsapp'],
   });
+
+  // Update reminder config when API config loads
+  useEffect(() => {
+    if (inmobiliariaConfig) {
+      setReminderConfig((prev) => ({
+        ...prev,
+        daysBefore: inmobiliariaConfig.reminderDaysBefore,
+        daysAfter: inmobiliariaConfig.reminderDaysAfter,
+      }));
+    }
+  }, [inmobiliariaConfig]);
 
   // Read status from URL query params
   useEffect(() => {
@@ -94,26 +132,16 @@ export default function CobrosPage() {
     }
   }, [searchParams]);
 
-  // Filter cobros based on current filters
+  // Filter cobros based on current filters (client-side filtering for consignacion and search)
   const filteredCobros = useMemo(() => {
-    let result = cobros.filter((c) => c.month === filters.month);
+    let result = apiCobros || [];
 
-    // Filter by status
-    if (filters.status !== 'all') {
-      result = result.filter((c) => c.status === filters.status);
-    }
-
-    // Filter by consignacion (property)
+    // Filter by consignacion (property) - client-side only
     if (filters.consignacionId) {
       result = result.filter((c) => c.consignacionId === filters.consignacionId);
     }
 
-    // Filter by propietario
-    if (filters.propietarioId) {
-      result = result.filter((c) => c.propietarioId === filters.propietarioId);
-    }
-
-    // Filter by search (tenant name, property title, property address)
+    // Filter by search (tenant name, property title, property address) - client-side only
     if (filters.search) {
       const query = filters.search.toLowerCase();
       result = result.filter(
@@ -125,7 +153,7 @@ export default function CobrosPage() {
     }
 
     return result;
-  }, [cobros, filters]);
+  }, [apiCobros, filters.consignacionId, filters.search]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCobros.length / ITEMS_PER_PAGE);
@@ -135,34 +163,27 @@ export default function CobrosPage() {
     return filteredCobros.slice(start, end);
   }, [filteredCobros, currentPage]);
 
-  // Calculate summary for selected month
+  // Use summary from API (fallback to default if loading)
   const summary: CobroSummary = useMemo(() => {
-    const monthCobros = cobros.filter((c) => c.month === filters.month);
-    const totalExpected = monthCobros.reduce((sum, c) => sum + c.totalWithFees, 0);
-    const totalCollected = monthCobros.reduce((sum, c) => sum + c.paidAmount, 0);
-    const totalPending = monthCobros
-      .filter((c) => c.status === 'pending')
-      .reduce((sum, c) => sum + c.pendingAmount, 0);
-    const totalLate = monthCobros
-      .filter((c) => c.status === 'late')
-      .reduce((sum, c) => sum + c.pendingAmount, 0);
+    if (apiSummary) return apiSummary;
 
+    // Fallback summary while loading
     return {
       month: filters.month,
-      totalExpected,
-      totalCollected,
-      totalPending,
-      totalLate,
-      collectionRate: totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0,
-      cobrosPaid: monthCobros.filter((c) => c.status === 'paid').length,
-      cobrosPending: monthCobros.filter((c) => c.status === 'pending').length,
-      cobrosLate: monthCobros.filter((c) => c.status === 'late').length,
+      totalExpected: 0,
+      totalCollected: 0,
+      totalPending: 0,
+      totalLate: 0,
+      collectionRate: 0,
+      cobrosPaid: 0,
+      cobrosPending: 0,
+      cobrosLate: 0,
     };
-  }, [cobros, filters.month]);
+  }, [apiSummary, filters.month]);
 
-  // Count cobros by status for tabs
+  // Count cobros by status for tabs (from API data)
   const cobroCountByStatus = useMemo(() => {
-    const monthCobros = cobros.filter((c) => c.month === filters.month);
+    const monthCobros = apiCobros || [];
     return {
       all: monthCobros.length,
       pending: monthCobros.filter((c) => c.status === 'pending').length,
@@ -171,7 +192,7 @@ export default function CobrosPage() {
       late: monthCobros.filter((c) => c.status === 'late').length,
       defaulted: monthCobros.filter((c) => c.status === 'defaulted').length,
     };
-  }, [cobros, filters.month]);
+  }, [apiCobros]);
 
   // Handle cobro click - open detail modal
   const handleCobroClick = useCallback((cobro: Cobro) => {
@@ -194,58 +215,77 @@ export default function CobrosPage() {
       reference?: string;
       notes?: string;
     }, cobroId: string) => {
-      // Find the cobro to update
-      const targetCobro = cobros.find((c) => c.id === cobroId);
-      if (!targetCobro) return;
+      try {
+        // Call API to register payment
+        await cobrosApi.registerPayment(cobroId, {
+          paidAmount: data.amount,
+          paymentMethod: data.method,
+          paymentDate: data.date,
+          paymentReference: data.reference,
+        });
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+        // Optimistically update local state
+        setCobrosData((prev) => {
+          if (!prev) return prev;
+          return prev.map((c) => {
+            if (c.id !== cobroId) return c;
+            const newPaidAmount = c.paidAmount + data.amount;
+            const newPendingAmount = c.totalWithFees - newPaidAmount;
+            const isFullyPaid = newPendingAmount <= 0;
+            return {
+              ...c,
+              paidAmount: newPaidAmount,
+              pendingAmount: Math.max(0, newPendingAmount),
+              status: isFullyPaid ? ('paid' as const) : ('partial' as const),
+              paidDate: isFullyPaid ? data.date : c.paidDate,
+              paymentMethod: data.method,
+              paymentReference: data.reference,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+        });
 
-      // Calculate new amounts
-      const newPaidAmount = targetCobro.paidAmount + data.amount;
-      const newPendingAmount = targetCobro.totalWithFees - newPaidAmount;
-      const isFullyPaid = newPendingAmount <= 0;
+        // Refetch summary to update totals
+        refetchSummary();
 
-      // Update cobro in state
-      setCobros((prev) =>
-        prev.map((c) =>
-          c.id === cobroId
-            ? {
-                ...c,
-                paidAmount: newPaidAmount,
-                pendingAmount: Math.max(0, newPendingAmount),
-                status: isFullyPaid ? 'paid' : 'partial',
-                paidDate: isFullyPaid ? data.date : c.paidDate,
-                paymentMethod: data.method,
-                paymentReference: data.reference,
-                updatedAt: new Date().toISOString(),
-              }
-            : c
-        )
-      );
-
-      setIsPaymentModalOpen(false);
-      setPaymentCobro(null);
+        setIsPaymentModalOpen(false);
+        setPaymentCobro(null);
+      } catch (error) {
+        console.error('Error registering payment:', error);
+        // In a production app, show error toast here
+      }
     },
-    [cobros]
+    [setCobrosData, refetchSummary]
   );
 
   // Handle send reminder
-  const handleSendReminder = useCallback((cobro: Cobro) => {
-    // Update reminder count
-    setCobros((prev) =>
-      prev.map((c) =>
-        c.id === cobro.id
-          ? {
-              ...c,
-              remindersSent: c.remindersSent + 1,
-              lastReminderDate: new Date().toISOString().split('T')[0],
-              updatedAt: new Date().toISOString(),
-            }
-          : c
-      )
-    );
-  }, []);
+  const handleSendReminder = useCallback(
+    async (cobro: Cobro) => {
+      try {
+        // Call API to send reminder
+        await cobrosApi.sendReminder(cobro.id);
+
+        // Optimistically update local state
+        setCobrosData((prev) => {
+          if (!prev) return prev;
+          return prev.map((c) =>
+            c.id === cobro.id
+              ? {
+                  ...c,
+                  remindersSent: c.remindersSent + 1,
+                  lastReminderDate: new Date().toISOString().split('T')[0],
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          );
+        });
+      } catch (error) {
+        console.error('Error sending reminder:', error);
+        // In a production app, show error toast here
+      }
+    },
+    [setCobrosData]
+  );
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: CobroFiltersState) => {
@@ -373,8 +413,8 @@ export default function CobrosPage() {
 
         {/* Filters Section - SECOND (Search + collapsible filters) */}
         <CobroFilters
-          consignaciones={MOCK_CONSIGNACIONES}
-          propietarios={MOCK_PROPIETARIOS}
+          consignaciones={consignaciones}
+          propietarios={propietarios}
           filters={filters}
           onFilterChange={handleFilterChange}
           cobroCountByStatus={cobroCountByStatus}
@@ -382,7 +422,28 @@ export default function CobrosPage() {
 
         {/* Content */}
         <div>
-          {paginatedCobros.length > 0 ? (
+          {cobrosLoading ? (
+            <div className="p-12 text-center">
+              <div className="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+              <p className="text-muted-foreground">Cargando cobros...</p>
+            </div>
+          ) : cobrosError ? (
+            <div className="p-12 text-center">
+              <CurrencyCircleDollar className="w-12 h-12 mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Error al cargar cobros
+              </h3>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-4">
+                {cobrosError}
+              </p>
+              <button
+                onClick={() => refetchCobros()}
+                className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : paginatedCobros.length > 0 ? (
             viewMode === 'table' ? (
               <CobroTable
                 cobros={paginatedCobros}

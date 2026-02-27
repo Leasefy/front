@@ -41,12 +41,12 @@ import {
 } from '@/lib/types/inmobiliaria';
 import type { ReporteFiltersState } from './ReporteFilters';
 import {
-  generateComisionesAgenteReport,
-  generateOcupacionReport,
-  generateVencimientosReport,
-  generateFlujoCajaReport,
-  generateCarteraReport,
-} from '@/lib/data/mock-inmobiliaria';
+  useComisionesReport,
+  useOcupacionReport,
+  useVencimientosReport,
+  useFlujoCajaReport,
+  useCarteraReport,
+} from '@/lib/hooks/useInmobiliaria';
 
 interface ReporteViewerProps {
   isOpen: boolean;
@@ -91,10 +91,8 @@ function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: 
  * Comisiones Agente Preview
  */
 function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const data = React.useMemo(
-    () => generateComisionesAgenteReport(new Date().toISOString().slice(0, 7)),
-    []
-  );
+  const { report: data } = useComisionesReport(new Date().toISOString().slice(0, 7));
+  if (!data) return null;
 
   return (
     <div className="space-y-4">
@@ -177,7 +175,8 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
  * Ocupacion Preview
  */
 function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const data = React.useMemo(() => generateOcupacionReport(), []);
+  const { report: data } = useOcupacionReport();
+  if (!data) return null;
 
   return (
     <div className="space-y-4">
@@ -281,7 +280,8 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
  * Vencimientos Preview
  */
 function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const data = React.useMemo(() => generateVencimientosReport(), []);
+  const { report: data } = useVencimientosReport();
+  if (!data) return null;
 
   const bucketColors = {
     '0-30': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -361,7 +361,8 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
  * Flujo de Caja Preview
  */
 function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<string, string | number>) => string; fmtDate: (d: string) => string }) {
-  const data = React.useMemo(() => generateFlujoCajaReport('semester'), []);
+  const { report: data } = useFlujoCajaReport('semester');
+  if (!data) return null;
 
   return (
     <div className="space-y-4">
@@ -425,7 +426,8 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
  * Cartera Edades Preview
  */
 function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const data = React.useMemo(() => generateCarteraReport(), []);
+  const { report: data } = useCarteraReport();
+  if (!data) return null;
 
   return (
     <div className="space-y-4">

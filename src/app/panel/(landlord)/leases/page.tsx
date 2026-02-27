@@ -2,14 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-icons/react';
+import { House, CurrencyDollar, Clock, WarningCircle, TrendUp, SpinnerGap } from '@phosphor-icons/react';
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  getLeasesForLandlord,
-  getPaymentsForLease,
-  getLandlordStats,
-} from '@/lib/data/mock-leases';
+import { ErrorState } from '@/components/ui/error-state';
+import { useLeases } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
@@ -84,22 +81,18 @@ function ProgressBar({ value, variant }: ProgressBarProps) {
 // ============================================================================
 
 export default function LandlordLeasesPage() {
-  const landlordId = 'landlord-001';
-  const leases = getLeasesForLandlord(landlordId);
-  const stats = getLandlordStats(landlordId);
+  const { leases, stats, isLoading, error, refetch } = useLeases();
   const { t, formatCurrency } = useI18n();
 
   const [activeTab, setActiveTab] = useState('all');
 
-  // Pre-compute per-lease payment status for filtering
+  // Payment status counts are not available at list level (lazy-loaded per expand).
+  // We use empty placeholders for tabs; payment-based tabs will show 0 until the
+  // backend provides payment summary data at the lease list level.
   const leasePaymentStatus = useMemo(() => {
     const map: Record<string, { pending: number; late: number }> = {};
     for (const lease of leases) {
-      const payments = getPaymentsForLease(lease.id);
-      map[lease.id] = {
-        pending: payments.filter(p => p.status === 'pending').length,
-        late: payments.filter(p => p.status === 'late').length,
-      };
+      map[lease.id] = { pending: 0, late: 0 };
     }
     return map;
   }, [leases]);
@@ -135,6 +128,24 @@ export default function LandlordLeasesPage() {
   const collectionRate = stats.totalMonthlyIncome > 0
     ? Math.round(((stats.totalMonthlyIncome - (stats.latePayments * (stats.totalMonthlyIncome / stats.activeLeases))) / stats.totalMonthlyIncome) * 100)
     : 100;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <SpinnerGap className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <ErrorState description={error} onRetry={refetch} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
@@ -283,7 +294,6 @@ export default function LandlordLeasesPage() {
                   <LeaseExpandableItem
                     key={lease.id}
                     lease={lease}
-                    payments={getPaymentsForLease(lease.id)}
                   />
                 ))}
               </div>

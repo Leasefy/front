@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Check, Info } from '@phosphor-icons/react';
-import { PAYMENT_METHODS } from '@/lib/data/mock-leases';
+import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import type { PaymentMethod } from '@/lib/types/lease';
 
 interface PaymentMethodSelectorProps {

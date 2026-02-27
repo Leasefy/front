@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, X, CalendarCheck, CalendarX } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { MOCK_VISITS, getVisitStats } from '@/lib/data/mock-visits';
+import { useVisits, useVisitActions } from '@/lib/hooks/useVisits';
+import { useLandlordProperties } from '@/lib/hooks/useLandlord';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
@@ -245,37 +246,41 @@ const SCHEDULE_HOURS = [
   '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00',
 ];
 
-const SCHEDULE_PROPERTIES = [
-  'Apartamento Centro Histórico',
-  'Casa Laureles',
-  'Estudio Poblado',
-  'Apartamento Chapinero Alto',
-  'Casa Envigado',
-];
-
 function ScheduleModal({
   onClose,
+  properties,
+  onCreate,
 }: {
   onClose: () => void;
+  properties: { id: string; title: string }[];
+  onCreate: (propertyId: string, date: string, time: string, notes?: string) => Promise<boolean>;
 }) {
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [propiedad, setPropiedad] = useState('');
   const [notas, setNotas] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { t } = useI18n();
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split('T')[0];
 
-  const canSubmit = fecha.length > 0 && hora.length > 0 && propiedad.length > 0;
+  const canSubmit = fecha.length > 0 && hora.length > 0 && propiedad.length > 0 && !submitting;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!canSubmit) return;
-    toast.success(t('landlord.visits.scheduleSuccessToast'), {
-      description: t('landlord.visits.scheduleSuccessDesc'),
-    });
-    onClose();
+    setSubmitting(true);
+    const ok = await onCreate(propiedad, fecha, hora, notas || undefined);
+    setSubmitting(false);
+    if (ok) {
+      toast.success(t('landlord.visits.scheduleSuccessToast'), {
+        description: t('landlord.visits.scheduleSuccessDesc'),
+      });
+      onClose();
+    } else {
+      toast.error('Error al agendar visita');
+    }
   };
 
   return (
@@ -326,8 +331,8 @@ function ScheduleModal({
               className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="">{t('landlord.visits.schedulePropertySelect')}</option>
-              {SCHEDULE_PROPERTIES.map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
               ))}
             </select>
           </div>
@@ -371,7 +376,9 @@ function ScheduleModal({
 
 export default function VisitasPage() {
   const [tabFunnel, setTabFunnel] = useState<TabFunnel>('all');
-  const [visits, setVisits] = useState<Visit[]>(MOCK_VISITS);
+  const { visits, stats, isLoading, error, refetch } = useVisits();
+  const actions = useVisitActions();
+  const { properties: landlordProperties } = useLandlordProperties();
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { t, formatDate } = useI18n();
@@ -380,8 +387,6 @@ export default function VisitasPage() {
   const [cancelTarget, setCancelTarget] = useState<Visit | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<Visit | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-
-  const stats = getVisitStats();
 
   // Visit status labels using i18n
   const visitStatusLabels: Record<VisitStatus, string> = {
@@ -392,11 +397,7 @@ export default function VisitasPage() {
     no_show: t('landlord.visits.visitStatusNoShow'),
   };
 
-  // Today's confirmed
-  const today = new Date().toISOString().split('T')[0];
-  const confirmedToday = visits.filter(
-    v => v.status === 'confirmed' && v.requestedDate === today
-  ).length;
+  const confirmedToday = stats.confirmedToday;
 
   // Counts per status
   const countByStatus = (s: VisitStatus) => visits.filter(v => v.status === s).length;
@@ -476,44 +477,51 @@ export default function VisitasPage() {
 
   // ---- Actions ----
 
-  const handleConfirm = (visit: Visit) => {
-    setVisits(prev => prev.map(v =>
-      v.id === visit.id ? { ...v, status: 'confirmed' as VisitStatus } : v
-    ));
+  const handleConfirm = async (visit: Visit) => {
+    const ok = await actions.confirm(visit.id);
     setSheetOpen(false);
-    toast.success(t('landlord.visits.confirmedToast'), {
-      description: t('landlord.visits.confirmedToastDesc', { name: visit.candidateName, date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) }),
-    });
+    if (ok) {
+      toast.success(t('landlord.visits.confirmedToast'), {
+        description: t('landlord.visits.confirmedToastDesc', { name: visit.candidateName, date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) }),
+      });
+      refetch();
+    } else {
+      toast.error('Error al confirmar visita');
+    }
   };
 
-  const handleComplete = (visit: Visit) => {
-    setVisits(prev => prev.map(v =>
-      v.id === visit.id ? { ...v, status: 'completed' as VisitStatus } : v
-    ));
+  const handleComplete = async (visit: Visit) => {
+    const ok = await actions.confirm(visit.id);
     setSheetOpen(false);
-    toast.success(t('landlord.visits.completedToast'), {
-      description: t('landlord.visits.completedToastDesc', { name: visit.candidateName }),
-    });
+    if (ok) {
+      toast.success(t('landlord.visits.completedToast'), {
+        description: t('landlord.visits.completedToastDesc', { name: visit.candidateName }),
+      });
+      refetch();
+    } else {
+      toast.error('Error al completar visita');
+    }
   };
 
   const openCancelModal = (visit: Visit) => {
     setSheetOpen(false);
-    // Small delay so sheet closes before modal opens
     setTimeout(() => setCancelTarget(visit), 150);
   };
 
-  const confirmCancel = (reason: string) => {
+  const confirmCancel = async (reason: string) => {
     if (!cancelTarget) return;
-    setVisits(prev => prev.map(v =>
-      v.id === cancelTarget.id
-        ? { ...v, status: 'cancelled' as VisitStatus, cancellationReason: reason }
-        : v
-    ));
+    const ok = await actions.cancel(cancelTarget.id, { reason });
+    const name = cancelTarget.candidateName;
     setCancelTarget(null);
-    toast(t('landlord.visits.cancelledToast'), {
-      description: t('landlord.visits.cancelledToastDesc', { name: cancelTarget.candidateName }),
-      icon: '❌',
-    });
+    if (ok) {
+      toast(t('landlord.visits.cancelledToast'), {
+        description: t('landlord.visits.cancelledToastDesc', { name }),
+        icon: '❌',
+      });
+      refetch();
+    } else {
+      toast.error('Error al cancelar visita');
+    }
   };
 
   const openRescheduleModal = (visit: Visit) => {
@@ -521,36 +529,25 @@ export default function VisitasPage() {
     setTimeout(() => setRescheduleTarget(visit), 150);
   };
 
-  const confirmReschedule = (newDate: string, newTime: string) => {
+  const confirmReschedule = async (newDate: string, newTime: string) => {
     if (!rescheduleTarget) return;
-
-    const newVisit: Visit = {
-      id: `visit-${Date.now()}`,
-      candidateId: rescheduleTarget.candidateId,
-      candidateName: rescheduleTarget.candidateName,
-      propertyId: rescheduleTarget.propertyId,
-      propertyTitle: rescheduleTarget.propertyTitle,
-      requestedDate: newDate,
-      requestedTime: newTime,
-      status: 'requested',
-      candidateMessage: rescheduleTarget.candidateMessage,
-      rescheduledFrom: rescheduleTarget.id,
-      createdAt: new Date().toISOString(),
-    };
-
-    setVisits(prev => [
-      newVisit,
-      ...prev.map(v =>
-        v.id === rescheduleTarget.id
-          ? { ...v, status: 'cancelled' as VisitStatus, cancellationReason: t('landlord.visits.rescheduledCancelReason') }
-          : v
-      ),
-    ]);
-
+    const ok = await actions.reschedule(rescheduleTarget.id, { date: newDate, time: newTime });
+    const name = rescheduleTarget.candidateName;
     setRescheduleTarget(null);
-    toast.success(t('landlord.visits.rescheduledToast'), {
-      description: t('landlord.visits.rescheduledToastDesc', { name: rescheduleTarget.candidateName, date: formatDate(newDate + 'T12:00:00'), time: formatTime(newTime) }),
-    });
+    if (ok) {
+      toast.success(t('landlord.visits.rescheduledToast'), {
+        description: t('landlord.visits.rescheduledToastDesc', { name, date: formatDate(newDate + 'T12:00:00'), time: formatTime(newTime) }),
+      });
+      refetch();
+    } else {
+      toast.error('Error al reagendar visita');
+    }
+  };
+
+  const handleCreateVisit = async (propertyId: string, date: string, time: string, notes?: string): Promise<boolean> => {
+    const ok = await actions.create({ propertyId, requestedDate: date, requestedTime: time, notes });
+    if (ok) refetch();
+    return ok;
   };
 
   // ---- Quick actions ----
@@ -679,6 +676,25 @@ export default function VisitasPage() {
       ),
     }] : []),
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>
+          <button onClick={refetch} className="text-sm text-indigo-600 hover:underline">Reintentar</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
@@ -847,7 +863,11 @@ export default function VisitasPage() {
 
       {/* Schedule Modal */}
       {showScheduleModal && (
-        <ScheduleModal onClose={() => setShowScheduleModal(false)} />
+        <ScheduleModal
+          onClose={() => setShowScheduleModal(false)}
+          properties={landlordProperties.map(p => ({ id: p.id, title: p.title }))}
+          onCreate={handleCreateVisit}
+        />
       )}
     </div>
   );

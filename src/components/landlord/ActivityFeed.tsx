@@ -5,7 +5,9 @@ import { UserPlus, CheckCircle, Chat, FileText } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import type { Activity, ActivityType } from '@/lib/data/mock-activity';
+import type { DashboardActivity } from '@/lib/api/landlord.types';
+
+type ActivityType = DashboardActivity['type'];
 
 // Format relative time
 function formatRelativeTime(isoDate: string, locale = 'es'): string {
@@ -37,7 +39,7 @@ const activityIcons: Record<ActivityType, typeof UserPlus> = {
 };
 
 interface ActivityItemProps {
-  activity: Activity;
+  activity: DashboardActivity;
 }
 
 function ActivityItem({ activity }: ActivityItemProps) {
@@ -92,7 +94,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
 }
 
 interface ActivityFeedProps {
-  activities: Activity[];
+  activities: DashboardActivity[];
   className?: string;
   showViewAll?: boolean;
 }

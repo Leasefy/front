@@ -3,14 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, FileText } from '@phosphor-icons/react';
+import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, SpinnerGap } from '@phosphor-icons/react';
 
-import { getActiveLeasesForTenant, getNextPayment } from '@/lib/data/mock-leases';
+import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
@@ -19,9 +20,10 @@ export default function ArriendoPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const tenantId = 'user-tenant-1';
-  // Only fetch real data if onboarding is complete, otherwise simulate empty state
-  const activeLeases = isOnboardingComplete ? getActiveLeasesForTenant(tenantId) : [];
+  const { leases, isLoading, error, refetch, getActive } = useLeases();
+  const { getNextPayment } = useMyPayments();
+
+  const activeLeases = isOnboardingComplete ? getActive() : [];
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
@@ -62,10 +64,10 @@ export default function ArriendoPage() {
   };
 
   // Loading state
-  if (isOnboardingLoading) {
+  if (isOnboardingLoading || isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <SpinnerGap className="w-8 h-8 text-indigo-600 animate-spin" />
       </div>
     );
   }
@@ -76,6 +78,17 @@ export default function ArriendoPage() {
       <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <ErrorState description={error} onRetry={refetch} />
         </div>
       </div>
     );

@@ -24,13 +24,15 @@ import {
   ActaEntregaForm,
   ActaEntregaViewer,
 } from '@/components/inmobiliaria';
-import {
-  MOCK_DOCUMENT_TEMPLATES,
-  MOCK_PROPERTY_DOCUMENTS,
-  MOCK_ACTAS_ENTREGA,
-  MOCK_CONSIGNACIONES,
-} from '@/lib/data/mock-inmobiliaria';
 import type { DocumentTemplate, PropertyDocument, ActaEntrega } from '@/lib/types/inmobiliaria';
+import {
+  useDocumentTemplates,
+  usePropertyDocuments,
+  useActasEntrega,
+  useConsignaciones,
+  documentosApi,
+  actasApi,
+} from '@/lib/hooks/useInmobiliaria';
 import {
   Sheet,
   SheetContent,
@@ -166,6 +168,12 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
 export default function DocumentosPage() {
   const { t, locale } = useI18n();
 
+  // API Hooks
+  const { documents, isLoading: isLoadingDocuments } = usePropertyDocuments();
+  const { templates, isLoading: isLoadingTemplates } = useDocumentTemplates();
+  const { actas, isLoading: isLoadingActas } = useActasEntrega();
+  const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
+
   // State
   const [activeTab, setActiveTab] = useState<DocTab>('documentos');
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,9 +181,6 @@ export default function DocumentosPage() {
   const [isActaFormOpen, setIsActaFormOpen] = useState(false);
   const [isActaViewerOpen, setIsActaViewerOpen] = useState(false);
   const [actaFormType, setActaFormType] = useState<'entrega' | 'devolucion'>('entrega');
-  const [documents] = useState<PropertyDocument[]>(MOCK_PROPERTY_DOCUMENTS);
-  const [templates] = useState<DocumentTemplate[]>(MOCK_DOCUMENT_TEMPLATES);
-  const [actas] = useState<ActaEntrega[]>(MOCK_ACTAS_ENTREGA);
 
   // Stats
   const stats = useMemo(() => getDocumentStats(documents, actas), [documents, actas]);
@@ -456,52 +461,76 @@ export default function DocumentosPage() {
           >
             {/* Documentos Tab */}
             {activeTab === 'documentos' && (
-              <DocumentoManager
-                documents={documents}
-                onView={handleViewDocument}
-                onDownload={handleDownloadDocument}
-                onSendForSignature={handleSendForSignature}
-                onDuplicate={handleDuplicateDocument}
-                onDelete={handleDeleteDocument}
-                onGenerateNew={handleGenerateNew}
-                minimal
-              />
+              <>
+                {isLoadingDocuments ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <DocumentoManager
+                    documents={documents}
+                    onView={handleViewDocument}
+                    onDownload={handleDownloadDocument}
+                    onSendForSignature={handleSendForSignature}
+                    onDuplicate={handleDuplicateDocument}
+                    onDelete={handleDeleteDocument}
+                    onGenerateNew={handleGenerateNew}
+                    minimal
+                  />
+                )}
+              </>
             )}
 
             {/* Plantillas Tab */}
             {activeTab === 'plantillas' && (
-              <DocumentoTemplates
-                templates={templates}
-                onPreview={handlePreviewTemplate}
-                onUseTemplate={handleUseTemplate}
-              />
+              <>
+                {isLoadingTemplates ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <DocumentoTemplates
+                    templates={templates}
+                    onPreview={handlePreviewTemplate}
+                    onUseTemplate={handleUseTemplate}
+                  />
+                )}
+              </>
             )}
 
             {/* Actas Tab */}
             {activeTab === 'actas' && (
-              <div className="space-y-4">
-                {filteredActas.length === 0 ? (
-                  <div className="text-center py-12 rounded-xl border border-dashed border-border">
-                    <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-muted-foreground">
-                      {searchQuery ? t('inmobiliaria.documentos.noActasFound') : t('inmobiliaria.documentos.noActas')}
-                    </p>
-                    <button
-                      onClick={handleCreateActa}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      {t('inmobiliaria.documentos.createFirstActa')}
-                    </button>
+              <>
+                {isLoadingActas ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                   </div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredActas.map((acta) => (
-                      <ActaCard key={acta.id} acta={acta} onClick={() => handleViewActa(acta)} />
-                    ))}
+                  <div className="space-y-4">
+                    {filteredActas.length === 0 ? (
+                      <div className="text-center py-12 rounded-xl border border-dashed border-border">
+                        <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-muted-foreground">
+                          {searchQuery ? t('inmobiliaria.documentos.noActasFound') : t('inmobiliaria.documentos.noActas')}
+                        </p>
+                        <button
+                          onClick={handleCreateActa}
+                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {t('inmobiliaria.documentos.createFirstActa')}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredActas.map((acta) => (
+                          <ActaCard key={acta.id} acta={acta} onClick={() => handleViewActa(acta)} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
           </motion.div>
         </AnimatePresence>
@@ -519,7 +548,7 @@ export default function DocumentosPage() {
           <div className="mt-6">
             <ActaEntregaForm
               initialData={{ type: actaFormType }}
-              consignaciones={MOCK_CONSIGNACIONES.filter((c) => c.availability === 'rented')}
+              consignaciones={consignaciones.filter((c) => c.availability === 'rented')}
               onSave={handleSaveActa}
               onCancel={handleCancelActa}
             />

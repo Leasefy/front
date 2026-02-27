@@ -37,7 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
-import { MOCK_PROPIETARIOS, MOCK_CONSIGNACIONES } from '@/lib/data/mock-inmobiliaria';
+import { usePropietarios, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface CobroDetailProps {
@@ -250,15 +250,18 @@ export function CobroDetail({
   }, [isOpen, stopLenis, startLenis]);
 
   // Get related data
+  const { propietarios } = usePropietarios();
+  const { consignaciones } = useConsignaciones();
+
   const propietario = React.useMemo(() => {
     if (!cobro) return null;
-    return MOCK_PROPIETARIOS.find((p) => p.id === cobro.propietarioId);
-  }, [cobro]);
+    return propietarios.find((p) => p.id === cobro.propietarioId) ?? null;
+  }, [cobro, propietarios]);
 
   const consignacion = React.useMemo(() => {
     if (!cobro) return null;
-    return MOCK_CONSIGNACIONES.find((c) => c.id === cobro.consignacionId);
-  }, [cobro]);
+    return consignaciones.find((c) => c.id === cobro.consignacionId) ?? null;
+  }, [cobro, consignaciones]);
 
   // Get payment and reminder history
   const paymentHistory = React.useMemo(() => {

@@ -7,6 +7,7 @@ import { SquaresFour, Buildings, Users, Chat, Gear, SignOut, List, X, CaretRight
 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -14,61 +15,31 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { MOCK_SUBSCRIPTION, getPlanById } from '@/lib/data/mock-subscriptions';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
 
 // Compass items
-const NAV_ITEMS = [
-  {
-    label: 'Panel',
-    href: '/panel',
-    icon: SquaresFour,
-    exact: true,
-  },
-  {
-    label: 'Mis Propiedades',
-    href: '/panel/propiedades',
-    icon: Buildings,
-  },
-  {
-    label: 'Candidatos',
-    href: '/panel/candidatos',
-    icon: Users,
-  },
-  {
-    label: 'Contratos',
-    href: '/panel/contratos',
-    icon: FileText,
-  },
-  {
-    label: 'Arriendos',
-    href: '/panel/leases',
-    icon: House,
-  },
-  {
-    label: 'Visitas',
-    href: '/panel/visitas',
-    icon: Calendar,
-  },
-  {
-    label: 'Mensajes',
-    href: '/panel/mensajes',
-    icon: Chat,
-    badge: 3,
-  },
-  {
-    label: 'Notificaciones',
-    href: '/panel/notificaciones',
-    icon: Bell,
-  },
-  {
-    label: 'Configuracion',
-    href: '/panel/configuracion',
-    icon: Gear,
-  },
+interface NavItemDef {
+  label: string;
+  href: string;
+  icon: typeof SquaresFour;
+  exact?: boolean;
+  badge?: number;
+}
+
+const NAV_ITEMS: NavItemDef[] = [
+  { label: 'Panel', href: '/panel', icon: SquaresFour, exact: true },
+  { label: 'Mis Propiedades', href: '/panel/propiedades', icon: Buildings },
+  { label: 'Candidatos', href: '/panel/candidatos', icon: Users },
+  { label: 'Contratos', href: '/panel/contratos', icon: FileText },
+  { label: 'Arriendos', href: '/panel/leases', icon: House },
+  { label: 'Visitas', href: '/panel/visitas', icon: Calendar },
+  { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
+  { label: 'Notificaciones', href: '/panel/notificaciones', icon: Bell },
+  { label: 'Configuracion', href: '/panel/configuracion', icon: Gear },
 ];
 
 interface NavItemProps {
-  item: (typeof NAV_ITEMS)[0];
+  item: NavItemDef;
   isActive: boolean;
   onClick?: () => void;
 }
@@ -128,8 +99,10 @@ interface SidebarContentProps {
 function SidebarContent({ onItemClick }: SidebarContentProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { subscription } = useMySubscription();
+  const { unreadCount } = useUnreadMessages();
 
-  const isActive = (item: (typeof NAV_ITEMS)[0]) => {
+  const isActive = (item: NavItemDef) => {
     if (item.exact) {
       return pathname === item.href;
     }
@@ -160,18 +133,23 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
 
       {/* Compass - with stagger animation */}
       <nav className="flex-1 p-4 space-y-1">
-        {NAV_ITEMS.map((item) => (
-          <NavItem
-            key={item.href}
-            item={item}
-            isActive={isActive(item)}
-            onClick={onItemClick}
-          />
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const dynamicItem = item.href === '/panel/mensajes' && unreadCount > 0
+            ? { ...item, badge: unreadCount }
+            : item;
+          return (
+            <NavItem
+              key={item.href}
+              item={dynamicItem}
+              isActive={isActive(item)}
+              onClick={onItemClick}
+            />
+          );
+        })}
       </nav>
 
       {/* Upgrade CTA for free users - Premium design */}
-      {MOCK_SUBSCRIPTION.planId === 'free' && (
+      {subscription?.planId === 'free' && (
         <div className="px-4 py-4">
           <div className="relative overflow-hidden rounded-sm bg-gradient-to-br from-foreground to-foreground/80 p-4 shadow-lg shadow-foreground/25">
             {/* Decorative elements */}

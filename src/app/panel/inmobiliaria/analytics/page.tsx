@@ -29,10 +29,10 @@ import {
   AnalyticsForecasting,
 } from '@/components/inmobiliaria';
 import {
-  MOCK_ANALYTICS_DATA,
-  MOCK_TREND_ANALYSIS,
-  MOCK_FORECAST_DATA,
-} from '@/lib/data/mock-inmobiliaria';
+  useAnalyticsData,
+  useTrendAnalysis,
+  useForecastData,
+} from '@/lib/hooks/useInmobiliaria';
 import {
   DropdownList,
   DropdownListContent,
@@ -283,6 +283,11 @@ export default function AnalyticsPage() {
   const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
   const [dateRange, setDateRange] = useState<DateRange>('30d');
 
+  // API hooks
+  const { analyticsData, isLoading: loadingAnalytics, error: analyticsError } = useAnalyticsData(dateRange);
+  const { trends, isLoading: loadingTrends, error: trendsError } = useTrendAnalysis();
+  const { forecasts, isLoading: loadingForecasts, error: forecastsError } = useForecastData();
+
   const VIEWS: ViewConfig[] = useMemo(() => [
     { id: 'dashboard', label: t('inmobiliaria.analytics.tabs.dashboard'), icon: ChartBar },
     { id: 'trends', label: t('inmobiliaria.analytics.tabs.trends'), icon: ChartLineUp },
@@ -298,8 +303,16 @@ export default function AnalyticsPage() {
 
   // Hero KPI data
   const heroKPIs = useMemo(() => {
-    const data = MOCK_ANALYTICS_DATA;
-    const getKpi = (id: string) => data.kpis.find((k) => k.id === id);
+    if (!analyticsData) {
+      return {
+        revenue: { value: '$0', trend: undefined, sparkline: [] },
+        occupancy: { value: '0%', trend: undefined, target: undefined, sparkline: [] },
+        collection: { value: '0%', trend: undefined, target: undefined },
+        properties: { value: '0', trend: undefined },
+      };
+    }
+
+    const getKpi = (id: string) => analyticsData.kpis.find((k) => k.id === id);
 
     const revenue = getKpi('kpi-revenue');
     const occupancy = getKpi('kpi-occupancy');
@@ -328,7 +341,7 @@ export default function AnalyticsPage() {
         trend: properties?.trend,
       },
     };
-  }, [t]);
+  }, [analyticsData, t]);
 
   // Insights
   const insights = useMemo(() => [
@@ -517,20 +530,32 @@ export default function AnalyticsPage() {
               transition={{ duration: 0.2 }}
             >
               {activeView === 'dashboard' && (
-                <AnalyticsDashboard
-                  data={MOCK_ANALYTICS_DATA}
-                />
+                <>
+                  {loadingAnalytics && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
+                  {analyticsError && <p className="text-sm text-rose-600">{analyticsError}</p>}
+                  {analyticsData && <AnalyticsDashboard data={analyticsData} />}
+                </>
               )}
 
               {activeView === 'trends' && (
-                <AnalyticsTrends data={MOCK_TREND_ANALYSIS} />
+                <>
+                  {loadingTrends && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
+                  {trendsError && <p className="text-sm text-rose-600">{trendsError}</p>}
+                  {trends && <AnalyticsTrends data={trends} />}
+                </>
               )}
 
               {activeView === 'forecasting' && (
-                <AnalyticsForecasting
-                  data={MOCK_FORECAST_DATA}
-                  onExport={() => toast.success(t('inmobiliaria.analytics.toasts.exportingForecasts'))}
-                />
+                <>
+                  {loadingForecasts && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
+                  {forecastsError && <p className="text-sm text-rose-600">{forecastsError}</p>}
+                  {forecasts && (
+                    <AnalyticsForecasting
+                      data={forecasts}
+                      onExport={() => toast.success(t('inmobiliaria.analytics.toasts.exportingForecasts'))}
+                    />
+                  )}
+                </>
               )}
             </motion.div>
           </AnimatePresence>

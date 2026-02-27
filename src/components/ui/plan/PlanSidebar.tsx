@@ -235,7 +235,7 @@ function SidebarContent({
         'h-[60px] flex items-center',
         isCollapsed ? 'justify-center px-2' : 'px-5'
       )}>
-        <Link href={logo?.href || '/'} className="flex items-center" onClick={onItemClick}>
+        <Link href="/" className="flex items-center" onClick={onItemClick}>
           {isCollapsed ? (
             <svg viewBox="0 0 52 60" className="h-8 w-auto text-foreground" fill="none">
               <path d="M5 51L29 27L47 45V15" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>

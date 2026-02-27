@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion, ConsignacionFormData } from '@/lib/types/inmobiliaria';
-import { MOCK_AGENTES } from '@/lib/data/mock-inmobiliaria';
+import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 
 interface ConsignacionEditFormProps {
   consignacion: Consignacion;
@@ -115,7 +115,8 @@ export function ConsignacionEditForm({
   });
 
   // Get agentes list
-  const agentes = useMemo(() => MOCK_AGENTES.filter(a => a.status === 'active'), []);
+  const { agentes: allAgentes } = useAgentes();
+  const agentes = useMemo(() => allAgentes.filter(a => a.status === 'active'), [allAgentes]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

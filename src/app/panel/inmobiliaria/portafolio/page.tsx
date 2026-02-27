@@ -17,11 +17,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  MOCK_CONSIGNACIONES,
-  MOCK_PROPIETARIOS,
-  MOCK_AGENTES,
-} from '@/lib/data/mock-inmobiliaria';
+import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
+import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
@@ -38,6 +35,9 @@ const ITEMS_PER_PAGE = 12;
 export default function PortafolioPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const { consignaciones: allConsignaciones } = useConsignaciones();
+  const { propietarios: allPropietarios } = usePropietarios();
+  const { agentes: allAgentes } = useAgentes();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
@@ -52,23 +52,23 @@ export default function PortafolioPage() {
   // Create lookup maps for propietarios and agentes
   const propietariosMap = useMemo(() => {
     const map: Record<string, string> = {};
-    MOCK_PROPIETARIOS.forEach((p) => {
+    allPropietarios.forEach((p) => {
       map[p.id] = p.name;
     });
     return map;
-  }, []);
+  }, [allPropietarios]);
 
   const agentesMap = useMemo(() => {
     const map: Record<string, { name: string; avatar?: string }> = {};
-    MOCK_AGENTES.forEach((a) => {
+    allAgentes.forEach((a) => {
       map[a.id] = { name: a.name, avatar: a.avatar };
     });
     return map;
-  }, []);
+  }, [allAgentes]);
 
   // Filter consignaciones
   const filteredConsignaciones = useMemo(() => {
-    let result = [...MOCK_CONSIGNACIONES];
+    let result = [...allConsignaciones];
 
     // Search filter
     if (filters.search) {
@@ -106,7 +106,7 @@ export default function PortafolioPage() {
     }
 
     return result;
-  }, [filters]);
+  }, [filters, allConsignaciones]);
 
   // Calculate stats from filtered data
   const stats = useMemo(() => {
@@ -135,11 +135,11 @@ export default function PortafolioPage() {
   }, []);
 
   // Handlers
-  const handleView = useCallback((consignacion: typeof MOCK_CONSIGNACIONES[0]) => {
+  const handleView = useCallback((consignacion: Consignacion) => {
     router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
   }, [router]);
 
-  const handleEdit = useCallback((consignacion: typeof MOCK_CONSIGNACIONES[0]) => {
+  const handleEdit = useCallback((consignacion: Consignacion) => {
     // Navigate to detail page where edit actions are available
     router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
   }, [router]);
@@ -301,9 +301,9 @@ export default function PortafolioPage() {
         <ConsignacionFilters
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          consignaciones={MOCK_CONSIGNACIONES}
-          propietarios={MOCK_PROPIETARIOS}
-          agentes={MOCK_AGENTES}
+          consignaciones={allConsignaciones}
+          propietarios={allPropietarios}
+          agentes={allAgentes}
         />
 
         {/* Content */}

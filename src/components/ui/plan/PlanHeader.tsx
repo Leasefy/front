@@ -7,11 +7,15 @@ import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, Sign
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { getPlanById, MOCK_SUBSCRIPTION, PLANS } from '@/lib/data/mock-subscriptions';
+import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
+import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
+import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, type TeamRole } from '@/lib/types/team';
-import { getTeamMembers, getPendingInvites } from '@/lib/data/mock-team';
+import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
 import {
   searchData,
   groupSearchResults,
@@ -20,7 +24,7 @@ import {
   getQuickLinks,
   type SearchCategory,
   type SearchResult,
-} from '@/lib/data/mock-search';
+} from '@/lib/constants/search-data';
 import {
   DropdownList,
   DropdownListContent,
@@ -48,114 +52,13 @@ export interface PlanHeaderProps {
   tenantSubscription?: TenantSubscriptionTextT;
 }
 
-// Notification type routing config
-const notificationRoutes: Record<string, { landlord: string; tenant: string }> = {
-  'Pago': { landlord: '/panel', tenant: '/inquilino/pagos' },
-  'Aplicación': { landlord: '/panel/candidatos', tenant: '/inquilino/aplicaciones' },
-  'Contrato': { landlord: '/panel/contratos', tenant: '/inquilino/documentos' },
-  'Mantenimiento': { landlord: '/panel', tenant: '/inquilino' },
-  'Verificación': { landlord: '/panel/candidatos', tenant: '/inquilino/aplicaciones' },
-  'Actualización': { landlord: '/panel', tenant: '/inquilino' },
-};
-
-// Mock notifications
-const initialNotifications = [
-  {
-    id: '1',
-    user: 'Nicolás Martinez',
-    action: 'completó el pago del arriendo',
-    target: 'Apt. #203',
-    time: 'hace 12 min',
-    type: 'Pago',
-    unread: true,
-  },
-  {
-    id: '2',
-    user: 'Maria Garcia',
-    action: 'envió una aplicación para',
-    target: 'Casa Providencia',
-    time: 'hace 12 min',
-    type: 'Aplicación',
-    unread: true,
-  },
-  {
-    id: '3',
-    user: 'Sistema',
-    action: 'te envió un recordatorio',
-    message: 'Renovación de contrato pendiente para 3 propiedades.',
-    time: 'hace 12 min',
-    type: 'Contrato',
-    hasReply: true,
-    replyColor: 'bg-green-100',
-    unread: false,
-  },
-  {
-    id: '4',
-    user: 'Roberto Silva',
-    action: 'envió documentos',
-    file: 'Contrato_Arriendo.pdf',
-    fileSize: '2 MB',
-    time: 'hace 12 min',
-    type: 'Contrato',
-    unread: false,
-  },
-  {
-    id: '5',
-    user: 'Ana Torres',
-    action: 'firmó el contrato de',
-    target: 'Oficina Santiago Centro',
-    time: 'hace 1 hora',
-    type: 'Contrato',
-    unread: false,
-  },
-  {
-    id: '6',
-    user: 'Diego Fernandez',
-    action: 'solicitó mantenimiento en',
-    target: 'Depto. Las Condes',
-    time: 'hace 2 horas',
-    type: 'Mantenimiento',
-    unread: false,
-  },
-  {
-    id: '7',
-    user: 'Sistema',
-    action: 'envió recordatorio',
-    message: 'Pago pendiente en 3 propiedades.',
-    time: 'hace 3 horas',
-    type: 'Pago',
-    replyColor: 'bg-plan-status-yellow-bg',
-    unread: false,
-  },
-  {
-    id: '8',
-    user: 'Laura Mendez',
-    action: 'completó la verificación para',
-    target: 'Casa Ñuñoa',
-    time: 'hace 5 horas',
-    type: 'Verificación',
-    unread: false,
-  },
-  {
-    id: '9',
-    user: 'Pedro Gonzalez',
-    action: 'actualizó información de',
-    target: 'Apt. #105',
-    time: 'Ayer',
-    type: 'Actualización',
-    unread: false,
-  },
-  {
-    id: '10',
-    user: 'Sistema',
-    action: 'envió documentos',
-    file: 'Informe_Mensual.pdf',
-    fileSize: '1.5 MB',
-    time: 'Ayer',
-    type: 'Contrato',
-    unread: false,
-  },
-];
+// Get category label for notification popover
+function getNotifCategoryLabel(category: string, isLandlord: boolean): string {
+  if (isLandlord) {
+    return LANDLORD_CATEGORIES[category as LandlordNotificationCategory]?.label ?? category;
+  }
+  return TENANT_CATEGORIES[category as TenantNotificationCategory]?.label ?? category;
+}
 
 export function PlanHeader({
   title,
@@ -178,44 +81,39 @@ export function PlanHeader({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'mentions'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const [notifications, setNotifications] = useState(initialNotifications);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(n => n.unread).length;
-
-  // Notification actions
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, unread: false } : n
-    ));
-  };
-
-  const handleNotificationClick = (notification: typeof initialNotifications[0]) => {
-    // Mark as read
-    if (notification.unread) {
-      markAsRead(notification.id);
-    }
-    // Close the popover
-    setNotificationsOpen(false);
-    // Navigate to relevant page
-    const routes = notificationRoutes[notification.type || ''];
-    if (routes) {
-      router.push(isLandlord ? routes.landlord : routes.tenant);
-    }
-  };
-
-  // Check if user is landlord (on /panel routes)
+  // Check if user is landlord (on /panel routes) - must be before hooks
   const isLandlord = pathname?.startsWith('/panel');
 
+  // Real notifications from API
+  const landlordNotifs = useLandlordNotifications();
+  const tenantNotifs = useTenantNotifications();
+  const activeNotifs = isLandlord ? landlordNotifs : tenantNotifs;
+  const notifications = activeNotifs.notifications as BaseNotification[];
+  const unreadCount = activeNotifs.unreadCount;
+
+  const handleNotificationClick = (notification: BaseNotification) => {
+    if (!notification.read) {
+      activeNotifs.markAsRead(notification.id);
+    }
+    setNotificationsOpen(false);
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    }
+  };
+
   // Get subscription data
-  const currentPlan = getPlanById(MOCK_SUBSCRIPTION.planId);
+  const { subscription } = useMySubscription();
+  const planId = subscription?.planId ?? 'free';
+  const currentPlan = getPlanById(planId);
   const teamMembers = getTeamMembers();
   const pendingInvites = getPendingInvites();
 
@@ -417,7 +315,7 @@ export function PlanHeader({
                 <PopoverTrigger asChild>
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
-                    {MOCK_SUBSCRIPTION.planId === 'free' && (
+                    {planId === 'free' && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full" />
                     )}
                   </button>
@@ -445,9 +343,9 @@ export function PlanHeader({
                     <div className="flex items-center gap-3 mb-4">
                       <div className={cn(
                         'w-10 h-10 flex items-center justify-center rounded-sm',
-                        MOCK_SUBSCRIPTION.planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
+                        planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
                       )}>
-                        {MOCK_SUBSCRIPTION.planId === 'free' ? (
+                        {planId === 'free' ? (
                           <Lightning className="w-5 h-5 text-plan-secondary" />
                         ) : (
                           <Crown className="w-5 h-5 text-plan-accent" />
@@ -458,9 +356,9 @@ export function PlanHeader({
                           Plan {currentPlan.name}
                         </p>
                         <p className="text-[12px] text-plan-secondary">
-                          {MOCK_SUBSCRIPTION.planId === 'free'
+                          {planId === 'free'
                             ? 'Funciones limitadas'
-                            : `Facturación ${MOCK_SUBSCRIPTION.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                            : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
                           }
                         </p>
                       </div>
@@ -488,13 +386,13 @@ export function PlanHeader({
                     </div>
 
                     {/* Upgrade CTA */}
-                    {MOCK_SUBSCRIPTION.planId !== 'business' && (
+                    {planId !== 'business' && (
                       <Link
                         href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
                         className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium text-center rounded-xl transition-colors"
                       >
-                        {MOCK_SUBSCRIPTION.planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
+                        {planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
                     )}
 
@@ -712,7 +610,7 @@ export function PlanHeader({
 
               {/* Tabs */}
               <div className="flex items-center gap-1.5 px-5 py-3 border-b border-neutral-100 dark:border-white/10">
-                {(['all', 'unread', 'mentions'] as const).map((tab) => (
+                {(['all', 'unread'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -725,10 +623,14 @@ export function PlanHeader({
                   >
                     {tab === 'all' && (locale === 'es' ? 'Todas' : 'All')}
                     {tab === 'unread' && (locale === 'es' ? 'Sin leer' : 'Unread')}
-                    {tab === 'mentions' && (locale === 'es' ? 'Menciones' : 'Mentions')}
-                    {tab === 'all' && (
+                    {tab === 'all' && notifications.length > 0 && (
                       <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full">
-                        7
+                        {notifications.length}
+                      </span>
+                    )}
+                    {tab === 'unread' && unreadCount > 0 && (
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full">
+                        {unreadCount}
                       </span>
                     )}
                   </button>
@@ -737,88 +639,70 @@ export function PlanHeader({
 
               {/* Notifications List */}
               <div className="max-h-[320px] overflow-y-auto overscroll-contain">
-                {notifications.map((notification) => (
+                {activeNotifs.isLoading ? (
+                  [...Array(3)].map((_, i) => (
+                    <div key={i} className="flex gap-3 px-5 py-4 border-b border-border last:border-0 animate-pulse">
+                      <div className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4" />
+                        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2" />
+                      </div>
+                    </div>
+                  ))
+                ) : (activeTab === 'unread' ? notifications.filter(n => !n.read) : notifications).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <Bell className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mb-2" />
+                    <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+                      {activeTab === 'unread'
+                        ? (locale === 'es' ? 'No tienes notificaciones sin leer' : 'No unread notifications')
+                        : (locale === 'es' ? 'No tienes notificaciones' : 'No notifications')}
+                    </p>
+                  </div>
+                ) : (
+                  (activeTab === 'unread' ? notifications.filter(n => !n.read) : notifications).map((notification) => (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={cn(
                       'flex gap-3 px-5 py-4 hover:bg-muted transition-colors border-b border-border last:border-0 cursor-pointer',
-                      notification.unread && 'bg-muted'
+                      !notification.read && 'bg-muted'
                     )}
                   >
                     {/* Avatar */}
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      notification.unread ? 'bg-primary text-white' : 'bg-muted text-plan-secondary'
+                      !notification.read ? 'bg-primary text-white' : 'bg-muted text-plan-secondary'
                     )}>
-                      {notification.user.charAt(0)}
+                      {notification.title.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-plan-primary">
-                        <span className="font-medium">{notification.user}</span>
-                        {' '}{notification.action}{' '}
-                        {notification.target && (
-                          <span className="font-medium">{notification.target}</span>
-                        )}
+                      <p className={cn(
+                        'text-[13px] text-plan-primary line-clamp-2',
+                        !notification.read && 'font-medium'
+                      )}>
+                        {notification.title}
                       </p>
-                      <p className="text-[12px] text-plan-muted mt-0.5">
-                        {notification.time}
-                        {notification.type && (
-                          <>
-                            {' • '}
-                            <span>{notification.type}</span>
-                          </>
-                        )}
-                      </p>
-
-                      {/* Message reply */}
                       {notification.message && (
-                        <div className="mt-2 px-3 py-2 rounded-sm flex items-center justify-between bg-neutral-100 dark:bg-white/10">
-                          <p className="text-[12px] text-neutral-700 dark:!text-white">{notification.message}</p>
-                          {notification.hasReply && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNotificationsOpen(false);
-                                router.push(isLandlord ? '/panel/mensajes' : '/inquilino/mensajes');
-                              }}
-                              className="px-3 py-1 bg-white dark:bg-neutral-700 text-[11px] font-medium text-neutral-900 dark:text-white rounded-sm border border-neutral-200 dark:border-white/20 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition-colors"
-                            >
-                              Responder
-                            </button>
-                          )}
-                        </div>
+                        <p className="text-[12px] text-plan-muted mt-0.5 line-clamp-1">
+                          {notification.message}
+                        </p>
                       )}
-
-                      {/* File */}
-                      {notification.file && (
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setNotificationsOpen(false);
-                            router.push(isLandlord ? '/panel/contratos' : '/inquilino/documentos');
-                          }}
-                          className="mt-2 px-3 py-2 bg-neutral-100 dark:bg-white/10 rounded-sm flex items-center justify-between hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span className="text-[12px] text-neutral-700 dark:text-white">{notification.file}</span>
-                          </div>
-                          <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{notification.fileSize}</span>
-                        </div>
-                      )}
+                      <p className="text-[12px] text-plan-muted mt-0.5">
+                        {formatNotificationTime(notification.createdAt)}
+                        {' • '}
+                        <span>{getNotifCategoryLabel(notification.category, !!isLandlord)}</span>
+                      </p>
                     </div>
 
                     {/* Unread indicator */}
-                    {notification.unread && (
+                    {!notification.read && (
                       <div className="w-2 h-2 rounded-full bg-plan-status-blue flex-shrink-0 mt-2" />
                     )}
                   </div>
-                ))}
+                ))
+                )}
               </div>
 
               {/* View all link */}
@@ -850,7 +734,7 @@ export function PlanHeader({
                 {isLandlord ? (
                   <AvatarSubscriptionIndicator
                     variant="landlord"
-                    planId={MOCK_SUBSCRIPTION.planId}
+                    planId={planId}
                   />
                 ) : tenantSubscription ? (
                   <AvatarSubscriptionIndicator
@@ -876,7 +760,7 @@ export function PlanHeader({
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem asChild>
                 <Link
-                  href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
+                  href={user?.role === 'agency' ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
                   className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />

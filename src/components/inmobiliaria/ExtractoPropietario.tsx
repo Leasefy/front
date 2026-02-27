@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table';
 import type { ExtractoPropietario as ExtractoPropietarioType, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
-import { MOCK_INMOBILIARIA_CONFIG, MOCK_PROPIETARIOS } from '@/lib/data/mock-inmobiliaria';
+import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -118,9 +118,11 @@ export function ExtractoPropietario({
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
 
   // Get propietario details for bank info
+  const { propietarios } = usePropietarios();
+  const { config: agencyConfig } = useInmobiliariaConfig();
   const propietario = React.useMemo(() => {
-    return MOCK_PROPIETARIOS.find((p) => p.id === extracto.propietarioId);
-  }, [extracto.propietarioId]);
+    return propietarios.find((p) => p.id === extracto.propietarioId);
+  }, [extracto.propietarioId, propietarios]);
 
   // Handle PDF download
   const handleDownloadPDF = async () => {
@@ -184,13 +186,13 @@ export function ExtractoPropietario({
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">
-                {MOCK_INMOBILIARIA_CONFIG.name}
+                {agencyConfig?.name}
               </h1>
               <p className="text-sm text-muted-foreground">
-                NIT: {MOCK_INMOBILIARIA_CONFIG.nit}
+                NIT: {agencyConfig?.nit}
               </p>
               <p className="text-sm text-muted-foreground">
-                {MOCK_INMOBILIARIA_CONFIG.address}, {MOCK_INMOBILIARIA_CONFIG.city}
+                {agencyConfig?.address}, {agencyConfig?.city}
               </p>
             </div>
           </div>
@@ -501,8 +503,8 @@ export function ExtractoPropietario({
 
       {/* Print Footer */}
       <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
-        <p>{MOCK_INMOBILIARIA_CONFIG.name} - NIT {MOCK_INMOBILIARIA_CONFIG.nit}</p>
-        <p>{MOCK_INMOBILIARIA_CONFIG.address}, {MOCK_INMOBILIARIA_CONFIG.city}</p>
+        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
+        <p>{agencyConfig?.address}, {agencyConfig?.city}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
       </div>
     </motion.div>

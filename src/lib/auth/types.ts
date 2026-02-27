@@ -148,6 +148,7 @@ export interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+  mfaRequired: boolean
 }
 
 export interface AuthContextType extends AuthState {
@@ -156,6 +157,7 @@ export interface AuthContextType extends AuthState {
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  setMfaVerified: () => void
 }
 
 /**

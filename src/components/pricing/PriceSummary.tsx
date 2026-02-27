@@ -4,8 +4,6 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { Plan, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
-import { calculateDiscountedPrice, isTrialCoupon, getTrialDuration } from '@/lib/utils/coupon-validation';
-import { getCouponByCode } from '@/lib/data/mock-coupons';
 import { Gift, Calendar, Info } from '@phosphor-icons/react';
 
 export interface PriceSummaryProps {
@@ -41,13 +39,25 @@ export function PriceSummary({
   let trialDays = 0;
 
   if (appliedCoupon) {
-    const coupon = getCouponByCode(appliedCoupon.code);
-    if (coupon) {
-      finalPrice = calculateDiscountedPrice(originalPrice, coupon);
-      savings = originalPrice - finalPrice;
-      isTrial = isTrialCoupon(coupon);
-      trialDays = getTrialDuration(coupon);
+    switch (appliedCoupon.type) {
+      case 'PERCENTAGE':
+        finalPrice = Math.max(0, Math.round(originalPrice - originalPrice * (appliedCoupon.discount / 100)));
+        break;
+      case 'FIXED_AMOUNT':
+        finalPrice = Math.max(0, originalPrice - appliedCoupon.discount);
+        break;
+      case 'FREE_MONTHS':
+      case 'FULL_ACCESS':
+        finalPrice = 0;
+        break;
     }
+    savings = originalPrice - finalPrice;
+    isTrial = appliedCoupon.type === 'FREE_MONTHS' ||
+      appliedCoupon.type === 'FULL_ACCESS' ||
+      (appliedCoupon.type === 'PERCENTAGE' && appliedCoupon.discount === 100);
+    if (appliedCoupon.type === 'FREE_MONTHS') trialDays = appliedCoupon.discount * 30;
+    else if (appliedCoupon.type === 'FULL_ACCESS') trialDays = appliedCoupon.discount;
+    else if (appliedCoupon.type === 'PERCENTAGE' && appliedCoupon.discount === 100) trialDays = 30;
   }
 
   const isFree = finalPrice === 0;

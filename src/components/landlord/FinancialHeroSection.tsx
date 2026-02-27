@@ -3,10 +3,10 @@
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { SectionLabel } from '@/components/ui/section-label';
 import { cn } from '@/lib/utils';
-import type { FinancialStats } from '@/lib/data/mock-dashboard';
+import type { DashboardFinancialStats } from '@/lib/api/landlord.types';
 
 interface FinancialHeroSectionProps {
-  stats: FinancialStats;
+  stats: DashboardFinancialStats;
   className?: string;
 }
 

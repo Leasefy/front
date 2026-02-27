@@ -24,14 +24,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
-  MOCK_DASHBOARD_KPIS,
-  MOCK_PIPELINE_ITEMS,
-  MOCK_COBROS,
-  MOCK_MANTENIMIENTOS,
-  MOCK_AGENTES,
-  getActiveAgentes,
-} from '@/lib/data/mock-inmobiliaria';
+  useInmobiliariaDashboard,
+  useAgentes,
+  usePipelineItems,
+  useCobros,
+  useMantenimientos,
+} from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 
 /**
  * KPI Card Component
@@ -128,7 +128,7 @@ function QuickAction({ title, description, href, icon: Icon, iconBg = 'bg-indigo
 /**
  * Pipeline Mini Card
  */
-function PipelineMiniCard({ item }: { item: typeof MOCK_PIPELINE_ITEMS[0] }) {
+function PipelineMiniCard({ item }: { item: PipelineItem }) {
   const stageInfo = getPipelineStageInfo(item.stage);
 
   return (
@@ -160,7 +160,7 @@ function PipelineMiniCard({ item }: { item: typeof MOCK_PIPELINE_ITEMS[0] }) {
 /**
  * Agent Mini Card
  */
-function AgentMiniCard({ agent, t }: { agent: typeof MOCK_AGENTES[0]; t: (key: string, params?: Record<string, string | number>) => string }) {
+function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm">
@@ -187,21 +187,33 @@ function AgentMiniCard({ agent, t }: { agent: typeof MOCK_AGENTES[0]; t: (key: s
  */
 export default function InmobiliariaDashboardPage() {
   const { t } = useI18n();
-  const kpis = MOCK_DASHBOARD_KPIS;
-  const activeAgents = getActiveAgentes();
+  const { kpis: kpisData } = useInmobiliariaDashboard();
+  const kpis = kpisData ?? {
+    totalProperties: 0, propertiesAvailable: 0, propertiesRented: 0, propertiesInProcess: 0,
+    occupancyRate: 0, expectedRevenue: 0, collectedRevenue: 0, pendingCollections: 0,
+    lateCollections: 0, collectionRate: 0, totalCommissions: 0, activeLeads: 0,
+    scheduledVisits: 0, pendingApplications: 0, contractsInProgress: 0,
+    totalAgents: 0, closedThisMonth: 0, avgDaysToClose: 0, totalPropietarios: 0, pendingDispersions: 0,
+  };
+  const { agentes } = useAgentes();
+  const { pipelineItems } = usePipelineItems();
+  const { cobros } = useCobros();
+  const { mantenimientos } = useMantenimientos();
+
+  const activeAgents = agentes.filter((a) => a.status === 'active');
 
   // Get pipeline items that need attention (not completed/lost)
-  const activePipeline = MOCK_PIPELINE_ITEMS.filter(
+  const activePipeline = pipelineItems.filter(
     (p) => p.stage !== 'completed' && p.stage !== 'lost'
   ).slice(0, 5);
 
   // Get pending cobros
-  const pendingCobros = MOCK_COBROS.filter(
+  const pendingCobros = cobros.filter(
     (c) => c.status === 'pending' || c.status === 'late'
   );
 
   // Get pending maintenance
-  const pendingMaintenance = MOCK_MANTENIMIENTOS.filter(
+  const pendingMaintenance = mantenimientos.filter(
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
 

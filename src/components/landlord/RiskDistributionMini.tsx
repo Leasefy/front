@@ -1,7 +1,13 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { RiskDistribution } from '@/lib/data/mock-dashboard';
+interface RiskDistribution {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  total: number;
+}
 
 interface RiskDistributionMiniProps {
   distribution: RiskDistribution;

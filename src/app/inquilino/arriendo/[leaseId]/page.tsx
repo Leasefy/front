@@ -7,19 +7,27 @@ import { motion } from 'framer-motion';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, ArrowSquareOut, Chat } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
-import { getLeaseById, getPaymentsForLease, getNextPayment, PAYMENT_METHODS } from '@/lib/data/mock-leases';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useLease, useLeasePayments } from '@/lib/hooks/useLeases';
+import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
 
 export default function LeaseDetailPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
   const router = useRouter();
   const leaseId = params.leaseId as string;
 
-  const lease = getLeaseById(leaseId);
-  const payments = getPaymentsForLease(leaseId);
-  const nextPayment = getNextPayment(leaseId);
+  const { lease, isLoading: leaseLoading, error: leaseError } = useLease(leaseId);
+  const { payments, getNextPayment } = useLeasePayments(leaseId);
+  const nextPayment = getNextPayment();
+
+  if (leaseLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!lease) {
     return (

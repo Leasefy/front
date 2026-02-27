@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
-import { formatCurrency } from '@/lib/data/mock-dashboard';
+import { useI18n } from '@/lib/i18n';
 
 interface DashboardHeaderProps {
   className?: string;
@@ -18,6 +18,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ className, propertyCount, monthlyIncome }: DashboardHeaderProps) {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
+  const { formatCurrency } = useI18n();
 
   // Get first name only
   const firstName = user?.name?.split(' ')[0] || 'Usuario';

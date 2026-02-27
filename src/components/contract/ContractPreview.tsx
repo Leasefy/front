@@ -7,7 +7,7 @@ import { FileText, Buildings, User, Calendar, CreditCard, Shield, Lock, CaretDow
 import { Button } from '@/components/ui/button';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
 import type { SelectedInsurance } from '@/lib/types/insurance';
-import { getInsuranceById } from '@/lib/data/mock-insurance';
+import { getInsuranceById } from '@/lib/constants/insurance-policies';
 import { maskEmail, maskPhone, maskDocument } from '@/lib/utils/mask-data';
 import { AuthenticityCertificate } from './AuthenticityCertificate';
 

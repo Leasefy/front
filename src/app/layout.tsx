@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { WishlistProvider } from "@/lib/stores/wishlist";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
+import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 
 const manrope = Manrope({
@@ -118,6 +119,7 @@ export default function RootLayout({
           <AuthProvider>
             <WishlistProvider>
               <RouteAnnouncer />
+              <PushNotificationHandler />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>

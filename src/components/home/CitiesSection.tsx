@@ -95,7 +95,7 @@ export function CitiesSection() {
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   {/* Property count badge */}
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md rounded-full mb-3 border border-white/10">
-                    <span className="text-[11px] font-medium text-white/90 tracking-wide uppercase">
+                    <span className="text-[11px] font-mono font-normal text-white/90 tracking-wide uppercase">
                       {city.properties} propiedades
                     </span>
                   </div>

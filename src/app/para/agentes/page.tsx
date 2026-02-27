@@ -139,7 +139,7 @@ function LinkGeneratorVisual() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-[8px] text-white/30 font-medium uppercase tracking-wider"
+            className="text-[8px] text-white/30 font-mono font-normal uppercase tracking-wider"
           >
             Compartir vía
           </motion.span>
@@ -603,7 +603,7 @@ function CommissionVisual() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="text-[8px] text-muted-foreground font-medium uppercase tracking-wider"
+          className="text-[8px] text-muted-foreground font-mono font-normal uppercase tracking-wider"
         >
           Últimos cierres
         </motion.span>
@@ -681,7 +681,7 @@ export default function AgentesPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <SealCheck className="w-3.5 h-3.5" />
                   100% gratis para agentes
@@ -716,7 +716,7 @@ export default function AgentesPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth?role=agent">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Crear cuenta gratis
                     </Button>
                   </Link>
@@ -901,7 +901,7 @@ export default function AgentesPage() {
                     <Clock className="w-3.5 h-3.5 text-white/80" />
                     <span className="text-white/70 text-xs font-medium">Problema #1</span>
                   </div>
-                  <h3 className="text-white text-2xl font-semibold mb-2">Horas en verificaciones manuales</h3>
+                  <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Horas en verificaciones manuales</h3>
                   <p className="text-white/60 text-sm max-w-md">Llamar referencias, verificar empleo, revisar historial crediticio... Por cada candidato.</p>
                 </div>
               </motion.div>
@@ -920,7 +920,7 @@ export default function AgentesPage() {
                   </div>
                   <span className="text-muted-foreground text-xs font-medium">Problema #2</span>
                 </div>
-                <h3 className="text-foreground text-xl font-semibold mb-2">Sin datos para decidir</h3>
+                <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Sin datos para decidir</h3>
                 <p className="text-muted-foreground text-sm mb-6">Presentas candidatos al propietario sin saber realmente si pueden pagar.</p>
                 {/* Visual: Empty documents */}
                 <div className="mt-auto grid grid-cols-3 gap-3">
@@ -956,7 +956,7 @@ export default function AgentesPage() {
                   </div>
                   <span className="text-muted-foreground text-xs font-medium">Problema #3</span>
                 </div>
-                <h3 className="text-foreground text-xl font-semibold mb-1">Candidatos que se pierden</h3>
+                <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-1">Candidatos que se pierden</h3>
                 <p className="text-muted-foreground text-sm mb-4">Mientras verificas uno, otros 3 ya encontraron otro apartamento.</p>
                 {/* Visual: Candidate timeline */}
                 <div className="mt-auto space-y-2">
@@ -1007,7 +1007,7 @@ export default function AgentesPage() {
                     <FileText className="w-3.5 h-3.5 text-white/80" />
                     <span className="text-white/70 text-xs font-medium">Problema #4</span>
                   </div>
-                  <h3 className="text-white text-2xl font-semibold mb-2">Te ves poco profesional</h3>
+                  <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Te ves poco profesional</h3>
                   <p className="text-white/60 text-sm max-w-md">Los propietarios esperan reportes formales, no &quot;yo creo que este candidato está bien&quot;.</p>
                 </div>
               </motion.div>
@@ -1051,13 +1051,13 @@ export default function AgentesPage() {
                       <span className="text-white text-sm font-semibold">GRATIS</span>
                       <span className="text-white/50 text-xs">para ti</span>
                     </div>
-                    <h3 className="text-white text-xl font-semibold mb-2">Link de evaluación</h3>
+                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">Link de evaluación</h3>
                     <p className="text-white/60 text-sm leading-relaxed mb-4">
                       Genera un link único para cada propiedad. Compártelo por WhatsApp y recibe el reporte.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['WhatsApp', 'Email', 'SMS', 'QR'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs">
+                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs font-mono uppercase font-normal">
                           {feature}
                         </span>
                       ))}
@@ -1107,7 +1107,7 @@ export default function AgentesPage() {
                       <span className="text-foreground text-sm font-semibold">$24.900</span>
                       <span className="text-muted-foreground text-xs">paga el candidato</span>
                     </div>
-                    <h3 className="text-foreground text-xl font-semibold mb-2">Evaluación completa</h3>
+                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Evaluación completa</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Verificación de identidad, historial crediticio y score de riesgo con IA.
                     </p>
@@ -1140,7 +1140,7 @@ export default function AgentesPage() {
                     <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
                       <DeviceMobile className="w-5 h-5 text-sand-700" />
                     </div>
-                    <h3 className="text-foreground text-xl font-semibold mb-2">App móvil</h3>
+                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">App móvil</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Notificaciones en tiempo real cuando alguien aplica. iOS y Android.
                     </p>
@@ -1180,13 +1180,13 @@ export default function AgentesPage() {
                       <span className="text-white/60 text-xs">Incluido</span>
                       <span className="text-white/40 text-xs">sin costo extra</span>
                     </div>
-                    <h3 className="text-white text-xl font-semibold mb-2">Dashboard de comisiones</h3>
+                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">Dashboard de comisiones</h3>
                     <p className="text-white/60 text-sm leading-relaxed mb-4">
                       Rastrea tus cierres, mide tu rendimiento y alcanza tus metas mensuales.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Métricas', 'Metas', 'Histórico', 'Exportar'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs">
+                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs font-mono uppercase font-normal">
                           {feature}
                         </span>
                       ))}
@@ -1226,7 +1226,7 @@ export default function AgentesPage() {
                     <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
                       <FileText className="w-5 h-5 text-sand-700" />
                     </div>
-                    <h3 className="text-foreground text-lg font-semibold mb-2">Contratos digitales</h3>
+                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos digitales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       Firma electrónica con validez legal. Genera contratos desde plantillas.
                     </p>
@@ -1261,7 +1261,7 @@ export default function AgentesPage() {
                     <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
                       <ChartBar className="w-5 h-5 text-sand-700" />
                     </div>
-                    <h3 className="text-foreground text-lg font-semibold mb-2">Reportes profesionales</h3>
+                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Reportes profesionales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       PDFs con tu marca para impresionar a propietarios.
                     </p>
@@ -1283,15 +1283,6 @@ export default function AgentesPage() {
               </motion.div>
             </div>
 
-            {/* CTA */}
-            <div className="mt-12 text-center">
-              <Link href="/auth?role=agent">
-                <Button size="lg" className="rounded-xl h-[50px] px-[32px]">
-                  Crear cuenta gratis
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
           </div>
         </section>
 

@@ -475,7 +475,7 @@ function BentoCard({
       style={{ border: borderStyle }}
     >
       <div className="px-6 pt-5 pb-0">
-        <h3 className={`text-[20px] sm:text-[24px] font-heading font-medium tracking-[-0.02em] leading-tight ${dark ? "text-white" : "text-foreground"}`}>
+        <h3 className={`font-mono uppercase text-[20px] sm:text-[24px] font-normal tracking-[-0.02em] leading-tight ${dark ? "text-white" : "text-foreground"}`}>
           {title}
         </h3>
         <p className={`text-[13px] font-sans leading-relaxed mt-1.5 max-w-[380px] ${dark ? "text-white/50" : "text-muted-foreground"}`}>

@@ -797,7 +797,7 @@ export default function InquilinosPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <MagnifyingGlass className="w-3.5 h-3.5" />
                   +2,500 propiedades verificadas
@@ -830,7 +830,7 @@ export default function InquilinosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/propiedades">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Ver propiedades
                     </Button>
                   </Link>
@@ -838,7 +838,7 @@ export default function InquilinosPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-mono uppercase font-normal h-12 px-6 rounded-xl"
                     >
                       Crear perfil gratis
                     </Button>
@@ -1121,7 +1121,7 @@ export default function InquilinosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Precio demasiado bueno{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1166,7 +1166,7 @@ export default function InquilinosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Necesitas un codeudor{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1208,7 +1208,7 @@ export default function InquilinosPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <MagnifyingGlass className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Búsqueda con IA
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -1217,7 +1217,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Filtros inteligentes', 'Alertas automáticas', 'Mapa interactivo'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1236,7 +1236,7 @@ export default function InquilinosPage() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                     <SealCheck className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Arriendo Pass
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1245,7 +1245,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Aplicaciones ilimitadas', '60 días', 'Sin repetir docs'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1264,7 +1264,7 @@ export default function InquilinosPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <Shield className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     100% Verificado
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -1273,7 +1273,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Fotos verificadas', 'Visitas reales', 'Cero estafas'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1300,7 +1300,7 @@ export default function InquilinosPage() {
                     <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[28px] md:text-[32px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Contratos Digitales
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -1308,7 +1308,7 @@ export default function InquilinosPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['Firma electrónica', 'Ley 820', '100% legal'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}

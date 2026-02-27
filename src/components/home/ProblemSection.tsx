@@ -65,7 +65,7 @@ export function ProblemSection() {
           className="absolute bottom-16 left-6 md:bottom-20 md:left-8 z-[3] max-w-2xl"
           style={{ pointerEvents: videoEnded ? "none" : "auto" }}
         >
-          <h2 className="text-[36px] sm:text-[48px] md:text-[56px] font-medium text-white leading-[1.15] tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]">
+          <h2 className="font-mono uppercase text-[36px] sm:text-[48px] md:text-[56px] font-normal text-white leading-[1.15] tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]">
             Arrienda seguro,<br />
             sin complicaciones.
           </h2>
@@ -91,7 +91,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.2s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
               3-6 meses buscando apartamento
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -110,7 +110,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.45s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
               40% de impago sin verificación
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -129,7 +129,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.7s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="text-[15px] text-white font-semibold leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
               +$6M en comisiones
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -181,7 +181,7 @@ export function ProblemSection() {
 
               {/* Tag */}
               <div className="absolute top-6 left-6">
-                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-medium text-white/90 uppercase tracking-wider">
+                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-mono font-normal text-white/90 uppercase tracking-wider">
                   Inquilinos
                 </span>
               </div>
@@ -225,7 +225,7 @@ export function ProblemSection() {
 
               {/* Tag */}
               <div className="absolute top-6 left-6">
-                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-medium text-white/90 uppercase tracking-wider">
+                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-mono font-normal text-white/90 uppercase tracking-wider">
                   Propietarios
                 </span>
               </div>
@@ -269,7 +269,7 @@ export function ProblemSection() {
 
               {/* Tag */}
               <div className="absolute top-6 left-6">
-                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-medium text-white/90 uppercase tracking-wider">
+                <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-mono font-normal text-white/90 uppercase tracking-wider">
                   El proceso
                 </span>
               </div>
@@ -405,7 +405,7 @@ export function ProblemSection() {
 
                 {/* Text content */}
                 <div className="text-center md:text-left max-w-[280px]">
-                  <h3 className="text-[20px] md:text-[22px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-2">
+                  <h3 className="font-mono uppercase text-[20px] md:text-[22px] font-normal text-foreground tracking-[-0.02em] leading-tight mb-2">
                     {'"'}Rechazado 3 veces sin explicación{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -517,7 +517,7 @@ export function ProblemSection() {
 
                 {/* Text content */}
                 <div className="text-center md:text-left max-w-[280px]">
-                  <h3 className="text-[20px] md:text-[22px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-2">
+                  <h3 className="font-mono uppercase text-[20px] md:text-[22px] font-normal text-foreground tracking-[-0.02em] leading-tight mb-2">
                     {'"'}4 meses sin cobrar arriendo{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">

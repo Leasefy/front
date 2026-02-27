@@ -171,7 +171,7 @@ export function WhyUsSection() {
             <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
               <div className="flex items-center gap-2 mb-3">
                 <span className="h-1 w-1 rounded-full bg-white/50" />
-                <span className="text-[11px] text-white/60 tracking-wide uppercase">
+                <span className="text-[11px] font-mono font-normal text-white/60 tracking-wide uppercase">
                   La plataforma de arriendos de Colombia
                 </span>
               </div>

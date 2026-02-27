@@ -85,7 +85,7 @@ export function Footer() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block text-[16px] tracking-[-0.32px] leading-[21.6px] text-white/70 hover:text-white transition-colors group/link"
+                  className="block font-mono uppercase text-[14px] font-normal tracking-wide text-white/70 hover:text-white transition-colors group/link"
                 >
                   <span className="relative overflow-hidden inline-block">
                     <span className="block transition-transform duration-300 group-hover/link:-translate-y-full">
@@ -179,7 +179,7 @@ export function Footer() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="block text-[16px] tracking-[-0.32px] leading-[21.6px] text-white/70 hover:text-white transition-colors group/link"
+                      className="block font-mono uppercase text-[14px] font-normal tracking-wide text-white/70 hover:text-white transition-colors group/link"
                     >
                       <span className="relative overflow-hidden inline-block">
                         <span className="block transition-transform duration-300 group-hover/link:-translate-y-full">
@@ -197,7 +197,7 @@ export function Footer() {
                 <h4 className="text-[18px] tracking-[-0.72px] leading-[24px] text-white/60 mb-[20px]">
                   Contacto
                 </h4>
-                <div className="space-y-3 text-[16px] tracking-[-0.32px] leading-[21.6px] text-white/70">
+                <div className="space-y-3 font-mono uppercase text-[14px] font-normal tracking-wide text-white/70">
                   <a
                     href="tel:+573001234567"
                     className="block hover:text-white transition-colors"
@@ -250,10 +250,10 @@ export function Footer() {
             © {new Date().getFullYear()} Leasefy. Todos los derechos reservados.
           </p>
           <div className="flex gap-6">
-            <Link href="/privacidad" className="text-[14px] tracking-[-0.28px] text-white/40 hover:text-white/60 transition-colors">
+            <Link href="/privacidad" className="font-mono uppercase text-[14px] font-normal tracking-wide text-white/40 hover:text-white/60 transition-colors">
               Privacidad
             </Link>
-            <Link href="/terminos" className="text-[14px] tracking-[-0.28px] text-white/40 hover:text-white/60 transition-colors">
+            <Link href="/terminos" className="font-mono uppercase text-[14px] font-normal tracking-wide text-white/40 hover:text-white/60 transition-colors">
               Terminos
             </Link>
           </div>

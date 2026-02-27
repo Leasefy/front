@@ -75,7 +75,7 @@ export default function PagosPage() {
                 <motion.span
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
+                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
                   <span className="flex h-2 w-2 relative">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
@@ -111,7 +111,7 @@ export default function PagosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-semibold h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
                       Activar cobro automático
                     </Button>
                   </Link>
@@ -285,7 +285,7 @@ export default function PagosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Perseguir
                   </span>
                 </div>
@@ -319,7 +319,7 @@ export default function PagosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Retrasos
                   </span>
                 </div>
@@ -353,7 +353,7 @@ export default function PagosPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="text-[11px] font-mono font-normal text-white/70 uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                     Desorden
                   </span>
                 </div>
@@ -412,7 +412,7 @@ export default function PagosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}Ya te escribo mañana{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -459,7 +459,7 @@ export default function PagosPage() {
 
                 {/* Text Content */}
                 <div className="flex-1">
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     {'"'}¿Ya me pagó este mes?{'"'}
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -501,7 +501,7 @@ export default function PagosPage() {
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-6">
                     <Wallet className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                     Cobro Automático
                   </h3>
                   <p className="text-[15px] text-white/70 leading-relaxed max-w-md">
@@ -510,7 +510,7 @@ export default function PagosPage() {
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-6">
                   {['Débito automático', 'PSE y tarjeta', 'Nequi y Daviplata'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/60 bg-white/10 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -529,7 +529,7 @@ export default function PagosPage() {
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
                     <BellRinging className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Recordatorios Inteligentes
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -538,7 +538,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['3 días antes', '1 día antes', 'Día de pago'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -557,7 +557,7 @@ export default function PagosPage() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                     <Receipt className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-heading font-medium text-foreground leading-tight mb-3">
+                  <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Recibos Automáticos
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
@@ -566,7 +566,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PDF descargable', 'Envío automático', 'Historial completo'].map((item, i) => (
-                    <span key={i} className="text-[12px] text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -594,7 +594,7 @@ export default function PagosPage() {
                     <Bank className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[28px] md:text-[32px] font-heading font-medium text-white leading-tight mb-3">
+                    <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-white leading-tight mb-3">
                       Tu Dinero en 24 Horas
                     </h3>
                     <p className="text-[15px] text-white/70 leading-relaxed max-w-md mb-6">
@@ -602,7 +602,7 @@ export default function PagosPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {['0% comisión', 'Todos los bancos', 'Transferencia automática'].map((item, i) => (
-                        <span key={i} className="text-[12px] text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <span key={i} className="text-[12px] font-mono uppercase font-normal text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
                           {item}
                         </span>
                       ))}
@@ -648,14 +648,14 @@ export default function PagosPage() {
                     className="relative bg-sand-50 rounded-xl p-6 min-h-[200px] flex flex-col"
                   >
                     {method.popular && (
-                      <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-medium uppercase tracking-wider bg-foreground text-white rounded-full">
+                      <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-mono font-normal uppercase tracking-wider bg-foreground text-white rounded-full">
                         Más usado
                       </span>
                     )}
                     <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4 shadow-sm">
                       <Icon className="w-6 h-6 text-foreground/70" />
                     </div>
-                    <h3 className="text-[17px] font-heading font-medium text-foreground mb-1">{method.name}</h3>
+                    <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">{method.name}</h3>
                     <p className="text-[13px] text-muted-foreground">{method.description}</p>
                   </motion.div>
                 );

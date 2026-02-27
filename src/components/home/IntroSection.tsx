@@ -131,7 +131,7 @@ export function IntroSection() {
 
             {/* Text content below - same solid background */}
             <div className="p-6 md:p-8 text-center">
-              <h3 className="text-[22px] md:text-[26px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-3">
+              <h3 className="font-mono uppercase text-[22px] md:text-[26px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-3">
                 Encuentra tu hogar en días, no meses
               </h3>
               <p className="text-[15px] text-muted-foreground leading-relaxed">
@@ -262,7 +262,7 @@ export function IntroSection() {
 
             {/* Text content below - same solid background */}
             <div className="p-6 md:p-8 text-center">
-              <h3 className="text-[22px] md:text-[26px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-3">
+              <h3 className="font-mono uppercase text-[22px] md:text-[26px] font-medium text-foreground tracking-[-0.02em] leading-tight mb-3">
                 Arrienda con tranquilidad total
               </h3>
               <p className="text-[15px] text-muted-foreground leading-relaxed">

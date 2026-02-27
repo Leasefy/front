@@ -94,7 +94,7 @@ export function ServicesSection() {
                       <div className="w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/10">
                         <Icon className="w-3.5 h-3.5 text-white/80" strokeWidth={1.5} />
                       </div>
-                      <span className="text-[11px] font-medium text-white/60 tracking-wide uppercase">
+                      <span className="text-[11px] font-mono font-normal text-white/60 tracking-wide uppercase">
                         {service.subtitle}
                       </span>
                     </div>

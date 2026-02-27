@@ -92,7 +92,7 @@ export function AgencyTierCard({
       )}
 
       <div className="mb-5">
-        <h3 className="text-[17px] font-semibold text-foreground">{name}</h3>
+        <h3 className="text-[17px] font-mono uppercase font-normal text-foreground">{name}</h3>
         <p className="text-[13px] text-muted-foreground mt-1">{description}</p>
       </div>
 

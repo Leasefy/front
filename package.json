@@ -13,7 +13,8 @@
     "db:reset": "npx prisma db push --force-reset && npm run db:seed",
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

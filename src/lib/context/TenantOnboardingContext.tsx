@@ -1,43 +1,28 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
-import type { TenantOnboardingData, PreferredContact, EmploymentType } from '@/lib/auth/types'
+import type { TenantOnboardingData } from '@/lib/auth/types'
 import { apiClient } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/use-auth'
 
 // ============================================================================
 // NOTA PARA BACKEND:
 // ============================================================================
-// Los pasos 1 (Info básica) y 2 (Verificación de ingresos) se llenan durante
-// el proceso de postulación/aplicación a una propiedad.
-//
-// Si el usuario YA APLICÓ a alguna propiedad:
-// - Ya tenemos su nombre, teléfono (paso 1)
-// - Ya tenemos su situación laboral e ingresos (paso 2)
-// - Solo faltaría: preferencias (paso 3)
-//
-// El backend debe:
-// 1. Verificar qué datos ya tenemos del usuario (de aplicaciones previas)
-// 2. Marcar automáticamente como completados los pasos que ya tenemos
-// 3. Iniciar el onboarding en el primer paso que falte
+// El onboarding solo recolecta info básica y preferencias.
+// Los datos de ingresos/empleo se recolectan durante la postulación a propiedades.
 //
 // Flags necesarios del backend:
 // - hasBasicInfo: boolean (nombre, teléfono)
-// - hasIncomeVerification: boolean (empleo, ingresos)
 // - hasPreferences: boolean (preferencias de vivienda)
 //
 // Lógica de pasos:
 // - Paso 1: saltar si hasBasicInfo = true
-// - Paso 2: saltar si hasIncomeVerification = true
-// - Paso 3: saltar si hasPreferences = true
-// - Si todos = true: no mostrar onboarding
-//
-// NOTA: Los documentos se piden durante el flujo de aplicación a una propiedad,
-// no en el onboarding.
+// - Paso 2: saltar si hasPreferences = true
+// - Si ambos = true: no mostrar onboarding
 // ============================================================================
 
 // ============================================================================
-// TextTs
+// Types
 // ============================================================================
 
 export interface TenantOnboardingStep {
@@ -58,13 +43,6 @@ export const TENANT_ONBOARDING_STEPS: TenantOnboardingStep[] = [
   },
   {
     id: 2,
-    key: 'employment',
-    label: 'Ingresos',
-    description: 'Tu situación laboral',
-    icon: 'briefcase',
-  },
-  {
-    id: 3,
     key: 'preferences',
     label: 'Preferencias',
     description: 'Tu hogar ideal',
@@ -76,17 +54,12 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   // Validation tracking
   step1Valid?: boolean
   step2Valid?: boolean
-  step3Valid?: boolean
 }
 
 export const initialTenantOnboardingDraft: TenantOnboardingDraft = {
   displayName: '',
   phone: '',
   preferredContact: 'whatsapp',
-  employmentType: undefined,
-  companyName: '',
-  monthlyIncome: undefined,
-  additionalIncome: 0,
   budgetMin: undefined,
   budgetMax: undefined,
   preferredZones: [],
@@ -190,13 +163,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       switch (step) {
         case 1: // Welcome - name required
           return !!draft.displayName && draft.displayName.trim().length > 0
-        case 2: // Employment - type and income required
-          return (
-            !!draft.employmentType &&
-            !!draft.monthlyIncome &&
-            draft.monthlyIncome > 0
-          )
-        case 3: // Preferences - budget required
+        case 2: // Preferences - budget required
           return (
             !!draft.budgetMin &&
             draft.budgetMin > 0 &&
@@ -259,7 +226,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       await refreshUser()
 
       // Mark all steps as completed
-      const allSteps = [1, 2, 3]
+      const allSteps = [1, 2]
       setCompletedSteps(allSteps)
 
       // Save completion status to localStorage (dashboard sidebar checks this)
@@ -299,13 +266,16 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       try {
         const parsed = JSON.parse(saved)
         if (parsed.draft) setDraft(parsed.draft)
-        if (parsed.currentStep) setCurrentStep(parsed.currentStep)
-        if (parsed.completedSteps) setCompletedSteps(parsed.completedSteps)
+        if (parsed.currentStep) setCurrentStep(Math.min(parsed.currentStep, totalSteps))
+        if (parsed.completedSteps) {
+          const validSteps = parsed.completedSteps.filter((s: number) => s <= totalSteps)
+          setCompletedSteps(validSteps)
+        }
       } catch (e) {
         console.error('Error loading tenant onboarding progress:', e)
       }
     }
-  }, [])
+  }, [totalSteps])
 
   const progressPercentage = useMemo(() => {
     return Math.round((completedSteps.length / totalSteps) * 100)

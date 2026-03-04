@@ -49,13 +49,7 @@ export interface TenantOnboardingData {
   phone?: string
   preferredContact?: PreferredContact
 
-  // Step 2 - Employment & Income
-  employmentType?: EmploymentType
-  companyName?: string
-  monthlyIncome?: number
-  additionalIncome?: number
-
-  // Step 3 - Housing Preferences
+  // Step 2 - Housing Preferences
   budgetMin?: number
   budgetMax?: number
   preferredZones?: string[]
@@ -64,7 +58,13 @@ export interface TenantOnboardingData {
   hasPets?: boolean
   petDetails?: string
 
-  // Step 4 - Documents Ready
+  // Employment & Income (collected during property application, not onboarding)
+  employmentType?: EmploymentType
+  companyName?: string
+  monthlyIncome?: number
+  additionalIncome?: number
+
+  // Documents (collected during property application, not onboarding)
   hasIdDocument?: boolean
   hasIncomeProof?: boolean
   hasEmploymentLetter?: boolean

@@ -1,10 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Buildings, Users, CheckCircle, Check } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Buildings, Users, CheckCircle, Check, CaretDown } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+export interface PlanAddon {
+  label: string;
+  price: string;
+}
 
 interface AgencyTierCardProps {
   name: string;
@@ -14,10 +20,12 @@ interface AgencyTierCardProps {
   properties?: number;
   users?: number;
   features: string[];
+  addons?: PlanAddon[];
   popular?: boolean;
   isEnterprise?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  onViewDetails?: () => void;
   ctaLabel?: string;
   ctaHref?: string;
   noCurrencySymbol?: boolean;
@@ -34,14 +42,17 @@ export function AgencyTierCard({
   properties,
   users,
   features,
+  addons,
   popular,
   isEnterprise,
   selected,
   onSelect,
+  onViewDetails,
   ctaLabel,
   ctaHref,
   noCurrencySymbol,
 }: AgencyTierCardProps) {
+  const [showAddons, setShowAddons] = useState(false);
   const showLimits = properties != null && users != null && !isEnterprise;
   const defaultCtaLabel = isEnterprise
     ? (selected ? 'Contactar ventas' : 'Solicitar cotización')
@@ -124,7 +135,7 @@ export function AgencyTierCard({
       )}
 
       {/* Features */}
-      <ul className="space-y-3 flex-1 mb-6">
+      <ul className="space-y-3 flex-1 mb-4">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
@@ -132,6 +143,51 @@ export function AgencyTierCard({
           </li>
         ))}
       </ul>
+
+      {/* View details link */}
+      {onViewDetails && (
+        <button
+          type="button"
+          onClick={onViewDetails}
+          className="text-[13px] font-medium text-primary hover:text-primary/80 transition-colors text-left mb-4"
+        >
+          Conocer más →
+        </button>
+      )}
+
+      {/* Add-ons toggle */}
+      {addons && addons.length > 0 && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => setShowAddons(!showAddons)}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <CaretDown className={cn('w-3.5 h-3.5 transition-transform duration-200', showAddons && 'rotate-180')} />
+            {showAddons ? 'Ocultar extras' : 'Ver extras disponibles'}
+          </button>
+          <AnimatePresence>
+            {showAddons && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 pt-3 border-t border-border space-y-2">
+                  {addons.map((addon, i) => (
+                    <div key={i} className="flex items-center justify-between text-[12px]">
+                      <span className="text-muted-foreground">{addon.label}</span>
+                      <span className="font-semibold text-foreground">{addon.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* CTA */}
       {ctaHref ? (

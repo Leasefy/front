@@ -418,9 +418,14 @@ export function Navbar() {
 
               {/* Footer with CTA */}
               <div className="px-8 py-4 bg-white/5 border-t border-white/10 flex items-center justify-between">
-                <p className="text-[12px] text-white/50">
-                  ¿No sabes cuál elegir? <span className="text-white/70">Habla con nuestro equipo</span>
-                </p>
+                <a
+                  href="https://wa.me/573116558833"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] text-white/50 hover:text-white/70 transition-colors"
+                >
+                  ¿No sabes cuál elegir? <span className="text-white/70 underline underline-offset-2">Habla con nuestro equipo</span>
+                </a>
                 <Link
                   href="/publicar"
                   onClick={() => setIsParaQuienOpen(false)}

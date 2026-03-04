@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, TreeEvergreen, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
+import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'

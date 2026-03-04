@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, Briefcase, House, Shield, Clock, Lightning, CheckCircle, Info, Lock, Eye, SealCheck } from '@phosphor-icons/react'
+import { ArrowLeft, Check, SpinnerGap, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
 import { useI18n } from '@/lib/i18n'
 
@@ -15,7 +16,6 @@ interface TenantOnboardingShellProps {
 
 const STEP_ICONS = {
   user: User,
-  briefcase: Briefcase,
   home: House,
 }
 
@@ -28,14 +28,6 @@ const STEP_WHY_CONTENT = {
         { icon: SealCheck, text: 'Verificamos tu identidad para proteger a todos' },
         { icon: Shield, text: 'Tu información está encriptada y segura' },
         { icon: Lightning, text: 'Propietarios ven tu perfil verificado' },
-      ],
-    },
-    {
-      title: '¿Por qué tus ingresos?',
-      points: [
-        { icon: CheckCircle, text: 'Los propietarios requieren verificar solvencia' },
-        { icon: Lock, text: 'No compartimos montos exactos, solo rangos' },
-        { icon: SealCheck, text: 'Aumenta tu tasa de aprobación un 80%' },
       ],
     },
     {
@@ -57,18 +49,10 @@ const STEP_WHY_CONTENT = {
       ],
     },
     {
-      title: 'Why your income?',
-      points: [
-        { icon: CheckCircle, text: 'Landlords require income verification' },
-        { icon: Lock, text: 'We don\'t share exact amounts, only ranges' },
-        { icon: SealCheck, text: 'Increases your approval rate by 80%' },
-      ],
-    },
-    {
       title: 'Why preferences?',
       points: [
         { icon: Eye, text: 'We show you only relevant properties' },
-        { icon: Clock, text: 'FloppyDisk time in your search' },
+        { icon: Clock, text: 'Save time in your search' },
         { icon: Lightning, text: 'Receive personalized alerts' },
       ],
     },
@@ -104,13 +88,11 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     es: {
       steps: [
         { label: 'Información básica', description: 'Nombre y contacto' },
-        { label: 'Verificar ingresos', description: 'Situación laboral' },
         { label: 'Preferencias', description: 'Tu hogar ideal' },
       ],
-      stepTitle: ['Cuéntanos sobre ti', 'Tu situación laboral', 'Tu hogar ideal'],
+      stepTitle: ['Cuéntanos sobre ti', 'Tu hogar ideal'],
       stepSubtitle: [
         'Esta información nos ayuda a personalizar tu experiencia',
-        'Verifica tus ingresos para mejorar tu perfil',
         'Dinos qué estás buscando',
       ],
       stepOf: 'Paso',
@@ -125,13 +107,11 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     en: {
       steps: [
         { label: 'Basic Information', description: 'Name and contact' },
-        { label: 'Verify Income', description: 'Employment status' },
         { label: 'Preferences', description: 'Your ideal home' },
       ],
-      stepTitle: ['Tell us about you', 'Your employment', 'Your ideal home'],
+      stepTitle: ['Tell us about you', 'Your ideal home'],
       stepSubtitle: [
         'This information helps us personalize your experience',
-        'Verify your income to improve your profile',
         'Tell us what you\'re looking for',
       ],
       stepOf: 'Step',
@@ -211,7 +191,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-28">
               <nav className="space-y-1">
-                {[1, 2, 3].map((step) => {
+                {TENANT_ONBOARDING_STEPS.map(({ id: step }) => {
                   const Icon = STEP_ICONS[TENANT_ONBOARDING_STEPS[step - 1].icon as keyof typeof STEP_ICONS] || User
                   const isCompleted = completedSteps.includes(step)
                   const isCurrent = step === currentStep
@@ -291,7 +271,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                   >
                     {/* Mobile step indicator */}
                     <div className="flex items-center gap-2 mb-4 lg:hidden">
-                      {[1, 2, 3].map((step) => (
+                      {TENANT_ONBOARDING_STEPS.map(({ id: step }) => (
                         <div
                           key={step}
                           className={cn(
@@ -351,34 +331,27 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                   </button>
 
                   {/* Next/Submit button */}
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={!canProceed || isSubmitting}
-                    className={cn(
-                      'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold',
-                      'rounded-xl bg-indigo-600 text-white',
-                      'hover:bg-indigo-700 transition-all duration-200',
-                      'disabled:opacity-50 disabled:cursor-not-allowed'
-                    )}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <SpinnerGap className="h-4 w-4 animate-spin" />
-                        {t.saving}
-                      </>
-                    ) : isLastStep ? (
-                      <>
-                        {t.submit}
-                        <Rocket className="h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        {t.continue}
-                        <ArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+                  {isSubmitting ? (
+                    <Button isLoading disabled>
+                      {t.saving}
+                    </Button>
+                  ) : isLastStep ? (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed}
+                      hideArrow
+                    >
+                      {t.submit}
+                      <Rocket className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed}
+                    >
+                      {t.continue}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

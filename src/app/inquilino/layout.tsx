@@ -11,11 +11,10 @@ import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantPro
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-// Define the setup steps - same as TenantDashboardEmpty (3 steps only, documents are requested during application)
+// Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
 const TENANT_SETUP_STEPS: ProfileCompletionStep[] = [
   { id: 1, labelEs: 'Info básica', labelEn: 'Basic info', completed: false },
-  { id: 2, labelEs: 'Ingresos', labelEn: 'Income', completed: false },
-  { id: 3, labelEs: 'Preferencias', labelEn: 'Preferences', completed: false },
+  { id: 2, labelEs: 'Preferencias', labelEn: 'Preferences', completed: false },
 ];
 
 const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
@@ -61,8 +60,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // Funnel to only valid steps (1, 2, 3) in case of old data with step 4
-          const completedStepIds = (parsed.completedSteps || []).filter((id: number) => id <= 3);
+          const completedStepIds = (parsed.completedSteps || []).filter((id: number) => id <= 2);
           setOnboardingSteps(TENANT_SETUP_STEPS.map(step => ({
             ...step,
             completed: completedStepIds.includes(step.id),

@@ -270,7 +270,7 @@ function SidebarContent({
       {/* Profile Completion Widget */}
       {profileCompletion && !isCollapsed && (() => {
         const completedCount = profileCompletion.completedCount ?? 0;
-        const totalSteps = profileCompletion.totalSteps ?? 3;
+        const totalSteps = profileCompletion.totalSteps ?? 2;
         const steps = profileCompletion.steps ?? [];
         const locale = profileCompletion.locale ?? 'es';
         const completedSteps = steps.filter(s => s.completed);

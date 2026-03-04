@@ -7,9 +7,10 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { CTASection } from '@/components/home/CTASection';
 import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, Buildings, UserCheck, ArrowRight, Circle } from '@phosphor-icons/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AgencyTierCard, BenefitCard } from '@/components/pricing/AgencyTierCard';
+import { PricingDetailSheet, type PlanDetail } from '@/components/pricing/PricingDetailSheet';
 import { PricingFAQSection, pricingFaqs } from '@/components/pricing/PricingFAQSection';
 
 type UserTextT = 'owner-managed' | 'owner-diy' | 'agency' | 'evaluation';
@@ -24,6 +25,140 @@ const PRICING_HERO_IMAGES = [
 
 const HERO_IMAGE_INTERVAL = 6000;
 
+const AGENCY_PLAN_DETAILS: Record<NonNullable<AgencyPlan>, PlanDetail> = {
+  starter: {
+    name: 'Starter',
+    price: '149.000',
+    period: '/mes',
+    description: 'Para inmobiliarias pequeñas',
+    pitch: 'Ideal para inmobiliarias que están comenzando a digitalizar su operación. Con las herramientas esenciales para publicar propiedades, gestionar candidatos y firmar contratos digitales, todo desde un solo lugar.',
+    highlights: ['20 propiedades incluidas', '3 usuarios', 'Soporte por email'],
+    featureGroups: [
+      {
+        category: 'CRM & Gestión',
+        items: [
+          { name: 'CRM de candidatos', description: 'Gestiona todos tus prospectos en un pipeline visual con estados, notas y seguimiento automático.' },
+          { name: 'Scoring de arrendatarios', description: 'Evaluación automática del perfil de cada candidato con score de riesgo basado en datos reales.' },
+        ],
+      },
+      {
+        category: 'Publicación & Contratos',
+        items: [
+          { name: 'Publicación en portales', description: 'Publica tus propiedades automáticamente en los principales portales inmobiliarios del país.' },
+          { name: 'Contratos digitales', description: 'Genera y firma contratos de arrendamiento con validez legal, todo 100% digital.' },
+        ],
+      },
+      {
+        category: 'Soporte',
+        items: [
+          { name: 'Soporte por email', description: 'Asistencia técnica y operativa por correo electrónico en horario laboral.' },
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
+      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
+      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
+    ],
+    limits: { properties: 20, users: 3 },
+  },
+  growth: {
+    name: 'Growth',
+    price: '399.000',
+    period: '/mes',
+    description: 'Para inmobiliarias en crecimiento',
+    pitch: 'Diseñado para inmobiliarias que ya tienen operación y necesitan escalar. Incluye todo lo del plan Starter más herramientas avanzadas de automatización, reportes y una API para integrar con tus sistemas.',
+    highlights: ['100 propiedades incluidas', '10 usuarios', 'Soporte prioritario'],
+    featureGroups: [
+      {
+        category: 'Todo en Starter, más',
+        items: [
+          { name: 'API REST básica', description: 'Conecta Leasefy con tu sitio web, CRM o cualquier herramienta externa mediante nuestra API documentada.' },
+          { name: 'Reportes avanzados', description: 'Dashboards con métricas clave: ocupación, tiempos de arriendo, rentabilidad por propiedad y más.' },
+        ],
+      },
+      {
+        category: 'Automatización',
+        items: [
+          { name: 'Recordatorios automáticos', description: 'Envío automático de recordatorios de pago, vencimiento de contrato y tareas pendientes a tu equipo.' },
+        ],
+      },
+      {
+        category: 'Soporte',
+        items: [
+          { name: 'Soporte prioritario', description: 'Atención preferencial con tiempos de respuesta más cortos por email y chat.' },
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
+      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
+      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
+    ],
+    limits: { properties: 100, users: 10 },
+  },
+  business: {
+    name: 'Business',
+    price: '899.000',
+    period: '/mes',
+    description: 'Para operaciones grandes',
+    pitch: 'Para inmobiliarias con operaciones complejas que necesitan control total. Incluye API completa, webhooks en tiempo real, soporte multi-sucursal y un gerente de cuenta dedicado para tu operación.',
+    highlights: ['300 propiedades incluidas', '25 usuarios', 'Gerente de cuenta'],
+    featureGroups: [
+      {
+        category: 'Todo en Growth, más',
+        items: [
+          { name: 'API REST completa', description: 'Acceso completo a todos los endpoints de la API con mayor tasa de peticiones y soporte técnico dedicado.' },
+          { name: 'Webhooks en tiempo real', description: 'Recibe notificaciones instantáneas en tus sistemas cuando ocurren eventos: nuevos candidatos, pagos, contratos firmados.' },
+          { name: 'Multi-sucursal', description: 'Gestiona múltiples oficinas o equipos con permisos independientes y reportes consolidados.' },
+        ],
+      },
+      {
+        category: 'Soporte dedicado',
+        items: [
+          { name: 'Gerente de cuenta dedicado', description: 'Un ejecutivo de Leasefy asignado exclusivamente a tu inmobiliaria para soporte estratégico y operativo.' },
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
+      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
+      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
+      { label: 'White-label', price: 'desde $200.000/mes', description: 'Personaliza la plataforma con tu marca: logo, colores y dominio propio para tus clientes.' },
+    ],
+    limits: { properties: 300, users: 25 },
+  },
+  enterprise: {
+    name: 'Enterprise',
+    price: 'Personalizado',
+    description: '500+ propiedades',
+    pitch: 'Solución a medida para las inmobiliarias más grandes del mercado. Infraestructura dedicada, SLA garantizado, white-label completo y onboarding personalizado para tu equipo. Hablemos de lo que necesitas.',
+    highlights: ['Propiedades ilimitadas', 'Usuarios ilimitados', 'SLA 99.9%'],
+    featureGroups: [
+      {
+        category: 'Todo en Business, más',
+        items: [
+          { name: 'Propiedades ilimitadas', description: 'Sin límite en el número de propiedades que puedes gestionar en la plataforma.' },
+          { name: 'Usuarios ilimitados', description: 'Invita a todo tu equipo sin restricciones ni costos adicionales por usuario.' },
+          { name: 'White-label completo', description: 'Plataforma completamente personalizada con tu marca, dominio, colores y experiencia de usuario a medida.' },
+        ],
+      },
+      {
+        category: 'Infraestructura & Soporte',
+        items: [
+          { name: 'SLA garantizado 99.9%', description: 'Acuerdo de nivel de servicio con disponibilidad garantizada y compensación por incumplimiento.' },
+          { name: 'Onboarding personalizado', description: 'Sesiones dedicadas de capacitación y configuración con tu equipo para asegurar una adopción exitosa.' },
+          { name: 'Descuentos por volumen hasta 24%', description: 'Precios reducidos en screenings y servicios adicionales basados en tu volumen de operación mensual.' },
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
+    ],
+    limits: { properties: 'ilimitadas', users: 'ilimitados' },
+  },
+};
+
 /**
  * Public pricing page - Hybrid Model
  *
@@ -36,6 +171,7 @@ export default function PricingPage() {
   const [userTextT, setUserTextT] = useState<UserTextT>('owner-managed');
   const [exampleRent, setExampleRent] = useState(2000000);
   const [selectedAgencyPlan, setSelectedAgencyPlan] = useState<AgencyPlan>(null);
+  const [detailPlan, setDetailPlan] = useState<AgencyPlan>(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
 
   // Auto-cycle hero images
@@ -614,8 +750,14 @@ export default function PricingPage() {
                   'Scoring de arrendatarios',
                   'Soporte por email',
                 ]}
+                addons={[
+                  { label: 'Propiedad extra', price: '$3.000/mes' },
+                  { label: 'Usuario extra', price: '$30.000/mes' },
+                  { label: 'Screening', price: '$20.000/app' },
+                ]}
                 selected={selectedAgencyPlan === 'starter'}
                 onSelect={() => setSelectedAgencyPlan('starter')}
+                onViewDetails={() => setDetailPlan('starter')}
               />
 
               {/* Growth - Popular */}
@@ -634,8 +776,14 @@ export default function PricingPage() {
                   'Recordatorios automáticos',
                   'Soporte prioritario',
                 ]}
+                addons={[
+                  { label: 'Propiedad extra', price: '$3.000/mes' },
+                  { label: 'Usuario extra', price: '$30.000/mes' },
+                  { label: 'Screening', price: '$20.000/app' },
+                ]}
                 selected={selectedAgencyPlan === 'growth'}
                 onSelect={() => setSelectedAgencyPlan('growth')}
+                onViewDetails={() => setDetailPlan('growth')}
               />
 
               {/* Business */}
@@ -653,8 +801,15 @@ export default function PricingPage() {
                   'Multi-sucursal',
                   'Gerente de cuenta dedicado',
                 ]}
+                addons={[
+                  { label: 'Propiedad extra', price: '$3.000/mes' },
+                  { label: 'Usuario extra', price: '$30.000/mes' },
+                  { label: 'Screening', price: '$20.000/app' },
+                  { label: 'White-label', price: 'desde $200.000/mes' },
+                ]}
                 selected={selectedAgencyPlan === 'business'}
                 onSelect={() => setSelectedAgencyPlan('business')}
+                onViewDetails={() => setDetailPlan('business')}
               />
 
               {/* Enterprise */}
@@ -673,32 +828,15 @@ export default function PricingPage() {
                   'Onboarding personalizado',
                   'Descuentos por volumen hasta 24%',
                 ]}
+                addons={[
+                  { label: 'Screening', price: '$20.000/app' },
+                ]}
                 isEnterprise
                 selected={selectedAgencyPlan === 'enterprise'}
                 onSelect={() => setSelectedAgencyPlan('enterprise')}
+                onViewDetails={() => setDetailPlan('enterprise')}
               />
             </div>
-
-            {/* Add-ons section - Only show after selecting a plan */}
-            <AnimatePresence>
-              {selectedAgencyPlan && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-muted-foreground mb-12"
-                >
-                  <span>Propiedad extra <strong className="text-foreground">$3.000/mes</strong></span>
-                  <span className="text-border">|</span>
-                  <span>Usuario extra <strong className="text-foreground">$30.000/mes</strong></span>
-                  <span className="text-border">|</span>
-                  <span>Screening <strong className="text-foreground">$20.000/app</strong></span>
-                  <span className="text-border">|</span>
-                  <span>White-label <strong className="text-foreground">desde $200.000/mes</strong></span>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Benefits */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -716,6 +854,16 @@ export default function PricingPage() {
               />
             </div>
           </div>
+
+          <PricingDetailSheet
+            plan={detailPlan ? AGENCY_PLAN_DETAILS[detailPlan] : null}
+            open={detailPlan !== null}
+            onClose={() => setDetailPlan(null)}
+            onSelect={() => {
+              if (detailPlan) setSelectedAgencyPlan(detailPlan);
+            }}
+            isEnterprise={detailPlan === 'enterprise'}
+          />
         </section>
       )}
 

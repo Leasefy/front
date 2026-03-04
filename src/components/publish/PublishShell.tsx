@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Check, SpinnerGap, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
+import { ArrowLeft, Check, SpinnerGap, PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { usePublish } from '@/lib/context/PublishContext';
 import { PUBLISH_STEPS } from '@/lib/types/publish';
 
@@ -243,34 +244,27 @@ export function PublishShell({ children }: PublishShellProps) {
                   </span>
 
                   {/* Next/Submit button */}
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={!canProceed || isSubmitting}
-                    className={cn(
-                      'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium',
-                      'rounded-xl bg-indigo-600 text-white',
-                      'hover:bg-indigo-700 transition-colors',
-                      'disabled:opacity-50 disabled:cursor-not-allowed'
-                    )}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <SpinnerGap className="h-4 w-4 animate-spin" />
-                        <span>Publicando...</span>
-                      </>
-                    ) : isLastStep ? (
-                      <>
-                        <span>Publicar inmueble</span>
-                        <PaperPlaneTilt className="h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Continuar</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+                  {isSubmitting ? (
+                    <Button isLoading disabled>
+                      Publicando...
+                    </Button>
+                  ) : isLastStep ? (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed}
+                      hideArrow
+                    >
+                      Publicar inmueble
+                      <PaperPlaneTilt className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed}
+                    >
+                      Continuar
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

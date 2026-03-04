@@ -40,8 +40,8 @@ export default function InquilinoPage() {
       }
       try {
         const parsed = JSON.parse(saved);
-        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 3);
-        setIsOnboardingComplete(completedSteps.length >= 3);
+        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
+        setIsOnboardingComplete(completedSteps.length >= 2);
       } catch {
         setIsOnboardingComplete(false);
       }

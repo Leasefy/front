@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Briefcase, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
+import { User, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -36,17 +36,6 @@ const SETUP_STEPS: SetupStep[] = [
   },
   {
     id: 2,
-    key: 'income',
-    labelEs: 'Verificar ingresos',
-    labelEn: 'Verify income',
-    descriptionEs: 'Tipo de empleo e ingresos',
-    descriptionEn: 'Employment type and income',
-    icon: Briefcase,
-    href: '/onboarding/inquilino',
-    completed: false,
-  },
-  {
-    id: 3,
     key: 'preferences',
     labelEs: 'Preferencias de vivienda',
     labelEn: 'Housing preferences',
@@ -95,8 +84,7 @@ export function TenantDashboardEmpty() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // Funnel to only valid steps (1, 2, 3) in case of old data
-          const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 3);
+          const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
           setSteps(prev =>
             prev.map(step => ({
               ...step,

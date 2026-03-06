@@ -147,9 +147,13 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
   const t = content[locale as 'es' | 'en'] || content.es
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLastStep) {
-      submitOnboarding()
+      try {
+        await submitOnboarding()
+      } catch (err) {
+        console.error('[TenantOnboarding] submitOnboarding error:', err)
+      }
     } else {
       nextStep()
     }

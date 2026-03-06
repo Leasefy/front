@@ -90,7 +90,11 @@ export function Navbar() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (err) {
+      console.error('[Navbar] Logout error:', err);
+    }
     setIsUserListOpen(false);
     setIsMobileListOpen(false);
     router.push('/auth');

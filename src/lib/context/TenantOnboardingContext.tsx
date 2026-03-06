@@ -255,9 +255,6 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         userType: 'TENANT',
       })
 
-      // Refresh user in auth context so role/onboardingCompleted updates
-      await refreshUser()
-
       // Mark all steps as completed
       const allSteps = [1, 2, 3]
       setCompletedSteps(allSteps)
@@ -275,6 +272,11 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       window.dispatchEvent(new Event('onboarding-updated'))
 
       setIsComplete(true)
+
+      // Refresh user in auth context in background (don't block success screen)
+      refreshUser().catch((err) => {
+        console.warn('[TenantOnboarding] refreshUser failed (non-blocking):', err)
+      })
     } catch (error) {
       console.error('Error submitting tenant onboarding:', error)
       throw error

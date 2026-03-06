@@ -195,12 +195,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
-    // Remove FCM token before signing out (while we still have auth)
-    await removeFcmToken().catch(() => {})
-    const supabase = getSupabase()
-    await supabase.auth.signOut()
+    // Clear local state immediately so UI updates
     setAccessToken(null)
     setUser(null)
+    // Remove FCM token and sign out from Supabase in background
+    removeFcmToken().catch(() => {})
+    try {
+      const supabase = getSupabase()
+      await supabase.auth.signOut()
+    } catch (err) {
+      console.error('[Auth] signOut error:', err)
+    }
   }, [])
 
   const value: AuthContextType = {

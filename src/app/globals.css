@@ -45,8 +45,10 @@
     --neutral-200: 30 6% 91%;     /* #E7E5E4 */
     --neutral-300: 24 6% 83%;     /* #D6D3D1 */
     --neutral-400: 28 4% 64%;     /* #A8A29E */
+    --neutral-500: 25 6% 45%;     /* #7A756F */
     --neutral-600: 25 8% 32%;     /* #57534E */
     --neutral-700: 24 10% 24%;    /* #44403C */
+    --neutral-800: 22 14% 16%;    /* #2E2825 */
     --neutral-900: 20 17% 9%;     /* #1C1917 */
 
     /* Semantic (sobered — don't compete with Primary) */

@@ -111,6 +111,8 @@ export function Navbar() {
     return user.role === 'landlord' ? 'Panel de propietario' : 'Mi panel';
   };
 
+  const isTenant = isAuthenticated && user?.role === 'tenant';
+
   // Get leases link based on user role
   const getLeasesLink = () => {
     if (!user) return '/';
@@ -124,7 +126,7 @@ export function Navbar() {
 
   return (
     <nav className={cn(
-      "z-50 fixed top-4 left-4 right-4 md:left-[72px] md:right-[72px]"
+      "z-[200] fixed top-4 left-4 right-4 md:left-[72px] md:right-[72px]"
     )}>
       {/* Navbar bar with glass effect */}
       <div className={cn(
@@ -152,15 +154,17 @@ export function Navbar() {
 
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              <Button
-                variant={isActive('/publicar') ? "default" : "secondary"}
-                size="sm"
-                hideArrow
-                asChild
-                className="font-mono text-[13px] uppercase tracking-wide"
-              >
-                <Link href="/publicar">Publicar Inmueble</Link>
-              </Button>
+              {!isTenant && (
+                <Button
+                  variant={isActive('/publicar') ? "default" : "secondary"}
+                  size="sm"
+                  hideArrow
+                  asChild
+                  className="font-mono text-[13px] uppercase tracking-wide"
+                >
+                  <Link href="/publicar">Publicar Inmueble</Link>
+                </Button>
+              )}
               <Link
                 href="/propiedades"
                 className={cn(
@@ -425,14 +429,24 @@ export function Navbar() {
                 <p className="text-[12px] text-white/50">
                   ¿No sabes cuál elegir? <span className="text-white/70">Habla con nuestro equipo</span>
                 </p>
-                <Link
-                  href="/publicar"
-                  onClick={() => setIsParaQuienOpen(false)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
-                >
-                  Comenzar gratis
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                {isTenant ? (
+                  <button
+                    onClick={() => { setIsParaQuienOpen(false); handleLogout(); }}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                  >
+                    Cerrar sesión
+                    <SignOut className="w-3 h-3" />
+                  </button>
+                ) : (
+                  <Link
+                    href="/publicar"
+                    onClick={() => setIsParaQuienOpen(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                  >
+                    Comenzar gratis
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
               </div>
             </motion.div>
           </>
@@ -577,14 +591,24 @@ export function Navbar() {
                 <p className="text-[12px] text-white/50">
                   Todos los productos se integran automáticamente
                 </p>
-                <Link
-                  href="/publicar"
-                  onClick={() => setIsProductosOpen(false)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
-                >
-                  Comenzar ahora
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                {isTenant ? (
+                  <button
+                    onClick={() => { setIsProductosOpen(false); handleLogout(); }}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                  >
+                    Cerrar sesión
+                    <SignOut className="w-3 h-3" />
+                  </button>
+                ) : (
+                  <Link
+                    href="/publicar"
+                    onClick={() => setIsProductosOpen(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                  >
+                    Comenzar ahora
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
               </div>
             </motion.div>
           </>
@@ -609,17 +633,19 @@ export function Navbar() {
               transition={{ duration: 0.2, delay: 0.05 }}
               className="px-6 py-4 space-y-1"
             >
-              <Link
-                href="/publicar"
-                className={cn(
-                  "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
-                  isActive('/publicar') ? "text-foreground" : "text-foreground/70 hover:text-foreground"
-                )}
-                onClick={() => setIsMobileListOpen(false)}
-              >
-                Publicar Inmueble
-                {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
-              </Link>
+              {!isTenant && (
+                <Link
+                  href="/publicar"
+                  className={cn(
+                    "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
+                    isActive('/publicar') ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                  )}
+                  onClick={() => setIsMobileListOpen(false)}
+                >
+                  Publicar Inmueble
+                  {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
+                </Link>
+              )}
               <Link
                 href="/propiedades"
                 className={cn(

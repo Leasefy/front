@@ -131,6 +131,8 @@ export interface User {
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
+  /** True if the user has an email+password credential (false = Google-only) */
+  hasPassword?: boolean
   // Onboarding fields
   onboardingCompleted?: boolean
   onboardingStep?: number
@@ -153,6 +155,15 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<User | null>
+  signUpWithEmail: (email: string, password: string) => Promise<{ requiresConfirmation: boolean }>
+  sendPasswordReset: (email: string) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
+  /** Re-authenticate with current password to verify identity before sensitive operations */
+  verifyCurrentPassword: (password: string) => Promise<boolean>
+  /** Change password: verifies current password on the backend then updates.
+   *  currentPassword is optional — omit for Google-only accounts. */
+  changePassword: (currentPassword: string | undefined, newPassword: string) => Promise<void>
   signOut: () => Promise<void>
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>

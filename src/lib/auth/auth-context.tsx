@@ -87,12 +87,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
-    const supabase = getSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      setAccessToken(session.access_token)
-    }
-    const userData = await fetchUser(session)
+    // Use the already-stored token to avoid an extra getSession() lock acquisition.
+    // If the stored token is still valid the backend will respond; if not, fetchUser
+    // handles the 401 gracefully.
+    const userData = await fetchUser()
     setUser(userData)
   }, [fetchUser])
 
@@ -115,48 +113,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMfaRequired(false)
   }, [])
 
-  // Initialize auth on mount
+  // Initialize auth on mount.
+  // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
+  // to avoid calling getSession() in parallel, which triggers an AbortError from
+  // Supabase's internal Navigator Locks when both compete for the same lock.
   useEffect(() => {
     const supabase = getSupabase()
 
-    // Load initial session
-    const initSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        console.log('[Auth] getSession result:', { hasSession: !!session, error, userId: session?.user?.id })
-        if (session) {
-          setAccessToken(session.access_token)
-          const userData = await fetchUser(session)
-          console.log('[Auth] fetchUser result:', userData)
-          setUser(userData)
-          await checkMfaLevel()
-          // Register FCM token on initial session load
-          if (userData?.onboardingCompleted) {
-            requestNotificationPermission().catch(() => {})
-          }
-        } else {
-          console.log('[Auth] No session found - user not logged in')
-        }
-      } catch (err) {
-        console.error('[Auth] Error initializing auth session:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initSession()
-
-    // Subscribe to auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[Auth] onAuthStateChange:', event, { hasSession: !!session })
-        if (event === 'SIGNED_IN' && session) {
+        /** Derive hasPassword from session providers — no extra API call needed */
+        const getHasPassword = (s: typeof session) => {
+          const providers = (s?.user?.app_metadata?.providers as string[]) ?? []
+          return providers.includes('email')
+        }
+
+        if (event === 'INITIAL_SESSION') {
+          if (session) {
+            setAccessToken(session.access_token)
+            const userData = await fetchUser(session)
+            if (userData) userData.hasPassword = getHasPassword(session)
+            setUser(userData)
+            await checkMfaLevel()
+            if (userData?.onboardingCompleted) {
+              requestNotificationPermission().catch(() => {})
+            }
+          }
+          setIsLoading(false)
+        } else if (event === 'SIGNED_IN' && session) {
           setAccessToken(session.access_token)
           const userData = await fetchUser(session)
+          if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setIsLoading(false)
           await checkMfaLevel()
-          // Register FCM token after successful login with completed onboarding
           if (userData?.onboardingCompleted) {
             requestNotificationPermission().catch(() => {})
           }
@@ -168,6 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setAccessToken(session.access_token)
           const userData = await fetchUser(session)
+          if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           await checkMfaLevel()
         }
@@ -193,6 +184,61 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /** Sign in with email and password. Returns the loaded user so callers can redirect based on role. */
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabase()
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    // Immediately set token and fetch user so the caller can use role info for redirect
+    if (data.session) {
+      setAccessToken(data.session.access_token)
+      const userData = await fetchUser(data.session)
+      setUser(userData)
+      return userData
+    }
+    return null
+  }, [fetchUser])
+
+  /** Sign up with email and password. Returns whether email confirmation is required. */
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabase()
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) throw error
+    const requiresConfirmation = !data.session
+    return { requiresConfirmation }
+  }, [])
+
+  /** Send password reset email */
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const supabase = getSupabase()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    })
+    if (error) throw error
+  }, [])
+
+  /** Update password for authenticated user (works for both email and Google users) */
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const supabase = getSupabase()
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }, [])
+
+  /** Verify current password by re-authenticating. Returns true if password is correct. */
+  const verifyCurrentPassword = useCallback(async (password: string): Promise<boolean> => {
+    const supabase = getSupabase()
+    const email = user?.email
+    if (!email) return false
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return !error
+  }, [user?.email])
+
+  /** Change password via backend: verifies current password then updates.
+   *  currentPassword is optional — omit for Google-only accounts. */
+  const changePassword = useCallback(async (currentPassword: string | undefined, newPassword: string): Promise<void> => {
+    await apiClient.patch('/users/me/password', { currentPassword, newPassword })
+  }, [])
+
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
     // Clear local state immediately so UI updates
@@ -214,6 +260,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     mfaRequired,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    sendPasswordReset,
+    updatePassword,
+    verifyCurrentPassword,
+    changePassword,
     signOut,
     logout: signOut,
     refreshUser,

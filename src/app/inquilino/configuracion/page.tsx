@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, EyeSlash, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import { ChangePasswordModal } from '@/components/settings/ChangePasswordModal';
+import { useAuth } from '@/lib/auth/use-auth';
 
 // Modal Component with Leasefy style
 function Modal({
@@ -91,8 +93,6 @@ export default function ConfiguracionPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Form states
-  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -111,23 +111,6 @@ export default function ConfiguracionPage() {
   const handleLanguageChange = (newLocale: Locale) => {
     setLocale(newLocale);
     toast.success(newLocale === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
-  };
-
-  const handlePasswordChange = async () => {
-    if (passwordForm.new !== passwordForm.confirm) {
-      toast.error('Las contraseñas no coinciden');
-      return;
-    }
-    if (passwordForm.new.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
-      return;
-    }
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', new: '', confirm: '' });
-    toast.success('Contraseña actualizada correctamente');
   };
 
   const handleCloseSession = (sessionId: string) => {
@@ -262,8 +245,8 @@ export default function ConfiguracionPage() {
                 <MfaSetupSection />
                 <SettingLink
                   icon={Lock}
-                  title={t('settings.account.changePassword')}
-                  description={locale === 'es' ? 'Actualiza tu acceso' : 'Update your access'}
+                  title={locale === 'es' ? 'Contraseña' : 'Password'}
+                  description={locale === 'es' ? 'Establece o cambia tu contraseña' : 'Set or change your password'}
                   onClick={() => setShowPasswordModal(true)}
                 />
                 <SettingLink
@@ -416,56 +399,7 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Password Modal */}
-      <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Contraseña actual</label>
-            <input
-              type="password"
-              value={passwordForm.current}
-              onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Nueva contraseña</label>
-            <input
-              type="password"
-              value={passwordForm.new}
-              onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder="Mínimo 8 caracteres"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Confirmar contraseña</label>
-            <input
-              type="password"
-              value={passwordForm.confirm}
-              onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-              placeholder="Repetir contraseña"
-            />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handlePasswordChange}
-              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-            >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
-              {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
 
       {/* Sessions Modal */}
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">

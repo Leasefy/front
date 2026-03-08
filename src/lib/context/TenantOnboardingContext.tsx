@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
 import type { TenantOnboardingData, PreferredContact, EmploymentType } from '@/lib/auth/types'
-import { apiClient } from '@/lib/api/client'
+import { apiClient, setAccessToken } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/use-auth'
+import { getSupabase } from '@/lib/supabase/client'
 
 // ============================================================================
 // NOTA PARA BACKEND:
@@ -242,10 +243,29 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   const submitOnboarding = useCallback(async () => {
     setIsSubmitting(true)
     try {
+      // Get session with a timeout to avoid hanging indefinitely
+      let token: string | null = null
+      try {
+        const supabase = getSupabase()
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 5000)
+        )
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
+        token = session?.access_token ?? null
+        if (token) {
+          setAccessToken(token)
+        }
+      } catch (sessionErr) {
+        console.warn('[TenantOnboarding] getSession failed, proceeding with cached token:', sessionErr)
+      }
+
       // Split displayName into first/last for backend
       const nameParts = (draft.displayName || '').trim().split(/\s+/)
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || firstName
+
+      console.log('[TenantOnboarding] Submitting onboarding:', { firstName, lastName, hasToken: !!token })
 
       // Call backend onboarding endpoint
       await apiClient.post('/users/me/onboarding', {
@@ -268,17 +288,23 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         completedAt: new Date().toISOString(),
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(completionData))
-      // Dispatch custom event to notify sidebar and other components
       window.dispatchEvent(new Event('onboarding-updated'))
 
-      setIsComplete(true)
+      // Refresh user so onboardingCompleted = true BEFORE showing success screen.
+      // Timeout of 4s to avoid blocking indefinitely if Supabase hangs.
+      // ProtectedRoute also checks localStorage as fallback.
+      try {
+        await Promise.race([
+          refreshUser(),
+          new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+        ])
+      } catch (err) {
+        console.warn('[TenantOnboarding] refreshUser failed:', err)
+      }
 
-      // Refresh user in auth context in background (don't block success screen)
-      refreshUser().catch((err) => {
-        console.warn('[TenantOnboarding] refreshUser failed (non-blocking):', err)
-      })
+      setIsComplete(true)
     } catch (error) {
-      console.error('Error submitting tenant onboarding:', error)
+      console.error('[TenantOnboarding] Error submitting onboarding:', error)
       throw error
     } finally {
       setIsSubmitting(false)

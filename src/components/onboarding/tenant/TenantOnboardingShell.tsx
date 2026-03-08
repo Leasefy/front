@@ -8,6 +8,8 @@ import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, Briefcase, Hous
 import { cn } from '@/lib/utils'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
 import { useI18n } from '@/lib/i18n'
+import { toast } from 'sonner'
+import { useEffect } from 'react'
 
 interface TenantOnboardingShellProps {
   children: React.ReactNode
@@ -77,8 +79,15 @@ const STEP_WHY_CONTENT = {
 
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const { locale } = useI18n()
+
+  // Redirect to login if not authenticated (after auth finishes loading)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth?mode=register&role=tenant')
+    }
+  }, [isAuthenticated, isLoading, router])
   const {
     currentStep,
     totalSteps,
@@ -151,8 +160,14 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     if (isLastStep) {
       try {
         await submitOnboarding()
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[TenantOnboarding] submitOnboarding error:', err)
+        const msg = err instanceof Error ? err.message : ''
+        if (msg === 'No autorizado' || msg.includes('401')) {
+          toast.error('Tu sesión expiró. Inicia sesión de nuevo para continuar.', { duration: 5000 })
+        } else {
+          toast.error('Error al guardar tu perfil. Intenta de nuevo.', { duration: 4000 })
+        }
       }
     } else {
       nextStep()

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CaretDown, X, SlidersHorizontal } from '@phosphor-icons/react';
+import { CaretDown, X } from '@phosphor-icons/react';
 
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
@@ -12,7 +12,6 @@ import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
-import type { Property } from '@/lib/types/property';
 
 /**
  * Property listing page with full-height split layout
@@ -55,14 +54,11 @@ function PropiedadesContent() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [aiMagnifyingGlassQuery, setAiMagnifyingGlassQuery] = useState(heroQuery || '');
-  const [isAiMagnifyingGlassing, setIsAiMagnifyingGlassing] = useState(false);
-  const [showAiResults, setShowAiResults] = useState(false);
-  const [aiResults, setAiResults] = useState<Property[]>([]);
+  const [naturalQuery, setNaturalQuery] = useState<string | null>(heroQuery || null);
   const [mapKey, setMapKey] = useState(0);
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const heroMagnifyingGlassTriggered = useRef(false);
 
   // Funnel state
   const [activeFunnel, setActiveFunnel] = useState<string | null>(null);
@@ -74,23 +70,24 @@ function PropiedadesContent() {
   // Build API filters from UI state
   const apiFilters = useMemo<PropertyFiltersParams>(() => {
     const filters: PropertyFiltersParams = { limit: 100 };
-    if (selectedCity) filters.city = selectedCity;
-    if (selectedBedrooms) {
-      if (selectedBedrooms !== '4+') {
+    if (naturalQuery) {
+      filters.naturalQuery = naturalQuery;
+    } else {
+      if (selectedCity) filters.city = selectedCity;
+      if (selectedBedrooms && selectedBedrooms !== '4+') {
         filters.bedrooms = parseInt(selectedBedrooms);
       }
-      // 4+ handled client-side after fetch
-    }
-    if (selectedTextT) {
-      filters.propertyType = selectedTextT.toUpperCase() as PropertyFiltersParams['propertyType'];
-    }
-    if (selectedPrice) {
-      const [min, max] = selectedPrice.split('-').map(Number);
-      filters.minPrice = min;
-      filters.maxPrice = max;
+      if (selectedTextT) {
+        filters.propertyType = selectedTextT.toUpperCase() as PropertyFiltersParams['propertyType'];
+      }
+      if (selectedPrice) {
+        const [min, max] = selectedPrice.split('-').map(Number);
+        filters.minPrice = min;
+        filters.maxPrice = max;
+      }
     }
     return filters;
-  }, [selectedCity, selectedBedrooms, selectedTextT, selectedPrice]);
+  }, [naturalQuery, selectedCity, selectedBedrooms, selectedTextT, selectedPrice]);
 
   // Fetch properties from API
   const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
@@ -104,37 +101,14 @@ function PropiedadesContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle AI search via backend naturalQuery
-  const handleAiMagnifyingGlass = useCallback(async (query: string) => {
+  // Handle AI search — integra naturalQuery en los filtros (una sola llamada API)
+  const handleAiMagnifyingGlass = useCallback((query: string) => {
     if (!query.trim()) {
-      setShowAiResults(false);
-      setAiResults([]);
+      setNaturalQuery(null);
       return;
     }
-
-    setIsAiMagnifyingGlassing(true);
-    setShowAiResults(false);
-
-    try {
-      const { propertiesApi } = await import('@/lib/api/properties.service');
-      const result = await propertiesApi.list({ naturalQuery: query, limit: 20 });
-      setAiResults(result.data);
-      setShowAiResults(true);
-    } catch {
-      setAiResults([]);
-      setShowAiResults(true);
-    } finally {
-      setIsAiMagnifyingGlassing(false);
-    }
+    setNaturalQuery(query);
   }, []);
-
-  // Auto-trigger AI search from hero query param
-  useEffect(() => {
-    if (heroQuery && !heroMagnifyingGlassTriggered.current) {
-      heroMagnifyingGlassTriggered.current = true;
-      handleAiMagnifyingGlass(heroQuery);
-    }
-  }, [heroQuery, handleAiMagnifyingGlass]);
 
   // Client-side: handle 4+ bedrooms filter and sorting (API handles other filters)
   const filteredProperties = useMemo(() => {
@@ -169,13 +143,15 @@ function PropiedadesContent() {
   );
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
-  const hasActiveFunnels = selectedCity || selectedBedrooms || selectedTextT || selectedPrice;
+  const hasActiveFunnels = selectedCity || selectedBedrooms || selectedTextT || selectedPrice || naturalQuery;
 
   const clearAllFunnels = () => {
     setSelectedCity(null);
     setSelectedBedrooms(null);
     setSelectedTextT(null);
     setSelectedPrice(null);
+    setNaturalQuery(null);
+    setAiMagnifyingGlassQuery('');
   };
 
   const handleWishlistToggle = useCallback(
@@ -231,18 +207,18 @@ function PropiedadesContent() {
                 onChange={setAiMagnifyingGlassQuery}
                 onMagnifyingGlass={handleAiMagnifyingGlass}
                 onClear={() => {
-                  setShowAiResults(false);
-                  setAiResults([]);
+                  setAiMagnifyingGlassQuery('');
+                  setNaturalQuery(null);
                 }}
-                isMagnifyingGlassing={isAiMagnifyingGlassing}
-                results={aiResults}
-                showResults={showAiResults}
+                isMagnifyingGlassing={isInitialLoading && !!naturalQuery}
+                results={naturalQuery ? filteredProperties : []}
+                showResults={!!naturalQuery && !isInitialLoading}
               />
             </div>
           </div>
 
           {/* Funnel & Results Bar */}
-          <div className="bg-background border-y border-border">
+          <div className="bg-background border-y border-border relative z-[50]">
             <div className="px-4 md:px-6 py-3">
               {/* Funnel Pills Row */}
               <div className="flex items-center gap-2 mb-3 pb-1 flex-wrap">
@@ -257,7 +233,7 @@ function PropiedadesContent() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedCity
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
@@ -273,7 +249,7 @@ function PropiedadesContent() {
                             key={city}
                             type="button"
                             onClick={() => { setSelectedCity(selectedCity === city ? null : city); setActiveFunnel(null); }}
-                            className={cn('w-full px-3 py-2 text-left text-sm', selectedCity === city ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
+                            className={cn('w-full px-3 py-2 text-left text-sm', selectedCity === city ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-black/5')}
                           >
                             {city}
                           </button>
@@ -291,7 +267,7 @@ function PropiedadesContent() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedBedrooms
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
@@ -307,7 +283,7 @@ function PropiedadesContent() {
                             key={bed}
                             type="button"
                             onClick={() => { setSelectedBedrooms(selectedBedrooms === bed ? null : bed); setActiveFunnel(null); }}
-                            className={cn('w-full px-3 py-2 text-left text-sm', selectedBedrooms === bed ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
+                            className={cn('w-full px-3 py-2 text-left text-sm', selectedBedrooms === bed ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-black/5')}
                           >
                             {bed} habitacion{bed !== '1' ? 'es' : ''}
                           </button>
@@ -325,7 +301,7 @@ function PropiedadesContent() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedTextT
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
@@ -341,7 +317,7 @@ function PropiedadesContent() {
                             key={type.value}
                             type="button"
                             onClick={() => { setSelectedTextT(selectedTextT === type.value ? null : type.value); setActiveFunnel(null); }}
-                            className={cn('w-full px-3 py-2 text-left text-sm', selectedTextT === type.value ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
+                            className={cn('w-full px-3 py-2 text-left text-sm', selectedTextT === type.value ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-black/5')}
                           >
                             {type.label}
                           </button>
@@ -359,7 +335,7 @@ function PropiedadesContent() {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
                       selectedPrice
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'border-border text-foreground/70 hover:border-foreground/30'
                     )}
                   >
@@ -375,7 +351,7 @@ function PropiedadesContent() {
                             key={range.value}
                             type="button"
                             onClick={() => { setSelectedPrice(selectedPrice === range.value ? null : range.value); setActiveFunnel(null); }}
-                            className={cn('w-full px-3 py-2 text-left text-sm', selectedPrice === range.value ? 'bg-black/5 font-medium' : 'hover:bg-black/5')}
+                            className={cn('w-full px-3 py-2 text-left text-sm', selectedPrice === range.value ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-black/5')}
                           >
                             {range.label}
                           </button>
@@ -424,7 +400,7 @@ function PropiedadesContent() {
                             key={option.value}
                             type="button"
                             onClick={() => { setSortBy(option.value); setShowSortList(false); }}
-                            className={cn('w-full px-4 py-2 text-left text-sm transition-colors', sortBy === option.value ? 'bg-black/5 text-foreground font-medium' : 'text-foreground/70 hover:bg-black/5')}
+                            className={cn('w-full px-4 py-2 text-left text-sm transition-colors', sortBy === option.value ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-foreground/70 hover:bg-black/5')}
                           >
                             {option.label}
                           </button>

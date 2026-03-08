@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
+const TENANT_ONBOARDING_KEY = 'plan_onboarding_tenant'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -68,7 +69,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     // If user hasn't completed onboarding, redirect to role selection/onboarding
     // Skip this check if already on an onboarding page
-    if (user && !user.onboardingCompleted && !pathname.startsWith('/onboarding')) {
+    // Also check localStorage as a fallback (in case refreshUser hasn't propagated yet)
+    const tenantOnboardingDone = (() => {
+      try {
+        const stored = localStorage.getItem(TENANT_ONBOARDING_KEY)
+        if (!stored) return false
+        const parsed = JSON.parse(stored)
+        return parsed.isComplete === true
+      } catch {
+        return false
+      }
+    })()
+    if (user && !user.onboardingCompleted && !tenantOnboardingDone && !pathname.startsWith('/onboarding')) {
       router.replace('/onboarding/seleccionar-rol')
       return
     }
@@ -118,7 +130,17 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   // Onboarding not completed - will redirect
-  if (user && !user.onboardingCompleted && !pathname.startsWith('/onboarding')) {
+  const tenantOnboardingDoneRender = (() => {
+    try {
+      const stored = localStorage.getItem(TENANT_ONBOARDING_KEY)
+      if (!stored) return false
+      const parsed = JSON.parse(stored)
+      return parsed.isComplete === true
+    } catch {
+      return false
+    }
+  })()
+  if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

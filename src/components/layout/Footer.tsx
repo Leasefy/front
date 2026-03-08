@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/use-auth";
 
-const menuLinks = [
+const baseMenuLinks = [
   { href: "/", label: "Inicio" },
   { href: "/propiedades", label: "Propiedades" },
   { href: "/pricing", label: "Precios" },
@@ -64,6 +66,25 @@ const socialLinks = [
  * - Footer padding top: 80px
  */
 export function Footer() {
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
+  const isTenant = isAuthenticated && user?.role === 'tenant';
+
+  const handleAuthLink = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await logout();
+    } catch {
+      // ignore
+    }
+    router.push('/auth');
+  };
+
+  const menuLinks = baseMenuLinks.filter(link => {
+    if (link.href === '/publicar' && isTenant) return false;
+    return true;
+  });
+
   return (
     <footer className="bg-primary text-white overflow-hidden">
       {/* Main Content - 80px padding top */}
@@ -81,22 +102,36 @@ export function Footer() {
               List
             </h4>
             <nav className="space-y-3">
-              {menuLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block font-mono uppercase text-[14px] font-normal tracking-wide text-white/70 hover:text-white transition-colors group/link"
-                >
+              {menuLinks.map((link) => {
+                const isAuthLink = link.href === '/auth' && isAuthenticated;
+                const content = (
                   <span className="relative overflow-hidden inline-block">
                     <span className="block transition-transform duration-300 group-hover/link:-translate-y-full">
-                      {link.label}
+                      {isAuthLink ? 'Cerrar sesión' : link.label}
                     </span>
                     <span className="block absolute top-full transition-transform duration-300 group-hover/link:-translate-y-full">
-                      {link.label}
+                      {isAuthLink ? 'Cerrar sesión' : link.label}
                     </span>
                   </span>
-                </Link>
-              ))}
+                );
+                return isAuthLink ? (
+                  <button
+                    key={link.href}
+                    onClick={handleAuthLink}
+                    className="block font-mono uppercase text-[14px] font-normal tracking-wide text-white/70 hover:text-white transition-colors group/link"
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="block font-mono uppercase text-[14px] font-normal tracking-wide text-white/70 hover:text-white transition-colors group/link"
+                  >
+                    {content}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Social Links */}

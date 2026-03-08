@@ -278,7 +278,7 @@ function FullPageSpinner({
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex flex-col items-center justify-center',
+        'fixed inset-0 z-[300] flex flex-col items-center justify-center',
         backdrop && 'bg-background/80 backdrop-blur-sm',
         className
       )}

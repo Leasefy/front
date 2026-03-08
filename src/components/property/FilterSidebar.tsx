@@ -332,7 +332,7 @@ export function FunnelSidebar({
       {/* Mobile drawer */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 lg:hidden"
+          className="fixed inset-0 z-[300] lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-labelledby="filter-drawer-title"

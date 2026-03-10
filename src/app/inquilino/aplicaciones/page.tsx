@@ -572,7 +572,7 @@ export default function AplicacionesPage() {
                     ? 'Las aplicaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/propiedades' } : undefined}
+              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/inquilino/explorar' } : undefined}
             />
           )}
         </motion.section>

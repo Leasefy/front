@@ -131,7 +131,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
           {locale === 'es' ? '¿Prefieres explorar primero?' : 'Prefer to explore first?'}{' '}
           <Link
-            href="/propiedades"
+            href="/inquilino/explorar"
             className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
           >
             {locale === 'es' ? 'Ver propiedades' : 'Browse properties'}

@@ -57,7 +57,12 @@ export function useOnboardingStatus(): OnboardingStatus {
 
       try {
         const parsed = JSON.parse(saved);
-        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= TOTAL_STEPS);
+        const rawSteps = parsed.completedSteps || [];
+        const completedSteps = rawSteps.filter((s: number) => s <= TOTAL_STEPS);
+        // Migrate: old step 3 (employment) removed; if completed, count step 2 too
+        if (rawSteps.includes(3) && !completedSteps.includes(2)) {
+          completedSteps.push(2);
+        }
         const isComplete = completedSteps.length >= TOTAL_STEPS;
         const progressPercentage = Math.round((completedSteps.length / TOTAL_STEPS) * 100);
 

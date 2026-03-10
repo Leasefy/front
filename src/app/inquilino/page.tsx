@@ -40,7 +40,13 @@ export default function InquilinoPage() {
       }
       try {
         const parsed = JSON.parse(saved);
-        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
+        const rawSteps = parsed.completedSteps || [];
+        const completedSteps = rawSteps.filter((s: number) => s <= 2);
+        // Migrate: old step 3 (employment) was removed; if it was completed,
+        // treat step 2 (now preferences) as completed too
+        if (rawSteps.includes(3) && !completedSteps.includes(2)) {
+          completedSteps.push(2);
+        }
         setIsOnboardingComplete(completedSteps.length >= 2);
       } catch {
         setIsOnboardingComplete(false);
@@ -140,7 +146,7 @@ export default function InquilinoPage() {
                 </p>
               </div>
               <Link
-                href="/propiedades"
+                href="/inquilino/explorar"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors flex-shrink-0"
               >
                 <MagnifyingGlass className="w-4 h-4" />
@@ -211,7 +217,7 @@ export default function InquilinoPage() {
               </p>
             </div>
           ) : (
-            <Link href="/propiedades" className="group">
+            <Link href="/inquilino/explorar" className="group">
               <div className="h-full rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
                 <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
                   <MagnifyingGlass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -247,7 +253,7 @@ export default function InquilinoPage() {
                   </p>
                 </div>
                 <Link
-                  href="/propiedades"
+                  href="/inquilino/explorar"
                   className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('common.showMore')}
@@ -341,7 +347,7 @@ export default function InquilinoPage() {
                       : 'When you apply to a property, you\'ll see the status of your application here.'}
                   </p>
                   <Link
-                    href="/propiedades"
+                    href="/inquilino/explorar"
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                   >
                     {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
@@ -368,7 +374,7 @@ export default function InquilinoPage() {
               <div className="space-y-2">
                 {[
                   {
-                    href: '/propiedades',
+                    href: '/inquilino/explorar',
                     icon: MagnifyingGlass,
                     label: locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties',
                     desc: locale === 'es' ? 'Explora el mercado' : 'Explore the market',

@@ -127,9 +127,14 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         if (parsed.draft) setDraft(parsed.draft)
         // Cap currentStep to totalSteps (in case user had step 4 saved from before)
         if (parsed.currentStep) setCurrentStep(Math.min(parsed.currentStep, totalSteps))
-        // Funnel completedSteps to only valid steps
+        // Funnel completedSteps to only valid steps + migrate old 3-step data
         if (parsed.completedSteps) {
-          const validSteps = parsed.completedSteps.filter((s: number) => s <= totalSteps)
+          const rawSteps: number[] = parsed.completedSteps
+          const validSteps = rawSteps.filter((s: number) => s <= totalSteps)
+          // Migrate: old step 3 (employment) was removed; count it as step 2
+          if (rawSteps.includes(3) && !validSteps.includes(2)) {
+            validSteps.push(2)
+          }
           setCompletedSteps(validSteps)
         }
       } catch (e) {

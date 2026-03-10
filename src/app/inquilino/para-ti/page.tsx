@@ -174,7 +174,7 @@ export default function ParaTiPage() {
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
-                href="/propiedades"
+                href="/inquilino/explorar"
                 className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
               >
                 {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}

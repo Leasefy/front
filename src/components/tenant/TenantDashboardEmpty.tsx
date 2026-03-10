@@ -52,7 +52,7 @@ const QUICK_ACTIONS = [
     labelEs: 'Buscar propiedades',
     labelEn: 'MagnifyingGlass properties',
     icon: MagnifyingGlass,
-    href: '/propiedades',
+    href: '/inquilino/explorar',
   },
   {
     labelEs: 'Ver guardados',
@@ -77,7 +77,7 @@ export function TenantDashboardEmpty() {
   const [steps, setSteps] = useState(SETUP_STEPS);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load progress from localStorage
+  // Load progress from localStorage (migrate old 3-step data to 2-step)
   useEffect(() => {
     const loadProgress = () => {
       const saved = localStorage.getItem('plan_onboarding_tenant');
@@ -85,6 +85,14 @@ export function TenantDashboardEmpty() {
         try {
           const parsed = JSON.parse(saved);
           const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
+
+          // Migrate: if old data had step 3 completed (employment, now removed),
+          // treat step 2 as completed since it was the old step 3 (preferences)
+          const oldCompletedSteps = parsed.completedSteps || [];
+          if (oldCompletedSteps.includes(3) && !completedSteps.includes(2)) {
+            completedSteps.push(2);
+          }
+
           setSteps(prev =>
             prev.map(step => ({
               ...step,
@@ -116,7 +124,8 @@ export function TenantDashboardEmpty() {
   const completedCount = steps.filter(s => s.completed).length;
   const totalSteps = steps.length;
   const progressPercentage = Math.round((completedCount / totalSteps) * 100);
-  const nextIncompleteStep = steps.find(s => !s.completed);
+  const allComplete = completedCount >= totalSteps;
+  const nextIncompleteStep = allComplete ? null : steps.find(s => !s.completed);
 
   if (!isLoaded) return null;
 

@@ -76,7 +76,7 @@ export default function GuardadosPage() {
               </p>
             </div>
             <Link
-              href="/propiedades"
+              href="/inquilino/explorar"
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
@@ -106,7 +106,7 @@ export default function GuardadosPage() {
                 : 'Explore properties and save the ones you like by tapping the heart. This way you can easily compare them.'}
             </p>
             <Link
-              href="/propiedades"
+              href="/inquilino/explorar"
               className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
@@ -238,7 +238,7 @@ export default function GuardadosPage() {
                 transition={{ delay: 0.1 + properties.length * 0.05 }}
               >
                 <Link
-                  href="/propiedades"
+                  href="/inquilino/explorar"
                   className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-[#1a1a1c]/50 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3 shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors">
@@ -276,7 +276,7 @@ export default function GuardadosPage() {
                   </div>
                 </div>
                 <Link
-                  href="/propiedades"
+                  href="/inquilino/explorar"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <MagnifyingGlass className="w-4 h-4" />

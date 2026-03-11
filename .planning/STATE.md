@@ -14,11 +14,11 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 Milestone: P1 — Inmobiliaria Registration
 Phase: P1-inmobiliaria-registration
-Plan: 1 of 3 (P1-01 complete)
+Plan: 2 of 3 (P1-02 complete)
 Status: In progress
-Last activity: 2026-03-11 — Completed P1-01-PLAN.md (registro e onboarding de inmobiliarias)
+Last activity: 2026-03-11 — Completed P1-02-PLAN.md (invitation page + onboarding checklist widget)
 
-Progress (P1): █░░ 33%
+Progress (P1): ██░ 67%
 
 ## Performance Metrics
 
@@ -151,6 +151,9 @@ Recent decisions affecting current work:
 - P1-01: AgencySetupWizard API calls are non-blocking (try/catch proceeds) — backend may not be deployed
 - P1-01: INMOBILIARIA BackendRole maps to 'agency' frontend role (alongside AGENT)
 - P1-01: seleccionar-rol routes to existing /onboarding/inmobiliaria page (not a new page)
+- P1-02: AlertCircle does not exist in @phosphor-icons/react — use Warning icon
+- P1-02: useAgencyOnboardingStatus.ts named distinctly to avoid collision with tenant use-onboarding-status.ts
+- P1-02: Middleware is pass-through only — documents public routes for future server-side auth
 
 ### Pending Todos
 
@@ -164,5 +167,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: P1-01 complete — ready for P1-02 (invitation page) or P1-03
-Resume file: .planning/phases/P1-inmobiliaria-registration/P1-02-PLAN.md
+Stopped at: P1-02 complete — ready for P1-03
+Resume file: .planning/phases/P1-inmobiliaria-registration/P1-03-PLAN.md

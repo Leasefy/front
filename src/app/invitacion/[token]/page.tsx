@@ -7,7 +7,7 @@ import {
   Buildings,
   CheckCircle,
   XCircle,
-  AlertCircle,
+  Warning,
   SpinnerGap,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -81,7 +81,7 @@ function ExpiredView() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
       <div className="rounded-2xl bg-amber-100 dark:bg-amber-900/30 p-4">
-        <AlertCircle weight="duotone" className="h-10 w-10 text-amber-500" />
+        <Warning weight="duotone" className="h-10 w-10 text-amber-500" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">

@@ -34,6 +34,7 @@ import {
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { AgencySetupWizard } from '@/components/inmobiliaria/AgencySetupWizard';
+import { OnboardingChecklist } from '@/components/inmobiliaria/OnboardingChecklist';
 import { useAuth } from '@/lib/auth/use-auth';
 
 /**
@@ -263,6 +264,9 @@ function InmobiliariaDashboardContent() {
           {t('inmobiliaria.dashboard.subtitle')}
         </p>
       </div>
+
+      {/* Onboarding Checklist — visible for ADMIN while setup is incomplete */}
+      <OnboardingChecklist />
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

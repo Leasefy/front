@@ -8,6 +8,7 @@ import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Pho
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useI18n } from '@/lib/i18n'
+import { apiClient } from '@/lib/api/client'
 
 // ============================================================================
 // Types & Constants
@@ -43,7 +44,7 @@ interface OnboardingData {
 function OnboardingInmobiliariaContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user, refreshUser } = useAuth()
   const { t } = useI18n()
   const returnUrl = searchParams.get('returnUrl')
 
@@ -178,7 +179,31 @@ function OnboardingInmobiliariaContent() {
         return
       }
 
-      // Save onboarding data to localStorage
+      // Split contactPerson into first/last for backend
+      const nameParts = data.contactPerson.trim().split(/\s+/)
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || firstName
+
+      // Call backend onboarding endpoint with agency data
+      const rawPhone = data.phone?.replace(/\s/g, '') || ''
+      await apiClient.post('/users/me/onboarding', {
+        userType: 'INMOBILIARIA',
+        firstName,
+        lastName,
+        phone: rawPhone.length >= 10 ? rawPhone : undefined,
+        agency: {
+          name: data.agencyName,
+          nit: data.nit || undefined,
+          city: data.city || undefined,
+        },
+      })
+
+      // Refresh user in auth context so role/onboardingCompleted updates
+      refreshUser().catch((err) =>
+        console.warn('refreshUser failed after agency onboarding (non-blocking):', err)
+      )
+
+      // Save onboarding data to localStorage for sidebar progress display
       const completionData = {
         draft: {
           agencyName: data.agencyName,
@@ -215,9 +240,10 @@ function OnboardingInmobiliariaContent() {
   }
 
   // Navigate to dashboard - uses window.location to ensure full page load
+  // Adds ?setup=true so AgencySetupWizard is shown on first visit
   const goToDashboard = () => {
     setIsNavigating(true)
-    window.location.href = returnUrl || '/panel/inmobiliaria'
+    window.location.href = returnUrl || '/panel/inmobiliaria?setup=true'
   }
 
   // Success Screen

@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { House, Buildings, SpinnerGap } from '@phosphor-icons/react'
+import { House, Buildings, SpinnerGap, Storefront } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 
-type RoleChoice = 'tenant' | 'landlord' | null
+type RoleChoice = 'tenant' | 'landlord' | 'inmobiliaria' | null
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
@@ -17,7 +17,7 @@ export default function SeleccionarRolPage() {
 
   // If user already completed onboarding, redirect to their dashboard
   if (user?.onboardingCompleted) {
-    router.replace(user.role === 'landlord' ? '/panel' : '/inquilino')
+    router.replace(user.role === 'landlord' ? '/panel' : user.role === 'agency' ? '/panel/inmobiliaria' : '/inquilino')
     return null
   }
 
@@ -27,6 +27,8 @@ export default function SeleccionarRolPage() {
 
     if (selected === 'landlord') {
       router.push('/onboarding/propietario')
+    } else if (selected === 'inmobiliaria') {
+      router.push('/onboarding/inmobiliaria')
     } else {
       router.push('/onboarding/inquilino')
     }
@@ -112,6 +114,40 @@ export default function SeleccionarRolPage() {
               </motion.div>
             )}
           </button>
+
+          {/* Inmobiliaria card */}
+          <button
+            type="button"
+            onClick={() => setSelected('inmobiliaria')}
+            className={cn(
+              'relative flex items-center gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200',
+              selected === 'inmobiliaria'
+                ? 'border-indigo-600 bg-indigo-50'
+                : 'border-neutral-200 hover:border-neutral-300 bg-white'
+            )}
+          >
+            <div className={cn(
+              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
+              selected === 'inmobiliaria' ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'
+            )}>
+              <Storefront className="w-6 h-6" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-neutral-900">Soy una inmobiliaria</p>
+              <p className="text-[13px] text-neutral-500 mt-0.5">Gestiona propiedades de múltiples propietarios con tu equipo</p>
+            </div>
+            {selected === 'inmobiliaria' && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+            )}
+          </button>
         </div>
 
         {/* Continue button */}
@@ -122,7 +158,9 @@ export default function SeleccionarRolPage() {
           className={cn(
             'w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all',
             selected && !isLoading
-              ? 'bg-neutral-900 text-white hover:bg-neutral-800'
+              ? selected === 'inmobiliaria'
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
           )}
         >

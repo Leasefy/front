@@ -12,13 +12,13 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 ## Current Position
 
-Milestone: v4.0 — AI Agent Platform Beta
-Phase: 25 of 25 (Polish & QA)
-Plan: 3 of 3 in phase 25
-Status: Phase verified (7/7 requirements passed) — v4.0 milestone complete
-Last activity: 2026-02-10 — Phase 25 verified, v4.0 milestone shipped
+Milestone: P1 — Inmobiliaria Registration
+Phase: P1-inmobiliaria-registration
+Plan: 1 of 3 (P1-01 complete)
+Status: In progress
+Last activity: 2026-03-11 — Completed P1-01-PLAN.md (registro e onboarding de inmobiliarias)
 
-Progress: ██████████████████████████████ 100%
+Progress (P1): █░░ 33%
 
 ## Performance Metrics
 
@@ -144,6 +144,14 @@ Recent decisions affecting current work:
 - 25-02: Mock data strings (AGENT_RESULT_SUMMARIES, AGENT_ERROR_MESSAGES) kept hardcoded -- will be replaced by real API
 - 25-02: UserBubble "TU" kept as literal (user initials, not translatable text)
 
+### Decisions (P1-inmobiliaria-registration)
+
+- P1-01: apiClient has no .put() — use .patch() for PATCH requests
+- P1-01: Zod not installed — TypeScript validation helpers in src/lib/validation/ instead
+- P1-01: AgencySetupWizard API calls are non-blocking (try/catch proceeds) — backend may not be deployed
+- P1-01: INMOBILIARIA BackendRole maps to 'agency' frontend role (alongside AGENT)
+- P1-01: seleccionar-rol routes to existing /onboarding/inmobiliaria page (not a new page)
+
 ### Pending Todos
 
 None yet.
@@ -155,6 +163,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10
-Stopped at: Phase 25 verified (7/7 requirements) — v4.0 milestone complete
-Resume file: None — ready for /gsd:audit-milestone or /gsd:complete-milestone
+Last session: 2026-03-11
+Stopped at: P1-01 complete — ready for P1-02 (invitation page) or P1-03
+Resume file: .planning/phases/P1-inmobiliaria-registration/P1-02-PLAN.md

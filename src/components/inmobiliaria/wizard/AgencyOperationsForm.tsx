@@ -41,14 +41,14 @@ function NumberInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
         <span className="flex items-center gap-1.5">
-          {Icon && <Icon className="w-4 h-4 text-neutral-400" />}
+          {Icon && <Icon className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />}
           {label}
         </span>
       </label>
       {description && (
-        <p className="text-xs text-neutral-500 mb-2">{description}</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{description}</p>
       )}
       <div className="relative">
         <input
@@ -57,15 +57,15 @@ function NumberInput({
           min={min}
           max={max}
           onChange={handleChange}
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
         />
         {suffix && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400">
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400 dark:text-neutral-500">
             {suffix}
           </span>
         )}
       </div>
-      <p className="mt-1 text-xs text-neutral-400">
+      <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
         Valor entre {min} y {max}
       </p>
     </div>
@@ -79,7 +79,7 @@ function NumberInput({
 export function AgencyOperationsForm({ data, onChange }: AgencyOperationsFormProps) {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
         Configura los valores por defecto para tu operación. Puedes cambiarlos en cualquier momento desde Configuración.
       </p>
 

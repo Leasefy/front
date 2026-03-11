@@ -94,8 +94,8 @@ function StepIndicator({
                   isCompleted
                     ? 'border-indigo-600 bg-indigo-600'
                     : isCurrent
-                    ? 'border-indigo-600 bg-white'
-                    : 'border-neutral-200 bg-white'
+                    ? 'border-indigo-600 bg-white dark:bg-neutral-900'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900'
                 )}
               >
                 {isCompleted ? (
@@ -104,7 +104,7 @@ function StepIndicator({
                   <Icon
                     className={cn(
                       'w-5 h-5',
-                      isCurrent ? 'text-indigo-600' : 'text-neutral-400'
+                      isCurrent ? 'text-indigo-600' : 'text-neutral-400 dark:text-neutral-500'
                     )}
                   />
                 )}
@@ -112,7 +112,7 @@ function StepIndicator({
               <p
                 className={cn(
                   'text-xs font-medium mt-1.5 text-center max-w-[80px]',
-                  isCurrent ? 'text-indigo-600' : isCompleted ? 'text-neutral-600' : 'text-neutral-400'
+                  isCurrent ? 'text-indigo-600' : isCompleted ? 'text-neutral-600 dark:text-neutral-400' : 'text-neutral-400 dark:text-neutral-500'
                 )}
               >
                 {step.title}
@@ -124,7 +124,7 @@ function StepIndicator({
               <div
                 className={cn(
                   'w-16 h-0.5 mx-2 mb-5 transition-colors',
-                  isCompleted ? 'bg-indigo-600' : 'bg-neutral-200'
+                  isCompleted ? 'bg-indigo-600' : 'bg-neutral-200 dark:bg-neutral-700'
                 )}
               />
             )}
@@ -295,14 +295,14 @@ export function AgencySetupWizard({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-5"
+          className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-5"
         >
-          <Check className="w-8 h-8 text-emerald-600" weight="bold" />
+          <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="bold" />
         </motion.div>
-        <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+        <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
           ¡Agencia configurada!
         </h3>
-        <p className="text-neutral-500 text-sm">
+        <p className="text-neutral-500 dark:text-neutral-400 text-sm">
           Tu agencia está lista. Redirigiendo al panel...
         </p>
       </div>
@@ -320,10 +320,10 @@ export function AgencySetupWizard({
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
             Configura tu agencia
           </h2>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             Solo tomará un par de minutos
           </p>
         </div>
@@ -331,7 +331,7 @@ export function AgencySetupWizard({
           <button
             type="button"
             onClick={onDismiss}
-            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors text-neutral-400 hover:text-neutral-600"
+            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
             aria-label="Cerrar wizard"
           >
             <X className="w-5 h-5" />
@@ -345,15 +345,15 @@ export function AgencySetupWizard({
       {/* Step Content */}
       <div className="mt-8 flex-1">
         <div className="mb-6">
-          <h3 className="text-base font-semibold text-neutral-900">
+          <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
             {currentStepConfig.title}
             {currentStepConfig.optional && (
-              <span className="ml-2 text-xs font-normal text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs font-normal text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
                 Opcional
               </span>
             )}
           </h3>
-          <p className="text-sm text-neutral-500 mt-0.5">{currentStepConfig.description}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{currentStepConfig.description}</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -389,7 +389,7 @@ export function AgencySetupWizard({
             type="button"
             onClick={handleBack}
             disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-neutral-200 text-neutral-600 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
           >
             <CaretLeft className="w-4 h-4" />
             Anterior
@@ -426,7 +426,7 @@ export function AgencySetupWizard({
               type="button"
               onClick={handleSkipInvite}
               disabled={isSubmitting}
-              className="flex-1 py-3 rounded-xl border border-neutral-200 text-neutral-600 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
             >
               Omitir por ahora
             </button>

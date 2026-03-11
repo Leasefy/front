@@ -13,7 +13,7 @@
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
-export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT'
+export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT' | 'INMOBILIARIA'
 
 export function toBackendRole(role: UserRole): BackendRole {
   if (role === 'agency') return 'AGENT'
@@ -21,7 +21,7 @@ export function toBackendRole(role: UserRole): BackendRole {
 }
 
 export function toFrontendRole(role: BackendRole): UserRole {
-  if (role === 'AGENT') return 'agency'
+  if (role === 'AGENT' || role === 'INMOBILIARIA') return 'agency'
   if (role === 'LANDLORD' || role === 'BOTH') return 'landlord'
   return 'tenant'
 }
@@ -96,6 +96,24 @@ export interface OnboardingData {
   preferredPaymentDay?: number
 }
 
+// ============================================================================
+// Agency
+// ============================================================================
+
+export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER'
+
+export interface Agency {
+  id: string
+  name: string
+  nit?: string
+  city?: string
+  address?: string
+  phone?: string
+  email?: string
+  logoUrl?: string
+  website?: string
+}
+
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
 export type AgencyService = 'arriendos' | 'ventas' | 'administracion' | 'avaluos'
 
@@ -151,6 +169,10 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   mfaRequired: boolean
+  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
+  agency: Agency | null
+  /** The user's role within the agency */
+  agencyRole: AgencyMemberRole | null
 }
 
 export interface AuthContextType extends AuthState {
@@ -169,6 +191,8 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   setMfaVerified: () => void
+  /** Set agency context (called after registration or login for agency members) */
+  setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
 }
 
 /**

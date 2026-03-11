@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { User, AuthContextType } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
 import { toFrontendRole } from './types'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
@@ -64,6 +64,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  const [agency, setAgencyState] = useState<Agency | null>(null)
+  const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
   /** Fetch the user profile from the backend, fallback to Supabase session */
   const fetchUser = useCallback(async (session?: Session | null): Promise<User | null> => {
@@ -85,6 +87,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /** Set the agency and role in context (called after registration or when user loads) */
+  const setAgency = useCallback((agencyData: Agency | null, role: AgencyMemberRole | null) => {
+    setAgencyState(agencyData)
+    setAgencyRole(role)
+  }, [])
+
+  /** Fetch agency membership for agency/agent roles */
+  const fetchAgency = useCallback(async (token?: string): Promise<{ agency: Agency | null; role: AgencyMemberRole | null }> => {
+    try {
+      const data = await apiClient.get<{ agency: Agency; role: AgencyMemberRole }>('/inmobiliaria/me/agency', token)
+      return { agency: data.agency, role: data.role }
+    } catch {
+      // User may not belong to an agency yet (e.g. just registered)
+      return { agency: null, role: null }
+    }
+  }, [])
+
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
@@ -92,7 +111,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // handles the 401 gracefully.
     const userData = await fetchUser()
     setUser(userData)
-  }, [fetchUser])
+    // Also refresh agency data for agency/agent roles
+    if (userData?.role === 'agency') {
+      const { agency: agencyData, role } = await fetchAgency()
+      setAgencyState(agencyData)
+      setAgencyRole(role)
+    }
+  }, [fetchUser, fetchAgency])
 
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
@@ -153,6 +178,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else if (event === 'SIGNED_OUT') {
           setAccessToken(null)
           setUser(null)
+          setAgencyState(null)
+          setAgencyRole(null)
           setMfaRequired(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -259,6 +286,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    agency,
+    agencyRole,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
@@ -270,6 +299,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout: signOut,
     refreshUser,
     setMfaVerified,
+    setAgency,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

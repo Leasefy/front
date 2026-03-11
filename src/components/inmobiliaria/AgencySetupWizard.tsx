@@ -211,7 +211,7 @@ export function AgencySetupWizard({
       // Save basic info to backend
       setIsSubmitting(true);
       try {
-        await apiClient.put('/inmobiliaria/agency', {
+        await apiClient.patch('/inmobiliaria/agency', {
           name: formData.basic.name,
           nit: formData.basic.nit || undefined,
           address: formData.basic.address || undefined,
@@ -231,7 +231,7 @@ export function AgencySetupWizard({
       // Save operations config to backend
       setIsSubmitting(true);
       try {
-        await apiClient.put('/inmobiliaria/agency/settings', {
+        await apiClient.patch('/inmobiliaria/agency/settings', {
           defaultCommissionRate: formData.operations.defaultCommission,
           collectionDay: formData.operations.collectionDay,
           dispersionDay: formData.operations.dispersionDay,

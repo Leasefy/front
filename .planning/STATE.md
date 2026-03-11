@@ -2,23 +2,23 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-10)
+See: .planning/PROJECT.md (updated 2026-03-11)
 See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architecture Spec**
+See: docs/BACKEND-API-V4.md (created 2026-02-10) - **Backend API Spec for AI endpoints**
 See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
-**Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 25 verified complete — v4.0 AI Agent Platform Beta SHIPPED
+**Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.
+**Current focus:** v5.0 milestone complete — Frontend 100% done. Ready to integrate real backend AI or plan next milestone.
 
 ## Current Position
 
-Milestone: P1 — Inmobiliaria Registration
-Phase: P1-inmobiliaria-registration
-Plan: 3 of 3 (P1-03 complete)
-Status: Phase complete
-Last activity: 2026-03-11 — Completed P1-03-PLAN.md (API client, i18n, dark mode QA, build validation)
+Milestone: v5.0 — COMPLETE
+Phase: All phases complete (1-26 + P1)
+Status: Between milestones — ready for /gsd:new-milestone
+Last activity: 2026-03-11 — v5.0 milestone archived
 
-Progress (P1): ███ 100%
+Progress: ██████████ 100% (v1.0 → v5.0 complete)
 
 ## Performance Metrics
 

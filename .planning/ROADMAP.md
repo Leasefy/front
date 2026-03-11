@@ -11,7 +11,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v3.0 Inmobiliaria Module** - Inmobiliaria 1-10 (shipped 2026-02-08)
 - ✅ **v3.1 Landing & SEO** - i18n, pricing, SEO (shipped 2026-02-10)
 - ✅ **v4.0 AI Agent Platform Beta** - Phases 17-25 (shipped 2026-02-10)
-- **v5.0 Inmobiliaria Registration** - Phase 26 (pending)
+- ✅ **v5.0 Inmobiliaria Registration** - Phase 26 (shipped 2026-03-11)
 
 ## Phases
 
@@ -31,7 +31,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
 - [x] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
 - [x] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
-- [ ] **Phase 26: Inmobiliaria Registration Flow** - Wizard de registro, onboarding de agencia, invitaciones con token — [ver planes](phases/P1-inmobiliaria-registration/)
+- [x] **Phase 26: Inmobiliaria Registration Flow** - Wizard de registro, onboarding de agencia, invitaciones con token — [ver planes](phases/P1-inmobiliaria-registration/) — [archivo](milestones/v5.0-ROADMAP.md)
 
 ## Phase Details
 
@@ -258,7 +258,7 @@ Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25 → 
 | 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
 | 24. API Client & Backend Docs | 3/3 | Complete | 2026-02-10 |
 | 25. Polish & QA | 3/3 | Complete | 2026-02-10 |
-| **26. Inmobiliaria Registration Flow** | **0/3** | **Pending** | — |
+| **26. Inmobiliaria Registration Flow** | **3/3** | **Complete** | 2026-03-11 |
 
 ## Notes
 

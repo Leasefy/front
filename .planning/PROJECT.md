@@ -10,25 +10,14 @@ Una plataforma de administración de arriendos para el mercado colombiano donde 
 
 Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Agentes → Resultado debe funcionar con autonomía inteligente y escalamiento a humano cuando se requiera una decisión.
 
-## Current Milestone: v4.0 — AI Agent Platform Beta
+## Current State: v5.0 Shipped — Planning Next Milestone
 
-**Goal:** Agregar una interfaz conversacional AI ("Beta") a los dashboards existentes donde el usuario habla con un orquestador que despacha agentes especializados para gestionar propiedades, cobrar arriendos, evaluar candidatos y coordinar mantenimiento.
+**Shipped v5.0** (2026-03-11): Flujo completo de registro de inmobiliarias — wizard de agencia, página de invitación, checklist de onboarding, API client tipado, i18n ES+EN.
 
-**Principio clave:** No romper nada existente. Los dashboards de propietarios e inmobiliarias siguen funcionando igual. La experiencia AI vive en una nueva sección "Beta" del sidebar, y eventualmente puede reemplazar el resto de la plataforma.
-
-**Target features:**
-- [ ] Chat UI en sección "Beta" del sidebar (propietarios + inmobiliarias)
-- [ ] Orquestador AI usando Claude API con tool use
-- [ ] Agente de consulta de datos (propiedades, inquilinos, pagos, contratos)
-- [ ] Agente de documentos (generar cartas, certificados, contratos)
-- [ ] Agente de cobranza (recordatorios, verificar comprobantes, estado cobros)
-- [ ] Agente de pipeline (scoring candidatos, mover por etapas)
-- [ ] Sistema de memoria (conversaciones + preferencias aprendidas)
-- [ ] Sistema de decisiones pendientes (AI presenta opciones, usuario decide)
-- [ ] Briefing proactivo (resumen diario/semanal automático)
-- [ ] Integración WhatsApp via Twilio (inquilinos envían comprobantes, reciben recordatorios)
+**All frontend phases complete (v1.0 → v5.0).** El frontend está listo para integración con el backend AI. El siguiente paso es conectar la UI con el orquestador real (Claude API + tool use) o iniciar un nuevo milestone de producto.
 
 **Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md`
+**API backend spec:** `docs/BACKEND-API-V4.md`
 
 ## Requirements
 
@@ -86,7 +75,16 @@ Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Age
 - [ ] Recordatorios automáticos por WhatsApp
 - [ ] Respuestas 24/7 a consultas de inquilinos
 
-### Previously Active (v1.0-v3.0)
+<!-- v5.0 Inmobiliaria Registration — shipped 2026-03-11 -->
+- ✓ Inmobiliaria role selector en onboarding — v5.0
+- ✓ AgencySetupWizard 3 pasos (branding, operaciones, invitaciones) — v5.0
+- ✓ Auth context con agency/agencyRole — v5.0
+- ✓ Página pública /invitacion/[token] con 4 estados — v5.0
+- ✓ OnboardingChecklist widget (auto-hide on complete) — v5.0
+- ✓ agencyApi namespace con 5 endpoints tipados — v5.0
+- ✓ i18n ES+EN para flujo de registro e invitación — v5.0
+
+### Previously Active (v1.0-v4.0)
 
 - ✓ Catálogo de inmuebles con búsqueda AI — v1.0
 - ✓ Risk Score AI con explicación conversacional — v1.0
@@ -96,6 +94,10 @@ Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Age
 - ✓ Módulo inmobiliaria completo (10 fases) — v3.0
 - ✓ SEO, OG images, JSON-LD — v3.1
 - ✓ Pricing page rediseñada — v3.1
+- ✓ Beta Chat UI con streaming, markdown, conversaciones — v4.0
+- ✓ Agent activity display + decision system + briefings — v4.0
+- ✓ Preferences & autonomy settings — v4.0
+- ✓ Mock API layer + backend API spec completo — v4.0
 
 ### Out of Scope (v4.0)
 
@@ -255,12 +257,15 @@ applicationId, hostId, note, createdAt
 | Scoring híbrido sin ML | No hay datos históricos, reglas cuantitativas son verificables | ✓ Good |
 | shadcn/ui + Tailwind | Componentes accesibles, fácil customización, consistencia | ✓ Good |
 | Vercel deploy (frontend) | Zero-config, preview deploys, edge functions | ✓ Good |
-| Claude API como orquestador | Tool use nativo, contexto largo, razonamiento superior | — Pending |
-| Beta en sección separada del sidebar | No rompe dashboards existentes, permite iteración rápida | — Pending |
-| Agentes como funciones (no LLMs separados) | Los agentes son tools del orquestador, no instancias de Claude independientes | — Pending |
-| pgvector para memoria largo plazo | Embeddings en PostgreSQL, evita servicio externo adicional | — Pending |
-| WhatsApp via Twilio | Canal dominante en Colombia, API madura | — Pending |
-| Conversación > Dashboard | El chat es la interfaz principal, dashboard es vista pasiva | — Pending |
+| Claude API como orquestador | Tool use nativo, contexto largo, razonamiento superior | — Backend pendiente |
+| Beta en sección separada del sidebar | No rompe dashboards existentes, permite iteración rápida | ✓ Good (shipped v4.0) |
+| Agentes como funciones (no LLMs separados) | Los agentes son tools del orquestador, no instancias de Claude independientes | — Backend pendiente |
+| pgvector para memoria largo plazo | Embeddings en PostgreSQL, evita servicio externo adicional | — Backend pendiente |
+| WhatsApp via Twilio | Canal dominante en Colombia, API madura | — Backend pendiente |
+| Conversación > Dashboard | El chat es la interfaz principal, dashboard es vista pasiva | ✓ Good (shipped v4.0) |
+| apiClient.patch() (no .put()) | apiClient no expone .put(), usar .patch() para PATCH requests | ✓ Good (v5.0) |
+| TypeScript validators (no Zod) | Zod no instalado, seguir patrón de applicationValidation.ts | ✓ Good (v5.0) |
+| agencyApi namespace en inmobiliaria.service.ts | No crear service separado, agregar namespace al existente | ✓ Good (v5.0) |
 
 ---
-*Last updated: 2026-02-10 after milestone v4.0 initialization*
+*Last updated: 2026-03-11 after v5.0 milestone completion*

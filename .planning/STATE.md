@@ -14,11 +14,11 @@ See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
 Milestone: P1 — Inmobiliaria Registration
 Phase: P1-inmobiliaria-registration
-Plan: 2 of 3 (P1-02 complete)
-Status: In progress
-Last activity: 2026-03-11 — Completed P1-02-PLAN.md (invitation page + onboarding checklist widget)
+Plan: 3 of 3 (P1-03 complete)
+Status: Phase complete
+Last activity: 2026-03-11 — Completed P1-03-PLAN.md (API client, i18n, dark mode QA, build validation)
 
-Progress (P1): ██░ 67%
+Progress (P1): ███ 100%
 
 ## Performance Metrics
 
@@ -154,6 +154,9 @@ Recent decisions affecting current work:
 - P1-02: AlertCircle does not exist in @phosphor-icons/react — use Warning icon
 - P1-02: useAgencyOnboardingStatus.ts named distinctly to avoid collision with tenant use-onboarding-status.ts
 - P1-02: Middleware is pass-through only — documents public routes for future server-side auth
+- P1-03: Canonical types (InvitationInfo, OnboardingStep, AgencyOnboardingStatus) in inmobiliaria.ts — hooks import from there
+- P1-03: agencyApi namespace added to inmobiliaria.service.ts (not a separate service file)
+- P1-03: MOCK_STEPS array remains in useAgencyOnboardingStatus — swap with agencyApi.getOnboardingStatus() when backend deploys
 
 ### Pending Todos
 
@@ -167,5 +170,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: P1-02 complete — ready for P1-03
-Resume file: .planning/phases/P1-inmobiliaria-registration/P1-03-PLAN.md
+Stopped at: P1-03 complete — P1 milestone fully done
+Resume file: none (P1 complete)

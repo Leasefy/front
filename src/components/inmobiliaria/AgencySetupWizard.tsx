@@ -17,6 +17,7 @@ import { apiClient } from '@/lib/api/client';
 import { AgencyBasicForm, type AgencyBasicFormData } from './wizard/AgencyBasicForm';
 import { AgencyOperationsForm, type AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
 import { InviteFirstMemberForm, type InviteFirstMemberFormData } from './wizard/InviteFirstMemberForm';
+import { isValidEmail, isValidNit } from '@/lib/validation/inmobiliariaValidation';
 
 // ============================================================================
 // Wizard Steps Config
@@ -190,13 +191,16 @@ export function AgencySetupWizard({
     setFormData((prev) => ({ ...prev, invite: { ...prev.invite, ...updates } }));
   };
 
-  const isStep1Valid = formData.basic.name.trim().length >= 2;
+  const isStep1Valid =
+    formData.basic.name.trim().length >= 2 &&
+    isValidNit(formData.basic.nit) &&
+    isValidEmail(formData.basic.email);
   // Step 2 always valid (all optional with defaults)
   const isStep2Valid = true;
   // Step 3 valid if empty (skippable) or has valid email
   const isStep3Valid =
     !formData.invite.email ||
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.invite.email);
+    isValidEmail(formData.invite.email);
 
   const canProceed = currentStep === 1 ? isStep1Valid : currentStep === 2 ? isStep2Valid : isStep3Valid;
 

@@ -1,20 +1,17 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/use-auth';
+import type { OnboardingStep } from '@/lib/types/inmobiliaria';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface AgencyOnboardingStep {
-  key: string;
-  label: string;
-  completed: boolean;
-  action?: { label: string; href: string };
-}
+/** @deprecated Use OnboardingStep from @/lib/types/inmobiliaria */
+export type AgencyOnboardingStep = OnboardingStep;
 
 export interface AgencyOnboardingStatusResult {
-  steps: AgencyOnboardingStep[];
+  steps: OnboardingStep[];
   isComplete: boolean;
   completionPercent: number;
   isAdmin: boolean;
@@ -25,7 +22,7 @@ export interface AgencyOnboardingStatusResult {
 // GET /inmobiliaria/agency/onboarding-status
 // ============================================================================
 
-const MOCK_STEPS: AgencyOnboardingStep[] = [
+const MOCK_STEPS: OnboardingStep[] = [
   {
     key: 'profile',
     label: 'Completa el perfil de tu agencia',

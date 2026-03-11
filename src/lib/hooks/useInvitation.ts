@@ -1,20 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { InvitationInfo } from '@/lib/types/inmobiliaria';
+
+export type { InvitationInfo };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface InvitationInfo {
-  agencyName: string;
-  agencyCity: string;
-  role: 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER';
-  invitedEmail: string;
-  expiresAt: string;
-}
 
 export type InvitationStatus = 'loading' | 'valid' | 'expired' | 'invalid';
 

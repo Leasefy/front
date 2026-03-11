@@ -40,6 +40,9 @@ import type {
   TrendAnalysis,
   ForecastData,
   ReportDefinition,
+  InvitationInfo,
+  AgencyMember,
+  AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
@@ -584,5 +587,52 @@ export const inmobiliariaConfigApi = {
 export const inmobiliariaDashboardApi = {
   async getKPIs(): Promise<InmobiliariaDashboardKPIs> {
     return apiClient.get<InmobiliariaDashboardKPIs>(`${BASE}/analytics/kpis`);
+  },
+};
+
+// ============================================================================
+// Agency Registration & Invitations (P1-inmobiliaria-registration)
+// ============================================================================
+
+export const agencyApi = {
+  /**
+   * GET /inmobiliaria/agency/invitations/:token
+   * Public endpoint — no auth required.
+   * Returns invitation details for display on the public invitation page.
+   */
+  async getInvitation(token: string): Promise<InvitationInfo> {
+    return apiClient.get<InvitationInfo>(`${BASE}/agency/invitations/${token}`);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/invitations/:token/accept
+   * Requires auth — the logged-in user accepts the invitation.
+   */
+  async acceptInvitation(token: string): Promise<AgencyMember> {
+    return apiClient.post<AgencyMember>(`${BASE}/agency/invitations/${token}/accept`);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/invitations/:token/decline
+   * Can be called without auth (user declines before logging in).
+   */
+  async declineInvitation(token: string): Promise<void> {
+    await apiClient.post(`${BASE}/agency/invitations/${token}/decline`);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/members/:memberId/resend-invitation
+   * Resends the invitation email for a pending member.
+   */
+  async resendInvitation(memberId: string): Promise<AgencyMember> {
+    return apiClient.post<AgencyMember>(`${BASE}/agency/members/${memberId}/resend-invitation`);
+  },
+
+  /**
+   * GET /inmobiliaria/agency/onboarding-status
+   * Returns the agency admin's onboarding checklist with completion state.
+   */
+  async getOnboardingStatus(): Promise<AgencyOnboardingStatus> {
+    return apiClient.get<AgencyOnboardingStatus>(`${BASE}/agency/onboarding-status`);
   },
 };

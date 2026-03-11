@@ -2075,3 +2075,45 @@ export function getPeriodLabel(period: AnalyticsPeriod): string {
   };
   return labels[period];
 }
+
+// ============================================================================
+// Agency Registration & Invitations (P1-inmobiliaria-registration)
+// ============================================================================
+
+export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER';
+
+export interface AgencyMember {
+  id: string;
+  agencyId: string;
+  userId: string;
+  email: string;
+  name?: string;
+  role: AgencyMemberRole;
+  status: 'active' | 'invited' | 'inactive';
+  joinedAt?: string;
+  invitedAt: string;
+}
+
+/** Returned by GET /inmobiliaria/agency/invitations/:token (public) */
+export interface InvitationInfo {
+  agencyName: string;
+  agencyCity: string;
+  role: AgencyMemberRole;
+  invitedEmail: string;
+  expiresAt: string;
+}
+
+/** A single step in the agency onboarding checklist */
+export interface OnboardingStep {
+  key: string;
+  label: string;
+  completed: boolean;
+  action?: { label: string; href: string };
+}
+
+/** Returned by GET /inmobiliaria/agency/onboarding-status */
+export interface AgencyOnboardingStatus {
+  steps: OnboardingStep[];
+  completionPercent: number;
+  isComplete: boolean;
+}

@@ -211,7 +211,7 @@ export default function NotificacionesPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: 20 }}

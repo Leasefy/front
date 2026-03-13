@@ -8,6 +8,7 @@ import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Ph
 import { useState } from 'react';
 
 import { BackButton } from '@/components/ui/back-button';
+import { Button } from '@/components/ui/button';
 import { useTenantApplication } from '@/lib/hooks/useApplications';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { cn } from '@/lib/utils';
@@ -147,13 +148,9 @@ export default function ApplicationDetailPage() {
               ? 'No pudimos encontrar esta aplicación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
               : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.')}
           </p>
-          <button
-            onClick={() => router.push('/inquilino/aplicaciones')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-          >
+          <Button onClick={() => router.push('/inquilino/aplicaciones')}>
             {locale === 'es' ? 'Ver mis aplicaciones' : 'View my applications'}
-            <ArrowUpRight className="w-4 h-4" />
-          </button>
+          </Button>
         </motion.div>
       </div>
     );

@@ -298,14 +298,14 @@ export default function LandlordLeasesPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
-                  <House className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+              <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                  <House className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                 </div>
-                <h3 className="font-medium text-neutral-900 dark:text-white mb-2">
+                <h3 className="text-base font-semibold text-foreground mb-1.5">
                   {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
                   {t('landlord.leases.noFilteredDescription')}
                 </p>
                 <button

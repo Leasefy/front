@@ -338,9 +338,11 @@ export default function InmobiliariaDashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Kanban className="h-8 w-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
+            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4 shadow-sm dark:shadow-none">
+                <Kanban className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <p className="text-sm text-muted-foreground">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
             </div>
           )}
         </div>

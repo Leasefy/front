@@ -428,12 +428,14 @@ export default function CobrosPage() {
               <p className="text-muted-foreground">Cargando cobros...</p>
             </div>
           ) : cobrosError ? (
-            <div className="p-12 text-center">
-              <CurrencyCircleDollar className="w-12 h-12 mx-auto text-red-500 mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-5">
+                <CurrencyCircleDollar className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1.5">
                 Error al cargar cobros
               </h3>
-              <p className="text-muted-foreground max-w-sm mx-auto mb-4">
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
                 {cobrosError}
               </p>
               <button
@@ -464,12 +466,14 @@ export default function CobrosPage() {
               </div>
             )
           ) : (
-            <div className="p-12 text-center">
-              <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                <CurrencyCircleDollar className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1.5">
                 {t('inmobiliaria.cobros.noPayments')}
               </h3>
-              <p className="text-muted-foreground max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 {t('inmobiliaria.cobros.noPaymentsDesc')}
               </p>
               {filters.status !== 'all' && (

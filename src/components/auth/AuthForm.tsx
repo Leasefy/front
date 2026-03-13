@@ -531,17 +531,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         )}
       </AnimatePresence>
 
-      {/* Info text */}
-      <p className="text-[12px] text-muted-foreground text-center mt-6 leading-relaxed">
-        Al continuar, aceptas nuestros{' '}
-        <button type="button" className="text-foreground hover:underline">
-          Términos de Servicio
-        </button>{' '}
-        y{' '}
-        <button type="button" className="text-foreground hover:underline">
-          Política de Privacidad
-        </button>
-      </p>
     </div>
   );
 }

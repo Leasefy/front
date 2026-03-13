@@ -12,6 +12,7 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
+import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
 export default function GuardadosPage() {
@@ -92,26 +93,24 @@ export default function GuardadosPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-8 sm:p-12 text-center"
+            className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] p-8 sm:p-12 text-center"
           >
-            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <Heart className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+              <Heart className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
             </div>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+            <h2 className="text-base font-semibold text-foreground mb-1.5">
               {locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto mb-8">
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
               {locale === 'es'
                 ? 'Explora propiedades y guarda las que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
                 : 'Explore properties and save the ones you like by tapping the heart. This way you can easily compare them.'}
             </p>
-            <Link
-              href="/inquilino/explorar"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
-            >
-              <MagnifyingGlass className="w-4 h-4" />
-              {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-            </Link>
+            <Button asChild>
+              <Link href="/inquilino/explorar">
+                {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
+              </Link>
+            </Button>
 
             {/* Tips */}
             <div className="mt-10 pt-8 border-t border-stone-200 dark:border-neutral-700">

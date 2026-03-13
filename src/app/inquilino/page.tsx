@@ -9,8 +9,14 @@ import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, Magnifyi
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
+import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
+import { ScoreCard } from '@/components/tenant/ScoreCard';
+import { ScoreDetailSheet } from '@/components/tenant/ScoreDetailSheet';
+import { ScoreShareModal } from '@/components/tenant/ScoreShareModal';
+import { downloadScorePDF } from '@/lib/utils/generate-score-pdf';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
 
@@ -27,6 +33,21 @@ export default function InquilinoPage() {
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Evaluation state
+  const { evaluation, isPaid, score, purchaseEvaluation } = useEvaluation();
+  const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  const handlePurchaseEvaluation = () => {
+    purchaseEvaluation();
+  };
+
+  const handleDownloadPDF = () => {
+    if (!score || !evaluation?.verificationCode || !evaluation.paidAt || !evaluation.expiresAt) return;
+    const name = user?.name || 'Inquilino';
+    downloadScorePDF(name, score, evaluation.verificationCode, evaluation.paidAt, evaluation.expiresAt);
+  };
 
   // Onboarding state - check if profile is complete
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
@@ -145,13 +166,11 @@ export default function InquilinoPage() {
                     : 'Your tenant score is active. Explore properties and apply with one click.'}
                 </p>
               </div>
-              <Link
-                href="/inquilino/explorar"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors flex-shrink-0"
-              >
-                <MagnifyingGlass className="w-4 h-4" />
-                {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
-              </Link>
+              <Button asChild className="flex-shrink-0">
+                <Link href="/inquilino/explorar">
+                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+                </Link>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -164,18 +183,11 @@ export default function InquilinoPage() {
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
         >
           {/* Trust Score - Always show */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
-              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Tu score' : 'Your score'}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">A</p>
-              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
-                {t('profile.score.excellent')}
-              </span>
-            </div>
-          </div>
+          <ScoreCard
+            isPaid={isPaid}
+            level={score?.level}
+            onClick={() => setScoreSheetOpen(true)}
+          />
 
           {/* Active Leases */}
           <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
@@ -334,25 +346,23 @@ export default function InquilinoPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
               >
-                <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6 sm:p-8 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
                     <FileText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                   </div>
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                  <h3 className="text-base font-semibold text-foreground mb-1.5">
                     {locale === 'es' ? 'Sin aplicaciones aún' : 'No applications yet'}
                   </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5 max-w-sm mx-auto">
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
                     {locale === 'es'
                       ? 'Cuando apliques a una propiedad, podrás ver el estado de tu aplicación aquí.'
                       : 'When you apply to a property, you\'ll see the status of your application here.'}
                   </p>
-                  <Link
-                    href="/inquilino/explorar"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-                  >
-                    {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <Button asChild>
+                    <Link href="/inquilino/explorar">
+                      {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
+                    </Link>
+                  </Button>
                 </div>
               </motion.section>
             )}
@@ -475,6 +485,30 @@ export default function InquilinoPage() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
       />
+
+      {/* Score Detail Sheet */}
+      <ScoreDetailSheet
+        open={scoreSheetOpen}
+        onClose={() => setScoreSheetOpen(false)}
+        isPaid={isPaid}
+        score={score}
+        verificationCode={evaluation?.verificationCode ?? null}
+        onPurchase={handlePurchaseEvaluation}
+        onDownloadPDF={handleDownloadPDF}
+        onShare={() => {
+          setScoreSheetOpen(false);
+          setShareModalOpen(true);
+        }}
+      />
+
+      {/* Score Share Modal */}
+      {evaluation?.verificationCode && (
+        <ScoreShareModal
+          open={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          verificationCode={evaluation.verificationCode}
+        />
+      )}
     </div>
   );
 }

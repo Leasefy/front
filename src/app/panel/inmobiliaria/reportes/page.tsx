@@ -39,6 +39,7 @@ import {
   exportFlujoCaja,
   exportOcupacion,
 } from '@/lib/utils/generate-report-excel';
+import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
 
@@ -103,6 +104,7 @@ function saveFavorites(favorites: Set<ReportId>): void {
  */
 export default function ReportesPage() {
   const { t, locale } = useI18n();
+  const { hasAdvancedReports } = useAgencyPlan();
 
   // API Hooks for report data
   const carteraReport = useCarteraReport();
@@ -603,6 +605,8 @@ export default function ReportesPage() {
                       }
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
+                      isLocked={!!report.premium && !hasAdvancedReports}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Growth para acceder a reportes avanzados.' : 'Upgrade to Growth plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -651,6 +655,8 @@ export default function ReportesPage() {
                       }
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
+                      isLocked={!!report.premium && !hasAdvancedReports}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Growth para acceder a reportes avanzados.' : 'Upgrade to Growth plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -661,12 +667,14 @@ export default function ReportesPage() {
 
         {/* Empty State */}
         {filteredReports.length === 0 && (
-          <div className="p-12 text-center rounded-xl border border-dashed border-border">
-            <MagnifyingGlass className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+          <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+              <MagnifyingGlass className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-1.5">
               {t('inmobiliaria.reportes.noReports')}
             </h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
               {t('inmobiliaria.reportes.noReportsDesc')}
             </p>
             {filters.search && (

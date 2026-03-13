@@ -1,17 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, X, CheckCircle, Shield, Buildings, SpinnerGap, ArrowUpRight, CaretRight, CaretLeft, Receipt, Wallet, Download } from '@phosphor-icons/react';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, X, CheckCircle, Shield, Buildings, SpinnerGap, ArrowUpRight, CaretRight, CaretLeft, Receipt, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
-import { NoDataEmptyState } from '@/components/tenant/NoDataEmptyState';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Payment } from '@/lib/types/lease';
 
@@ -166,6 +164,43 @@ export default function PagosPage() {
       <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="payments" />
+        </div>
+      </div>
+    );
+  }
+
+  // No active lease — show clean empty state (no fake stats, no mock Visa)
+  if (!primaryLease) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <motion.header
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+              {t('payments.title')}
+            </h1>
+            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+              {t('payments.subtitle')}
+            </p>
+          </motion.header>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <EmptyState
+              icon={CurrencyCircleDollar}
+              title={locale === 'es' ? 'Sin pagos por ahora' : 'No payments yet'}
+              description={locale === 'es'
+                ? 'Cuando tengas un arriendo activo, aquí podrás ver tus pagos, recibos y estado de cuenta.'
+                : 'When you have an active rental, you\'ll see your payments, receipts and account status here.'}
+              action={{ label: locale === 'es' ? 'Explorar propiedades' : 'Explore properties', href: '/inquilino/explorar' }}
+            />
+          </motion.div>
         </div>
       </div>
     );
@@ -376,14 +411,16 @@ export default function PagosPage() {
             ) : (
               <EmptyState
                 icon={CurrencyCircleDollar}
-                title="No hay historial de pagos"
-                description="Cuando realices pagos de arriendo, aparecerán aquí para tu seguimiento."
-                action={{ label: "Ver arriendos", href: "/inquilino/arriendo" }}
+                title={locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}
+                description={locale === 'es'
+                  ? 'Cuando realices pagos de arriendo, aparecerán aquí para tu seguimiento.'
+                  : 'When you make rental payments, they will appear here for your tracking.'}
+                action={{ label: locale === 'es' ? 'Ver arriendo' : 'View rental', href: '/inquilino/arriendo' }}
               />
             )}
           </motion.div>
 
-          {/* Sidebar */}
+          {/* Sidebar — only with active lease */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -391,7 +428,7 @@ export default function PagosPage() {
             className="space-y-6"
           >
             {/* Next Payment Card */}
-            {nextPayment && primaryLease && (
+            {nextPayment && (
               <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
@@ -443,30 +480,6 @@ export default function PagosPage() {
                 </button>
               </div>
             )}
-
-            {/* Payment Methods */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">{t('payments.methods.title')}</h3>
-                <Wallet className="w-5 h-5 text-neutral-400" />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#2a2a2c] rounded-xl border border-neutral-200 dark:border-neutral-700">
-                  <div className="w-12 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-900 flex items-center justify-center">
-                    <span className="text-white text-[10px] font-bold tracking-wider">VISA</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">•••• 4242</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('payments.methods.expires')} 12/25</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
-                    {t('payments.methods.default')}
-                  </span>
-                </div>
-
-              </div>
-            </div>
 
             {/* Quick Links */}
             <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
@@ -558,24 +571,10 @@ export default function PagosPage() {
                       </p>
                     </div>
 
-                    {/* Payment Method */}
-                    <div className="mb-6">
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">{t('payments.confirm.method')}</p>
-                      <div className="flex items-center gap-3 p-3 border border-neutral-200 dark:border-neutral-700 rounded-xl">
-                        <div className="w-12 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-900 flex items-center justify-center">
-                          <span className="text-white text-[10px] font-bold tracking-wider">VISA</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">•••• 4242</p>
-                        </div>
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
-                      </div>
-                    </div>
-
                     {/* Security Note */}
                     <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-6">
                       <Shield className="w-4 h-4" />
-                      <span>{locale === 'es' ? 'Pago seguro con encriptación SSL' : 'Secure payment with SSL encryption'}</span>
+                      <span>{locale === 'es' ? 'Serás redirigido a una pasarela de pago segura' : 'You will be redirected to a secure payment gateway'}</span>
                     </div>
 
                     {/* Actions */}

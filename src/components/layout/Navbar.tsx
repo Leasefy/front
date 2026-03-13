@@ -60,7 +60,7 @@ export function Navbar() {
 
   // Check if we're on a page without a dark hero (should always show solid navbar)
   // Includes both /propiedades (listing) and /propiedades/[id] (detail pages)
-  const isLightPage = pathname === '/propiedades' || pathname.startsWith('/propiedades/');
+  const isLightPage = pathname === '/propiedades' || pathname.startsWith('/propiedades/') || pathname === '/terminos' || pathname === '/privacidad';
 
   // Detect scroll to change navbar style
   useEffect(() => {

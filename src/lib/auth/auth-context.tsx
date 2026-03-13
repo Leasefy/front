@@ -88,6 +88,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
     const supabase = getSupabase()
+    if (!supabase) return
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
       setAccessToken(session.access_token)
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
     const supabase = getSupabase()
+    if (!supabase) return
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
       if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
@@ -118,6 +120,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth on mount
   useEffect(() => {
     const supabase = getSupabase()
+
+    // If Supabase is not configured, skip auth initialization
+    if (!supabase) {
+      console.warn('[Auth] Supabase not configured — running without authentication')
+      setIsLoading(false)
+      return
+    }
 
     // Load initial session
     const initSession = async () => {
@@ -182,6 +191,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabase()
+    if (!supabase) {
+      throw new Error('Supabase not configured')
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -198,7 +210,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Remove FCM token before signing out (while we still have auth)
     await removeFcmToken().catch(() => {})
     const supabase = getSupabase()
-    await supabase.auth.signOut()
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
     setAccessToken(null)
     setUser(null)
   }, [])

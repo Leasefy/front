@@ -3,7 +3,8 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, ArrowClockwise } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,7 +24,7 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, agency, updateProfile } = useAuth();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -38,52 +39,53 @@ export default function InmobiliariaPerfilPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    name: user?.name || 'Admin Inmobiliaria',
-    email: user?.email || 'admin@inmobiliaria.com',
-    phone: '+56 9 1234 5678',
-    rut: '76.543.210-K',
-    address: 'Av. Apoquindo 3000, Las Condes',
-    birthDate: '1985-03-20',
-    emergencyContact: 'Carlos Pérez - +56 9 8765 4321',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    rut: user?.rut || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate ? user.birthDate.split('T')[0] : '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
     cargo: 'Administrador General',
   });
 
-  // Setup steps with completion status
+  // Setup steps with completion status derived from real user/agency data
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
       description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
       icon: User,
-      completed: true,
+      completed: !!(user?.firstName || user?.name),
     },
     {
       id: 'phone-verify',
       label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
       description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
       icon: Phone,
-      completed: true,
+      completed: !!user?.phone,
     },
     {
       id: 'identity-verify',
       label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
       description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
       icon: Shield,
-      completed: true,
+      completed: !!user?.rut,
     },
     {
       id: 'agency-verify',
       label: locale === 'es' ? 'Verificar agencia' : 'Verify agency',
       description: locale === 'es' ? 'Confirma los datos de tu inmobiliaria' : 'Confirm your agency details',
       icon: Buildings,
-      completed: true,
+      completed: !!(agency?.name && agency?.city),
     },
     {
       id: 'emergency-contact',
       label: locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact',
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: true,
+      completed: !!user?.emergencyContactName,
     },
   ];
 
@@ -100,15 +102,34 @@ export default function InmobiliariaPerfilPage() {
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    try {
+      if (section === 'personal') {
+        const [firstName, ...rest] = formData.name.trim().split(' ');
+        const lastName = rest.join(' ') || undefined;
+        await updateProfile({
+          firstName: firstName || undefined,
+          lastName,
+          phone: formData.phone || undefined,
+          rut: formData.rut || undefined,
+          address: formData.address || undefined,
+          birthDate: formData.birthDate || undefined,
+        });
+      } else if (section === 'emergency') {
+        await updateProfile({
+          emergencyContactName: formData.emergencyContactName || undefined,
+          emergencyContactPhone: formData.emergencyContactPhone || undefined,
+        });
+      } else if (section === 'avatar' && avatarPreview) {
+        // Avatar upload requires a separate file upload endpoint — saved locally for now
+        setSavedAvatar(avatarPreview);
+      }
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setEditingSection(null);
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
@@ -752,25 +773,72 @@ export default function InmobiliariaPerfilPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  {locale === 'es' ? 'Nombre y telefono' : 'Name and phone'}
-                </label>
-                {editingSection === 'emergency' ? (
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    placeholder={locale === 'es' ? 'Nombre - Telefono' : 'Name - Phone'}
-                  />
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
+              {editingSection === 'emergency' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      {locale === 'es' ? 'Nombre' : 'Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.emergencyContactName}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      placeholder={locale === 'es' ? 'Ej: Carlos Pérez' : 'E.g. Carlos Pérez'}
+                    />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      {locale === 'es' ? 'Teléfono' : 'Phone'}
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.emergencyContactPhone}
+                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      placeholder="3001234567"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500 shrink-0" />
+                  {formData.emergencyContactName || formData.emergencyContactPhone ? (
+                    <div>
+                      {formData.emergencyContactName && (
+                        <p className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactName}</p>
+                      )}
+                      {formData.emergencyContactPhone && (
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{formData.emergencyContactPhone}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-neutral-400 dark:text-neutral-500">
+                      {locale === 'es' ? 'No configurado' : 'Not set'}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Redo Onboarding */}
+            <div className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-white/[0.02] p-6">
+              <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2 flex items-center gap-2">
+                <ArrowClockwise className="w-5 h-5" />
+                {locale === 'es' ? 'Reconfigurar perfil' : 'Reconfigure profile'}
+              </h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                {locale === 'es'
+                  ? 'Vuelve a completar el proceso de configuración para actualizar la información de tu inmobiliaria.'
+                  : 'Complete the setup process again to update your agency information.'}
+              </p>
+              <Link
+                href="/onboarding/inmobiliaria"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-100 dark:hover:bg-white/[0.05] transition-colors"
+              >
+                <ArrowClockwise className="w-4 h-4" />
+                {locale === 'es' ? 'Re-hacer onboarding' : 'Redo onboarding'}
+              </Link>
             </div>
 
             {/* Danger Zone */}

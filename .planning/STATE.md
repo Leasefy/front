@@ -2,23 +2,23 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-10)
+See: .planning/PROJECT.md (updated 2026-03-11)
 See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architecture Spec**
+See: docs/BACKEND-API-V4.md (created 2026-02-10) - **Backend API Spec for AI endpoints**
 See: docs/BACKEND-INTEGRATION.md (created 2026-01-29) - **Backend API Contract**
 See: docs/FRONTEND-ARCHITECTURE.md (created 2026-01-29) - **Frontend Structure**
 
-**Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** Phase 25 verified complete — v4.0 AI Agent Platform Beta SHIPPED
+**Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autónomo de administración de arriendos.
+**Current focus:** v5.0 milestone complete — Frontend 100% done. Ready to integrate real backend AI or plan next milestone.
 
 ## Current Position
 
-Milestone: v4.0 — AI Agent Platform Beta
-Phase: 25 of 25 (Polish & QA)
-Plan: 3 of 3 in phase 25
-Status: Phase verified (7/7 requirements passed) — v4.0 milestone complete
-Last activity: 2026-02-10 — Phase 25 verified, v4.0 milestone shipped
+Milestone: v5.0 — COMPLETE
+Phase: All phases complete (1-26 + P1)
+Status: Between milestones — ready for /gsd:new-milestone
+Last activity: 2026-03-11 — v5.0 milestone archived
 
-Progress: ██████████████████████████████ 100%
+Progress: ██████████ 100% (v1.0 → v5.0 complete)
 
 ## Performance Metrics
 
@@ -144,6 +144,20 @@ Recent decisions affecting current work:
 - 25-02: Mock data strings (AGENT_RESULT_SUMMARIES, AGENT_ERROR_MESSAGES) kept hardcoded -- will be replaced by real API
 - 25-02: UserBubble "TU" kept as literal (user initials, not translatable text)
 
+### Decisions (P1-inmobiliaria-registration)
+
+- P1-01: apiClient has no .put() — use .patch() for PATCH requests
+- P1-01: Zod not installed — TypeScript validation helpers in src/lib/validation/ instead
+- P1-01: AgencySetupWizard API calls are non-blocking (try/catch proceeds) — backend may not be deployed
+- P1-01: INMOBILIARIA BackendRole maps to 'agency' frontend role (alongside AGENT)
+- P1-01: seleccionar-rol routes to existing /onboarding/inmobiliaria page (not a new page)
+- P1-02: AlertCircle does not exist in @phosphor-icons/react — use Warning icon
+- P1-02: useAgencyOnboardingStatus.ts named distinctly to avoid collision with tenant use-onboarding-status.ts
+- P1-02: Middleware is pass-through only — documents public routes for future server-side auth
+- P1-03: Canonical types (InvitationInfo, OnboardingStep, AgencyOnboardingStatus) in inmobiliaria.ts — hooks import from there
+- P1-03: agencyApi namespace added to inmobiliaria.service.ts (not a separate service file)
+- P1-03: MOCK_STEPS array remains in useAgencyOnboardingStatus — swap with agencyApi.getOnboardingStatus() when backend deploys
+
 ### Pending Todos
 
 None yet.
@@ -155,6 +169,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10
-Stopped at: Phase 25 verified (7/7 requirements) — v4.0 milestone complete
-Resume file: None — ready for /gsd:audit-milestone or /gsd:complete-milestone
+Last session: 2026-03-11
+Stopped at: P1-03 complete — P1 milestone fully done
+Resume file: none (P1 complete)

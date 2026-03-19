@@ -13,7 +13,7 @@
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
-export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT'
+export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT' | 'INMOBILIARIA'
 
 export function toBackendRole(role: UserRole): BackendRole {
   if (role === 'agency') return 'AGENT'
@@ -21,7 +21,7 @@ export function toBackendRole(role: UserRole): BackendRole {
 }
 
 export function toFrontendRole(role: BackendRole): UserRole {
-  if (role === 'AGENT') return 'agency'
+  if (role === 'AGENT' || role === 'INMOBILIARIA') return 'agency'
   if (role === 'LANDLORD' || role === 'BOTH') return 'landlord'
   return 'tenant'
 }
@@ -47,6 +47,7 @@ export interface TenantOnboardingData {
   // Step 1 - Welcome & Profile
   displayName?: string
   phone?: string
+  rut?: string
   preferredContact?: PreferredContact
 
   // Step 2 - Employment & Income
@@ -82,18 +83,40 @@ export interface OnboardingData {
   propertyType?: 'apartment' | 'house' | 'studio' | 'room'
   propertyAddress?: string
   propertyCity?: string
+  expectedRent?: number
   rentPrice?: number
 
-  // Step 3 - Ideal Tenant
+  // Step 3 - Ideal tenant
   minIncomeRatio?: number
   acceptPets?: boolean
-  minRiskLevel?: RiskLevel
+  minRiskLevel?: string
 
   // Step 4 - Payments
   bankAccount?: string
   bankName?: string
-  acceptedPaymentMethods?: PaymentMethod[]
+  acceptedPaymentMethods?: string[]
   preferredPaymentDay?: number
+}
+
+// ============================================================================
+// Agency
+// ============================================================================
+
+export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER'
+
+export interface Agency {
+  id: string
+  name: string
+  nit?: string
+  city?: string
+  address?: string
+  phone?: string
+  email?: string
+  logoUrl?: string
+  website?: string
+  portfolioSize?: string
+  yearsInBusiness?: number
+  services?: string[]
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -128,6 +151,11 @@ export interface User {
   lastName?: string
   phone?: string
   avatar?: string
+  rut?: string
+  address?: string
+  birthDate?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
@@ -151,6 +179,10 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   mfaRequired: boolean
+  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
+  agency: Agency | null
+  /** The user's role within the agency */
+  agencyRole: AgencyMemberRole | null
 }
 
 export interface AuthContextType extends AuthState {
@@ -168,7 +200,10 @@ export interface AuthContextType extends AuthState {
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }) => Promise<void>
   setMfaVerified: () => void
+  /** Set agency context (called after registration or login for agency members) */
+  setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
 }
 
 /**

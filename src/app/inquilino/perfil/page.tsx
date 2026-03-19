@@ -4,11 +4,12 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Image as ImageIcon, ArrowClockwise } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { apiClient } from '@/lib/api/client';
 
 // Setup steps definition
 interface SetupStep {
@@ -25,7 +26,7 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState<string | null>(null);
@@ -39,46 +40,103 @@ export default function PerfilPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Employment verification modal state
+  const [employmentForm, setEmploymentForm] = useState({ empresa: '', cargo: '', ingreso: '' });
+  const [employmentFile, setEmploymentFile] = useState<File | null>(null);
+  const [isSubmittingEmployment, setIsSubmittingEmployment] = useState(false);
+  const employmentFileRef = useRef<HTMLInputElement>(null);
+
+  const handleEmploymentSubmit = async () => {
+    if (!employmentForm.empresa.trim() || !employmentForm.ingreso.trim()) {
+      toast.error(locale === 'es' ? 'Completa empresa e ingreso mensual' : 'Fill in company and monthly income');
+      return;
+    }
+    setIsSubmittingEmployment(true);
+    try {
+      const nameParts = (user?.name || '').trim().split(/\s+/);
+      const firstName = user?.firstName || nameParts[0] || '';
+      const lastName = user?.lastName || nameParts.slice(1).join(' ') || firstName;
+      const rawIngreso = parseInt(employmentForm.ingreso.replace(/[^0-9]/g, ''), 10);
+
+      await apiClient.post('/users/me/onboarding', {
+        userType: 'TENANT',
+        firstName,
+        lastName,
+        companyName: employmentForm.empresa,
+        monthlyIncome: isNaN(rawIngreso) ? undefined : rawIngreso,
+        employmentType: 'employed',
+      });
+
+      if (employmentFile) {
+        const formData = new FormData();
+        formData.append('file', employmentFile);
+        formData.append('type', 'INCOME_PROOF');
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+          const { getAccessToken } = await import('@/lib/api/client');
+          await fetch(`${backendUrl}/documents/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getAccessToken()}` },
+            body: formData,
+          });
+        } catch {
+          // Document upload requires an active application — employment data was still saved
+        }
+      }
+
+      toast.success(locale === 'es' ? 'Información laboral guardada correctamente' : 'Employment info saved successfully');
+      setShowVerifyModal(null);
+      setEmploymentForm({ empresa: '', cargo: '', ingreso: '' });
+      setEmploymentFile(null);
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar la información' : 'Error saving information');
+    } finally {
+      setIsSubmittingEmployment(false);
+    }
+  };
+
   // Form state
   const [formData, setFormData] = useState({
-    name: user?.name || 'María González',
-    email: user?.email || 'tenant@example.com',
-    phone: '+56 9 1234 5678',
-    rut: '12.345.678-9',
-    address: 'Av. Providencia 1234, Providencia',
-    birthDate: '1990-05-15',
-    emergencyContact: 'Juan González - +56 9 8765 4321',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    rut: user?.rut || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate ? user.birthDate.split('T')[0] : '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
   });
 
-  // Setup steps with completion status
+  // Setup steps with completion status derived from real user data
+  const tenantData = user?.tenantOnboardingData
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
       description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
       icon: User,
-      completed: true,
+      completed: !!(user?.firstName || user?.name),
     },
     {
       id: 'phone-verify',
       label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
       description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
       icon: Phone,
-      completed: true,
+      completed: !!user?.phone,
     },
     {
       id: 'identity-verify',
       label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
       description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
       icon: Shield,
-      completed: true,
+      completed: !!user?.rut,
     },
     {
       id: 'employment-verify',
       label: locale === 'es' ? 'Verificar empleo' : 'Verify employment',
       description: locale === 'es' ? 'Agrega tu información laboral' : 'Add your employment information',
       icon: Briefcase,
-      completed: false,
+      completed: !!(tenantData?.companyName && tenantData?.monthlyIncome),
       action: t('profile.verification.verify'),
     },
     {
@@ -86,7 +144,7 @@ export default function PerfilPage() {
       label: t('profile.emergencyContact'),
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: true,
+      completed: !!user?.emergencyContactName,
     },
   ];
 
@@ -103,17 +161,33 @@ export default function PerfilPage() {
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // If saving avatar section, preserve the uploaded image
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    try {
+      if (section === 'personal') {
+        const [firstName, ...rest] = formData.name.trim().split(' ');
+        const lastName = rest.join(' ') || undefined;
+        await updateProfile({
+          firstName: firstName || undefined,
+          lastName,
+          phone: formData.phone || undefined,
+          rut: formData.rut || undefined,
+          address: formData.address || undefined,
+          birthDate: formData.birthDate || undefined,
+        });
+      } else if (section === 'emergency') {
+        await updateProfile({
+          emergencyContactName: formData.emergencyContactName || undefined,
+          emergencyContactPhone: formData.emergencyContactPhone || undefined,
+        });
+      } else if (section === 'avatar' && avatarPreview) {
+        setSavedAvatar(avatarPreview);
+      }
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setEditingSection(null);
-    // Don't clear avatarPreview here - it will be cleared by handleCancelEdit if user cancels
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
@@ -535,29 +609,40 @@ export default function PerfilPage() {
                 {/* Quick Stats */}
                 <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-white/10 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {locale === 'es' ? '1 Arriendo activo' : '1 Active rental'}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Departamento Providencia</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      <Buildings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {locale === 'es' ? '12 Pagos realizados' : '12 Payments made'}
+                        {locale === 'es' ? 'Inquilino activo' : 'Active tenant'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {locale === 'es' ? '100% a tiempo' : '100% on time'}
-                      </p>
+                      {user?.address ? (
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{user.address}</p>
+                      ) : (
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
+                          {locale === 'es' ? 'Sin dirección registrada' : 'No address registered'}
+                        </p>
+                      )}
                     </div>
                   </div>
+                  {tenantData?.companyName && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          {tenantData.companyName}
+                        </p>
+                        {tenantData.monthlyIncome && (
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {locale === 'es' ? 'Ingreso: ' : 'Income: '}
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(tenantData.monthlyIncome)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -570,10 +655,10 @@ export default function PerfilPage() {
               </h3>
               <div className="space-y-3">
                 {[
-                  { key: 'email', label: 'Email', verified: true },
-                  { key: 'phone', label: locale === 'es' ? 'Teléfono' : 'Phone', verified: true },
-                  { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
-                  { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: false },
+                  { key: 'email', label: 'Email', verified: !!user?.email },
+                  { key: 'phone', label: locale === 'es' ? 'Teléfono' : 'Phone', verified: !!user?.phone },
+                  { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: !!user?.rut },
+                  { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: !!(tenantData?.companyName && tenantData?.monthlyIncome) },
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-100 dark:border-neutral-600">
                     <span className="text-sm font-medium text-neutral-700 dark:text-white">{item.label}</span>
@@ -717,11 +802,13 @@ export default function PerfilPage() {
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">
-                        {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
+                        {formData.birthDate
+                          ? new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : (locale === 'es' ? 'No especificada' : 'Not specified')}
                       </span>
                     </div>
                   )}
@@ -779,25 +866,72 @@ export default function PerfilPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  {locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}
-                </label>
-                {editingSection === 'emergency' ? (
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
-                  />
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
+              {editingSection === 'emergency' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      {locale === 'es' ? 'Nombre' : 'Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.emergencyContactName}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      placeholder={locale === 'es' ? 'Ej: Carlos Pérez' : 'E.g. Carlos Pérez'}
+                    />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      {locale === 'es' ? 'Teléfono' : 'Phone'}
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.emergencyContactPhone}
+                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      placeholder="3001234567"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500 shrink-0" />
+                  {formData.emergencyContactName || formData.emergencyContactPhone ? (
+                    <div>
+                      {formData.emergencyContactName && (
+                        <p className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactName}</p>
+                      )}
+                      {formData.emergencyContactPhone && (
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{formData.emergencyContactPhone}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-neutral-400 dark:text-neutral-500">
+                      {locale === 'es' ? 'No configurado' : 'Not set'}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Redo Onboarding */}
+            <div className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-white/[0.02] p-6">
+              <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2 flex items-center gap-2">
+                <ArrowClockwise className="w-5 h-5" />
+                {locale === 'es' ? 'Reconfigurar perfil' : 'Reconfigure profile'}
+              </h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                {locale === 'es'
+                  ? 'Vuelve a completar el proceso de configuración para actualizar tu información de inquilino.'
+                  : 'Complete the setup process again to update your tenant profile.'}
+              </p>
+              <Link
+                href="/onboarding/inquilino"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-100 dark:hover:bg-white/[0.05] transition-colors"
+              >
+                <ArrowClockwise className="w-4 h-4" />
+                {locale === 'es' ? 'Re-hacer onboarding' : 'Redo onboarding'}
+              </Link>
             </div>
 
             {/* Danger Zone */}
@@ -846,10 +980,12 @@ export default function PerfilPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  {locale === 'es' ? 'Empresa' : 'Company'}
+                  {locale === 'es' ? 'Empresa' : 'Company'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
+                  value={employmentForm.empresa}
+                  onChange={e => setEmploymentForm(p => ({ ...p, empresa: e.target.value }))}
                   placeholder={locale === 'es' ? 'Nombre de tu empresa' : 'Your company name'}
                   className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
@@ -860,17 +996,21 @@ export default function PerfilPage() {
                 </label>
                 <input
                   type="text"
+                  value={employmentForm.cargo}
+                  onChange={e => setEmploymentForm(p => ({ ...p, cargo: e.target.value }))}
                   placeholder={locale === 'es' ? 'Tu cargo actual' : 'Your current position'}
                   className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  {locale === 'es' ? 'Ingreso mensual (CLP)' : 'Monthly income (CLP)'}
+                  {locale === 'es' ? 'Ingreso mensual (COP)' : 'Monthly income (COP)'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
+                  value={employmentForm.ingreso}
+                  onChange={e => setEmploymentForm(p => ({ ...p, ingreso: e.target.value }))}
+                  placeholder={locale === 'es' ? 'Ej: 1500000' : 'E.g.: 1500000'}
                   className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
               </div>
@@ -878,33 +1018,47 @@ export default function PerfilPage() {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {locale === 'es' ? 'Comprobante de ingresos' : 'Proof of income'}
                 </label>
-                <div className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors cursor-pointer">
+                <input
+                  ref={employmentFileRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={e => setEmploymentFile(e.target.files?.[0] ?? null)}
+                />
+                <div
+                  onClick={() => employmentFileRef.current?.click()}
+                  className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors cursor-pointer"
+                >
                   <FileText className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
-                  </p>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                    {locale === 'es' ? 'PDF, JPG o PNG (máx. 5MB)' : 'PDF, JPG or PNG (max. 5MB)'}
-                  </p>
+                  {employmentFile ? (
+                    <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{employmentFile.name}</p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
+                      </p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                        {locale === 'es' ? 'PDF, JPG o PNG (máx. 5MB)' : 'PDF, JPG or PNG (max. 5MB)'}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setShowVerifyModal(null)}
+                onClick={() => { setShowVerifyModal(null); setEmploymentForm({ empresa: '', cargo: '', ingreso: '' }); setEmploymentFile(null); }}
                 className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
-                onClick={() => {
-                  toast.success(locale === 'es' ? 'Verificación enviada. Te notificaremos cuando sea aprobada.' : 'Verification sent. We will notify you when approved.');
-                  setShowVerifyModal(null);
-                }}
-                className="flex-1 px-4 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                onClick={handleEmploymentSubmit}
+                disabled={isSubmittingEmployment}
+                className="flex-1 px-4 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {locale === 'es' ? 'Enviar verificación' : 'Submit verification'}
+                {isSubmittingEmployment ? '...' : (locale === 'es' ? 'Guardar información' : 'Save information')}
               </button>
             </div>
           </motion.div>

@@ -4987,5 +4987,112 @@
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
     }
+  },
+  "registration": {
+    "accountType": {
+      "title": "¿Cómo quieres usar Leasefy?",
+      "subtitle": "Selecciona el tipo de cuenta que mejor describe tu rol",
+      "tenant": "Inquilino",
+      "tenantDesc": "Busco propiedades en arriendo",
+      "landlord": "Propietario",
+      "landlordDesc": "Tengo propiedades para arrendar",
+      "inmobiliaria": "Inmobiliaria",
+      "inmobiliariaDesc": "Administro propiedades para terceros"
+    },
+    "agencyFields": {
+      "agencyName": "Nombre de la agencia",
+      "agencyNamePlaceholder": "Inmobiliaria Rodríguez & Asociados",
+      "nit": "NIT / RUT",
+      "nitPlaceholder": "900.123.456-7",
+      "nitOptional": "NIT / RUT (opcional)",
+      "address": "Dirección",
+      "addressOptional": "Dirección (opcional)",
+      "addressPlaceholder": "Calle 123 # 45-67",
+      "city": "Ciudad principal",
+      "cityPlaceholder": "Selecciona una ciudad",
+      "phone": "Teléfono de la agencia",
+      "phoneOptional": "Teléfono de la agencia (opcional)",
+      "phonePlaceholder": "601 234 5678",
+      "email": "Email de la agencia",
+      "emailOptional": "Email de la agencia (opcional)",
+      "emailPlaceholder": "contacto@miinmobiliaria.com",
+      "defaultCommission": "Comisión por defecto",
+      "defaultCommissionDesc": "Porcentaje que cobras sobre el arriendo mensual",
+      "collectionDay": "Día de cobro",
+      "collectionDayDesc": "Día del mes en que se cobra el arriendo a los inquilinos",
+      "dispersionDay": "Día de dispersión",
+      "dispersionDayDesc": "Día del mes en que se transfiere el pago a los propietarios",
+      "valueBetween": "Valor entre {{min}} y {{max}}"
+    }
+  },
+  "invitation": {
+    "validating": "Validando invitación…",
+    "notFound": "Invitación no encontrada",
+    "notFoundDesc": "Este enlace no es válido o ya fue usado. Solicita una nueva invitación a tu agencia.",
+    "expired": "Invitación expirada",
+    "expiredDesc": "Este enlace de invitación ya no está vigente. Pide al administrador de la agencia que te envíe una nueva invitación.",
+    "validUntil": "Válida hasta el {{date}}",
+    "roleAssigned": "Rol asignado",
+    "invitedAs": "Invitado como",
+    "atAgency": "en {{agencyName}}",
+    "greetingLoggedIn": "Hola {{name}}, te han invitado a unirte como",
+    "loginToAccept": "Iniciar sesión para aceptar",
+    "createAccount": "Crear cuenta nueva",
+    "accept": "Aceptar invitación",
+    "accepting": "Aceptando…",
+    "decline": "Rechazar invitación",
+    "declining": "Rechazando…",
+    "helpText": "¿Necesitas ayuda?",
+    "helpLink": "Visita el centro de ayuda",
+    "goHome": "Ir al inicio",
+    "roles": {
+      "ADMIN": "Administrador",
+      "AGENTE": "Agente",
+      "CONTADOR": "Contador",
+      "VIEWER": "Observador"
+    }
+  },
+  "onboarding": {
+    "checklist": {
+      "title": "Configura tu agencia",
+      "subtitle": "Completa estos pasos para aprovechar al máximo Leasefy",
+      "completionPercent": "{{percent}}% completado",
+      "steps": {
+        "profile": "Completa el perfil de tu agencia",
+        "first_property": "Agrega tu primera propiedad en consignación",
+        "invite_agent": "Invita a un agente a tu equipo",
+        "first_collection": "Registra tu primer cobro"
+      },
+      "actions": {
+        "edit": "Editar",
+        "add": "Agregar",
+        "invite": "Invitar",
+        "view": "Ver cobros"
+      }
+    },
+    "wizard": {
+      "title": "Configura tu agencia",
+      "subtitle": "Solo tomará un par de minutos",
+      "close": "Cerrar wizard",
+      "step1Title": "Información básica",
+      "step1Desc": "Completa el perfil de tu agencia",
+      "step2Title": "Configuración operacional",
+      "step2Desc": "Define tus parámetros de operación",
+      "step3Title": "Invitar primer miembro",
+      "step3Desc": "Opcional — agrega a tu equipo",
+      "optional": "Opcional",
+      "saving": "Guardando...",
+      "sending": "Enviando...",
+      "skip": "Omitir por ahora",
+      "sendInvitation": "Enviar invitación",
+      "complete": "¡Agencia configurada!",
+      "completeRedirecting": "Tu agencia está lista. Redirigiendo al panel...",
+      "inviteError": "No se pudo enviar la invitación. Puedes intentarlo más tarde desde Configuración.",
+      "inviteMember": "Invita a tu primer colaborador. Recibirán un correo para unirse a tu agencia. Este paso es completamente opcional.",
+      "memberEmail": "Email del miembro",
+      "memberEmailPlaceholder": "colaborador@tuagencia.com",
+      "memberRole": "Rol",
+      "operationsDesc": "Configura los valores por defecto para tu operación. Puedes cambiarlos en cualquier momento desde Configuración."
+    }
   }
 }

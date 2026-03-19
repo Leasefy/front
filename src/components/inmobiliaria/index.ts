@@ -157,3 +157,12 @@ export { AnalyticsKPICards } from './AnalyticsKPICards';
 // Analytics - Trends & Forecasting (Phase 10 - Plan 07)
 export { AnalyticsTrends } from './AnalyticsTrends';
 export { AnalyticsForecasting } from './AnalyticsForecasting';
+
+// Agency Setup Wizard (P1-01 - Inmobiliaria Registration)
+export { AgencySetupWizard } from './AgencySetupWizard';
+export { AgencyBasicForm } from './wizard/AgencyBasicForm';
+export type { AgencyBasicFormData } from './wizard/AgencyBasicForm';
+export { AgencyOperationsForm } from './wizard/AgencyOperationsForm';
+export type { AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
+export { InviteFirstMemberForm } from './wizard/InviteFirstMemberForm';
+export type { InviteFirstMemberFormData, AgencyMemberRoleOption } from './wizard/InviteFirstMemberForm';

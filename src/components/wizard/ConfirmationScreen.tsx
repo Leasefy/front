@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText } from '@phosphor-icons/react';
+import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText, EnvelopeSimple } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
@@ -12,6 +12,8 @@ import type { Property } from '@/lib/types/property';
 interface ConfirmationScreenProps {
   property: Property;
   trackingCode: string;
+  isGuest?: boolean;
+  guestEmail?: string;
 }
 
 // ============================================================================
@@ -22,7 +24,7 @@ interface ConfirmationScreenProps {
  * ConfirmationScreen - Shown after successful application submission
  * Displays tracking code and next steps
  */
-export function ConfirmationScreen({ property, trackingCode }: ConfirmationScreenProps) {
+export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail }: ConfirmationScreenProps) {
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
@@ -44,6 +46,21 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
               ha sido recibida.
             </p>
           </div>
+
+          {/* Guest notice: activate account */}
+          {isGuest && guestEmail && (
+            <div className="mx-6 mt-6 p-4 bg-blue-50 border border-blue-200 rounded-sm flex gap-3">
+              <EnvelopeSimple className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-900 mb-1">
+                  Activa tu cuenta para hacer seguimiento
+                </p>
+                <p className="text-sm text-blue-700">
+                  Te enviamos un correo a <span className="font-medium">{guestEmail}</span> con un enlace para crear tu contraseña. Tu aplicación ya está registrada.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Next steps */}
           <div className="px-6 py-6">
@@ -88,11 +105,19 @@ export function ConfirmationScreen({ property, trackingCode }: ConfirmationScree
 
           {/* Actions */}
           <div className="px-6 pb-6">
-            <Link href="/onboarding/inquilino" className="block">
-              <Button className="w-full">
-                Ver mi aplicación
-              </Button>
-            </Link>
+            {isGuest ? (
+              <Link href="/auth" className="block">
+                <Button className="w-full">
+                  Iniciar sesión
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/onboarding/inquilino" className="block">
+                <Button className="w-full">
+                  Ver mi aplicación
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

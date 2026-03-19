@@ -104,6 +104,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   React.useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !user) return;
+    // Si el onboarding no está completo, siempre ir a seleccionar rol
+    if (!user.onboardingCompleted) {
+      window.location.href = '/onboarding/seleccionar-rol';
+      return;
+    }
     const destination = (returnUrl && returnUrl !== '/') ? returnUrl : '/';
     window.location.href = destination;
   }, [isAuthenticated, user, authLoading, returnUrl]);
@@ -266,8 +271,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       await sendPasswordReset(data.email);
       setResetEmail(data.email);
       setMode('reset-sent');
-    } catch {
-      setError('Ocurrió un error. Intenta de nuevo.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('over_email')) {
+        setError('Límite de envíos alcanzado. Espera unos minutos e intenta de nuevo.');
+      } else {
+        setError('Ocurrió un error. Intenta de nuevo.');
+      }
     } finally {
       setIsLoading(false);
     }

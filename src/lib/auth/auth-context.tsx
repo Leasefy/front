@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { User, AuthContextType } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
 import { toFrontendRole } from './types'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
@@ -26,6 +26,31 @@ function mapBackendUser(data: Record<string, unknown>): User {
   const backendRole = (data.role as string) || 'TENANT'
   const firstName = (data.firstName as string) || ''
   const lastName = (data.lastName as string) || ''
+  const frontendRole = toFrontendRole(backendRole as import('./types').BackendRole)
+
+  // Map role-specific onboarding data stored as JSON in the backend
+  const raw = (data.onboardingData as Record<string, unknown> | null) ?? null
+  const onboardingData = frontendRole === 'landlord' && raw ? {
+    preferredContact: raw.preferredContact as import('./types').PreferredContact | undefined,
+    propertyType: raw.propertyType as import('./types').OnboardingData['propertyType'] | undefined,
+    propertyCity: raw.propertyCity as string | undefined,
+    expectedRent: raw.expectedRent as number | undefined,
+  } : undefined
+
+  const tenantOnboardingData = frontendRole === 'tenant' && raw ? {
+    preferredContact: raw.preferredContact as import('./types').PreferredContact | undefined,
+    employmentType: raw.employmentType as import('./types').EmploymentType | undefined,
+    companyName: raw.companyName as string | undefined,
+    monthlyIncome: raw.monthlyIncome as number | undefined,
+    additionalIncome: raw.additionalIncome as number | undefined,
+    budgetMin: raw.budgetMin as number | undefined,
+    budgetMax: raw.budgetMax as number | undefined,
+    preferredZones: raw.preferredZones as string[] | undefined,
+    preferredAmenities: raw.preferredAmenities as string[] | undefined,
+    moveInDate: raw.moveInDate as string | undefined,
+    hasPets: raw.hasPets as boolean | undefined,
+    petDetails: raw.petDetails as string | undefined,
+  } : undefined
 
   return {
     id: data.id as string,
@@ -35,9 +60,16 @@ function mapBackendUser(data: Record<string, unknown>): User {
     lastName,
     phone: (data.phone as string) || undefined,
     avatar: (data.avatarUrl as string) || undefined,
-    role: toFrontendRole(backendRole as import('./types').BackendRole),
+    rut: (data.rut as string) || undefined,
+    address: (data.address as string) || undefined,
+    birthDate: (data.birthDate as string) || undefined,
+    emergencyContactName: (data.emergencyContactName as string) || undefined,
+    emergencyContactPhone: (data.emergencyContactPhone as string) || undefined,
+    role: frontendRole,
     backendRole: backendRole as import('./types').BackendRole,
     onboardingCompleted: !!data.firstName,
+    onboardingData,
+    tenantOnboardingData,
   }
 }
 
@@ -64,6 +96,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  const [agency, setAgencyState] = useState<Agency | null>(null)
+  const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
   /** Fetch the user profile from the backend, fallback to Supabase session */
   const fetchUser = useCallback(async (session?: Session | null): Promise<User | null> => {
@@ -85,6 +119,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /** Set the agency and role in context (called after registration or when user loads) */
+  const setAgency = useCallback((agencyData: Agency | null, role: AgencyMemberRole | null) => {
+    setAgencyState(agencyData)
+    setAgencyRole(role)
+  }, [])
+
+  /** Fetch agency membership for agency/agent roles */
+  const fetchAgency = useCallback(async (token?: string): Promise<{ agency: Agency | null; role: AgencyMemberRole | null }> => {
+    try {
+      // Backend returns { ...agencyFields, memberRole, memberStatus }
+      const data = await apiClient.get<Agency & { memberRole: AgencyMemberRole }>('/inmobiliaria/agency', token)
+      const { memberRole, ...agencyFields } = data as Agency & { memberRole: AgencyMemberRole; memberStatus: string }
+      return { agency: agencyFields as Agency, role: memberRole }
+    } catch {
+      // User may not belong to an agency yet (e.g. just registered)
+      return { agency: null, role: null }
+    }
+  }, [])
+
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
@@ -92,7 +145,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // handles the 401 gracefully.
     const userData = await fetchUser()
     setUser(userData)
-  }, [fetchUser])
+    // Also refresh agency data for agency/agent roles (or when just completing inmobiliaria onboarding)
+    if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
+      const { agency: agencyData, role } = await fetchAgency()
+      setAgencyState(agencyData)
+      setAgencyRole(role)
+    }
+  }, [fetchUser, fetchAgency])
 
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
@@ -138,6 +197,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (userData?.onboardingCompleted) {
               requestNotificationPermission().catch(() => {})
             }
+            if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
+              const { agency: agencyData, role } = await fetchAgency(session.access_token)
+              setAgencyState(agencyData)
+              setAgencyRole(role)
+            }
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
@@ -150,9 +214,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userData?.onboardingCompleted) {
             requestNotificationPermission().catch(() => {})
           }
+          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
+            const { agency: agencyData, role } = await fetchAgency(session.access_token)
+            setAgencyState(agencyData)
+            setAgencyRole(role)
+          }
         } else if (event === 'SIGNED_OUT') {
           setAccessToken(null)
           setUser(null)
+          setAgencyState(null)
+          setAgencyRole(null)
           setMfaRequired(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -168,7 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel])
+  }, [fetchUser, checkMfaLevel, fetchAgency])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -212,7 +283,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const sendPasswordReset = useCallback(async (email: string) => {
     const supabase = getSupabase()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${window.location.origin}/auth/callback?returnUrl=/auth/update-password`,
     })
     if (error) throw error
   }, [])
@@ -239,6 +310,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await apiClient.patch('/users/me/password', { currentPassword, newPassword })
   }, [])
 
+  /** Update user profile fields and refresh local user state */
+  const updateProfile = useCallback(async (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }): Promise<void> => {
+    const updated = await apiClient.patch<Record<string, unknown>>('/users/me', data)
+    setUser(mapBackendUser(updated))
+  }, [])
+
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
     // Clear local state immediately so UI updates
@@ -259,6 +336,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    agency,
+    agencyRole,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
@@ -269,7 +348,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     logout: signOut,
     refreshUser,
+    updateProfile,
     setMfaVerified,
+    setAgency,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

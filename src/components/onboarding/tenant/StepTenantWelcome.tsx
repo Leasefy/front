@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { User, Phone, SignIn } from '@phosphor-icons/react'
+import { User, Phone, SignIn, IdentificationCard } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
@@ -51,11 +51,43 @@ export function StepTenantWelcome() {
         </div>
       </motion.div>
 
-      {/* Phone */}
+      {/* CC */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+      >
+        <label htmlFor="rut" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          Cédula de Ciudadanía
+        </label>
+        <div className="relative">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <IdentificationCard className="h-5 w-5 text-neutral-400" />
+          </div>
+          <input
+            type="text"
+            id="rut"
+            value={draft.rut || ''}
+            onChange={(e) => updateDraft({ rut: e.target.value })}
+            placeholder="Ej: 1090525663"
+            className={cn(
+              'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
+              'text-neutral-900 dark:text-white placeholder:text-neutral-400',
+              'transition-all duration-200',
+              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+              draft.rut
+                ? 'border-indigo-500 focus:border-indigo-500'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+            )}
+          />
+        </div>
+      </motion.div>
+
+      {/* Phone */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
       >
         <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
           Tu número de teléfono

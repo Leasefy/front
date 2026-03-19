@@ -4974,5 +4974,112 @@
       "noSteps": "No steps defined",
       "stepsProgress": "{{completed}} of {{total}} completed"
     }
+  },
+  "registration": {
+    "accountType": {
+      "title": "How do you want to use Leasefy?",
+      "subtitle": "Select the account type that best describes your role",
+      "tenant": "Tenant",
+      "tenantDesc": "I'm looking for rental properties",
+      "landlord": "Landlord",
+      "landlordDesc": "I have properties to rent",
+      "inmobiliaria": "Real Estate Agency",
+      "inmobiliariaDesc": "I manage properties on behalf of others"
+    },
+    "agencyFields": {
+      "agencyName": "Agency name",
+      "agencyNamePlaceholder": "Rodriguez & Associates Real Estate",
+      "nit": "Tax ID / NIT",
+      "nitPlaceholder": "900.123.456-7",
+      "nitOptional": "Tax ID / NIT (optional)",
+      "address": "Address",
+      "addressOptional": "Address (optional)",
+      "addressPlaceholder": "123 Main St",
+      "city": "Primary city",
+      "cityPlaceholder": "Select a city",
+      "phone": "Agency phone",
+      "phoneOptional": "Agency phone (optional)",
+      "phonePlaceholder": "601 234 5678",
+      "email": "Agency email",
+      "emailOptional": "Agency email (optional)",
+      "emailPlaceholder": "contact@myagency.com",
+      "defaultCommission": "Default commission",
+      "defaultCommissionDesc": "Percentage charged on monthly rent",
+      "collectionDay": "Collection day",
+      "collectionDayDesc": "Day of the month rent is collected from tenants",
+      "dispersionDay": "Disbursement day",
+      "dispersionDayDesc": "Day of the month payments are transferred to owners",
+      "valueBetween": "Value between {{min}} and {{max}}"
+    }
+  },
+  "invitation": {
+    "validating": "Validating invitation…",
+    "notFound": "Invitation not found",
+    "notFoundDesc": "This link is invalid or has already been used. Request a new invitation from your agency.",
+    "expired": "Invitation expired",
+    "expiredDesc": "This invitation link is no longer valid. Ask the agency administrator to send you a new invitation.",
+    "validUntil": "Valid until {{date}}",
+    "roleAssigned": "Assigned role",
+    "invitedAs": "Invited as",
+    "atAgency": "at {{agencyName}}",
+    "greetingLoggedIn": "Hi {{name}}, you've been invited to join as",
+    "loginToAccept": "Log in to accept",
+    "createAccount": "Create new account",
+    "accept": "Accept invitation",
+    "accepting": "Accepting…",
+    "decline": "Decline invitation",
+    "declining": "Declining…",
+    "helpText": "Need help?",
+    "helpLink": "Visit the help center",
+    "goHome": "Go to home",
+    "roles": {
+      "ADMIN": "Administrator",
+      "AGENTE": "Agent",
+      "CONTADOR": "Accountant",
+      "VIEWER": "View only"
+    }
+  },
+  "onboarding": {
+    "checklist": {
+      "title": "Set up your agency",
+      "subtitle": "Complete these steps to get the most out of Leasefy",
+      "completionPercent": "{{percent}}% complete",
+      "steps": {
+        "profile": "Complete your agency profile",
+        "first_property": "Add your first property consignment",
+        "invite_agent": "Invite an agent to your team",
+        "first_collection": "Record your first collection"
+      },
+      "actions": {
+        "edit": "Edit",
+        "add": "Add",
+        "invite": "Invite",
+        "view": "View collections"
+      }
+    },
+    "wizard": {
+      "title": "Set up your agency",
+      "subtitle": "This will only take a couple of minutes",
+      "close": "Close wizard",
+      "step1Title": "Basic information",
+      "step1Desc": "Complete your agency profile",
+      "step2Title": "Operations setup",
+      "step2Desc": "Define your operational parameters",
+      "step3Title": "Invite first member",
+      "step3Desc": "Optional — add your team",
+      "optional": "Optional",
+      "saving": "Saving...",
+      "sending": "Sending...",
+      "skip": "Skip for now",
+      "sendInvitation": "Send invitation",
+      "complete": "Agency configured!",
+      "completeRedirecting": "Your agency is ready. Redirecting to dashboard...",
+      "inviteError": "Could not send the invitation. You can try again later from Settings.",
+      "inviteMember": "Invite your first collaborator. They will receive an email to join your agency. This step is completely optional.",
+      "memberEmail": "Member email",
+      "memberEmailPlaceholder": "collaborator@youragency.com",
+      "memberRole": "Role",
+      "operationsDesc": "Set the default values for your operation. You can change them at any time from Settings."
+    }
   }
 }

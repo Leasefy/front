@@ -145,10 +145,28 @@ function mapToTenantView(ba: BackendApplication): TenantApplicationView {
 // ============================================================================
 
 export const applicationsApi = {
-  /** Create and submit an application */
+  /** Create and submit an application (authenticated) */
   async create(data: CreateApplicationDto): Promise<Application> {
     const ba = await apiClient.post<BackendApplication>('/applications', data);
     return mapBackendApplication(ba);
+  },
+
+  /** Submit application as guest (unauthenticated) — backend sends invite email */
+  async createGuest(data: CreateApplicationDto & { agentCode?: string; linkCode?: string }): Promise<{
+    applicationId: string;
+    trackingCode: string;
+    userAlreadyExisted: boolean;
+  }> {
+    const res = await fetch(`${BACKEND_URL}/applications/guest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Error al enviar la aplicación: ${res.status}`);
+    }
+    return res.json();
   },
 
   /** Get my applications as tenant */

@@ -42,6 +42,7 @@ import {
   inmobiliariaConfigApi,
 } from '@/lib/hooks/useInmobiliaria';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
+import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import type {
   InmobiliariaConfigExtended,
   AgencyBranding,
@@ -101,14 +102,17 @@ export default function ConfiguracionPage() {
     DEFAULT_ROLE_PERMISSIONS
   );
 
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    emailNewLead: true,
-    emailPaymentReceived: true,
-    emailContractReminder: true,
-    pushNewMessage: true,
-    marketingEmails: false,
-  });
+  // Real notification settings from backend
+  const { settings: notifSettings, isLoading: notifLoading, updateSetting } = useNotificationSettings();
+
+  // Map inmobiliaria UI keys to backend NotificationSettings keys
+  const notifKeyMap: Record<string, 'emailApplications' | 'emailPayments' | 'emailContracts' | 'pushAll' | 'emailMarketing'> = {
+    emailNewLead: 'emailApplications',
+    emailPaymentReceived: 'emailPayments',
+    emailContractReminder: 'emailContracts',
+    pushNewMessage: 'pushAll',
+    marketingEmails: 'emailMarketing',
+  };
 
   // Theme & i18n
   const { resolvedTheme, setTheme } = useTheme();
@@ -443,18 +447,24 @@ export default function ConfiguracionPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      setNotifications(prev => ({ ...prev, [item.key]: !prev[item.key] }));
-                      toast.success(!notifications[item.key] ? t('inmobiliaria.config.notifications.enabled') : t('inmobiliaria.config.notifications.disabled'));
+                    onClick={async () => {
+                      const backendKey = notifKeyMap[item.key];
+                      if (!backendKey) return;
+                      try {
+                        await updateSetting(backendKey, !notifSettings[backendKey]);
+                        toast.success(!notifSettings[backendKey] ? t('inmobiliaria.config.notifications.enabled') : t('inmobiliaria.config.notifications.disabled'));
+                      } catch {
+                        toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
+                      }
                     }}
                     className={cn(
                       'relative w-11 h-6 rounded-full transition-colors',
-                      notifications[item.key] ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                      notifSettings[notifKeyMap[item.key]] ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
                     )}
                   >
                     <span className={cn(
                       'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                      notifications[item.key] && 'translate-x-5'
+                      notifSettings[notifKeyMap[item.key]] && 'translate-x-5'
                     )} />
                   </button>
                 </div>

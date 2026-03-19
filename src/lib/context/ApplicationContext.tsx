@@ -30,6 +30,7 @@ import {
 import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
+import { getAccessToken } from '@/lib/api/client';
 
 // ============================================================================
 // Local storage key
@@ -86,6 +87,7 @@ interface ApplicationContextValue {
   clearApplication: () => void;
   submitApplication: () => Promise<void>;
   submissionError: string | null;
+  isGuestSubmission: boolean;
 
   // Computed values
   completedSteps: number[];
@@ -149,6 +151,7 @@ export function ApplicationProvider({
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [isGuestSubmission, setIsGuestSubmission] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
   const [attemptedAdvance, setAttemptedAdvance] = useState(false);
@@ -331,70 +334,84 @@ export function ApplicationProvider({
   const submitApplication = useCallback(async () => {
     setIsLoading(true);
     setSubmissionError(null);
+
+    const payload = {
+      propertyId,
+      // Personal
+      fullName: application.personal.fullName,
+      documentType: application.personal.documentType,
+      documentNumber: application.personal.documentNumber,
+      dateOfBirth: application.personal.dateOfBirth,
+      phone: application.personal.phone,
+      email: application.personal.email,
+      currentAddress: application.personal.currentAddress,
+      timeAtCurrentAddress: application.personal.timeAtCurrentAddress,
+      maritalStatus: application.personal.maritalStatus,
+      dependents: application.personal.dependents,
+      // Employment
+      employmentStatus: application.employment.employmentStatus,
+      companyName: application.employment.companyName,
+      industry: application.employment.industry,
+      position: application.employment.position,
+      contractType: application.employment.contractType,
+      timeAtJob: application.employment.timeAtJob,
+      employerPhone: application.employment.employerPhone,
+      employerAddress: application.employment.employerAddress,
+      // Income
+      monthlySalary: application.income.monthlySalary,
+      additionalIncome: application.income.additionalIncome,
+      additionalIncomeSource: application.income.additionalIncomeSource,
+      totalMonthlyIncome: application.income.totalMonthlyIncome,
+      monthlyObligations: application.income.monthlyObligations,
+      availableForRent: application.income.availableForRent,
+      // References
+      references: application.references as Record<string, unknown>,
+      // Co-signer
+      hasCoSigner: application.hasCoSigner,
+      coSigner: application.coSigner as unknown as Record<string, unknown>,
+      // Agent attribution
+      agentCode: (application as Application & { agentCode?: string }).agentCode,
+      linkCode: (application as Application & { linkCode?: string }).linkCode,
+    };
+
     try {
-      // 1. Create application via API
-      const created = await applicationsApi.create({
-        propertyId,
-        // Personal
-        fullName: application.personal.fullName,
-        documentType: application.personal.documentType,
-        documentNumber: application.personal.documentNumber,
-        dateOfBirth: application.personal.dateOfBirth,
-        phone: application.personal.phone,
-        email: application.personal.email,
-        currentAddress: application.personal.currentAddress,
-        timeAtCurrentAddress: application.personal.timeAtCurrentAddress,
-        maritalStatus: application.personal.maritalStatus,
-        dependents: application.personal.dependents,
-        // Employment
-        employmentStatus: application.employment.employmentStatus,
-        companyName: application.employment.companyName,
-        industry: application.employment.industry,
-        position: application.employment.position,
-        contractType: application.employment.contractType,
-        timeAtJob: application.employment.timeAtJob,
-        employerPhone: application.employment.employerPhone,
-        employerAddress: application.employment.employerAddress,
-        // Income
-        monthlySalary: application.income.monthlySalary,
-        additionalIncome: application.income.additionalIncome,
-        additionalIncomeSource: application.income.additionalIncomeSource,
-        totalMonthlyIncome: application.income.totalMonthlyIncome,
-        monthlyObligations: application.income.monthlyObligations,
-        availableForRent: application.income.availableForRent,
-        // References
-        references: application.references as Record<string, unknown>,
-        // Co-signer
-        hasCoSigner: application.hasCoSigner,
-        coSigner: application.coSigner as unknown as Record<string, unknown>,
-        // Agent attribution
-        agentCode: (application as Application & { agentCode?: string }).agentCode,
-        linkCode: (application as Application & { linkCode?: string }).linkCode,
-      });
+      const isAuthenticated = !!getAccessToken();
 
-      // 2. Upload documents
-      const docs = application.documents;
-      const docEntries: Array<{ file: File | null | undefined; type: string }> = [
-        { file: docs.idDocument?.file, type: 'id_document' },
-        { file: docs.incomeProof?.file, type: 'income_proof' },
-        { file: docs.employmentLetter?.file, type: 'employment_letter' },
-        { file: docs.bankStatements?.file, type: 'bank_statements' },
-        { file: docs.creditReport?.file, type: 'credit_report' },
-      ];
+      let applicationId: string;
 
-      for (const { file, type } of docEntries) {
-        if (file) {
-          try {
-            await applicationsApi.uploadDocument(file, type);
-          } catch {
-            console.error(`Failed to upload document: ${type}`);
+      if (isAuthenticated) {
+        // 1a. Authenticated: create via authenticated endpoint
+        const created = await applicationsApi.create(payload);
+        applicationId = created.id;
+
+        // Upload documents (only possible when authenticated)
+        const docs = application.documents;
+        const docEntries: Array<{ file: File | null | undefined; type: string }> = [
+          { file: docs.idDocument?.file, type: 'id_document' },
+          { file: docs.incomeProof?.file, type: 'income_proof' },
+          { file: docs.employmentLetter?.file, type: 'employment_letter' },
+          { file: docs.bankStatements?.file, type: 'bank_statements' },
+          { file: docs.creditReport?.file, type: 'credit_report' },
+        ];
+        for (const { file, type } of docEntries) {
+          if (file) {
+            try {
+              await applicationsApi.uploadDocument(file, type);
+            } catch {
+              console.error(`Failed to upload document: ${type}`);
+            }
           }
         }
+      } else {
+        // 1b. Guest: create via public endpoint — backend sends invite email
+        const result = await applicationsApi.createGuest(payload);
+        applicationId = result.applicationId;
+        setIsGuestSubmission(true);
       }
 
       setApplication((prev) => ({
         ...prev,
-        id: created.id,
+        id: applicationId,
         status: 'submitted',
         updatedAt: new Date().toISOString(),
       }));
@@ -508,6 +525,7 @@ export function ApplicationProvider({
     clearApplication,
     submitApplication,
     submissionError,
+    isGuestSubmission,
 
     completedSteps,
     isStepCompleted,

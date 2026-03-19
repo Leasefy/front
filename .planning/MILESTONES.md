@@ -23,8 +23,14 @@
 **Shipped:** 2026-02-10
 **Summary:** i18n across entire codebase (ES/EN), pricing page redesign with unified card format, SEO optimization (dynamic OG images, metadata, JSON-LD structured data), es_CL → es_CO locale fix.
 
-## v4.0 — AI Agent Platform Beta (ACTIVE)
+## v4.0 — AI Agent Platform Beta (COMPLETE)
 
-**Started:** 2026-02-10
-**Goal:** Conversational AI interface ("Beta" section) in existing dashboards where users talk to an AI orchestrator that dispatches specialized agents to manage properties, collect rent, evaluate candidates, and handle maintenance.
-**Architecture:** `docs/AI-AGENT-ARCHITECTURE.md`
+**Shipped:** 2026-02-10
+**Phases:** 9 (Phases 17-25, 21 plans)
+**Summary:** Conversational AI Beta section in both dashboards — chat UI with streaming, agent activity display, decision system, daily briefings, preferences/autonomy settings, mock API layer, full backend API spec, dark mode, mobile, i18n, a11y.
+
+## v5.0 — Inmobiliaria Registration (COMPLETE)
+
+**Shipped:** 2026-03-11
+**Phases:** 1 (P1-inmobiliaria-registration, 3 plans)
+**Summary:** Registro completo de inmobiliarias — role selector con opción inmobiliaria, AgencySetupWizard 3 pasos (branding/operaciones/invitaciones), página pública de invitación con token (4 estados), OnboardingChecklist widget en dashboard, agencyApi namespace con 5 endpoints tipados, i18n ES+EN, dark mode, build limpio.

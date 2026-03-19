@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Buildings,
   Users,
@@ -32,6 +33,9 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
+import { AgencySetupWizard } from '@/components/inmobiliaria/AgencySetupWizard';
+import { OnboardingChecklist } from '@/components/inmobiliaria/OnboardingChecklist';
+import { useAuth } from '@/lib/auth/use-auth';
 
 /**
  * KPI Card Component
@@ -182,11 +186,30 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
 }
 
 /**
- * Inmobiliaria Dashboard Page
- * Main overview for real estate agency operations
+ * Inmobiliaria Dashboard Page - inner content (needs searchParams access)
  */
-export default function InmobiliariaDashboardPage() {
+function InmobiliariaDashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
+  const { user } = useAuth();
+
+  // Show setup wizard if ?setup=true is present in URL
+  const showSetup = searchParams.get('setup') === 'true';
+  const [wizardOpen, setWizardOpen] = useState(showSetup);
+
+  useEffect(() => {
+    if (showSetup) {
+      setWizardOpen(true);
+    }
+  }, [showSetup]);
+
+  const handleWizardComplete = () => {
+    setWizardOpen(false);
+    // Remove ?setup=true from URL without navigation
+    router.replace('/panel/inmobiliaria', { scroll: false });
+  };
+
   const { kpis: kpisData } = useInmobiliariaDashboard();
   const kpis = kpisData ?? {
     totalProperties: 0, propertiesAvailable: 0, propertiesRented: 0, propertiesInProcess: 0,
@@ -219,6 +242,19 @@ export default function InmobiliariaDashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
+      {/* Agency Setup Wizard Modal */}
+      {wizardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <AgencySetupWizard
+              agencyName={user?.name || ''}
+              onComplete={handleWizardComplete}
+              onDismiss={handleWizardComplete}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
@@ -228,6 +264,9 @@ export default function InmobiliariaDashboardPage() {
           {t('inmobiliaria.dashboard.subtitle')}
         </p>
       </div>
+
+      {/* Onboarding Checklist — visible for ADMIN while setup is incomplete */}
+      <OnboardingChecklist />
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -529,5 +568,18 @@ export default function InmobiliariaDashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Inmobiliaria Dashboard Page
+ * Main overview for real estate agency operations
+ * Wrapped in Suspense because it uses useSearchParams()
+ */
+export default function InmobiliariaDashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-6 lg:p-8" />}>
+      <InmobiliariaDashboardContent />
+    </Suspense>
   );
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
-import { useAuth } from '@/lib/auth/auth-context';
+import { useAuth } from '@/lib/auth';
 
 export default function UpdatePasswordPage() {
   const router = useRouter();

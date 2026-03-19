@@ -84,6 +84,18 @@ export interface OnboardingData {
   propertyAddress?: string
   propertyCity?: string
   expectedRent?: number
+  rentPrice?: number
+
+  // Step 3 - Ideal tenant
+  minIncomeRatio?: number
+  acceptPets?: boolean
+  minRiskLevel?: string
+
+  // Step 4 - Payments
+  bankAccount?: string
+  bankName?: string
+  acceptedPaymentMethods?: string[]
+  preferredPaymentDay?: number
 }
 
 // ============================================================================

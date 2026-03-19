@@ -47,6 +47,7 @@ export interface TenantOnboardingData {
   // Step 1 - Welcome & Profile
   displayName?: string
   phone?: string
+  rut?: string
   preferredContact?: PreferredContact
 
   // Step 2 - Employment & Income
@@ -80,20 +81,8 @@ export interface OnboardingData {
 
   // Step 2 - First Property
   propertyType?: 'apartment' | 'house' | 'studio' | 'room'
-  propertyAddress?: string
   propertyCity?: string
-  rentPrice?: number
-
-  // Step 3 - Ideal Tenant
-  minIncomeRatio?: number
-  acceptPets?: boolean
-  minRiskLevel?: RiskLevel
-
-  // Step 4 - Payments
-  bankAccount?: string
-  bankName?: string
-  acceptedPaymentMethods?: PaymentMethod[]
-  preferredPaymentDay?: number
+  expectedRent?: number
 }
 
 // ============================================================================
@@ -112,6 +101,9 @@ export interface Agency {
   email?: string
   logoUrl?: string
   website?: string
+  portfolioSize?: string
+  yearsInBusiness?: number
+  services?: string[]
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -146,6 +138,11 @@ export interface User {
   lastName?: string
   phone?: string
   avatar?: string
+  rut?: string
+  address?: string
+  birthDate?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
@@ -190,6 +187,7 @@ export interface AuthContextType extends AuthState {
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }) => Promise<void>
   setMfaVerified: () => void
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void

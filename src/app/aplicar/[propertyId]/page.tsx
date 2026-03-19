@@ -128,7 +128,7 @@ interface WizardContentProps {
  * Wrapper that handles the submission state and switches between wizard and confirmation
  */
 function WizardContent({ property }: WizardContentProps) {
-  const { application } = useApplication();
+  const { application, isGuestSubmission } = useApplication();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
 
@@ -144,6 +144,8 @@ function WizardContent({ property }: WizardContentProps) {
       <ConfirmationScreen
         property={property}
         trackingCode={trackingCode || generateTrackingCode()}
+        isGuest={isGuestSubmission}
+        guestEmail={application.personal.email}
       />
     );
   }

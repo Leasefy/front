@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, EyeSlash, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
+import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, EyeSlash, FileText, Tag, ArrowUpRight } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
@@ -141,13 +141,6 @@ export default function ConfiguracionPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleResetOnboarding = () => {
-    localStorage.removeItem('plan_onboarding_landlord');
-    window.dispatchEvent(new Event('onboarding-updated'));
-    toast.success(t('landlordSettings.toasts.onboardingReset'));
-    setTimeout(() => router.push('/panel'), 500);
   };
 
   // Derive current session info from browser
@@ -407,12 +400,6 @@ export default function ConfiguracionPage() {
                   title={t('landlordSettings.dataPrivacy.downloadData')}
                   description={t('landlordSettings.dataPrivacy.downloadDataDesc')}
                   onClick={() => setShowDownloadModal(true)}
-                />
-                <SettingLink
-                  icon={ArrowCounterClockwise}
-                  title={t('landlordSettings.dataPrivacy.resetOnboarding')}
-                  description={t('landlordSettings.dataPrivacy.resetOnboardingDesc')}
-                  onClick={handleResetOnboarding}
                 />
                 <SettingLink
                   icon={FileText}

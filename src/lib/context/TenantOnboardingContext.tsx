@@ -83,6 +83,7 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
 export const initialTenantOnboardingDraft: TenantOnboardingDraft = {
   displayName: '',
   phone: '',
+  rut: '',
   preferredContact: 'whatsapp',
   employmentType: undefined,
   companyName: '',
@@ -136,7 +137,7 @@ const TenantOnboardingContext = createContext<TenantOnboardingContextTextT | nul
 // ============================================================================
 
 export function TenantOnboardingProvider({ children }: { children: ReactNode }) {
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
   const [draft, setDraft] = useState<TenantOnboardingDraft>(initialTenantOnboardingDraft)
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
@@ -146,26 +147,35 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
 
   const totalSteps = TENANT_ONBOARDING_STEPS.length
 
-  // Load saved progress from localStorage on mount
+  // Preload from backend user data on mount (takes priority over localStorage)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (parsed.draft) setDraft(parsed.draft)
-        // Cap currentStep to totalSteps (in case user had step 4 saved from before)
-        if (parsed.currentStep) setCurrentStep(Math.min(parsed.currentStep, totalSteps))
-        // Funnel completedSteps to only valid steps
-        if (parsed.completedSteps) {
-          const validSteps = parsed.completedSteps.filter((s: number) => s <= totalSteps)
-          setCompletedSteps(validSteps)
-        }
-      } catch (e) {
-        console.error('Error loading tenant onboarding progress:', e)
-      }
+    if (user) {
+      const od = user.tenantOnboardingData
+      const fullName = user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`.trim()
+        : user.firstName || ''
+      setDraft(prev => ({
+        ...prev,
+        displayName: fullName || prev.displayName,
+        phone: user.phone || prev.phone,
+        rut: user.rut || prev.rut,
+        preferredContact: od?.preferredContact || prev.preferredContact,
+        employmentType: od?.employmentType || prev.employmentType,
+        companyName: od?.companyName || prev.companyName,
+        monthlyIncome: od?.monthlyIncome ?? prev.monthlyIncome,
+        additionalIncome: od?.additionalIncome ?? prev.additionalIncome,
+        budgetMin: od?.budgetMin ?? prev.budgetMin,
+        budgetMax: od?.budgetMax ?? prev.budgetMax,
+        preferredZones: od?.preferredZones ?? prev.preferredZones,
+        preferredAmenities: od?.preferredAmenities ?? prev.preferredAmenities,
+        moveInDate: od?.moveInDate || prev.moveInDate,
+        hasPets: od?.hasPets ?? prev.hasPets,
+        petDetails: od?.petDetails || prev.petDetails,
+      }))
     }
     setIsHydrated(true)
-  }, [totalSteps])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   // FloppyDisk progress to localStorage on changes
   useEffect(() => {
@@ -267,12 +277,26 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
 
       console.log('[TenantOnboarding] Submitting onboarding:', { firstName, lastName, hasToken: !!token })
 
-      // Call backend onboarding endpoint
+      // Call backend onboarding endpoint with all extended fields
+      const rawPhone = (draft.phone || '').replace(/\s/g, '')
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
-        phone: draft.phone || undefined,
+        phone: rawPhone.length >= 10 ? rawPhone : undefined,
         userType: 'TENANT',
+        rut: draft.rut || undefined,
+        preferredContact: draft.preferredContact,
+        employmentType: draft.employmentType,
+        companyName: draft.companyName || undefined,
+        monthlyIncome: draft.monthlyIncome,
+        additionalIncome: draft.additionalIncome,
+        budgetMin: draft.budgetMin,
+        budgetMax: draft.budgetMax,
+        preferredZones: draft.preferredZones,
+        preferredAmenities: draft.preferredAmenities,
+        moveInDate: draft.moveInDate || undefined,
+        hasPets: draft.hasPets,
+        petDetails: draft.petDetails || undefined,
       })
 
       // Mark all steps as completed

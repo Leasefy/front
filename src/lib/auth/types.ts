@@ -81,6 +81,7 @@ export interface OnboardingData {
 
   // Step 2 - First Property
   propertyType?: 'apartment' | 'house' | 'studio' | 'room'
+  propertyAddress?: string
   propertyCity?: string
   expectedRent?: number
 }

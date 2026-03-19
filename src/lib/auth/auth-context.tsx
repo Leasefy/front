@@ -239,7 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel])
+  }, [fetchUser, checkMfaLevel, fetchAgency])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {

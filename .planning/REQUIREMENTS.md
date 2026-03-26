@@ -311,11 +311,11 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GATE-01 | Phase 26 | Pending |
-| GATE-02 | Phase 26 | Pending |
-| GATE-03 | Phase 26 | Pending |
-| GATE-04 | Phase 26 | Pending |
-| GATE-05 | Phase 26 | Pending |
+| GATE-01 | Phase 26 | Complete |
+| GATE-02 | Phase 26 | Complete |
+| GATE-03 | Phase 26 | Complete |
+| GATE-04 | Phase 26 | Complete |
+| GATE-05 | Phase 26 | Complete |
 | ADUX-01 | Phase 27 | Pending |
 | ADUX-02 | Phase 27 | Pending |
 | ADUX-03 | Phase 27 | Pending |

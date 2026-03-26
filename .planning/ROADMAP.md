@@ -15,7 +15,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 
 ## Phases
 
-- [ ] **Phase 26: Plan Gating System** - Foundation hook + upgrade prompts for feature gating
+- [x] **Phase 26: Plan Gating System** - Foundation hook + upgrade prompts for feature gating
 - [ ] **Phase 27: Agent Dashboard UX** - Polish existing agent cards, feed, execution panel, detail sidebar
 - [ ] **Phase 28: Agency Pricing Modal** - Polish Flex vs Subscription pricing modal
 - [ ] **Phase 29: Advanced Reports** - Occupancy, collections, agent performance reports with charts
@@ -150,7 +150,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 26. Plan Gating | 0/2 | Not started | - |
+| 26. Plan Gating | 2/2 | Complete | 2026-03-26 |
 | 27. Agent Dashboard UX | 0/2 | Not started | - |
 | 28. Agency Pricing | 0/1 | Not started | - |
 | 29. Advanced Reports | 0/3 | Not started | - |

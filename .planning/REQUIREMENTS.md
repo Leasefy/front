@@ -316,11 +316,11 @@ Which phases cover which requirements. Updated by create-roadmap.
 | GATE-03 | Phase 26 | Complete |
 | GATE-04 | Phase 26 | Complete |
 | GATE-05 | Phase 26 | Complete |
-| ADUX-01 | Phase 27 | Pending |
-| ADUX-02 | Phase 27 | Pending |
-| ADUX-03 | Phase 27 | Pending |
-| ADUX-04 | Phase 27 | Pending |
-| ADUX-05 | Phase 27 | Pending |
+| ADUX-01 | Phase 27 | Complete |
+| ADUX-02 | Phase 27 | Complete |
+| ADUX-03 | Phase 27 | Complete |
+| ADUX-04 | Phase 27 | Complete |
+| ADUX-05 | Phase 27 | Complete |
 | PRIC-01 | Phase 28 | Pending |
 | PRIC-02 | Phase 28 | Pending |
 | PRIC-03 | Phase 28 | Pending |

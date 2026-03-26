@@ -243,6 +243,111 @@ Which phases cover which requirements. Updated by create-roadmap.
 - Mapped to phases: 63
 - Unmapped: 0 ✓
 
+## v5.0 Requirements — Agency Plan-Gated Features & AI Agent UX
+
+### Plan Gating System (GATE)
+
+- [ ] **GATE-01**: `useAgencyPlan` hook returns current plan tier and checks feature access
+- [ ] **GATE-02**: Gating config defines which features require which plan tier (Growth+, Business+)
+- [ ] **GATE-03**: Gated feature shows upgrade prompt when user lacks required plan
+- [ ] **GATE-04**: Upgrade prompt links to agency pricing modal
+- [ ] **GATE-05**: Plan tier persisted in localStorage (client-side, backend enforces server-side)
+
+### Advanced Reports (REPT)
+
+- [ ] **REPT-01**: Occupancy report — vacancy rate, avg days vacant, by property/zone
+- [ ] **REPT-02**: Collections report — mora rate, avg days late, recovery rate, by month
+- [ ] **REPT-03**: Agent performance report — closings, avg days to close, conversion rate, by agent
+- [ ] **REPT-04**: Trend charts — occupancy/collections/performance over last 6-12 months
+- [ ] **REPT-05**: Reports gated to Growth+ and Growth Flex+ plans
+- [ ] **REPT-06**: Export reports as PDF (basic)
+
+### Executive Reports (EXEC)
+
+- [ ] **EXEC-01**: Executive summary dashboard — single page with key metrics for C-level
+- [ ] **EXEC-02**: Month-over-month comparison with delta indicators
+- [ ] **EXEC-03**: Portfolio health score (composite of occupancy, collections, maintenance)
+- [ ] **EXEC-04**: Executive reports gated to Business+ and Business Flex+ plans
+
+### Automatic Reminders (RMDR)
+
+- [ ] **RMDR-01**: Pre-payment reminder — configurable days before due date (default: 5 days)
+- [ ] **RMDR-02**: Overdue reminder — first notice at configurable days after due (default: 3 days)
+- [ ] **RMDR-03**: Escalation reminder — second notice with urgency (default: 7 days overdue)
+- [ ] **RMDR-04**: Contract expiry alert — at 90, 60, and 30 days before contract ends
+- [ ] **RMDR-05**: Reminder configuration UI — toggle on/off, set timing per reminder type
+- [ ] **RMDR-06**: Reminder log — history of sent reminders with status
+- [ ] **RMDR-07**: Reminders gated to Growth+ and Growth Flex+ plans
+
+### Agency Pricing & Plans UI (PRIC)
+
+- [ ] **PRIC-01**: Agency pricing modal with Flex vs Subscription toggle
+- [ ] **PRIC-02**: Per-lease model highlighted as recommended with calculator
+- [ ] **PRIC-03**: Flex plans show AI agents as differentiator feature
+- [ ] **PRIC-04**: "Mejorar Plan" button opens pricing modal for agency users
+
+### Agent Dashboard UX (ADUX)
+
+- [ ] **ADUX-01**: Agent cards on dashboard with activity feed
+- [ ] **ADUX-02**: Agent Hub page at /panel/inmobiliaria/ai
+- [ ] **ADUX-03**: Agent detail sidebar explaining how each agent works
+- [ ] **ADUX-04**: Agent execution panel (Manus-style step viewer)
+- [ ] **ADUX-05**: Sidebar nav item "Agentes AI" with badge
+
+## Out of Scope (v5.0)
+
+| Feature | Reason |
+|---------|--------|
+| API REST for agencies | Not built yet, future milestone |
+| Real AI agent execution | Backend responsibility, frontend shows mock |
+| WhatsApp reminders | Requires Twilio integration, future phase |
+| Email delivery | Backend service, frontend configures |
+| Multi-sucursal | Business+ feature, gated but not built |
+| White-label | Enterprise tier, future |
+
+## Traceability
+
+Which phases cover which requirements. Updated by create-roadmap.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| GATE-01 | Phase 26 | Pending |
+| GATE-02 | Phase 26 | Pending |
+| GATE-03 | Phase 26 | Pending |
+| GATE-04 | Phase 26 | Pending |
+| GATE-05 | Phase 26 | Pending |
+| ADUX-01 | Phase 27 | Pending |
+| ADUX-02 | Phase 27 | Pending |
+| ADUX-03 | Phase 27 | Pending |
+| ADUX-04 | Phase 27 | Pending |
+| ADUX-05 | Phase 27 | Pending |
+| PRIC-01 | Phase 28 | Pending |
+| PRIC-02 | Phase 28 | Pending |
+| PRIC-03 | Phase 28 | Pending |
+| PRIC-04 | Phase 28 | Pending |
+| REPT-01 | Phase 29 | Pending |
+| REPT-02 | Phase 29 | Pending |
+| REPT-03 | Phase 29 | Pending |
+| REPT-04 | Phase 29 | Pending |
+| REPT-05 | Phase 29 | Pending |
+| REPT-06 | Phase 29 | Pending |
+| EXEC-01 | Phase 30 | Pending |
+| EXEC-02 | Phase 30 | Pending |
+| EXEC-03 | Phase 30 | Pending |
+| EXEC-04 | Phase 30 | Pending |
+| RMDR-01 | Phase 31 | Pending |
+| RMDR-02 | Phase 31 | Pending |
+| RMDR-03 | Phase 31 | Pending |
+| RMDR-04 | Phase 31 | Pending |
+| RMDR-05 | Phase 31 | Pending |
+| RMDR-06 | Phase 31 | Pending |
+| RMDR-07 | Phase 31 | Pending |
+
+**Coverage:**
+- v5.0 requirements: 31 total
+- Mapped to phases: 31
+- Unmapped: 0 ✓
+
 ---
 *Requirements defined: 2026-01-18 (v1)*
-*Last updated: 2026-02-10 after v4.0 roadmap creation*
+*Last updated: 2026-03-26 after v5.0 requirements added*

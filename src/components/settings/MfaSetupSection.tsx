@@ -36,6 +36,7 @@ export function MfaSetupSection() {
     const checkFactors = async () => {
       try {
         const supabase = getSupabase();
+        if (!supabase) return;
         const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (cancelled) return;
         // If next level requires aal2, user has a verified TOTP factor
@@ -73,6 +74,7 @@ export function MfaSetupSection() {
     setIsLoading(true);
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
 
       // Save access token BEFORE enroll() — SDK lock hangs after enroll
       const { data: { session } } = await supabase.auth.getSession();
@@ -180,7 +182,7 @@ export function MfaSetupSection() {
     if (enrollData) {
       try {
         const supabase = getSupabase();
-        await supabase.auth.mfa.unenroll({ factorId: enrollData.factorId });
+        if (supabase) await supabase.auth.mfa.unenroll({ factorId: enrollData.factorId });
       } catch {
         // Ignore cleanup errors
       }
@@ -195,6 +197,7 @@ export function MfaSetupSection() {
     setIsLoading(true);
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
       const { error } = await supabase.auth.mfa.unenroll({ factorId });
       if (error) throw error;
 

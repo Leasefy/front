@@ -335,13 +335,13 @@ Which phases cover which requirements. Updated by create-roadmap.
 | EXEC-02 | Phase 30 | Complete |
 | EXEC-03 | Phase 30 | Complete |
 | EXEC-04 | Phase 30 | Complete |
-| RMDR-01 | Phase 31 | Pending |
-| RMDR-02 | Phase 31 | Pending |
-| RMDR-03 | Phase 31 | Pending |
-| RMDR-04 | Phase 31 | Pending |
-| RMDR-05 | Phase 31 | Pending |
-| RMDR-06 | Phase 31 | Pending |
-| RMDR-07 | Phase 31 | Pending |
+| RMDR-01 | Phase 31 | Complete |
+| RMDR-02 | Phase 31 | Complete |
+| RMDR-03 | Phase 31 | Complete |
+| RMDR-04 | Phase 31 | Complete |
+| RMDR-05 | Phase 31 | Complete |
+| RMDR-06 | Phase 31 | Complete |
+| RMDR-07 | Phase 31 | Complete |
 
 **Coverage:**
 - v5.0 requirements: 31 total

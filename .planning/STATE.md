@@ -12,12 +12,12 @@ See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architectur
 ## Current Position
 
 Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
-Phase: 28 of 32 (Agency Pricing)
-Plan: 1 of 1 complete
-Status: Phase complete
-Last activity: 2026-03-26 — Completed 28-01-PLAN.md (Agency Pricing Modal Polish)
+Phase: 29 of 32 (Advanced Reports)
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-03-27 — Completed 29-01-PLAN.md (Mock Data & Core Report Components)
 
-Progress: [█████░░░░░░░░░░░░░░░░░░░░░░░░░] 14%
+Progress: [██████░░░░░░░░░░░░░░░░░░░░░░░░] 15%
 
 ## What's Already Built (this session, pre-GSD)
 
@@ -59,9 +59,11 @@ These were built in the current conversation before GSD was invoked:
 | flex-default | Default plan type is 'flex' when no localStorage value | Demo shows most features | 26-01 |
 | neutral-agent-ui | All agent UI uses neutral color scheme; only emerald for active dot | Sobrio/professional appearance | 27-01 |
 | no-changes-needed-28 | Agency pricing modal already production-ready, no code changes | Pre-GSD implementation was complete | 28-01 |
+| css-only-charts | Pure CSS/Tailwind for report chart visualizations | No charting library needed for simple bars/trends | 29-01 |
+| data-via-props | Report components accept data as props, not importing mock data | Flexibility for future API integration | 29-01 |
 
 ## Session Continuity
 
-Last session: 2026-03-26
-Stopped at: Completed 28-01-PLAN.md (Agency Pricing Modal Polish)
-Resume file: None (Phase 28 complete)
+Last session: 2026-03-27
+Stopped at: Completed 29-01-PLAN.md (Mock Data & Core Report Components)
+Resume file: None (continue with 29-02-PLAN.md)

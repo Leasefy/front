@@ -13,11 +13,11 @@ See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architectur
 
 Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
 Phase: 31 of 32 (Automatic Reminders)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In progress
-Last activity: 2026-03-27 — Completed 31-01-PLAN.md (Reminder Types, Mock Data & Config Panel)
+Last activity: 2026-03-27 — Completed 31-02-PLAN.md (Reminder Log Component)
 
-Progress: [████████░░░░░░░░░░░░░░░░░░░░░░] 25%
+Progress: [████████████████░░░░░░░░░░░░░░] 50%
 
 ## What's Already Built (this session, pre-GSD)
 
@@ -64,9 +64,10 @@ These were built in the current conversation before GSD was invoked:
 | reusable-chart-api | TrendChart/BarChart have flexible props for reuse across reports | Same components used in occupancy, collections, executive reports | 29-02 |
 | health-svg-circle | SVG circle with strokeDasharray for health score visualization | Pure CSS/SVG consistent with css-only-charts decision | 30-01 |
 | contract-expiry-fixed-label | Contract expiry shows fixed "90/60/30 dias" label instead of editable input | Multi-step alerts don't map to a single input | 31-01 |
+| status-dot-badge | Status badges use colored dot + text inside pill | Quick visual scanability | 31-02 |
 
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 31-01-PLAN.md (Reminder Types, Mock Data & Config Panel)
-Resume file: None (continue with 31-02-PLAN.md)
+Stopped at: Completed 31-02-PLAN.md (Reminder Log Component)
+Resume file: None (continue with 31-03-PLAN.md)

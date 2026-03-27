@@ -12,12 +12,12 @@ See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architectur
 ## Current Position
 
 Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
-Phase: 30 of 32 (Executive Reports)
-Plan: 2 of 2 complete
-Status: Phase complete
-Last activity: 2026-03-27 — Completed 30-02-PLAN.md (Executive Tab Integration)
+Phase: 31 of 32 (Automatic Reminders)
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-03-27 — Completed 31-01-PLAN.md (Reminder Types, Mock Data & Config Panel)
 
-Progress: [████████░░░░░░░░░░░░░░░░░░░░░░] 23%
+Progress: [████████░░░░░░░░░░░░░░░░░░░░░░] 25%
 
 ## What's Already Built (this session, pre-GSD)
 
@@ -63,9 +63,10 @@ These were built in the current conversation before GSD was invoked:
 | data-via-props | Report components accept data as props, not importing mock data | Flexibility for future API integration | 29-01 |
 | reusable-chart-api | TrendChart/BarChart have flexible props for reuse across reports | Same components used in occupancy, collections, executive reports | 29-02 |
 | health-svg-circle | SVG circle with strokeDasharray for health score visualization | Pure CSS/SVG consistent with css-only-charts decision | 30-01 |
+| contract-expiry-fixed-label | Contract expiry shows fixed "90/60/30 dias" label instead of editable input | Multi-step alerts don't map to a single input | 31-01 |
 
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 30-02-PLAN.md (Executive Tab Integration) — Phase 30 complete
-Resume file: None (continue with Phase 31)
+Stopped at: Completed 31-01-PLAN.md (Reminder Types, Mock Data & Config Panel)
+Resume file: None (continue with 31-02-PLAN.md)

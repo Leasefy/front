@@ -321,10 +321,10 @@ Which phases cover which requirements. Updated by create-roadmap.
 | ADUX-03 | Phase 27 | Complete |
 | ADUX-04 | Phase 27 | Complete |
 | ADUX-05 | Phase 27 | Complete |
-| PRIC-01 | Phase 28 | Pending |
-| PRIC-02 | Phase 28 | Pending |
-| PRIC-03 | Phase 28 | Pending |
-| PRIC-04 | Phase 28 | Pending |
+| PRIC-01 | Phase 28 | Complete |
+| PRIC-02 | Phase 28 | Complete |
+| PRIC-03 | Phase 28 | Complete |
+| PRIC-04 | Phase 28 | Complete |
 | REPT-01 | Phase 29 | Pending |
 | REPT-02 | Phase 29 | Pending |
 | REPT-03 | Phase 29 | Pending |

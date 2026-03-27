@@ -331,10 +331,10 @@ Which phases cover which requirements. Updated by create-roadmap.
 | REPT-04 | Phase 29 | Complete |
 | REPT-05 | Phase 29 | Complete |
 | REPT-06 | Phase 29 | Complete |
-| EXEC-01 | Phase 30 | Pending |
-| EXEC-02 | Phase 30 | Pending |
-| EXEC-03 | Phase 30 | Pending |
-| EXEC-04 | Phase 30 | Pending |
+| EXEC-01 | Phase 30 | Complete |
+| EXEC-02 | Phase 30 | Complete |
+| EXEC-03 | Phase 30 | Complete |
+| EXEC-04 | Phase 30 | Complete |
 | RMDR-01 | Phase 31 | Pending |
 | RMDR-02 | Phase 31 | Pending |
 | RMDR-03 | Phase 31 | Pending |

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ChartLine,
+  ChartLineUp,
   Lightning,
   Star,
   Clock,
@@ -47,11 +48,13 @@ import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
 import { CollectionsReport } from '@/components/inmobiliaria/reports/CollectionsReport';
 import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentPerformanceReport';
+import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
 import { ReportPDFExport } from '@/components/inmobiliaria/reports/ReportPDFExport';
 import {
   mockOccupancyData,
   mockCollectionsData,
   mockAgentPerformanceData,
+  mockExecutiveData,
 } from '@/lib/data/mock-reports';
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
@@ -120,13 +123,14 @@ export default function ReportesPage() {
   const { hasAdvancedReports } = useAgencyPlan();
 
   // Advanced report tabs
-  type AdvancedTab = 'ocupacion' | 'cobros' | 'agentes';
+  type AdvancedTab = 'ocupacion' | 'cobros' | 'agentes' | 'ejecutivo';
   const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('ocupacion');
 
   const advancedTabs: { key: AdvancedTab; label: string; icon: typeof Buildings }[] = [
     { key: 'ocupacion', label: locale === 'es' ? 'Ocupacion' : 'Occupancy', icon: Buildings },
     { key: 'cobros', label: locale === 'es' ? 'Cobros' : 'Collections', icon: CurrencyDollar },
     { key: 'agentes', label: locale === 'es' ? 'Agentes' : 'Agents', icon: Users },
+    { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
   ];
 
   // API Hooks for report data
@@ -745,6 +749,8 @@ export default function ReportesPage() {
                 ? (locale === 'es' ? 'Reporte de Ocupacion' : 'Occupancy Report')
                 : activeAdvancedTab === 'cobros'
                 ? (locale === 'es' ? 'Reporte de Cobros' : 'Collections Report')
+                : activeAdvancedTab === 'ejecutivo'
+                ? (locale === 'es' ? 'Resumen Ejecutivo' : 'Executive Summary')
                 : (locale === 'es' ? 'Rendimiento de Agentes' : 'Agent Performance')
             }
           />
@@ -776,17 +782,23 @@ export default function ReportesPage() {
 
         {/* Tab Content — Gated */}
         <div className="p-4">
-          <FeatureGate feature="advanced-reports">
-            {activeAdvancedTab === 'ocupacion' && (
-              <OccupancyReport data={mockOccupancyData} />
-            )}
-            {activeAdvancedTab === 'cobros' && (
-              <CollectionsReport data={mockCollectionsData} />
-            )}
-            {activeAdvancedTab === 'agentes' && (
-              <AgentPerformanceReport data={mockAgentPerformanceData} />
-            )}
-          </FeatureGate>
+          {activeAdvancedTab === 'ejecutivo' ? (
+            <FeatureGate feature="executive-reports">
+              <ExecutiveSummary data={mockExecutiveData} />
+            </FeatureGate>
+          ) : (
+            <FeatureGate feature="advanced-reports">
+              {activeAdvancedTab === 'ocupacion' && (
+                <OccupancyReport data={mockOccupancyData} />
+              )}
+              {activeAdvancedTab === 'cobros' && (
+                <CollectionsReport data={mockCollectionsData} />
+              )}
+              {activeAdvancedTab === 'agentes' && (
+                <AgentPerformanceReport data={mockAgentPerformanceData} />
+              )}
+            </FeatureGate>
+          )}
         </div>
       </motion.div>
 

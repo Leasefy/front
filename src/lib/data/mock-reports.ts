@@ -108,6 +108,34 @@ export interface AgentPerformanceData {
 }
 
 // ============================================================================
+// Executive Report Types & Data
+// ============================================================================
+
+export interface ExecutiveMetric {
+  id: string;
+  labelEs: string;
+  labelEn: string;
+  currentValue: number;
+  previousValue: number;
+  format: 'percent' | 'currency' | 'number' | 'days';
+  higherIsBetter: boolean;
+}
+
+export interface ExecutiveMonthlySummary {
+  month: string;
+  revenue: number;
+  expenses: number;
+  netIncome: number;
+}
+
+export interface ExecutiveData {
+  healthScore: number;
+  healthLevel: 'excellent' | 'good' | 'warning' | 'critical';
+  metrics: ExecutiveMetric[];
+  monthlySummary: ExecutiveMonthlySummary[];
+}
+
+// ============================================================================
 // Mock Data
 // ============================================================================
 
@@ -210,4 +238,73 @@ export const mockAgentPerformanceData: AgentPerformanceData = {
     totalRevenue: 218000000,
     avgDaysToClose: 16,
   },
+};
+
+export const mockExecutiveData: ExecutiveData = {
+  healthScore: 82,
+  healthLevel: 'good',
+  metrics: [
+    {
+      id: 'occupancy',
+      labelEs: 'Tasa de ocupacion',
+      labelEn: 'Occupancy rate',
+      currentValue: 87,
+      previousValue: 84,
+      format: 'percent',
+      higherIsBetter: true,
+    },
+    {
+      id: 'monthly-collections',
+      labelEs: 'Recaudo mensual',
+      labelEn: 'Monthly collections',
+      currentValue: 45200000,
+      previousValue: 42800000,
+      format: 'currency',
+      higherIsBetter: true,
+    },
+    {
+      id: 'mora-rate',
+      labelEs: 'Tasa de mora',
+      labelEn: 'Delinquency rate',
+      currentValue: 4.2,
+      previousValue: 5.1,
+      format: 'percent',
+      higherIsBetter: false,
+    },
+    {
+      id: 'avg-vacancy-days',
+      labelEs: 'Dias prom. vacancia',
+      labelEn: 'Avg vacancy days',
+      currentValue: 12,
+      previousValue: 15,
+      format: 'days',
+      higherIsBetter: false,
+    },
+    {
+      id: 'commissions',
+      labelEs: 'Comisiones generadas',
+      labelEn: 'Commissions earned',
+      currentValue: 5400000,
+      previousValue: 4900000,
+      format: 'currency',
+      higherIsBetter: true,
+    },
+    {
+      id: 'maintenance-requests',
+      labelEs: 'Solicitudes mantenimiento',
+      labelEn: 'Maintenance requests',
+      currentValue: 8,
+      previousValue: 11,
+      format: 'number',
+      higherIsBetter: false,
+    },
+  ],
+  monthlySummary: [
+    { month: 'Oct 2025', revenue: 128500000, expenses: 38200000, netIncome: 90300000 },
+    { month: 'Nov 2025', revenue: 132000000, expenses: 39800000, netIncome: 92200000 },
+    { month: 'Dic 2025', revenue: 127800000, expenses: 41500000, netIncome: 86300000 },
+    { month: 'Ene 2026', revenue: 125400000, expenses: 37600000, netIncome: 87800000 },
+    { month: 'Feb 2026', revenue: 131200000, expenses: 38900000, netIncome: 92300000 },
+    { month: 'Mar 2026', revenue: 135600000, expenses: 40100000, netIncome: 95500000 },
+  ],
 };

@@ -759,7 +759,7 @@ export interface ReportDefinition {
   frequency: ReportFrequency;
   lastGenerated?: string;
   isFavorite?: boolean;
-  /** Reports marked premium require Growth+ agency plan */
+  /** Reports marked premium require Pro+ agency plan */
   premium?: boolean;
 }
 

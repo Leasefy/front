@@ -103,7 +103,9 @@ export async function GET(
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[verify] Error:', msg)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[verify] Error:', msg)
+    }
     return NextResponse.json(
       { valid: false, error: 'Verification service error' },
       { status: 500 },

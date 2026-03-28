@@ -553,7 +553,9 @@ const storeResult = createStep({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const riskModel = (db as any).riskScoreResult
       if (!riskModel?.create) {
-        console.warn('[store-result] Prisma stub mode — skipping DB write')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[store-result] Prisma stub mode — skipping DB write')
+        }
         return { ...output, storedSuccessfully: false }
       }
 
@@ -616,7 +618,9 @@ const storeResult = createStep({
 
       return { ...output, storedSuccessfully: true }
     } catch (err) {
-      console.error('[store-result] DB write failed:', err)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[store-result] DB write failed:', err)
+      }
       return { ...output, storedSuccessfully: false }
     }
   },

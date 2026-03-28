@@ -148,7 +148,9 @@ export async function GET(
     return NextResponse.json(report)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[scoring-report] Error:', msg)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[scoring-report] Error:', msg)
+    }
     return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 })
   }
 }

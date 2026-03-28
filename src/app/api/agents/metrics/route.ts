@@ -61,13 +61,6 @@ export async function GET() {
         ? Math.round((escalatedCount / evaluationsThisMonth) * 100)
         : 0
 
-      // Level distribution for accuracy estimation
-      const levelCounts = await riskModel.groupBy({
-        by: ['level'],
-        where: { createdAt: { gte: startOfMonth } },
-        _count: true,
-      })
-
       scoringMetrics = {
         evaluationsThisMonth,
         avgTimeMin: '< 3 min',
@@ -155,7 +148,9 @@ export async function GET() {
     })
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[metrics] API error:', errorMessage)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[metrics] API error:', errorMessage)
+    }
 
     // Return zeros on error so the UI still renders
     return NextResponse.json({

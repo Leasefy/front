@@ -98,16 +98,25 @@ export async function GET(
     const featuresJson = score.featuresJson as Record<string, unknown> | null
     const verificationCode = featuresJson?.verificationCode ?? null
 
+    // Parse JSON fields safely
+    const parseJson = (value: unknown): unknown => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'string') {
+        try { return JSON.parse(value) } catch { return null }
+      }
+      return value
+    }
+
     return NextResponse.json({
       id: score.id,
       applicationId: score.applicationId,
-      score: score.score,
+      score: score.totalScore,
       level: score.level,
-      breakdown: score.breakdown,
-      drivers: score.drivers,
-      flags: score.flags,
-      conditions: score.conditions,
-      explanation: score.explanation,
+      breakdown: parseJson(score.subscoresJson),
+      drivers: parseJson(score.driversJson),
+      flags: parseJson(score.flagsJson),
+      conditions: parseJson(score.conditionsJson),
+      explanation: score.recommendation,
       verificationCode,
       createdAt: score.createdAt,
       application: score.application ?? null,
@@ -115,7 +124,9 @@ export async function GET(
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[evaluation/get] Error:', msg)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[evaluation/get] Error:', msg)
+    }
     return NextResponse.json(
       { error: 'Failed to fetch evaluation', details: msg },
       { status: 500 },

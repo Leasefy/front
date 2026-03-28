@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
@@ -29,19 +29,25 @@ function formatCOP(amount: number): string {
 // Animated number component
 function AnimatedNumber({ value, prefix = '' }: { value: number; prefix?: string }) {
   const [displayValue, setDisplayValue] = useState(value);
+  const prevValueRef = useRef(value);
 
   useEffect(() => {
     const duration = 300;
-    const startValue = displayValue;
+    const startValue = prevValueRef.current;
     const startTime = Date.now();
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.round(startValue + (value - startValue) * easeOut));
+      const current = Math.round(startValue + (value - startValue) * easeOut);
+      setDisplayValue(current);
 
-      if (progress < 1) requestAnimationFrame(animate);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        prevValueRef.current = value;
+      }
     };
 
     requestAnimationFrame(animate);

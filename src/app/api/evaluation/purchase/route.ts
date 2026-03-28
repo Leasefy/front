@@ -69,7 +69,7 @@ export async function POST(req: Request) {
               error: 'Evaluation already exists for this application',
               existingEvaluation: {
                 id: existing.id,
-                score: existing.score,
+                score: existing.totalScore,
                 level: existing.level,
                 createdAt: existing.createdAt,
               },
@@ -80,7 +80,9 @@ export async function POST(req: Request) {
       }
     } catch (dbErr) {
       // If DB check fails, proceed anyway — the workflow will handle storage
-      console.warn('[evaluation/purchase] DB check failed, proceeding:', dbErr)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[evaluation/purchase] DB check failed, proceeding:', dbErr)
+      }
     }
 
     // Run the tenant scoring workflow
@@ -139,7 +141,9 @@ export async function POST(req: Request) {
     )
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[evaluation/purchase] Error:', errorMessage)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[evaluation/purchase] Error:', errorMessage)
+    }
 
     return NextResponse.json(
       { error: 'Evaluation purchase failed', details: errorMessage },

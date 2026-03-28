@@ -59,7 +59,9 @@ export async function POST(req: Request) {
     )
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[tenant-scoring] API error:', errorMessage)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[tenant-scoring] API error:', errorMessage)
+    }
 
     return NextResponse.json(
       { error: 'Scoring pipeline failed', details: errorMessage },

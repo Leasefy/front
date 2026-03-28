@@ -123,11 +123,13 @@ export const dailyNoApplicantsScan = inngest.createFunction(
         take: 20,
       })
 
-      return properties.map((p: any) => ({
-        propertyId: p.id,
-        title: p.title,
-        agencyId: p.owner.id,
-      }))
+      return properties
+        .filter((p: any) => p.owner?.id)
+        .map((p: any) => ({
+          propertyId: p.id,
+          title: p.title,
+          agencyId: p.owner.id,
+        }))
     })
 
     // Step 2: Notify agencies about stale properties
@@ -141,7 +143,6 @@ export const dailyNoApplicantsScan = inngest.createFunction(
         let notified = 0
         for (const prop of staleProperties) {
           await execSend({
-            channel: 'internal',
             recipientId: prop.agencyId,
             templateId: 'property_no_applicants',
             data: { propertyTitle: prop.title, daysListed: '7+' },

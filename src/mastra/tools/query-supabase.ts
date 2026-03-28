@@ -87,7 +87,9 @@ export const querySupabaseTool = createTool({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      console.error('[query-supabase] Error:', errorMessage)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[query-supabase] Error:', errorMessage)
+      }
 
       return {
         success: false,

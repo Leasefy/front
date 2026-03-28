@@ -633,7 +633,7 @@ export default function ReportesPage() {
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
                       isLocked={!!report.premium && !hasAdvancedReports}
-                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Growth para acceder a reportes avanzados.' : 'Upgrade to Growth plan to access advanced reports.')}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -683,7 +683,7 @@ export default function ReportesPage() {
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
                       isLocked={!!report.premium && !hasAdvancedReports}
-                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Growth para acceder a reportes avanzados.' : 'Upgrade to Growth plan to access advanced reports.')}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -719,7 +719,7 @@ export default function ReportesPage() {
         </div>
       </motion.div>
 
-      {/* Advanced Reports Section — gated to Growth+ */}
+      {/* Advanced Reports Section — gated to Pro+ */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

@@ -157,7 +157,7 @@ export function ReporteCard({
               </h3>
               {isLocked && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium shrink-0">
-                  Growth
+                  Pro
                 </span>
               )}
               {!isLocked && report.isFavorite && (
@@ -219,7 +219,7 @@ export function ReporteCard({
                 </h3>
                 {isLocked && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium shrink-0">
-                    Growth
+                    Pro
                   </span>
                 )}
               </div>

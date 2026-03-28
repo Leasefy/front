@@ -73,9 +73,11 @@ export const extractDocumentTool = createTool({
     error: z.string().optional(),
   }),
   execute: async ({ documentUrl, documentType, applicationId }) => {
-    console.log(
-      `[extract-document] Processing ${documentType} for application ${applicationId}`,
-    )
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `[extract-document] Processing ${documentType} for application ${applicationId}`,
+      )
+    }
 
     try {
       const prompt = EXTRACTION_PROMPTS[documentType] ?? EXTRACTION_PROMPTS.otro
@@ -110,7 +112,9 @@ export const extractDocumentTool = createTool({
         const jsonStr = rawText.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
         extractedData = JSON.parse(jsonStr)
       } catch {
-        console.warn('[extract-document] Failed to parse JSON, returning raw text')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[extract-document] Failed to parse JSON, returning raw text')
+        }
         return {
           success: false,
           documentType,
@@ -135,7 +139,9 @@ export const extractDocumentTool = createTool({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      console.error('[extract-document] Error:', errorMessage)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[extract-document] Error:', errorMessage)
+      }
 
       return {
         success: false,

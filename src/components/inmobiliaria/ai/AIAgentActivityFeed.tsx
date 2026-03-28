@@ -59,6 +59,13 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
         <ArrowsClockwise weight="duotone" className="h-4 w-4 text-neutral-400" />
       </div>
 
+      {items.length === 0 ? (
+        <div className="rounded-xl bg-neutral-50 dark:bg-white/[0.02] py-8 px-4 text-center">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
+          </p>
+        </div>
+      ) : (
       <div className="space-y-1">
         {items.map((activity) => {
           const AgentIcon = AGENT_ICONS[activity.agentId] || ShieldCheck;
@@ -122,6 +129,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
           );
         })}
       </div>
+      )}
     </div>
   );
 }

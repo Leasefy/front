@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const limit = Math.min(Number(url.searchParams.get('limit') || '20'), 50)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eventModel = (db as any).applicationEvent
 
     if (!eventModel?.findMany) {
@@ -47,8 +48,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ activities, source: 'db' })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[activity] API error:', msg)
-    return NextResponse.json({ activities: [], source: 'error' })
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[activity] API error:', msg)
+    }
+    return NextResponse.json({ activities: [], source: 'error' }, { status: 500 })
   }
 }
 

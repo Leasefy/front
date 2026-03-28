@@ -61,7 +61,9 @@ export const searchPropertiesTool = createTool({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const model = (db as any).property
       if (!model?.findMany) {
-        console.warn('[search-properties] Prisma stub mode — returning empty')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[search-properties] Prisma stub mode — returning empty')
+        }
         return { success: true, properties: [], totalFound: 0 }
       }
 
@@ -150,7 +152,9 @@ export const searchPropertiesTool = createTool({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      console.error('[search-properties] Error:', errorMessage)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[search-properties] Error:', errorMessage)
+      }
       return {
         success: false,
         properties: [],

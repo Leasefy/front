@@ -61,7 +61,9 @@ export async function POST(req: Request) {
     )
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[smart-matching] API error:', errorMessage)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[smart-matching] API error:', errorMessage)
+    }
 
     return NextResponse.json(
       { error: 'Matching pipeline failed', details: errorMessage },

@@ -117,6 +117,13 @@ export function PricingDetailSheet({
             <div className="flex items-baseline gap-2">
               {isEnterprise ? (
                 <span className="text-[28px] font-heading font-bold text-foreground">{plan.price}</span>
+              ) : plan.price === '0' ? (
+                <span className="text-[32px] font-heading font-bold text-foreground">Gratis</span>
+              ) : plan.price === '1%' ? (
+                <>
+                  <span className="text-[32px] font-heading font-bold text-foreground">1%</span>
+                  {plan.period && <span className="text-muted-foreground text-[14px]">{plan.period}</span>}
+                </>
               ) : (
                 <>
                   <span className="text-[32px] font-heading font-bold text-foreground">${plan.price}</span>

@@ -34,7 +34,9 @@ import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
 import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
-import { getActiveAgents, getMockAgentActivity } from '@/lib/types/ai-agents';
+import { getActiveAgents } from '@/lib/types/ai-agents';
+import type { AgentActivity } from '@/lib/types/ai-agents';
+import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
 import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 /**
@@ -194,7 +196,7 @@ function AgentSection({
   metricsMap,
 }: {
   agents: ReturnType<typeof getActiveAgents>;
-  activities: ReturnType<typeof getMockAgentActivity>;
+  activities: AgentActivity[];
   metricsMap: Record<string, { label: string; value: string | number }[]>;
 }) {
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -265,17 +267,17 @@ export default function InmobiliariaDashboardPage() {
   );
 
   const aiAgents = getActiveAgents();
-  const aiActivities = getMockAgentActivity();
+  const { activities: aiActivities } = useAgentActivity();
 
-  // Mock metrics for dashboard agent cards
+  // Agent metrics from real data (hook auto-refreshes)
   const agentMetricsMap: Record<string, { label: string; value: string | number }[]> = {
     'tenant-scoring': [
-      { label: t('inmobiliaria.dashboard.aiAgents.evaluationsThisMonth'), value: 47 },
+      { label: t('inmobiliaria.dashboard.aiAgents.evaluationsThisMonth'), value: aiActivities.filter(a => a.agentId === 'tenant-scoring' && a.type === 'execution').length || '—' },
       { label: t('inmobiliaria.dashboard.aiAgents.avgTime'), value: '< 3 min' },
     ],
     'smart-matching': [
-      { label: t('inmobiliaria.dashboard.aiAgents.suggestedThisWeek'), value: 128 },
-      { label: t('inmobiliaria.dashboard.aiAgents.conversionRate'), value: '31%' },
+      { label: t('inmobiliaria.dashboard.aiAgents.suggestedThisWeek'), value: aiActivities.filter(a => a.agentId === 'smart-matching').length || '—' },
+      { label: t('inmobiliaria.dashboard.aiAgents.conversionRate'), value: '—' },
     ],
   };
 

@@ -5,72 +5,137 @@
 // Returns MASKED data (no full name, no full score details) so it's safe
 // to call without authentication.
 //
+// This mirrors the logic in /api/agents/verify/[code] but lives under the
+// /evaluation namespace for client convenience.
+//
 // REQUEST:
 //   Params: code — 8-character verification code (e.g., "AB3K7FXN")
 //   No auth required — this is a public verification endpoint
 //
 // RESPONSE (200):
 //   {
-//     verified: true;
-//     tenant: {
-//       maskedName: string;    // e.g., "Nic*** Gar***"
-//     };
-//     evaluation: {
-//       level: RiskLevel;       // 'A' | 'B' | 'C' | 'D'
-//       numericScore: number;
-//       label: string;          // 'Excelente' | 'Bueno' | etc.
-//       evaluatedAt: string;
-//       expiresAt: string;
+//     valid: true;
+//     verification: {
+//       candidateName: string;   // masked, e.g. "C***** M*******"
+//       documentNumber: string;  // masked, e.g. "123****56"
+//       scoreLevel: string;
+//       scoredAt: string;
+//       property: { title, city } | null;
+//       message: { es, en };
 //     };
 //   }
 //
 // RESPONSE (404):
-//   {
-//     verified: false;
-//     error: 'Verification code not found or evaluation expired.'
-//   }
-//
-// IMPLEMENTATION STEPS:
-//
-// 1. Validate code format — must be 8 chars, alphanumeric
-//    - If invalid, return 400 Bad Request
-//
-// 2. Look up evaluation by verification_code
-//    SELECT e.*, t.first_name, t.last_name
-//    FROM evaluations e
-//    JOIN tenants t ON e.tenant_id = t.id
-//    WHERE e.verification_code = :code
-//      AND e.status = 'paid'
-//      AND e.expires_at > NOW()
-//
-// 3. If not found, return 404 with verified: false
-//
-// 4. Mask tenant name:
-//    - "Nicolas" → "Nic***"
-//    - "Garcia" → "Gar***"
-//    - Keep first 3 chars, replace rest with ***
-//
-// 5. Return masked response (do NOT return full score categories,
-//    drivers, flags, or AI explanation — only level + numeric score)
-//
-// RATE LIMITING:
-//   - Max 10 requests per IP per minute
-//   - Consider adding CAPTCHA for web clients
-//   - Log verification attempts for abuse detection
+//   { valid: false; error: 'Verification code not found' }
 //
 // ERROR HANDLING:
 //   400 — Bad request (invalid code format)
-//   404 — Not found (no matching active evaluation)
-//   429 — Too many requests (rate limit exceeded)
+//   404 — Not found (no matching evaluation)
 //   500 — Internal server error
 // ============================================================================
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
-export async function GET() {
-  // Stub: return 501 Not Implemented
-  return NextResponse.json(
-    { error: 'Not implemented. See comments in this file for implementation guide.' },
-    { status: 501 }
-  );
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ code: string }> },
+) {
+  const { code } = await params
+
+  if (!code || code.length !== 8) {
+    return NextResponse.json(
+      { valid: false, error: 'Invalid verification code format' },
+      { status: 400 },
+    )
+  }
+
+  try {
+    const { db } = await import('@/lib/db')
+
+    const riskModel = (db as any).riskScoreResult
+
+    if (!riskModel?.findMany) {
+      return NextResponse.json(
+        { valid: false, error: 'Verification service unavailable' },
+        { status: 503 },
+      )
+    }
+
+    // Search for the verification code in featuresJson
+    const results = await riskModel.findMany({
+      where: {
+        featuresJson: {
+          path: ['verificationCode'],
+          equals: code.toUpperCase(),
+        },
+      },
+      include: {
+        application: {
+          select: {
+            documentNumber: true,
+            applicant: { select: { name: true } },
+            property: { select: { title: true, city: true } },
+          },
+        },
+      },
+      take: 1,
+    })
+
+    if (!results || results.length === 0) {
+      return NextResponse.json(
+        {
+          valid: false,
+          error: 'Verification code not found',
+          message: {
+            es: 'Codigo de verificacion no encontrado. Verifique que el codigo sea correcto.',
+            en: 'Verification code not found. Please check the code and try again.',
+          },
+        },
+        { status: 404 },
+      )
+    }
+
+    const score = results[0]
+    const app = score.application
+    const candidateName = app?.applicant?.name || 'N/A'
+
+    // Mask the name: "Carlos Martinez" -> "C***** M*******"
+    const maskedName = candidateName
+      .split(' ')
+      .map((part: string) => {
+        if (part.length <= 1) return part
+        return part[0] + '*'.repeat(part.length - 1)
+      })
+      .join(' ')
+
+    // Mask document number: "1234567890" -> "123****90"
+    const docNumber = app?.documentNumber || ''
+    const maskedDoc = docNumber.length > 4
+      ? docNumber.slice(0, 3) + '****' + docNumber.slice(-2)
+      : '****'
+
+    return NextResponse.json({
+      valid: true,
+      verification: {
+        candidateName: maskedName,
+        documentNumber: maskedDoc,
+        scoreLevel: score.level,
+        scoredAt: score.createdAt,
+        property: app?.property
+          ? { title: app.property.title, city: app.property.city }
+          : null,
+        message: {
+          es: `Este reporte de evaluacion es autentico. Nivel: ${score.level}. Generado el ${new Date(score.createdAt).toLocaleDateString('es-CO')}.`,
+          en: `This scoring report is authentic. Level: ${score.level}. Generated on ${new Date(score.createdAt).toLocaleDateString('en-US')}.`,
+        },
+      },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[evaluation/verify] Error:', msg)
+    return NextResponse.json(
+      { valid: false, error: 'Verification service error' },
+      { status: 500 },
+    )
+  }
 }

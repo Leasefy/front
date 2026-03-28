@@ -13,31 +13,60 @@ import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivit
 import {
   getActiveAgents,
   getComingSoonAgents,
-  getMockAgentActivity,
 } from '@/lib/types/ai-agents';
+import { useAgentMetrics } from '@/lib/hooks/use-agent-metrics';
+import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
 
 /**
  * AI Agents Hub — Central command for all AI agents
+ *
+ * Metrics are fetched from GET /api/agents/metrics (real DB data)
+ * and auto-refresh every 60 seconds.
  */
 export default function AIAgentsPage() {
   const { locale } = useI18n();
   const activeAgents = getActiveAgents();
   const comingSoonAgents = getComingSoonAgents();
-  const activities = getMockAgentActivity();
+  const { activities, source: activitySource } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
+  const { metrics, isLoading } = useAgentMetrics(60_000);
 
-  // Mock metrics for active agents
+  // Build metrics arrays from real data
   const scoringMetrics = [
-    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: 47 },
-    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: locale === 'es' ? '< 3 min' : '< 3 min' },
-    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: '94%' },
-    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: '3%' },
+    {
+      label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month',
+      value: isLoading ? '...' : metrics.scoring.evaluationsThisMonth,
+    },
+    {
+      label: locale === 'es' ? 'Tiempo promedio' : 'Avg time',
+      value: metrics.scoring.avgTimeMin,
+    },
+    {
+      label: locale === 'es' ? 'Precisión' : 'Accuracy',
+      value: isLoading ? '...' : metrics.scoring.accuracyRate,
+    },
+    {
+      label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human',
+      value: isLoading ? '...' : metrics.scoring.escalationRate,
+    },
   ];
 
   const matchingMetrics = [
-    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: 128 },
-    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: '31%' },
-    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: 12 },
-    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: '87%' },
+    {
+      label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent',
+      value: isLoading ? '...' : metrics.matching.suggestionsSent,
+    },
+    {
+      label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate',
+      value: isLoading ? '...' : metrics.matching.conversionRate,
+    },
+    {
+      label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected',
+      value: isLoading ? '...' : metrics.matching.candidatesRedirected,
+    },
+    {
+      label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility',
+      value: isLoading ? '...' : metrics.matching.avgCompatibility,
+    },
   ];
 
   return (
@@ -82,7 +111,9 @@ export default function AIAgentsPage() {
               <TrendUp weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">175</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
+                {isLoading ? '...' : metrics.summary.actionsThisWeek}
+              </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Acciones esta semana' : 'Actions this week'}
               </p>
@@ -96,7 +127,7 @@ export default function AIAgentsPage() {
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {locale === 'es' ? '~18h' : '~18h'}
+                {isLoading ? '...' : metrics.summary.hoursSavedThisMonth}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Horas ahorradas este mes' : 'Hours saved this month'}

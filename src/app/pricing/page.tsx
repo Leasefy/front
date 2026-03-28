@@ -14,7 +14,7 @@ import { PricingDetailSheet, type PlanDetail } from '@/components/pricing/Pricin
 import { PricingFAQSection, pricingFaqs } from '@/components/pricing/PricingFAQSection';
 
 type UserTextT = 'owner-managed' | 'owner-diy' | 'agency' | 'evaluation';
-type AgencyPlan = 'starter' | 'growth' | 'business' | 'enterprise' | null;
+type AgencyPlan = 'starter' | 'pro' | 'flex' | 'enterprise' | null;
 
 const PRICING_HERO_IMAGES = [
   '/pricing-hero-1.jpg', // Cozy candlelit room
@@ -28,24 +28,23 @@ const HERO_IMAGE_INTERVAL = 6000;
 const AGENCY_PLAN_DETAILS: Record<NonNullable<AgencyPlan>, PlanDetail> = {
   starter: {
     name: 'Starter',
-    price: '149.000',
-    period: '/mes',
-    description: 'Para inmobiliarias pequeñas',
-    pitch: 'Ideal para inmobiliarias que están comenzando a digitalizar su operación. Con las herramientas esenciales para publicar propiedades, gestionar candidatos y firmar contratos digitales, todo desde un solo lugar.',
-    highlights: ['20 propiedades incluidas', '3 usuarios', 'Soporte por email'],
+    price: '0',
+    period: 'Gratis',
+    description: 'Para empezar sin compromiso',
+    pitch: 'Comienza a usar Leasefy sin costo. Paga solo por las evaluaciones AI que necesites a $42.000 COP por consulta. Ideal para inmobiliarias que quieren probar la plataforma antes de comprometerse.',
+    highlights: ['Gratis para siempre', 'Scoring básico con IA', 'Pago por uso'],
     featureGroups: [
       {
-        category: 'CRM & Gestión',
+        category: 'Evaluaciones AI',
         items: [
-          { name: 'CRM de candidatos', description: 'Gestiona todos tus prospectos en un pipeline visual con estados, notas y seguimiento automático.' },
-          { name: 'Scoring de arrendatarios', description: 'Evaluación automática del perfil de cada candidato con score de riesgo basado en datos reales.' },
+          { name: 'Scoring básico con IA', description: 'Evaluación automática del perfil de cada candidato con score de riesgo. Se cobra $42.000 COP ($10 USD) por cada consulta.' },
         ],
       },
       {
-        category: 'Publicación & Contratos',
+        category: 'Gestión básica',
         items: [
-          { name: 'Publicación en portales', description: 'Publica tus propiedades automáticamente en los principales portales inmobiliarios del país.' },
-          { name: 'Contratos digitales', description: 'Genera y firma contratos de arrendamiento con validez legal, todo 100% digital.' },
+          { name: 'CRM de candidatos', description: 'Gestiona tus prospectos en un pipeline visual con estados y seguimiento.' },
+          { name: 'Publicación en portales', description: 'Publica tus propiedades en los principales portales inmobiliarios.' },
         ],
       },
       {
@@ -55,109 +54,237 @@ const AGENCY_PLAN_DETAILS: Record<NonNullable<AgencyPlan>, PlanDetail> = {
         ],
       },
     ],
-    addons: [
-      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
-      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
-      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
-    ],
-    limits: { properties: 20, users: 3 },
+    addons: [],
+    limits: { properties: 10, users: 2 },
   },
-  growth: {
-    name: 'Growth',
-    price: '399.000',
+  pro: {
+    name: 'Pro',
+    price: '149.000',
     period: '/mes',
     description: 'Para inmobiliarias en crecimiento',
-    pitch: 'Diseñado para inmobiliarias que ya tienen operación y necesitan escalar. Incluye todo lo del plan Starter más herramientas avanzadas de automatización, reportes y una API para integrar con tus sistemas.',
-    highlights: ['100 propiedades incluidas', '10 usuarios', 'Soporte prioritario'],
+    pitch: 'Todo lo que necesitas para escalar tu operación. Evaluaciones AI con 50% de descuento, scoring avanzado, matching inteligente y reportes completos. Hasta 30 evaluaciones al mes incluidas con tarifa preferencial.',
+    highlights: ['100 propiedades', '10 usuarios', '50% descuento en evaluaciones'],
     featureGroups: [
       {
-        category: 'Todo en Starter, más',
+        category: 'Evaluaciones AI',
         items: [
-          { name: 'API REST básica', description: 'Conecta Leasefy con tu sitio web, CRM o cualquier herramienta externa mediante nuestra API documentada.' },
-          { name: 'Reportes avanzados', description: 'Dashboards con métricas clave: ocupación, tiempos de arriendo, rentabilidad por propiedad y más.' },
+          { name: 'Evaluaciones con 50% descuento', description: 'Cada evaluación AI a $21.000 COP ($5 USD) en lugar de $42.000. Hasta 30 evaluaciones/mes.' },
+          { name: 'Scoring + Matching + Reportes', description: 'Scoring avanzado, matching inteligente de candidatos con propiedades, y reportes PDF completos.' },
         ],
       },
       {
-        category: 'Automatización',
+        category: 'CRM & Gestión',
         items: [
-          { name: 'Recordatorios automáticos', description: 'Envío automático de recordatorios de pago, vencimiento de contrato y tareas pendientes a tu equipo.' },
+          { name: 'CRM de candidatos', description: 'Pipeline visual completo con estados, notas, filtros y seguimiento automático.' },
+          { name: 'Contratos digitales', description: 'Genera y firma contratos de arrendamiento con validez legal, 100% digital.' },
+          { name: 'Reportes avanzados', description: 'Dashboards con métricas clave: ocupación, tiempos de arriendo, rentabilidad por propiedad.' },
         ],
       },
       {
         category: 'Soporte',
         items: [
-          { name: 'Soporte prioritario', description: 'Atención preferencial con tiempos de respuesta más cortos por email y chat.' },
+          { name: 'Soporte prioritario', description: 'Atención preferencial con tiempos de respuesta cortos por email y chat.' },
         ],
       },
     ],
     addons: [
-      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
-      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
-      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
+      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales más allá del límite incluido.' },
+      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo.' },
     ],
     limits: { properties: 100, users: 10 },
   },
-  business: {
-    name: 'Business',
-    price: '899.000',
-    period: '/mes',
-    description: 'Para operaciones grandes',
-    pitch: 'Para inmobiliarias con operaciones complejas que necesitan control total. Incluye API completa, webhooks en tiempo real, soporte multi-sucursal y un gerente de cuenta dedicado para tu operación.',
-    highlights: ['300 propiedades incluidas', '25 usuarios', 'Gerente de cuenta'],
+  flex: {
+    name: 'Flex',
+    price: '1%',
+    period: 'del canon administrado',
+    description: 'Todo incluido, sin límites',
+    pitch: 'El plan definitivo para inmobiliarias que quieren acceso completo a toda la plataforma. Evaluaciones ilimitadas y gratuitas, los 19 agentes AI, sin límites en propiedades ni usuarios. Pagas un porcentaje justo del canon que administras.',
+    highlights: ['Evaluaciones ilimitadas gratis', '19 agentes AI', 'Sin límites'],
     featureGroups: [
       {
-        category: 'Todo en Growth, más',
+        category: 'Evaluaciones AI',
         items: [
-          { name: 'API REST completa', description: 'Acceso completo a todos los endpoints de la API con mayor tasa de peticiones y soporte técnico dedicado.' },
-          { name: 'Webhooks en tiempo real', description: 'Recibe notificaciones instantáneas en tus sistemas cuando ocurren eventos: nuevos candidatos, pagos, contratos firmados.' },
+          { name: 'Evaluaciones ilimitadas y gratuitas', description: 'Sin costo por evaluación. Evalúa todos los candidatos que necesites sin preocuparte por el volumen.' },
+          { name: 'Los 19 agentes AI completos', description: 'Scoring, matching, cobranza, contratos, desembolsos, pipeline, mantenimiento, renovaciones, comunicaciones, documentos, analíticas, pricing dinámico y más.' },
+        ],
+      },
+      {
+        category: 'Plataforma completa',
+        items: [
+          { name: 'Propiedades y usuarios ilimitados', description: 'Sin restricciones. Crece sin pensar en límites del plan.' },
+          { name: 'API REST completa + Webhooks', description: 'Integra con tu ERP, CRM o cualquier sistema externo con nuestra API completa y webhooks en tiempo real.' },
           { name: 'Multi-sucursal', description: 'Gestiona múltiples oficinas o equipos con permisos independientes y reportes consolidados.' },
         ],
       },
       {
         category: 'Soporte dedicado',
         items: [
-          { name: 'Gerente de cuenta dedicado', description: 'Un ejecutivo de Leasefy asignado exclusivamente a tu inmobiliaria para soporte estratégico y operativo.' },
+          { name: 'Soporte prioritario dedicado', description: 'Gerente de cuenta asignado y atención prioritaria por todos los canales.' },
+          { name: 'Onboarding personalizado', description: 'Sesiones dedicadas de capacitación para asegurar una adopción exitosa de toda tu operación.' },
         ],
       },
     ],
-    addons: [
-      { label: 'Propiedad extra', price: '$3.000/mes', description: 'Añade propiedades adicionales a tu plan cuando crezcas más allá del límite incluido.' },
-      { label: 'Usuario extra', price: '$30.000/mes', description: 'Invita más miembros de tu equipo con acceso completo a la plataforma.' },
-      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
-      { label: 'White-label', price: 'desde $200.000/mes', description: 'Personaliza la plataforma con tu marca: logo, colores y dominio propio para tus clientes.' },
-    ],
-    limits: { properties: 300, users: 25 },
+    addons: [],
+    limits: { properties: 'ilimitadas', users: 'ilimitados' },
   },
   enterprise: {
     name: 'Enterprise',
     price: 'Personalizado',
-    description: '500+ propiedades',
+    description: 'Infraestructura dedicada',
     pitch: 'Solución a medida para las inmobiliarias más grandes del mercado. Infraestructura dedicada, SLA garantizado, white-label completo y onboarding personalizado para tu equipo. Hablemos de lo que necesitas.',
-    highlights: ['Propiedades ilimitadas', 'Usuarios ilimitados', 'SLA 99.9%'],
+    highlights: ['White-label completo', 'SLA 99.9%', 'Infraestructura dedicada'],
     featureGroups: [
       {
-        category: 'Todo en Business, más',
+        category: 'Todo en Flex, más',
         items: [
-          { name: 'Propiedades ilimitadas', description: 'Sin límite en el número de propiedades que puedes gestionar en la plataforma.' },
-          { name: 'Usuarios ilimitados', description: 'Invita a todo tu equipo sin restricciones ni costos adicionales por usuario.' },
           { name: 'White-label completo', description: 'Plataforma completamente personalizada con tu marca, dominio, colores y experiencia de usuario a medida.' },
+          { name: 'Infraestructura dedicada', description: 'Servidores y bases de datos exclusivos para tu operación con máximo rendimiento.' },
         ],
       },
       {
-        category: 'Infraestructura & Soporte',
+        category: 'Garantías & Soporte',
         items: [
           { name: 'SLA garantizado 99.9%', description: 'Acuerdo de nivel de servicio con disponibilidad garantizada y compensación por incumplimiento.' },
           { name: 'Onboarding personalizado', description: 'Sesiones dedicadas de capacitación y configuración con tu equipo para asegurar una adopción exitosa.' },
-          { name: 'Descuentos por volumen hasta 24%', description: 'Precios reducidos en screenings y servicios adicionales basados en tu volumen de operación mensual.' },
         ],
       },
     ],
-    addons: [
-      { label: 'Screening', price: '$20.000/app', description: 'Verificación profunda de antecedentes, historial crediticio y referencias del candidato.' },
-    ],
+    addons: [],
     limits: { properties: 'ilimitadas', users: 'ilimitados' },
   },
 };
+
+/**
+ * Flex plan interactive calculator
+ */
+function FlexCalculator() {
+  const [units, setUnits] = useState(100);
+  const [avgRent, setAvgRent] = useState(2000000);
+
+  const monthlyFee = Math.round(units * avgRent * 0.01);
+  const sliderPercentage = Math.min(((units - 10) / (500 - 10)) * 100, 100);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="mb-12 rounded-2xl overflow-hidden"
+      style={{ border: '1px solid rgba(0,0,0,0.08)' }}
+    >
+      <div className="relative bg-foreground text-background px-6 py-5">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400" />
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
+            <Calculator className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="text-[15px] font-medium text-white">Calculadora Flex</h3>
+            <p className="text-[12px] text-white/50">Estima tu costo mensual con el plan Flex</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Unidades administradas
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value={units}
+                  onChange={(e) => setUnits(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
+                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                />
+              </div>
+              <div className="relative h-10 flex items-center">
+                <div className="absolute inset-x-0 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-foreground rounded-full"
+                    style={{ width: `${sliderPercentage}%` }}
+                    initial={false}
+                    animate={{ width: `${sliderPercentage}%` }}
+                    transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="500"
+                  value={units}
+                  onChange={(e) => setUnits(parseInt(e.target.value))}
+                  className="absolute inset-x-0 w-full h-10 opacity-0 cursor-pointer"
+                />
+                <motion.div
+                  className="absolute w-4 h-4 bg-foreground rounded-full shadow-lg cursor-pointer"
+                  style={{ left: `calc(${sliderPercentage}% - 8px)` }}
+                  initial={false}
+                  animate={{ left: `calc(${sliderPercentage}% - 8px)` }}
+                  transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+                />
+              </div>
+              <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+                <span>10</span>
+                <span>100</span>
+                <span>250</span>
+                <span>500+</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+                Canon promedio (COP)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={avgRent ? avgRent.toLocaleString('es-CO') : ''}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/[^\d]/g, '');
+                    if (rawValue === '') { setAvgRent(0); return; }
+                    const numValue = parseInt(rawValue, 10);
+                    if (!isNaN(numValue) && numValue >= 0) setAvgRent(numValue);
+                  }}
+                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
+                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col justify-center">
+            <div className="bg-muted/30 rounded-xl p-5" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
+              <p className="text-[36px] font-heading font-bold text-foreground tracking-tight leading-none tabular-nums">
+                ${monthlyFee.toLocaleString('es-CO')}
+              </p>
+              <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
+              <div className="mt-4 pt-4 space-y-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-muted-foreground">{units} unidades x ${avgRent.toLocaleString('es-CO')} canon</span>
+                  <span className="text-foreground font-medium">= ${(units * avgRent).toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-muted-foreground">1% del canon administrado</span>
+                  <span className="text-foreground font-semibold">${monthlyFee.toLocaleString('es-CO')}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground/70 mt-3 leading-relaxed">
+                Ej: {units} unidades x ${(avgRent / 1000000).toFixed(1)}M canon = ${(monthlyFee / 1000000).toFixed(1)}M COP/mes. Evaluaciones ilimitadas incluidas.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 /**
  * Public pricing page - Hybrid Model
@@ -424,7 +551,7 @@ export default function PricingPage() {
                   <div className="flex items-baseline gap-1 mb-3">
                     <span className="text-[12px] text-muted-foreground mr-0.5">Desde</span>
                     <span className="text-[24px] font-heading font-bold text-foreground">$24.9K</span>
-                    <span className="text-[12px] text-muted-foreground">/reporte</span>
+                    <span className="text-[12px] text-muted-foreground">/eval</span>
                   </div>
                 </div>
               </div>
@@ -463,9 +590,8 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio con tecnología</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[12px] text-muted-foreground mr-0.5">Desde</span>
-                    <span className="text-[24px] font-heading font-bold text-foreground">$149K</span>
-                    <span className="text-[12px] text-muted-foreground">/mes</span>
+                    <span className="text-[24px] font-heading font-bold text-foreground">$0</span>
+                    <span className="text-[12px] text-muted-foreground">para empezar</span>
                   </div>
                 </div>
               </div>
@@ -729,114 +855,104 @@ export default function PricingPage() {
                 Planes para <span className="font-medium">inmobiliarias</span>
               </h2>
               <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
-                Precios que <span className="text-amber-600 font-medium">escalan con tu negocio</span>. Paga por lo que usas.
+                Precios que <span className="text-amber-600 font-medium">escalan con tu negocio</span>. Empieza gratis, crece sin límites.
               </p>
             </motion.div>
 
             {/* Pricing Tiers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-              {/* Starter */}
+              {/* Starter - Gratis */}
               <AgencyTierCard
                 name="Starter"
-                price="149.000"
-                period="/mes"
-                description="Para inmobiliarias pequeñas"
-                properties={20}
-                users={3}
+                price="0"
+                period="Gratis"
+                description="Para empezar sin compromiso"
+                properties={10}
+                users={2}
                 features={[
+                  'Scoring básico con IA',
+                  '$42.000 COP por evaluación AI',
                   'CRM de candidatos',
                   'Publicación en portales',
-                  'Contratos digitales',
-                  'Scoring de arrendatarios',
                   'Soporte por email',
                 ]}
-                addons={[
-                  { label: 'Propiedad extra', price: '$3.000/mes' },
-                  { label: 'Usuario extra', price: '$30.000/mes' },
-                  { label: 'Screening', price: '$20.000/app' },
-                ]}
+                ctaLabel="Empezar gratis"
+                ctaHref="/auth"
                 selected={selectedAgencyPlan === 'starter'}
                 onSelect={() => setSelectedAgencyPlan('starter')}
                 onViewDetails={() => setDetailPlan('starter')}
               />
 
-              {/* Growth - Popular */}
+              {/* Pro - Más popular */}
               <AgencyTierCard
-                name="Growth"
-                price="399.000"
+                name="Pro"
+                price="149.000"
                 period="/mes"
                 description="Para inmobiliarias en crecimiento"
                 properties={100}
                 users={10}
                 popular
                 features={[
-                  'Todo en Starter',
-                  'API REST básica',
+                  'Evaluaciones AI al 50% → $21.000',
+                  'Hasta 30 evaluaciones/mes',
+                  'Scoring + Matching + Reportes',
+                  'Contratos digitales',
                   'Reportes avanzados',
-                  'Recordatorios automáticos',
                   'Soporte prioritario',
                 ]}
                 addons={[
                   { label: 'Propiedad extra', price: '$3.000/mes' },
                   { label: 'Usuario extra', price: '$30.000/mes' },
-                  { label: 'Screening', price: '$20.000/app' },
                 ]}
-                selected={selectedAgencyPlan === 'growth'}
-                onSelect={() => setSelectedAgencyPlan('growth')}
-                onViewDetails={() => setDetailPlan('growth')}
+                ctaLabel="Empezar con Pro"
+                selected={selectedAgencyPlan === 'pro'}
+                onSelect={() => setSelectedAgencyPlan('pro')}
+                onViewDetails={() => setDetailPlan('pro')}
               />
 
-              {/* Business */}
+              {/* Flex - Todo incluido */}
               <AgencyTierCard
-                name="Business"
-                price="899.000"
-                period="/mes"
-                description="Para operaciones grandes"
-                properties={300}
-                users={25}
+                name="Flex"
+                price="1%"
+                period="del canon administrado"
+                noCurrencySymbol
+                description="Todo incluido, sin límites"
                 features={[
-                  'Todo en Growth',
-                  'API REST completa',
-                  'Webhooks en tiempo real',
+                  'Evaluaciones ilimitadas y gratis',
+                  'Los 19 agentes AI completos',
+                  'Propiedades y usuarios ilimitados',
+                  'API REST + Webhooks',
                   'Multi-sucursal',
-                  'Gerente de cuenta dedicado',
+                  'Soporte prioritario dedicado',
                 ]}
-                addons={[
-                  { label: 'Propiedad extra', price: '$3.000/mes' },
-                  { label: 'Usuario extra', price: '$30.000/mes' },
-                  { label: 'Screening', price: '$20.000/app' },
-                  { label: 'White-label', price: 'desde $200.000/mes' },
-                ]}
-                selected={selectedAgencyPlan === 'business'}
-                onSelect={() => setSelectedAgencyPlan('business')}
-                onViewDetails={() => setDetailPlan('business')}
+                ctaLabel="Contactar ventas"
+                selected={selectedAgencyPlan === 'flex'}
+                onSelect={() => setSelectedAgencyPlan('flex')}
+                onViewDetails={() => setDetailPlan('flex')}
               />
 
               {/* Enterprise */}
               <AgencyTierCard
                 name="Enterprise"
                 price="Personalizado"
-                description="500+ propiedades"
-                properties={-1}
-                users={-1}
+                description="Infraestructura dedicada"
+                isEnterprise
                 features={[
-                  'Todo en Business',
-                  'Propiedades ilimitadas',
-                  'Usuarios ilimitados',
+                  'Todo en Flex',
                   'White-label completo',
+                  'Infraestructura dedicada',
                   'SLA garantizado 99.9%',
                   'Onboarding personalizado',
-                  'Descuentos por volumen hasta 24%',
                 ]}
-                addons={[
-                  { label: 'Screening', price: '$20.000/app' },
-                ]}
-                isEnterprise
+                ctaLabel="Contactar"
                 selected={selectedAgencyPlan === 'enterprise'}
                 onSelect={() => setSelectedAgencyPlan('enterprise')}
                 onViewDetails={() => setDetailPlan('enterprise')}
               />
             </div>
+
+            {/* Flex Calculator */}
+            <FlexCalculator />
 
             {/* Benefits */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -939,7 +1055,7 @@ export default function PricingPage() {
             />
           </div>
 
-          {/* B2B Volume Pricing Banner */}
+          {/* B2B Plan-based Pricing Banner */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -954,13 +1070,13 @@ export default function PricingPage() {
                 <div>
                   <h3 className="text-[15px] font-semibold text-foreground">¿Eres inmobiliaria o agente?</h3>
                   <p className="text-[13px] text-muted-foreground">
-                    Precios por volumen desde <span className="font-semibold text-amber-600">$9.900/evaluación</span>. Hasta 60% de descuento.
+                    Con el plan Pro pagas solo <span className="font-semibold text-amber-600">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-amber-600">ilimitadas y gratis</span>.
                   </p>
                 </div>
               </div>
-              <Link href="mailto:ventas@leasefy.co?subject=Precios%20por%20volumen%20-%20Evaluaciones">
-                <Button variant="outline" className="whitespace-nowrap rounded-xl">
-                  Contactar ventas
+              <Link href="/pricing">
+                <Button variant="outline" className="whitespace-nowrap rounded-xl" onClick={() => { /* Will scroll to agency section */ }}>
+                  Ver planes para inmobiliarias
                 </Button>
               </Link>
             </div>

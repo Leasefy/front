@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/format';
 
 const PLAN_ICONS: Record<string, string> = {
   free: '⚡', pro: '✨', business: '🏢',
-  starter: '🚀', growth: '📈', 'agency-business': '🏛️', enterprise: '👑',
+  starter: '🚀', flex: '🔄', enterprise: '👑',
 };
 
 const PROPIETARIO_OPTIONS = PLANS.map((plan) => ({

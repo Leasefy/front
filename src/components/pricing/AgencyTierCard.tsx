@@ -22,6 +22,7 @@ interface AgencyTierCardProps {
   features: string[];
   addons?: PlanAddon[];
   popular?: boolean;
+  isFlex?: boolean;
   isEnterprise?: boolean;
   selected?: boolean;
   onSelect?: () => void;
@@ -44,6 +45,7 @@ export function AgencyTierCard({
   features,
   addons,
   popular,
+  isFlex,
   isEnterprise,
   selected,
   onSelect,
@@ -53,7 +55,7 @@ export function AgencyTierCard({
   noCurrencySymbol,
 }: AgencyTierCardProps) {
   const [showAddons, setShowAddons] = useState(false);
-  const showLimits = properties != null && users != null && !isEnterprise;
+  const showLimits = properties != null && users != null && !isEnterprise && properties > 0 && users > 0;
   const defaultCtaLabel = isEnterprise
     ? (selected ? 'Contactar ventas' : 'Solicitar cotización')
     : (selected ? 'Continuar' : 'Seleccionar plan');
@@ -61,8 +63,8 @@ export function AgencyTierCard({
 
   const buttonEl = (
     <Button
-      variant={selected ? 'default' : popular ? 'default' : 'outline'}
-      className="w-full rounded-xl"
+      variant={selected ? 'default' : (popular || isFlex) ? 'default' : 'outline'}
+      className={cn("w-full rounded-xl", isFlex && !selected && "bg-amber-500 hover:bg-amber-600 text-white")}
       onClick={onSelect}
     >
       {label}
@@ -77,15 +79,25 @@ export function AgencyTierCard({
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'relative rounded-2xl border bg-card p-6 flex flex-col transition-all duration-300',
+        'relative rounded-2xl bg-card p-6 flex flex-col transition-all duration-300',
         selected
-          ? 'border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl shadow-indigo-600/10'
-          : popular
-            ? 'border-indigo-600/50 shadow-lg shadow-indigo-600/5'
-            : 'border-border hover:border-indigo-600/30 hover:shadow-lg'
+          ? 'border-2 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl shadow-indigo-600/10'
+          : isFlex
+            ? 'border-2 border-amber-400 shadow-lg shadow-amber-500/10'
+            : popular
+              ? 'border border-indigo-600/50 shadow-lg shadow-indigo-600/5'
+              : 'border border-border hover:border-indigo-600/30 hover:shadow-lg'
       )}
     >
-      {popular && !selected && (
+      {isFlex && !selected && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/25">
+            Todo incluido
+          </span>
+        </div>
+      )}
+
+      {popular && !selected && !isFlex && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className="bg-indigo-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-indigo-600/25">
             Más popular
@@ -192,7 +204,7 @@ export function AgencyTierCard({
       {/* CTA */}
       {ctaHref ? (
         <Link href={ctaHref}>{buttonEl}</Link>
-      ) : isEnterprise ? (
+      ) : (isEnterprise || isFlex) ? (
         <a href="mailto:ventas@leasefy.co">{buttonEl}</a>
       ) : (
         buttonEl

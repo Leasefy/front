@@ -17,7 +17,7 @@ import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import { cn } from '@/lib/utils';
 
-const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, growth: Sparkle, 'agency-business': Buildings, enterprise: Buildings } as const;
+const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, flex: Buildings, enterprise: Buildings } as const;
 
 const PLAN_INFO = Object.fromEntries([
   ...PLANS.map((plan) => [

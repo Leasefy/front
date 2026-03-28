@@ -21,6 +21,7 @@ export type FeatureName =
   | 'automatic-reminders'
   | 'contract-reminders'
   | 'ai-agents'
+  | 'all-ai-agents'
   | 'multi-branch'
   | 'pdf-export';
 
@@ -46,38 +47,43 @@ export interface FeatureGate {
  */
 export const FEATURE_GATES: Record<FeatureName, FeatureGate> = {
   'advanced-reports': {
-    minTier: 'growth',
+    minTier: 'pro',
     labelEs: 'Reportes avanzados',
     labelEn: 'Advanced reports',
   },
   'executive-reports': {
-    minTier: 'agency-business',
+    minTier: 'flex',
     labelEs: 'Reportes ejecutivos',
     labelEn: 'Executive reports',
   },
   'automatic-reminders': {
-    minTier: 'growth',
+    minTier: 'pro',
     labelEs: 'Recordatorios automaticos',
     labelEn: 'Automatic reminders',
   },
   'contract-reminders': {
-    minTier: 'growth',
+    minTier: 'pro',
     labelEs: 'Alertas de vencimiento de contrato',
     labelEn: 'Contract expiry alerts',
   },
   'ai-agents': {
-    minTier: 'starter',
+    minTier: 'pro',
+    labelEs: 'Agentes AI (Scoring + Matching)',
+    labelEn: 'AI Agents (Scoring + Matching)',
+  },
+  'all-ai-agents': {
+    minTier: 'flex',
     flexOnly: true,
-    labelEs: 'Agentes AI',
-    labelEn: 'AI Agents',
+    labelEs: 'Todos los 19 agentes AI',
+    labelEn: 'All 19 AI Agents',
   },
   'multi-branch': {
-    minTier: 'agency-business',
+    minTier: 'flex',
     labelEs: 'Multi-sucursal',
     labelEn: 'Multi-branch',
   },
   'pdf-export': {
-    minTier: 'growth',
+    minTier: 'pro',
     labelEs: 'Exportar a PDF',
     labelEn: 'PDF export',
   },

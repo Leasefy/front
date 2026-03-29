@@ -85,7 +85,7 @@ const LANDLORD_BADGES: Record<PlanId, {
   },
   business: {
     label: 'Plan Inversionista',
-    shortLabel: 'Business',
+    shortLabel: 'Inversionista',
     icon: Crown,
     colors: {
       bg: 'bg-gradient-to-r from-amber-500/10 to-orange-500/10',

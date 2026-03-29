@@ -100,6 +100,7 @@ export default function ConfiguracionPage() {
     setIsLoading(true);
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
       const { error } = await supabase.auth.updateUser({ password: passwordForm.new });
       if (error) throw error;
       setShowPasswordModal(false);
@@ -115,6 +116,7 @@ export default function ConfiguracionPage() {
   const handleCloseAllSessions = async () => {
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
       toast.success(t('landlordSettings.toasts.allSessionsClosed'));
@@ -158,7 +160,7 @@ export default function ConfiguracionPage() {
       await settingsApi.deleteAccount();
       // Sign out from Supabase after soft-delete
       const supabase = getSupabase();
-      await supabase.auth.signOut();
+      if (supabase) await supabase.auth.signOut();
       toast.success(t('landlordSettings.toasts.accountDeleted'));
       setTimeout(() => router.push('/'), 2000);
     } catch (err) {

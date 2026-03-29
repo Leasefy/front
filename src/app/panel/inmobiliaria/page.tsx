@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Buildings,
@@ -32,6 +32,12 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
+import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
+import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
+import { getActiveAgents } from '@/lib/types/ai-agents';
+import type { AgentActivity } from '@/lib/types/ai-agents';
+import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
+import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 /**
  * KPI Card Component
@@ -182,6 +188,49 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
 }
 
 /**
+ * Agent section — syncs feed height to the agent cards column
+ */
+function AgentSection({
+  agents,
+  activities,
+  metricsMap,
+}: {
+  agents: ReturnType<typeof getActiveAgents>;
+  activities: AgentActivity[];
+  metricsMap: Record<string, { label: string; value: string | number }[]>;
+}) {
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  const [feedMaxH, setFeedMaxH] = useState<string>('auto');
+
+  useEffect(() => {
+    function sync() {
+      if (!cardsRef.current) return;
+      setFeedMaxH(`${cardsRef.current.offsetHeight}px`);
+    }
+    // Delay to ensure cards have rendered
+    const timer = setTimeout(sync, 100);
+    const observer = new ResizeObserver(sync);
+    if (cardsRef.current) observer.observe(cardsRef.current);
+    return () => { clearTimeout(timer); observer.disconnect(); };
+  }, []);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+      <div ref={cardsRef} className="space-y-4">
+        {agents.map((agent) => (
+          <AIAgentCard key={agent.id} agent={agent} metrics={metricsMap[agent.id]} />
+        ))}
+      </div>
+      <div className="lg:col-span-2" style={{ height: feedMaxH }}>
+        <AIAgentActivityFeed activities={activities} maxItems={10} className="h-full" />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Inmobiliaria Dashboard Page
  * Main overview for real estate agency operations
  */
@@ -217,6 +266,21 @@ export default function InmobiliariaDashboardPage() {
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
 
+  const aiAgents = getActiveAgents();
+  const { activities: aiActivities } = useAgentActivity();
+
+  // Agent metrics from real data (hook auto-refreshes)
+  const agentMetricsMap: Record<string, { label: string; value: string | number }[]> = {
+    'tenant-scoring': [
+      { label: t('inmobiliaria.dashboard.aiAgents.evaluationsThisMonth'), value: aiActivities.filter(a => a.agentId === 'tenant-scoring' && a.type === 'execution').length || '—' },
+      { label: t('inmobiliaria.dashboard.aiAgents.avgTime'), value: '< 3 min' },
+    ],
+    'smart-matching': [
+      { label: t('inmobiliaria.dashboard.aiAgents.suggestedThisWeek'), value: aiActivities.filter(a => a.agentId === 'smart-matching').length || '—' },
+      { label: t('inmobiliaria.dashboard.aiAgents.conversionRate'), value: '—' },
+    ],
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
@@ -228,6 +292,11 @@ export default function InmobiliariaDashboardPage() {
           {t('inmobiliaria.dashboard.subtitle')}
         </p>
       </div>
+
+      {/* AI Agents Section — Primary focus, gated to Flex plans */}
+      <FeatureGate feature="ai-agents">
+        <AgentSection agents={aiAgents} activities={aiActivities} metricsMap={agentMetricsMap} />
+      </FeatureGate>
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

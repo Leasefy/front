@@ -1,164 +1,135 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import {
   ShieldCheck,
   GitMerge,
-  ArrowRight,
-  Lightning,
   CheckCircle,
   Warning,
-  CircleNotch,
-  CaretRight,
+  Clock,
+  ArrowsClockwise,
+  Bell,
+  Lightning,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import type { AIAgentActivity, AIAgentId } from '@/lib/types/ai-agents';
-import { getAgentById } from '@/lib/types/ai-agents';
-import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
+import type { AgentActivity } from '@/lib/types/ai-agents';
 
 const AGENT_ICONS: Record<string, Icon> = {
   'tenant-scoring': ShieldCheck,
   'smart-matching': GitMerge,
 };
 
-function timeAgo(date: Date, locale: string): string {
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diff < 60) return locale === 'es' ? 'ahora' : 'now';
-  if (diff < 3600) {
-    const mins = Math.floor(diff / 60);
-    return locale === 'es' ? `hace ${mins} min` : `${mins}m ago`;
-  }
-  if (diff < 86400) {
-    const hours = Math.floor(diff / 3600);
-    return locale === 'es' ? `hace ${hours}h` : `${hours}h ago`;
-  }
-  const days = Math.floor(diff / 86400);
-  return locale === 'es' ? `hace ${days}d` : `${days}d ago`;
-}
+const TYPE_ICONS: Record<string, Icon> = {
+  execution: Lightning,
+  notification: Bell,
+  escalation: Warning,
+  error: Warning,
+};
 
 interface AIAgentActivityFeedProps {
-  activities: AIAgentActivity[];
+  activities: AgentActivity[];
   maxItems?: number;
-  showHeader?: boolean;
-  compact?: boolean;
   className?: string;
 }
 
-export function AIAgentActivityFeed({
-  activities,
-  maxItems = 4,
-  showHeader = true,
-  compact = false,
-  className,
-}: AIAgentActivityFeedProps) {
-  const { locale, t } = useI18n();
-  const [selectedActivity, setSelectedActivity] = useState<AIAgentActivity | null>(null);
-  const displayActivities = activities.slice(0, maxItems);
+function timeAgo(date: Date, locale: string): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
+
+  if (diffMin < 1) return locale === 'es' ? 'Ahora' : 'Just now';
+  if (diffMin < 60) return locale === 'es' ? `hace ${diffMin} min` : `${diffMin}m ago`;
+  if (diffHours < 24) return locale === 'es' ? `hace ${diffHours}h` : `${diffHours}h ago`;
+  return locale === 'es' ? `hace ${diffDays}d` : `${diffDays}d ago`;
+}
+
+export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIAgentActivityFeedProps) {
+  const { locale } = useI18n();
+  const items = activities.slice(0, maxItems);
 
   return (
-    <>
-      <div className={cn(
-        'rounded-xl border bg-white dark:bg-[#1a1a1c] flex flex-col',
-        'border-neutral-200 dark:border-neutral-700',
-        className,
-      )}>
-        {showHeader && (
-          <div className="flex items-center justify-between px-5 pt-5 pb-0">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                <Lightning weight="fill" className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
-                  {locale === 'es' ? 'Actividad de Agentes AI' : 'AI Agent Activity'}
-                </h2>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {locale === 'es' ? '2 agentes trabajando ahora' : '2 agents working now'}
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/panel/inmobiliaria/ai"
-              className="flex items-center gap-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 transition-colors"
-            >
-              {locale === 'es' ? 'Ver todo' : 'View all'}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        )}
-
-        <div className={cn('divide-y divide-neutral-100 dark:divide-neutral-700/50 flex-1 overflow-y-auto', showHeader && 'mt-4')}>
-          {displayActivities.map((activity) => {
-            const agent = getAgentById(activity.agentId);
-            const AgentIcon = AGENT_ICONS[activity.agentId] || Lightning;
-            const agentColor = agent?.color || 'text-neutral-600';
-            const agentBg = agent?.colorBg || 'bg-neutral-100';
-            const isLive = activity.status === 'in_progress';
-            const hasTrace = !!activity.executionTrace;
-
-            return (
-              <button
-                key={activity.id}
-                onClick={() => hasTrace && setSelectedActivity(activity)}
-                className={cn(
-                  'w-full flex items-start gap-3 px-5 py-3.5 transition-colors text-left',
-                  isLive
-                    ? 'bg-neutral-50 dark:bg-white/[0.03] border-l-2 border-l-neutral-400'
-                    : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]',
-                  hasTrace && 'cursor-pointer',
-                  !hasTrace && 'cursor-default',
-                )}
-              >
-                <div className={cn('rounded-lg p-2 mt-0.5 flex-shrink-0', agentBg)}>
-                  <AgentIcon weight="duotone" className={cn('h-4 w-4', agentColor)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-900 dark:text-white">
-                      {activity.description}
-                    </span>
-                    {activity.status === 'requires_attention' && (
-                      <Warning weight="fill" className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
-                    )}
-                    {activity.status === 'completed' && (
-                      <CheckCircle weight="fill" className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
-                    )}
-                    {activity.status === 'in_progress' && (
-                      <CircleNotch weight="bold" className="h-3.5 w-3.5 text-neutral-400 animate-spin flex-shrink-0" />
-                    )}
-                  </div>
-                  {activity.detail && !compact && (
-                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400 truncate">
-                      {activity.detail}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
-                  <span className="text-xs text-neutral-400 dark:text-neutral-500">
-                    {timeAgo(activity.timestamp, locale)}
-                  </span>
-                  {hasTrace && (
-                    <CaretRight className="h-3.5 w-3.5 text-neutral-300 dark:text-neutral-600" />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+    <div className={className}>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          {locale === 'es' ? 'Actividad Reciente' : 'Recent Activity'}
+        </h2>
+        <ArrowsClockwise weight="duotone" className="h-4 w-4 text-neutral-400" />
       </div>
 
-      {/* Execution detail panel */}
-      {selectedActivity?.executionTrace && (
-        <AIAgentExecutionPanel
-          trace={selectedActivity.executionTrace}
-          onClose={() => setSelectedActivity(null)}
-        />
+      {items.length === 0 ? (
+        <div className="rounded-xl bg-neutral-50 dark:bg-white/[0.02] py-8 px-4 text-center">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
+          </p>
+        </div>
+      ) : (
+      <div className="space-y-1">
+        {items.map((activity) => {
+          const AgentIcon = AGENT_ICONS[activity.agentId] || ShieldCheck;
+          const TypeIcon = TYPE_ICONS[activity.type] || Lightning;
+
+          return (
+            <div
+              key={activity.id}
+              className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors"
+            >
+              {/* Agent icon */}
+              <div className="relative flex-shrink-0 mt-0.5">
+                <div className="rounded-lg p-1.5 bg-neutral-100 dark:bg-neutral-800">
+                  <AgentIcon weight="duotone" className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" />
+                </div>
+                {/* Status dot */}
+                <div className={cn(
+                  'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#1a1a1c]',
+                  activity.status === 'success' && 'bg-emerald-500',
+                  activity.status === 'pending' && 'bg-amber-500',
+                  activity.status === 'failed' && 'bg-red-500',
+                )} />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <TypeIcon weight="bold" className={cn(
+                    'h-3 w-3 flex-shrink-0',
+                    activity.type === 'escalation' ? 'text-amber-500' : 'text-neutral-400',
+                  )} />
+                  <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                    {activity.title}
+                  </p>
+                </div>
+                {activity.description && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                    {activity.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Score badge if available */}
+              {activity.metadata?.level && (
+                <span className={cn(
+                  'flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold',
+                  activity.metadata.level === 'A' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+                  activity.metadata.level === 'B' && 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
+                  activity.metadata.level === 'C' && 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+                  activity.metadata.level === 'D' && 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400',
+                )}>
+                  {activity.metadata.level}
+                </span>
+              )}
+
+              {/* Timestamp */}
+              <span className="flex-shrink-0 text-[11px] text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
+                {timeAgo(activity.timestamp, locale)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
       )}
-    </>
+    </div>
   );
 }

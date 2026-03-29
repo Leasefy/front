@@ -10,23 +10,22 @@ Una plataforma de administración de arriendos para el mercado colombiano donde 
 
 Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Agentes → Resultado debe funcionar con autonomía inteligente y escalamiento a humano cuando se requiera una decisión.
 
-## Current Milestone: v4.0 — AI Agent Platform Beta
+## Current Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
 
-**Goal:** Agregar una interfaz conversacional AI ("Beta") a los dashboards existentes donde el usuario habla con un orquestador que despacha agentes especializados para gestionar propiedades, cobrar arriendos, evaluar candidatos y coordinar mantenimiento.
+**Goal:** Hacer que la plataforma se sienta agéntica desde el minuto 0 para inmobiliarias, y construir las features que diferencian los planes Flex (pago por adjudicación) de los planes de suscripción: reportes avanzados, recordatorios automáticos, y lógica de gating por plan.
 
-**Principio clave:** No romper nada existente. Los dashboards de propietarios e inmobiliarias siguen funcionando igual. La experiencia AI vive en una nueva sección "Beta" del sidebar, y eventualmente puede reemplazar el resto de la plataforma.
+**Principio clave:** Los planes Flex deben ser irresistibles — incluyen Agentes AI, reportes avanzados y recordatorios automáticos. El modelo de negocio óptimo es que las inmobiliarias paguen $10 USD por cada adjudicación exitosa.
 
 **Target features:**
-- [ ] Chat UI en sección "Beta" del sidebar (propietarios + inmobiliarias)
-- [ ] Orquestador AI usando Claude API con tool use
-- [ ] Agente de consulta de datos (propiedades, inquilinos, pagos, contratos)
-- [ ] Agente de documentos (generar cartas, certificados, contratos)
-- [ ] Agente de cobranza (recordatorios, verificar comprobantes, estado cobros)
-- [ ] Agente de pipeline (scoring candidatos, mover por etapas)
-- [ ] Sistema de memoria (conversaciones + preferencias aprendidas)
-- [ ] Sistema de decisiones pendientes (AI presenta opciones, usuario decide)
-- [ ] Briefing proactivo (resumen diario/semanal automático)
-- [ ] Integración WhatsApp via Twilio (inquilinos envían comprobantes, reciben recordatorios)
+- [ ] Plan gating system — lógica en useAgencyPlan para bloquear features según plan
+- [ ] Reportes avanzados — ocupación, mora, rendimiento por agente, tendencias (Growth+)
+- [ ] Reportes ejecutivos — resúmenes C-level con comparativas mensuales (Business+)
+- [ ] Recordatorios automáticos de cobro — pre-vencimiento, post-vencimiento, escalación (Growth+)
+- [ ] Recordatorios de vencimiento de contrato — alertas a 90/60/30 días (Growth+)
+- [ ] UI de pricing modal para inmobiliarias — modelo Flex vs Suscripción
+- [ ] Dashboard agéntico — agent cards, activity feed, execution panel (ya en progreso)
+- [ ] Agent Hub page — centro de control de agentes AI (/panel/inmobiliaria/ai)
+- [ ] Agent detail sidebar — explicación paso a paso de cada agente
 
 **Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md`
 

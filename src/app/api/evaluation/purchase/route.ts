@@ -1,82 +1,153 @@
 // ============================================================================
 // POST /api/evaluation/purchase
 // ============================================================================
-// Creates a tenant evaluation: processes payment, runs scoring, generates
-// a verification code.
+// Triggers the tenant scoring workflow for an application.
+//
+// In the future, payment processing will happen before scoring.
+// For now this acts as a proxy to the scoring workflow with "purchase"
+// semantics — the caller indicates intent to evaluate a candidate.
 //
 // REQUEST:
-//   Headers: Authorization: Bearer <token>
+//   Headers: Authorization: Bearer <token> (or x-api-key in production)
 //   Body: {
-//     tenantId: string;
-//     paymentMethod: 'card' | 'transfer';
-//     paymentToken?: string;  // From payment gateway (e.g., Stripe token)
+//     applicationId: string;
+//     agencyId: string;
 //   }
 //
 // RESPONSE (201):
 //   {
-//     id: string;
-//     status: 'paid';
-//     score: RiskScore;
-//     verificationCode: string;
-//     expiresAt: string;     // 90 days from now
+//     success: true;
+//     score: number;
+//     level: 'A' | 'B' | 'C' | 'D';
+//     recommendation: string;
+//     explanation: string;
+//     verificationCode: string | null;
+//     escalate: boolean;
+//     storedSuccessfully: boolean;
 //   }
 //
-// IMPLEMENTATION STEPS:
-//
-// 1. Authenticate the request — verify JWT token, extract tenantId
-//
-// 2. Check if tenant already has a valid (non-expired) evaluation
-//    - If yes, return 409 Conflict with existing evaluation
-//
-// 3. Process payment via payment gateway
-//    - Integrate with Stripe, MercadoPago, or local gateway
-//    - Validate payment amount matches evaluation price
-//    - Store payment record in payments table
-//
-// 4. Run scoring algorithm
-//    - Pull tenant data: income, employment, rental history, documents
-//    - Calculate category scores:
-//      * financial_stability (35%): income verification, debt-to-income ratio, credit history
-//      * rental_history (25%): previous landlord references, tenure length, payment history
-//      * personal_profile (20%): employment stability, personal references
-//      * document_verification (20%): ID verification, income proof, document completeness
-//    - Compute weighted overall score
-//    - Map to risk level (A: >=85, B: >=70, C: >=50, D: <50)
-//    - Generate AI explanation using LLM
-//    - Identify positive drivers and flags
-//
-// 5. Generate 8-character verification code
-//    - Use charset: ABCDEFGHJKLMNPQRSTUVWXYZ23456789 (no ambiguous chars)
-//    - Check for uniqueness in database
-//
-// 6. Store evaluation in database:
-//    CREATE TABLE evaluations (
-//      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-//      tenant_id UUID REFERENCES tenants(id),
-//      status VARCHAR(20) NOT NULL DEFAULT 'paid',
-//      score JSONB NOT NULL,
-//      verification_code VARCHAR(8) UNIQUE NOT NULL,
-//      paid_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//      expires_at TIMESTAMPTZ NOT NULL,
-//      payment_id UUID REFERENCES payments(id),
-//      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-//    );
-//
-// 7. Return evaluation data
-//
 // ERROR HANDLING:
-//   401 — Unauthorized (missing/invalid token)
-//   409 — Conflict (active evaluation already exists)
-//   402 — Payment required (payment failed)
-//   500 — Internal server error
+//   400 — Bad request (missing fields)
+//   401 — Unauthorized
+//   409 — Conflict (evaluation already exists for this application)
+//   500 — Internal server error (workflow failure)
 // ============================================================================
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { mastra } from '@/mastra'
+import { validateAgentRequest, unauthorizedResponse } from '@/app/api/agents/_middleware'
 
-export async function POST() {
-  // Stub: return 501 Not Implemented
-  return NextResponse.json(
-    { error: 'Not implemented. See comments in this file for implementation guide.' },
-    { status: 501 }
-  );
+export async function POST(req: Request) {
+  const auth = validateAgentRequest(req)
+  if (!auth.valid) return unauthorizedResponse(auth.error!)
+
+  try {
+    const body = await req.json()
+    const { applicationId, agencyId } = body
+
+    if (!applicationId || !agencyId) {
+      return NextResponse.json(
+        { error: 'applicationId and agencyId are required' },
+        { status: 400 },
+      )
+    }
+
+    // Check if an evaluation already exists for this application
+    try {
+      const { db } = await import('@/lib/db')
+      const riskModel = (db as any).riskScoreResult
+
+      if (riskModel?.findFirst) {
+        const existing = await riskModel.findFirst({
+          where: { applicationId },
+          select: { id: true, totalScore: true, level: true, createdAt: true },
+        })
+
+        if (existing) {
+          return NextResponse.json(
+            {
+              error: 'Evaluation already exists for this application',
+              existingEvaluation: {
+                id: existing.id,
+                score: existing.totalScore,
+                level: existing.level,
+                createdAt: existing.createdAt,
+              },
+            },
+            { status: 409 },
+          )
+        }
+      }
+    } catch (dbErr) {
+      // If DB check fails, proceed anyway — the workflow will handle storage
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[evaluation/purchase] DB check failed, proceeding:', dbErr)
+      }
+    }
+
+    // Run the tenant scoring workflow
+    const workflow = mastra.getWorkflow('tenant-scoring-pipeline')
+    const run = await workflow.createRun()
+
+    const result = await run.start({
+      inputData: { applicationId, agencyId },
+    })
+
+    if (result.status === 'success') {
+      const data = result.result as Record<string, unknown>
+
+      // Retrieve the verification code from the stored result
+      let verificationCode: string | null = null
+      try {
+        const { db } = await import('@/lib/db')
+        const riskModel = (db as any).riskScoreResult
+
+        if (riskModel?.findFirst) {
+          const stored = await riskModel.findFirst({
+            where: { applicationId },
+            select: { featuresJson: true },
+            orderBy: { createdAt: 'desc' },
+          })
+
+          const featuresJson = stored?.featuresJson as Record<string, unknown> | null
+          verificationCode = (featuresJson?.verificationCode as string) ?? null
+        }
+      } catch {
+        // Verification code retrieval is non-critical
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          score: data.score,
+          level: data.level,
+          recommendation: data.recommendation,
+          explanation: data.explanation,
+          verificationCode,
+          escalate: data.escalate ?? false,
+          storedSuccessfully: data.storedSuccessfully ?? false,
+        },
+        { status: 201 },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Scoring workflow did not complete successfully',
+        status: result.status,
+      },
+      { status: 500 },
+    )
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[evaluation/purchase] Error:', errorMessage)
+    }
+
+    return NextResponse.json(
+      { error: 'Evaluation purchase failed', details: errorMessage },
+      { status: 500 },
+    )
+  }
 }

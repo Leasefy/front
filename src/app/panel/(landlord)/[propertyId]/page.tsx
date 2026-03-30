@@ -1287,7 +1287,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   onClick={() => {
                     toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Descargar

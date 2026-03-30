@@ -469,7 +469,7 @@ export function ExtractoPropietario({
           <Button
             onClick={handleDownloadPDF}
             disabled={isDownloading}
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
           >
             {isDownloading ? (
               <>

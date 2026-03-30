@@ -169,7 +169,7 @@ export function StepReview() {
                 className="w-full h-full object-cover"
               />
               {index === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] rounded-md">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-md">
                   Principal
                 </span>
               )}

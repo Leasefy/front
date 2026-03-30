@@ -398,7 +398,7 @@ export default function MensajesPage() {
             </div>
             {totalUnread > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-full">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                   {t('inmobiliaria.mensajes.unreadCount', { count: totalUnread })}
                 </span>
@@ -510,7 +510,7 @@ export default function MensajesPage() {
                         </div>
 
                         {conversation.unread > 0 && (
-                          <span className="w-5 h-5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="w-5 h-5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
                             {conversation.unread}
                           </span>
                         )}
@@ -762,7 +762,7 @@ export default function MensajesPage() {
                         className={cn(
                           'p-3 rounded-full transition-all',
                           messageText.trim()
-                            ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
+                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                             : 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
                         )}
                       >

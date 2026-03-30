@@ -180,7 +180,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -195,7 +195,7 @@ export function TenantDashboardEmpty() {
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
+                    className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full"
                   />
                 </div>
                 <div className="flex items-center justify-between mt-3">
@@ -212,7 +212,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />

@@ -320,7 +320,7 @@ export default function PropietarioPerfilPage() {
                     {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
                       <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white font-bold text-4xl">
+                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -650,7 +650,7 @@ export default function PropietarioPerfilPage() {
                   </ul>
                   <div className="flex gap-3">
                     <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
-                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
+                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
                   </div>
                 </div>
               </>
@@ -671,7 +671,7 @@ export default function PropietarioPerfilPage() {
                     <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
                     <button onClick={handleDeleteAccount} disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
                       className={cn('flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
-                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>
+                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>
                       {isDeleting ? <><SpinnerGap className="w-4 h-4 animate-spin" />{locale === 'es' ? 'Eliminando...' : 'Deleting...'}</> : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
                     </button>
                   </div>

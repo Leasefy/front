@@ -206,7 +206,7 @@ export function TenantOnboardingSuccess({ userName = 'inquilino' }: TenantOnboar
               onClick={() => router.push('/propiedades')}
               className={cn(
                 'w-full inline-flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold',
-                'rounded-xl bg-indigo-600 text-white',
+                'rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono',
                 'hover:bg-indigo-700 transition-all duration-200',
                 'shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30'
               )}

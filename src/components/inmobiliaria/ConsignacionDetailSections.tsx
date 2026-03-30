@@ -307,7 +307,7 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
           </div>
           <div className="mt-2 h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex">
             <div
-              className="bg-indigo-500 dark:bg-indigo-400"
+              className="bg-indigo-600 dark:bg-indigo-400"
               style={{ width: `${agente.commissionSplit}%` }}
             />
             <div

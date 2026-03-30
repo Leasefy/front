@@ -350,7 +350,7 @@ export default function CobrosPage() {
               setPaymentCobro(null);
               setIsPaymentModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors shadow-lg shadow-indigo-500/20"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
           >
             <Plus className="w-5 h-5" />
             {t('inmobiliaria.cobros.registerPayment')}
@@ -440,7 +440,7 @@ export default function CobrosPage() {
               </p>
               <button
                 onClick={() => refetchCobros()}
-                className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 transition-colors"
               >
                 Reintentar
               </button>

@@ -483,7 +483,7 @@ export default function ReportesPage() {
               'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg',
               generatingReports.size > 0
                 ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
-                : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/20'
+                : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
             )}
           >
             <Lightning className="w-5 h-5" weight="fill" />

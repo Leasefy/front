@@ -404,7 +404,7 @@ export default function ContratosPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white uppercase tracking-wide font-mono font-bold text-sm">
                     !
                   </div>
                 </div>

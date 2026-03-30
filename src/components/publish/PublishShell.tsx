@@ -184,7 +184,7 @@ export function PublishShell({ children }: PublishShellProps) {
               {/* Desktop step header */}
               <div className="hidden lg:block px-6 py-5 border-b border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white text-sm font-medium">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium">
                     {currentStep}
                   </span>
                   <div>

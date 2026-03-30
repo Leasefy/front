@@ -216,7 +216,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                         className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                           isCurrent
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                             : isCompleted
                             ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'

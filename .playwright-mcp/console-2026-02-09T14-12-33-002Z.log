@@ -1,0 +1,1154 @@
+[ 5475441ms] [ERROR] ./src/app/panel/inmobiliaria/operaciones/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/operaciones/page.tsx:340:1]
+ 340 |   );
+ 341 | 
+ 342 |   return (
+ 343 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 344 |       {/* Header */}
+ 345 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 346 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/operaciones/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[ 5478158ms] [ERROR] ./src/app/panel/inmobiliaria/operaciones/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/operaciones/page.tsx:340:1]
+ 340 |   );
+ 341 | 
+ 342 |   return (
+ 343 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 344 |       {/* Header */}
+ 345 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 346 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/operaciones/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[ 5478398ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones?_rsc=i3tjy:0
+[ 5478459ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones?_rsc=i3tjy:0
+[ 5478506ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones?_rsc=i3tjy:0
+[ 5478641ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 5479193ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/operaciones/page.tsx:340:1]
+ 340 |   );
+ 341 | 
+ 342 |   return (
+ 343 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 344 |       {/* Header */}
+ 345 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 346 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 5479206ms] [ERROR] ./src/app/panel/inmobiliaria/operaciones/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/operaciones/page.tsx:340:1]
+ 340 |   );
+ 341 | 
+ 342 |   return (
+ 343 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 344 |       {/* Header */}
+ 345 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 346 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 5486768ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8835252ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[ 8836291ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[ 8836702ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones?_rsc=i3tjy:0
+[ 8836788ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8837265ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8837285ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8837286ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8841194ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8843179ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8843188ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8843189ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8843258ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8843473ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8843485ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8843487ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8844067ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8844700ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8844726ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8844726ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8844745ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[ 8844772ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8844945ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8844962ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8844962ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8873151ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8873934ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8873940ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8873940ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8874030ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8874218ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8874219ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8874303ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8880257ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8880784ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8880784ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8880849ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8881049ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8881072ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8901608ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8901984ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8901984ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8902031ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8902229ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8902243ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8902274ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8909580ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8909934ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8909934ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8909974ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8910144ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8910165ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8910165ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8918715ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8919969ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8919981ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8919985ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8920018ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8920174ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8920177ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8929454ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8929455ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8930013ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8931002ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8931022ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8931199ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8931220ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8931222ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8944964ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8946165ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8946171ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8946171ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8946225ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8946407ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8946422ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8946441ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8952218ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8953594ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/panel/inmobiliaria/agentes/page.tsx @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8953598ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/webpack/7f438b07d10a7262.webpack.hot-update.json:0
+[ 8953599ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 8953646ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/panel/inmobiliaria/operaciones:0
+[ 8953830ms] ModuleBuildError: Module build failed (from ./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+
+Caused by:
+    Syntax Error
+    at processResult (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:400590)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/webpack/bundle5.js:28:402302)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645)
+    at <unknown> (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019)
+    at r.callback (file:///Users/nicolasgarcia/rent/mvp/node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+[ 8953842ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8953843ms] [ERROR] ./src/app/panel/inmobiliaria/agentes/page.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/app/panel/inmobiliaria/agentes/page.tsx:137:1]
+ 137 |   }, []);
+ 138 | 
+ 139 |   return (
+ 140 |     <div className="p-4 md:p-6 space-y-6">
+     :      ^^^
+ 141 |       {/* Header */}
+ 142 |       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ 143 |         <div>
+     `----
+
+Caused by:
+    Syntax Error @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 8979660ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[10352507ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770656702523:0
+[10352642ms] Event
+[10470797ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770656823121:0
+[10470826ms] Event
+[10489238ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770656842214:0
+[10489255ms] Event
+[10507454ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770656860433:0
+[10507470ms] Event
+[10512544ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770656865525:0
+[10512560ms] Event
+[10648222ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657000611:0
+[10648256ms] Event
+[10652306ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657005257:0
+[10652365ms] Event
+[10668742ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657021726:0
+[10668758ms] Event
+[10677424ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657030408:0
+[10677449ms] Event
+[10684622ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657037599:0
+[10684690ms] Event
+[10701249ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657054223:0
+[10701273ms] Event
+[10708730ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657061711:0
+[10708757ms] Event
+[10713303ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657066267:0
+[10713319ms] Event
+[10723767ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657076724:0
+[10723806ms] Event
+[10729188ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657082159:0
+[10729208ms] Event
+[10733789ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/_next/static/css/app/layout.css?v=1770657086778:0
+[10733805ms] Event

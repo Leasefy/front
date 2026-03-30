@@ -536,7 +536,7 @@ export default function PanelPage() {
                   </p>
                   <Link
                     href="/publicar?from=panel"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-full hover:bg-indigo-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-full hover:bg-indigo-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     {t('landlord.dashboard.publishProperty')}
@@ -656,7 +656,7 @@ export default function PanelPage() {
                     </div>
                     <div className="h-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
+                        className="h-full bg-indigo-600 rounded-full transition-all"
                         style={{ width: `${dashboardData.financial.collectionRate}%` }}
                       />
                     </div>
@@ -706,7 +706,7 @@ export default function PanelPage() {
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
                       </div>
                       {action.badge && (
-                        <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
                       )}
                       <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
                     </div>
@@ -817,7 +817,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
               onClick={() => setSelected(visit)}
               className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-white dark:hover:bg-[#222224] transition-colors"
             >
-              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-indigo-500')} />
+              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-indigo-600')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{visit.candidateName}</p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -861,7 +861,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             </Link>
             <Link
               href="/panel/visitas"
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors"
             >
               {t('landlord.dashboard.manageVisit')}
             </Link>
@@ -882,7 +882,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
   const [selected, setSelected] = useState<DashboardUpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {
-    payment_due: 'bg-indigo-500',
+    payment_due: 'bg-indigo-600',
     lease_ending: 'bg-amber-500',
     contract_renewal: 'bg-emerald-500',
     inspection: 'bg-purple-500',
@@ -966,7 +966,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         </h3>
         <div className="space-y-1">
           {events.slice(0, 5).map((event) => {
-            const dotColor = event.daysUntil < 0 ? 'bg-red-500' : (EVENT_DOT_COLOR[event.type] || 'bg-indigo-500');
+            const dotColor = event.daysUntil < 0 ? 'bg-red-500' : (EVENT_DOT_COLOR[event.type] || 'bg-indigo-600');
             return (
               <button
                 key={event.id}
@@ -1003,7 +1003,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         footerActions={selected?.href ? (
           <Link
             href={selected.href}
-            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors"
           >
             {actionLabel}
           </Link>

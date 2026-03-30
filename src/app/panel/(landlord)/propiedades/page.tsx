@@ -69,7 +69,7 @@ export default function PropiedadesPage() {
           </div>
           <Link
             href="/publicar?from=panel"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('landlord.properties.newProperty')}
@@ -398,7 +398,7 @@ export default function PropiedadesPage() {
             </p>
             <Link
               href="/publicar?from=panel"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('landlord.properties.publishProperty')}

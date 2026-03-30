@@ -113,7 +113,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {isPendingTenant ? (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-semibold transition-colors"
         >
           <PenNib className="w-4 h-4" />
           {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}

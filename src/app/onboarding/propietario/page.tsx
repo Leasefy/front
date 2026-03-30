@@ -384,7 +384,7 @@ function OnboardingPropietarioContent() {
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid && !isSubmitting
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
@@ -532,7 +532,7 @@ function OnboardingPropietarioContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid && !isSubmitting
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >

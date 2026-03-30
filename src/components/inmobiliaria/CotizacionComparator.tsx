@@ -246,7 +246,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
             'w-full py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
             isSelected
               ? 'bg-emerald-500 text-white cursor-default'
-              : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20'
+              : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
           )}
         >
           {isSelected ? (
@@ -300,7 +300,7 @@ export function CotizacionComparator({
         {onRequestNewQuote && (
           <button
             onClick={onRequestNewQuote}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4" weight="bold" />
             {t('inmobiliaria.finance.quotes.requestQuote')}
@@ -351,7 +351,7 @@ export function CotizacionComparator({
                 'flex-1 py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
                 selectedQuoteId === quote.id
                   ? 'bg-emerald-500 text-white cursor-default'
-                  : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20'
+                  : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
               )}
             >
               {selectedQuoteId === quote.id ? (

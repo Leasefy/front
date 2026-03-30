@@ -33,7 +33,7 @@ export function SettingToggle({
         className={cn(
           'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
           enabled
-            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-500'
+            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-600'
             : 'bg-neutral-200 dark:bg-[#2a2a2c]'
         )}
       >

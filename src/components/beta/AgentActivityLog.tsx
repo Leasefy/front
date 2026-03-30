@@ -50,7 +50,7 @@ const AGENT_COLOR_BG: Record<string, string> = {
   amber: 'bg-amber-50 dark:bg-amber-500/10',
   purple: 'bg-purple-50 dark:bg-purple-500/10',
   pink: 'bg-pink-50 dark:bg-pink-500/10',
-  indigo: 'bg-indigo-50 dark:bg-indigo-500/10',
+  indigo: 'bg-indigo-50 dark:bg-indigo-600/10',
 };
 
 const AGENT_COLOR_TEXT: Record<string, string> = {

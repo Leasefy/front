@@ -271,7 +271,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'presencial'
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -283,7 +283,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'virtual'
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -306,7 +306,7 @@ export function StickyCTA({
                       className={cn(
                         'py-2.5 border text-center rounded-xl transition-all duration-200',
                         selectedDay === day.full
-                          ? 'border-primary bg-primary text-white'
+                          ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                           : 'border-border hover:border-primary/30'
                       )}
                     >
@@ -338,7 +338,7 @@ export function StickyCTA({
                       className={cn(
                         'py-2.5 text-[12px] font-semibold border rounded-lg transition-all duration-200',
                         selectedTime === time
-                          ? 'border-primary bg-primary text-white'
+                          ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                           : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                       )}
                     >
@@ -355,7 +355,7 @@ export function StickyCTA({
                 className={cn(
                   'w-full py-4 text-[14px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                   selectedDay && selectedTime && !isSubmitting
-                    ? 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                    ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
                     : 'bg-neutral-100 text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -438,7 +438,7 @@ export function MobileStickyCTA({
           </div>
           <div className="flex gap-2">
             <Link href={`/aplicar/${propertyId}`}>
-              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
+              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold uppercase tracking-wide font-mono rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
                 Postularme
               </button>
             </Link>

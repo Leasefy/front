@@ -358,7 +358,7 @@ export default function ApplicationDetailPage() {
                               'w-10 h-10 rounded-full flex items-center justify-center transition-all',
                               isCompleted
                                 ? isCurrent
-                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                  ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                                   : 'bg-emerald-500 text-white'
                                 : 'bg-stone-200 dark:bg-neutral-700 text-neutral-400'
                             )}>
@@ -407,7 +407,7 @@ export default function ApplicationDetailPage() {
                         </p>
                         <Link
                           href={`/inquilino/contratos/${pendingContract.id}/firmar`}
-                          className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+                          className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-semibold transition-colors"
                         >
                           <PenNib className="w-4 h-4" />
                           {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
@@ -495,7 +495,7 @@ export default function ApplicationDetailPage() {
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all',
                           isFirst
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                             : 'bg-white dark:bg-[#2a2a2c] border-2 border-stone-200 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400'
                         )}>
                           <EventIcon className="w-4 h-4" />
@@ -585,7 +585,7 @@ export default function ApplicationDetailPage() {
                   onClick={() => router.push('/inquilino/mensajes')}
                   className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center group-hover:bg-indigo-700 transition-colors">
                     <ChatCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-left">

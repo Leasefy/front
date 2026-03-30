@@ -837,6 +837,7 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
+      "aiAgents": "AI Agents",
       "propietarios": "Owners",
       "portafolio": "Portfolio",
       "pipeline": "Pipeline",
@@ -947,6 +948,16 @@
         "late": "Overdue",
         "pendingDispersions": "Pending disbursements",
         "collectionRate": "Collection rate"
+      },
+      "aiAgents": {
+        "evaluationsThisMonth": "Evaluations this month",
+        "avgTime": "Average time",
+        "precision": "Precision",
+        "escalatedToHuman": "Escalated to human",
+        "suggestedThisWeek": "Suggestions sent",
+        "conversionRate": "Conversion rate",
+        "redirectedCandidates": "Redirected candidates",
+        "avgCompatibility": "Average compatibility"
       }
     },
     "config": {

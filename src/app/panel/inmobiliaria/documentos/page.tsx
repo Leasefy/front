@@ -348,7 +348,7 @@ export default function DocumentosPage() {
         </div>
         <button
           onClick={handleCreateActa}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 font-medium shadow-lg shadow-indigo-500/20 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 font-medium transition-colors"
         >
           <Plus className="w-5 h-5" />
           {t('inmobiliaria.documentos.newActa')}
@@ -517,7 +517,7 @@ export default function DocumentosPage() {
                         </p>
                         <button
                           onClick={handleCreateActa}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                           {t('inmobiliaria.documentos.createFirstActa')}

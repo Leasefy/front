@@ -16,7 +16,7 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
-  // Sparkle, — re-add when AI Beta nav item is uncommented
+  Robot,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -42,6 +42,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       href: '/panel/inmobiliaria',
       icon: SquaresFour,
       exact: true,
+    },
+    {
+      label: t('inmobiliaria.nav.aiAgents'),
+      href: '/panel/inmobiliaria/ai',
+      icon: Robot,
     },
     {
       label: t('inmobiliaria.nav.propietarios'),
@@ -99,12 +104,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: Chat,
       badge: 5,
     },
-    // --- AI Beta section (hidden — re-enable when ready) ---
-    // {
-    //   label: t('inmobiliaria.nav.aiBeta'),
-    //   href: '/panel/inmobiliaria/beta',
-    //   icon: Sparkle,
-    // },
   ], [t]);
 
   return (

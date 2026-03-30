@@ -301,7 +301,7 @@ export function ReporteCard({
               e.stopPropagation();
               onUpgrade?.();
             }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             <Lock className="w-4 h-4" />
             {t('inmobiliaria.reporte.upgradeToAccess') || 'Mejorar plan'}
@@ -320,7 +320,7 @@ export function ReporteCard({
                   'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                   isGenerating
                     ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                    : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                    : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                 )}
               >
                 {isGenerating ? (

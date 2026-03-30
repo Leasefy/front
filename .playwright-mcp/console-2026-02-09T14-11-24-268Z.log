@@ -1,0 +1,63 @@
+[   44534ms] [ERROR] ./src/components/inmobiliaria/RenovacionesTable.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/RenovacionesTable.tsx:225:1]
+ 225 |   const hasSelection = selectedItems.size > 0;
+ 226 | 
+ 227 |   return (
+ 228 |     <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/50 overflow-hidden">
+     :      ^^^
+ 229 |       <div className="p-4 md:p-6 space-y-5">
+ 230 |       {/* Summary Cards */}
+ 231 |       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/RenovacionesTable.tsx
+./src/components/inmobiliaria/index.ts
+./src/app/panel/inmobiliaria/pipeline/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[   45070ms] [ERROR] ./src/components/inmobiliaria/RenovacionesTable.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/RenovacionesTable.tsx:225:1]
+ 225 |   const hasSelection = selectedItems.size > 0;
+ 226 | 
+ 227 |   return (
+ 228 |     <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/50 overflow-hidden">
+     :      ^^^
+ 229 |       <div className="p-4 md:p-6 space-y-5">
+ 230 |       {/* Summary Cards */}
+ 231 |       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/RenovacionesTable.tsx
+./src/components/inmobiliaria/index.ts
+./src/app/panel/inmobiliaria/documentos/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32
+[   60252ms] [ERROR] ./src/components/inmobiliaria/RenovacionesTable.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/RenovacionesTable.tsx:225:1]
+ 225 |   const hasSelection = selectedItems.size > 0;
+ 226 | 
+ 227 |   return (
+ 228 |     <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/50 overflow-hidden">
+     :      ^^^
+ 229 |       <div className="p-4 md:p-6 space-y-5">
+ 230 |       {/* Summary Cards */}
+ 231 |       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/RenovacionesTable.tsx
+./src/components/inmobiliaria/index.ts
+./src/app/panel/inmobiliaria/pipeline/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@14.2.21_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/app-index.js:32

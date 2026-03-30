@@ -125,7 +125,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
           {/* Progress bar */}
           <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mb-3">
-            <div className="h-full w-4/5 bg-neutral-900 dark:bg-indigo-500 rounded-full" />
+            <div className="h-full w-4/5 bg-neutral-900 dark:bg-indigo-600 rounded-full" />
           </div>
 
           {/* Steps summary */}

@@ -675,10 +675,10 @@ export default function AplicacionesPage() {
                 viewport={{ once: true }}
                 whileHover={{ y: -4 }}
                 transition={{ duration: 0.3 }}
-                className="relative rounded-2xl border border-indigo-600/50 bg-card p-6 flex flex-col transition-all duration-300 shadow-lg shadow-indigo-600/5"
+                className="relative rounded-2xl border border-indigo-600/50 bg-card p-6 flex flex-col transition-all duration-300"
               >
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-indigo-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-indigo-600/25 inline-flex items-center gap-1.5">
+                  <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full inline-flex items-center gap-1.5">
                     <Sparkle className="w-3 h-3" />
                     Recomendado
                   </span>

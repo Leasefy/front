@@ -453,7 +453,7 @@ export default function PricingPage() {
             >
               {userTextT === 'owner-managed' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export default function PricingPage() {
             >
               {userTextT === 'owner-diy' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
@@ -533,7 +533,7 @@ export default function PricingPage() {
             >
               {userTextT === 'evaluation' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
@@ -574,7 +574,7 @@ export default function PricingPage() {
             >
               {userTextT === 'agency' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>

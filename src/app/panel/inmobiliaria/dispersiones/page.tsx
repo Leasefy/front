@@ -376,7 +376,7 @@ export default function DispersionesPage() {
         </div>
         <Link
           href="/panel/inmobiliaria/dispersiones/generar"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
         >
           <Lightning className="w-5 h-5" weight="fill" />
           {t('inmobiliaria.dispersiones.wizard.title')}
@@ -495,7 +495,7 @@ export default function DispersionesPage() {
                   <div className="mt-6">
                     <Link
                       href="/panel/inmobiliaria/dispersiones/generar"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
                     >
                       <Lightning className="w-4 h-4" weight="fill" />
                       {t('inmobiliaria.dispersiones.wizard.title')}

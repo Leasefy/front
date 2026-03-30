@@ -65,7 +65,7 @@ const socialLinks = [
  */
 export function Footer() {
   return (
-    <footer className="bg-primary text-white overflow-hidden">
+    <footer className="bg-primary text-white uppercase tracking-wide font-mono overflow-hidden">
       {/* Main Content - 80px padding top */}
       <div className="container-platform pt-[80px]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-20">

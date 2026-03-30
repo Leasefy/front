@@ -167,7 +167,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         <>
           <span className="flex-1">{item.label}</span>
           {item.badge !== undefined && item.badge > 0 && (
-            <span className="min-w-[20px] h-5 px-1.5 bg-indigo-500 text-white text-[11px] font-medium flex items-center justify-center rounded-full">
+            <span className="min-w-[20px] h-5 px-1.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-medium flex items-center justify-center rounded-full">
               {item.badge}
             </span>
           )}

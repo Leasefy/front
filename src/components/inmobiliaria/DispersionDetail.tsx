@@ -596,7 +596,7 @@ export function DispersionDetail({
             {/* Process button (primary - right) */}
             {isPending && onProcess && (
               <Button
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
                 onClick={handleProcess}
                 disabled={isProcessing}
               >

@@ -162,7 +162,7 @@ export default function PortafolioPage() {
         </div>
         <button
           onClick={handleNuevaConsignacion}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
           {t('inmobiliaria.portafolio.addProperty')}

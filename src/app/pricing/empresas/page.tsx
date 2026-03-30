@@ -463,7 +463,7 @@ export default function EmpresasCalculadoraPage() {
                     <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 pr-4">Evaluaciones/mes</th>
                     <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">Starter (Gratis)</th>
                     <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 px-4">
-                      <span className="flex items-center gap-1.5">Pro ($149K/mes) <span className="bg-indigo-600 text-white text-[8px] px-1.5 py-0.5 rounded-full">Popular</span></span>
+                      <span className="flex items-center gap-1.5">Pro ($149K/mes) <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[8px] px-1.5 py-0.5 rounded-full">Popular</span></span>
                     </th>
                     <th className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-3 pl-4">
                       <span className="flex items-center gap-1.5">Flex (1% canon) <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">Todo incluido</span></span>

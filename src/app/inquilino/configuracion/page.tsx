@@ -589,7 +589,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
               {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
@@ -635,7 +635,7 @@ function SettingToggle({
         className={cn(
           'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
           enabled
-            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-500'
+            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-600'
             : 'bg-neutral-200 dark:bg-[#2a2a2c]'
         )}
       >

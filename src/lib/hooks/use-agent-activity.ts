@@ -57,10 +57,8 @@ export function useAgentActivity(options: UseAgentActivityOptions = {}): UseAgen
       const msg = err instanceof Error ? err.message : 'Failed to fetch activity'
       setError(msg)
       // Fall back to mock data on error
-      if (activities.length === 0) {
-        setActivities(getMockAgentActivity())
-        setSource('mock')
-      }
+      setActivities(getMockAgentActivity())
+      setSource('mock')
     } finally {
       setIsLoading(false)
     }

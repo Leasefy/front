@@ -241,7 +241,7 @@ function OnboardingInmobiliariaContent() {
           <button
             onClick={goToDashboard}
             disabled={isNavigating}
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-indigo-600 text-white uppercase tracking-wide font-mono font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isNavigating ? (
               <>
@@ -311,8 +311,8 @@ function OnboardingInmobiliariaContent() {
                   <div key={s} className="flex items-center gap-2">
                     <div className={cn(
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                      step > s ? "bg-indigo-600 text-white" :
-                      step === s ? "bg-indigo-600 text-white" : "bg-neutral-100 text-neutral-400"
+                      step > s ? "bg-indigo-600 text-white uppercase tracking-wide font-mono" :
+                      step === s ? "bg-indigo-600 text-white uppercase tracking-wide font-mono" : "bg-neutral-100 text-neutral-400"
                     )}>
                       {step > s ? <Check className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
@@ -459,7 +459,7 @@ function OnboardingInmobiliariaContent() {
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
@@ -574,7 +574,7 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
@@ -692,7 +692,7 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep3Valid
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
@@ -843,7 +843,7 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep4Valid && !isSubmitting
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >

@@ -242,7 +242,7 @@ export default function ConfiguracionPage() {
                 {currentPlanId !== 'business' && (
                   <Link
                     href="/panel/upgrade"
-                    className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                    className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-colors flex items-center gap-2"
                   >
                     {t('landlordSettings.subscription.upgradePlan')}
                     <ArrowUpRight className="w-4 h-4" />
@@ -660,7 +660,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== t('landlordSettings.modals.deleteAccount.confirmWord')}
-              className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.deleteAccount.deleting') : t('landlordSettings.modals.deleteAccount.deleteButton')}

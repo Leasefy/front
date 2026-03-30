@@ -287,7 +287,7 @@ export function MfaSetupSection() {
               <button
                 onClick={handleUnenroll}
                 disabled={isLoading}
-                className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
               >
                 {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
                 {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}

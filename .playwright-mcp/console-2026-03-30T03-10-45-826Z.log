@@ -1,0 +1,152 @@
+[     611ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     611ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     611ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     613ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     613ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     613ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[     687ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[     695ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[     708ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   30692ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   60692ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   90704ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  120691ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  150714ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  180698ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  210692ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  240699ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  270724ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  300693ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  330721ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  360693ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  366342ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  366344ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  366344ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  366344ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  366344ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  367920ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  387544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  387545ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  388760ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  389423ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  417518ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  419365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  419365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  419365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  419365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  419365ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  420446ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  449388ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  479394ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  503901ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:112
+[  504805ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria:0
+[  505285ms] ReferenceError: Bell is not defined
+    at eval (webpack-internal:///(app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:25:19)
+    at (app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:302:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+    at eval (webpack-internal:///(app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx:25:105)
+    at (app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:269:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+[  505294ms] ReferenceError: Bell is not defined
+    at eval (webpack-internal:///(app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:25:19)
+    at (app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:302:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+    at eval (webpack-internal:///(app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx:25:105)
+    at (app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:269:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+[  505294ms] [ERROR] The above error occurred in the <ServerRoot> component:
+
+    at ServerRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:112:27)
+    at Root (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:117:11)
+    at ReactDevOverlay (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ReactDevOverlay. @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  505322ms] ReferenceError: Bell is not defined
+    at eval (webpack-internal:///(app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:25:19)
+    at (app-pages-browser)/./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:302:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+    at eval (webpack-internal:///(app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx:25:105)
+    at (app-pages-browser)/./src/app/panel/inmobiliaria/page.tsx (http://localhost:3001/_next/static/chunks/app/panel/inmobiliaria/page.js:269:1)
+    at options.factory (http://localhost:3001/_next/static/chunks/webpack.js:715:31)
+    at __webpack_require__ (http://localhost:3001/_next/static/chunks/webpack.js:37:33)
+    at fn (http://localhost:3001/_next/static/chunks/webpack.js:371:21)
+[  510313ms] [WARNING] The resource http://localhost:3001/_next/static/media/fc727f226c737876-s.p.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3001/panel/inmobiliaria:0
+[  510313ms] [WARNING] The resource http://localhost:3001/_next/static/css/app/layout.css?v=1774840750555 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3001/panel/inmobiliaria:0
+[  510313ms] [WARNING] The resource http://localhost:3001/_next/static/media/806de4d605d3ad01-s.p.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3001/panel/inmobiliaria:0
+[  511927ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[  511927ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[  511927ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[  511930ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[  511930ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[  511930ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  512014ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  512015ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  512273ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  512292ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  542009ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  546907ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  546907ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  546908ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  546908ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  546908ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  548221ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0

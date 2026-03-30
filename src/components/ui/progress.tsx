@@ -38,7 +38,7 @@ const progressIndicatorVariants = cva(
         warning: 'bg-amber-500',
         error: 'bg-rose-500',
         info: 'bg-blue-500',
-        indigo: 'bg-indigo-500',
+        indigo: 'bg-indigo-600',
         gradient: 'bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500',
       },
       animated: {
@@ -296,10 +296,10 @@ function StepProgress({
       lineIncomplete: 'bg-muted',
     },
     indigo: {
-      completed: 'bg-indigo-500 border-indigo-500 text-white',
+      completed: 'bg-indigo-600 border-indigo-500 text-white uppercase tracking-wide font-mono',
       current: 'border-indigo-500 text-indigo-600',
       upcoming: 'border-muted text-muted-foreground',
-      line: 'bg-indigo-500',
+      line: 'bg-indigo-600',
       lineIncomplete: 'bg-muted',
     },
   };

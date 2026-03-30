@@ -396,7 +396,7 @@ export default function InmobiliariaPerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white font-bold text-4xl">
+                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -855,7 +855,7 @@ export default function InmobiliariaPerfilPage() {
                     </button>
                     <button
                       onClick={() => setDeleteStep(2)}
-                      className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+                      className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
                     >
                       {locale === 'es' ? 'Continuar' : 'Continue'}
                     </button>
@@ -917,7 +917,7 @@ export default function InmobiliariaPerfilPage() {
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
                         (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE')
-                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700'
                           : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                       )}
                     >

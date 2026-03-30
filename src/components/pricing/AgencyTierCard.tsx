@@ -81,11 +81,11 @@ export function AgencyTierCard({
       className={cn(
         'relative rounded-2xl bg-card p-6 flex flex-col transition-all duration-300',
         selected
-          ? 'border-2 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl shadow-indigo-600/10'
+          ? 'border-2 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl'
           : isFlex
             ? 'border-2 border-amber-400 shadow-lg shadow-amber-500/10'
             : popular
-              ? 'border border-indigo-600/50 shadow-lg shadow-indigo-600/5'
+              ? 'border border-indigo-600/50'
               : 'border border-border hover:border-indigo-600/30 hover:shadow-lg'
       )}
     >
@@ -99,7 +99,7 @@ export function AgencyTierCard({
 
       {popular && !selected && !isFlex && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-indigo-600/25">
+          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
             Más popular
           </span>
         </div>
@@ -107,7 +107,7 @@ export function AgencyTierCard({
 
       {selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg shadow-indigo-600/25">
+          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
             <Check className="w-3 h-3" />
             Seleccionado
           </span>

@@ -408,7 +408,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                         <div
                           className={cn(
                             'absolute -left-5 w-2.5 h-2.5 rounded-full mt-1.5 ring-2 ring-card',
-                            entry.isCurrent ? 'bg-indigo-500' : 'bg-muted-foreground/30'
+                            entry.isCurrent ? 'bg-indigo-600' : 'bg-muted-foreground/30'
                           )}
                         />
 
@@ -498,7 +498,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <button
                 onClick={handleMoveToNext}
                 disabled={isMoving || isMarking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
               >
                 {isMoving ? (
                   <span className="flex items-center gap-2">

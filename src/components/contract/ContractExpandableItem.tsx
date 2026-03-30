@@ -95,7 +95,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
   // Status badge config
   const statusConfig = {
     draft: { text: 'Borrador', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
-    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-600 text-white' },
+    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-600 text-white uppercase tracking-wide font-mono' },
     pending_tenant: { text: 'Esperando', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
     active: { text: 'Activo', className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
     expired: { text: 'Expirado', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
@@ -267,7 +267,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-700">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
-                    <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
+                    <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl">
                       <PencilLine className="w-4 h-4" />
                       Firmar
                     </Button>

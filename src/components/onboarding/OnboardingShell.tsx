@@ -191,7 +191,7 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
                       isCompleted && !isCurrent
                         ? 'bg-emerald-500 text-white'
                         : isCurrent
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                         : 'bg-stone-100 text-stone-400'
                     )}
                   >

@@ -310,7 +310,7 @@ export default function LandlordLeasesPage() {
                 </p>
                 <button
                   onClick={() => setActiveTab('all')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
                 >
                   {t('landlord.leases.viewAllLeases')}
                 </button>

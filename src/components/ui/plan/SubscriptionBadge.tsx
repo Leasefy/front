@@ -44,7 +44,7 @@ const TENANT_BADGES: Record<TenantSubscriptionTextT, {
       bg: 'bg-gradient-to-r from-indigo-500/10 to-violet-500/10',
       text: 'text-indigo-700 dark:text-indigo-300',
       border: 'border-indigo-500/20',
-      iconBg: 'bg-indigo-500',
+      iconBg: 'bg-indigo-600',
     },
   },
   none: null,

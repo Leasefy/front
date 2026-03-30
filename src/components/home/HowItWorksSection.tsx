@@ -77,7 +77,7 @@ export function HowItWorksSection() {
                     <span className="text-[48px] md:text-[56px] font-extralight tracking-[-4px] text-primary/20">
                       {step.number}
                     </span>
-                    <div className="w-14 h-14 flex items-center justify-center bg-primary/5 border border-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <div className="w-14 h-14 flex items-center justify-center bg-primary/5 border border-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white uppercase tracking-wide font-mono transition-colors">
                       <Icon className="w-6 h-6" strokeWidth={1.5} />
                     </div>
                   </div>

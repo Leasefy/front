@@ -53,7 +53,7 @@ function SigningSuccess({ locale }: { locale: string }) {
       </p>
       <button
         onClick={() => router.push('/inquilino/contratos')}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-2xl text-sm font-semibold transition-colors"
       >
         {locale === 'es' ? 'Ver mis contratos' : 'View my contracts'}
         <ArrowRight className="w-4 h-4" />

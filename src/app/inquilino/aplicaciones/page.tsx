@@ -364,7 +364,7 @@ export default function AplicacionesPage() {
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
-                                          : "bg-indigo-500"
+                                          : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -475,7 +475,7 @@ export default function AplicacionesPage() {
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
-                                          : "bg-indigo-500"
+                                          : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />

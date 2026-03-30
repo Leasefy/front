@@ -137,7 +137,7 @@ export default function MfaVerifyPage() {
           <button
             onClick={handleVerify}
             disabled={isLoading || code.length !== 6 || !factorId}
-            className="w-full py-3.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {isLoading ? (
               <>

@@ -467,7 +467,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'savings'
-                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                        ? 'border-indigo-500 bg-indigo-600/10 text-indigo-700 dark:text-indigo-300'
                         : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
                     )}
                   >
@@ -479,7 +479,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'checking'
-                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                        ? 'border-indigo-500 bg-indigo-600/10 text-indigo-700 dark:text-indigo-300'
                         : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
                     )}
                   >
@@ -693,7 +693,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                         <div className={cn(
                           'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
                           isSelected
-                            ? 'border-indigo-500 bg-indigo-500'
+                            ? 'border-indigo-500 bg-indigo-600'
                             : 'border-neutral-300 dark:border-neutral-600'
                         )}>
                           {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
@@ -739,7 +739,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <button
               onClick={handleAddAccount}
               disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? (
                 <SpinnerGap className="w-4 h-4 animate-spin" />
@@ -798,7 +798,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <button
                   onClick={handleDeletePaymentAccount}
                   disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                 >
                   {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
                   {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}

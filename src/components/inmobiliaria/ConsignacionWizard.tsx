@@ -229,7 +229,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                     status === 'completed'
                       ? 'bg-emerald-500 text-white'
                       : status === 'current'
-                        ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono ring-4 ring-indigo-500/20'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
                   )}>
                     {status === 'completed' ? (
@@ -274,7 +274,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-500"
+              className="h-full bg-indigo-600"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -331,7 +331,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
                   isStepValid
-                    ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
+                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                 )}
               >
@@ -346,7 +346,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
-                    ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
+                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
                 )}
               >
@@ -407,7 +407,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 </button>
                 <button
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white uppercase tracking-wide font-mono font-medium hover:bg-red-600 transition-colors"
                 >
                   {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
                 </button>

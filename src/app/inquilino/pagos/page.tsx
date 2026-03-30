@@ -452,7 +452,7 @@ export default function PagosPage() {
                   </div>
                   <div className="h-2 bg-indigo-200 dark:bg-indigo-900/50 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-500"
+                      className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full transition-all duration-500"
                       style={{ width: `${getPaymentProgress()}%` }}
                     />
                   </div>
@@ -473,7 +473,7 @@ export default function PagosPage() {
 
                 <button
                   onClick={handlePayNow}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
                 >
                   {t('dashboard.payNow')}
                   <ArrowUpRight className="w-4 h-4" />
@@ -587,7 +587,7 @@ export default function PagosPage() {
                       </button>
                       <button
                         onClick={handleConfirmPayment}
-                        className="flex-1 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-full hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
+                        className="flex-1 py-3 bg-indigo-600 dark:bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium rounded-full hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-colors"
                       >
                         {t('payments.confirm.title')}
                       </button>

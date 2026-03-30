@@ -850,6 +850,7 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
+      "aiAgents": "Agentes AI",
       "propietarios": "Propietarios",
       "portafolio": "Portafolio",
       "pipeline": "Pipeline",
@@ -960,6 +961,16 @@
         "late": "En mora",
         "pendingDispersions": "Dispersiones pendientes",
         "collectionRate": "Tasa de recaudo"
+      },
+      "aiAgents": {
+        "evaluationsThisMonth": "Evaluaciones este mes",
+        "avgTime": "Tiempo promedio",
+        "precision": "Precisión",
+        "escalatedToHuman": "Escalados a humano",
+        "suggestedThisWeek": "Sugerencias enviadas",
+        "conversionRate": "Tasa de conversión",
+        "redirectedCandidates": "Candidatos redirigidos",
+        "avgCompatibility": "Compatibilidad promedio"
       }
     },
     "config": {

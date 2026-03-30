@@ -257,7 +257,7 @@ export function ActaEntregaViewer({
             </button>
             <button
               onClick={onDownloadPDF}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 transition-colors text-sm font-medium"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 transition-colors text-sm font-medium"
             >
               <DownloadSimple className="w-4 h-4" />
               {t('inmobiliaria.acta.downloadPdf')}

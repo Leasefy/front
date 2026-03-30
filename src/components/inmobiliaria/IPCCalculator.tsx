@@ -73,7 +73,7 @@ function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => str
                   <div
                     className={`flex-1 rounded-full transition-all cursor-pointer hover:scale-105 ${
                       isCurrentMonth
-                        ? 'bg-indigo-500'
+                        ? 'bg-indigo-600'
                         : 'bg-indigo-200 hover:bg-indigo-300 dark:bg-indigo-800 dark:hover:bg-indigo-700'
                     }`}
                     style={{ height: `${height}%` }}
@@ -292,7 +292,7 @@ function CalculatorForm({
               <p className="text-xs font-medium text-muted-foreground mb-1">{t('inmobiliaria.finance.ipc.currentRent')}</p>
               <p className="text-xl font-bold text-foreground">{formatCurrency(result.currentRent)}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
               <ArrowRight className="h-5 w-5 text-white" weight="bold" />
             </div>
             <div className="text-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex-1 border border-indigo-200 dark:border-indigo-800">

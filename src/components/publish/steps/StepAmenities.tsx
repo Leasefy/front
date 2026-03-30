@@ -122,7 +122,7 @@ export function StepAmenities() {
               type="button"
               onClick={addCustom}
               disabled={!customValue.trim()}
-              className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-xl disabled:opacity-30 transition-opacity hover:bg-indigo-700"
+              className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl disabled:opacity-30 transition-opacity hover:bg-indigo-700"
             >
               Agregar
             </button>

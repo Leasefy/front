@@ -86,7 +86,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
+              className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         {/* CTA Button */}
         <Link
           href="/onboarding/inquilino"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-full transition-colors shadow-sm"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium rounded-full transition-colors"
         >
           {completedSteps.length > 0
             ? (locale === 'es' ? 'Continuar perfil' : 'Continue profile')

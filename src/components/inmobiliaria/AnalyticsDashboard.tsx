@@ -134,7 +134,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
             <div
               className={cn(
                 'h-full rounded-full transition-all',
-                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'
+                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'
               )}
               style={{ width: `${Math.min(100, progress)}%` }}
             />

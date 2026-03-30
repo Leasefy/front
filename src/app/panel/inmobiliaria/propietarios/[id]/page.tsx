@@ -473,11 +473,11 @@ export default function PropietarioDetailPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
                 >
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <FileText className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <Download className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
                   </button>

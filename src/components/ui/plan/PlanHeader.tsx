@@ -313,7 +313,7 @@ export function PlanHeader({
               {/* Subscription Popover */}
               <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {planId === 'free' && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
@@ -418,7 +418,7 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
                       <span className="absolute top-0 right-0 w-4 h-4 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
@@ -583,7 +583,7 @@ export function PlanHeader({
           {/* Notifications */}
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
-              <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors">
+              <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white" />
@@ -723,7 +723,7 @@ export function PlanHeader({
           {/* User Account Container */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-full bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors outline-none">
+              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-xl bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors outline-none">
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
@@ -761,7 +761,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href={user?.role === 'agency' ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                   {t('header.profile')}
@@ -770,7 +770,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                 >
                   <Gear className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                   {t('header.settings')}
@@ -781,7 +781,7 @@ export function PlanHeader({
                   <DropdownListItem asChild>
                     <Link
                       href="/inquilino/pagos"
-                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                     >
                       <CreditCard className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                       {t('nav.payments')}
@@ -790,7 +790,7 @@ export function PlanHeader({
                   <DropdownListItem asChild>
                     <Link
                       href="/inquilino/guardados"
-                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                     >
                       <Heart className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                       {locale === 'es' ? 'Ver guardados' : 'Saved'}
@@ -802,7 +802,7 @@ export function PlanHeader({
                 <DropdownListItem asChild>
                   <Link
                     href="/panel/upgrade"
-                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                     {locale === 'es' ? 'Mi Plan' : 'My Plan'}
@@ -813,7 +813,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href="/ayuda"
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                 >
                   <Question className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />
                   {t('nav.help')}
@@ -822,7 +822,7 @@ export function PlanHeader({
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 text-[13px] text-red-600 dark:!text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 text-[13px] text-red-600 dark:!text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl cursor-pointer"
               >
                 <SignOut className="w-4 h-4 stroke-[1.5px]" />
                 {t('nav.logout')}

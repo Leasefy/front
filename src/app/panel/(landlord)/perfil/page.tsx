@@ -326,7 +326,7 @@ export default function PropietarioPerfilPage() {
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button onClick={handleAvatarClick} className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg">
+                    <button onClick={handleAvatarClick} className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 rounded-xl text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg">
                       <Camera className="w-4 h-4" />
                     </button>
                   )}
@@ -381,7 +381,7 @@ export default function PropietarioPerfilPage() {
 
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
-                    <button onClick={handleCancelEdit} className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('avatar')} disabled={isSaving}
@@ -470,7 +470,7 @@ export default function PropietarioPerfilPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('personal')} disabled={isSaving}
@@ -571,7 +571,7 @@ export default function PropietarioPerfilPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('emergency')} disabled={isSaving}
@@ -649,8 +649,8 @@ export default function PropietarioPerfilPage() {
                     ))}
                   </ul>
                   <div className="flex gap-3">
-                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
-                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
+                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
                   </div>
                 </div>
               </>
@@ -668,7 +668,7 @@ export default function PropietarioPerfilPage() {
                   <input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
                     className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest" />
                   <div className="flex gap-3 mt-6">
-                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
+                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
                     <button onClick={handleDeleteAccount} disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
                       className={cn('flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
                         (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>

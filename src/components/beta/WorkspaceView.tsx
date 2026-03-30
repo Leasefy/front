@@ -203,7 +203,7 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const baseClasses = cn(
     'inline-flex items-center gap-2',
-    'px-4 py-2 rounded-lg',
+    'px-4 py-2 rounded-xl',
     'text-[13px] font-medium',
     'transition-all duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-1',

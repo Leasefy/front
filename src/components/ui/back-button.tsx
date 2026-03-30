@@ -39,7 +39,7 @@ export function BackButton({
       // Subtle: minimal, just text and icon
       'subtle': "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white",
       // Pill: contained button style
-      'pill': "text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-4 py-2.5 rounded-full shadow-sm hover:shadow",
+      'pill': "text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-4 py-2.5 rounded-xl shadow-sm hover:shadow",
     }[variant],
     className
   )

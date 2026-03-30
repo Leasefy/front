@@ -396,7 +396,7 @@ export default function AnalyticsPage() {
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium font-mono uppercase tracking-wide hover:bg-muted transition-colors">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}

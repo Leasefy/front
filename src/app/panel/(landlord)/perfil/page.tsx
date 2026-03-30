@@ -649,7 +649,7 @@ export default function PropietarioPerfilPage() {
                     ))}
                   </ul>
                   <div className="flex gap-3">
-                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium font-mono uppercase tracking-wide hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
                     <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
                   </div>
                 </div>
@@ -668,7 +668,7 @@ export default function PropietarioPerfilPage() {
                   <input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
                     className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest" />
                   <div className="flex gap-3 mt-6">
-                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
+                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium font-mono uppercase tracking-wide hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
                     <button onClick={handleDeleteAccount} disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
                       className={cn('flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
                         (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>

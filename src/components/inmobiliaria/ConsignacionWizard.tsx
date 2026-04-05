@@ -305,7 +305,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             {t('inmobiliaria.consignaciones.wizard.cancel')}
           </button>
@@ -316,7 +316,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
               <button
                 type="button"
                 onClick={goToPreviousStep}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 <CaretLeft className="w-4 h-4" />
                 {t('inmobiliaria.consignaciones.wizard.previous')}
@@ -332,7 +332,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
                   isStepValid
                     ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
+                    : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed uppercase tracking-wide font-mono'
                 )}
               >
                 {t('inmobiliaria.consignaciones.wizard.next')}
@@ -347,7 +347,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
                     ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/25'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
+                    : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed uppercase tracking-wide font-mono'
                 )}
               >
                 {isSubmitting ? (
@@ -401,7 +401,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
               <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={() => setShowCancelDialog(false)}
-                  className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
                 </button>

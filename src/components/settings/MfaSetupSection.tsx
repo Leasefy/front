@@ -6,6 +6,24 @@ import { getSupabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { SettingsModal } from './SettingsModal';
 
+/**
+ * MFA_DISABLED
+ *
+ * El backend NO tiene implementado 2FA/MFA — no hay endpoints, no hay schema,
+ * no hay lógica de enforcement. Técnicamente la UI podría enrolar un factor
+ * TOTP directo contra Supabase Auth, pero sería un dead-end: el backend no
+ * valida el AAL en ningún request, no persiste el estado 2FA en `public.users`,
+ * y un usuario que se enrole queda en limbo.
+ *
+ * Mantenemos el botón visible pero disabled con badge "Próximamente" en los 3
+ * perfiles (tenant, landlord, inmobiliaria — todos usan este mismo componente)
+ * hasta que el backend implemente el feature completo en v1.4+.
+ *
+ * Para re-habilitar: flippear esta constante a `false`. El resto de la lógica
+ * sigue acá intacta y debería funcionar sin cambios.
+ */
+const MFA_DISABLED = true;
+
 type MfaState = 'idle' | 'enrolling' | 'enrolled';
 
 interface EnrollData {
@@ -26,6 +44,10 @@ export function MfaSetupSection() {
 
   // Check if MFA is already enrolled on mount
   useEffect(() => {
+    if (MFA_DISABLED) {
+      setInitializing(false);
+      return;
+    }
     let cancelled = false;
 
     // Safety timeout — if listFactors hangs, stop loading after 3s
@@ -215,6 +237,39 @@ export function MfaSetupSection() {
       toast.success('Codigo secreto copiado');
     }
   }, [enrollData]);
+
+  // Short-circuit: backend has no MFA support yet. See MFA_DISABLED docstring above.
+  if (MFA_DISABLED) {
+    return (
+      <div className="flex items-center justify-between px-6 py-4 opacity-60">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+            <ShieldCheck className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticación de dos factores</p>
+              <span className="inline-flex items-center px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-semibold uppercase tracking-wide rounded-full">
+                Próximamente
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              Capa extra de seguridad para tu cuenta
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled
+          title="Próximamente disponible"
+          className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 text-xs font-medium rounded-lg cursor-not-allowed flex items-center gap-1.5"
+        >
+          <Shield className="w-3.5 h-3.5" />
+          Activar
+        </button>
+      </div>
+    );
+  }
 
   if (initializing) {
     return (

@@ -67,6 +67,22 @@ export interface BackendCouponValidationResult {
 }
 
 // ============================================================================
+// Backend Subscription Plan (from GET /subscription-plans)
+// ============================================================================
+
+export interface BackendSubscriptionPlan {
+  id: string;
+  planType: 'LANDLORD' | 'AGENCY';
+  tier: string;
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  maxProperties: number; // -1 = unlimited
+  hasPremiumScoring: boolean;
+  evaluationCreditPrice: number;
+}
+
+// ============================================================================
 // Display types (mapped from backend)
 // ============================================================================
 

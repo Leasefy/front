@@ -21,6 +21,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { agentesApi } from '@/lib/api/inmobiliaria.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
@@ -42,7 +43,7 @@ const ITEMS_PER_PAGE = 6;
 export default function AgentesPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const { agentes: allAgentes } = useAgentes();
+  const { agentes: allAgentes, refetch: refetchAgentes } = useAgentes();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
     { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
@@ -141,16 +142,18 @@ export default function AgentesPage() {
   }, []);
 
   const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
-    // TODO Backend: Create agent via API
-    // For now, just show success toast
-    toast.success(t('inmobiliaria.agentes.toasts.created'), {
-      description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
-    });
-    // In production, this would:
-    // 1. POST to /api/agentes
-    // 2. Refresh the agentes list
-    // 3. Show success/error toast
-  }, [t]);
+    try {
+      await agentesApi.create(data);
+      toast.success(t('inmobiliaria.agentes.toasts.created'), {
+        description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
+      });
+      await refetchAgentes();
+    } catch (err) {
+      toast.error(t('inmobiliaria.agentes.toasts.createError'), {
+        description: err instanceof Error ? err.message : 'Error desconocido',
+      });
+    }
+  }, [t, refetchAgentes]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">

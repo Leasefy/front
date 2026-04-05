@@ -179,6 +179,12 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   mfaRequired: boolean
+  /**
+   * True when Supabase Auth has a valid JWT but the backend returned 401
+   * "User not found" — meaning the user hasn't completed onboarding yet.
+   * Callers should redirect to /onboarding/seleccionar-rol when this is true.
+   */
+  needsOnboarding: boolean
   /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
   agency: Agency | null
   /** The user's role within the agency */

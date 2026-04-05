@@ -166,3 +166,26 @@ export { AgencyOperationsForm } from './wizard/AgencyOperationsForm';
 export type { AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
 export { InviteFirstMemberForm } from './wizard/InviteFirstMemberForm';
 export type { InviteFirstMemberFormData, AgencyMemberRoleOption } from './wizard/InviteFirstMemberForm';
+
+// Pricing & Feature Gating
+export { AgencyPricingModal } from './AgencyPricingModal';
+export { UpgradePrompt, FeatureGate } from './UpgradePrompt';
+
+// AI Agent Components
+export { AIAgentCard } from './ai/AIAgentCard';
+export { AIAgentActivityFeed } from './ai/AIAgentActivityFeed';
+export { AIAgentDetailSidebar } from './ai/AIAgentDetailSidebar';
+export { AIAgentExecutionPanel } from './ai/AIAgentExecutionPanel';
+
+// Reminder Components
+export { ReminderConfigPanel } from './reminders/ReminderConfig';
+export { ReminderLog } from './reminders/ReminderLog';
+
+// Advanced Report Components
+export { AgentPerformanceReport } from './reports/AgentPerformanceReport';
+export { CollectionsReport } from './reports/CollectionsReport';
+export { ExecutiveSummary } from './reports/ExecutiveSummary';
+export { OccupancyReport } from './reports/OccupancyReport';
+export { ReportPDFExport } from './reports/ReportPDFExport';
+export { TrendChart, BarChart } from './reports/TrendChart';
+export type { TrendChartDataPoint, BarChartDataPoint } from './reports/TrendChart';

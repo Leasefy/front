@@ -361,7 +361,7 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
  * Flujo de Caja Preview
  */
 function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<string, string | number>) => string; fmtDate: (d: string) => string }) {
-  const { report: data } = useFlujoCajaReport('semester');
+  const { report: data } = useFlujoCajaReport(6);
   if (!data) return null;
 
   return (

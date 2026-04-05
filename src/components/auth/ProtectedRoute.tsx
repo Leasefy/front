@@ -31,7 +31,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -59,6 +59,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   useEffect(() => {
     // Wait for both auth context and storage check to complete
     if (isLoading || isCheckingStorage) return
+
+    // JWT valid but backend has no user record yet → send to onboarding
+    // IMPORTANT: this check must come BEFORE !effectiveIsAuthenticated, because
+    // in this state `user` is null but the session is valid and we don't want
+    // to kick the user back to /auth in a loop.
+    if (needsOnboarding && !pathname.startsWith('/onboarding')) {
+      router.replace('/onboarding/seleccionar-rol')
+      return
+    }
 
     // Redirect to auth if not authenticated (neither context nor localStorage)
     if (!effectiveIsAuthenticated) {
@@ -103,7 +112,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         router.replace('/inquilino')
       }
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user, needsOnboarding])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -117,8 +126,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     )
   }
 
-  // Not authenticated - will redirect
-  if (!effectiveIsAuthenticated) {
+  // needsOnboarding or not authenticated - will redirect (handled in effect)
+  if (needsOnboarding || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

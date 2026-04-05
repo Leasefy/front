@@ -92,30 +92,58 @@ function mapSupabaseUser(session: Session): User {
   }
 }
 
+/**
+ * Detects the specific 401 case where Supabase Auth has a valid JWT but the
+ * user has no record in `public.users` on the backend (onboarding never ran).
+ * The backend returns: "User not found. Please ensure your account is set up correctly."
+ *
+ * See .planning/FRONTEND-AUTH-CONTEXT-FIX.md for full context.
+ */
+function isUserNotFoundError(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 401) return false
+  const msg = err.message?.toLowerCase() ?? ''
+  return msg.includes('user not found')
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [agency, setAgencyState] = useState<Agency | null>(null)
   const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
-  /** Fetch the user profile from the backend, fallback to Supabase session */
-  const fetchUser = useCallback(async (session?: Session | null): Promise<User | null> => {
+  /**
+   * Fetch the user profile from the backend.
+   * Returns one of three states:
+   *  - { user: User }            → authenticated, profile loaded
+   *  - { needsOnboarding: true } → JWT valid but no backend record yet → go to /onboarding
+   *  - { user: null }            → real auth failure (logout) or fallback to Supabase session
+   */
+  const fetchUser = useCallback(async (
+    session?: Session | null,
+  ): Promise<{ user: User | null; needsOnboarding: boolean }> => {
     // Use token directly from session to avoid calling getSession() again (can deadlock during init)
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
-      return mapBackendUser(data)
+      return { user: mapBackendUser(data), needsOnboarding: false }
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        return null
+      // JWT valid but user doesn't exist in public.users yet → needs onboarding
+      if (isUserNotFoundError(err)) {
+        return { user: null, needsOnboarding: true }
       }
-      // Backend unavailable — fallback to Supabase session data
+      // Any other 401 = real token failure → logout (handled by caller returning null user)
+      if (err instanceof ApiError && err.status === 401) {
+        return { user: null, needsOnboarding: false }
+      }
+      // Backend unavailable (5xx, network) — fallback to Supabase session data so
+      // the user isn't kicked out just because the API is down
       if (session) {
-        return mapSupabaseUser(session)
+        return { user: mapSupabaseUser(session), needsOnboarding: false }
       }
       console.error('[Auth] Error fetching user profile:', err)
-      return null
+      return { user: null, needsOnboarding: false }
     }
   }, [])
 
@@ -143,8 +171,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
     // If the stored token is still valid the backend will respond; if not, fetchUser
     // handles the 401 gracefully.
-    const userData = await fetchUser()
+    const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
     setUser(userData)
+    setNeedsOnboarding(needsOnb)
     // Also refresh agency data for agency/agent roles (or when just completing inmobiliaria onboarding)
     if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
       const { agency: agencyData, role } = await fetchAgency()
@@ -190,9 +219,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (event === 'INITIAL_SESSION') {
           if (session) {
             setAccessToken(session.access_token)
-            const userData = await fetchUser(session)
+            const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
+            setNeedsOnboarding(needsOnb)
             await checkMfaLevel()
             if (userData?.onboardingCompleted) {
               requestNotificationPermission().catch(() => {})
@@ -206,9 +236,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
           setAccessToken(session.access_token)
-          const userData = await fetchUser(session)
+          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
+          setNeedsOnboarding(needsOnb)
           setIsLoading(false)
           await checkMfaLevel()
           if (userData?.onboardingCompleted) {
@@ -225,12 +256,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAgencyState(null)
           setAgencyRole(null)
           setMfaRequired(false)
+          setNeedsOnboarding(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setAccessToken(session.access_token)
-          const userData = await fetchUser(session)
+          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
+          setNeedsOnboarding(needsOnb)
           await checkMfaLevel()
         }
       }
@@ -263,8 +296,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Immediately set token and fetch user so the caller can use role info for redirect
     if (data.session) {
       setAccessToken(data.session.access_token)
-      const userData = await fetchUser(data.session)
+      const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
       setUser(userData)
+      setNeedsOnboarding(needsOnb)
       return userData
     }
     return null
@@ -321,6 +355,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Clear local state immediately so UI updates
     setAccessToken(null)
     setUser(null)
+    setNeedsOnboarding(false)
     // Remove FCM token and sign out from Supabase in background
     removeFcmToken().catch(() => {})
     try {
@@ -336,6 +371,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    needsOnboarding,
     agency,
     agencyRole,
     signInWithGoogle,

@@ -238,10 +238,10 @@ export function useOcupacionReport() {
   return { report: data, ...rest };
 }
 
-export function useComisionesReport(period: string) {
+export function useComisionesReport(month: string) {
   const { data, ...rest } = useApiData(
-    () => reportesApi.getComisiones(period),
-    [period]
+    () => reportesApi.getComisiones(month),
+    [month]
   );
   return { report: data, ...rest };
 }
@@ -251,10 +251,18 @@ export function useVencimientosReport() {
   return { report: data, ...rest };
 }
 
-export function useFlujoCajaReport(periodType?: 'quarter' | 'semester' | 'year') {
+export function useFlujoCajaReport(months?: number) {
   const { data, ...rest } = useApiData(
-    () => reportesApi.getFlujoCaja(periodType),
-    [periodType]
+    () => reportesApi.getFlujoCaja(months),
+    [months]
+  );
+  return { report: data, ...rest };
+}
+
+export function useRendimientoAgentesReport(month?: string) {
+  const { data, ...rest } = useApiData(
+    () => reportesApi.getRendimientoAgentes(month),
+    [month]
   );
   return { report: data, ...rest };
 }

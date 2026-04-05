@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, ArrowClockwise } from '@phosphor-icons/react';
@@ -9,6 +9,9 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { settingsApi } from '@/lib/api/settings.service';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
 
 // Setup steps definition
 interface SetupStep {
@@ -25,6 +28,14 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
   const { user, agency, updateProfile } = useAuth();
+  const { users: agencyMembers } = useAgencyUsers();
+
+  // Find the current user's member entry to get their `position` (cargo).
+  // Backend only exposes position via the agency members list.
+  const currentMember = useMemo(
+    () => agencyMembers?.find((m) => m.email === user?.email),
+    [agencyMembers, user?.email],
+  );
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -47,8 +58,15 @@ export default function InmobiliariaPerfilPage() {
     birthDate: user?.birthDate ? user.birthDate.split('T')[0] : '',
     emergencyContactName: user?.emergencyContactName || '',
     emergencyContactPhone: user?.emergencyContactPhone || '',
-    cargo: 'Administrador General',
+    cargo: '',
   });
+
+  // Hydrate cargo from the agency member record when available
+  useEffect(() => {
+    if (currentMember?.position) {
+      setFormData((prev) => ({ ...prev, cargo: currentMember.position ?? '' }));
+    }
+  }, [currentMember?.position]);
 
   // Setup steps with completion status derived from real user/agency data
   const setupSteps: SetupStep[] = [
@@ -99,6 +117,12 @@ export default function InmobiliariaPerfilPage() {
 
   // Saved avatar URL (persists after saving)
   const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  // Hydrate saved avatar from user profile
+  useEffect(() => {
+    if (user?.avatar) setSavedAvatar(user.avatar);
+  }, [user?.avatar]);
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
@@ -114,14 +138,25 @@ export default function InmobiliariaPerfilPage() {
           address: formData.address || undefined,
           birthDate: formData.birthDate || undefined,
         });
+        // Persist position (cargo) to the agency member profile if it changed
+        if (currentMember && formData.cargo !== (currentMember.position ?? '')) {
+          try {
+            await agencyApi.updateMemberProfile(currentMember.id, {
+              position: formData.cargo || null,
+            });
+          } catch {
+            // Non-blocking — user profile data was already saved above
+          }
+        }
       } else if (section === 'emergency') {
         await updateProfile({
           emergencyContactName: formData.emergencyContactName || undefined,
           emergencyContactPhone: formData.emergencyContactPhone || undefined,
         });
-      } else if (section === 'avatar' && avatarPreview) {
-        // Avatar upload requires a separate file upload endpoint — saved locally for now
-        setSavedAvatar(avatarPreview);
+      } else if (section === 'avatar' && avatarFile) {
+        const { url } = await settingsApi.uploadAvatar(avatarFile);
+        setSavedAvatar(url);
+        setAvatarFile(null);
       }
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
@@ -154,10 +189,11 @@ export default function InmobiliariaPerfilPage() {
       toast.error(locale === 'es' ? 'Por favor selecciona una imagen' : 'Please select an image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(locale === 'es' ? 'La imagen debe ser menor a 10MB' : 'Image must be less than 10MB');
       return;
     }
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       setAvatarPreview(e.target?.result as string);

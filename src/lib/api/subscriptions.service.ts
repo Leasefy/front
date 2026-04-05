@@ -6,6 +6,7 @@
 import { apiClient } from './client';
 import type {
   BackendSubscription,
+  BackendSubscriptionPlan,
   CreateSubscriptionDto,
   ValidateCouponDto,
   BackendCouponValidationResult,
@@ -136,6 +137,22 @@ export const subscriptionsApi = {
    */
   async cancelSubscription(): Promise<void> {
     await apiClient.post<void>('/subscriptions/cancel');
+  },
+
+  /**
+   * Fetch available subscription plans from the backend.
+   * Public endpoint — no auth required.
+   */
+  async getPlans(planType?: 'LANDLORD' | 'AGENCY'): Promise<BackendSubscriptionPlan[]> {
+    const qs = planType ? `?planType=${planType}` : '';
+    return apiClient.get<BackendSubscriptionPlan[]>(`/subscription-plans${qs}`);
+  },
+
+  /**
+   * Fetch a single plan by ID.
+   */
+  async getPlan(id: string): Promise<BackendSubscriptionPlan> {
+    return apiClient.get<BackendSubscriptionPlan>(`/subscription-plans/${id}`);
   },
 
   /**

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -34,6 +35,8 @@ import {
   ConfigIntegraciones,
   ConfigFacturacion,
 } from '@/components/inmobiliaria';
+import { AgencyPricingModal } from '@/components/inmobiliaria/AgencyPricingModal';
+import { Lightning } from '@phosphor-icons/react';
 import {
   useInmobiliariaConfig,
   useAgencyUsers,
@@ -41,8 +44,10 @@ import {
   useAgencyBilling,
   inmobiliariaConfigApi,
 } from '@/lib/hooks/useInmobiliaria';
+import { permissionsApi, agencyApi } from '@/lib/api/inmobiliaria.service';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
+import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type {
   InmobiliariaConfigExtended,
   AgencyBranding,
@@ -50,6 +55,7 @@ import type {
   AgencyIntegration,
   RolePermissions,
   AgencyRole,
+  UserInvite,
 } from '@/lib/types/inmobiliaria';
 
 // ============================================================================
@@ -96,8 +102,13 @@ export default function ConfiguracionPage() {
   const { integrations, isLoading: integrationsLoading, refetch: refetchIntegrations } = useAgencyIntegrations();
   const { billing, invoices, isLoading: billingLoading } = useAgencyBilling();
 
+  // Initial tab from `?tab=X` query param (e.g. from PlanHeader "Gestionar suscripción")
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as ConfigTab) || 'perfil';
+
   // State
-  const [activeTab, setActiveTab] = useState<ConfigTab>('perfil');
+  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
@@ -133,10 +144,53 @@ export default function ConfiguracionPage() {
 
   const [mounted, setMounted] = useState(false);
 
-  // Security
-  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
-
   useEffect(() => { setMounted(true); }, []);
+
+  // Hydrate permissions matrix from backend per-member data.
+  //
+  // Context: the backend stores permissions per MEMBER (not per role). The UI
+  // shows a role-level matrix (admin/agente/contador/viewer) as a template.
+  // We reconstruct each role's current template by looking at the first active
+  // member of that role. If `usingDefaults` is true, we keep the hardcoded
+  // default for that role. If false, we use the member's effective permissions.
+  useEffect(() => {
+    if (!users || users.length === 0) return;
+
+    const nonAdminRoles: AgencyRole[] = ['agente', 'contador', 'viewer'];
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const updates: Partial<Record<AgencyRole, RolePermissions>> = {};
+        await Promise.all(
+          nonAdminRoles.map(async (role) => {
+            const member = users.find((u) => u.role === role && u.status === 'active');
+            if (!member) return;
+            try {
+              const res = await permissionsApi.getMemberPermissions(member.id);
+              if (res.usingDefaults || res.effectivePermissions === 'FULL_ACCESS') return;
+              // Convert Record<string, string[]> → RolePermissions
+              const permissionsArray = Object.entries(res.effectivePermissions).map(
+                ([module, actions]) => ({ module, actions }),
+              );
+              updates[role] = { role, permissions: permissionsArray } as RolePermissions;
+            } catch {
+              // Skip role on error — keep default
+            }
+          }),
+        );
+        if (!cancelled && Object.keys(updates).length > 0) {
+          setPermissions((prev) => ({ ...prev, ...updates }));
+        }
+      } catch {
+        // Silent fail — defaults remain
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [users]);
 
   // -------------------------------------------------------------------------
   // Handlers - Perfil
@@ -174,14 +228,17 @@ export default function ConfiguracionPage() {
   // Handlers - Usuarios
   // -------------------------------------------------------------------------
 
-  const handleInviteUser = async () => {
+  const handleInviteUser = async (invite: UserInvite) => {
     try {
-      // TODO: Open invite modal to get email and role
-      toast.info(t('inmobiliaria.config.toasts.inviteSent'), {
+      await inmobiliariaConfigApi.inviteUser(invite);
+      await refetchUsers();
+      toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
         description: t('inmobiliaria.config.toasts.inviteSentDesc'),
       });
     } catch (error) {
-      toast.error('Error al invitar usuario');
+      toast.error('Error al invitar usuario', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -211,12 +268,14 @@ export default function ConfiguracionPage() {
   const handleResendInvite = async (userId: string) => {
     try {
       const user = users.find((u) => u.id === userId);
-      // TODO: API endpoint for resend invite
+      await agencyApi.resendInvitation(userId);
       toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
         description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
       });
     } catch (error) {
-      toast.error('Error al reenviar invitación');
+      toast.error('Error al reenviar invitación', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -234,11 +293,32 @@ export default function ConfiguracionPage() {
   // Handlers - Permisos
   // -------------------------------------------------------------------------
 
-  const handleSavePermissions = (newPermissions: Record<AgencyRole, RolePermissions>) => {
-    setPermissions(newPermissions);
-    toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
-      description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
-    });
+  const handleSavePermissions = async (newPermissions: Record<AgencyRole, RolePermissions>) => {
+    try {
+      // Update each non-admin member's custom permissions based on their role
+      const memberList = users ?? [];
+      const updatePromises = memberList
+        .filter((u) => u.role !== 'admin' && u.status === 'active')
+        .map((member) => {
+          const roleKey = member.role.toLowerCase() as AgencyRole;
+          const rolePerms = newPermissions[roleKey];
+          if (!rolePerms) return Promise.resolve();
+          // Convert RolePermissions to the flat Record<string, string[]> the API expects
+          const permMap: Record<string, string[]> = {};
+          for (const mp of rolePerms.permissions) {
+            permMap[mp.module] = mp.actions;
+          }
+          return permissionsApi.updateMemberPermissions(member.id, permMap);
+        });
+
+      await Promise.all(updatePromises);
+      setPermissions(newPermissions);
+      toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
+        description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
+      });
+    } catch {
+      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos');
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -255,11 +335,25 @@ export default function ConfiguracionPage() {
     }
   };
 
+  /**
+   * Handler to save integration-specific config (API keys, webhooks, etc.).
+   *
+   * ⚠️ INACTIVE — las integraciones están deshabilitadas en la UI (ver
+   * INTEGRATIONS_DISABLED en `ConfigIntegraciones.tsx`). Este handler queda
+   * acá como scaffolding: cuando el backend implemente
+   * `PATCH /inmobiliaria/agency/integrations/:id/config` con el body de
+   * credenciales, descomentar la llamada y poner `INTEGRATIONS_DISABLED = false`
+   * en el componente.
+   *
+   * Contexto: en MVP v1.3 las integraciones (Metrocuadrado, FincaRaiz, Siigo,
+   * etc.) son placeholders — existen como catálogo visual pero no hay cliente
+   * real detrás. El toggle on/off YA usa `PATCH /inmobiliaria/agency/integrations/:id`
+   * pero esto es cosmético hasta que haya integraciones de verdad.
+   */
   const handleConfigureIntegration = async (integrationId: string, config: Record<string, string>) => {
     try {
       const integration = integrations.find((i) => i.id === integrationId);
-      // TODO: Add API endpoint for updating integration config
-      // await inmobiliariaConfigApi.configureIntegration(integrationId, config);
+      // TODO(v1.4+): await inmobiliariaConfigApi.configureIntegration(integrationId, config);
       await refetchIntegrations();
       toast.info(t('inmobiliaria.config.toasts.configureIntegration'), {
         description: t('inmobiliaria.config.toasts.configureIntegrationDesc', { name: integration?.name || integrationId }),
@@ -410,9 +504,34 @@ export default function ConfiguracionPage() {
               onUpdatePaymentMethod={handleUpdatePaymentMethod}
             />
           ) : (
-            <div className="text-center py-12 text-muted-foreground">No hay información de facturación</div>
+            // Empty state — agency has no active billing/subscription yet.
+            // Show a clear CTA to view available plans instead of a dead-end message.
+            <div className="rounded-2xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#141416] p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <Lightning className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                Todavía no tenés un plan activo
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
+                Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasify.
+              </p>
+              <button
+                onClick={() => setIsPricingModalOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
+              >
+                <Lightning className="w-4 h-4" />
+                Ver planes disponibles
+              </button>
+            </div>
           )
         )}
+
+        {/* Pricing modal — shown from upgrade CTAs */}
+        <AgencyPricingModal
+          open={isPricingModalOpen}
+          onClose={() => setIsPricingModalOpen(false)}
+        />
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
@@ -560,35 +679,7 @@ export default function ConfiguracionPage() {
               </div>
             </div>
             <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
-              {/* 2FA toggle */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.twoFactor')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {twoFactorAuth ? t('inmobiliaria.config.security.twoFactorProtected') : t('inmobiliaria.config.security.twoFactorAdd')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setTwoFactorAuth(!twoFactorAuth);
-                    toast.success(!twoFactorAuth ? t('inmobiliaria.config.security.twoFactorEnabled') : t('inmobiliaria.config.security.twoFactorDisabled'));
-                  }}
-                  className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors',
-                    twoFactorAuth ? 'bg-emerald-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                  )}
-                >
-                  <span className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                    twoFactorAuth && 'translate-x-5'
-                  )} />
-                </button>
-              </div>
+              <MfaSetupSection />
               {/* Change password */}
               <button
                 onClick={() => toast.info(t('inmobiliaria.config.security.changePassword'), { description: t('inmobiliaria.config.security.changePasswordToast') })}

@@ -15,7 +15,10 @@ import type { BaseNotification, LandlordNotificationCategory, TenantNotification
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, type TeamRole } from '@/lib/types/team';
-import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
+import { useTeamMembers } from '@/lib/hooks/useSettings';
+import { settingsApi } from '@/lib/api/settings.service';
+import { inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
+import { toast } from 'sonner';
 import {
   searchData,
   groupSearchResults,
@@ -86,12 +89,27 @@ export function PlanHeader({
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Check if user is landlord (on /panel routes) - must be before hooks
-  const isLandlord = pathname?.startsWith('/panel');
+  // Context detection — both landlord and inmobiliaria live under /panel.
+  // `isLandlord` intentionally covers BOTH (same UI chrome: notifications, search,
+  // quick actions, etc.). Use `isInmobiliaria` only where the two diverge —
+  // currently just for routing (upgrade/configuracion paths).
+  const isInmobiliaria = pathname?.startsWith('/panel/inmobiliaria') ?? false;
+  const isLandlord = pathname?.startsWith('/panel') ?? false;
+
+  // Route destinations depend on whether we're in landlord or inmobiliaria context.
+  // - Landlord has /panel/upgrade and /panel/configuracion
+  // - Inmobiliaria has no dedicated /upgrade page — both CTAs land on configuracion?tab=facturacion
+  const upgradePlanHref = isInmobiliaria
+    ? '/panel/inmobiliaria/configuracion?tab=facturacion'
+    : '/panel/upgrade';
+  const manageSubscriptionHref = isInmobiliaria
+    ? '/panel/inmobiliaria/configuracion?tab=facturacion'
+    : '/panel/configuracion';
 
   // Real notifications from API
   const landlordNotifs = useLandlordNotifications();
@@ -114,8 +132,8 @@ export function PlanHeader({
   const { subscription } = useMySubscription();
   const planId = subscription?.planId ?? 'free';
   const currentPlan = getPlanById(planId);
-  const teamMembers = getTeamMembers();
-  const pendingInvites = getPendingInvites();
+  const { members: teamMembers } = useTeamMembers();
+  const pendingInvites = teamMembers.filter((m) => m.status === 'pending');
 
   // MagnifyingGlass functionality
   useEffect(() => {
@@ -307,7 +325,7 @@ export function PlanHeader({
         <div className="flex items-center gap-1.5 ml-auto">
           {actions}
 
-          {/* Quick Action Icons - Only for Landlords */}
+          {/* Quick Action Icons - Landlords and Inmobiliaria (both under /panel) */}
           {isLandlord && (
             <>
               {/* Subscription Popover */}
@@ -388,7 +406,7 @@ export function PlanHeader({
                     {/* Upgrade CTA */}
                     {planId !== 'business' && (
                       <Link
-                        href="/panel/upgrade"
+                        href={upgradePlanHref}
                         onClick={() => setSubscriptionOpen(false)}
                         className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium text-center rounded-xl transition-colors"
                       >
@@ -398,7 +416,7 @@ export function PlanHeader({
 
                     {/* Manage subscription */}
                     <Link
-                      href="/panel/configuracion"
+                      href={manageSubscriptionHref}
                       onClick={() => setSubscriptionOpen(false)}
                       className="block mt-2 text-center text-[12px] text-plan-secondary hover:text-plan-primary"
                     >
@@ -531,21 +549,46 @@ export function PlanHeader({
                           </div>
                         </div>
 
-                        {/* Submit */}
+                        {/* Submit — wires to the real backend based on context */}
                         <button
-                          onClick={() => {
-                            if (!inviteEmail || !isValidEmail(inviteEmail)) return;
-                            setInviteSent(true);
+                          onClick={async () => {
+                            if (!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading) return;
+                            setInviteLoading(true);
+                            try {
+                              if (isInmobiliaria) {
+                                // Inmobiliaria uses AgencyRole (admin/agente/contador/viewer).
+                                // The navbar selector only offers a subset — map TeamRole → AgencyRole.
+                                const agencyRole = (inviteRole === 'admin' ? 'admin' : 'viewer') as 'admin' | 'viewer';
+                                await inmobiliariaConfigApi.inviteUser({
+                                  email: inviteEmail,
+                                  name: inviteEmail.split('@')[0],
+                                  role: agencyRole,
+                                });
+                              } else {
+                                await settingsApi.inviteTeamMember({
+                                  email: inviteEmail,
+                                  role: inviteRole,
+                                });
+                              }
+                              setInviteSent(true);
+                              toast.success(`Invitación enviada a ${inviteEmail}`);
+                            } catch (err) {
+                              toast.error('Error al enviar la invitación', {
+                                description: err instanceof Error ? err.message : undefined,
+                              });
+                            } finally {
+                              setInviteLoading(false);
+                            }
                           }}
-                          disabled={!inviteEmail || !isValidEmail(inviteEmail)}
+                          disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
                           className={cn(
                             'w-full py-2.5 text-[13px] font-medium text-center rounded-xl transition-colors',
-                            inviteEmail && isValidEmail(inviteEmail)
+                            inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
                               ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
-                          Enviar Invitación
+                          {inviteLoading ? 'Enviando...' : 'Enviar Invitación'}
                         </button>
                       </>
                     )}

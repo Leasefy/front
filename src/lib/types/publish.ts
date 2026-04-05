@@ -173,7 +173,7 @@ export interface PropertyDraft {
 
   // Step 9: Plan Selection
   ownerType: 'propietario' | 'inmobiliaria' | '';
-  selectedPlan: 'free' | 'pro' | 'business' | 'starter' | 'growth' | 'agency-business' | 'enterprise' | '';
+  selectedPlan: 'free' | 'pro' | 'business' | 'starter' | 'growth' | 'agency-business' | 'flex' | 'enterprise' | '';
 }
 
 export interface PublishStep {

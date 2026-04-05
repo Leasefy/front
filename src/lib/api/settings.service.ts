@@ -2,8 +2,10 @@
  * Settings API service.
  * Handles notification preferences, data export, account deletion, and team management.
  */
-import { apiClient } from './client'
+import { apiClient, getAccessToken } from './client'
 import type { TeamMember, TeamRole } from '@/lib/types/team'
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
 // ============================================================================
 // Types
@@ -87,6 +89,35 @@ export const settingsApi = {
 
   async deleteAccount(): Promise<{ success: boolean; message: string }> {
     return apiClient.delete<{ success: boolean; message: string }>('/users/me/account')
+  },
+
+  // --- Avatar Upload ---
+
+  /**
+   * Upload user avatar. Backend auto-compresses to 512x512 WebP (max 10 MB raw).
+   * Returns the public URL of the uploaded avatar and updates the user's profile.
+   */
+  async uploadAvatar(file: File): Promise<{ url: string }> {
+    const token = getAccessToken()
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch(`${BACKEND_URL}/users/me/avatar`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || `Avatar upload failed: ${res.status}`)
+    }
+
+    return res.json()
   },
 
   // --- Team Management ---

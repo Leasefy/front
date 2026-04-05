@@ -85,16 +85,24 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<AgencyRole>('agente');
+  const [position, setPosition] = useState('');
   const [message, setMessage] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && name && role) {
-      onSubmit({ email, name, role, message: message || undefined });
+      onSubmit({
+        email,
+        name,
+        role,
+        position: position.trim() || undefined,
+        message: message || undefined,
+      });
       // Reset form
       setEmail('');
       setName('');
       setRole('agente');
+      setPosition('');
       setMessage('');
     }
   };
@@ -151,6 +159,18 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
                 <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Position / Cargo (optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="position">Cargo</Label>
+            <Input
+              id="position"
+              placeholder="Ej: Agente Senior, Administrador General"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              maxLength={100}
+            />
           </div>
 
           {/* Custom Message (optional) */}

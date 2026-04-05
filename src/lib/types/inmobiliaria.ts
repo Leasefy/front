@@ -470,6 +470,15 @@ export interface CarteraItem {
   bucket: '0-30' | '31-60' | '61-90' | '90+';
 }
 
+export interface CarteraMonthly {
+  month: string; // '2026-04'
+  collected: number;
+  overdue: number;
+  total: number;
+  cobroCount: number;
+  collectionRate: number; // percent (0-100)
+}
+
 export interface CarteraReport {
   generatedAt: string;
   items: CarteraItem[];
@@ -480,6 +489,7 @@ export interface CarteraReport {
     bucket61to90: number;
     bucket90plus: number;
   };
+  byMonth?: CarteraMonthly[];
 }
 
 // ============================================================================
@@ -495,6 +505,26 @@ export interface OcupacionZone {
   occupancyRate: number;
 }
 
+export interface OcupacionProperty {
+  consignacionId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyZone: string;
+  propertyType: string;
+  monthlyRent: number;
+  availability: 'RENTED' | 'AVAILABLE' | 'IN_PROCESS' | string;
+  tenantName?: string;
+  leaseEndDate?: string;
+}
+
+export interface OcupacionMonthlyTrend {
+  month: string; // '2026-04'
+  occupied: number;
+  total: number;
+  rate: number; // percent (0-100)
+}
+
 export interface OcupacionReport {
   generatedAt: string;
   totalProperties: number;
@@ -504,6 +534,8 @@ export interface OcupacionReport {
   overallOccupancyRate: number;
   previousMonthOccupancyRate?: number;
   zones: OcupacionZone[];
+  byProperty?: OcupacionProperty[];
+  monthlyTrend?: OcupacionMonthlyTrend[];
 }
 
 // ============================================================================
@@ -530,6 +562,27 @@ export interface ComisionesAgenteReport {
   totalClosedDeals: number;
   topAgentName: string;
   agentes: ComisionAgente[];
+}
+
+// ============================================================================
+// Rendimiento Agentes Report
+// ============================================================================
+
+export interface RendimientoAgente {
+  userId: string;
+  agenteName?: string;
+  assignedConsignaciones: number;
+  activePipeline: number;
+  activeLeads: number;
+  completedDeals: number;
+  lostDeals: number;
+  conversionRate: number; // percent (0-100)
+  avgDaysToClose: number;
+}
+
+export interface RendimientoAgentesReport {
+  period: string; // '2026-04'
+  agentes: RendimientoAgente[];
 }
 
 // ============================================================================
@@ -759,6 +812,7 @@ export interface ReportDefinition {
   frequency: ReportFrequency;
   lastGenerated?: string;
   isFavorite?: boolean;
+  premium?: boolean;
 }
 
 export interface ReportFiltersState {
@@ -1199,6 +1253,8 @@ export interface AgencyUser {
   email: string;
   name: string;
   role: AgencyRole;
+  /** Free-form title/cargo (e.g. "Administrador General", "Agente Senior"). Max 100 chars. */
+  position?: string | null;
   avatar?: string;
   phone?: string;
   status: 'active' | 'invited' | 'inactive';
@@ -1211,6 +1267,8 @@ export interface UserInvite {
   email: string;
   name: string;
   role: AgencyRole;
+  /** Optional free-form title/cargo to display in the UI. Max 100 chars. */
+  position?: string;
   message?: string;
 }
 

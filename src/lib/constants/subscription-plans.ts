@@ -14,6 +14,7 @@ import type {
   PlanId,
   PlanComparisonRow,
   AgencyPlan,
+  AgencyPlanId,
 } from '@/lib/types/subscription';
 
 // ============================================================================
@@ -371,4 +372,20 @@ export function daysUntil(dateString: string): number {
   const now = new Date();
   const diffMs = target.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+/**
+ * Get an agency plan by its ID.
+ */
+export function getAgencyPlanById(id: AgencyPlanId): AgencyPlan {
+  return AGENCY_PLANS.find((p) => p.id === id) || AGENCY_PLANS[0];
+}
+
+/**
+ * Calculate the evaluation price for a given agency plan.
+ * Returns the per-evaluation cost in COP.
+ */
+export function getEvaluationPrice(planId: AgencyPlanId): number {
+  const plan = getAgencyPlanById(planId);
+  return (plan as Record<string, any>).evaluation?.price ?? 0;
 }

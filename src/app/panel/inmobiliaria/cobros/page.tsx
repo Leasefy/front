@@ -22,6 +22,7 @@ import {
   useInmobiliariaConfig,
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
 import {
   CobroResumen,
@@ -293,9 +294,17 @@ export default function CobrosPage() {
     setCurrentPage(1); // Reset page when filters change
   }, []);
 
-  // Handle reminder config save
-  const handleConfigSave = useCallback((config: RecordatorioConfigData) => {
+  // Handle reminder config save — persists to backend
+  const handleConfigSave = useCallback(async (config: RecordatorioConfigData) => {
     setReminderConfig(config);
+    try {
+      await agencyApi.updateAgency({
+        reminderDaysBefore: config.daysBefore,
+        reminderDaysAfter: config.daysAfter,
+      });
+    } catch {
+      // Silently fail — local state is already updated
+    }
   }, []);
 
   // Handle detail modal close

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, FileText, ArrowClockwise } from '@phosphor-icons/react';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { settingsApi } from '@/lib/api/settings.service';
 
 // Setup steps definition
 interface SetupStep {
@@ -98,6 +99,12 @@ export default function PropietarioPerfilPage() {
   };
 
   const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  // Hydrate saved avatar from user profile
+  useEffect(() => {
+    if (user?.avatar) setSavedAvatar(user.avatar);
+  }, [user?.avatar]);
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
@@ -118,8 +125,10 @@ export default function PropietarioPerfilPage() {
           emergencyContactName: formData.emergencyContactName || undefined,
           emergencyContactPhone: formData.emergencyContactPhone || undefined,
         });
-      } else if (section === 'avatar' && avatarPreview) {
-        setSavedAvatar(avatarPreview);
+      } else if (section === 'avatar' && avatarFile) {
+        const { url } = await settingsApi.uploadAvatar(avatarFile);
+        setSavedAvatar(url);
+        setAvatarFile(null);
       }
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
@@ -149,10 +158,11 @@ export default function PropietarioPerfilPage() {
       toast.error(locale === 'es' ? 'Por favor selecciona una imagen' : 'Please select an image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(locale === 'es' ? 'La imagen debe ser menor a 10MB' : 'Image must be less than 10MB');
       return;
     }
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (e) => setAvatarPreview(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -179,13 +189,21 @@ export default function PropietarioPerfilPage() {
     const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
     if (deleteConfirmText !== requiredText) return;
     setIsDeleting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-    setTimeout(() => {
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+    try {
+      await settingsApi.deleteAccount();
+      setIsDeleting(false);
+      setDeleteStep(3);
+      setTimeout(() => {
+        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        handleCloseDeleteModal();
+      }, 2000);
+    } catch (error) {
+      setIsDeleting(false);
+      toast.error(
+        locale === 'es' ? 'Error al eliminar la cuenta' : 'Error deleting account',
+        { description: error instanceof Error ? error.message : undefined },
+      );
+    }
   };
 
   return (

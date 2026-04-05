@@ -34,6 +34,8 @@ interface ReporteCardProps {
   onDownload?: () => void;
   onToggleFavorite?: () => void;
   isGenerating?: boolean;
+  isLocked?: boolean;
+  onUpgrade?: () => void;
 }
 
 // Map icon names to Phosphor components
@@ -106,6 +108,8 @@ export function ReporteCard({
   onDownload,
   onToggleFavorite,
   isGenerating = false,
+  isLocked = false,
+  onUpgrade,
 }: ReporteCardProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const Icon = ICON_MAP[report.icon] || FileText;

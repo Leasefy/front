@@ -36,6 +36,12 @@ import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { AgencySetupWizard } from '@/components/inmobiliaria/AgencySetupWizard';
 import { OnboardingChecklist } from '@/components/inmobiliaria/OnboardingChecklist';
 import { useAuth } from '@/lib/auth/use-auth';
+import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
+import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
+import { getActiveAgents } from '@/lib/types/ai-agents';
+import type { AgentActivity } from '@/lib/types/ai-agents';
+import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
+import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 /**
  * KPI Card Component
@@ -225,6 +231,10 @@ function InmobiliariaDashboardContent() {
 
   const activeAgents = agentes.filter((a) => a.status === 'active');
 
+  // AI Agents data
+  const aiAgents = getActiveAgents();
+  const { activities: aiActivities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 10 });
+
   // Get pipeline items that need attention (not completed/lost)
   const activePipeline = pipelineItems.filter(
     (p) => p.stage !== 'completed' && p.stage !== 'lost'
@@ -351,6 +361,18 @@ function InmobiliariaDashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* AI Agents Section */}
+      <FeatureGate feature="ai-agents">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {aiAgents.map((agent) => (
+              <AIAgentCard key={agent.id} agent={agent} />
+            ))}
+          </div>
+          <AIAgentActivityFeed activities={aiActivities} maxItems={4} />
+        </div>
+      </FeatureGate>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

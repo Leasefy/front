@@ -33,6 +33,7 @@ import type {
   CarteraReport,
   OcupacionReport,
   ComisionesAgenteReport,
+  RendimientoAgentesReport,
   VencimientosReport,
   FlujoCajaReport,
   ExtractoPropietario,
@@ -46,6 +47,27 @@ import type {
 } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
+
+// Permission response types
+export interface UserPermissionsResponse {
+  role: string;
+  context: string;
+  agencyId?: string;
+  agencyRole?: string;
+  teamRole?: string | null;
+  ownerId?: string;
+  permissions: 'FULL_ACCESS' | Record<string, string[]> | null;
+}
+
+export interface MemberPermissionsResponse {
+  memberId: string;
+  role: string;
+  isAdmin: boolean;
+  permissions: Record<string, string[]> | null;
+  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
+  usingDefaults: boolean;
+  note?: string;
+}
 
 // ============================================================================
 // Propietarios
@@ -404,7 +426,7 @@ export const renovacionesApi = {
 
 export const reportesApi = {
   async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reportes/definitions`);
+    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reports/definitions`);
     return res.data;
   },
 
@@ -413,29 +435,39 @@ export const reportesApi = {
     if (params?.startDate) query.set('startDate', params.startDate);
     if (params?.endDate) query.set('endDate', params.endDate);
     const qs = query.toString();
-    return apiClient.get<CarteraReport>(`${BASE}/reportes/cartera${qs ? `?${qs}` : ''}`);
+    return apiClient.get<CarteraReport>(`${BASE}/reports/cartera${qs ? `?${qs}` : ''}`);
   },
 
   async getOcupacion(): Promise<OcupacionReport> {
-    return apiClient.get<OcupacionReport>(`${BASE}/reportes/ocupacion`);
+    return apiClient.get<OcupacionReport>(`${BASE}/reports/ocupacion`);
   },
 
-  async getComisiones(period: string): Promise<ComisionesAgenteReport> {
-    return apiClient.get<ComisionesAgenteReport>(`${BASE}/reportes/comisiones?period=${period}`);
+  async getComisiones(month: string): Promise<ComisionesAgenteReport> {
+    return apiClient.get<ComisionesAgenteReport>(`${BASE}/reports/comisiones?month=${month}`);
   },
 
   async getVencimientos(): Promise<VencimientosReport> {
-    return apiClient.get<VencimientosReport>(`${BASE}/reportes/vencimientos`);
+    return apiClient.get<VencimientosReport>(`${BASE}/reports/vencimientos`);
   },
 
-  async getFlujoCaja(periodType?: 'quarter' | 'semester' | 'year'): Promise<FlujoCajaReport> {
-    const qs = periodType ? `?period=${periodType}` : '';
-    return apiClient.get<FlujoCajaReport>(`${BASE}/reportes/flujo-caja${qs}`);
+  async getFlujoCaja(months?: number): Promise<FlujoCajaReport> {
+    const qs = months ? `?months=${months}` : '';
+    return apiClient.get<FlujoCajaReport>(`${BASE}/reports/flujo-caja${qs}`);
+  },
+
+  async getRendimientoAgentes(month?: string): Promise<RendimientoAgentesReport> {
+    const qs = month ? `?month=${month}` : '';
+    return apiClient.get<RendimientoAgentesReport>(`${BASE}/reports/rendimiento-agentes${qs}`);
+  },
+
+  async getExtracto(propietarioId: string, month?: string): Promise<unknown> {
+    const qs = month ? `?month=${month}` : '';
+    return apiClient.get(`${BASE}/reports/extracto/${propietarioId}${qs}`);
   },
 
   async export(reportId: string, format: 'pdf' | 'xlsx', params?: Record<string, string>): Promise<Blob> {
     const query = new URLSearchParams({ reportId, format, ...params });
-    return apiClient.get<Blob>(`${BASE}/reportes/export?${query.toString()}`);
+    return apiClient.get<Blob>(`${BASE}/reports/export?${query.toString()}`);
   },
 };
 
@@ -629,10 +661,64 @@ export const agencyApi = {
   },
 
   /**
+   * PATCH /inmobiliaria/agency/members/:memberId/profile
+   * Updates a member's free-form profile fields (position/cargo). Admin only.
+   */
+  async updateMemberProfile(memberId: string, data: { position?: string | null }): Promise<AgencyMember> {
+    return apiClient.patch<AgencyMember>(`${BASE}/agency/members/${memberId}/profile`, data);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency
+   * Updates agency settings (including reminder config).
+   */
+  async updateAgency(data: { reminderDaysBefore?: number[]; reminderDaysAfter?: number[] }): Promise<unknown> {
+    return apiClient.put(`${BASE}/agency`, data);
+  },
+
+  /**
    * GET /inmobiliaria/agency/onboarding-status
    * Returns the agency admin's onboarding checklist with completion state.
    */
   async getOnboardingStatus(): Promise<AgencyOnboardingStatus> {
     return apiClient.get<AgencyOnboardingStatus>(`${BASE}/agency/onboarding-status`);
+  },
+};
+
+// ============================================================================
+// Permissions (Phase 24 — Granular Agency Permissions)
+// ============================================================================
+
+export const permissionsApi = {
+  /**
+   * GET /users/me/permissions
+   * Returns the current user's effective permissions based on role and context.
+   */
+  async getMyPermissions(): Promise<UserPermissionsResponse> {
+    return apiClient.get<UserPermissionsResponse>('/users/me/permissions');
+  },
+
+  /**
+   * GET /inmobiliaria/agency/members/:memberId/permissions
+   * Returns a member's effective permissions (admin only).
+   */
+  async getMemberPermissions(memberId: string): Promise<MemberPermissionsResponse> {
+    return apiClient.get<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/permissions
+   * Updates a member's custom permissions (admin only). Pass null to reset to role defaults.
+   */
+  async updateMemberPermissions(memberId: string, permissions: Record<string, string[]> | null): Promise<MemberPermissionsResponse> {
+    return apiClient.patch<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/role
+   * Updates a member's role (admin only).
+   */
+  async updateMemberRole(memberId: string, role: string): Promise<unknown> {
+    return apiClient.patch(`${BASE}/agency/members/${memberId}/role`, { role });
   },
 };

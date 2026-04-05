@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ChartLine,
+  ChartLineUp,
   Lightning,
   Star,
   Clock,
@@ -14,6 +15,9 @@ import {
   SquaresFour,
   Table,
   FileText,
+  Buildings,
+  CurrencyDollar,
+  Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
@@ -24,6 +28,7 @@ import {
   useComisionesReport,
   useVencimientosReport,
   useFlujoCajaReport,
+  useRendimientoAgentesReport,
   reportesApi,
 } from '@/lib/hooks/useInmobiliaria';
 import {
@@ -39,6 +44,25 @@ import {
   exportFlujoCaja,
   exportOcupacion,
 } from '@/lib/utils/generate-report-excel';
+import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
+import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
+import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
+import { CollectionsReport } from '@/components/inmobiliaria/reports/CollectionsReport';
+import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentPerformanceReport';
+import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
+import { ReportPDFExport } from '@/components/inmobiliaria/reports/ReportPDFExport';
+import {
+  mockOccupancyData,
+  mockCollectionsData,
+  mockAgentPerformanceData,
+  mockExecutiveData,
+} from '@/lib/data/mock-reports';
+import {
+  adaptOccupancy,
+  adaptCollections,
+  adaptAgentPerformance,
+  adaptExecutive,
+} from '@/lib/utils/report-adapters';
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
 
@@ -103,6 +127,18 @@ function saveFavorites(favorites: Set<ReportId>): void {
  */
 export default function ReportesPage() {
   const { t, locale } = useI18n();
+  const { hasAdvancedReports } = useAgencyPlan();
+
+  // Advanced report tabs
+  type AdvancedTab = 'ocupacion' | 'cobros' | 'agentes' | 'ejecutivo';
+  const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('ocupacion');
+
+  const advancedTabs: { key: AdvancedTab; label: string; icon: typeof Buildings }[] = [
+    { key: 'ocupacion', label: locale === 'es' ? 'Ocupacion' : 'Occupancy', icon: Buildings },
+    { key: 'cobros', label: locale === 'es' ? 'Cobros' : 'Collections', icon: CurrencyDollar },
+    { key: 'agentes', label: locale === 'es' ? 'Agentes' : 'Agents', icon: Users },
+    { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
+  ];
 
   // API Hooks for report data
   const carteraReport = useCarteraReport();
@@ -110,7 +146,8 @@ export default function ReportesPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const comisionesReport = useComisionesReport(currentMonth);
   const vencimientosReport = useVencimientosReport();
-  const flujoCajaReport = useFlujoCajaReport('semester');
+  const flujoCajaReport = useFlujoCajaReport(6);
+  const rendimientoReport = useRendimientoAgentesReport(currentMonth);
 
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
@@ -603,6 +640,8 @@ export default function ReportesPage() {
                       }
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
+                      isLocked={!!report.premium && !hasAdvancedReports}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -651,6 +690,8 @@ export default function ReportesPage() {
                       }
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
+                      isLocked={!!report.premium && !hasAdvancedReports}
+                      onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
                   </motion.div>
                 ))}
@@ -661,12 +702,14 @@ export default function ReportesPage() {
 
         {/* Empty State */}
         {filteredReports.length === 0 && (
-          <div className="p-12 text-center rounded-xl border border-dashed border-border">
-            <MagnifyingGlass className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+          <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+              <MagnifyingGlass className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-1.5">
               {t('inmobiliaria.reportes.noReports')}
             </h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
               {t('inmobiliaria.reportes.noReportsDesc')}
             </p>
             {filters.search && (
@@ -681,6 +724,96 @@ export default function ReportesPage() {
             )}
           </div>
         )}
+        </div>
+      </motion.div>
+
+      {/* Advanced Reports Section — gated to Pro+ */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-xl border border-border bg-card overflow-hidden print:border-none print:shadow-none"
+      >
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <ChartLine className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">
+                {locale === 'es' ? 'Reportes Avanzados' : 'Advanced Reports'}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {locale === 'es'
+                  ? 'Analisis detallado de ocupacion, cobros y rendimiento'
+                  : 'Detailed occupancy, collections and performance analysis'}
+              </p>
+            </div>
+          </div>
+          <ReportPDFExport
+            title={
+              activeAdvancedTab === 'ocupacion'
+                ? (locale === 'es' ? 'Reporte de Ocupacion' : 'Occupancy Report')
+                : activeAdvancedTab === 'cobros'
+                ? (locale === 'es' ? 'Reporte de Cobros' : 'Collections Report')
+                : activeAdvancedTab === 'ejecutivo'
+                ? (locale === 'es' ? 'Resumen Ejecutivo' : 'Executive Summary')
+                : (locale === 'es' ? 'Rendimiento de Agentes' : 'Agent Performance')
+            }
+          />
+        </div>
+
+        {/* Tab Bar */}
+        <div className="p-4 border-b border-border print:hidden">
+          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-muted">
+            {advancedTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveAdvancedTab(tab.key)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                    activeAdvancedTab === tab.key
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content — Gated */}
+        <div className="p-4">
+          {activeAdvancedTab === 'ejecutivo' ? (
+            <FeatureGate feature="executive-reports">
+              <ExecutiveSummary
+                data={adaptExecutive(flujoCajaReport.report, ocupacionReport.report) ?? mockExecutiveData}
+              />
+            </FeatureGate>
+          ) : (
+            <FeatureGate feature="advanced-reports">
+              {activeAdvancedTab === 'ocupacion' && (
+                <OccupancyReport data={adaptOccupancy(ocupacionReport.report) ?? mockOccupancyData} />
+              )}
+              {activeAdvancedTab === 'cobros' && (
+                <CollectionsReport data={adaptCollections(carteraReport.report) ?? mockCollectionsData} />
+              )}
+              {activeAdvancedTab === 'agentes' && (
+                <AgentPerformanceReport
+                  data={
+                    adaptAgentPerformance(rendimientoReport.report, comisionesReport.report)
+                    ?? mockAgentPerformanceData
+                  }
+                />
+              )}
+            </FeatureGate>
+          )}
         </div>
       </motion.div>
 

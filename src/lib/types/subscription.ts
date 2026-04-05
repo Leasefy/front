@@ -7,7 +7,7 @@
 export type PlanId = 'free' | 'pro' | 'business';
 
 // Agency plan identifiers
-export type AgencyPlanId = 'starter' | 'growth' | 'agency-business' | 'enterprise';
+export type AgencyPlanId = 'starter' | 'growth' | 'agency-business' | 'pro' | 'flex' | 'enterprise';
 
 // Billing options
 export type BillingCycle = 'monthly' | 'yearly';

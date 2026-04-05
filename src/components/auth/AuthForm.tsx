@@ -89,7 +89,7 @@ function GoogleIcon({ className }: { className?: string }) {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
@@ -103,6 +103,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // Redirigir automáticamente cuando el usuario se autentica
   React.useEffect(() => {
     if (authLoading) return;
+    // JWT valid but backend has no user record yet → onboarding
+    if (needsOnboarding) {
+      window.location.href = '/onboarding/seleccionar-rol';
+      return;
+    }
     if (!isAuthenticated || !user) return;
     // Si el onboarding no está completo, siempre ir a seleccionar rol
     if (!user.onboardingCompleted) {
@@ -111,7 +116,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
     const destination = (returnUrl && returnUrl !== '/') ? returnUrl : '/';
     window.location.href = destination;
-  }, [isAuthenticated, user, authLoading, returnUrl]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 

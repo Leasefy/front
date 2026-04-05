@@ -14,22 +14,16 @@ import { Button } from "@/components/ui/button";
  */
 const audienceLinks = [
   {
-    href: '/para/propietarios',
-    label: 'Propietarios',
-    icon: Key,
-    description: 'Arrienda tu propiedad sin comisiones de intermediación',
-  },
-  {
-    href: '/para/inquilinos',
-    label: 'Inquilinos',
-    icon: MagnifyingGlass,
-    description: 'Encuentra y aplica a propiedades verificadas',
-  },
-  {
     href: '/para/inmobiliarias',
     label: 'Inmobiliarias',
     icon: Bank,
-    description: 'Escala tu operación con tecnología',
+    description: 'Escala tu operación con tecnología e IA',
+  },
+  {
+    href: '/para/propietarios',
+    label: 'Propietarios',
+    icon: Key,
+    description: 'Arrienda tu propiedad sin comisiones',
   },
   {
     href: '/para/agentes',
@@ -37,6 +31,14 @@ const audienceLinks = [
     icon: Trophy,
     description: 'Herramientas para cerrar más arriendos',
   },
+  // --- Commented out for agency-only launch ---
+  // {
+  //   href: '/para/inquilinos',
+  //   label: 'Inquilinos',
+  //   icon: MagnifyingGlass,
+  //   description: 'Encuentra y aplica a propiedades verificadas',
+  // },
+  // ---
 ];
 
 const productLinks = [

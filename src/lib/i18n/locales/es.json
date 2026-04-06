@@ -2500,6 +2500,80 @@
         "submitting": "Creando..."
       }
     },
+    "import": {
+      "title": "Importar propiedades",
+      "subtitle": "Migra tu portafolio completo en minutos",
+      "steps": {
+        "method": "Método",
+        "upload": "Archivo",
+        "mapping": "Mapeo",
+        "review": "Revisión AI",
+        "confirm": "Confirmar"
+      },
+      "methods": {
+        "excel": {
+          "title": "Excel / CSV",
+          "desc": "Sube un archivo Excel o CSV con tus propiedades",
+          "badge": "Recomendado"
+        },
+        "software": {
+          "title": "Desde software",
+          "desc": "Exporta desde SIMI, Daytona, DOMUS y más",
+          "badge": "Guiado"
+        },
+        "portal": {
+          "title": "Desde portales",
+          "desc": "Importa desde FincaRaíz, Metrocuadrado",
+          "badge": "Próximamente"
+        }
+      },
+      "upload": {
+        "dragText": "Arrastra tu archivo aquí o haz clic para seleccionar",
+        "formats": "Formatos soportados: .xlsx, .xls, .csv",
+        "parsing": "Analizando archivo...",
+        "rowsDetected": "{{count}} filas detectadas",
+        "selectSheet": "Seleccionar hoja",
+        "downloadTemplate": "Descargar plantilla",
+        "fileLoaded": "Archivo cargado: {{name}} ({{size}})"
+      },
+      "mapping": {
+        "title": "Mapeo de columnas",
+        "subtitle": "Hemos detectado automáticamente las columnas. Revisa y ajusta si es necesario.",
+        "mapped": "{{count}} de {{total}} columnas mapeadas",
+        "confidence": {
+          "detected": "Detectado",
+          "probable": "Probable",
+          "unmapped": "Sin mapear",
+          "manual": "Manual"
+        },
+        "ignore": "Ignorar",
+        "reset": "Restablecer mapeo",
+        "requiredMissing": "Campos requeridos sin mapear:",
+        "sampleValues": "Ej:"
+      },
+      "fields": {
+        "propertyTitle": "Título",
+        "propertyAddress": "Dirección",
+        "propertyCity": "Ciudad",
+        "propertyZone": "Barrio / Zona",
+        "propertyType": "Tipo de inmueble",
+        "monthlyRent": "Canon mensual",
+        "adminFee": "Administración",
+        "commissionPercent": "Comisión %"
+      },
+      "wizard": {
+        "cancel": "Cancelar",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "mobileProgress": "Paso {{current}} de {{total}}: {{label}}",
+        "cancelDialog": {
+          "title": "¿Cancelar importación?",
+          "description": "Perderás el progreso de esta importación.",
+          "continueEditing": "Continuar",
+          "yesCancel": "Sí, cancelar"
+        }
+      }
+    },
     "consignaciones": {
       "propertyType": {
         "apartment": "Apartamento",

@@ -2487,6 +2487,80 @@
         "submitting": "Creating..."
       }
     },
+    "import": {
+      "title": "Import properties",
+      "subtitle": "Migrate your entire portfolio in minutes",
+      "steps": {
+        "method": "Method",
+        "upload": "File",
+        "mapping": "Mapping",
+        "review": "AI Review",
+        "confirm": "Confirm"
+      },
+      "methods": {
+        "excel": {
+          "title": "Excel / CSV",
+          "desc": "Upload an Excel or CSV file with your properties",
+          "badge": "Recommended"
+        },
+        "software": {
+          "title": "From software",
+          "desc": "Export from SIMI, Daytona, DOMUS and more",
+          "badge": "Guided"
+        },
+        "portal": {
+          "title": "From portals",
+          "desc": "Import from FincaRaíz, Metrocuadrado",
+          "badge": "Coming soon"
+        }
+      },
+      "upload": {
+        "dragText": "Drag your file here or click to select",
+        "formats": "Supported formats: .xlsx, .xls, .csv",
+        "parsing": "Analyzing file...",
+        "rowsDetected": "{{count}} rows detected",
+        "selectSheet": "Select sheet",
+        "downloadTemplate": "Download template",
+        "fileLoaded": "File loaded: {{name}} ({{size}})"
+      },
+      "mapping": {
+        "title": "Column mapping",
+        "subtitle": "We automatically detected the columns. Review and adjust if necessary.",
+        "mapped": "{{count}} of {{total}} columns mapped",
+        "confidence": {
+          "detected": "Detected",
+          "probable": "Probable",
+          "unmapped": "Unmapped",
+          "manual": "Manual"
+        },
+        "ignore": "Ignore",
+        "reset": "Reset mapping",
+        "requiredMissing": "Required fields not mapped:",
+        "sampleValues": "Ex:"
+      },
+      "fields": {
+        "propertyTitle": "Title",
+        "propertyAddress": "Address",
+        "propertyCity": "City",
+        "propertyZone": "Neighborhood / Zone",
+        "propertyType": "Property type",
+        "monthlyRent": "Monthly rent",
+        "adminFee": "Admin fee",
+        "commissionPercent": "Commission %"
+      },
+      "wizard": {
+        "cancel": "Cancel",
+        "previous": "Previous",
+        "next": "Next",
+        "mobileProgress": "Step {{current}} of {{total}}: {{label}}",
+        "cancelDialog": {
+          "title": "Cancel import?",
+          "description": "You will lose the progress of this import.",
+          "continueEditing": "Continue",
+          "yesCancel": "Yes, cancel"
+        }
+      }
+    },
     "consignaciones": {
       "propertyType": {
         "apartment": "Apartment",

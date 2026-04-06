@@ -21,6 +21,8 @@ import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
 import { StepAIReview } from './steps/StepAIReview';
 import { StepConfirmImport } from './steps/StepConfirmImport';
+import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
+import { StepPortalImport } from './steps/StepPortalImport';
 import type { ImportWizardState } from './lib/importTypes';
 
 const STEPS = [
@@ -64,12 +66,21 @@ export function ImportWizard() {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
 
+  // Visible steps based on method
+  const visibleSteps = useMemo(() => {
+    if (wizardState.method === 'portal') return STEPS.slice(0, 2);
+    return STEPS;
+  }, [wizardState.method]);
+
   // Step validation
   const isStepValid = useMemo(() => {
     switch (currentStep) {
       case 1:
         return wizardState.method !== null;
       case 2:
+        // Software and portal steps are always "valid" for navigation purposes
+        if (wizardState.method === 'software') return true;
+        if (wizardState.method === 'portal') return true;
         return wizardState.rawRows.length > 0;
       case 3: {
         // At least propertyAddress and monthlyRent must be mapped
@@ -91,10 +102,10 @@ export function ImportWizard() {
 
   // Navigation handlers
   const goToNextStep = useCallback(() => {
-    if (currentStep < TOTAL_STEPS && isStepValid) {
+    if (currentStep < visibleSteps.length && isStepValid) {
       setCurrentStep((prev) => prev + 1);
     }
-  }, [currentStep, isStepValid]);
+  }, [currentStep, isStepValid, visibleSteps.length]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
@@ -134,6 +145,8 @@ export function ImportWizard() {
       case 1:
         return <StepChooseMethod {...stepProps} />;
       case 2:
+        if (wizardState.method === 'software') return <StepSoftwareMigration {...stepProps} />;
+        if (wizardState.method === 'portal') return <StepPortalImport {...stepProps} />;
         return <StepUploadFile {...stepProps} />;
       case 3:
         return <StepColumnMapping {...stepProps} />;
@@ -152,7 +165,7 @@ export function ImportWizard() {
       <div className="mb-8">
         {/* Desktop Steps */}
         <div className="hidden md:flex items-center justify-between">
-          {STEPS.map((step, index) => {
+          {visibleSteps.map((step, index) => {
             const status = getStepStatus(step.id);
             const StepIcon = step.icon;
 
@@ -194,7 +207,7 @@ export function ImportWizard() {
                 </button>
 
                 {/* Connector Line */}
-                {index < STEPS.length - 1 && (
+                {index < visibleSteps.length - 1 && (
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
                     step.id < currentStep
@@ -213,17 +226,17 @@ export function ImportWizard() {
             <span className="text-sm font-medium text-neutral-900 dark:text-white">
               {t('inmobiliaria.import.wizard.mobileProgress', {
                 current: currentStep,
-                total: TOTAL_STEPS,
-                label: t(STEPS[currentStep - 1]?.labelKey),
+                total: visibleSteps.length,
+                label: t(visibleSteps[currentStep - 1]?.labelKey ?? ''),
               })}
             </span>
-            <span className="text-sm text-neutral-500">{Math.round((currentStep / TOTAL_STEPS) * 100)}%</span>
+            <span className="text-sm text-neutral-500">{Math.round((currentStep / visibleSteps.length) * 100)}%</span>
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-indigo-600"
               initial={false}
-              animate={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
+              animate={{ width: `${(currentStep / visibleSteps.length) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           </div>
@@ -271,7 +284,16 @@ export function ImportWizard() {
                 </button>
               )}
 
-              {currentStep < TOTAL_STEPS && (
+              {/* Portal terminal step: show "Volver al portafolio" instead of "Siguiente" */}
+              {wizardState.method === 'portal' && currentStep === 2 ? (
+                <button
+                  type="button"
+                  onClick={confirmCancel}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all font-mono uppercase tracking-wide text-sm border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  {t('inmobiliaria.import.portal.backToPortfolio')}
+                </button>
+              ) : currentStep < visibleSteps.length ? (
                 <button
                   type="button"
                   onClick={goToNextStep}
@@ -286,7 +308,7 @@ export function ImportWizard() {
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         )}

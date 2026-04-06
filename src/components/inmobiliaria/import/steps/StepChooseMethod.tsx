@@ -47,7 +47,7 @@ const METHOD_CARDS: MethodCard[] = [
     badgeColor: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
     icon: Globe,
     iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-    disabled: true,
+    disabled: false,
   },
 ];
 

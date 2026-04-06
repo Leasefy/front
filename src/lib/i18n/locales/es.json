@@ -2610,6 +2610,34 @@
           "successTitle": "Importación exitosa",
           "successDesc": "{{count}} propiedades importadas correctamente"
         }
+      },
+      "software": {
+        "title": "Exporta desde tu software",
+        "subtitle": "Selecciona tu sistema actual y sigue las instrucciones para exportar",
+        "popular": "Popular",
+        "exportSteps": {
+          "step1": "Ir a la sección de Propiedades / Inmuebles",
+          "step2": "Seleccionar todas o filtrar las que desea importar",
+          "step3": "Buscar botón 'Exportar' o 'Descargar' (usualmente en formato .xlsx o .csv)",
+          "step4": "Descargar el archivo y cargarlo aquí"
+        },
+        "otherSoftware": "¿Usas otro software?",
+        "otherSoftwareDesc": "Contáctanos y te ayudamos con la migración",
+        "haveFile": "Ya tengo mi archivo",
+        "requestHelp": "Solicitar ayuda"
+      },
+      "portal": {
+        "title": "Importar desde portales",
+        "subtitle": "Conecta tu perfil de agencia para importar propiedades automáticamente",
+        "comingSoon": "Próximamente",
+        "backToPortfolio": "Volver al portafolio",
+        "emailCapture": {
+          "title": "¿Te interesa esta función?",
+          "subtitle": "Déjanos tu email y te avisamos cuando esté disponible",
+          "placeholder": "tu@email.com",
+          "submit": "Avisar",
+          "success": "¡Registrado! Te avisaremos cuando esté disponible."
+        }
       }
     },
     "consignaciones": {

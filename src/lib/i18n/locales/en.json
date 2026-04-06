@@ -2597,6 +2597,34 @@
           "successTitle": "Import successful",
           "successDesc": "{{count}} properties imported successfully"
         }
+      },
+      "software": {
+        "title": "Export from your software",
+        "subtitle": "Select your current system and follow the export instructions",
+        "popular": "Popular",
+        "exportSteps": {
+          "step1": "Go to the Properties / Real Estate section",
+          "step2": "Select all or filter the ones you want to import",
+          "step3": "Find the 'Export' or 'Download' button (usually in .xlsx or .csv format)",
+          "step4": "Download the file and upload it here"
+        },
+        "otherSoftware": "Using other software?",
+        "otherSoftwareDesc": "Contact us and we'll help you with the migration",
+        "haveFile": "I already have my file",
+        "requestHelp": "Request help"
+      },
+      "portal": {
+        "title": "Import from portals",
+        "subtitle": "Connect your agency profile to automatically import properties",
+        "comingSoon": "Coming soon",
+        "backToPortfolio": "Back to portfolio",
+        "emailCapture": {
+          "title": "Interested in this feature?",
+          "subtitle": "Leave your email and we'll notify you when it's available",
+          "placeholder": "your@email.com",
+          "submit": "Notify me",
+          "success": "Registered! We'll notify you when it's available."
+        }
       }
     },
     "consignaciones": {

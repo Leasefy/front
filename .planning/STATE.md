@@ -13,9 +13,9 @@ See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architectur
 
 Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
 Phase: 33 of 33 (Property Import System)
-Plan: 2 of 2 complete
+Plan: 3 of 3 complete
 Status: Phase complete
-Last activity: 2026-03-29 — Completed 33-02-PLAN.md (AI Review + Confirmation Import)
+Last activity: 2026-03-29 — Completed 33-03-PLAN.md (Software Migration + Portal Import + Portfolio Integration)
 
 Progress: [██████████████████████████████] 100%
 
@@ -71,11 +71,11 @@ These were built in the current conversation before GSD was invoked:
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 33-02-PLAN.md — Property Import System complete (all 5 wizard steps)
+Stopped at: Completed 33-03-PLAN.md — Phase 33 fully complete (all 3 plans)
 Resume file: None
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 - Phase 33 added: Property Import System — Excel/CSV import with AI column mapping and gap-filling, software migration guides, and portal import for real estate agencies
-- Phase 33 complete (2026-03-29): All 5 wizard steps built. gapFiller.ts uses 6 heuristic rules for mock AI gap-filling. StepAIReview animates 2s analysis then reveals stagger-in cards. StepConfirmImport simulates import progress with for-loop + setTimeout.
+- Phase 33 complete (2026-03-29): All 5 wizard steps built. gapFiller.ts uses 6 heuristic rules for mock AI gap-filling. StepAIReview animates 2s analysis then reveals stagger-in cards. StepConfirmImport simulates import progress with for-loop + setTimeout. Plan 03 adds StepSoftwareMigration + StepPortalImport + method-aware wizard routing + portfolio page import button + empty state CTA + i18n for software/portal namespaces.

@@ -2572,6 +2572,44 @@
           "continueEditing": "Continuar",
           "yesCancel": "Sí, cancelar"
         }
+      },
+      "review": {
+        "analyzing": "Analizando {{count}} propiedades...",
+        "readyCount": "{{ready}} propiedades listas.",
+        "issueCount": "{{issues}} necesitan atención.",
+        "complete": "Completo",
+        "suggestions": "{{count}} sugerencias",
+        "error": "Error",
+        "ready": "Listo",
+        "acceptAll": "Aceptar todas las sugerencias",
+        "acceptAllProperty": "Aceptar todas",
+        "selectAll": "Seleccionar todas",
+        "deselectAll": "Deseleccionar todas",
+        "accepted": "Aceptado",
+        "rejected": "Rechazado",
+        "completeStat": "{{count}} completas",
+        "suggestionStat": "{{count}} con sugerencias",
+        "errorStat": "{{count}} con errores"
+      },
+      "confirm": {
+        "title": "Resumen de importación",
+        "propertiesToImport": "Propiedades a importar",
+        "propertiesExcluded": "Propiedades excluidas",
+        "suggestionsAccepted": "Sugerencias AI aceptadas",
+        "remainingErrors": "Errores restantes",
+        "assignAgent": "Asignar agente",
+        "assignAgentDesc": "Selecciona el agente que gestionará las propiedades importadas",
+        "assignLater": "Podrás asignar agentes después",
+        "importButton": "Importar {{count}} propiedades",
+        "importing": "Importando propiedad {{current}} de {{total}}...",
+        "successTitle": "¡Importación completada!",
+        "successDesc": "Se importaron {{count}} propiedades a tu portafolio",
+        "viewPortfolio": "Ver portafolio",
+        "importMore": "Importar más",
+        "toast": {
+          "successTitle": "Importación exitosa",
+          "successDesc": "{{count}} propiedades importadas correctamente"
+        }
       }
     },
     "consignaciones": {

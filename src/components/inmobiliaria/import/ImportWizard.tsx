@@ -19,6 +19,8 @@ import { useI18n } from '@/lib/i18n';
 import { StepChooseMethod } from './steps/StepChooseMethod';
 import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
+import { StepAIReview } from './steps/StepAIReview';
+import { StepConfirmImport } from './steps/StepConfirmImport';
 import type { ImportWizardState } from './lib/importTypes';
 
 const STEPS = [
@@ -77,8 +79,10 @@ export function ImportWizard() {
         return hasAddress && hasRent;
       }
       case 4:
-        return true;
+        // Valid when analysis is done and at least 1 property is selected
+        return wizardState.aiAnalyzed && wizardState.properties.some((p) => p.selected && !p.hasErrors);
       case 5:
+        // Always valid — step manages its own submit
         return true;
       default:
         return false;
@@ -134,19 +138,9 @@ export function ImportWizard() {
       case 3:
         return <StepColumnMapping {...stepProps} />;
       case 4:
-        return (
-          <div className="py-12 text-center text-neutral-400">
-            <MagicWand className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-            <p className="text-sm font-mono uppercase tracking-wide">Revisión AI — Coming in plan 33-02</p>
-          </div>
-        );
+        return <StepAIReview {...stepProps} />;
       case 5:
-        return (
-          <div className="py-12 text-center text-neutral-400">
-            <CheckCircle className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-            <p className="text-sm font-mono uppercase tracking-wide">Confirmación — Coming in plan 33-02</p>
-          </div>
-        );
+        return <StepConfirmImport {...stepProps} />;
       default:
         return null;
     }
@@ -252,46 +246,50 @@ export function ImportWizard() {
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416] flex items-center justify-between">
-          {/* Cancel Button */}
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:text-neutral-900 dark:hover:text-white transition-colors"
-          >
-            {t('inmobiliaria.import.wizard.cancel')}
-          </button>
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center gap-3">
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={goToPreviousStep}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              >
-                <CaretLeft className="w-4 h-4" />
-                {t('inmobiliaria.import.wizard.previous')}
-              </button>
-            )}
-
+        {/* Footer Navigation — hidden when import is complete */}
+        {!(currentStep === 5 && wizardState.importedCount > 0) && (
+          <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416] flex items-center justify-between">
+            {/* Cancel Button */}
             <button
               type="button"
-              onClick={goToNextStep}
-              disabled={!isStepValid}
-              className={cn(
-                'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all font-mono uppercase tracking-wide text-sm',
-                isStepValid
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              )}
+              onClick={handleCancel}
+              className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:text-neutral-900 dark:hover:text-white transition-colors"
             >
-              {t('inmobiliaria.import.wizard.next')}
-              <CaretRight className="w-4 h-4" />
+              {t('inmobiliaria.import.wizard.cancel')}
             </button>
+
+            {/* Navigation Buttons */}
+            <div className="flex items-center gap-3">
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={goToPreviousStep}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  <CaretLeft className="w-4 h-4" />
+                  {t('inmobiliaria.import.wizard.previous')}
+                </button>
+              )}
+
+              {currentStep < TOTAL_STEPS && (
+                <button
+                  type="button"
+                  onClick={goToNextStep}
+                  disabled={!isStepValid}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all font-mono uppercase tracking-wide text-sm',
+                    isStepValid
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+                  )}
+                >
+                  {t('inmobiliaria.import.wizard.next')}
+                  <CaretRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Cancel Confirmation Dialog */}

@@ -15,6 +15,18 @@ import { parseSpreadsheetFile, downloadTemplate } from '../lib/parseFile';
 import { autoMapColumns } from '../lib/columnMapping';
 import type { ImportStepProps } from '../ImportWizard';
 
+const SUPPORTED_EXTENSIONS = ['csv', 'xlsx', 'xls'];
+const UNSUPPORTED_MESSAGES: Record<string, string> = {
+  numbers: 'Los archivos .numbers de Apple no son soportados. Abre tu archivo en Numbers y expórtalo como CSV: Archivo → Exportar a → CSV.',
+  ods: 'Los archivos .ods no son soportados directamente. Abre tu archivo en LibreOffice/Calc y guárdalo como .xlsx o .csv.',
+  pdf: 'Los archivos PDF no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
+  doc: 'Los archivos Word no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
+  docx: 'Los archivos Word no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
+  txt: 'Si tu archivo .txt tiene datos separados por comas, renómbralo a .csv e intenta de nuevo.',
+};
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const ROW_COUNT_WARNING_THRESHOLD = 5000;
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -25,10 +37,12 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const { t } = useI18n();
   const [isParsing, setIsParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [rowWarning, setRowWarning] = useState<string | null>(null);
 
   const processFile = useCallback(async (file: File, sheetName?: string) => {
     setIsParsing(true);
     setParseError(null);
+    setRowWarning(null);
     try {
       const result = await parseSpreadsheetFile(file, sheetName);
 
@@ -36,6 +50,10 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         setParseError('El archivo está vacío o no tiene datos válidos');
         setIsParsing(false);
         return;
+      }
+
+      if (result.rows.length > ROW_COUNT_WARNING_THRESHOLD) {
+        setRowWarning(`Tu archivo tiene ${result.rows.length.toLocaleString()} filas. El proceso puede tardar más de lo usual.`);
       }
 
       const columnMappings = autoMapColumns(result.headers);
@@ -57,19 +75,33 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
     }
   }, [updateState]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDropWithValidation = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setParseError('El archivo excede el límite de 10MB. Divide tu archivo en partes más pequeñas.');
+      return;
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+      const hint = UNSUPPORTED_MESSAGES[ext];
+      if (hint) {
+        setParseError(hint);
+      } else {
+        setParseError(`El formato .${ext} no es soportado. Usa archivos .xlsx, .xls o .csv.`);
+      }
+      return;
+    }
+
+    setParseError(null);
     processFile(file);
   }, [processFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.ms-excel': ['.xls'],
-      'text/csv': ['.csv'],
-    },
+    onDrop: onDropWithValidation,
     maxFiles: 1,
     multiple: false,
     disabled: isParsing,
@@ -174,6 +206,14 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
           <WarningCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <p className="text-sm text-red-700 dark:text-red-400">{parseError}</p>
+        </div>
+      )}
+
+      {/* Row Count Warning */}
+      {rowWarning && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <WarningCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700 dark:text-amber-400">{rowWarning}</p>
         </div>
       )}
 

@@ -301,7 +301,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
       )}
 
       {/* Property list */}
-      <div className={cn('space-y-3', properties.length > 5 ? 'max-h-[60vh] overflow-y-auto pr-1' : '')}>
+      <div data-lenis-prevent className={cn('space-y-3', properties.length > 5 ? 'max-h-[60vh] overflow-y-auto pr-1' : '')} style={{ overscrollBehavior: 'contain' }}>
         {sortedProperties.map((property, i) => (
           <AISuggestionCard
             key={property._rowIndex}

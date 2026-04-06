@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,6 +23,7 @@ import { StepAIReview } from './steps/StepAIReview';
 import { StepConfirmImport } from './steps/StepConfirmImport';
 import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
 import { StepPortalImport } from './steps/StepPortalImport';
+import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
 
 const STEPS = [
@@ -33,7 +34,6 @@ const STEPS = [
   { id: 5, labelKey: 'inmobiliaria.import.steps.confirm', icon: CheckCircle },
 ];
 
-const TOTAL_STEPS = STEPS.length;
 
 const INITIAL_STATE: ImportWizardState = {
   method: null,
@@ -66,6 +66,15 @@ export function ImportWizard() {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
 
+  // When method changes (e.g. from software → excel), reset to step 1
+  const prevMethodRef = useRef(wizardState.method);
+  useEffect(() => {
+    if (prevMethodRef.current !== wizardState.method && wizardState.method !== null) {
+      prevMethodRef.current = wizardState.method;
+      setCurrentStep(1);
+    }
+  }, [wizardState.method]);
+
   // Visible steps based on method
   const visibleSteps = useMemo(() => {
     if (wizardState.method === 'portal') return STEPS.slice(0, 2);
@@ -83,11 +92,10 @@ export function ImportWizard() {
         if (wizardState.method === 'portal') return true;
         return wizardState.rawRows.length > 0;
       case 3: {
-        // At least propertyAddress and monthlyRent must be mapped
+        // All required TARGET_FIELDS must be mapped
         const mappings = wizardState.columnMappings;
-        const hasAddress = mappings.some((m) => m.targetField === 'propertyAddress');
-        const hasRent = mappings.some((m) => m.targetField === 'monthlyRent');
-        return hasAddress && hasRent;
+        const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
+        return requiredKeys.every((key) => mappings.some((m) => m.targetField === key));
       }
       case 4:
         // Valid when analysis is done and at least 1 property is selected
@@ -109,15 +117,21 @@ export function ImportWizard() {
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
+      if (currentStep === 4) {
+        updateState({ aiAnalyzed: false, properties: [] });
+      }
       setCurrentStep((prev) => prev - 1);
     }
-  }, [currentStep]);
+  }, [currentStep, updateState]);
 
   const goToStep = useCallback((step: number) => {
-    if (step >= 1 && step <= TOTAL_STEPS) {
+    if (step >= 1 && step <= currentStep) {
+      if (currentStep === 4 && step < 4) {
+        updateState({ aiAnalyzed: false, properties: [] });
+      }
       setCurrentStep(step);
     }
-  }, []);
+  }, [currentStep, updateState]);
 
   const handleCancel = useCallback(() => {
     setShowCancelDialog(true);
@@ -244,7 +258,7 @@ export function ImportWizard() {
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div

@@ -9,16 +9,13 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { toast } from '@/components/ui/toast';
 import type { ImportStepProps } from '../ImportWizard';
 
 export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const { agentes } = useAgentes();
 
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentItem, setCurrentItem] = useState(0);
@@ -215,36 +212,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </div>
       </div>
 
-      {/* Agent assignment */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-5 space-y-3">
-        <div className="flex items-center gap-2">
-          <UserCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-          <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
-            {t('inmobiliaria.import.confirm.assignAgent')}
-          </h3>
+      {/* Agent assignment note */}
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] p-5">
+        <div className="flex items-start gap-3">
+          <UserCircle className="w-5 h-5 text-neutral-400 dark:text-neutral-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
+              Asignación de agentes
+            </h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+              Las propiedades se importarán sin agente asignado. Podrás asignar agentes individualmente o en lote desde el portafolio después de importar.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {t('inmobiliaria.import.confirm.assignAgentDesc')}
-        </p>
-
-        <select
-          value={selectedAgentId}
-          onChange={(e) => setSelectedAgentId(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">Sin asignar</option>
-          {agentes.map((agente) => (
-            <option key={agente.id} value={agente.id}>
-              {agente.name}
-            </option>
-          ))}
-        </select>
-
-        {!selectedAgentId && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
-            {t('inmobiliaria.import.confirm.assignLater')}
-          </p>
-        )}
       </div>
 
       {/* Import progress bar (during import) */}

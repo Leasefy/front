@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/home/HeroSection";
-// --- Commented out for agency-only launch ---
-// import { IntroSection } from "@/components/home/IntroSection";
-// import { ProblemSection } from "@/components/home/ProblemSection";
+import { IntroSection } from "@/components/home/IntroSection";
+import { ProblemSection } from "@/components/home/ProblemSection";
+// --- Commented out for agency-only launch (tenant property listings) ---
 // import { PropertiesSection } from "@/components/home/PropertiesSection";
 // -----------------------------------------
 import { AboutSection } from "@/components/home/AboutSection";
@@ -81,12 +81,13 @@ export default function House() {
         {/* 1. Hero */}
         <HeroSection />
 
-        {/* --- Commented out: multi-audience sections ---
+        {/* 2. Intro - Value proposition */}
         <IntroSection />
-        <ProblemSection />
-        --- */}
 
-        {/* 2. Solution - Platform benefits */}
+        {/* 3. Problem - Pain points */}
+        <ProblemSection />
+
+        {/* 4. Solution - Platform benefits */}
         <AboutSection />
 
         {/* 3. Social Proof */}

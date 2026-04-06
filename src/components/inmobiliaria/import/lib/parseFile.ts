@@ -19,8 +19,17 @@ export async function parseSpreadsheetFile(
 ): Promise<ParseResult> {
   const XLSX = await import('xlsx');
 
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  let workbook;
+
+  if (ext === 'csv') {
+    // Read CSV as UTF-8 text to preserve accents and special characters
+    const text = await file.text();
+    workbook = XLSX.read(text, { type: 'string' });
+  } else {
+    const buffer = await file.arrayBuffer();
+    workbook = XLSX.read(buffer, { type: 'array', codepage: 65001 });
+  }
 
   const sheetNames = workbook.SheetNames;
   const targetSheet = sheetName && sheetNames.includes(sheetName)
@@ -46,11 +55,13 @@ export async function parseSpreadsheetFile(
   // Extract headers from first row keys
   const headers = Object.keys(rawData[0]);
 
-  // Map rows to add _rowIndex (1-based)
-  const rows: ParsedRow[] = rawData.map((row, index) => ({
-    _rowIndex: index + 1,
-    ...row,
-  }));
+  // Filter out empty rows and add _rowIndex (1-based)
+  const rows: ParsedRow[] = rawData
+    .filter((row) => Object.values(row).some((v) => v !== '' && v !== null && v !== undefined))
+    .map((row, index) => ({
+      _rowIndex: index + 1,
+      ...row,
+    }));
 
   return { rows, headers, sheetNames };
 }
@@ -62,26 +73,40 @@ export async function downloadTemplate(): Promise<void> {
   const XLSX = await import('xlsx');
 
   const headers = [
-    'Titulo',
-    'Direccion',
+    'Título',
+    'Dirección',
     'Ciudad',
     'Barrio',
-    'Tipo',
-    'Canon mensual',
-    'Cuota admin',
-    'Comision %',
+    'Tipo Inmueble',
+    'Canon Mensual',
+    'Administración',
+    'Comisión %',
+    'Área m2',
+    'Habitaciones',
+    'Baños',
+    'Propietario',
+    'Tel Propietario',
+    'Estado',
+    'Observaciones',
   ];
 
-  // Create a worksheet with a header row and one example row
+  // Create a worksheet with a header row and two example rows
   const exampleRow = [
     'Apartamento El Prado',
     'Calle 123 # 45-67',
     'Bogotá',
     'El Prado',
     'Apartamento',
-    '1500000',
-    '150000',
+    '2500000',
+    '350000',
     '10',
+    '85',
+    '3',
+    '2',
+    'Juan Pérez',
+    '3101234567',
+    'Disponible',
+    'Parqueadero incluido',
   ];
 
   const worksheetData = [headers, exampleRow];

@@ -134,7 +134,7 @@ export function CTASection() {
           >
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-5 py-2.5">
               <Sparkle className="w-4 h-4 text-amber-400" />
-              <span className="text-[13px] font-medium text-white">+2,400 arriendos exitosos este año</span>
+              <span className="text-[13px] font-medium text-white">+200 inmobiliarias ya confían en nosotros</span>
             </div>
           </motion.div>
 
@@ -147,10 +147,10 @@ export function CTASection() {
             className="mb-6"
           >
             <h2 className="text-[42px] sm:text-[56px] lg:text-[72px] font-heading font-semibold text-white tracking-[-0.03em] leading-[1.05] text-center">
-              Tu próximo arriendo
+              Administra más
               <br />
               <span className="bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-                empieza aquí
+                con menos esfuerzo
               </span>
             </h2>
           </motion.div>
@@ -172,7 +172,7 @@ export function CTASection() {
             transition={{ duration: 0.5, delay: 0.25 }}
             className="text-[18px] sm:text-[20px] text-white/70 mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            Únete a miles de inquilinos y propietarios que ya arriendan sin estrés, sin comisiones ocultas.
+            Sube tu portafolio, activa los agentes AI, y deja que la plataforma haga el trabajo pesado por ti.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -183,9 +183,9 @@ export function CTASection() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
           >
-            <Button variant="white" size="lg" asChild className="min-w-[220px] h-14 text-[15px] shadow-xl shadow-black/20">
-              <Link href="/propiedades">
-                Buscar propiedades
+            <Button variant="white" size="lg" asChild className="min-w-[220px] h-14 text-[15px]">
+              <Link href="/auth?mode=register&role=agency">
+                Empezar gratis
               </Link>
             </Button>
             <Button
@@ -195,8 +195,8 @@ export function CTASection() {
               hideArrow
               className="min-w-[220px] h-14 text-[15px] border-white/30 hover:border-white/50 hover:bg-white/20"
             >
-              <Link href="/publicar">
-                Publicar gratis
+              <Link href="/pricing">
+                Ver precios
               </Link>
             </Button>
           </motion.div>
@@ -210,9 +210,9 @@ export function CTASection() {
             className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-12"
           >
             {[
-              { icon: Shield, text: "Sin compromisos" },
-              { icon: Clock, text: "Registro en 2 min" },
-              { icon: Users, text: "Gratis para inquilinos" },
+              { icon: Shield, text: "Sin compromiso" },
+              { icon: Clock, text: "Activo en 5 min" },
+              { icon: Users, text: "Plan gratis disponible" },
             ].map((item, index) => {
               const Icon = item.icon;
               return (

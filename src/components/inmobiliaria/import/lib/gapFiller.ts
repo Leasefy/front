@@ -79,8 +79,11 @@ export function cleanNumericValue(value: unknown): number | undefined {
 
   const str = String(value).trim();
 
-  // Remove currency symbols, spaces
-  let cleaned = str.replace(/[$\s]/g, '');
+  // Strip common text prefixes (aprox, aprox., ~, cerca de, COP, etc.)
+  let cleaned = str
+    .replace(/^(aprox\.?\s*|~\s*|cerca\s*de\s*|approx\.?\s*)/i, '')
+    .replace(/\s*(COP|cop|pesos|m2|mts|m²)$/i, '')
+    .replace(/[$\s]/g, '');
 
   // Handle Colombian format: 1.800.000 (dots as thousand separators, comma as decimal)
   if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
@@ -147,10 +150,14 @@ function normalizePropertyType(raw: string): { normalized: string; wasNormalized
 // City extraction from address
 // ============================================================================
 
+function stripAccents(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function extractCityFromAddress(address: string): string | null {
-  const lower = address.toLowerCase();
+  const normalizedAddr = stripAccents(address.toLowerCase());
   for (const city of COLOMBIAN_CITIES) {
-    if (lower.includes(city.toLowerCase())) {
+    if (normalizedAddr.includes(stripAccents(city.toLowerCase()))) {
       return city;
     }
   }
@@ -172,7 +179,7 @@ export function mapRowsToProperties(
   rawRows: ParsedRow[],
   columnMappings: ColumnMapping[]
 ): ImportProperty[] {
-  const numericFields = new Set(['monthlyRent', 'adminFee', 'commissionPercent']);
+  const numericFields = new Set(['monthlyRent', 'adminFee', 'commissionPercent', 'propertyArea', 'bedrooms', 'bathrooms']);
 
   return rawRows.map((row) => {
     const prop: ImportProperty = {
@@ -306,11 +313,11 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
       });
     }
 
-    // Rule 5: Missing commissionPercent
+    // Rule 5: Missing commissionPercent (0% is valid — only suggest when undefined/NaN)
     if (
-      !prop.commissionPercent ||
-      prop.commissionPercent === 0 ||
-      isNaN(prop.commissionPercent)
+      prop.commissionPercent === undefined ||
+      prop.commissionPercent === null ||
+      (typeof prop.commissionPercent === 'number' && isNaN(prop.commissionPercent))
     ) {
       suggestions.push({
         field: 'commissionPercent',

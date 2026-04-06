@@ -7,15 +7,27 @@ import type { ColumnMapping } from './importTypes';
  * Keyword dictionary for Tier 1 exact substring matching.
  * Keys are Leasefy target field names; values are Spanish/English keywords.
  */
+/**
+ * Keywords ordered by specificity — longer/more specific phrases first.
+ * The matcher checks in order, so "tipo inmueble" matches propertyType before
+ * "inmueble" could match propertyTitle.
+ */
 export const COLUMN_KEYWORDS: Record<string, string[]> = {
-  propertyTitle:    ['titulo', 'nombre', 'inmueble', 'propiedad', 'descripcion corta'],
-  propertyAddress:  ['direccion', 'direccion', 'address', 'ubicacion', 'ubicacion', 'calle'],
+  propertyType:     ['tipo inmueble', 'tipo de inmueble', 'tipo propiedad', 'clase inmueble', 'tipo', 'clase', 'type'],
+  propertyTitle:    ['titulo', 'nombre propiedad', 'descripcion corta', 'nombre'],
+  propertyAddress:  ['direccion', 'address', 'ubicacion', 'calle', 'dir'],
   propertyCity:     ['ciudad', 'municipio', 'city'],
-  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'urbanizacion'],
-  propertyType:     ['tipo', 'tipo inmueble', 'clase', 'type'],
-  monthlyRent:      ['canon', 'arriendo', 'valor', 'precio', 'alquiler', 'renta', 'mensual', 'rent'],
-  adminFee:         ['admin', 'administracion', 'administracion', 'cuota admin', 'copropiedad'],
-  commissionPercent:['comision', 'comision', 'fee', 'honorario', 'honorarios'],
+  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'vecindario'],
+  monthlyRent:      ['canon mensual', 'canon', 'arriendo', 'valor arriendo', 'precio', 'alquiler', 'renta mensual', 'renta', 'mensual', 'rent'],
+  adminFee:         ['administracion', 'admin', 'cuota admin', 'copropiedad', 'cuota'],
+  commissionPercent:['comision', 'fee', 'honorario', 'honorarios', 'porcentaje'],
+  propertyArea:     ['area m2', 'area', 'metros', 'm2', 'metros cuadrados', 'superficie', 'tamano'],
+  bedrooms:         ['alcobas', 'habitaciones', 'cuartos', 'dormitorios', 'hab', 'recamaras', 'bedrooms'],
+  bathrooms:        ['banos', 'bano', 'bathrooms', 'wc'],
+  ownerName:        ['propietario', 'dueno', 'nombre propietario', 'owner'],
+  ownerPhone:       ['tel propietario', 'telefono propietario', 'celular propietario', 'tel', 'telefono', 'celular', 'phone'],
+  status:           ['estado', 'status', 'disponibilidad'],
+  notes:            ['observaciones', 'notas', 'comentarios', 'descripcion', 'notes'],
 };
 
 /**
@@ -65,12 +77,36 @@ export function levenshteinDistance(a: string, b: string): number {
  * Returns { targetField, confidence } or null if no match.
  */
 function tier1Match(normalizedHeader: string): { targetField: string; confidence: number } | null {
+  // Collect ALL matches, prefer forward matches (header contains keyword) over reverse
+  let bestField: string | null = null;
+  let bestScore = 0;
+
   for (const [field, keywords] of Object.entries(COLUMN_KEYWORDS)) {
     for (const keyword of keywords) {
-      if (normalizedHeader.includes(normalize(keyword)) || normalize(keyword).includes(normalizedHeader)) {
-        return { targetField: field, confidence: 0.92 };
+      const normKeyword = normalize(keyword);
+      const forwardMatch = normalizedHeader.includes(normKeyword);
+      const reverseMatch = normKeyword.includes(normalizedHeader);
+
+      if (forwardMatch) {
+        // Forward match: header contains keyword — strong signal, score by keyword length
+        const score = 1000 + normKeyword.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestField = field;
+        }
+      } else if (reverseMatch && normalizedHeader.length >= normKeyword.length * 0.6) {
+        // Reverse match: keyword contains header — weaker, only when header is substantial
+        const score = normKeyword.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestField = field;
+        }
       }
     }
+  }
+
+  if (bestField) {
+    return { targetField: bestField, confidence: 0.92 };
   }
   return null;
 }

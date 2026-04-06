@@ -32,6 +32,13 @@ export interface ImportProperty {
   monthlyRent?: number;
   adminFee?: number;
   commissionPercent?: number;
+  propertyArea?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  ownerName?: string;
+  ownerPhone?: string;
+  status?: string;
+  notes?: string;
   suggestions: AISuggestion[];
   selected: boolean;
   hasErrors: boolean;
@@ -55,12 +62,19 @@ export interface ImportWizardState {
 
 // Target fields that columns can map to
 export const TARGET_FIELDS = [
-  { key: 'propertyTitle', labelKey: 'inmobiliaria.import.fields.propertyTitle', required: true },
-  { key: 'propertyAddress', labelKey: 'inmobiliaria.import.fields.propertyAddress', required: true },
-  { key: 'propertyCity', labelKey: 'inmobiliaria.import.fields.propertyCity', required: true },
-  { key: 'propertyZone', labelKey: 'inmobiliaria.import.fields.propertyZone', required: false },
-  { key: 'propertyType', labelKey: 'inmobiliaria.import.fields.propertyType', required: true },
-  { key: 'monthlyRent', labelKey: 'inmobiliaria.import.fields.monthlyRent', required: true },
-  { key: 'adminFee', labelKey: 'inmobiliaria.import.fields.adminFee', required: false },
-  { key: 'commissionPercent', labelKey: 'inmobiliaria.import.fields.commissionPercent', required: false },
+  { key: 'propertyTitle', label: 'Título', required: false },
+  { key: 'propertyAddress', label: 'Dirección', required: true },
+  { key: 'propertyCity', label: 'Ciudad', required: true },
+  { key: 'propertyZone', label: 'Barrio / Zona', required: false },
+  { key: 'propertyType', label: 'Tipo de inmueble', required: true },
+  { key: 'monthlyRent', label: 'Canon mensual', required: true },
+  { key: 'adminFee', label: 'Administración', required: false },
+  { key: 'commissionPercent', label: 'Comisión %', required: false },
+  { key: 'propertyArea', label: 'Área (m²)', required: false },
+  { key: 'bedrooms', label: 'Habitaciones', required: false },
+  { key: 'bathrooms', label: 'Baños', required: false },
+  { key: 'ownerName', label: 'Propietario', required: false },
+  { key: 'ownerPhone', label: 'Teléfono propietario', required: false },
+  { key: 'status', label: 'Estado', required: false },
+  { key: 'notes', label: 'Observaciones', required: false },
 ] as const;

@@ -185,7 +185,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                   <option value="">{t('inmobiliaria.import.mapping.ignore')}</option>
                   {TARGET_FIELDS.map((field) => (
                     <option key={field.key} value={field.key}>
-                      {t(field.labelKey)}
+                      {field.label}
                     </option>
                   ))}
                 </select>
@@ -210,7 +210,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
             </p>
             <ul className="text-sm text-amber-700 dark:text-amber-400 space-y-0.5">
               {unmappedRequired.map((field) => (
-                <li key={field.key}>• {t(field.labelKey)}</li>
+                <li key={field.key}>• {field.label}</li>
               ))}
             </ul>
           </div>

@@ -157,3 +157,13 @@ Plans:
 | 30. Executive Reports | 2/2 | Complete | 2026-03-26 |
 | 31. Automatic Reminders | 3/3 | Complete | 2026-03-26 |
 | 32. Integration & QA | 2/2 | Complete | 2026-03-26 |
+
+### Phase 33: Property Import System — Excel/CSV import with AI column mapping and gap-filling, software migration guides, and portal import for real estate agencies
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 33 to break down)

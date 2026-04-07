@@ -12,6 +12,8 @@ import type { Property } from '@/lib/types/property';
 interface ConfirmationScreenProps {
   property: Property;
   trackingCode: string;
+  isGuest?: boolean;
+  guestEmail?: string;
 }
 
 // ============================================================================
@@ -22,7 +24,8 @@ interface ConfirmationScreenProps {
  * ConfirmationScreen - Shown after successful application submission
  * Displays tracking code and next steps
  */
-export function ConfirmationScreen({ property, trackingCode }: ConfirmationScreenProps) {
+export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail }: ConfirmationScreenProps) {
+  void isGuest; void guestEmail; // available for future use
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">

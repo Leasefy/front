@@ -54,6 +54,8 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   // Validation tracking
   step1Valid?: boolean
   step2Valid?: boolean
+  /** Cédula de Ciudadanía (Colombia) */
+  rut?: string
 }
 
 export const initialTenantOnboardingDraft: TenantOnboardingDraft = {

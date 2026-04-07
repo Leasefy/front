@@ -480,11 +480,35 @@ export interface CarteraReport {
     bucket61to90: number;
     bucket90plus: number;
   };
+  /** Optional monthly breakdown (backend may not return this yet) */
+  byMonth?: CarteraMonthItem[];
 }
 
 // ============================================================================
 // Ocupacion Report
 // ============================================================================
+
+export interface OcupacionPropertyItem {
+  consignacionId: string;
+  propertyTitle: string;
+  propertyZone: string;
+  availability: string;
+  tenantName?: string;
+  monthlyRent: number;
+}
+
+export interface OcupacionTrendItem {
+  month: string;
+  rate: number;
+}
+
+export interface CarteraMonthItem {
+  month: string;
+  total: number;
+  collected: number;
+  overdue: number;
+  collectionRate: number;
+}
 
 export interface OcupacionZone {
   zone: string;
@@ -504,6 +528,10 @@ export interface OcupacionReport {
   overallOccupancyRate: number;
   previousMonthOccupancyRate?: number;
   zones: OcupacionZone[];
+  /** Optional per-property breakdown (backend may not return this yet) */
+  byProperty?: OcupacionPropertyItem[];
+  /** Optional monthly occupancy trend (backend may not return this yet) */
+  monthlyTrend?: OcupacionTrendItem[];
 }
 
 // ============================================================================
@@ -1214,6 +1242,13 @@ export interface UserInvite {
   name: string;
   role: AgencyRole;
   message?: string;
+  // Extended fields used by AgenteFormModal and ConfigUsuarios
+  phone?: string;
+  zone?: string;
+  specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
+  commissionSplit?: number;
+  agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
+  position?: string;
 }
 
 // Helper functions for users/roles
@@ -1489,6 +1524,76 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// ============================================================================
+// Onboarding Step (Checklist)
+// ============================================================================
+
+export interface OnboardingStep {
+  key: string;
+  label: string;
+  completed: boolean;
+  action?: {
+    label: string;
+    href: string;
+  };
+}
+
+// ============================================================================
+// Agency Member (extended AgencyUser with agency-level role info)
+// ============================================================================
+
+export interface AgencyMember extends AgencyUser {
+  agencyRole?: string;
+  joinedAt?: string;
+  permissions?: Record<string, string[]> | null;
+}
+
+// ============================================================================
+// Agency Onboarding Status (backend response)
+// ============================================================================
+
+export interface AgencyOnboardingStatus {
+  isComplete: boolean;
+  completionPercent: number;
+  steps: OnboardingStep[];
+}
+
+// ============================================================================
+// Invitation Info (public invitation details for /invitacion/[token])
+// ============================================================================
+
+export interface InvitationInfo {
+  token: string;
+  email: string;
+  name?: string;
+  role: AgencyRole;
+  agencyName?: string;
+  agencyCity?: string;
+  invitedBy?: string;
+  invitedEmail?: string;
+  expiresAt?: string;
+}
+
+// ============================================================================
+// Rendimiento Agentes Report
+// ============================================================================
+
+export interface RendimientoAgente {
+  userId: string;
+  agenteName?: string;
+  activeLeads: number;
+  completedDeals: number;
+  conversionRate: number;
+  avgDaysToClose: number;
+}
+
+export interface RendimientoAgentesReport {
+  generatedAt: string;
+  period?: string;
+  agentes: RendimientoAgente[];
+}
+
 
 // Helper to check if role has permission
 export function hasPermission(

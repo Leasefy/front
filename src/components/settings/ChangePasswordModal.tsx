@@ -34,7 +34,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
     }
     setIsLoading(true);
     try {
-      await changePassword(form.current || undefined, form.new);
+      await changePassword!(form.current || undefined, form.new);
       toast.success('Contraseña actualizada correctamente');
       handleClose();
     } catch (err: unknown) {

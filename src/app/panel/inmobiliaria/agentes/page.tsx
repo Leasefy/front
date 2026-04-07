@@ -28,7 +28,7 @@ import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/Age
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
-import type { AgenteFormData } from '@/lib/types/inmobiliaria';
+import type { UserInvite } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
@@ -140,7 +140,7 @@ export default function AgentesPage() {
     setShowAddModal(true);
   }, []);
 
-  const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
+  const handleCreateAgente = useCallback(async (data: UserInvite) => {
     // TODO Backend: Create agent via API
     // For now, just show success toast
     toast.success(t('inmobiliaria.agentes.toasts.created'), {

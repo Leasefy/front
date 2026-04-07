@@ -158,6 +158,14 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   setMfaVerified: () => void
+  /** Change password for authenticated user (current password required unless using OAuth) */
+  changePassword?: (currentPassword: string | undefined, newPassword: string) => Promise<void>
+  /** Update password from a reset-password flow (no current password required) */
+  updatePassword?: (newPassword: string) => Promise<void>
+  /** Whether the user needs to complete onboarding before accessing the panel */
+  needsOnboarding?: boolean
+  /** The agency-level role of the current user (e.g. 'ADMIN', 'AGENT') */
+  agencyRole?: string
 }
 
 /**

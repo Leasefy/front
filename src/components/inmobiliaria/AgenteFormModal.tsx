@@ -215,31 +215,8 @@ export function AgenteFormModal({
                 </button>
               </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                {t('inmobiliaria.agente.cancel')}
-              </button>
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    {t('inmobiliaria.agente.creating')}
-                  </>
-                ) : (
-                  t('inmobiliaria.agente.createAgent')
-                )}
-
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
                 {/* Name */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">

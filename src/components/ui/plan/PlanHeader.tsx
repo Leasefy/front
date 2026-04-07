@@ -90,8 +90,15 @@ export function PlanHeader({
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Check if user is landlord (on /panel routes, but NOT inmobiliaria routes)
-  const isLandlord = pathname?.startsWith('/panel') && !pathname?.startsWith('/panel/inmobiliaria');
+  // Context detection — both landlord and inmobiliaria live under /panel.
+  // `isLandlord` intentionally covers BOTH (same UI chrome: notifications, search, quick actions).
+  // Use `isInmobiliaria` only where the two diverge — routing, plan CTAs, etc.
+  const isInmobiliaria = pathname?.startsWith('/panel/inmobiliaria') ?? false;
+  const isLandlord = pathname?.startsWith('/panel') ?? false;
+
+  // Route destinations depend on context
+  const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
+  const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion';
 
   // Real notifications from API
   const landlordNotifs = useLandlordNotifications();
@@ -388,7 +395,7 @@ export function PlanHeader({
                     {/* Upgrade CTA */}
                     {planId !== 'business' && (
                       <Link
-                        href={user?.role === 'agency' ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade'}
+                        href={upgradePlanHref}
                         onClick={() => setSubscriptionOpen(false)}
                         className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide font-mono transition-colors"
                       >
@@ -398,7 +405,7 @@ export function PlanHeader({
 
                     {/* Manage subscription */}
                     <Link
-                      href={user?.role === 'agency' ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion'}
+                      href={manageSubscriptionHref}
                       onClick={() => setSubscriptionOpen(false)}
                       className="block mt-3 text-center text-[13px] font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white underline underline-offset-2 decoration-neutral-300 dark:decoration-neutral-600 hover:decoration-neutral-500 transition-colors"
                     >
@@ -798,10 +805,10 @@ export function PlanHeader({
                   </DropdownListItem>
                 </>
               )}
-              {(isLandlord || user?.role === 'agency') && (
+              {isLandlord && (
                 <DropdownListItem asChild>
                   <Link
-                    href={user?.role === 'agency' ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade'}
+                    href={upgradePlanHref}
                     className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />

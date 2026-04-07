@@ -1,33 +1,41 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MagnifyingGlass, ShieldCheck, PencilLine, ArrowRight, FileText } from '@phosphor-icons/react';
+import { Buildings, ShieldCheck, ArrowRight, CurrencyDollar } from '@phosphor-icons/react';
 import Link from "next/link";
+
+// --- Original multi-audience steps (commented for agency-only launch) ---
+// const _originalSteps = [
+//   { number: "01", icon: MagnifyingGlass, title: "Busca o publica", description: "Inquilinos: encuentra propiedades..." },
+//   { number: "02", icon: ShieldCheck, title: "Evaluación inteligente", description: "Nuestro scoring AI evalúa..." },
+//   { number: "03", icon: FileText, title: "Firma y listo", description: "Contrato digital legalmente válido..." },
+// ];
+// ---
 
 const steps = [
   {
     number: "01",
-    icon: MagnifyingGlass,
-    title: "Busca o publica",
+    icon: Buildings,
+    title: "Sube tu portafolio",
     subtitle: "En minutos, no semanas",
-    description: "Inquilinos: encuentra propiedades verificadas con IA que recomienda según tu perfil. Propietarios: publica gratis y recibe aplicaciones pre-evaluadas.",
-    cta: { label: "Ver propiedades", href: "/propiedades" },
+    description: "Registra tus propietarios y propiedades. Importa desde Excel o crea uno por uno. Tu portafolio organizado desde el día 1.",
+    cta: { label: "Ver cómo funciona", href: "/para/inmobiliarias" },
   },
   {
     number: "02",
     icon: ShieldCheck,
-    title: "Evaluación inteligente",
-    subtitle: "Decisiones informadas en 48h",
-    description: "Nuestro scoring AI evalúa capacidad de pago, historial y estabilidad. Sin sesgos, sin conjeturas. Sabrás exactamente qué esperar.",
-    cta: { label: "Cómo funciona", href: "/productos/evaluacion" },
+    title: "Los agentes AI trabajan",
+    subtitle: "24/7 sin intervención",
+    description: "Evaluación de inquilinos con scoring AI, matching inteligente de propiedades, y recordatorios automáticos. Tu equipo AI no descansa.",
+    cta: { label: "Conocer agentes AI", href: "/para/inmobiliarias" },
   },
   {
     number: "03",
-    icon: FileText,
-    title: "Firma y listo",
-    subtitle: "100% digital y seguro",
-    description: "Contrato digital legalmente válido, firma electrónica, y todo listo para mudarte. Sin intermediarios, sin comisiones ocultas.",
-    cta: { label: "Ver contratos", href: "/productos/contratos" },
+    icon: CurrencyDollar,
+    title: "Cobra y dispersa",
+    subtitle: "Automático y puntual",
+    description: "Cobros automáticos a inquilinos, dispersiones a propietarios, y reportes financieros. Todo sin tocar una hoja de cálculo.",
+    cta: { label: "Ver precios", href: "/pricing" },
   },
 ];
 
@@ -49,11 +57,11 @@ export function HowItWorksSection() {
         >
           {/* Main heading */}
           <h2 className="text-[32px] md:text-[48px] font-heading font-normal text-foreground tracking-[-3px] leading-[1.1] mb-4 max-w-2xl mx-auto">
-            De búsqueda a llaves en 3 pasos
+            Administra más con menos en 3 pasos
           </h2>
 
           <p className="text-[17px] md:text-[19px] tracking-[-0.5px] text-muted-foreground max-w-xl mx-auto">
-            Sin intermediarios, sin papeleo, sin sorpresas. Así de simple.
+            Sin Excel, sin llamadas de cobro, sin trabajo manual. Así de simple.
           </p>
         </motion.div>
 
@@ -77,7 +85,7 @@ export function HowItWorksSection() {
                     <span className="text-[48px] md:text-[56px] font-extralight tracking-[-4px] text-primary/20">
                       {step.number}
                     </span>
-                    <div className="w-14 h-14 flex items-center justify-center bg-primary/5 border border-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <div className="w-14 h-14 flex items-center justify-center bg-primary/5 border border-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-white uppercase tracking-wide font-mono transition-colors">
                       <Icon className="w-6 h-6" strokeWidth={1.5} />
                     </div>
                   </div>

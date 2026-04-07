@@ -1,6 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -47,21 +46,18 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn('border border-dashed border-border bg-muted/50', className)}>
-      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-        {/* Icon Container - Premium gradient background */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-[black]/10 rounded-sm blur-xl" />
-          <div className="relative rounded-sm bg-gradient-to-br from-black/10 to-[black]/5 p-5 border border-[black]/10">
-            <Icon className="h-8 w-8 text-[black]" />
-          </div>
+    <div className={cn('rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03]', className)}>
+      <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
+        {/* Icon */}
+        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mb-5 shadow-sm dark:shadow-none">
+          <Icon className="h-6 w-6 text-neutral-400 dark:text-neutral-500" />
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground mb-1.5">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">{description}</p>
 
         {/* Optional CTA */}
         {action && (
@@ -69,7 +65,7 @@ export function EmptyState({
             <Link href={action.href}>{action.label}</Link>
           </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

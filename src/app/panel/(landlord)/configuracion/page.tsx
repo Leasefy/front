@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, EyeSlash, FileText, Tag, ArrowUpRight } from '@phosphor-icons/react';
+import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
@@ -24,7 +24,6 @@ import { SettingLink } from '@/components/settings/SettingLink';
 import { PaymentAccountsSection } from '@/components/settings/PaymentAccountsSection';
 import { TeamManagementSection } from '@/components/settings/TeamManagementSection';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
-import { ChangePasswordModal } from '@/components/settings/ChangePasswordModal';
 import type { NotificationSettings } from '@/lib/api/settings.service';
 
 // ============================================================================
@@ -53,6 +52,8 @@ export default function ConfiguracionPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Form states
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
@@ -87,9 +88,35 @@ export default function ConfiguracionPage() {
     toast.success(newTheme === 'dark' ? t('landlordSettings.toasts.darkModeEnabled') : t('landlordSettings.toasts.lightModeEnabled'));
   };
 
+  const handlePasswordChange = async () => {
+    if (passwordForm.new !== passwordForm.confirm) {
+      toast.error(t('landlordSettings.toasts.passwordsDontMatch'));
+      return;
+    }
+    if (passwordForm.new.length < 8) {
+      toast.error(t('landlordSettings.toasts.passwordTooShort'));
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.new });
+      if (error) throw error;
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      toast.success(t('landlordSettings.toasts.passwordUpdated'));
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al cambiar contraseña');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCloseAllSessions = async () => {
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
       toast.success(t('landlordSettings.toasts.allSessionsClosed'));
@@ -133,7 +160,7 @@ export default function ConfiguracionPage() {
       await settingsApi.deleteAccount();
       // Sign out from Supabase after soft-delete
       const supabase = getSupabase();
-      await supabase.auth.signOut();
+      if (supabase) await supabase.auth.signOut();
       toast.success(t('landlordSettings.toasts.accountDeleted'));
       setTimeout(() => router.push('/'), 2000);
     } catch (err) {
@@ -141,6 +168,13 @@ export default function ConfiguracionPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResetOnboarding = () => {
+    localStorage.removeItem('plan_onboarding_landlord');
+    window.dispatchEvent(new Event('onboarding-updated'));
+    toast.success(t('landlordSettings.toasts.onboardingReset'));
+    setTimeout(() => router.push('/panel'), 500);
   };
 
   // Derive current session info from browser
@@ -208,7 +242,7 @@ export default function ConfiguracionPage() {
                 {currentPlanId !== 'business' && (
                   <Link
                     href="/panel/upgrade"
-                    className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                    className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-colors flex items-center gap-2"
                   >
                     {t('landlordSettings.subscription.upgradePlan')}
                     <ArrowUpRight className="w-4 h-4" />
@@ -402,6 +436,12 @@ export default function ConfiguracionPage() {
                   onClick={() => setShowDownloadModal(true)}
                 />
                 <SettingLink
+                  icon={ArrowCounterClockwise}
+                  title={t('landlordSettings.dataPrivacy.resetOnboarding')}
+                  description={t('landlordSettings.dataPrivacy.resetOnboardingDesc')}
+                  onClick={handleResetOnboarding}
+                />
+                <SettingLink
                   icon={FileText}
                   title={t('landlordSettings.dataPrivacy.privacyPolicy')}
                   description={t('landlordSettings.dataPrivacy.privacyPolicyDesc')}
@@ -461,7 +501,56 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Password Modal */}
-      <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
+      <SettingsModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title={t('landlordSettings.modals.changePassword.title')}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.currentPassword')}</label>
+            <input
+              type="password"
+              value={passwordForm.current}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.newPassword')}</label>
+            <input
+              type="password"
+              value={passwordForm.new}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.modals.changePassword.minChars')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.confirmPassword')}</label>
+            <input
+              type="password"
+              value={passwordForm.confirm}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder={t('landlordSettings.modals.changePassword.repeatPassword')}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setShowPasswordModal(false)}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              {t('landlordSettings.modals.cancel')}
+            </button>
+            <button
+              onClick={handlePasswordChange}
+              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
+              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
+              {isLoading ? t('landlordSettings.modals.changePassword.updating') : t('landlordSettings.modals.changePassword.changeButton')}
+            </button>
+          </div>
+        </div>
+      </SettingsModal>
 
       {/* Sessions Modal */}
       <SettingsModal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
@@ -571,7 +660,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== t('landlordSettings.modals.deleteAccount.confirmWord')}
-              className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.deleteAccount.deleting') : t('landlordSettings.modals.deleteAccount.deleteButton')}

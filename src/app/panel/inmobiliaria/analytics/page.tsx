@@ -89,7 +89,7 @@ function HeroKPICard({
       bg: 'bg-indigo-50 dark:bg-indigo-900/20',
       icon: 'text-indigo-600 dark:text-indigo-400',
       border: 'border-indigo-100 dark:border-indigo-800/50',
-      progress: 'bg-indigo-500',
+      progress: 'bg-indigo-600',
       progressBg: 'bg-indigo-100 dark:bg-indigo-900/40',
     },
     emerald: {
@@ -420,7 +420,7 @@ export default function AnalyticsPage() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium shadow-lg shadow-indigo-500/20 transition-colors">
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
               </button>

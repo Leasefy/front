@@ -169,7 +169,7 @@ export default function InmobiliariasPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-white font-semibold text-sm">Inmobiliaria Bogotá</p>
-                        <p className="text-white/60 text-xs">Plan Empresarial</p>
+                        <p className="text-white/60 text-xs">Plan Flex</p>
                       </div>
                       <motion.div
                         initial={{ scale: 0 }}

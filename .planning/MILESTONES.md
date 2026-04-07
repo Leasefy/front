@@ -26,11 +26,11 @@
 ## v4.0 — AI Agent Platform Beta (COMPLETE)
 
 **Shipped:** 2026-02-10
-**Phases:** 9 (Phases 17-25, 21 plans)
-**Summary:** Conversational AI Beta section in both dashboards — chat UI with streaming, agent activity display, decision system, daily briefings, preferences/autonomy settings, mock API layer, full backend API spec, dark mode, mobile, i18n, a11y.
+**Phases:** 9 (21 plans)
+**Summary:** Conversational AI interface ("Beta" section) — chat UI with streaming, agent activity display, decision system, briefings, preferences/autonomy settings, API client layer, i18n, mobile support.
 
-## v5.0 — Inmobiliaria Registration (COMPLETE)
+## v5.0 — Agency Plan-Gated Features & AI Agent UX (ACTIVE)
 
-**Shipped:** 2026-03-11
-**Phases:** 1 (P1-inmobiliaria-registration, 3 plans)
-**Summary:** Registro completo de inmobiliarias — role selector con opción inmobiliaria, AgencySetupWizard 3 pasos (branding/operaciones/invitaciones), página pública de invitación con token (4 estados), OnboardingChecklist widget en dashboard, agencyApi namespace con 5 endpoints tipados, i18n ES+EN, dark mode, build limpio.
+**Started:** 2026-03-26
+**Goal:** Make the platform feel agentic from day one for agencies. Build plan-gated features (advanced reports, automatic reminders) that differentiate Flex plans. Ship the pricing model where agencies pay $10 USD per successful lease.
+**Key insight:** Flex plans include AI agents as differentiator — agencies should prefer per-lease pricing.

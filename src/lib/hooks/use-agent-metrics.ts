@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { apiClient } from '@/lib/api/client'
 
 // =============================================================================
 // Types
@@ -57,9 +56,6 @@ const DEFAULT_METRICS: AgentMetrics = {
 
 // =============================================================================
 // Hook: useAgentMetrics
-//
-// Fetches metrics from the backend. Falls back to defaults silently when the
-// endpoint is unavailable.
 // =============================================================================
 
 export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
@@ -69,12 +65,19 @@ export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await apiClient.get<AgentMetrics>('/inmobiliaria/ai/metrics')
-      setMetrics(res)
+      const res = await fetch('/api/agents/metrics')
+
+      if (!res.ok) {
+        throw new Error(`Metrics API responded with ${res.status}`)
+      }
+
+      const data: AgentMetrics = await res.json()
+      setMetrics(data)
       setError(null)
-    } catch {
-      // Endpoint not available yet — use defaults silently
-      setError(null)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch metrics'
+      setError(msg)
+      // Keep previous metrics on error, don't reset to defaults
     } finally {
       setIsLoading(false)
     }
@@ -83,6 +86,7 @@ export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
   useEffect(() => {
     fetchMetrics()
 
+    // Auto-refresh at the specified interval
     const interval = setInterval(fetchMetrics, refreshIntervalMs)
     return () => clearInterval(interval)
   }, [fetchMetrics, refreshIntervalMs])

@@ -203,7 +203,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-indigo-500 rounded" />
+            <span className="w-3 h-0.5 bg-indigo-600 rounded" />
             <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -655,7 +655,7 @@ function InsightsPanel({ insights }: { insights: string[] }) {
             transition={{ delay: index * 0.1 }}
             className="flex items-start gap-2 text-sm text-indigo-800 dark:text-indigo-200"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shrink-0 mt-1.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0 mt-1.5" />
             {insight}
           </motion.li>
         ))}

@@ -257,7 +257,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
         className="flex w-full items-center gap-4 p-5 text-left bg-background hover:bg-muted/50 transition-colors"
         aria-expanded={open}
       >
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 shrink-0">
           {section.icon}
         </div>
         <div className="flex-1 min-w-0">
@@ -296,7 +296,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
                         key={stepIdx}
                         className="flex items-start gap-3 text-[14px]"
                       >
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-medium shrink-0 mt-0.5">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-medium shrink-0 mt-0.5">
                           {stepIdx + 1}
                         </span>
                         <span className="text-foreground">{step}</span>
@@ -357,7 +357,7 @@ export default function PropietariosGuidePage() {
               <div className="flex flex-wrap gap-3 mb-12">
                 <Link
                   href="/publicar"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-[14px] font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[14px] font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   Publicar propiedad
                   <ArrowRight className="w-4 h-4" />

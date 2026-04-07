@@ -44,7 +44,7 @@ const TENANT_BADGES: Record<TenantSubscriptionTextT, {
       bg: 'bg-gradient-to-r from-indigo-500/10 to-violet-500/10',
       text: 'text-indigo-700 dark:text-indigo-300',
       border: 'border-indigo-500/20',
-      iconBg: 'bg-indigo-500',
+      iconBg: 'bg-indigo-600',
     },
   },
   none: null,
@@ -85,7 +85,7 @@ const LANDLORD_BADGES: Record<PlanId, {
   },
   business: {
     label: 'Plan Inversionista',
-    shortLabel: 'Business',
+    shortLabel: 'Inversionista',
     icon: Crown,
     colors: {
       bg: 'bg-gradient-to-r from-amber-500/10 to-orange-500/10',

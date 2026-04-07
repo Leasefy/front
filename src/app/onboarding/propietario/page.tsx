@@ -20,7 +20,6 @@ type PropertyType = 'apartment' | 'house' | 'studio' | 'room'
 interface OnboardingData {
   // Step 1: About You
   displayName: string
-  rut: string
   phone: string
   preferredContact: PreferredContact
   // Step 2: Your Property
@@ -57,14 +56,13 @@ function OnboardingPropietarioContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnUrl = searchParams.get('returnUrl')
-  const { refreshUser, isAuthenticated, user } = useAuth()
+  const { refreshUser, isAuthenticated } = useAuth()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
 
   const [data, setData] = useState<OnboardingData>({
     displayName: '',
-    rut: '',
     phone: '',
     preferredContact: 'whatsapp',
     propertyTextT: null,
@@ -72,24 +70,31 @@ function OnboardingPropietarioContent() {
     expectedRent: '',
   })
 
-  // Preload from backend user data (takes priority over localStorage)
+  // Load saved progress
   useEffect(() => {
-    if (user) {
-      const od = user.onboardingData
-      setData(prev => ({
-        ...prev,
-        displayName: user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`.trim()
-          : prev.displayName,
-        rut: user.rut || prev.rut,
-        phone: user.phone || prev.phone,
-        preferredContact: (od?.preferredContact as OnboardingData['preferredContact']) || prev.preferredContact,
-        propertyTextT: (od?.propertyType as OnboardingData['propertyTextT']) || prev.propertyTextT,
-        propertyCity: od?.propertyCity || prev.propertyCity,
-        expectedRent: od?.expectedRent ? od.expectedRent.toString() : prev.expectedRent,
-      }))
+    const saved = localStorage.getItem('plan_onboarding_landlord')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.draft) {
+          setData(prev => ({
+            ...prev,
+            displayName: parsed.draft.displayName || '',
+            phone: parsed.draft.phone || '',
+            preferredContact: parsed.draft.preferredContact || 'whatsapp',
+            propertyTextT: parsed.draft.propertyTextT || null,
+            propertyCity: parsed.draft.propertyCity || '',
+            expectedRent: parsed.draft.rentPrice?.toString() || '',
+          }))
+        }
+        if (parsed.isComplete) {
+          setIsComplete(true)
+        }
+      } catch (e) {
+        console.error('Error loading progress:', e)
+      }
     }
-  }, [user])
+  }, [])
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
@@ -132,17 +137,11 @@ function OnboardingPropietarioContent() {
       // Call backend onboarding endpoint
       // Strip spaces from phone — backend expects 3XXXXXXXXX or +573XXXXXXXXX
       const rawPhone = data.phone?.replace(/\s/g, '') || ''
-      const rentNum = data.expectedRent ? parseInt(data.expectedRent.replace(/\D/g, ''), 10) : undefined
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
         phone: rawPhone.length >= 10 ? rawPhone : undefined,
         userType: 'LANDLORD',
-        rut: data.rut || undefined,
-        preferredContact: data.preferredContact,
-        propertyType: data.propertyTextT || undefined,
-        propertyCity: data.propertyCity || undefined,
-        expectedRent: rentNum && !isNaN(rentNum) ? rentNum : undefined,
       })
 
       // Refresh user in auth context so role/onboardingCompleted updates
@@ -331,21 +330,6 @@ function OnboardingPropietarioContent() {
                   />
                 </div>
 
-                {/* CC */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Cédula de Ciudadanía <span className="text-neutral-400 font-normal">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={data.rut}
-                    onChange={(e) => updateData({ rut: e.target.value.replace(/\D/g, '') })}
-                    placeholder="Ej: 1090525663"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
-                  />
-                </div>
-
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -400,7 +384,7 @@ function OnboardingPropietarioContent() {
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid && !isSubmitting
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
@@ -548,7 +532,7 @@ function OnboardingPropietarioContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid && !isSubmitting
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >

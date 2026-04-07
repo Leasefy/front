@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/format';
 
 const PLAN_ICONS: Record<string, string> = {
   free: '⚡', pro: '✨', business: '🏢',
-  starter: '🚀', growth: '📈', 'agency-business': '🏛️', enterprise: '👑',
+  starter: '🚀', flex: '🔄', enterprise: '👑',
 };
 
 const PROPIETARIO_OPTIONS = PLANS.map((plan) => ({
@@ -106,7 +106,7 @@ export function StepPlan() {
                     className={cn(
                       'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
                       isSelected
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
                     )}
                   >
@@ -221,7 +221,7 @@ export function StepPlan() {
                   >
                     {/* Badge */}
                     {plan.badge && (
-                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-indigo-600 text-white shadow-sm">
+                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono">
                         {plan.badge}
                       </span>
                     )}
@@ -232,7 +232,7 @@ export function StepPlan() {
                         className={cn(
                           'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
                           plan.highlighted
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                             : isSelected
                               ? 'bg-indigo-100 dark:bg-indigo-900/30'
                               : 'bg-neutral-100 dark:bg-neutral-800',

@@ -228,7 +228,7 @@ export function PublishSuccess() {
               {isAuthenticated ? (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Ver mi propiedad en el panel
@@ -237,7 +237,7 @@ export function PublishSuccess() {
                 <button
                   type="button"
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Ver mi propiedad en el panel

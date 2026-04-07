@@ -112,7 +112,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
               >
                 <Icon className="w-[17px] h-[17px]" weight={isActive ? 'fill' : 'regular'} />
                 {hasBadge && (
-                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] font-semibold flex items-center justify-center leading-none">
                     {pendingDecisionsCount}
                   </span>
                 )}

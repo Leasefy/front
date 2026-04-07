@@ -222,7 +222,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Split Bar */}
           <div className="h-3 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex mb-3">
             <div
-              className="bg-indigo-500 dark:bg-indigo-400 transition-all"
+              className="bg-indigo-600 dark:bg-indigo-400 transition-all"
               style={{ width: `${agentPercent}%` }}
             />
             <div
@@ -234,7 +234,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Labels */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+              <div className="w-3 h-3 rounded-full bg-indigo-600 dark:bg-indigo-400" />
               <span className="text-neutral-600 dark:text-neutral-400">
                 {t('inmobiliaria.agente.agentLabel')}: <span className="font-semibold text-neutral-900 dark:text-white">{agentPercent}%</span>
               </span>
@@ -252,7 +252,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
           >
             <Envelope className="w-4 h-4" />
             Email

@@ -211,7 +211,7 @@ export default function NotificacionesPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: 20 }}
@@ -362,7 +362,7 @@ export default function NotificacionesPage() {
                         className={cn(
                           'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
                           !notification.read
-                            ? 'bg-indigo-600 dark:bg-indigo-500'
+                            ? 'bg-indigo-600 dark:bg-indigo-600'
                             : cn(categoryConfig.bgColor, categoryConfig.darkBgColor)
                         )}
                       >
@@ -424,7 +424,7 @@ export default function NotificacionesPage() {
                                 router.push(notification.actionUrl);
                               }
                             }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-700/20 transition-colors"
                           >
                             {notification.actionLabel}
                             <ArrowRight className="w-3 h-3" />

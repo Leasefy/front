@@ -335,7 +335,7 @@ export default function PropietarioDetailPage() {
           </p>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propietarios')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.propietarios.backToList')}
@@ -648,7 +648,7 @@ export default function PropietarioDetailPage() {
                     <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                       {t('inmobiliaria.propietarios.detail.noProperties')}
                     </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors">
+                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors">
                       <Plus className="w-4 h-4" />
                       {t('inmobiliaria.propietarios.detail.newConsignment')}
                     </button>
@@ -766,7 +766,7 @@ export default function PropietarioDetailPage() {
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors"
             >
               {t('inmobiliaria.common.delete')}
             </button>
@@ -807,7 +807,7 @@ export default function PropietarioDetailPage() {
             <button
               onClick={handleSaveNotes}
               disabled={isSavingNotes}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSavingNotes ? (
                 <>

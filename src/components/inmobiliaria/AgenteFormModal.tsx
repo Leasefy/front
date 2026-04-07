@@ -215,33 +215,29 @@ export function AgenteFormModal({
                 </button>
               </div>
 
-              {/* Form — scrollable */}
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
-
-                {/* System Role Selector — only in member variant */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Rol del sistema *</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {SYSTEM_ROLE_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setSystemRole(opt.value)}
-                          className={cn(
-                            'py-2.5 px-2 rounded-xl border text-center transition-all text-xs',
-                            systemRole === opt.value
-                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                              : 'border-border hover:bg-muted'
-                          )}
-                        >
-                          <p className={cn('font-medium', systemRole === opt.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground')}>
-                            {opt.label}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                {t('inmobiliaria.agente.cancel')}
+              </button>
+              <button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <SpinnerGap className="w-4 h-4 animate-spin" />
+                    {t('inmobiliaria.agente.creating')}
+                  </>
+                ) : (
+                  t('inmobiliaria.agente.createAgent')
                 )}
 
                 {/* Name */}

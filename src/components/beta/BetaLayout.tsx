@@ -54,7 +54,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
         {/* Skip to chat link - visible only on focus for screen readers */}
         <a
           href="#beta-chat-main"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-500 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white uppercase tracking-wide font-mono focus:rounded-lg focus:text-sm focus:font-medium"
         >
           {t('beta.a11y.skipToChat')}
         </a>
@@ -163,7 +163,7 @@ function MobileNewChatButton() {
         'w-9 h-9 rounded-lg',
         'flex items-center justify-center',
         'text-indigo-500 hover:text-indigo-600',
-        'hover:bg-indigo-50 dark:hover:bg-indigo-500/10',
+        'hover:bg-indigo-50 dark:hover:bg-indigo-700/10',
         'transition-colors duration-150'
       )}
       aria-label={t('beta.mobile.newChat')}

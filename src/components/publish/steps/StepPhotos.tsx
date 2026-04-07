@@ -186,7 +186,7 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-indigo-600 text-white text-xs font-medium rounded-lg">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-medium rounded-lg">
                   Principal
                 </span>
               )}

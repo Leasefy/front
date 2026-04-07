@@ -337,7 +337,7 @@ export function ConfigFacturacion({
           {billing.plan !== 'enterprise' && (
             <button
               onClick={() => setIsUpgradeDialogOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors"
             >
               <ArrowUp className="w-4 h-4" />
               {t('inmobiliaria.config.billing.upgradePlan')}
@@ -665,7 +665,7 @@ export function ConfigFacturacion({
                 >
                   {config.highlight && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="default" className="bg-indigo-500 text-white">
+                      <Badge variant="default" className="bg-indigo-600 text-white uppercase tracking-wide font-mono">
                         <Sparkle className="w-3 h-3 mr-1" />
                         {t('inmobiliaria.config.billing.popular')}
                       </Badge>
@@ -755,7 +755,7 @@ export function ConfigFacturacion({
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                 !selectedPlan || isUpgrading
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
               )}
             >
               {isUpgrading ? (

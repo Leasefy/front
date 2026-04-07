@@ -54,7 +54,7 @@ export function OnboardingSuccess() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          router.push('/panel')
+          router.push('/panel?setup=true')
           return 0
         }
         return prev - 1
@@ -183,10 +183,10 @@ export function OnboardingSuccess() {
             className="px-8 py-6 space-y-3"
           >
             <Link
-              href="/panel"
+              href="/panel?setup=true"
               className={cn(
                 'flex items-center justify-center gap-2 w-full py-4 px-6 text-sm font-semibold',
-                'bg-indigo-600 text-white rounded-xl',
+                'bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl',
                 'hover:bg-indigo-700 transition-all',
                 'shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30'
               )}

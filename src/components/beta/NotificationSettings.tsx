@@ -52,7 +52,7 @@ const DOT_COLORS: Record<string, string> = {
   amber: 'bg-amber-500',
   purple: 'bg-purple-500',
   pink: 'bg-pink-500',
-  indigo: 'bg-indigo-500',
+  indigo: 'bg-indigo-600',
 };
 
 // ============================================================================
@@ -210,7 +210,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                   'text-[12px] font-medium',
                   'transition-all duration-150',
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >

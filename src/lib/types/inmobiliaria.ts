@@ -470,15 +470,6 @@ export interface CarteraItem {
   bucket: '0-30' | '31-60' | '61-90' | '90+';
 }
 
-export interface CarteraMonthly {
-  month: string; // '2026-04'
-  collected: number;
-  overdue: number;
-  total: number;
-  cobroCount: number;
-  collectionRate: number; // percent (0-100)
-}
-
 export interface CarteraReport {
   generatedAt: string;
   items: CarteraItem[];
@@ -489,7 +480,6 @@ export interface CarteraReport {
     bucket61to90: number;
     bucket90plus: number;
   };
-  byMonth?: CarteraMonthly[];
 }
 
 // ============================================================================
@@ -505,26 +495,6 @@ export interface OcupacionZone {
   occupancyRate: number;
 }
 
-export interface OcupacionProperty {
-  consignacionId: string;
-  propertyTitle: string;
-  propertyAddress: string;
-  propertyCity: string;
-  propertyZone: string;
-  propertyType: string;
-  monthlyRent: number;
-  availability: 'RENTED' | 'AVAILABLE' | 'IN_PROCESS' | string;
-  tenantName?: string;
-  leaseEndDate?: string;
-}
-
-export interface OcupacionMonthlyTrend {
-  month: string; // '2026-04'
-  occupied: number;
-  total: number;
-  rate: number; // percent (0-100)
-}
-
 export interface OcupacionReport {
   generatedAt: string;
   totalProperties: number;
@@ -534,8 +504,6 @@ export interface OcupacionReport {
   overallOccupancyRate: number;
   previousMonthOccupancyRate?: number;
   zones: OcupacionZone[];
-  byProperty?: OcupacionProperty[];
-  monthlyTrend?: OcupacionMonthlyTrend[];
 }
 
 // ============================================================================
@@ -562,27 +530,6 @@ export interface ComisionesAgenteReport {
   totalClosedDeals: number;
   topAgentName: string;
   agentes: ComisionAgente[];
-}
-
-// ============================================================================
-// Rendimiento Agentes Report
-// ============================================================================
-
-export interface RendimientoAgente {
-  userId: string;
-  agenteName?: string;
-  assignedConsignaciones: number;
-  activePipeline: number;
-  activeLeads: number;
-  completedDeals: number;
-  lostDeals: number;
-  conversionRate: number; // percent (0-100)
-  avgDaysToClose: number;
-}
-
-export interface RendimientoAgentesReport {
-  period: string; // '2026-04'
-  agentes: RendimientoAgente[];
 }
 
 // ============================================================================
@@ -812,6 +759,7 @@ export interface ReportDefinition {
   frequency: ReportFrequency;
   lastGenerated?: string;
   isFavorite?: boolean;
+  /** Reports marked premium require Pro+ agency plan */
   premium?: boolean;
 }
 
@@ -1253,8 +1201,6 @@ export interface AgencyUser {
   email: string;
   name: string;
   role: AgencyRole;
-  /** Free-form title/cargo (e.g. "Administrador General", "Agente Senior"). Max 100 chars. */
-  position?: string | null;
   avatar?: string;
   phone?: string;
   status: 'active' | 'invited' | 'inactive';
@@ -1267,17 +1213,7 @@ export interface UserInvite {
   email: string;
   name: string;
   role: AgencyRole;
-  /** Optional free-form title/cargo to display in the UI. Max 100 chars. */
-  position?: string;
   message?: string;
-  /** Agent-specific fields — only sent when role is 'agente'.
-   *  Backend expects UPPERCASE enums (AGENT, RESIDENTIAL, etc.) */
-  phone?: string;
-  commissionSplit?: number;
-  zone?: string;
-  specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH' | 'residential' | 'commercial' | 'both';
-  agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR' | AgenteRole;
-  hireDate?: string;
 }
 
 // Helper functions for users/roles
@@ -2140,46 +2076,4 @@ export function getPeriodLabel(period: AnalyticsPeriod): string {
     custom: 'Personalizado',
   };
   return labels[period];
-}
-
-// ============================================================================
-// Agency Registration & Invitations (P1-inmobiliaria-registration)
-// ============================================================================
-
-export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER';
-
-export interface AgencyMember {
-  id: string;
-  agencyId: string;
-  userId: string;
-  email: string;
-  name?: string;
-  role: AgencyMemberRole;
-  status: 'active' | 'invited' | 'inactive';
-  joinedAt?: string;
-  invitedAt: string;
-}
-
-/** Returned by GET /inmobiliaria/agency/invitations/:token (public) */
-export interface InvitationInfo {
-  agencyName: string;
-  agencyCity: string;
-  role: AgencyMemberRole;
-  invitedEmail: string;
-  expiresAt: string;
-}
-
-/** A single step in the agency onboarding checklist */
-export interface OnboardingStep {
-  key: string;
-  label: string;
-  completed: boolean;
-  action?: { label: string; href: string };
-}
-
-/** Returned by GET /inmobiliaria/agency/onboarding-status */
-export interface AgencyOnboardingStatus {
-  steps: OnboardingStep[];
-  completionPercent: number;
-  isComplete: boolean;
 }

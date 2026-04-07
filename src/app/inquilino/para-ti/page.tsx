@@ -174,8 +174,8 @@ export default function ParaTiPage() {
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
-                href="/propiedades"
-                className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                href="/inquilino/explorar"
+                className="px-5 py-2 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
               >
                 {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
               </Link>
@@ -246,7 +246,7 @@ export default function ParaTiPage() {
                     riskLevel === 'A' ? 'bg-emerald-500 text-white' :
                     riskLevel === 'B' ? 'bg-blue-500 text-white' :
                     riskLevel === 'C' ? 'bg-amber-500 text-white' :
-                    'bg-red-500 text-white'
+                    'bg-red-500 text-white uppercase tracking-wide font-mono'
                   )}>
                     {riskLevel}
                   </span>
@@ -422,7 +422,7 @@ export default function ParaTiPage() {
                         className={cn(
                           'min-w-[36px] h-9 px-3 border text-sm font-medium transition-colors',
                           currentPage === page
-                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                            ? 'bg-indigo-600 border-indigo-600 text-white uppercase tracking-wide font-mono'
                             : 'border-plan-border text-plan-secondary hover:bg-muted hover:text-plan-primary'
                         )}
                       >
@@ -541,7 +541,7 @@ export default function ParaTiPage() {
           </div>
           <Link
             href="/inquilino/perfil"
-            className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors flex-shrink-0"
+            className="px-5 py-2 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors flex-shrink-0"
           >
             {locale === 'es' ? 'Mejorar perfil' : 'Improve profile'}
           </Link>

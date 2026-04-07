@@ -215,7 +215,7 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
                   className={cn(
                     "py-1.5 text-[13px] font-medium transition-colors rounded-lg",
                     year === value
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-white uppercase tracking-wide font-mono"
                       : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   )}
                 >

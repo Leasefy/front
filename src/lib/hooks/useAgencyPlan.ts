@@ -13,8 +13,6 @@ const STORAGE_KEY = 'leasefy_agency_plan';
  */
 const PLAN_TIER: Record<AgencyPlanId, number> = {
   starter: 0,
-  growth: 1,
-  'agency-business': 1,
   pro: 1,
   flex: 2,
   enterprise: 3,
@@ -23,8 +21,6 @@ const PLAN_TIER: Record<AgencyPlanId, number> = {
 /** Human-readable plan names for upgrade prompts */
 const PLAN_NAMES: Record<AgencyPlanId, string> = {
   starter: 'Starter',
-  growth: 'Growth',
-  'agency-business': 'Business',
   pro: 'Pro',
   flex: 'Flex',
   enterprise: 'Enterprise',
@@ -42,8 +38,6 @@ export interface UpgradeReason {
 /** Agents available per plan tier */
 const PLAN_AGENTS: Record<AgencyPlanId, string[]> = {
   starter: ['tenant-scoring'], // Pay-per-use only
-  growth: ['tenant-scoring', 'smart-matching'],
-  'agency-business': ['tenant-scoring', 'smart-matching'],
   pro: ['tenant-scoring', 'smart-matching'],
   flex: 'all' as unknown as string[], // All 19 agents — use canUseAgent() for checks
   enterprise: 'all' as unknown as string[],

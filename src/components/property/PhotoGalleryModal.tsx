@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Image from 'next/image';
+import Lenis from 'lenis';
 import { CaretLeft, ShareNetwork, Heart, X, MagnifyingGlassPlus, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -26,10 +27,38 @@ export function PhotoGalleryModal({
   initialImageIndex = 0,
 }: PhotoGalleryModalProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const modalLenisRef = useRef<Lenis | null>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(initialImageIndex);
   const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
   const lenis = useLenis();
+
+  // Create a dedicated Lenis instance for the modal scroll container
+  useEffect(() => {
+    if (!isOpen || !scrollContainerRef.current) return;
+
+    const modalLenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wrapper: scrollContainerRef.current,
+      content: scrollContainerRef.current.firstElementChild as HTMLElement,
+    });
+
+    modalLenisRef.current = modalLenis;
+
+    function raf(time: number) {
+      modalLenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    const frameId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      modalLenis.destroy();
+      modalLenisRef.current = null;
+    };
+  }, [isOpen]);
 
   // Define scrollToImage BEFORE the useEffect that uses it
   const scrollToImage = useCallback((index: number) => {
@@ -42,15 +71,14 @@ export function PhotoGalleryModal({
     const containerRect = container.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
     const scrollTop = container.scrollTop;
-
-    // Calculate the target scroll position with some padding
     const targetScrollTop = scrollTop + (targetRect.top - containerRect.top) - 24;
 
-    // Use native smooth scroll on the container
-    container.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth',
-    });
+    // Use modal Lenis for smooth scroll, fallback to native
+    if (modalLenisRef.current) {
+      modalLenisRef.current.scrollTo(targetScrollTop, { duration: 1.2 });
+    } else {
+      container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }
   }, []);
 
   // Scroll to initial image when modal opens
@@ -147,7 +175,7 @@ export function PhotoGalleryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] bg-background flex flex-col" data-lenis-prevent>
+    <div className="fixed inset-0 z-50 bg-background flex flex-col" data-lenis-prevent>
       {/* Header - Airbnb style */}
       <header className="flex-shrink-0 bg-card border-b border-border">
         <div className="flex items-center justify-between h-16 px-6 md:px-8">
@@ -284,7 +312,7 @@ export function PhotoGalleryModal({
       {/* Zoom Overlay */}
       {zoomedIndex !== null && (
         <div
-          className="fixed inset-0 z-[310] bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
           onClick={handleCloseZoom}
         >
           {/* Close button */}

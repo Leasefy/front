@@ -1,0 +1,105 @@
+[     530ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     530ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     530ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     532ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     532ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     532ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[     586ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[     590ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[     591ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   30577ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   60582ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   90585ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  120587ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  146541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[  146541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[  146541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[  146541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[  146541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[  148481ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  176547ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  207148ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  236558ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  266558ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  272801ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentCard.tsx
+Error: 
+  x Expression expected
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentCard.tsx:159:1]
+ 159 |   }
+ 160 | 
+ 161 |   return (
+ 162 |     <>
+     :      ^
+ 163 |       <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden cursor-pointer">
+ 164 |         {/* Header: badge + active + info */}
+ 165 |         <div className="flex items-center gap-2 mb-3">
+     `----
+
+  x Expected corresponding JSX closing tag for <Link>
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentCard.tsx:278:1]
+ 278 |             {locale === 'es' ? 'Cómo funciona?' : 'How does it work?'}
+ 279 |           </button>
+ 280 |         </div>
+ 281 |       </div>
+     :       ^^^^^^
+ 282 | 
+ 283 |       {/* Detail sidebar */}
+ 284 |       {showDetail && (
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentCard.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  296557ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  307979ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentCard.tsx
+Error: 
+  x Expression expected
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentCard.tsx:159:1]
+ 159 |   }
+ 160 | 
+ 161 |   return (
+ 162 |     <>
+     :      ^
+ 163 |       <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden cursor-pointer">
+ 164 |         {/* Header: badge + active + info */}
+ 165 |         <div className="flex items-center gap-2 mb-3">
+     `----
+
+  x Expected corresponding JSX closing tag for <Link>
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentCard.tsx:278:1]
+ 278 |             {locale === 'es' ? 'Cómo funciona?' : 'How does it work?'}
+ 279 |           </button>
+ 280 |         </div>
+ 281 |       </div>
+     :       ^^^^^^
+ 282 | 
+ 283 |       {/* Detail sidebar */}
+ 284 |       {showDetail && (
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentCard.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  326564ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  356565ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0

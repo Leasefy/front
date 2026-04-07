@@ -229,7 +229,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                           ? 'bg-red-500'
                           : propertyCount > RECOMMENDED_MAX
                           ? 'bg-amber-500'
-                          : 'bg-indigo-500'
+                          : 'bg-indigo-600'
                       )}
                     />
                   </div>
@@ -250,7 +250,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       {/* Legend Footer */}
       <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendNormal')}</span>
         </div>
         <div className="flex items-center gap-1.5">

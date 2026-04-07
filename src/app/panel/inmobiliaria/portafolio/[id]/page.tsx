@@ -257,7 +257,7 @@ export default function ConsignacionDetailPage() {
           </p>
           <Link
             href="/panel/inmobiliaria/portafolio"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.portafolio.detail.backToPortfolio')}

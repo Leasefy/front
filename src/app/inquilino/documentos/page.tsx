@@ -520,7 +520,7 @@ export default function DocumentosPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         download
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-medium transition-colors"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" />
                         {locale === 'es' ? 'Descargar archivo' : 'Download file'}

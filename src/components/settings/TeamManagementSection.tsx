@@ -91,7 +91,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
             <button
               onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
               {t('landlordSettings.team.invite')}
@@ -181,7 +181,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
                     inviteForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
+                      ? 'border-indigo-500 bg-indigo-600/10 dark:bg-indigo-600/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                   )}
                 >
@@ -192,7 +192,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                       : 'border-neutral-300 dark:border-neutral-600'
                   )}>
                     {inviteForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
                     )}
                   </div>
                   <div>
@@ -213,7 +213,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             <button
               onClick={handleInviteMember}
               disabled={isLoading || !inviteForm.email}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
@@ -251,7 +251,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
                     editMemberForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20'
+                      ? 'border-indigo-500 bg-indigo-600/10 dark:bg-indigo-600/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                   )}
                 >
@@ -262,7 +262,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                       : 'border-neutral-300 dark:border-neutral-600'
                   )}>
                     {editMemberForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
                     )}
                   </div>
                   <div>
@@ -286,7 +286,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             <button
               onClick={handleEditMember}
               disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <PencilSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}

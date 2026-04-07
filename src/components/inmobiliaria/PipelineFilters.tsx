@@ -192,7 +192,7 @@ export function PipelineFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.agenteId
-                ? 'bg-indigo-500 text-white border-indigo-500'
+                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -266,7 +266,7 @@ export function PipelineFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.consignacionId
-                ? 'bg-indigo-500 text-white border-indigo-500'
+                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >

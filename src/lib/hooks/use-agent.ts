@@ -1,27 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { apiClient } from '@/lib/api/client';
 import type { AgentExecutionTrace, ExecutionStep } from '@/lib/types/ai-agents';
 
 // =============================================================================
 // Types
 // =============================================================================
-
-/** Response from POST /evaluations/:applicationId */
-interface EvaluationStartResponse {
-  runId: string;
-  status: 'PENDING';
-}
-
-/** Response from GET /evaluations/:applicationId/result */
-interface EvaluationResultResponse {
-  runId: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  result?: Record<string, unknown>;
-  error?: string;
-  createdAt: string;
-}
 
 interface ScoringResult {
   success: boolean;
@@ -56,45 +40,9 @@ interface MatchingResult {
 type AgentResult = ScoringResult | MatchingResult;
 
 // =============================================================================
-// Polling helper
-// =============================================================================
-
-const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_ATTEMPTS = 40; // ~2 minutes max
-
-async function pollEvaluationResult(
-  applicationId: string,
-  onStepProgress: (stepIndex: number) => void,
-): Promise<EvaluationResultResponse> {
-  for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-    const res = await apiClient.get<EvaluationResultResponse>(
-      `/evaluations/${applicationId}/result`,
-    );
-
-    if (res.status === 'COMPLETED' || res.status === 'FAILED') {
-      return res;
-    }
-
-    // Simulate step progression while polling
-    const progressStep = Math.min(1 + Math.floor(attempt / 3), 5);
-    onStepProgress(progressStep);
-
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-
-  throw new Error('Tiempo de espera agotado. Intenta de nuevo mas tarde.');
-}
-
-// =============================================================================
 // Hook: useAgentExecution
 // =============================================================================
 
-/**
- * Hook for executing AI agent evaluations via the NestJS backend.
- *
- * Scoring: POST /evaluations/:applicationId → polls GET /evaluations/:applicationId/result
- * Matching: Not yet proxied through backend — shows coming soon message.
- */
 export function useAgentExecution() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,11 +50,12 @@ export function useAgentExecution() {
   const [trace, setTrace] = useState<AgentExecutionTrace | null>(null);
 
   const runScoring = useCallback(
-    async (applicationId: string, _agencyId: string) => {
+    async (applicationId: string, agencyId: string) => {
       setIsRunning(true);
       setError(null);
       setResult(null);
 
+      // Build execution trace for UI
       const traceId = `trace-${Date.now()}`;
       const steps = buildScoringSteps();
       setTrace({
@@ -119,68 +68,38 @@ export function useAgentExecution() {
       });
 
       try {
-        // Step 1: Request evaluation
+        // Simulate step progression for UI feedback
         updateStepStatus(steps, 0, 'running');
         setTrace((t) => t ? { ...t, steps: [...steps] } : null);
 
         const startTime = Date.now();
 
-        const startRes = await apiClient.post<EvaluationStartResponse>(
-          `/evaluations/${applicationId}`,
-        );
+        const res = await fetch('/api/agents/tenant-scoring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId, agencyId }),
+        });
 
-        updateStepStatus(steps, 0, 'completed');
-        updateStepStatus(steps, 1, 'running');
-        setTrace((t) => t ? { ...t, steps: [...steps] } : null);
-
-        // Step 2-6: Poll for result (agent processes async)
-        const evalResult = await pollEvaluationResult(
-          applicationId,
-          (stepIdx) => {
-            // Update trace steps as we poll
-            for (let i = 1; i < stepIdx; i++) {
-              if (steps[i].status !== 'completed') {
-                updateStepStatus(steps, i, 'completed');
-              }
-            }
-            if (stepIdx < steps.length) {
-              updateStepStatus(steps, stepIdx, 'running');
-            }
-            setTrace((t) => t ? { ...t, steps: [...steps] } : null);
-          },
-        );
-
+        const data = await res.json();
         const durationMs = Date.now() - startTime;
 
-        if (evalResult.status === 'FAILED') {
-          throw new Error(evalResult.error || 'La evaluación falló');
+        if (!res.ok) {
+          throw new Error(data.error || data.details || 'Scoring failed');
         }
 
         // Mark all steps as completed
         steps.forEach((_, i) => updateStepStatus(steps, i, 'completed'));
 
-        // Map the evaluation result to the expected ScoringResult shape
-        const data = evalResult.result ?? {};
-        const scoringResult: ScoringResult = {
-          success: true,
-          applicationId,
-          score: (data.score as number) ?? 0,
-          level: (data.level as ScoringResult['level']) ?? 'D',
-          recommendation: (data.recommendation as string) ?? '',
-          explanation: (data.explanation as string) ?? '',
-          escalate: (data.escalate as boolean) ?? false,
-          escalateReason: data.escalateReason as string | undefined,
-          storedSuccessfully: true,
-        };
-
-        // Add output to trace steps
-        if (scoringResult.score !== undefined) {
-          steps[3].output = `Score: ${scoringResult.score}/100 — Nivel ${scoringResult.level}`;
-          steps[4].output = scoringResult.explanation;
-          steps[5].output = 'Resultado guardado en la base de datos';
+        // Add result details to relevant steps
+        if (data.score !== undefined) {
+          steps[3].output = `Score: ${data.score}/100 — Nivel ${data.level}`;
+          steps[4].output = data.explanation;
+          steps[5].output = data.storedSuccessfully
+            ? 'Resultado guardado en la base de datos'
+            : 'Error al guardar';
         }
 
-        setResult(scoringResult);
+        setResult(data as ScoringResult);
         setTrace({
           id: traceId,
           agentId: 'tenant-scoring',
@@ -188,14 +107,15 @@ export function useAgentExecution() {
           status: 'completed',
           steps,
           totalDurationMs: durationMs,
-          conclusion: scoringResult.recommendation,
-          result: `${scoringResult.score}/100 (${scoringResult.level})`,
+          conclusion: data.recommendation,
+          result: `${data.score}/100 (${data.level})`,
           createdAt: new Date(),
         });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        const msg = err instanceof Error ? err.message : 'Unknown error';
         setError(msg);
 
+        // Mark current step as failed
         const runningIdx = steps.findIndex((s) => s.status === 'running');
         if (runningIdx >= 0) updateStepStatus(steps, runningIdx, 'failed');
 
@@ -210,11 +130,9 @@ export function useAgentExecution() {
   const runMatching = useCallback(
     async (
       applicationId: string,
-      _agencyId: string,
-      _trigger: string = 'new_application',
+      agencyId: string,
+      trigger: string = 'new_application',
     ) => {
-      // Smart matching is not yet proxied through the NestJS backend.
-      // TODO: Add POST /evaluations/:applicationId/matching endpoint to backend
       setIsRunning(true);
       setError(null);
       setResult(null);
@@ -234,12 +152,46 @@ export function useAgentExecution() {
         updateStepStatus(steps, 0, 'running');
         setTrace((t) => t ? { ...t, steps: [...steps] } : null);
 
-        // For now, show a clear message that this endpoint is pending backend integration
-        throw new Error(
-          'Smart Matching aún no está disponible. Próximamente será habilitado desde el backend.',
-        );
+        const startTime = Date.now();
+
+        const res = await fetch('/api/agents/smart-matching', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId, agencyId, trigger }),
+        });
+
+        const data = await res.json();
+        const durationMs = Date.now() - startTime;
+
+        if (!res.ok) {
+          throw new Error(data.error || data.details || 'Matching failed');
+        }
+
+        steps.forEach((_, i) => updateStepStatus(steps, i, 'completed'));
+
+        if (data.suggestions) {
+          steps[2].output = `${data.suggestionsCount} propiedades compatibles`;
+          steps[3].output = data.suggestions
+            .map((s: { title: string; compatibility: number }) =>
+              `${s.title} (${s.compatibility}%)`,
+            )
+            .join(', ');
+        }
+
+        setResult(data as MatchingResult);
+        setTrace({
+          id: traceId,
+          agentId: 'smart-matching',
+          title: `Matching ${applicationId}`,
+          status: 'completed',
+          steps,
+          totalDurationMs: durationMs,
+          conclusion: `${data.suggestionsCount} sugerencias enviadas a ${data.candidateName}`,
+          result: `${data.suggestionsCount} matches`,
+          createdAt: new Date(),
+        });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        const msg = err instanceof Error ? err.message : 'Unknown error';
         setError(msg);
 
         const runningIdx = steps.findIndex((s) => s.status === 'running');
@@ -291,7 +243,7 @@ function updateStepStatus(
 
 function buildScoringSteps(): ExecutionStep[] {
   return [
-    { id: 's1', label: 'Solicitar evaluación', stepType: 'api', status: 'pending' },
+    { id: 's1', label: 'Cargar aplicación', stepType: 'api', status: 'pending' },
     { id: 's2', label: 'Extraer documentos (OCR)', stepType: 'analysis', status: 'pending' },
     { id: 's3', label: 'Verificar consistencia', stepType: 'analysis', status: 'pending', reasoning: 'Cruzando datos entre formulario, cédula y certificación laboral' },
     { id: 's4', label: 'Calcular score', stepType: 'decision', status: 'pending' },

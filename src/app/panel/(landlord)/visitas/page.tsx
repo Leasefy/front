@@ -127,7 +127,7 @@ function CancelModal({
           <button
             onClick={() => canSubmit && onConfirm(finalReason)}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.cancelConfirm')}
           </button>
@@ -226,7 +226,7 @@ function RescheduleModal({
           <button
             onClick={() => canSubmit && onConfirm(newDate, newTime)}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.rescheduleConfirm')}
           </button>
@@ -360,7 +360,7 @@ function ScheduleModal({
           <button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.scheduleConfirm')}
           </button>
@@ -710,7 +710,7 @@ export default function VisitasPage() {
           <button
             type="button"
             onClick={() => setShowScheduleModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shrink-0"
           >
             <CalendarPlus className="w-4 h-4" />
             {t('landlord.visits.scheduleButton')}

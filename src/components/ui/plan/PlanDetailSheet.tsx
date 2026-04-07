@@ -145,7 +145,7 @@ export function PlanDetailSheet({
             </button>
             <button
               onClick={() => onOpenChange(false)}
-              className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors"
+              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -253,7 +253,7 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-primary text-white hover:bg-primary/90'
+                        ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90'
                         : action.variant === 'danger'
                           ? 'bg-plan-status-red-bg text-red-800 hover:bg-red-200'
                           : 'bg-muted text-plan-primary hover:bg-muted'
@@ -342,7 +342,7 @@ export function PlanDetailSheet({
             </h2>
             <button
               onClick={secondaryPanel.onClose}
-              className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors"
+              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

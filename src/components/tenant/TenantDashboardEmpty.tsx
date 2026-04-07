@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Briefcase, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
+import { User, House, CaretRight, CheckCircle, ArrowRight, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -36,17 +36,6 @@ const SETUP_STEPS: SetupStep[] = [
   },
   {
     id: 2,
-    key: 'income',
-    labelEs: 'Verificar ingresos',
-    labelEn: 'Verify income',
-    descriptionEs: 'Tipo de empleo e ingresos',
-    descriptionEn: 'Employment type and income',
-    icon: Briefcase,
-    href: '/onboarding/inquilino',
-    completed: false,
-  },
-  {
-    id: 3,
     key: 'preferences',
     labelEs: 'Preferencias de vivienda',
     labelEn: 'Housing preferences',
@@ -63,7 +52,7 @@ const QUICK_ACTIONS = [
     labelEs: 'Buscar propiedades',
     labelEn: 'MagnifyingGlass properties',
     icon: MagnifyingGlass,
-    href: '/propiedades',
+    href: '/inquilino/explorar',
   },
   {
     labelEs: 'Ver guardados',
@@ -88,15 +77,22 @@ export function TenantDashboardEmpty() {
   const [steps, setSteps] = useState(SETUP_STEPS);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load progress from localStorage
+  // Load progress from localStorage (migrate old 3-step data to 2-step)
   useEffect(() => {
     const loadProgress = () => {
       const saved = localStorage.getItem('plan_onboarding_tenant');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // Funnel to only valid steps (1, 2, 3) in case of old data
-          const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 3);
+          const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
+
+          // Migrate: if old data had step 3 completed (employment, now removed),
+          // treat step 2 as completed since it was the old step 3 (preferences)
+          const oldCompletedSteps = parsed.completedSteps || [];
+          if (oldCompletedSteps.includes(3) && !completedSteps.includes(2)) {
+            completedSteps.push(2);
+          }
+
           setSteps(prev =>
             prev.map(step => ({
               ...step,
@@ -128,7 +124,8 @@ export function TenantDashboardEmpty() {
   const completedCount = steps.filter(s => s.completed).length;
   const totalSteps = steps.length;
   const progressPercentage = Math.round((completedCount / totalSteps) * 100);
-  const nextIncompleteStep = steps.find(s => !s.completed);
+  const allComplete = completedCount >= totalSteps;
+  const nextIncompleteStep = allComplete ? null : steps.find(s => !s.completed);
 
   if (!isLoaded) return null;
 
@@ -183,7 +180,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -198,7 +195,7 @@ export function TenantDashboardEmpty() {
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
+                    className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full"
                   />
                 </div>
                 <div className="flex items-center justify-between mt-3">
@@ -215,7 +212,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />

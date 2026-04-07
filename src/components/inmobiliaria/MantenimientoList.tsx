@@ -129,7 +129,7 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
   }, [data]);
 
   const cards = [
-    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-indigo-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-indigo-600' },
     { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-slate-400' },
     { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-blue-500' },
     { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-lime-500' },

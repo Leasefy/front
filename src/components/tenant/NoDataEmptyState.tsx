@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { House, FileText, CreditCard, Folder, Chat, Heart, ArrowUpRight, MagnifyingGlass } from '@phosphor-icons/react';
+import { House, FileText, CreditCard, Folder, Chat, Heart, ArrowUpRight } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 
 type EmptyStateContext = 'rental' | 'applications' | 'payments' | 'documents' | 'messages' | 'saved';
@@ -32,7 +33,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
     descriptionEn: 'When you sign a rental contract, it will appear here with all its details.',
     ctaEs: 'Explorar propiedades',
     ctaEn: 'Browse properties',
-    ctaHref: '/propiedades',
+    ctaHref: '/inquilino/explorar',
     secondaryEs: 'Ver mis aplicaciones',
     secondaryEn: 'View my applications',
     secondaryHref: '/inquilino/aplicaciones',
@@ -45,7 +46,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
     descriptionEn: "You haven't applied to any property yet. Find your next home and submit your first application.",
     ctaEs: 'Buscar propiedades',
     ctaEn: 'MagnifyingGlass properties',
-    ctaHref: '/propiedades',
+    ctaHref: '/inquilino/explorar',
     secondaryEs: 'Ver guardados',
     secondaryEn: 'View saved',
     secondaryHref: '/inquilino/guardados',
@@ -58,7 +59,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
     descriptionEn: 'When you have an active rental, you can view and manage your monthly payments here.',
     ctaEs: 'Explorar propiedades',
     ctaEn: 'Browse properties',
-    ctaHref: '/propiedades',
+    ctaHref: '/inquilino/explorar',
     secondaryEs: 'Ver mi arriendo',
     secondaryEn: 'View my rental',
     secondaryHref: '/inquilino/arriendo',
@@ -81,7 +82,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
     descriptionEn: 'When you apply to properties, you can communicate with landlords here.',
     ctaEs: 'Explorar propiedades',
     ctaEn: 'Browse properties',
-    ctaHref: '/propiedades',
+    ctaHref: '/inquilino/explorar',
   },
   saved: {
     icon: Heart,
@@ -91,7 +92,7 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
     descriptionEn: 'FloppyDisk properties you like to compare them later and keep track of them.',
     ctaEs: 'Buscar propiedades',
     ctaEn: 'MagnifyingGlass properties',
-    ctaHref: '/propiedades',
+    ctaHref: '/inquilino/explorar',
   },
 };
 
@@ -108,28 +109,26 @@ export function NoDataEmptyState({ context }: NoDataEmptyStateProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-12 text-center"
+      className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center"
     >
-      <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
-        <Icon className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
+      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+        <Icon className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
 
-      <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
+      <h3 className="text-base font-semibold text-foreground mb-1.5">
         {locale === 'es' ? config.titleEs : config.titleEn}
       </h3>
 
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
+      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
         {locale === 'es' ? config.descriptionEs : config.descriptionEn}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Link
-          href={config.ctaHref}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-        >
-          <MagnifyingGlass className="w-4 h-4" />
-          {locale === 'es' ? config.ctaEs : config.ctaEn}
-        </Link>
+        <Button asChild>
+          <Link href={config.ctaHref}>
+            {locale === 'es' ? config.ctaEs : config.ctaEn}
+          </Link>
+        </Button>
 
         {config.secondaryHref && (
           <Link

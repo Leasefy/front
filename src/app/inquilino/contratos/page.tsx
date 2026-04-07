@@ -113,7 +113,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {isPendingTenant ? (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-semibold transition-colors"
         >
           <PenNib className="w-4 h-4" />
           {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
@@ -151,7 +151,7 @@ export default function ContratosPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
               <WarningCircle className="w-8 h-8 text-red-500" />
@@ -175,27 +175,22 @@ export default function ContratosPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <motion.div
+        <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Handshake className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-              {locale === 'es' ? 'Mis Contratos' : 'My Contracts'}
-            </h1>
-          </div>
-          <p className="text-neutral-500 dark:text-neutral-400 ml-[52px]">
+          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            {locale === 'es' ? 'Mis Contratos' : 'My Contracts'}
+          </h1>
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
             {locale === 'es'
               ? 'Revisa y firma tus contratos de arrendamiento'
               : 'Review and sign your rental contracts'}
           </p>
-        </motion.div>
+        </motion.header>
 
         {/* Empty state */}
         {sorted.length === 0 ? (

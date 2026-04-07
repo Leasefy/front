@@ -31,6 +31,7 @@ export default function MfaVerifyPage() {
     const loadFactor = async () => {
       try {
         const supabase = getSupabase();
+        if (!supabase) return;
         const { data: factors } = await supabase.auth.mfa.listFactors();
         const verified = factors?.totp?.find(f => f.status === 'verified');
         if (verified) {
@@ -48,6 +49,7 @@ export default function MfaVerifyPage() {
     setIsLoading(true);
     try {
       const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
 
       // Create a challenge
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
@@ -135,7 +137,7 @@ export default function MfaVerifyPage() {
           <button
             onClick={handleVerify}
             disabled={isLoading || code.length !== 6 || !factorId}
-            className="w-full py-3.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {isLoading ? (
               <>

@@ -45,7 +45,7 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                 className={cn(
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
                   step.status === 'completed' && 'bg-emerald-500 text-white',
-                  step.status === 'current' && 'bg-primary text-white ring-4 ring-primary/20',
+                  step.status === 'current' && 'bg-primary text-white uppercase tracking-wide font-mono ring-4 ring-primary/20',
                   step.status === 'pending' && 'bg-muted text-muted-foreground'
                 )}
               >

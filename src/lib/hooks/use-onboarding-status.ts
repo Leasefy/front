@@ -5,27 +5,12 @@ import { useState, useEffect } from 'react';
 // ============================================================================
 // NOTA PARA BACKEND:
 // ============================================================================
-// Si el usuario ya aplicó a una propiedad, ya tenemos:
-// - Info básica (nombre, teléfono) → Paso 1 completado
-// - Verificación de ingresos (empleo, salario) → Paso 2 completado
+// El onboarding solo recolecta info básica y preferencias (2 pasos).
+// Los datos de ingresos/empleo se recolectan durante la postulación.
 //
-// Este hook debe consultar al backend qué pasos ya están completados
-// basándose en los datos que ya tenemos del usuario.
-//
-// TODO: Cuando se integre el backend, este hook debe:
-// 1. Consultar qué datos ya tenemos (de aplicaciones previas)
-// 2. Auto-completar los pasos que ya tenemos info
-// 3. Calcular completedSteps basado en datos reales del servidor
-// 4. Eliminar la dependencia de localStorage
-//
-// Ejemplo de respuesta del backend:
-// {
-//   hasBasicInfo: true,        // Ya tenemos nombre y teléfono
-//   hasIncomeVerification: true, // Ya tenemos empleo e ingresos
-//   hasPreferences: false,     // Aún no tenemos preferencias
-//   hasDocuments: false        // Aún no tenemos documentos
-// }
-// → completedSteps = [1, 2], startAtStep = 3
+// Flags necesarios del backend:
+// - hasBasicInfo: boolean (nombre, teléfono)
+// - hasPreferences: boolean (preferencias de vivienda)
 // ============================================================================
 
 export interface OnboardingStatus {
@@ -34,10 +19,9 @@ export interface OnboardingStatus {
   completedSteps: number[];
   totalSteps: number;
   progressPercentage: number;
-  // TODO (backend): agregar hasApplications para saltar onboarding si ya aplicó
 }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 const STORAGE_KEY = 'plan_onboarding_tenant';
 
 /**
@@ -73,8 +57,12 @@ export function useOnboardingStatus(): OnboardingStatus {
 
       try {
         const parsed = JSON.parse(saved);
-        // Filter to only valid steps (1, 2, 3) in case of old data with step 4
-        const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= TOTAL_STEPS);
+        const rawSteps = parsed.completedSteps || [];
+        const completedSteps = rawSteps.filter((s: number) => s <= TOTAL_STEPS);
+        // Migrate: old step 3 (employment) removed; if completed, count step 2 too
+        if (rawSteps.includes(3) && !completedSteps.includes(2)) {
+          completedSteps.push(2);
+        }
         const isComplete = completedSteps.length >= TOTAL_STEPS;
         const progressPercentage = Math.round((completedSteps.length / TOTAL_STEPS) * 100);
 

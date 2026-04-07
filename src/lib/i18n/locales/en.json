@@ -837,6 +837,7 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
+      "aiAgents": "AI Agents",
       "propietarios": "Owners",
       "portafolio": "Portfolio",
       "pipeline": "Pipeline",
@@ -947,6 +948,16 @@
         "late": "Overdue",
         "pendingDispersions": "Pending disbursements",
         "collectionRate": "Collection rate"
+      },
+      "aiAgents": {
+        "evaluationsThisMonth": "Evaluations this month",
+        "avgTime": "Average time",
+        "precision": "Precision",
+        "escalatedToHuman": "Escalated to human",
+        "suggestedThisWeek": "Suggestions sent",
+        "conversionRate": "Conversion rate",
+        "redirectedCandidates": "Redirected candidates",
+        "avgCompatibility": "Average compatibility"
       }
     },
     "config": {
@@ -2474,6 +2485,146 @@
         "review": "Review and confirm",
         "submit": "Create consignment",
         "submitting": "Creating..."
+      }
+    },
+    "import": {
+      "title": "Import properties",
+      "subtitle": "Migrate your entire portfolio in minutes",
+      "steps": {
+        "method": "Method",
+        "upload": "File",
+        "mapping": "Mapping",
+        "review": "AI Review",
+        "confirm": "Confirm"
+      },
+      "methods": {
+        "excel": {
+          "title": "Excel / CSV",
+          "desc": "Upload an Excel or CSV file with your properties",
+          "badge": "Recommended"
+        },
+        "software": {
+          "title": "From software",
+          "desc": "Export from SIMI, Daytona, DOMUS and more",
+          "badge": "Guided"
+        },
+        "portal": {
+          "title": "From portals",
+          "desc": "Import from FincaRaíz, Metrocuadrado",
+          "badge": "Coming soon"
+        }
+      },
+      "upload": {
+        "dragText": "Drag your file here or click to select",
+        "formats": "Supported formats: .xlsx, .xls, .csv",
+        "parsing": "Analyzing file...",
+        "rowsDetected": "{{count}} rows detected",
+        "selectSheet": "Select sheet",
+        "downloadTemplate": "Download template",
+        "fileLoaded": "File loaded: {{name}} ({{size}})"
+      },
+      "mapping": {
+        "title": "Column mapping",
+        "subtitle": "We automatically detected the columns. Review and adjust if necessary.",
+        "mapped": "{{count}} of {{total}} columns mapped",
+        "confidence": {
+          "detected": "Detected",
+          "probable": "Probable",
+          "unmapped": "Unmapped",
+          "manual": "Manual"
+        },
+        "ignore": "Ignore",
+        "reset": "Reset mapping",
+        "requiredMissing": "Required fields not mapped:",
+        "sampleValues": "Ex:"
+      },
+      "fields": {
+        "propertyTitle": "Title",
+        "propertyAddress": "Address",
+        "propertyCity": "City",
+        "propertyZone": "Neighborhood / Zone",
+        "propertyType": "Property type",
+        "monthlyRent": "Monthly rent",
+        "adminFee": "Admin fee",
+        "commissionPercent": "Commission %"
+      },
+      "wizard": {
+        "cancel": "Cancel",
+        "previous": "Previous",
+        "next": "Next",
+        "mobileProgress": "Step {{current}} of {{total}}: {{label}}",
+        "cancelDialog": {
+          "title": "Cancel import?",
+          "description": "You will lose the progress of this import.",
+          "continueEditing": "Continue",
+          "yesCancel": "Yes, cancel"
+        }
+      },
+      "review": {
+        "analyzing": "Analyzing {{count}} properties...",
+        "readyCount": "{{ready}} properties ready.",
+        "issueCount": "{{issues}} need attention.",
+        "complete": "Complete",
+        "suggestions": "{{count}} suggestions",
+        "error": "Error",
+        "ready": "Ready",
+        "acceptAll": "Accept all suggestions",
+        "acceptAllProperty": "Accept all",
+        "selectAll": "Select all",
+        "deselectAll": "Deselect all",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "completeStat": "{{count}} complete",
+        "suggestionStat": "{{count}} with suggestions",
+        "errorStat": "{{count}} with errors"
+      },
+      "confirm": {
+        "title": "Import summary",
+        "propertiesToImport": "Properties to import",
+        "propertiesExcluded": "Properties excluded",
+        "suggestionsAccepted": "AI suggestions accepted",
+        "remainingErrors": "Remaining errors",
+        "assignAgent": "Assign agent",
+        "assignAgentDesc": "Select the agent who will manage the imported properties",
+        "assignLater": "You can assign agents later",
+        "importButton": "Import {{count}} properties",
+        "importing": "Importing property {{current}} of {{total}}...",
+        "successTitle": "Import complete!",
+        "successDesc": "{{count}} properties were imported to your portfolio",
+        "viewPortfolio": "View portfolio",
+        "importMore": "Import more",
+        "toast": {
+          "successTitle": "Import successful",
+          "successDesc": "{{count}} properties imported successfully"
+        }
+      },
+      "software": {
+        "title": "Export from your software",
+        "subtitle": "Select your current system and follow the export instructions",
+        "popular": "Popular",
+        "exportSteps": {
+          "step1": "Go to the Properties / Real Estate section",
+          "step2": "Select all or filter the ones you want to import",
+          "step3": "Find the 'Export' or 'Download' button (usually in .xlsx or .csv format)",
+          "step4": "Download the file and upload it here"
+        },
+        "otherSoftware": "Using other software?",
+        "otherSoftwareDesc": "Contact us and we'll help you with the migration",
+        "haveFile": "I already have my file",
+        "requestHelp": "Request help"
+      },
+      "portal": {
+        "title": "Import from portals",
+        "subtitle": "Connect your agency profile to automatically import properties",
+        "comingSoon": "Coming soon",
+        "backToPortfolio": "Back to portfolio",
+        "emailCapture": {
+          "title": "Interested in this feature?",
+          "subtitle": "Leave your email and we'll notify you when it's available",
+          "placeholder": "your@email.com",
+          "submit": "Notify me",
+          "success": "Registered! We'll notify you when it's available."
+        }
       }
     },
     "consignaciones": {
@@ -4973,113 +5124,6 @@
       "chatPanel": "Chat panel",
       "noSteps": "No steps defined",
       "stepsProgress": "{{completed}} of {{total}} completed"
-    }
-  },
-  "registration": {
-    "accountType": {
-      "title": "How do you want to use Leasefy?",
-      "subtitle": "Select the account type that best describes your role",
-      "tenant": "Tenant",
-      "tenantDesc": "I'm looking for rental properties",
-      "landlord": "Landlord",
-      "landlordDesc": "I have properties to rent",
-      "inmobiliaria": "Real Estate Agency",
-      "inmobiliariaDesc": "I manage properties on behalf of others"
-    },
-    "agencyFields": {
-      "agencyName": "Agency name",
-      "agencyNamePlaceholder": "Rodriguez & Associates Real Estate",
-      "nit": "Tax ID / NIT",
-      "nitPlaceholder": "900.123.456-7",
-      "nitOptional": "Tax ID / NIT (optional)",
-      "address": "Address",
-      "addressOptional": "Address (optional)",
-      "addressPlaceholder": "123 Main St",
-      "city": "Primary city",
-      "cityPlaceholder": "Select a city",
-      "phone": "Agency phone",
-      "phoneOptional": "Agency phone (optional)",
-      "phonePlaceholder": "601 234 5678",
-      "email": "Agency email",
-      "emailOptional": "Agency email (optional)",
-      "emailPlaceholder": "contact@myagency.com",
-      "defaultCommission": "Default commission",
-      "defaultCommissionDesc": "Percentage charged on monthly rent",
-      "collectionDay": "Collection day",
-      "collectionDayDesc": "Day of the month rent is collected from tenants",
-      "dispersionDay": "Disbursement day",
-      "dispersionDayDesc": "Day of the month payments are transferred to owners",
-      "valueBetween": "Value between {{min}} and {{max}}"
-    }
-  },
-  "invitation": {
-    "validating": "Validating invitation…",
-    "notFound": "Invitation not found",
-    "notFoundDesc": "This link is invalid or has already been used. Request a new invitation from your agency.",
-    "expired": "Invitation expired",
-    "expiredDesc": "This invitation link is no longer valid. Ask the agency administrator to send you a new invitation.",
-    "validUntil": "Valid until {{date}}",
-    "roleAssigned": "Assigned role",
-    "invitedAs": "Invited as",
-    "atAgency": "at {{agencyName}}",
-    "greetingLoggedIn": "Hi {{name}}, you've been invited to join as",
-    "loginToAccept": "Log in to accept",
-    "createAccount": "Create new account",
-    "accept": "Accept invitation",
-    "accepting": "Accepting…",
-    "decline": "Decline invitation",
-    "declining": "Declining…",
-    "helpText": "Need help?",
-    "helpLink": "Visit the help center",
-    "goHome": "Go to home",
-    "roles": {
-      "ADMIN": "Administrator",
-      "AGENTE": "Agent",
-      "CONTADOR": "Accountant",
-      "VIEWER": "View only"
-    }
-  },
-  "onboarding": {
-    "checklist": {
-      "title": "Set up your agency",
-      "subtitle": "Complete these steps to get the most out of Leasefy",
-      "completionPercent": "{{percent}}% complete",
-      "steps": {
-        "profile": "Complete your agency profile",
-        "first_property": "Add your first property consignment",
-        "invite_agent": "Invite an agent to your team",
-        "first_collection": "Record your first collection"
-      },
-      "actions": {
-        "edit": "Edit",
-        "add": "Add",
-        "invite": "Invite",
-        "view": "View collections"
-      }
-    },
-    "wizard": {
-      "title": "Set up your agency",
-      "subtitle": "This will only take a couple of minutes",
-      "close": "Close wizard",
-      "step1Title": "Basic information",
-      "step1Desc": "Complete your agency profile",
-      "step2Title": "Operations setup",
-      "step2Desc": "Define your operational parameters",
-      "step3Title": "Invite first member",
-      "step3Desc": "Optional — add your team",
-      "optional": "Optional",
-      "saving": "Saving...",
-      "sending": "Sending...",
-      "skip": "Skip for now",
-      "sendInvitation": "Send invitation",
-      "complete": "Agency configured!",
-      "completeRedirecting": "Your agency is ready. Redirecting to dashboard...",
-      "inviteError": "Could not send the invitation. You can try again later from Settings.",
-      "inviteMember": "Invite your first collaborator. They will receive an email to join your agency. This step is completely optional.",
-      "memberEmail": "Member email",
-      "memberEmailPlaceholder": "collaborator@youragency.com",
-      "memberRole": "Role",
-      "operationsDesc": "Set the default values for your operation. You can change them at any time from Settings."
     }
   }
 }

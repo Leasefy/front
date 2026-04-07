@@ -426,7 +426,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
               className={cn(
                 'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
               )}
             >
@@ -677,7 +677,7 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
           <button
             type="button"
             onClick={addKey}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.acta.add')}

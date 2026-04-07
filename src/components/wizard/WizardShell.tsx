@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Check, WarningCircle } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -47,6 +48,8 @@ export function WizardShell({
   children,
   className,
 }: WizardShellProps) {
+  const router = useRouter();
+
   const {
     currentStep,
     totalSteps,
@@ -69,13 +72,14 @@ export function WizardShell({
       {/* Mobile Header - only visible on mobile */}
       <header className="lg:hidden sticky top-0 z-10 bg-card border-b border-border">
         <div className="px-4 py-3">
-          <Link
-            href={`/propiedades/${property.id}`}
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a la propiedad
-          </Link>
+            Volver
+          </button>
         </div>
 
         {/* Mobile property summary */}
@@ -130,13 +134,14 @@ export function WizardShell({
         <aside className="hidden lg:flex lg:flex-col lg:w-[320px] xl:w-[360px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Back link and property info */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <Link
-              href={`/propiedades/${property.id}`}
+            <button
+              type="button"
+              onClick={() => router.back()}
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a la propiedad
-            </Link>
+              Volver
+            </button>
 
             {/* Property card */}
             <div className="flex items-start gap-4">

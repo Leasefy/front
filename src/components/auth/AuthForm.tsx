@@ -144,7 +144,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setError(null);
     try {
       await signInWithGoogle();
-      onSuccess?.();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(returnUrl);
+      }
     } catch {
       setError('Error con el inicio de sesión. Intenta de nuevo.');
     } finally {
@@ -158,7 +162,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setError(null);
     try {
       await signInWithEmail(data.email, data.password);
-      onSuccess?.();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(returnUrl);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Credenciales inválidas. Intenta de nuevo.');
     } finally {

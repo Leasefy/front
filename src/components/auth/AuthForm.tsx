@@ -74,7 +74,7 @@ function GoogleIcon({ className }: { className?: string }) {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, signInWithEmail } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = React.useState<'tenant' | 'landlord' | 'agency' | null>(null);
@@ -182,8 +182,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setIsLoading(false);
       return;
     }
-    // Otherwise delegate to Google OAuth
-    await handleGoogleLogin();
+    // Email/password login via Supabase
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signInWithEmail(data.email, data.password);
+      onSuccess?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Credenciales inválidas. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPasswordSubmit = async (data: ForgotPasswordFormData) => {

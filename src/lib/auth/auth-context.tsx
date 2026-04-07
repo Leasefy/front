@@ -205,6 +205,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /** Sign in with email and password via Supabase */
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not configured')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+  }, [])
+
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
     // Remove FCM token before signing out (while we still have auth)
@@ -223,6 +231,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     mfaRequired,
     signInWithGoogle,
+    signInWithEmail,
     signOut,
     logout: signOut,
     refreshUser,

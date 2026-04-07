@@ -51,11 +51,11 @@ import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentP
 import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
 import { ReportPDFExport } from '@/components/inmobiliaria/reports/ReportPDFExport';
 import {
-  mockOccupancyData,
-  mockCollectionsData,
-  mockAgentPerformanceData,
-  mockExecutiveData,
-} from '@/lib/data/mock-reports';
+  adaptOccupancy,
+  adaptCollections,
+  adaptAgentPerformance,
+  adaptExecutive,
+} from '@/lib/utils/report-adapters';
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
 

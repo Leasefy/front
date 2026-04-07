@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { AgencyPlanId } from '@/lib/types/subscription';
 import { FEATURE_GATES, type FeatureName } from '@/lib/constants/feature-gates';
 import { getAgencyPlanById, getEvaluationPrice as getEvalPrice } from '@/lib/constants/subscription-plans';
-
-const STORAGE_KEY = 'leasefy_agency_plan';
 
 /**
  * Agency plan tiers ordered by level.
@@ -45,22 +43,15 @@ const PLAN_AGENTS: Record<AgencyPlanId, string[]> = {
 
 /**
  * Hook for agency plan access checks.
- * Defaults to 'flex' (recommended tier for demo).
+ * Defaults to 'flex' until the backend exposes a plan endpoint.
  *
  * SECURITY: This is client-side only and NOT a security boundary.
  * Feature gating MUST be enforced server-side. This hook only controls
  * UI visibility — the backend must verify plan access on every API call.
- * TODO: Replace localStorage with authenticated API call to fetch plan.
+ * TODO: Replace hardcoded default with authenticated API call to fetch plan.
  */
 export function useAgencyPlan() {
-  const [planId, setPlanId] = useState<AgencyPlanId>('flex');
-
-  useEffect(() => {
-    const storedPlan = localStorage.getItem(STORAGE_KEY);
-    if (storedPlan && storedPlan in PLAN_TIER) {
-      setPlanId(storedPlan as AgencyPlanId);
-    }
-  }, []);
+  const [planId] = useState<AgencyPlanId>('flex');
 
   /**
    * Check if current plan meets the minimum required tier.
@@ -142,18 +133,6 @@ export function useAgencyPlan() {
     [hasFeature],
   );
 
-  /**
-   * Set plan in localStorage for testing purposes.
-   * In production this would be set by the backend after purchase.
-   */
-  const setPlan = useCallback(
-    (newPlanId: AgencyPlanId) => {
-      localStorage.setItem(STORAGE_KEY, newPlanId);
-      setPlanId(newPlanId);
-    },
-    [],
-  );
-
   return {
     /** Current plan identifier */
     planId,
@@ -169,8 +148,6 @@ export function useAgencyPlan() {
     canUseAgent,
     /** Get upgrade prompt info for a locked feature (null if accessible) */
     getUpgradeReason,
-    /** Set plan tier — for testing only */
-    setPlan,
     /** Convenience: true if plan is Pro or higher */
     hasAdvancedReports: PLAN_TIER[planId] >= PLAN_TIER.pro,
     /** Full plan details from constants */

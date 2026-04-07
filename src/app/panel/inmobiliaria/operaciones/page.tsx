@@ -61,7 +61,12 @@ import {
 } from '@/components/inmobiliaria';
 import { ReminderConfigPanel } from '@/components/inmobiliaria/reminders/ReminderConfig';
 import { ReminderLog } from '@/components/inmobiliaria/reminders/ReminderLog';
-import { mockReminderConfig, mockReminderLog } from '@/lib/data/mock-reminders';
+import type { ReminderConfig } from '@/lib/types/reminders';
+
+const DEFAULT_REMINDER_CONFIG: ReminderConfig = {
+  globalEnabled: false,
+  types: [],
+};
 import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 // ============================================================================
@@ -648,8 +653,8 @@ export default function OperacionesPage() {
           <TabsContent value="recordatorios" className="mt-0 p-5">
             <FeatureGate feature="automatic-reminders">
               <div className="space-y-6">
-                <ReminderConfigPanel config={mockReminderConfig} />
-                <ReminderLog entries={mockReminderLog} />
+                <ReminderConfigPanel config={DEFAULT_REMINDER_CONFIG} />
+                <ReminderLog entries={[]} />
               </div>
             </FeatureGate>
           </TabsContent>

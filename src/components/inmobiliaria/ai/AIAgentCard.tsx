@@ -14,8 +14,6 @@ import {
   ArrowRight,
   Lock,
   Robot,
-  Info,
-  Play,
   CircleNotch,
   CheckCircle,
   X,
@@ -28,6 +26,7 @@ import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { AIAgentDetailSidebar } from './AIAgentDetailSidebar';
 import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 import { useAgentExecution } from '@/lib/hooks/use-agent';
+import { useAuth } from '@/lib/auth/use-auth';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -47,21 +46,9 @@ interface AIAgentCardProps {
   recentCount?: number;
 }
 
-/** Reads the agency ID from localStorage auth, falls back to demo */
-function getAgencyId(): string {
-  if (typeof window === 'undefined') return 'demo-agency-001';
-  try {
-    const raw = localStorage.getItem('arriendo-facil-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.id) return parsed.id;
-    }
-  } catch { /* ignore */ }
-  return 'demo-agency-001';
-}
-
 export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgentCardProps) {
   const { locale } = useI18n();
+  const { user } = useAuth();
   const [showDetail, setShowDetail] = useState(false);
   const [showRunPopover, setShowRunPopover] = useState(false);
   const [showExecution, setShowExecution] = useState(false);
@@ -108,7 +95,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
     if (!appId) return;
 
     setShowRunPopover(false);
-    const agencyId = getAgencyId();
+    const agencyId = user?.id ?? '';
 
     if (isScoring) {
       await runScoring(appId, agencyId);

@@ -64,20 +64,20 @@ export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchMetrics = useCallback(async () => {
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    if (!agentUrl) {
+      setIsLoading(false)
+      return
+    }
     try {
-      const res = await fetch('/api/agents/metrics')
-
-      if (!res.ok) {
-        throw new Error(`Metrics API responded with ${res.status}`)
-      }
-
+      const res = await fetch(`${agentUrl}/metrics`)
+      if (!res.ok) throw new Error(`Metrics API responded with ${res.status}`)
       const data: AgentMetrics = await res.json()
       setMetrics(data)
       setError(null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch metrics'
       setError(msg)
-      // Keep previous metrics on error, don't reset to defaults
     } finally {
       setIsLoading(false)
     }

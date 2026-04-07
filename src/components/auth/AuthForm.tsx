@@ -8,10 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { cn } from '@/lib/utils';
-import { validateMockCredentials } from '@/lib/data/mock-users';
 import { Key, Briefcase, SpinnerGap, ArrowLeft, Envelope, CheckCircle, Check, MagnifyingGlass } from '@phosphor-icons/react';
-
-const AUTH_STORAGE_KEY = 'arriendo-facil-auth';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
 
@@ -156,32 +153,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   };
 
   const handleLoginSubmit = async (data: LoginFormData) => {
-    // If Supabase is not configured, use mock credentials for demo
-    const { getSupabase } = await import('@/lib/supabase/client');
-    if (!getSupabase()) {
-      setIsLoading(true);
-      setError(null);
-      const result = validateMockCredentials(data.email, data.password);
-      if (result.valid && result.user) {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-          id: result.user.id,
-          email: result.user.email,
-          role: result.user.role,
-          name: result.user.name,
-          onboardingCompleted: true,
-        }));
-        const dest = result.user.role === 'agency'
-          ? '/panel/inmobiliaria'
-          : result.user.role === 'landlord'
-            ? '/panel'
-            : '/inquilino';
-        router.push(dest);
-      } else {
-        setError(result.error || 'Credenciales inválidas');
-      }
-      setIsLoading(false);
-      return;
-    }
     // Email/password login via Supabase
     setIsLoading(true);
     setError(null);

@@ -74,7 +74,8 @@ export function useAgentExecution() {
 
         const startTime = Date.now();
 
-        const res = await fetch('/api/agents/tenant-scoring', {
+        const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
+        const res = await fetch(`${agentUrl}/tenant-scoring`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ applicationId, agencyId }),
@@ -154,7 +155,8 @@ export function useAgentExecution() {
 
         const startTime = Date.now();
 
-        const res = await fetch('/api/agents/smart-matching', {
+        const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
+        const res = await fetch(`${agentUrl}/smart-matching`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ applicationId, agencyId, trigger }),

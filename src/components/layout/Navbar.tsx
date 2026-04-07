@@ -101,23 +101,31 @@ export function Navbar() {
   // Get dashboard link based on user role
   const getDashboardLink = () => {
     if (!user) return '/';
-    return user.role === 'landlord' ? '/panel' : '/inquilino';
+    if (user.role === 'landlord') return '/panel';
+    if (user.role === 'agency') return '/panel/inmobiliaria';
+    return '/inquilino';
   };
 
   const getDashboardLabel = () => {
     if (!user) return 'Mi panel';
-    return user.role === 'landlord' ? 'Panel de propietario' : 'Mi panel';
+    if (user.role === 'landlord') return 'Panel de propietario';
+    if (user.role === 'agency') return 'Panel inmobiliaria';
+    return 'Mi panel';
   };
 
   // Get leases link based on user role
   const getLeasesLink = () => {
     if (!user) return '/';
-    return user.role === 'landlord' ? '/panel/leases' : '/inquilino/arriendo';
+    if (user.role === 'landlord') return '/panel/leases';
+    if (user.role === 'agency') return '/panel/inmobiliaria';
+    return '/inquilino/arriendo';
   };
 
   const getLeasesLabel = () => {
     if (!user) return 'Mis arriendos';
-    return user.role === 'landlord' ? 'Mis arriendos' : 'Mi arriendo';
+    if (user.role === 'landlord') return 'Mis arriendos';
+    if (user.role === 'agency') return 'Panel';
+    return 'Mi arriendo';
   };
 
   return (
@@ -273,7 +281,7 @@ export function Navbar() {
                           <p className="text-sm font-medium text-foreground">{user.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                           <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-black/5 rounded-full text-muted-foreground">
-                            {user.role === 'landlord' ? 'Propietario' : 'Inquilino'}
+                            {user.role === 'landlord' ? 'Propietario' : user.role === 'agency' ? 'Inmobiliaria' : 'Inquilino'}
                           </span>
                         </div>
 
@@ -725,7 +733,7 @@ export function Navbar() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.role === 'landlord' ? 'Propietario' : 'Inquilino'}</p>
+                        <p className="text-xs text-muted-foreground">{user.role === 'landlord' ? 'Propietario' : user.role === 'agency' ? 'Inmobiliaria' : 'Inquilino'}</p>
                       </div>
                     </div>
                   </div>

@@ -90,8 +90,8 @@ export function PlanHeader({
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Check if user is landlord (on /panel routes) - must be before hooks
-  const isLandlord = pathname?.startsWith('/panel');
+  // Check if user is landlord (on /panel routes, but NOT inmobiliaria routes)
+  const isLandlord = pathname?.startsWith('/panel') && !pathname?.startsWith('/panel/inmobiliaria');
 
   // Real notifications from API
   const landlordNotifs = useLandlordNotifications();
@@ -388,7 +388,7 @@ export function PlanHeader({
                     {/* Upgrade CTA */}
                     {planId !== 'business' && (
                       <Link
-                        href="/panel/upgrade"
+                        href={user?.role === 'agency' ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade'}
                         onClick={() => setSubscriptionOpen(false)}
                         className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide font-mono transition-colors"
                       >
@@ -398,7 +398,7 @@ export function PlanHeader({
 
                     {/* Manage subscription */}
                     <Link
-                      href="/panel/configuracion"
+                      href={user?.role === 'agency' ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion'}
                       onClick={() => setSubscriptionOpen(false)}
                       className="block mt-3 text-center text-[13px] font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white underline underline-offset-2 decoration-neutral-300 dark:decoration-neutral-600 hover:decoration-neutral-500 transition-colors"
                     >
@@ -798,10 +798,10 @@ export function PlanHeader({
                   </DropdownListItem>
                 </>
               )}
-              {isLandlord && (
+              {(isLandlord || user?.role === 'agency') && (
                 <DropdownListItem asChild>
                   <Link
-                    href="/panel/upgrade"
+                    href={user?.role === 'agency' ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade'}
                     className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" />

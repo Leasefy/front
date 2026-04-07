@@ -114,8 +114,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = '/onboarding/seleccionar-rol';
       return;
     }
-    const destination = (returnUrl && returnUrl !== '/') ? returnUrl : '/';
-    window.location.href = destination;
+    if (returnUrl && returnUrl !== '/') {
+      window.location.href = returnUrl;
+      return;
+    }
+    // No returnUrl — redirect to the correct panel based on role
+    if (user.role === 'agency') window.location.href = '/panel/inmobiliaria';
+    else if (user.role === 'landlord') window.location.href = '/panel';
+    else window.location.href = '/inquilino';
   }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;

@@ -29,9 +29,9 @@ export default function UpgradePage() {
   const currentPlan = getPlanById(currentPlanId);
   const newPlan = selectedPlan ? getPlanById(selectedPlan) : null;
 
-  const handleSelectPlan = (planId: PlanId) => {
+  const handleSelectPlan = (planId: string) => {
     if (planId !== currentPlanId) {
-      setSelectedPlan(planId);
+      setSelectedPlan(planId as PlanId);
     }
   };
 

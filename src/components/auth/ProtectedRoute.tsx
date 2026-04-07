@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 
+const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
 const TENANT_ONBOARDING_KEY = 'plan_onboarding_tenant'
 
 interface ProtectedRouteProps {
@@ -33,13 +34,31 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const [isCheckingStorage, setIsCheckingStorage] = useState(true)
+  const [storageUser, setStorageUser] = useState<{ role: string } | null>(null)
 
-  const effectiveUser = user
-  const effectiveIsAuthenticated = isAuthenticated
+  // Check localStorage directly as a fallback
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setStorageUser(parsed)
+      }
+    } catch {
+      // Ignore errors
+    }
+    setIsCheckingStorage(false)
+  }, [])
+
+  // Determine effective authentication state
+  // Trust either the context OR localStorage
+  const effectiveUser = user || storageUser
+  const effectiveIsAuthenticated = isAuthenticated || !!storageUser
 
   useEffect(() => {
-    // Wait for auth context to resolve
-    if (isLoading) return
+    // Wait for both auth context and storage check to complete
+    if (isLoading || isCheckingStorage) return
 
     // JWT valid but backend has no user record yet → send to onboarding
     // IMPORTANT: this check must come BEFORE !effectiveIsAuthenticated, because
@@ -93,10 +112,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         router.replace('/inquilino')
       }
     }
-  }, [isLoading, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user, needsOnboarding])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user, needsOnboarding])
 
   // Show loading state while checking auth
-  if (isLoading) {
+  if (isLoading || isCheckingStorage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

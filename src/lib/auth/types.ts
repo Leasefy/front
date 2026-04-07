@@ -13,7 +13,7 @@
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
-export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT'
+export type BackendRole = 'TENANT' | 'LANDLORD' | 'BOTH' | 'ADMIN' | 'AGENT' | 'INMOBILIARIA'
 
 export function toBackendRole(role: UserRole): BackendRole {
   if (role === 'agency') return 'AGENT'
@@ -21,7 +21,7 @@ export function toBackendRole(role: UserRole): BackendRole {
 }
 
 export function toFrontendRole(role: BackendRole): UserRole {
-  if (role === 'AGENT') return 'agency'
+  if (role === 'AGENT' || role === 'INMOBILIARIA') return 'agency'
   if (role === 'LANDLORD' || role === 'BOTH') return 'landlord'
   return 'tenant'
 }
@@ -47,9 +47,16 @@ export interface TenantOnboardingData {
   // Step 1 - Welcome & Profile
   displayName?: string
   phone?: string
+  rut?: string
   preferredContact?: PreferredContact
 
-  // Step 2 - Housing Preferences
+  // Step 2 - Employment & Income
+  employmentType?: EmploymentType
+  companyName?: string
+  monthlyIncome?: number
+  additionalIncome?: number
+
+  // Step 3 - Housing Preferences
   budgetMin?: number
   budgetMax?: number
   preferredZones?: string[]
@@ -58,13 +65,7 @@ export interface TenantOnboardingData {
   hasPets?: boolean
   petDetails?: string
 
-  // Employment & Income (collected during property application, not onboarding)
-  employmentType?: EmploymentType
-  companyName?: string
-  monthlyIncome?: number
-  additionalIncome?: number
-
-  // Documents (collected during property application, not onboarding)
+  // Step 4 - Documents Ready
   hasIdDocument?: boolean
   hasIncomeProof?: boolean
   hasEmploymentLetter?: boolean
@@ -82,18 +83,40 @@ export interface OnboardingData {
   propertyType?: 'apartment' | 'house' | 'studio' | 'room'
   propertyAddress?: string
   propertyCity?: string
+  expectedRent?: number
   rentPrice?: number
 
-  // Step 3 - Ideal Tenant
+  // Step 3 - Ideal tenant
   minIncomeRatio?: number
   acceptPets?: boolean
-  minRiskLevel?: RiskLevel
+  minRiskLevel?: string
 
   // Step 4 - Payments
   bankAccount?: string
   bankName?: string
-  acceptedPaymentMethods?: PaymentMethod[]
+  acceptedPaymentMethods?: string[]
   preferredPaymentDay?: number
+}
+
+// ============================================================================
+// Agency
+// ============================================================================
+
+export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER'
+
+export interface Agency {
+  id: string
+  name: string
+  nit?: string
+  city?: string
+  address?: string
+  phone?: string
+  email?: string
+  logoUrl?: string
+  website?: string
+  portfolioSize?: string
+  yearsInBusiness?: number
+  services?: string[]
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -128,9 +151,16 @@ export interface User {
   lastName?: string
   phone?: string
   avatar?: string
+  rut?: string
+  address?: string
+  birthDate?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
+  /** True if the user has an email+password credential (false = Google-only) */
+  hasPassword?: boolean
   // Onboarding fields
   onboardingCompleted?: boolean
   onboardingStep?: number
@@ -149,24 +179,37 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   mfaRequired: boolean
+  /**
+   * True when Supabase Auth has a valid JWT but the backend returned 401
+   * "User not found" — meaning the user hasn't completed onboarding yet.
+   * Callers should redirect to /onboarding/seleccionar-rol when this is true.
+   */
+  needsOnboarding: boolean
+  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
+  agency: Agency | null
+  /** The user's role within the agency */
+  agencyRole: AgencyMemberRole | null
 }
 
 export interface AuthContextType extends AuthState {
   signInWithGoogle: () => Promise<void>
-  signInWithEmail: (email: string, password: string) => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<User | null>
+  signUpWithEmail: (email: string, password: string) => Promise<{ requiresConfirmation: boolean }>
+  sendPasswordReset: (email: string) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
+  /** Re-authenticate with current password to verify identity before sensitive operations */
+  verifyCurrentPassword: (password: string) => Promise<boolean>
+  /** Change password: verifies current password on the backend then updates.
+   *  currentPassword is optional — omit for Google-only accounts. */
+  changePassword: (currentPassword: string | undefined, newPassword: string) => Promise<void>
   signOut: () => Promise<void>
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }) => Promise<void>
   setMfaVerified: () => void
-  /** Change password for authenticated user (current password required unless using OAuth) */
-  changePassword?: (currentPassword: string | undefined, newPassword: string) => Promise<void>
-  /** Update password from a reset-password flow (no current password required) */
-  updatePassword?: (newPassword: string) => Promise<void>
-  /** Whether the user needs to complete onboarding before accessing the panel */
-  needsOnboarding?: boolean
-  /** The agency-level role of the current user (e.g. 'ADMIN', 'AGENT') */
-  agencyRole?: string
+  /** Set agency context (called after registration or login for agency members) */
+  setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
 }
 
 /**

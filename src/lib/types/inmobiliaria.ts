@@ -1270,6 +1270,14 @@ export interface UserInvite {
   /** Optional free-form title/cargo to display in the UI. Max 100 chars. */
   position?: string;
   message?: string;
+  /** Agent-specific fields — only sent when role is 'agente'.
+   *  Backend expects UPPERCASE enums (AGENT, RESIDENTIAL, etc.) */
+  phone?: string;
+  commissionSplit?: number;
+  zone?: string;
+  specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH' | 'residential' | 'commercial' | 'both';
+  agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR' | AgenteRole;
+  hireDate?: string;
 }
 
 // Helper functions for users/roles

@@ -289,7 +289,7 @@ export function ActaEntregaForm({
                       status === 'completed'
                         ? 'bg-emerald-500 text-white'
                         : status === 'current'
-                        ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono ring-4 ring-indigo-500/20'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
                     )}
                   >
@@ -341,7 +341,7 @@ export function ActaEntregaForm({
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-500"
+              className="h-full bg-indigo-600"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -409,7 +409,7 @@ export function ActaEntregaForm({
                   type="button"
                   onClick={goToNextStep}
                   disabled={!isStepValid}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('inmobiliaria.acta.next')}
                   <CaretRight className="w-4 h-4" />

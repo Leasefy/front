@@ -251,7 +251,16 @@ export function useVencimientosReport() {
   return { report: data, ...rest };
 }
 
-export function useFlujoCajaReport(months?: number) {
+export function useFlujoCajaReport(period?: number | string) {
+  // Accept string periods like 'semester', 'quarter', 'year' for backwards compat.
+  // Map them to month counts; numeric values pass through as-is.
+  const months: number | undefined =
+    typeof period === 'number' ? period :
+    period === 'semester' ? 6 :
+    period === 'quarter' ? 3 :
+    period === 'year' ? 12 :
+    typeof period === 'string' ? undefined : period;
+
   const { data, ...rest } = useApiData(
     () => reportesApi.getFlujoCaja(months),
     [months]

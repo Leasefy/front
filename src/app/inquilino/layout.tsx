@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -11,11 +11,10 @@ import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantPro
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-// Define the setup steps - same as TenantDashboardEmpty (3 steps only, documents are requested during application)
+// Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
 const TENANT_SETUP_STEPS: ProfileCompletionStep[] = [
   { id: 1, labelEs: 'Info básica', labelEn: 'Basic info', completed: false },
-  { id: 2, labelEs: 'Ingresos', labelEn: 'Income', completed: false },
-  { id: 3, labelEs: 'Preferencias', labelEn: 'Preferences', completed: false },
+  { id: 2, labelEs: 'Preferencias', labelEn: 'Preferences', completed: false },
 ];
 
 const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
@@ -24,10 +23,11 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
  * Hook to generate translated nav items
  */
 function useTenantNavItems() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
+    { label: locale === 'es' ? 'Explorar' : 'Explore', href: '/inquilino/explorar', icon: MagnifyingGlass },
     { label: t('nav.myRental'), href: '/inquilino/arriendo', icon: House },
     { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
@@ -61,8 +61,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // Funnel to only valid steps (1, 2, 3) in case of old data with step 4
-          const completedStepIds = (parsed.completedSteps || []).filter((id: number) => id <= 3);
+          const completedStepIds = (parsed.completedSteps || []).filter((id: number) => id <= 2);
           setOnboardingSteps(TENANT_SETUP_STEPS.map(step => ({
             ...step,
             completed: completedStepIds.includes(step.id),

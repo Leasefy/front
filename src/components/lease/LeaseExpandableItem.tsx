@@ -236,7 +236,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 {isEndingSoon && (
                   <Button
                     size="sm"
-                    className="gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
                     onClick={handleRenewal}
                   >
                     <ArrowsClockwise className="w-4 h-4" />

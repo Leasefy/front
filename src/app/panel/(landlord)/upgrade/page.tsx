@@ -212,7 +212,7 @@ export default function UpgradePage() {
                 disabled={isProcessing}
                 className={cn(
                   'flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all min-w-[200px]',
-                  'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25',
+                  'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
                   isProcessing && 'opacity-70 cursor-not-allowed'
                 )}
               >

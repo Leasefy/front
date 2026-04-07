@@ -215,35 +215,8 @@ export function AgenteFormModal({
                 </button>
               </div>
 
-              {/* Form — scrollable */}
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
-
-                {/* System Role Selector — only in member variant */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Rol del sistema *</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {SYSTEM_ROLE_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setSystemRole(opt.value)}
-                          className={cn(
-                            'py-2.5 px-2 rounded-xl border text-center transition-all text-xs',
-                            systemRole === opt.value
-                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                              : 'border-border hover:bg-muted'
-                          )}
-                        >
-                          <p className={cn('font-medium', systemRole === opt.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground')}>
-                            {opt.label}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
                 {/* Name */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">

@@ -10,5 +10,4 @@ export { TenantOnboardingSuccess } from './TenantOnboardingSuccess'
 
 // Step components
 export { StepTenantWelcome } from './StepTenantWelcome'
-export { StepEmployment } from './StepEmployment'
 export { StepHousingPreferences } from './StepHousingPreferences'

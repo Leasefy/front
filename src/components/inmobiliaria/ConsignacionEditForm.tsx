@@ -505,7 +505,7 @@ export function ConsignacionEditForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors disabled:opacity-70"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors disabled:opacity-70"
         >
           {isSubmitting ? (
             <>

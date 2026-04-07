@@ -377,7 +377,7 @@ export function VencimientosTable({
               {onBulkRenewal && (
                 <button
                   onClick={() => onBulkRenewal(Array.from(selectedItems))}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   {t('inmobiliaria.finance.expirations.startRenewal')}

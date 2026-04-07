@@ -53,7 +53,7 @@ export function TabNavigation({
                   className={cn(
                     'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
                     activeTab === tab.id
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-white uppercase tracking-wide font-mono'
                       : 'bg-muted text-muted-foreground group-hover:bg-muted'
                   )}
                 >

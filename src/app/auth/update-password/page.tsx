@@ -32,7 +32,7 @@ export default function UpdatePasswordPage() {
     setError(null);
 
     try {
-      await updatePassword(password);
+      await updatePassword!(password);
       setSuccess(true);
       // Redirect to dashboard after 2 seconds
       setTimeout(() => router.push('/'), 2000);

@@ -17,7 +17,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   amber: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   purple: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
   pink: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400',
+  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-600/15 dark:text-indigo-400',
 };
 
 // ============================================================================

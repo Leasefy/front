@@ -171,7 +171,7 @@ export function AISearchInput({
               className={cn(
                 'flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
                 value.trim() && !isMagnifyingGlassing
-                  ? 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                  ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
                   : 'bg-neutral-100 text-muted-foreground/50 cursor-not-allowed'
               )}
             >

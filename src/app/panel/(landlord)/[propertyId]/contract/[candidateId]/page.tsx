@@ -474,8 +474,8 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all',
-                          isCompleted && 'bg-indigo-600 text-white',
-                          isCurrent && 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25',
+                          isCompleted && 'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+                          isCurrent && 'bg-indigo-600 text-white uppercase tracking-wide font-mono',
                           !isCompleted && !isCurrent && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500',
                         )}>
                           {isCompleted ? <Check className="h-4 w-4" /> : i + 1}
@@ -522,7 +522,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     className={cn(
                       'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all',
                       selectedType
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono hover: hover:'
                         : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                     )}
                   >
@@ -623,7 +623,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           </div>
                           <Link
                             href={`/panel/${propertyId}`}
-                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
                           >
                             Entendido, volver a la propiedad
                           </Link>

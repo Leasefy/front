@@ -361,7 +361,7 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
  * Flujo de Caja Preview
  */
 function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<string, string | number>) => string; fmtDate: (d: string) => string }) {
-  const { report: data } = useFlujoCajaReport(6);
+  const { report: data } = useFlujoCajaReport('semester');
   if (!data) return null;
 
   return (
@@ -674,7 +674,7 @@ export function ReporteViewer({
           <div className="flex gap-3">
             {/* Export Primary - Always indigo */}
             <Button
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono hover: transition-all"
               onClick={() => handleExport(report.format)}
               disabled={isExporting}
             >

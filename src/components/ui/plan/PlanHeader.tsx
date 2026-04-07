@@ -15,10 +15,7 @@ import type { BaseNotification, LandlordNotificationCategory, TenantNotification
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, type TeamRole } from '@/lib/types/team';
-import { useTeamMembers } from '@/lib/hooks/useSettings';
-import { settingsApi } from '@/lib/api/settings.service';
-import { inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
-import { toast } from 'sonner';
+import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
 import {
   searchData,
   groupSearchResults,
@@ -89,27 +86,12 @@ export function PlanHeader({
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Context detection — both landlord and inmobiliaria live under /panel.
-  // `isLandlord` intentionally covers BOTH (same UI chrome: notifications, search,
-  // quick actions, etc.). Use `isInmobiliaria` only where the two diverge —
-  // currently just for routing (upgrade/configuracion paths).
-  const isInmobiliaria = pathname?.startsWith('/panel/inmobiliaria') ?? false;
-  const isLandlord = pathname?.startsWith('/panel') ?? false;
-
-  // Route destinations depend on whether we're in landlord or inmobiliaria context.
-  // - Landlord has /panel/upgrade and /panel/configuracion
-  // - Inmobiliaria has no dedicated /upgrade page — both CTAs land on configuracion?tab=facturacion
-  const upgradePlanHref = isInmobiliaria
-    ? '/panel/inmobiliaria/configuracion?tab=facturacion'
-    : '/panel/upgrade';
-  const manageSubscriptionHref = isInmobiliaria
-    ? '/panel/inmobiliaria/configuracion?tab=facturacion'
-    : '/panel/configuracion';
+  // Check if user is landlord (on /panel routes) - must be before hooks
+  const isLandlord = pathname?.startsWith('/panel');
 
   // Real notifications from API
   const landlordNotifs = useLandlordNotifications();
@@ -132,8 +114,8 @@ export function PlanHeader({
   const { subscription } = useMySubscription();
   const planId = subscription?.planId ?? 'free';
   const currentPlan = getPlanById(planId);
-  const { members: teamMembers } = useTeamMembers();
-  const pendingInvites = teamMembers.filter((m) => m.status === 'pending');
+  const teamMembers = getTeamMembers();
+  const pendingInvites = getPendingInvites();
 
   // MagnifyingGlass functionality
   useEffect(() => {
@@ -325,7 +307,7 @@ export function PlanHeader({
         <div className="flex items-center gap-1.5 ml-auto">
           {actions}
 
-          {/* Quick Action Icons - Landlords and Inmobiliaria (both under /panel) */}
+          {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
             <>
               {/* Subscription Popover */}
@@ -334,7 +316,7 @@ export function PlanHeader({
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {planId === 'free' && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full" />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
@@ -406,9 +388,9 @@ export function PlanHeader({
                     {/* Upgrade CTA */}
                     {planId !== 'business' && (
                       <Link
-                        href={upgradePlanHref}
+                        href="/panel/upgrade"
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-medium text-center rounded-xl transition-colors"
+                        className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide font-mono transition-colors"
                       >
                         {planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -416,9 +398,9 @@ export function PlanHeader({
 
                     {/* Manage subscription */}
                     <Link
-                      href={manageSubscriptionHref}
+                      href="/panel/configuracion"
                       onClick={() => setSubscriptionOpen(false)}
-                      className="block mt-2 text-center text-[12px] text-plan-secondary hover:text-plan-primary"
+                      className="block mt-3 text-center text-[13px] font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white underline underline-offset-2 decoration-neutral-300 dark:decoration-neutral-600 hover:decoration-neutral-500 transition-colors"
                     >
                       Gestionar suscripción
                     </Link>
@@ -439,7 +421,7 @@ export function PlanHeader({
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
-                      <span className="absolute top-0 right-0 w-4 h-4 bg-indigo-500 text-white text-[9px] font-medium flex items-center justify-center rounded-full">
+                      <span className="absolute top-0 right-0 w-4 h-4 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
                         {pendingInvites.length}
                       </span>
                     )}
@@ -505,7 +487,7 @@ export function PlanHeader({
                               placeholder="correo@ejemplo.com"
                               aria-label="Correo electrónico para invitación"
                               className={cn(
-                                "w-full h-10 pl-9 pr-4 bg-muted border text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
+                                "w-full h-10 pl-9 pr-4 bg-muted border rounded-xl text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
                                 inviteEmailError ? 'border-red-400 focus:ring-red-400' : 'border-plan-border focus:ring-plan-primary'
                               )}
                             />
@@ -526,18 +508,18 @@ export function PlanHeader({
                                 key={role.id}
                                 onClick={() => setInviteRole(role.id)}
                                 className={cn(
-                                  'w-full flex items-start gap-3 p-3 text-left border transition-colors',
+                                  'w-full flex items-start gap-3 p-3 text-left border rounded-xl transition-all',
                                   inviteRole === role.id
-                                    ? 'border-plan-primary bg-muted'
-                                    : 'border-plan-border hover:border-border'
+                                    ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20'
+                                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                                 )}
                               >
                                 <div className={cn(
-                                  'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5',
-                                  inviteRole === role.id ? 'border-plan-primary' : 'border-border'
+                                  'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors',
+                                  inviteRole === role.id ? 'border-indigo-500 dark:border-indigo-400' : 'border-neutral-300 dark:border-neutral-600'
                                 )}>
                                   {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-primary" />
+                                    <div className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
                                   )}
                                 </div>
                                 <div className="flex-1">
@@ -549,46 +531,21 @@ export function PlanHeader({
                           </div>
                         </div>
 
-                        {/* Submit — wires to the real backend based on context */}
+                        {/* Submit */}
                         <button
-                          onClick={async () => {
-                            if (!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading) return;
-                            setInviteLoading(true);
-                            try {
-                              if (isInmobiliaria) {
-                                // Inmobiliaria uses AgencyRole (admin/agente/contador/viewer).
-                                // The navbar selector only offers a subset — map TeamRole → AgencyRole.
-                                const agencyRole = (inviteRole === 'admin' ? 'admin' : 'viewer') as 'admin' | 'viewer';
-                                await inmobiliariaConfigApi.inviteUser({
-                                  email: inviteEmail,
-                                  name: inviteEmail.split('@')[0],
-                                  role: agencyRole,
-                                });
-                              } else {
-                                await settingsApi.inviteTeamMember({
-                                  email: inviteEmail,
-                                  role: inviteRole,
-                                });
-                              }
-                              setInviteSent(true);
-                              toast.success(`Invitación enviada a ${inviteEmail}`);
-                            } catch (err) {
-                              toast.error('Error al enviar la invitación', {
-                                description: err instanceof Error ? err.message : undefined,
-                              });
-                            } finally {
-                              setInviteLoading(false);
-                            }
+                          onClick={() => {
+                            if (!inviteEmail || !isValidEmail(inviteEmail)) return;
+                            setInviteSent(true);
                           }}
-                          disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
+                          disabled={!inviteEmail || !isValidEmail(inviteEmail)}
                           className={cn(
-                            'w-full py-2.5 text-[13px] font-medium text-center rounded-xl transition-colors',
-                            inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide transition-colors',
+                            inviteEmail && isValidEmail(inviteEmail)
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
-                          {inviteLoading ? 'Enviando...' : 'Enviar Invitación'}
+                          Enviar Invitación
                         </button>
                       </>
                     )}
@@ -610,7 +567,7 @@ export function PlanHeader({
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[10px] font-medium text-white">
+                            <div className="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
                               +{teamMembers.length - 5}
                             </div>
                           )}
@@ -629,7 +586,7 @@ export function PlanHeader({
               <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full ring-2 ring-white" />
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white" />
                 )}
               </button>
             </PopoverTrigger>
@@ -667,12 +624,12 @@ export function PlanHeader({
                     {tab === 'all' && (locale === 'es' ? 'Todas' : 'All')}
                     {tab === 'unread' && (locale === 'es' ? 'Sin leer' : 'Unread')}
                     {tab === 'all' && notifications.length > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                         {notifications.length}
                       </span>
                     )}
                     {tab === 'unread' && unreadCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                         {unreadCount}
                       </span>
                     )}
@@ -714,7 +671,7 @@ export function PlanHeader({
                     {/* Avatar */}
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      !notification.read ? 'bg-primary text-white' : 'bg-muted text-plan-secondary'
+                      !notification.read ? 'bg-primary text-white uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
                     )}>
                       {notification.title.charAt(0).toUpperCase()}
                     </div>

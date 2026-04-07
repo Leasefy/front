@@ -60,25 +60,6 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Cloud,
 };
 
-/**
- * INTEGRATIONS_DISABLED
- *
- * Las integraciones con servicios externos (Metrocuadrado, FincaRaiz, Siigo,
- * WhatsApp Business, etc.) son PLACEHOLDERS en el MVP v1.3. El toggle on/off y
- * el botón "Configurar" (guardar API keys) NO persisten nada porque no hay
- * backend real detrás — ninguna integración está conectada de verdad todavía.
- *
- * Mantener la UI visible pero deshabilitada (gris + toggle forzado en OFF)
- * comunica al usuario que el feature existe pero está próximo a estar disponible,
- * sin crear la falsa expectativa de que ya funciona.
- *
- * TODO (v1.4+): cuando el backend implemente `PATCH /inmobiliaria/agency/integrations/:id/config`
- * y cada integración tenga su cliente real (Metrocuadrado API, Siigo API, etc.),
- * setear esta constante en `false` y volver a habilitar el Switch y el botón
- * Configurar. Ver también: `configuracion/page.tsx:handleConfigureIntegration`
- */
-const INTEGRATIONS_DISABLED = true;
-
 interface ConfigIntegracionesProps {
   integrations: AgencyIntegration[];
   onToggle?: (integrationId: string, enabled: boolean) => void;
@@ -251,22 +232,6 @@ export function ConfigIntegraciones({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* "Próximamente" banner — shown while integrations are placeholder-only */}
-      {INTEGRATIONS_DISABLED && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-              Integraciones próximamente disponibles
-            </p>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              Estamos trabajando en las integraciones con portales y servicios externos.
-              Podés ver el catálogo, pero la activación y configuración estarán disponibles muy pronto.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -366,16 +331,15 @@ export function ConfigIntegraciones({
                         </p>
                       </div>
 
-                      {/* Toggle Switch — forced OFF and disabled while INTEGRATIONS_DISABLED */}
+                      {/* Toggle Switch */}
                       <div className="flex items-center gap-2">
-                        {isToggling && !INTEGRATIONS_DISABLED && (
+                        {isToggling && (
                           <SpinnerGap className="w-4 h-4 text-indigo-500 animate-spin" />
                         )}
                         <Switch
-                          checked={INTEGRATIONS_DISABLED ? false : integration.isEnabled}
-                          onCheckedChange={() => !INTEGRATIONS_DISABLED && handleToggle(integration)}
-                          disabled={INTEGRATIONS_DISABLED || isToggling}
-                          className={cn(INTEGRATIONS_DISABLED && 'opacity-50 cursor-not-allowed')}
+                          checked={integration.isEnabled}
+                          onCheckedChange={() => handleToggle(integration)}
+                          disabled={isToggling}
                         />
                       </div>
                     </div>
@@ -434,19 +398,11 @@ export function ConfigIntegraciones({
                         </div>
                       )}
 
-                    {/* Configure Button — always visible but disabled (grayed) while INTEGRATIONS_DISABLED */}
-                    {(INTEGRATIONS_DISABLED || integration.isEnabled) && (
+                    {/* Configure Button */}
+                    {integration.isEnabled && (
                       <button
-                        type="button"
-                        onClick={() => !INTEGRATIONS_DISABLED && handleConfigure(integration)}
-                        disabled={INTEGRATIONS_DISABLED}
-                        className={cn(
-                          'mt-3 flex items-center gap-1.5 text-sm font-medium transition-colors',
-                          INTEGRATIONS_DISABLED
-                            ? 'text-muted-foreground cursor-not-allowed opacity-60'
-                            : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300'
-                        )}
-                        title={INTEGRATIONS_DISABLED ? 'Próximamente disponible' : undefined}
+                        onClick={() => handleConfigure(integration)}
+                        className="mt-3 flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
                       >
                         <Gear className="w-4 h-4" />
                         {t('inmobiliaria.config.integrations.configure')}
@@ -551,7 +507,7 @@ export function ConfigIntegraciones({
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                 !apiKey || isSaving
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
               )}
             >
               {isSaving ? (

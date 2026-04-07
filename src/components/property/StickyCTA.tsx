@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Sparkle, ArrowRight, Calendar, SpinnerGap } from '@phosphor-icons/react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, ArrowRight, Calendar, SpinnerGap } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -209,34 +210,26 @@ export function StickyCTA({
             /* Apply Tab */
             <div>
               {/* Benefits */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 p-3.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.08)] border border-[hsl(var(--success-100))] dark:border-[hsl(var(--success-500)/0.2)] rounded-xl">
-                  <div className="w-9 h-9 bg-[hsl(var(--success-500))] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Sin codeudor requerido</p>
-                    <p className="text-[11px] text-muted-foreground">Aplica solo con tu información</p>
-                  </div>
+              <div className="space-y-2.5 mb-6">
+                <div className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
+                  <p className="text-[13px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">Sin codeudor</span> — aplica solo con tu información
+                  </p>
                 </div>
-
-                {/* Response time */}
-                <div className="flex items-center gap-3 p-3.5 bg-neutral-50 dark:bg-white/[0.02] border border-border rounded-xl">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Respuesta en menos de 24h</p>
-                    <p className="text-[11px] text-muted-foreground">Tiempo promedio de evaluación</p>
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
+                  <p className="text-[13px] text-muted-foreground">
+                    Respuesta en <span className="font-semibold text-foreground">menos de 24h</span>
+                  </p>
                 </div>
               </div>
 
               {/* CTA Button */}
-              <Link href={`/aplicar/${propertyId}`} className="block group">
-                <button className="w-full py-4 bg-primary text-white text-[14px] font-semibold tracking-tight rounded-xl hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md">
-                  <Sparkle className="w-4 h-4" />
+              <Link href={`/aplicar/${propertyId}`} className="block">
+                <Button className="w-full">
                   Postularme a esta propiedad
-                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
-                </button>
+                </Button>
               </Link>
 
               <p className="text-[11px] text-muted-foreground text-center mt-3">
@@ -278,7 +271,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'presencial'
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -290,7 +283,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'virtual'
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -313,7 +306,7 @@ export function StickyCTA({
                       className={cn(
                         'py-2.5 border text-center rounded-xl transition-all duration-200',
                         selectedDay === day.full
-                          ? 'border-primary bg-primary text-white'
+                          ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                           : 'border-border hover:border-primary/30'
                       )}
                     >
@@ -345,7 +338,7 @@ export function StickyCTA({
                       className={cn(
                         'py-2.5 text-[12px] font-semibold border rounded-lg transition-all duration-200',
                         selectedTime === time
-                          ? 'border-primary bg-primary text-white'
+                          ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
                           : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                       )}
                     >
@@ -362,7 +355,7 @@ export function StickyCTA({
                 className={cn(
                   'w-full py-4 text-[14px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                   selectedDay && selectedTime && !isSubmitting
-                    ? 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                    ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
                     : 'bg-neutral-100 text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -445,7 +438,7 @@ export function MobileStickyCTA({
           </div>
           <div className="flex gap-2">
             <Link href={`/aplicar/${propertyId}`}>
-              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
+              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold uppercase tracking-wide font-mono rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
                 Postularme
               </button>
             </Link>

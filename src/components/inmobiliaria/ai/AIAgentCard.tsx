@@ -14,8 +14,6 @@ import {
   ArrowRight,
   Lock,
   Robot,
-  Info,
-  Play,
   CircleNotch,
   CheckCircle,
   X,
@@ -28,6 +26,7 @@ import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { AIAgentDetailSidebar } from './AIAgentDetailSidebar';
 import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 import { useAgentExecution } from '@/lib/hooks/use-agent';
+import { useAuth } from '@/lib/auth/use-auth';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -43,24 +42,13 @@ const ICON_MAP: Record<string, Icon> = {
 interface AIAgentCardProps {
   agent: AIAgentDefinition;
   metrics?: { label: string; value: string | number }[];
+  lastAction?: { title: string; time: string } | null;
   recentCount?: number;
 }
 
-/** Reads the agency ID from localStorage auth, falls back to demo */
-function getAgencyId(): string {
-  if (typeof window === 'undefined') return 'demo-agency-001';
-  try {
-    const raw = localStorage.getItem('arriendo-facil-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.id) return parsed.id;
-    }
-  } catch { /* ignore */ }
-  return 'demo-agency-001';
-}
-
-export function AIAgentCard({ agent, metrics, recentCount }: AIAgentCardProps) {
+export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgentCardProps) {
   const { locale } = useI18n();
+  const { user } = useAuth();
   const [showDetail, setShowDetail] = useState(false);
   const [showRunPopover, setShowRunPopover] = useState(false);
   const [showExecution, setShowExecution] = useState(false);
@@ -107,7 +95,7 @@ export function AIAgentCard({ agent, metrics, recentCount }: AIAgentCardProps) {
     if (!appId) return;
 
     setShowRunPopover(false);
-    const agencyId = getAgencyId();
+    const agencyId = user?.id ?? '';
 
     if (isScoring) {
       await runScoring(appId, agencyId);
@@ -159,7 +147,7 @@ export function AIAgentCard({ agent, metrics, recentCount }: AIAgentCardProps) {
 
   return (
     <>
-      <div className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden">
+      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
@@ -175,13 +163,6 @@ export function AIAgentCard({ agent, metrics, recentCount }: AIAgentCardProps) {
               {locale === 'es' ? 'Activo' : 'Active'}
             </span>
           </span>
-          <button
-            onClick={(e) => { e.preventDefault(); setShowDetail(true); }}
-            className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            title={locale === 'es' ? 'Que hace este agente?' : 'What does this agent do?'}
-          >
-            <Info weight="duotone" className="h-4 w-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors" />
-          </button>
         </div>
 
         {/* Icon + name */}
@@ -255,111 +236,32 @@ export function AIAgentCard({ agent, metrics, recentCount }: AIAgentCardProps) {
           </div>
         )}
 
-        {/* Actions row */}
-        <div className="mt-2.5 flex items-center justify-between">
-          <Link
-            href="/panel/inmobiliaria/ai"
-            className="flex items-center gap-1 text-xs font-medium text-neutral-400 dark:text-neutral-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-          >
-            {locale === 'es' ? 'Ver actividad' : 'View activity'}
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-
-          <div className="flex items-center gap-2">
-            {/* Run button */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  if (isRunning) return;
-                  setShowRunPopover((prev) => !prev);
-                }}
-                disabled={isRunning}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
-                  isRunning
-                    ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed'
-                    : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-sm',
-                )}
-              >
-                {isRunning ? (
-                  <CircleNotch weight="bold" className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Play weight="fill" className="h-3 w-3" />
-                )}
-                {locale === 'es' ? 'Ejecutar' : 'Run'}
-              </button>
-
-              {/* Run popover */}
-              {showRunPopover && (
-                <div
-                  ref={popoverRef}
-                  className="absolute right-0 bottom-full mb-2 w-72 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-50 p-4"
-                >
-                  <p className="text-xs font-medium text-neutral-900 dark:text-white mb-2">
-                    {locale === 'es'
-                      ? isScoring
-                        ? 'Evaluar aplicacion'
-                        : 'Buscar propiedades compatibles'
-                      : isScoring
-                        ? 'Evaluate application'
-                        : 'Find compatible properties'}
-                  </p>
-                  <label className="block text-[11px] text-neutral-500 dark:text-neutral-400 mb-1.5">
-                    Application ID
-                  </label>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={applicationIdInput}
-                    onChange={(e) => setApplicationIdInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleRun(); if (e.key === 'Escape') setShowRunPopover(false); }}
-                    placeholder="app-abc123..."
-                    className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#0c0c0e] px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600 transition-colors"
-                  />
-                  <div className="flex items-center justify-between mt-3">
-                    <button
-                      onClick={() => setShowRunPopover(false)}
-                      className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                    >
-                      {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </button>
-                    <button
-                      onClick={handleRun}
-                      disabled={!applicationIdInput.trim()}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                        applicationIdInput.trim()
-                          ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100'
-                          : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed',
-                      )}
-                    >
-                      <Play weight="fill" className="h-3 w-3" />
-                      {locale === 'es' ? 'Ejecutar' : 'Run'}
-                    </button>
-                  </div>
+        {/* Live activity ticker */}
+        {lastAction && (
+          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50">
+            <div className="relative overflow-hidden rounded-lg bg-neutral-50/80 dark:bg-white/[0.03] px-3 py-2">
+              {/* Shimmer sweep */}
+              <div className="absolute inset-0 animate-sweep bg-gradient-to-r from-transparent via-white/60 dark:via-white/[0.06] to-transparent w-1/2" />
+              <div className="relative flex items-center gap-2">
+                {/* Animated dots */}
+                <div className="flex items-center gap-[3px] flex-shrink-0">
+                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-500 animate-[pulse_1.5s_ease-in-out_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-400 animate-[pulse_1.5s_ease-in-out_0.3s_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-300 animate-[pulse_1.5s_ease-in-out_0.6s_infinite]" />
                 </div>
-              )}
+                <p className="text-[11px] font-medium text-neutral-700 dark:text-neutral-200 truncate flex-1">{lastAction.title}</p>
+                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 whitespace-nowrap tabular-nums">{lastAction.time}</span>
+              </div>
             </div>
-
-            <button
-              onClick={() => setShowDetail(true)}
-              className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 transition-colors"
-            >
-              {locale === 'es' ? 'Como funciona?' : 'How does it work?'}
-            </button>
           </div>
+        )}
+
+        {/* View detail hint */}
+        <div className="mt-2.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+          {locale === 'es' ? 'Ver detalle del agente' : 'View agent detail'}
+          <ArrowRight className="h-3 w-3" />
         </div>
-      </div>
-
-      {/* Detail sidebar */}
-      {showDetail && (
-        <AIAgentDetailSidebar agent={agent} onClose={() => setShowDetail(false)} />
-      )}
-
-      {/* Execution panel */}
-      {showExecution && trace && (
-        <AIAgentExecutionPanel trace={trace} onClose={() => setShowExecution(false)} />
-      )}
+      </Link>
     </>
   );
 }

@@ -77,7 +77,7 @@ function RequirementSection({
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
               isNonNegotiable
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                 : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
             )}
           >

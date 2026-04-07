@@ -22,7 +22,7 @@ export function IntroSection() {
             Arrienda diferente.
             <br />
             Arrienda{" "}
-            <span className="inline-block bg-primary text-white px-4 md:px-6 py-1 md:py-2 rounded-lg md:rounded-xl align-middle">
+            <span className="inline-block bg-primary text-white uppercase tracking-wide font-mono px-4 md:px-6 py-1 md:py-2 rounded-lg md:rounded-xl align-middle">
               <span className="block" style={{ transform: 'translateY(-0.06em)' }}>simple</span>
             </span>
           </h2>
@@ -62,7 +62,7 @@ export function IntroSection() {
                       </svg>
                     </div>
                     {/* Badge */}
-                    <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+                    <div className="absolute top-2 left-2 bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-medium px-2 py-0.5 rounded-full">
                       Disponible
                     </div>
                   </div>

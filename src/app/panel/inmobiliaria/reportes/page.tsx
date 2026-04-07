@@ -28,7 +28,6 @@ import {
   useComisionesReport,
   useVencimientosReport,
   useFlujoCajaReport,
-  useRendimientoAgentesReport,
   reportesApi,
 } from '@/lib/hooks/useInmobiliaria';
 import {
@@ -51,12 +50,6 @@ import { CollectionsReport } from '@/components/inmobiliaria/reports/Collections
 import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentPerformanceReport';
 import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
 import { ReportPDFExport } from '@/components/inmobiliaria/reports/ReportPDFExport';
-import {
-  mockOccupancyData,
-  mockCollectionsData,
-  mockAgentPerformanceData,
-  mockExecutiveData,
-} from '@/lib/data/mock-reports';
 import {
   adaptOccupancy,
   adaptCollections,
@@ -146,8 +139,7 @@ export default function ReportesPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const comisionesReport = useComisionesReport(currentMonth);
   const vencimientosReport = useVencimientosReport();
-  const flujoCajaReport = useFlujoCajaReport(6);
-  const rendimientoReport = useRendimientoAgentesReport(currentMonth);
+  const flujoCajaReport = useFlujoCajaReport('semester');
 
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
@@ -491,7 +483,7 @@ export default function ReportesPage() {
               'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg',
               generatingReports.size > 0
                 ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
-                : 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/20'
+                : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
             )}
           >
             <Lightning className="w-5 h-5" weight="fill" />
@@ -792,25 +784,18 @@ export default function ReportesPage() {
         <div className="p-4">
           {activeAdvancedTab === 'ejecutivo' ? (
             <FeatureGate feature="executive-reports">
-              <ExecutiveSummary
-                data={adaptExecutive(flujoCajaReport.report, ocupacionReport.report) ?? mockExecutiveData}
-              />
+              <ExecutiveSummary data={mockExecutiveData} />
             </FeatureGate>
           ) : (
             <FeatureGate feature="advanced-reports">
               {activeAdvancedTab === 'ocupacion' && (
-                <OccupancyReport data={adaptOccupancy(ocupacionReport.report) ?? mockOccupancyData} />
+                <OccupancyReport data={mockOccupancyData} />
               )}
               {activeAdvancedTab === 'cobros' && (
-                <CollectionsReport data={adaptCollections(carteraReport.report) ?? mockCollectionsData} />
+                <CollectionsReport data={mockCollectionsData} />
               )}
               {activeAdvancedTab === 'agentes' && (
-                <AgentPerformanceReport
-                  data={
-                    adaptAgentPerformance(rendimientoReport.report, comisionesReport.report)
-                    ?? mockAgentPerformanceData
-                  }
-                />
+                <AgentPerformanceReport data={mockAgentPerformanceData} />
               )}
             </FeatureGate>
           )}

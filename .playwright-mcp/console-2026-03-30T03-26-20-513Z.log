@@ -1,0 +1,106 @@
+[     541ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     541ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     541ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     544ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     544ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[     544ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[     631ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[     634ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[     644ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[     662ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[     678ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   15630ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   30640ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   30644ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   45630ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   60634ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   60635ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[   75632ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   90633ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[   90636ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  105629ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  120635ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  120642ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  135629ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  150686ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  150687ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  165630ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  180643ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  180646ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  195637ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  210637ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  210639ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  225645ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  240632ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  240635ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  255634ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  270725ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  270730ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[  284356ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:44:1]
+ 44 |   const [selectedActivity, setSelectedActivity] = useState<AgentActivity | null>(null);
+ 45 | 
+ 46 |   return (
+ 47 |     <div className={cn(
+    :      ^^^
+ 48 |       'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+ 49 |       'overflow-hidden',
+ 50 |       className,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/ai/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  285036ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:44:1]
+ 44 |   const [selectedActivity, setSelectedActivity] = useState<AgentActivity | null>(null);
+ 45 | 
+ 46 |   return (
+ 47 |     <div className={cn(
+    :      ^^^
+ 48 |       'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+ 49 |       'overflow-hidden',
+ 50 |       className,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/ai/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  285668ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  290616ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Unexpected token `div`. Expected jsx identifier
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:44:1]
+ 44 |   const [selectedActivity, setSelectedActivity] = useState<AgentActivity | null>(null);
+ 45 | 
+ 46 |   return (
+ 47 |     <div className={cn(
+    :      ^^^
+ 48 |       'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+ 49 |       'overflow-hidden',
+ 50 |       className,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/ai/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[  300634ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=50:0
+[  300639ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0

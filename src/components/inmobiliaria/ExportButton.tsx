@@ -179,7 +179,7 @@ export function ExportButton({
             sizeConfig.button,
             disabled
               ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/25',
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
             className
           )}
         >

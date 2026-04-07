@@ -409,7 +409,7 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
             <button
               type="button"
               onClick={() => onRemove(index)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white uppercase tracking-wide font-mono opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X className="w-4 h-4" />
             </button>
@@ -792,7 +792,7 @@ export function MantenimientoForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
         >
           {isSubmitting ? (
             <>

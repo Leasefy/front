@@ -197,7 +197,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                           href={task.href}
                           className="block p-4 rounded-xl bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-400 hover:shadow-md transition-all group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <Icon className="w-5 h-5 text-white" />
                           </div>
                           <p className="text-sm font-semibold text-indigo-700">{task.title}</p>
@@ -275,7 +275,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
 
                     <Link
                       href="/publicar?from=panel"
-                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
                     >
                       Completar propiedad
                       <ArrowRight className="w-4 h-4" />

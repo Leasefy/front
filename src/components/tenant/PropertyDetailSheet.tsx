@@ -376,7 +376,7 @@ export function PropertyDetailSheet({
               {/* Apply Button */}
               <Link
                 href={`/aplicar/${property.id}`}
-                className="flex items-center justify-center gap-2 h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
               >
                 Aplicar a propiedad
                 <CaretRight className="w-4 h-4" />

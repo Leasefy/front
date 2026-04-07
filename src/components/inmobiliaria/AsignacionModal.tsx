@@ -272,7 +272,7 @@ export function AsignacionModal({
             className={cn(
               'flex-1 px-4 py-2.5 rounded-xl font-medium transition-all',
               canConfirm
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
                 : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
             )}
           >

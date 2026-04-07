@@ -24,7 +24,6 @@ import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { usePermissions } from '@/lib/hooks/usePermissions';
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -36,33 +35,76 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isAdmin, isLoading: permissionsLoading } = usePermissions();
 
-  // Map each nav item to its permission module for filtering
-  const ALL_NAV_ITEMS: (NavItem & { permModule?: string })[] = useMemo(() => [
-    { label: t('inmobiliaria.nav.dashboard'), href: '/panel/inmobiliaria', icon: SquaresFour, exact: true, permModule: 'dashboard' },
-    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle, permModule: 'propietarios' },
-    { label: t('inmobiliaria.nav.portafolio'), href: '/panel/inmobiliaria/portafolio', icon: Buildings, permModule: 'portafolio' },
-    { label: t('inmobiliaria.nav.pipeline'), href: '/panel/inmobiliaria/pipeline', icon: Kanban, permModule: 'pipeline' },
-    { label: t('inmobiliaria.nav.agentes'), href: '/panel/inmobiliaria/agentes', icon: Users, permModule: 'agentes' },
-    { label: t('inmobiliaria.nav.cobros'), href: '/panel/inmobiliaria/cobros', icon: CurrencyDollar, permModule: 'cobros' },
-    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, permModule: 'dispersiones' },
-    { label: t('inmobiliaria.nav.operaciones'), href: '/panel/inmobiliaria/operaciones', icon: Wrench, permModule: 'operaciones' },
-    { label: t('inmobiliaria.nav.documentos'), href: '/panel/inmobiliaria/documentos', icon: FileText, permModule: 'documentos' },
-    { label: t('inmobiliaria.nav.reportes'), href: '/panel/inmobiliaria/reportes', icon: ChartLine, permModule: 'reportes' },
-    { label: t('inmobiliaria.nav.analitica'), href: '/panel/inmobiliaria/analytics', icon: ChartLineUp, permModule: 'analytics' },
-    { label: t('inmobiliaria.nav.mensajes') , href: '/panel/inmobiliaria/mensajes', icon: Chat, badge: 5 },
-    { label: t('inmobiliaria.nav.aiAgents') || 'Agentes AI', href: '/panel/inmobiliaria/ai', icon: Robot },
+  const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => [
+    {
+      label: t('inmobiliaria.nav.dashboard'),
+      href: '/panel/inmobiliaria',
+      icon: SquaresFour,
+      exact: true,
+    },
+    {
+      label: t('inmobiliaria.nav.aiAgents'),
+      href: '/panel/inmobiliaria/ai',
+      icon: Robot,
+    },
+    {
+      label: t('inmobiliaria.nav.propietarios'),
+      href: '/panel/inmobiliaria/propietarios',
+      icon: UserCircle,
+    },
+    {
+      label: t('inmobiliaria.nav.portafolio'),
+      href: '/panel/inmobiliaria/portafolio',
+      icon: Buildings,
+    },
+    {
+      label: t('inmobiliaria.nav.pipeline'),
+      href: '/panel/inmobiliaria/pipeline',
+      icon: Kanban,
+    },
+    {
+      label: t('inmobiliaria.nav.agentes'),
+      href: '/panel/inmobiliaria/agentes',
+      icon: Users,
+    },
+    {
+      label: t('inmobiliaria.nav.cobros'),
+      href: '/panel/inmobiliaria/cobros',
+      icon: CurrencyDollar,
+    },
+    {
+      label: t('inmobiliaria.nav.dispersiones'),
+      href: '/panel/inmobiliaria/dispersiones',
+      icon: PaperPlaneTilt,
+    },
+    {
+      label: t('inmobiliaria.nav.operaciones'),
+      href: '/panel/inmobiliaria/operaciones',
+      icon: Wrench,
+    },
+    {
+      label: t('inmobiliaria.nav.documentos'),
+      href: '/panel/inmobiliaria/documentos',
+      icon: FileText,
+    },
+    {
+      label: t('inmobiliaria.nav.reportes'),
+      href: '/panel/inmobiliaria/reportes',
+      icon: ChartLine,
+    },
+    {
+      label: t('inmobiliaria.nav.analitica'),
+      href: '/panel/inmobiliaria/analytics',
+      icon: ChartLineUp,
+    },
+    {
+      label: t('inmobiliaria.nav.mensajes'),
+      href: '/panel/inmobiliaria/mensajes',
+      icon: Chat,
+      badge: 5,
+    },
   ], [t]);
-
-  // Filter nav items based on user permissions (show all while loading to avoid flash)
-  const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
-    if (permissionsLoading || isAdmin) return ALL_NAV_ITEMS;
-    return ALL_NAV_ITEMS.filter((item) => {
-      if (!item.permModule) return true; // No permission module = always visible
-      return canAccess(item.permModule, 'view');
-    });
-  }, [ALL_NAV_ITEMS, permissionsLoading, isAdmin, canAccess]);
 
   return (
     <div className="min-h-screen bg-plan-page">

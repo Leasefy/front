@@ -250,7 +250,7 @@ export function SignatureForm({
           className={cn(
             'w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm transition-all',
             canSign && !isLoading
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25'
+              ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
           )}
         >

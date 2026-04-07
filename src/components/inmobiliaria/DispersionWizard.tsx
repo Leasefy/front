@@ -970,7 +970,7 @@ export function DispersionWizard({
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-500"
+              className="h-full bg-indigo-600"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -1025,7 +1025,7 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
                   isStepValid
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -1054,7 +1054,7 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -1082,7 +1082,7 @@ export function DispersionWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
             onClick={() => setShowCancelDialog(false)}
           >
             <motion.div
@@ -1115,7 +1115,7 @@ export function DispersionWizard({
                 </button>
                 <button
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white uppercase tracking-wide font-mono font-medium hover:bg-red-600 transition-colors"
                 >
                   Si, cancelar
                 </button>

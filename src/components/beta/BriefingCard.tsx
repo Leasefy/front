@@ -61,7 +61,7 @@ const ACTION_BTN_COLORS: Record<string, string> = {
   amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20',
   purple: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 hover:bg-purple-100 dark:hover:bg-purple-500/20',
   pink: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/30 hover:bg-pink-100 dark:hover:bg-pink-500/20',
-  indigo: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/20',
+  indigo: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-700/20',
 };
 
 // ============================================================================
@@ -248,7 +248,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
               className={cn(
                 'inline-flex items-center gap-1',
                 'px-1.5 py-0.5 rounded-full',
-                'bg-indigo-500/10 text-indigo-500',
+                'bg-indigo-600/10 text-indigo-500',
                 'text-[10px] font-semibold'
               )}
             >

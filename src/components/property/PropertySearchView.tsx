@@ -1,0 +1,432 @@
+'use client';
+
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CaretDown, X } from '@phosphor-icons/react';
+
+import { Navbar } from '@/components/layout/Navbar';
+import { PropertyGrid } from '@/components/property/PropertyGrid';
+import { AISearchInput } from '@/components/property/AISearchInput';
+import { PropertyMap, MapToggle } from '@/components/map';
+import { useWishlist } from '@/lib/hooks/useWishlist';
+import { useProperties } from '@/lib/hooks/useProperties';
+import { cn } from '@/lib/utils';
+import type { PropertyFiltersParams } from '@/lib/api/properties.types';
+import type { Property } from '@/lib/types/property';
+
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Recomendado' },
+  { value: 'price_asc', label: 'Menor precio' },
+  { value: 'price_desc', label: 'Mayor precio' },
+  { value: 'newest', label: 'Más reciente' },
+];
+
+const CITIES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'];
+const BEDROOMS = ['1', '2', '3', '4+'];
+const PROPERTY_TYPES = [
+  { value: 'apartment', label: 'Apartamento' },
+  { value: 'house', label: 'Casa' },
+  { value: 'studio', label: 'Estudio' },
+];
+const PRICE_RANGES = [
+  { value: '0-1500000', label: 'Hasta $1.5M' },
+  { value: '1500000-2500000', label: '$1.5M - $2.5M' },
+  { value: '2500000-4000000', label: '$2.5M - $4M' },
+  { value: '4000000-99999999', label: 'Más de $4M' },
+];
+
+interface PropertySearchViewProps {
+  /** When true, renders without Navbar and adapts layout for embedding inside dashboard */
+  embedded?: boolean;
+}
+
+/**
+ * Reusable property search view.
+ * Used by /propiedades (public, with Navbar) and /inquilino/explorar (embedded in tenant layout).
+ */
+export function PropertySearchView({ embedded = false }: PropertySearchViewProps) {
+  const searchParams = useSearchParams();
+  const heroQuery = searchParams.get('q');
+  const [showMap, setShowMap] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
+  const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [showAiResults, setShowAiResults] = useState(false);
+  const [aiResults, setAiResults] = useState<Property[]>([]);
+  const [mapKey, setMapKey] = useState(0);
+  const [sortBy, setSortBy] = useState('recommended');
+  const [showSortList, setShowSortList] = useState(false);
+  const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const heroSearchTriggered = useRef(false);
+
+  // Filter state
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedBedrooms, setSelectedBedrooms] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
+
+  // Build API filters from UI state
+  const apiFilters = useMemo<PropertyFiltersParams>(() => {
+    const filters: PropertyFiltersParams = { limit: 100 };
+    if (selectedCity) filters.city = selectedCity;
+    if (selectedBedrooms) {
+      if (selectedBedrooms !== '4+') {
+        filters.bedrooms = parseInt(selectedBedrooms);
+      }
+    }
+    if (selectedType) {
+      filters.propertyType = selectedType.toUpperCase() as PropertyFiltersParams['propertyType'];
+    }
+    if (selectedPrice) {
+      const [min, max] = selectedPrice.split('-').map(Number);
+      filters.minPrice = min;
+      filters.maxPrice = max;
+    }
+    return filters;
+  }, [selectedCity, selectedBedrooms, selectedType, selectedPrice]);
+
+  // Fetch properties from API
+  const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
+
+  // Use wishlist hook
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
+  // Force map reload on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setMapKey(prev => prev + 1), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle AI search via backend naturalQuery
+  const handleAiSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setShowAiResults(false);
+      setAiResults([]);
+      return;
+    }
+
+    setIsAiSearching(true);
+    setShowAiResults(false);
+
+    try {
+      const { propertiesApi } = await import('@/lib/api/properties.service');
+      const result = await propertiesApi.list({ naturalQuery: query, limit: 20 });
+      setAiResults(result.data);
+      setShowAiResults(true);
+    } catch {
+      setAiResults([]);
+      setShowAiResults(true);
+    } finally {
+      setIsAiSearching(false);
+    }
+  }, []);
+
+  // Auto-trigger AI search from hero query param
+  useEffect(() => {
+    if (heroQuery && !heroSearchTriggered.current) {
+      heroSearchTriggered.current = true;
+      handleAiSearch(heroQuery);
+    }
+  }, [heroQuery, handleAiSearch]);
+
+  // Client-side: handle 4+ bedrooms filter and sorting
+  const filteredProperties = useMemo(() => {
+    let result = [...apiProperties];
+
+    if (selectedBedrooms === '4+') {
+      result = result.filter(p => p.bedrooms >= 4);
+    }
+
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'price_asc':
+          return a.monthlyRent - b.monthlyRent;
+        case 'price_desc':
+          return b.monthlyRent - a.monthlyRent;
+        case 'newest':
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [apiProperties, selectedBedrooms, sortBy]);
+
+  // Properties with valid coordinates for the map
+  const mappableProperties = useMemo(
+    () => filteredProperties.filter(p => p.latitude !== 0 || p.longitude !== 0),
+    [filteredProperties]
+  );
+
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
+  const hasActiveFilters = selectedCity || selectedBedrooms || selectedType || selectedPrice;
+
+  const clearAllFilters = () => {
+    setSelectedCity(null);
+    setSelectedBedrooms(null);
+    setSelectedType(null);
+    setSelectedPrice(null);
+  };
+
+  const handleWishlistToggle = useCallback(
+    (id: string) => {
+      toggleWishlist(id);
+    },
+    [toggleWishlist]
+  );
+
+  // Handle property selection from map
+  const handlePropertySelect = useCallback((id: string) => {
+    setSelectedPropertyId(id);
+    propertyRefs.current[id]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, []);
+
+  const propertyRefCallback = useCallback((id: string, el: HTMLDivElement | null) => {
+    propertyRefs.current[id] = el;
+  }, []);
+
+  // ── Filter dropdown renderer ──
+  const renderFilterDropdown = (
+    id: string,
+    label: string,
+    selectedValue: string | null,
+    options: { value: string; label: string }[],
+    onSelect: (value: string | null) => void
+  ) => (
+    <div className="relative z-10">
+      <button
+        type="button"
+        onClick={() => setActiveFilter(activeFilter === id ? null : id)}
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
+          selectedValue
+            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
+            : 'border-border text-foreground/70 hover:border-foreground/30'
+        )}
+      >
+        {options.find(o => o.value === selectedValue)?.label || label}
+        <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFilter === id && 'rotate-180')} />
+      </button>
+      {activeFilter === id && (
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
+          <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[140px]">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => { onSelect(selectedValue === option.value ? null : option.value); setActiveFilter(null); }}
+                className={cn(
+                  'w-full px-3 py-2 text-left text-sm',
+                  selectedValue === option.value
+                    ? 'bg-black/5 dark:bg-white/10 font-medium'
+                    : 'hover:bg-black/5 dark:hover:bg-white/10'
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  // ── Layout ──
+  return (
+    <div className={cn(
+      embedded
+        ? 'flex flex-col h-[calc(100vh-64px)]'
+        : 'min-h-screen bg-background'
+    )}>
+      {!embedded && <Navbar />}
+
+      {/* Main Layout - Split View */}
+      <div className={cn(
+        'flex',
+        embedded ? 'flex-1 min-h-0' : 'pt-[76px]'
+      )}>
+        {/* Left Panel - Scrollable Content */}
+        <div
+          className={cn(
+            'w-full lg:w-1/2',
+            embedded ? 'overflow-y-auto' : 'min-h-screen',
+            showMap && 'hidden lg:block'
+          )}
+        >
+          {/* Hero query banner */}
+          {heroQuery && (
+            <div className="bg-black/5 dark:bg-white/5 border-b border-border px-4 md:px-6 py-3">
+              <p className="text-sm text-muted-foreground">
+                Resultados basados en: <span className="font-medium text-foreground">&laquo;{heroQuery}&raquo;</span>
+              </p>
+            </div>
+          )}
+
+          {/* AI Search Section */}
+          <div className="bg-background py-4 md:py-5">
+            <div className="px-4 md:px-6">
+              <h1 className={cn(
+                'font-medium text-foreground tracking-tight mb-4',
+                embedded ? 'text-base' : 'text-lg'
+              )}>
+                Busqueda inteligente
+              </h1>
+              <AISearchInput
+                value={aiSearchQuery}
+                onChange={setAiSearchQuery}
+                onMagnifyingGlass={handleAiSearch}
+                onClear={() => {
+                  setShowAiResults(false);
+                  setAiResults([]);
+                }}
+                isMagnifyingGlassing={isAiSearching}
+                results={aiResults}
+                showResults={showAiResults}
+              />
+            </div>
+          </div>
+
+          {/* Filters & Results Bar */}
+          <div className="bg-background border-y border-border">
+            <div className="px-4 md:px-6 py-3">
+              {/* Filter Pills Row */}
+              <div className="flex items-center gap-2 mb-3 pb-1 flex-wrap">
+                {renderFilterDropdown(
+                  'city',
+                  'Ciudad',
+                  selectedCity,
+                  CITIES.map(c => ({ value: c, label: c })),
+                  setSelectedCity
+                )}
+                {renderFilterDropdown(
+                  'bedrooms',
+                  'Habitaciones',
+                  selectedBedrooms,
+                  BEDROOMS.map(b => ({ value: b, label: `${b} habitacion${b !== '1' ? 'es' : ''}` })),
+                  setSelectedBedrooms
+                )}
+                {renderFilterDropdown(
+                  'type',
+                  'Tipo',
+                  selectedType,
+                  PROPERTY_TYPES,
+                  setSelectedType
+                )}
+                {renderFilterDropdown(
+                  'price',
+                  'Precio',
+                  selectedPrice,
+                  PRICE_RANGES,
+                  setSelectedPrice
+                )}
+
+                {/* Clear Filters */}
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Limpiar
+                  </button>
+                )}
+              </div>
+
+              {/* Results Count + Sort */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-foreground/70">
+                  <span className="font-medium text-foreground">{filteredProperties.length}</span> propiedades
+                </p>
+
+                {/* Sort Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowSortList(!showSortList)}
+                    className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    <span>{currentSortLabel}</span>
+                    <CaretDown className={cn('w-4 h-4 transition-transform', showSortList && 'rotate-180')} />
+                  </button>
+
+                  {showSortList && (
+                    <>
+                      <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[160px]">
+                        {SORT_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => { setSortBy(option.value); setShowSortList(false); }}
+                            className={cn(
+                              'w-full px-4 py-2 text-left text-sm transition-colors',
+                              sortBy === option.value
+                                ? 'bg-black/5 dark:bg-white/10 text-foreground font-medium'
+                                : 'text-foreground/70 hover:bg-black/5 dark:hover:bg-white/10'
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Property Grid */}
+          <div className="p-4 md:p-6">
+            <PropertyGrid
+              properties={filteredProperties}
+              isWishlisted={isWishlisted}
+              onWishlistToggle={handleWishlistToggle}
+              isLoading={isInitialLoading}
+              hoveredPropertyId={hoveredPropertyId}
+              onPropertyHover={setHoveredPropertyId}
+              propertyRefCallback={propertyRefCallback}
+            />
+          </div>
+        </div>
+
+        {/* Right Panel - Map */}
+        <div
+          className={cn(
+            embedded
+              ? cn(
+                  'w-full lg:w-1/2 h-full',
+                  !showMap && 'hidden lg:block'
+                )
+              : cn(
+                  'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[76px]',
+                  'h-[calc(100vh-76px)]',
+                  !showMap && 'hidden lg:block'
+                )
+          )}
+        >
+          <PropertyMap
+            key={mapKey}
+            properties={mappableProperties}
+            selectedPropertyId={selectedPropertyId}
+            hoveredPropertyId={hoveredPropertyId}
+            onPropertySelect={handlePropertySelect}
+            onPropertyHover={setHoveredPropertyId}
+            className="h-full w-full"
+          />
+        </div>
+      </div>
+
+      {/* Mobile Map Toggle */}
+      <MapToggle showMap={showMap} onToggle={() => setShowMap(!showMap)} />
+    </div>
+  );
+}

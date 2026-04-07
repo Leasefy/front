@@ -364,7 +364,7 @@ export default function AplicacionesPage() {
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
-                                          : "bg-indigo-500"
+                                          : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -475,7 +475,7 @@ export default function AplicacionesPage() {
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
-                                          : "bg-indigo-500"
+                                          : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -572,7 +572,7 @@ export default function AplicacionesPage() {
                     ? 'Las aplicaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/propiedades' } : undefined}
+              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/inquilino/explorar' } : undefined}
             />
           )}
         </motion.section>

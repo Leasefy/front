@@ -10,7 +10,11 @@
 
 import type {
   OcupacionReport,
+  OcupacionPropertyItem,
+  OcupacionTrendItem,
   CarteraReport,
+  CarteraMonthItem,
+  CarteraItem,
   ComisionesAgenteReport,
   RendimientoAgentesReport,
   FlujoCajaReport,
@@ -50,7 +54,7 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
       vacancyRate: Math.round(vacancyRate * 10) / 10,
       avgDaysVacant: 0, // backend doesn't track this yet
     },
-    byProperty: (report.byProperty ?? []).map((p) => ({
+    byProperty: (report.byProperty ?? []).map((p: OcupacionPropertyItem) => ({
       id: p.consignacionId,
       title: p.propertyTitle,
       zone: p.propertyZone,
@@ -65,7 +69,7 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
       vacant: z.available + z.inProcess,
       vacancyRate: Math.round((1 - z.occupancyRate) * 1000) / 10,
     })),
-    monthlyTrend: (report.monthlyTrend ?? []).map((t) => ({
+    monthlyTrend: (report.monthlyTrend ?? []).map((t: OcupacionTrendItem) => ({
       month: formatMonthLabel(t.month),
       occupancyRate: Math.round(t.rate * 10) / 10,
     })),
@@ -80,13 +84,13 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
   if (!report) return null;
 
   const totalLate = report.summary.totalPending;
-  const lateItems = report.items.filter((i) => i.daysLate > 0);
+  const lateItems = report.items.filter((i: CarteraItem) => i.daysLate > 0);
   const avgDaysLate = lateItems.length > 0
-    ? lateItems.reduce((sum, i) => sum + i.daysLate, 0) / lateItems.length
+    ? lateItems.reduce((sum: number, i: CarteraItem) => sum + i.daysLate, 0) / lateItems.length
     : 0;
 
   // Derive summary totals from byMonth[] (current period is last month in the series)
-  const byMonth = report.byMonth ?? [];
+  const byMonth: CarteraMonthItem[] = report.byMonth ?? [];
   const currentMonth = byMonth[byMonth.length - 1];
   const totalExpected = currentMonth?.total ?? 0;
   const totalCollected = currentMonth?.collected ?? 0;
@@ -102,7 +106,7 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       avgDaysLate: Math.round(avgDaysLate),
       recoveryRate: Math.round(recoveryRate * 10) / 10,
     },
-    byMonth: byMonth.map((m) => ({
+    byMonth: byMonth.map((m: CarteraMonthItem) => ({
       month: formatMonthLabel(m.month),
       expected: m.total,
       collected: m.collected,
@@ -141,7 +145,7 @@ export function adaptAgentPerformance(
     (comisiones?.agentes ?? []).map((c) => [c.agenteId, c.totalCommission]),
   );
 
-  const agents = rendimiento.agentes.map((a) => ({
+  const agents = rendimiento.agentes.map((a: RendimientoAgentesReport['agentes'][number]) => ({
     id: a.userId,
     name: a.agenteName ?? a.userId,
     closings: a.completedDeals,
@@ -151,13 +155,13 @@ export function adaptAgentPerformance(
     activeLeads: a.activeLeads,
   }));
 
-  const totalClosings = agents.reduce((sum, a) => sum + a.closings, 0);
-  const totalRevenue = agents.reduce((sum, a) => sum + a.totalRevenue, 0);
+  const totalClosings = agents.reduce((sum: number, a) => sum + a.closings, 0);
+  const totalRevenue = agents.reduce((sum: number, a) => sum + a.totalRevenue, 0);
   const avgConversion = agents.length > 0
-    ? agents.reduce((sum, a) => sum + a.conversionRate, 0) / agents.length
+    ? agents.reduce((sum: number, a) => sum + a.conversionRate, 0) / agents.length
     : 0;
   const avgDaysToClose = agents.length > 0
-    ? agents.reduce((sum, a) => sum + a.avgDaysToClose, 0) / agents.length
+    ? agents.reduce((sum: number, a) => sum + a.avgDaysToClose, 0) / agents.length
     : 0;
 
   return {

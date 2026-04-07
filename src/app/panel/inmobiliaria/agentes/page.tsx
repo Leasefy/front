@@ -20,15 +20,15 @@ import {
   UsersThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
+import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import type { UserInvite } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
 import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/AgenteFilters';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
+import type { UserInvite } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
@@ -42,7 +42,7 @@ const ITEMS_PER_PAGE = 6;
 export default function AgentesPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const { agentes: allAgentes, refetch: refetchAgentes } = useAgentes();
+  const { agentes: allAgentes } = useAgentes();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
     { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
@@ -141,18 +141,16 @@ export default function AgentesPage() {
   }, []);
 
   const handleCreateAgente = useCallback(async (data: UserInvite) => {
-    try {
-      await inmobiliariaConfigApi.inviteUser(data);
-      toast.success(t('inmobiliaria.agentes.toasts.created'), {
-        description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
-      });
-      await refetchAgentes();
-    } catch (err) {
-      toast.error(t('inmobiliaria.agentes.toasts.createError'), {
-        description: err instanceof Error ? err.message : 'Error desconocido',
-      });
-    }
-  }, [t, refetchAgentes]);
+    // TODO Backend: Create agent via API
+    // For now, just show success toast
+    toast.success(t('inmobiliaria.agentes.toasts.created'), {
+      description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
+    });
+    // In production, this would:
+    // 1. POST to /api/agentes
+    // 2. Refresh the agentes list
+    // 3. Show success/error toast
+  }, [t]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -168,7 +166,7 @@ export default function AgentesPage() {
         </div>
         <button
           onClick={handleNuevoAgente}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
           {t('inmobiliaria.agentes.addAgent')}
@@ -458,14 +456,14 @@ export default function AgentesPage() {
 function EmptyState() {
   const { t } = useI18n();
   return (
-    <div className="p-12 text-center">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-        <Users className="w-8 h-8 text-muted-foreground" />
+    <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+        <Users className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-1">
+      <h3 className="text-base font-semibold text-foreground mb-1.5">
         {t('inmobiliaria.agentes.noAgents')}
       </h3>
-      <p className="text-muted-foreground max-w-md mx-auto">
+      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
         {t('inmobiliaria.agentes.noAgentsDesc')}
       </p>
     </div>

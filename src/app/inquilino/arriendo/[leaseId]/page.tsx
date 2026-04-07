@@ -265,7 +265,7 @@ export default function LeaseDetailPage() {
                   </div>
                   <Link
                     href="/inquilino/pagos"
-                    className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                    className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-2xl font-semibold hover:bg-indigo-700 transition-colors"
                   >
                     <Wallet className="w-5 h-5" />
                     {locale === 'es' ? 'Pagar ahora' : 'Pay now'}

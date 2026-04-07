@@ -7,9 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
-import type { Agency } from '@/lib/auth/types'
 import { useI18n } from '@/lib/i18n'
-import { apiClient } from '@/lib/api/client'
 
 // ============================================================================
 // Types & Constants
@@ -24,14 +22,12 @@ interface OnboardingData {
   agencyName: string
   nit: string
   contactPerson: string
-  rutRepresentante: string
   phone: string
   preferredContact: PreferredContact
   // Step 2: Business Details
   city: string
   portfolioSize: PortfolioSize | null
   yearsInBusiness: string
-  website: string
   // Step 3: Services
   services: AgencyService[]
   // Step 4: Account
@@ -47,7 +43,7 @@ interface OnboardingData {
 function OnboardingInmobiliariaContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user, refreshUser, agency } = useAuth()
+  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const { t } = useI18n()
   const returnUrl = searchParams.get('returnUrl')
 
@@ -90,61 +86,43 @@ function OnboardingInmobiliariaContent() {
     agencyName: '',
     nit: '',
     contactPerson: '',
-    rutRepresentante: '',
     phone: '',
     preferredContact: 'whatsapp',
     city: '',
     portfolioSize: null,
     yearsInBusiness: '',
-    website: '',
     services: ['arriendos'],
     email: '',
     password: '',
     confirmPassword: '',
   })
 
-  // Preload from backend user + agency data (takes priority over localStorage)
+  // Load saved draft data (but not completion status - that's only set after successful registration)
   useEffect(() => {
-    if (!user) return
-
-    const contactPerson = user.firstName && user.lastName
-      ? `${user.firstName} ${user.lastName}`.trim()
-      : user.firstName || ''
-
-    setData(prev => ({
-      ...prev,
-      contactPerson: contactPerson || prev.contactPerson,
-      rutRepresentante: user.rut || prev.rutRepresentante,
-      phone: user.phone || prev.phone,
-      email: user.email || prev.email,
-    }))
-
-    // Load agency data — try context first, fall back to direct API call
-    const applyAgency = (agencyData: Partial<Agency>) => {
-      const savedServices = agencyData.services as AgencyService[] | undefined
-      setData(prev => ({
-        ...prev,
-        agencyName: agencyData.name || prev.agencyName,
-        nit: agencyData.nit || prev.nit,
-        city: agencyData.city || prev.city,
-        phone: agencyData.phone || prev.phone,
-        portfolioSize: (agencyData.portfolioSize as PortfolioSize | undefined) || prev.portfolioSize,
-        yearsInBusiness: agencyData.yearsInBusiness?.toString() || prev.yearsInBusiness,
-        services: savedServices && savedServices.length > 0 ? savedServices : prev.services,
-        website: agencyData.website || prev.website,
-      }))
+    const saved = localStorage.getItem('plan_onboarding_agency')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.draft && !parsed.isComplete) {
+          // Only load draft data if not completed - prevents showing old data
+          setData(prev => ({
+            ...prev,
+            agencyName: parsed.draft.agencyName || '',
+            nit: parsed.draft.nit || '',
+            contactPerson: parsed.draft.contactPerson || '',
+            phone: parsed.draft.phone || '',
+            preferredContact: parsed.draft.preferredContact || 'whatsapp',
+            city: parsed.draft.city || '',
+            portfolioSize: parsed.draft.portfolioSize || null,
+            yearsInBusiness: parsed.draft.yearsInBusiness?.toString() || '',
+            services: parsed.draft.services || ['arriendos'],
+          }))
+        }
+      } catch (e) {
+        console.error('Error loading progress:', e)
+      }
     }
-
-    if (agency) {
-      applyAgency(agency)
-    } else {
-      // Auth context didn't load agency yet — fetch directly
-      apiClient.get<Agency & { memberRole: string }>('/inmobiliaria/agency')
-        .then(({ memberRole: _r, ...agencyData }) => applyAgency(agencyData))
-        .catch(() => { /* User may not have an agency yet */ })
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [])
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
@@ -162,11 +140,9 @@ function OnboardingInmobiliariaContent() {
   const isStep1Valid = data.agencyName.trim().length > 0 && data.contactPerson.trim().length > 0
   const isStep2Valid = data.city.trim().length > 0 && data.portfolioSize !== null
   const isStep3Valid = data.services.length > 0
-  const isStep4Valid = isAuthenticated || (
-    data.email.trim().length > 0 &&
+  const isStep4Valid = data.email.trim().length > 0 &&
     data.password.length >= 8 &&
     data.password === data.confirmPassword
-  )
 
   const handleNext = () => {
     if (step === 1 && isStep1Valid) {
@@ -202,37 +178,7 @@ function OnboardingInmobiliariaContent() {
         return
       }
 
-      // Split contactPerson into first/last for backend
-      const nameParts = data.contactPerson.trim().split(/\s+/)
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || firstName
-
-      // Call backend onboarding endpoint with agency data
-      const rawPhone = data.phone?.replace(/\s/g, '') || ''
-      await apiClient.post('/users/me/onboarding', {
-        userType: 'INMOBILIARIA',
-        firstName,
-        lastName,
-        phone: rawPhone.length >= 10 ? rawPhone : undefined,
-        rut: data.rutRepresentante || undefined,
-        agency: {
-          name: data.agencyName,
-          nit: data.nit || undefined,
-          city: data.city || undefined,
-          phone: rawPhone.length >= 10 ? rawPhone : undefined,
-          portfolioSize: data.portfolioSize || undefined,
-          yearsInBusiness: data.yearsInBusiness ? parseInt(data.yearsInBusiness, 10) : undefined,
-          services: data.services.length > 0 ? data.services : undefined,
-          website: data.website || undefined,
-        },
-      })
-
-      // Refresh user in auth context so role/onboardingCompleted updates
-      refreshUser().catch((err) =>
-        console.warn('refreshUser failed after agency onboarding (non-blocking):', err)
-      )
-
-      // Save onboarding data to localStorage for sidebar progress display
+      // Save onboarding data to localStorage
       const completionData = {
         draft: {
           agencyName: data.agencyName,
@@ -268,6 +214,7 @@ function OnboardingInmobiliariaContent() {
     router.push(isAuthenticated ? '/panel/inmobiliaria' : '/')
   }
 
+  // Navigate to dashboard - uses window.location to ensure full page load
   const goToDashboard = () => {
     setIsNavigating(true)
     window.location.href = returnUrl || '/panel/inmobiliaria'
@@ -294,7 +241,7 @@ function OnboardingInmobiliariaContent() {
           <button
             onClick={goToDashboard}
             disabled={isNavigating}
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-indigo-600 text-white uppercase tracking-wide font-mono font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isNavigating ? (
               <>
@@ -364,8 +311,8 @@ function OnboardingInmobiliariaContent() {
                   <div key={s} className="flex items-center gap-2">
                     <div className={cn(
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                      step > s ? "bg-indigo-600 text-white" :
-                      step === s ? "bg-indigo-600 text-white" : "bg-neutral-100 text-neutral-400"
+                      step > s ? "bg-indigo-600 text-white uppercase tracking-wide font-mono" :
+                      step === s ? "bg-indigo-600 text-white uppercase tracking-wide font-mono" : "bg-neutral-100 text-neutral-400"
                     )}>
                       {step > s ? <Check className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
@@ -458,21 +405,6 @@ function OnboardingInmobiliariaContent() {
                   />
                 </div>
 
-                {/* RUT representante */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    RUT del representante legal <span className="text-neutral-400 font-normal">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={data.rutRepresentante}
-                    onChange={(e) => updateData({ rutRepresentante: e.target.value.replace(/\D/g, '') })}
-                    placeholder="Ej: 1090525663"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
-                  />
-                </div>
-
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -527,7 +459,7 @@ function OnboardingInmobiliariaContent() {
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                     : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                 )}
               >
@@ -642,7 +574,7 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep2Valid
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
@@ -760,7 +692,7 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep3Valid
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
@@ -779,144 +711,120 @@ function OnboardingInmobiliariaContent() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Step 4: Create Account / Confirm */}
+              {/* Step 4: Create Account */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium mb-4">
-                  {isAuthenticated ? <Check className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                  {isAuthenticated ? 'Cuenta vinculada' : t('inmobiliaria.onboarding.register.step4.badge')}
+                  <Lock className="w-4 h-4" />
+                  {t('inmobiliaria.onboarding.register.step4.badge')}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  {isAuthenticated ? 'Confirma tu información' : t('inmobiliaria.onboarding.register.step4.title')}
+                  {t('inmobiliaria.onboarding.register.step4.title')}
                 </h1>
                 <p className="text-neutral-500">
-                  {isAuthenticated
-                    ? 'Tu sesión ya está activa. Solo confirma para completar el registro de tu inmobiliaria.'
-                    : t('inmobiliaria.onboarding.register.step4.subtitle')}
+                  {t('inmobiliaria.onboarding.register.step4.subtitle')}
                 </p>
               </div>
 
-              {isAuthenticated ? (
-                <div className="space-y-5">
-                  {/* Cuenta activa */}
-                  <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                      <Envelope className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-indigo-500 font-medium mb-0.5">Cuenta activa</p>
-                      <p className="text-sm font-semibold text-indigo-900">{user?.email}</p>
-                    </div>
+              <div className="space-y-5">
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('inmobiliaria.onboarding.register.step4.email')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                    <input
+                      type="email"
+                      value={data.email}
+                      onChange={(e) => updateData({ email: e.target.value })}
+                      placeholder={t('inmobiliaria.onboarding.register.step4.emailPlaceholder')}
+                      className="w-full pl-12 pr-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
                   </div>
+                </div>
 
-                  {/* Error message */}
-                  {authError && (
-                    <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
-                      <p className="text-sm text-red-600">{authError}</p>
-                    </div>
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('inmobiliaria.onboarding.register.step4.password')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={data.password}
+                      onChange={(e) => updateData({ password: e.target.value })}
+                      placeholder={t('inmobiliaria.onboarding.register.step4.passwordPlaceholder')}
+                      className="w-full pl-12 pr-12 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    >
+                      {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {data.password.length > 0 && data.password.length < 8 && (
+                    <p className="mt-1.5 text-xs text-amber-600">
+                      {t('validation.password')}
+                    </p>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-5">
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      {t('inmobiliaria.onboarding.register.step4.email')} <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                      <input
-                        type="email"
-                        value={data.email}
-                        onChange={(e) => updateData({ email: e.target.value })}
-                        placeholder={t('inmobiliaria.onboarding.register.step4.emailPlaceholder')}
-                        className="w-full pl-12 pr-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      {t('inmobiliaria.onboarding.register.step4.password')} <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={data.password}
-                        onChange={(e) => updateData({ password: e.target.value })}
-                        placeholder={t('inmobiliaria.onboarding.register.step4.passwordPlaceholder')}
-                        className="w-full pl-12 pr-12 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {data.password.length > 0 && data.password.length < 8 && (
-                      <p className="mt-1.5 text-xs text-amber-600">
-                        {t('validation.password')}
-                      </p>
-                    )}
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('inmobiliaria.onboarding.register.step4.confirmPassword')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={data.confirmPassword}
+                      onChange={(e) => updateData({ confirmPassword: e.target.value })}
+                      placeholder={t('inmobiliaria.onboarding.register.step4.confirmPasswordPlaceholder')}
+                      className={cn(
+                        "w-full pl-12 pr-12 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all",
+                        data.confirmPassword.length > 0 && data.password !== data.confirmPassword
+                          ? "border-red-300 focus:border-red-400"
+                          : "border-neutral-200 focus:border-indigo-500"
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    >
+                      {showConfirmPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      {t('inmobiliaria.onboarding.register.step4.confirmPassword')} <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={data.confirmPassword}
-                        onChange={(e) => updateData({ confirmPassword: e.target.value })}
-                        placeholder={t('inmobiliaria.onboarding.register.step4.confirmPasswordPlaceholder')}
-                        className={cn(
-                          "w-full pl-12 pr-12 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all",
-                          data.confirmPassword.length > 0 && data.password !== data.confirmPassword
-                            ? "border-red-300 focus:border-red-400"
-                            : "border-neutral-200 focus:border-indigo-500"
-                        )}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                      >
-                        {showConfirmPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {data.confirmPassword.length > 0 && data.password !== data.confirmPassword && (
-                      <p className="mt-1.5 text-xs text-red-500">
-                        {t('validation.passwordMatch')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Error message */}
-                  {authError && (
-                    <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
-                      <p className="text-sm text-red-600">{authError}</p>
-                    </div>
+                  {data.confirmPassword.length > 0 && data.password !== data.confirmPassword && (
+                    <p className="mt-1.5 text-xs text-red-500">
+                      {t('validation.passwordMatch')}
+                    </p>
                   )}
-
-                  {/* Terms notice */}
-                  <p className="text-xs text-neutral-400 text-center">
-                    {t('inmobiliaria.onboarding.register.step4.termsPrefix')}{' '}
-                    <Link href="/terminos" className="text-indigo-600 hover:underline">
-                      {t('inmobiliaria.onboarding.register.step4.termsOfService')}
-                    </Link>{' '}
-                    {t('common.and')}{' '}
-                    <Link href="/privacidad" className="text-indigo-600 hover:underline">
-                      {t('inmobiliaria.onboarding.register.step4.privacyPolicy')}
-                    </Link>
-                  </p>
                 </div>
-              )}
+
+                {/* Error message */}
+                {authError && (
+                  <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
+                    <p className="text-sm text-red-600">{authError}</p>
+                  </div>
+                )}
+
+                {/* Terms notice */}
+                <p className="text-xs text-neutral-400 text-center">
+                  {t('inmobiliaria.onboarding.register.step4.termsPrefix')}{' '}
+                  <Link href="/terminos" className="text-indigo-600 hover:underline">
+                    {t('inmobiliaria.onboarding.register.step4.termsOfService')}
+                  </Link>{' '}
+                  {t('common.and')}{' '}
+                  <Link href="/privacidad" className="text-indigo-600 hover:underline">
+                    {t('inmobiliaria.onboarding.register.step4.privacyPolicy')}
+                  </Link>
+                </p>
+              </div>
 
               {/* Navigation */}
               <div className="flex gap-3 mt-10">
@@ -935,18 +843,18 @@ function OnboardingInmobiliariaContent() {
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                     isStep4Valid && !isSubmitting
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
                       : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                   )}
                 >
                   {isSubmitting ? (
                     <>
                       <SpinnerGap className="w-4 h-4 animate-spin" />
-                      {isAuthenticated ? 'Completando registro...' : t('inmobiliaria.onboarding.register.step4.creatingAccount')}
+                      {t('inmobiliaria.onboarding.register.step4.creatingAccount')}
                     </>
                   ) : (
                     <>
-                      {isAuthenticated ? 'Completar registro' : t('inmobiliaria.onboarding.register.step4.createAccount')}
+                      {t('inmobiliaria.onboarding.register.step4.createAccount')}
                       <Rocket className="w-4 h-4" />
                     </>
                   )}

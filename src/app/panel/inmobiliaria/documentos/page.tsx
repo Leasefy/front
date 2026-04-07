@@ -348,7 +348,7 @@ export default function DocumentosPage() {
         </div>
         <button
           onClick={handleCreateActa}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 font-medium shadow-lg shadow-indigo-500/20 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 font-medium transition-colors"
         >
           <Plus className="w-5 h-5" />
           {t('inmobiliaria.documentos.newActa')}
@@ -508,14 +508,16 @@ export default function DocumentosPage() {
                 ) : (
                   <div className="space-y-4">
                     {filteredActas.length === 0 ? (
-                      <div className="text-center py-12 rounded-xl border border-dashed border-border">
-                        <ClipboardText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                        <p className="text-muted-foreground">
+                      <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                          <ClipboardText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+                        </div>
+                        <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
                           {searchQuery ? t('inmobiliaria.documentos.noActasFound') : t('inmobiliaria.documentos.noActas')}
                         </p>
                         <button
                           onClick={handleCreateActa}
-                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium transition-colors"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                           {t('inmobiliaria.documentos.createFirstActa')}

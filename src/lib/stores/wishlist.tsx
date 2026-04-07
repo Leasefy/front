@@ -38,6 +38,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       // Check if user is authenticated
       try {
         const supabase = getSupabase();
+        if (!supabase) throw new Error('no supabase');
         const { data } = await supabase.auth.getSession();
         if (data.session?.access_token) {
           isAuthenticated.current = true;

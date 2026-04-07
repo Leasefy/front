@@ -96,7 +96,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                 'border text-left transition-all duration-150',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
                 isSelected
-                  ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-500/5'
+                  ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-600/5'
                   : 'border-neutral-200 dark:border-border bg-white dark:bg-card hover:border-neutral-300 dark:hover:border-neutral-600'
               )}
             >

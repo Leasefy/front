@@ -1,44 +1,28 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
-import type { TenantOnboardingData, PreferredContact, EmploymentType } from '@/lib/auth/types'
-import { apiClient, setAccessToken } from '@/lib/api/client'
+import type { TenantOnboardingData } from '@/lib/auth/types'
+import { apiClient } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/use-auth'
-import { getSupabase } from '@/lib/supabase/client'
 
 // ============================================================================
 // NOTA PARA BACKEND:
 // ============================================================================
-// Los pasos 1 (Info básica) y 2 (Verificación de ingresos) se llenan durante
-// el proceso de postulación/aplicación a una propiedad.
-//
-// Si el usuario YA APLICÓ a alguna propiedad:
-// - Ya tenemos su nombre, teléfono (paso 1)
-// - Ya tenemos su situación laboral e ingresos (paso 2)
-// - Solo faltaría: preferencias (paso 3)
-//
-// El backend debe:
-// 1. Verificar qué datos ya tenemos del usuario (de aplicaciones previas)
-// 2. Marcar automáticamente como completados los pasos que ya tenemos
-// 3. Iniciar el onboarding en el primer paso que falte
+// El onboarding solo recolecta info básica y preferencias.
+// Los datos de ingresos/empleo se recolectan durante la postulación a propiedades.
 //
 // Flags necesarios del backend:
 // - hasBasicInfo: boolean (nombre, teléfono)
-// - hasIncomeVerification: boolean (empleo, ingresos)
 // - hasPreferences: boolean (preferencias de vivienda)
 //
 // Lógica de pasos:
 // - Paso 1: saltar si hasBasicInfo = true
-// - Paso 2: saltar si hasIncomeVerification = true
-// - Paso 3: saltar si hasPreferences = true
-// - Si todos = true: no mostrar onboarding
-//
-// NOTA: Los documentos se piden durante el flujo de aplicación a una propiedad,
-// no en el onboarding.
+// - Paso 2: saltar si hasPreferences = true
+// - Si ambos = true: no mostrar onboarding
 // ============================================================================
 
 // ============================================================================
-// TextTs
+// Types
 // ============================================================================
 
 export interface TenantOnboardingStep {
@@ -59,13 +43,6 @@ export const TENANT_ONBOARDING_STEPS: TenantOnboardingStep[] = [
   },
   {
     id: 2,
-    key: 'employment',
-    label: 'Ingresos',
-    description: 'Tu situación laboral',
-    icon: 'briefcase',
-  },
-  {
-    id: 3,
     key: 'preferences',
     label: 'Preferencias',
     description: 'Tu hogar ideal',
@@ -77,18 +54,14 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   // Validation tracking
   step1Valid?: boolean
   step2Valid?: boolean
-  step3Valid?: boolean
+  /** Cédula de Ciudadanía (Colombia) */
+  rut?: string
 }
 
 export const initialTenantOnboardingDraft: TenantOnboardingDraft = {
   displayName: '',
   phone: '',
-  rut: '',
   preferredContact: 'whatsapp',
-  employmentType: undefined,
-  companyName: '',
-  monthlyIncome: undefined,
-  additionalIncome: 0,
   budgetMin: undefined,
   budgetMax: undefined,
   preferredZones: [],
@@ -137,7 +110,7 @@ const TenantOnboardingContext = createContext<TenantOnboardingContextTextT | nul
 // ============================================================================
 
 export function TenantOnboardingProvider({ children }: { children: ReactNode }) {
-  const { refreshUser, user } = useAuth()
+  const { refreshUser } = useAuth()
   const [draft, setDraft] = useState<TenantOnboardingDraft>(initialTenantOnboardingDraft)
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
@@ -147,35 +120,31 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
 
   const totalSteps = TENANT_ONBOARDING_STEPS.length
 
-  // Preload from backend user data on mount (takes priority over localStorage)
+  // Load saved progress from localStorage on mount
   useEffect(() => {
-    if (user) {
-      const od = user.tenantOnboardingData
-      const fullName = user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`.trim()
-        : user.firstName || ''
-      setDraft(prev => ({
-        ...prev,
-        displayName: fullName || prev.displayName,
-        phone: user.phone || prev.phone,
-        rut: user.rut || prev.rut,
-        preferredContact: od?.preferredContact || prev.preferredContact,
-        employmentType: od?.employmentType || prev.employmentType,
-        companyName: od?.companyName || prev.companyName,
-        monthlyIncome: od?.monthlyIncome ?? prev.monthlyIncome,
-        additionalIncome: od?.additionalIncome ?? prev.additionalIncome,
-        budgetMin: od?.budgetMin ?? prev.budgetMin,
-        budgetMax: od?.budgetMax ?? prev.budgetMax,
-        preferredZones: od?.preferredZones ?? prev.preferredZones,
-        preferredAmenities: od?.preferredAmenities ?? prev.preferredAmenities,
-        moveInDate: od?.moveInDate || prev.moveInDate,
-        hasPets: od?.hasPets ?? prev.hasPets,
-        petDetails: od?.petDetails || prev.petDetails,
-      }))
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.draft) setDraft(parsed.draft)
+        // Cap currentStep to totalSteps (in case user had step 4 saved from before)
+        if (parsed.currentStep) setCurrentStep(Math.min(parsed.currentStep, totalSteps))
+        // Funnel completedSteps to only valid steps + migrate old 3-step data
+        if (parsed.completedSteps) {
+          const rawSteps: number[] = parsed.completedSteps
+          const validSteps = rawSteps.filter((s: number) => s <= totalSteps)
+          // Migrate: old step 3 (employment) was removed; count it as step 2
+          if (rawSteps.includes(3) && !validSteps.includes(2)) {
+            validSteps.push(2)
+          }
+          setCompletedSteps(validSteps)
+        }
+      } catch (e) {
+        console.error('Error loading tenant onboarding progress:', e)
+      }
     }
     setIsHydrated(true)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [totalSteps])
 
   // FloppyDisk progress to localStorage on changes
   useEffect(() => {
@@ -201,13 +170,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       switch (step) {
         case 1: // Welcome - name required
           return !!draft.displayName && draft.displayName.trim().length > 0
-        case 2: // Employment - type and income required
-          return (
-            !!draft.employmentType &&
-            !!draft.monthlyIncome &&
-            draft.monthlyIncome > 0
-          )
-        case 3: // Preferences - budget required
+        case 2: // Preferences - budget required
           return (
             !!draft.budgetMin &&
             draft.budgetMin > 0 &&
@@ -253,54 +216,24 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   const submitOnboarding = useCallback(async () => {
     setIsSubmitting(true)
     try {
-      // Get session with a timeout to avoid hanging indefinitely
-      let token: string | null = null
-      try {
-        const supabase = getSupabase()
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('getSession timeout')), 5000)
-        )
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
-        token = session?.access_token ?? null
-        if (token) {
-          setAccessToken(token)
-        }
-      } catch (sessionErr) {
-        console.warn('[TenantOnboarding] getSession failed, proceeding with cached token:', sessionErr)
-      }
-
       // Split displayName into first/last for backend
       const nameParts = (draft.displayName || '').trim().split(/\s+/)
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || firstName
 
-      console.log('[TenantOnboarding] Submitting onboarding:', { firstName, lastName, hasToken: !!token })
-
-      // Call backend onboarding endpoint with all extended fields
-      const rawPhone = (draft.phone || '').replace(/\s/g, '')
+      // Call backend onboarding endpoint
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
-        phone: rawPhone.length >= 10 ? rawPhone : undefined,
+        phone: draft.phone || undefined,
         userType: 'TENANT',
-        rut: draft.rut || undefined,
-        preferredContact: draft.preferredContact,
-        employmentType: draft.employmentType,
-        companyName: draft.companyName || undefined,
-        monthlyIncome: draft.monthlyIncome,
-        additionalIncome: draft.additionalIncome,
-        budgetMin: draft.budgetMin,
-        budgetMax: draft.budgetMax,
-        preferredZones: draft.preferredZones,
-        preferredAmenities: draft.preferredAmenities,
-        moveInDate: draft.moveInDate || undefined,
-        hasPets: draft.hasPets,
-        petDetails: draft.petDetails || undefined,
       })
 
+      // Refresh user in auth context so role/onboardingCompleted updates
+      await refreshUser()
+
       // Mark all steps as completed
-      const allSteps = [1, 2, 3]
+      const allSteps = [1, 2]
       setCompletedSteps(allSteps)
 
       // Save completion status to localStorage (dashboard sidebar checks this)
@@ -312,23 +245,12 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         completedAt: new Date().toISOString(),
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(completionData))
+      // Dispatch custom event to notify sidebar and other components
       window.dispatchEvent(new Event('onboarding-updated'))
-
-      // Refresh user so onboardingCompleted = true BEFORE showing success screen.
-      // Timeout of 4s to avoid blocking indefinitely if Supabase hangs.
-      // ProtectedRoute also checks localStorage as fallback.
-      try {
-        await Promise.race([
-          refreshUser(),
-          new Promise<void>((resolve) => setTimeout(resolve, 4000)),
-        ])
-      } catch (err) {
-        console.warn('[TenantOnboarding] refreshUser failed:', err)
-      }
 
       setIsComplete(true)
     } catch (error) {
-      console.error('[TenantOnboarding] Error submitting onboarding:', error)
+      console.error('Error submitting tenant onboarding:', error)
       throw error
     } finally {
       setIsSubmitting(false)
@@ -351,13 +273,16 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       try {
         const parsed = JSON.parse(saved)
         if (parsed.draft) setDraft(parsed.draft)
-        if (parsed.currentStep) setCurrentStep(parsed.currentStep)
-        if (parsed.completedSteps) setCompletedSteps(parsed.completedSteps)
+        if (parsed.currentStep) setCurrentStep(Math.min(parsed.currentStep, totalSteps))
+        if (parsed.completedSteps) {
+          const validSteps = parsed.completedSteps.filter((s: number) => s <= totalSteps)
+          setCompletedSteps(validSteps)
+        }
       } catch (e) {
         console.error('Error loading tenant onboarding progress:', e)
       }
     }
-  }, [])
+  }, [totalSteps])
 
   const progressPercentage = useMemo(() => {
     return Math.round((completedSteps.length / totalSteps) * 100)

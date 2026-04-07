@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, TreeEvergreen, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
+import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
@@ -158,7 +158,7 @@ export function StepHousingPreferences() {
                   className={cn(
                     'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                     isSelected
-                      ? 'bg-indigo-500 text-white shadow-sm'
+                      ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                       : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                   )}
                 >
@@ -215,7 +215,7 @@ export function StepHousingPreferences() {
               disabled={!customZone.trim()}
               className={cn(
                 'px-4 py-3 rounded-xl font-medium transition-all duration-200',
-                'bg-indigo-600 text-white hover:bg-indigo-700',
+                'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >

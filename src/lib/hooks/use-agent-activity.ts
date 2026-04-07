@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/api/client'
 import type { AgentActivity } from '@/lib/types/ai-agents'
-import { getMockAgentActivity } from '@/lib/types/ai-agents'
 
 interface UseAgentActivityOptions {
   /** Auto-refresh interval in ms. Default 30_000 (30s). Set 0 to disable. */
@@ -16,14 +15,16 @@ interface UseAgentActivityReturn {
   activities: AgentActivity[]
   isLoading: boolean
   error: string | null
-  /** 'db' if data came from the API, 'mock' if using fallback */
-  source: 'db' | 'mock' | 'loading'
   refetch: () => Promise<void>
 }
 
 /**
- * Fetches agent activity from the backend.
- * Falls back to mock data when the endpoint is unavailable.
+ * Fetches agent activity from the backend (`GET /inmobiliaria/ai/activity`).
+ *
+ * When the endpoint returns an empty list or fails, the hook returns an empty
+ * array — the UI should render its own empty state. We intentionally do NOT
+ * fall back to mock data anymore because realistic-looking mocks made it
+ * impossible to distinguish "no real activity yet" from "mock placeholder".
  */
 export function useAgentActivity(options: UseAgentActivityOptions = {}): UseAgentActivityReturn {
   const { refreshIntervalMs = 30_000, limit = 20 } = options
@@ -31,38 +32,33 @@ export function useAgentActivity(options: UseAgentActivityOptions = {}): UseAgen
   const [activities, setActivities] = useState<AgentActivity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [source, setSource] = useState<'db' | 'mock' | 'loading'>('loading')
 
   const fetchActivities = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ activities: AgentActivity[]; source: string }>(
+      const res = await apiClient.get<{ activities: AgentActivity[]; source?: string }>(
         `/inmobiliaria/ai/activity?limit=${limit}`,
       )
 
-      if (res.source === 'db' && Array.isArray(res.activities) && res.activities.length > 0) {
+      if (Array.isArray(res.activities)) {
         const parsed: AgentActivity[] = res.activities.map((a) => ({
           ...a,
           timestamp: new Date(a.timestamp as unknown as string),
         }))
         setActivities(parsed)
-        setSource('db')
         setError(null)
       } else {
-        setActivities(getMockAgentActivity())
-        setSource('mock')
+        setActivities([])
         setError(null)
       }
-    } catch {
-      // Endpoint not available yet — fall back to mock data silently
-      if (activities.length === 0) {
-        setActivities(getMockAgentActivity())
-        setSource('mock')
-      }
-      setError(null)
+    } catch (err) {
+      // Empty activities so the UI shows its empty state, but surface the
+      // error for observability (component may show a retry CTA in the future)
+      setActivities([])
+      setError(err instanceof Error ? err.message : 'Error cargando actividad')
     } finally {
       setIsLoading(false)
     }
-  }, [limit]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [limit])
 
   useEffect(() => {
     fetchActivities()
@@ -77,7 +73,6 @@ export function useAgentActivity(options: UseAgentActivityOptions = {}): UseAgen
     activities,
     isLoading,
     error,
-    source,
     refetch: fetchActivities,
   }
 }

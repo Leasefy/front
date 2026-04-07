@@ -579,7 +579,7 @@ export function DocumentoManager({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownList>
                         <DropdownListTrigger asChild>
-                          <button className="p-1.5 rounded hover:bg-muted">
+                          <button className="p-1.5 rounded-xl hover:bg-muted">
                             <DotsThree className="w-4 h-4" />
                           </button>
                         </DropdownListTrigger>
@@ -689,7 +689,7 @@ export function DocumentoManager({
 
                       <DropdownList>
                         <DropdownListTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-1.5 rounded hover:bg-muted shrink-0">
+                          <button className="p-1.5 rounded-xl hover:bg-muted shrink-0">
                             <DotsThree className="w-4 h-4" />
                           </button>
                         </DropdownListTrigger>

@@ -140,12 +140,12 @@ export function PlanDetailSheet({
             Detalles
           </h2>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors">
+            <button className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors">
               <DotsThree className="w-5 h-5" />
             </button>
             <button
               onClick={() => onOpenChange(false)}
-              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
+              className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -342,7 +342,7 @@ export function PlanDetailSheet({
             </h2>
             <button
               onClick={secondaryPanel.onClose}
-              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
+              className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

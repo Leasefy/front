@@ -20,16 +20,15 @@ import {
   UsersThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useAgentes } from '@/lib/hooks/useInmobiliaria';
-import { agentesApi } from '@/lib/api/inmobiliaria.service';
+import { useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type { UserInvite } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
 import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/AgenteFilters';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
-import type { AgenteFormData } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
@@ -141,9 +140,9 @@ export default function AgentesPage() {
     setShowAddModal(true);
   }, []);
 
-  const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
+  const handleCreateAgente = useCallback(async (data: UserInvite) => {
     try {
-      await agentesApi.create(data);
+      await inmobiliariaConfigApi.inviteUser(data);
       toast.success(t('inmobiliaria.agentes.toasts.created'), {
         description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
       });

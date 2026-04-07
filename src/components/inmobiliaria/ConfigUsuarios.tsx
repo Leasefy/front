@@ -42,6 +42,7 @@ import {
 import type {
   AgencyUser,
   AgencyRole,
+  AgenteRole,
   UserInvite,
 } from '@/lib/types/inmobiliaria';
 import {
@@ -51,6 +52,7 @@ import {
   getUserStatusLabel,
 } from '@/lib/types/inmobiliaria';
 import { formatRelativeTime } from '@/lib/format';
+import { AgenteFormModal } from './AgenteFormModal';
 
 // ============================================================================
 // Types
@@ -58,7 +60,7 @@ import { formatRelativeTime } from '@/lib/format';
 
 interface ConfigUsuariosProps {
   users: AgencyUser[];
-  onInvite?: (invite: UserInvite) => void;
+  onInvite?: (invite: UserInvite) => void | Promise<void>;
   onUpdateRole?: (userId: string, role: AgencyRole) => void;
   onToggleStatus?: (userId: string) => void;
   onResendInvite?: (userId: string) => void;
@@ -87,23 +89,43 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
   const [role, setRole] = useState<AgencyRole>('agente');
   const [position, setPosition] = useState('');
   const [message, setMessage] = useState('');
+  // Agent-specific fields (shown when role === 'agente')
+  const [phone, setPhone] = useState('');
+  const [zone, setZone] = useState('');
+  const [specialization, setSpecialization] = useState<'residential' | 'commercial' | 'both'>('residential');
+  const [commissionSplit, setCommissionSplit] = useState(50);
+  const [agentRole, setAgentRole] = useState<AgenteRole>('agent');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && name && role) {
-      onSubmit({
+      const invite: UserInvite = {
         email,
         name,
         role,
         position: position.trim() || undefined,
         message: message || undefined,
-      });
+      };
+      // Attach agent-specific fields when role is agente (backend expects UPPERCASE enums)
+      if (role === 'agente') {
+        invite.phone = phone || undefined;
+        invite.zone = zone || undefined;
+        invite.specialization = specialization.toUpperCase() as UserInvite['specialization'];
+        invite.commissionSplit = commissionSplit;
+        invite.agentRole = agentRole.toUpperCase() as UserInvite['agentRole'];
+      }
+      onSubmit(invite);
       // Reset form
       setEmail('');
       setName('');
       setRole('agente');
       setPosition('');
       setMessage('');
+      setPhone('');
+      setZone('');
+      setSpecialization('residential');
+      setCommissionSplit(50);
+      setAgentRole('agent');
     }
   };
 
@@ -111,7 +133,7 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.config.users.inviteModal.title')}</DialogTitle>
           <DialogDescription>
@@ -119,7 +141,7 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto overscroll-contain pr-1">
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">{t('inmobiliaria.config.users.inviteModal.emailLabel')} *</Label>
@@ -172,6 +194,99 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
               maxLength={100}
             />
           </div>
+
+          {/* Agent-specific fields — conditionally shown */}
+          {role === 'agente' && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="invite-phone">Teléfono</Label>
+                <Input
+                  id="invite-phone"
+                  type="tel"
+                  placeholder="+57 300 123 4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+
+              {/* Agent business role */}
+              <div className="space-y-2">
+                <Label>Rol operativo</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'agent' as AgenteRole, label: 'Agente', desc: 'Ventas/arriendos' },
+                    { value: 'coordinator' as AgenteRole, label: 'Coordinador', desc: 'Supervisa equipo' },
+                    { value: 'director' as AgenteRole, label: 'Director', desc: 'Director agencia' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setAgentRole(opt.value)}
+                      className={cn(
+                        'p-2.5 rounded-xl border text-center transition-all text-xs',
+                        agentRole === opt.value
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-border hover:bg-muted'
+                      )}
+                    >
+                      <p className={cn('font-medium', agentRole === opt.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground')}>{opt.label}</p>
+                      <p className="text-muted-foreground mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Zone + Specialization */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-zone">Zona</Label>
+                  <Select value={zone} onValueChange={setZone}>
+                    <SelectTrigger id="invite-zone">
+                      <SelectValue placeholder="Seleccionar zona" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Chapinero', 'Usaquen', 'Suba', 'Kennedy', 'Fontibon'].map((z) => (
+                        <SelectItem key={z} value={z}>{z}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-spec">Especialización</Label>
+                  <Select value={specialization} onValueChange={(v) => setSpecialization(v as 'residential' | 'commercial' | 'both')}>
+                    <SelectTrigger id="invite-spec">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="residential">Residencial</SelectItem>
+                      <SelectItem value="commercial">Comercial</SelectItem>
+                      <SelectItem value="both">Ambos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Commission */}
+              <div className="space-y-2">
+                <Label>Comisión ({commissionSplit}%)</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={commissionSplit}
+                    onChange={(e) => setCommissionSplit(Number(e.target.value))}
+                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-indigo-500"
+                  />
+                  <span className="text-sm font-medium text-foreground w-10 text-right">{commissionSplit}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Porcentaje de la comisión de la agencia</p>
+              </div>
+            </div>
+          )}
 
           {/* Custom Message (optional) */}
           <div className="space-y-2">
@@ -432,9 +547,9 @@ export function ConfigUsuarios({
   };
 
   // Handle invite submit
-  const handleInvite = (invite: UserInvite) => {
-    onInvite?.(invite);
-    setInviteModalOpen(false);
+  const handleInvite = async (invite: UserInvite) => {
+    await onInvite?.(invite);
+    // AgenteFormModal closes itself after successful submit
   };
 
   // Handle edit role
@@ -741,10 +856,11 @@ export function ConfigUsuarios({
       </div>
 
       {/* Modals */}
-      <InviteModal
-        open={inviteModalOpen}
-        onOpenChange={setInviteModalOpen}
+      <AgenteFormModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
         onSubmit={handleInvite}
+        variant="member"
         isLoading={isLoading}
       />
 

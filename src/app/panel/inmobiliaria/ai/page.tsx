@@ -27,7 +27,7 @@ export default function AIAgentsPage() {
   const { locale } = useI18n();
   const activeAgents = getActiveAgents();
   const comingSoonAgents = getComingSoonAgents();
-  const { activities, source: activitySource } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
+  const { activities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
   const { metrics, isLoading } = useAgentMetrics(60_000);
 
   // Build metrics arrays from real data

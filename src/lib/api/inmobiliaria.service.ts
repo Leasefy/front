@@ -275,7 +275,8 @@ export const cobrosApi = {
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
-    return apiClient.get<CobroSummary>(`${BASE}/cobros/summary?month=${month}`);
+    const res = await apiClient.get<{ data: CobroSummary }>(`${BASE}/cobros/summary?month=${month}`);
+    return res.data;
   },
 
   async generate(month: string): Promise<void> {
@@ -319,7 +320,8 @@ export const dispersionesApi = {
   },
 
   async getSummary(month: string): Promise<DispersionSummary> {
-    return apiClient.get<DispersionSummary>(`${BASE}/dispersiones/summary?month=${month}`);
+    const res = await apiClient.get<{ data: DispersionSummary }>(`${BASE}/dispersiones/summary?month=${month}`);
+    return res.data;
   },
 
   async getExtracto(propietarioId: string, month?: string): Promise<ExtractoPropietario> {
@@ -580,7 +582,14 @@ export const inmobiliariaConfigApi = {
   },
 
   async inviteUser(invite: UserInvite): Promise<AgencyUser> {
-    return apiClient.post<AgencyUser>(`${BASE}/config/users/invite`, invite);
+    // Backend DTO rejects: message (UI-only), phone (not in DTO)
+    // Backend requires role in UPPERCASE
+    const { message: _msg, phone: _phone, ...rest } = invite;
+    const payload = {
+      ...rest,
+      role: invite.role.toUpperCase(),
+    };
+    return apiClient.post<AgencyUser>(`${BASE}/agency/members`, payload);
   },
 
   async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
@@ -662,9 +671,17 @@ export const agencyApi = {
 
   /**
    * PATCH /inmobiliaria/agency/members/:memberId/profile
-   * Updates a member's free-form profile fields (position/cargo). Admin only.
+   * Updates a member's profile fields (position, agent business fields). Admin only.
    */
-  async updateMemberProfile(memberId: string, data: { position?: string | null }): Promise<AgencyMember> {
+  async updateMemberProfile(memberId: string, data: {
+    position?: string | null;
+    agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
+    agentStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+    specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
+    commissionSplit?: number;
+    zone?: string | null;
+    hireDate?: string | null;
+  }): Promise<AgencyMember> {
     return apiClient.patch<AgencyMember>(`${BASE}/agency/members/${memberId}/profile`, data);
   },
 

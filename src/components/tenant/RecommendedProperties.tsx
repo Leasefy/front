@@ -116,7 +116,7 @@ export function RecommendedProperties({
             Completa una aplicación para que podamos mostrarte propiedades donde tienes alta probabilidad de ser aceptado.
           </p>
           <Link
-            href="/propiedades"
+            href="/inquilino/explorar"
             className="inline-flex items-center gap-2 text-sm font-medium text-plan-primary hover:underline"
           >
             Explorar propiedades
@@ -142,7 +142,7 @@ export function RecommendedProperties({
             No hay propiedades disponibles que coincidan con tu perfil actual.
           </p>
           <Link
-            href="/propiedades"
+            href="/inquilino/explorar"
             className="inline-flex items-center gap-2 text-sm font-medium text-plan-primary hover:underline"
           >
             Ver todas las propiedades
@@ -241,7 +241,7 @@ export function RecommendedProperties({
 
         {/* See All Card */}
         <Link
-          href="/propiedades"
+          href="/inquilino/explorar"
           className={cn(
             'flex-shrink-0 w-[200px] flex flex-col items-center justify-center',
             'bg-muted/50 border border-dashed border-plan-border rounded-sm',

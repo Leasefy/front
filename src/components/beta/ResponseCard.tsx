@@ -47,7 +47,7 @@ const AGENT_DOT_COLORS: Record<string, string> = {
   amber: 'bg-amber-500',
   purple: 'bg-purple-500',
   pink: 'bg-rose-500',
-  indigo: 'bg-indigo-500',
+  indigo: 'bg-indigo-600',
 };
 
 // ============================================================================
@@ -78,7 +78,7 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
         'text-[11px] font-medium leading-none',
         'shrink-0',
         isActionable
-          ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
+          ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-600/10 dark:text-indigo-400'
           : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
       )}
     >
@@ -106,10 +106,10 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const variantClasses: Record<string, string> = {
     primary: cn(
-      'bg-indigo-500 text-white',
-      'hover:bg-indigo-600',
+      'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+      'hover:bg-indigo-700',
       'shadow-sm hover:shadow-md',
-      'dark:bg-indigo-600 dark:hover:bg-indigo-500'
+      'dark:bg-indigo-600 dark:hover:bg-indigo-700'
     ),
     secondary: cn(
       'bg-white text-foreground',

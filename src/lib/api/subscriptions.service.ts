@@ -6,10 +6,14 @@
 import { apiClient } from './client';
 import type {
   BackendSubscription,
+  BackendSubscriptionMeResponse,
+  BackendSubscriptionPlan,
   CreateSubscriptionDto,
   ValidateCouponDto,
   BackendCouponValidationResult,
   DisplaySubscription,
+  SubscribeWithPSEDto,
+  PSEBank,
 } from './subscriptions.types';
 import type { PlanId, BillingCycle, SubscriptionStatus } from '@/lib/types/subscription';
 import type { Coupon, CouponValidationResult, CouponDiscount } from '@/lib/types/coupon';
@@ -37,17 +41,30 @@ const BILLING_MAP: Record<string, BillingCycle> = {
   yearly: 'yearly',
 };
 
+/**
+ * Maps the canonical tier from the backend to the frontend PlanId.
+ * Reads `plan.tier` (STARTER | PRO | FLEX) — NOT `planId`, which is a UUID
+ * pointing to the SubscriptionPlanConfig row.
+ */
 function mapSubscription(backend: BackendSubscription): DisplaySubscription {
+  const tier = (backend.plan?.tier || '').toLowerCase();
+  const planId: PlanId = (['starter', 'pro', 'flex'].includes(tier) ? tier : 'starter') as PlanId;
+
+  const cycle = backend.cycle ?? backend.billingCycle ?? 'monthly';
+  const periodStart = backend.startDate ?? backend.currentPeriodStart ?? new Date().toISOString();
+  const periodEnd = backend.endDate ?? backend.currentPeriodEnd ?? new Date().toISOString();
+  const cancelAtPeriodEnd = backend.cancelAtPeriodEnd ?? (backend.autoRenew === false);
+
   return {
     id: backend.id,
     userId: backend.userId,
-    planId: (backend.planId?.toLowerCase() || 'free') as PlanId,
+    planId,
     status: STATUS_MAP[backend.status] || 'active',
-    billingCycle: BILLING_MAP[backend.billingCycle] || 'monthly',
-    currentPeriodStart: backend.currentPeriodStart,
-    currentPeriodEnd: backend.currentPeriodEnd,
-    cancelAtPeriodEnd: backend.cancelAtPeriodEnd,
-    trialEndsAt: backend.trialEndsAt,
+    billingCycle: BILLING_MAP[cycle] || 'monthly',
+    currentPeriodStart: periodStart,
+    currentPeriodEnd: periodEnd,
+    cancelAtPeriodEnd,
+    trialEndsAt: backend.trialEndsAt ?? undefined,
   };
 }
 
@@ -71,7 +88,7 @@ function mapCouponValidation(backend: BackendCouponValidationResult): CouponVali
         currentUses: backend.coupon.currentUses,
         applicablePlans: backend.coupon.applicablePlans === 'all'
           ? 'all'
-          : (backend.coupon.applicablePlans as ('free' | 'pro' | 'business')[]),
+          : (backend.coupon.applicablePlans as ('starter' | 'pro' | 'flex')[]),
         minimumPurchase: backend.coupon.minimumPurchase,
         description: backend.coupon.description,
         createdAt: backend.coupon.validFrom,
@@ -96,7 +113,7 @@ function mapCouponValidation(backend: BackendCouponValidationResult): CouponVali
 const FREE_SUBSCRIPTION: DisplaySubscription = {
   id: '',
   userId: '',
-  planId: 'free',
+  planId: 'starter', // canonical base tier
   status: 'active',
   billingCycle: 'monthly',
   currentPeriodStart: new Date().toISOString(),
@@ -115,10 +132,18 @@ export const subscriptionsApi = {
    */
   async getMySubscription(): Promise<DisplaySubscription> {
     try {
-      const backend = await apiClient.get<BackendSubscription>('/subscriptions/me');
-      return mapSubscription(backend);
+      // Backend returns an envelope: { subscription, usage, planConfig }
+      // with the canonical tier at subscription.plan.tier.
+      const response = await apiClient.get<BackendSubscriptionMeResponse | BackendSubscription>(
+        '/subscriptions/me'
+      );
+      const sub = 'subscription' in response && response.subscription
+        ? response.subscription
+        : (response as BackendSubscription);
+      if (!sub || !sub.id) return FREE_SUBSCRIPTION;
+      return mapSubscription(sub);
     } catch {
-      // If 404 or error, user is on free plan
+      // If 404 or error, user is on the base (starter) tier
       return FREE_SUBSCRIPTION;
     }
   },
@@ -132,10 +157,44 @@ export const subscriptionsApi = {
   },
 
   /**
+   * Subscribe to a plan with PSE payment data.
+   * POST /subscriptions/subscribe
+   * Mock is deterministic by last digit of documentNumber.
+   */
+  async subscribeWithPSE(dto: SubscribeWithPSEDto): Promise<DisplaySubscription> {
+    const backend = await apiClient.post<BackendSubscription>('/subscriptions/subscribe', dto);
+    return mapSubscription(backend);
+  },
+
+  /**
+   * Get available PSE banks for the mock.
+   * GET /pse-mock/banks — public, no auth required
+   */
+  async getPSEBanks(): Promise<PSEBank[]> {
+    return apiClient.get<PSEBank[]>('/pse-mock/banks');
+  },
+
+  /**
    * Cancel the current subscription
    */
   async cancelSubscription(): Promise<void> {
     await apiClient.post<void>('/subscriptions/cancel');
+  },
+
+  /**
+   * Fetch available subscription plans from the backend.
+   * Public endpoint — no auth required.
+   */
+  async getPlans(planType?: 'LANDLORD' | 'AGENCY'): Promise<BackendSubscriptionPlan[]> {
+    const qs = planType ? `?planType=${planType}` : '';
+    return apiClient.get<BackendSubscriptionPlan[]>(`/subscription-plans${qs}`);
+  },
+
+  /**
+   * Fetch a single plan by ID.
+   */
+  async getPlan(id: string): Promise<BackendSubscriptionPlan> {
+    return apiClient.get<BackendSubscriptionPlan>(`/subscription-plans/${id}`);
   },
 
   /**

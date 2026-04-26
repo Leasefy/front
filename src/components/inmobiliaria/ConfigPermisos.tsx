@@ -25,6 +25,7 @@ import {
   HandCoins,
   Wrench,
   ClipboardText,
+  Handshake,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -82,6 +83,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   configuracion: Gear,
   documentos: FileText,
   analytics: ChartBar,
+  contratos: Handshake,
 };
 
 // Action icons map

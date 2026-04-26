@@ -12,8 +12,8 @@ export interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: TranslationKey, params?: TranslationParams) => string;
-  formatCurrency: (amount: number) => string;
-  formatNumber: (value: number) => string;
+  formatCurrency: (amount: number | null | undefined) => string;
+  formatNumber: (value: number | null | undefined) => string;
   formatDate: (date: Date | string, options?: Intl.DateTimeFormatOptions) => string;
   formatRelativeDate: (date: Date | string) => string;
 }

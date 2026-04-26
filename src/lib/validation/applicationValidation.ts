@@ -370,12 +370,15 @@ export function validateDocumentsStep(data: Partial<DocumentInfo>): ValidationRe
     errors.idDocument = 'Documento de identidad es requerido';
   }
 
-  // Income proof - required
-  if (!hasDocument(data.incomeProof)) {
-    errors.incomeProof = 'Comprobante de ingresos es requerido';
+  // Bank statement - required (new)
+  if (!hasDocument(data.bankStatement)) {
+    errors.bankStatement = 'El extracto bancario es requerido para la evaluación';
   }
 
-  // Optional documents don't need validation
+  // Employment letter OR income proof — at least one required
+  if (!hasDocument(data.employmentLetter) && !hasDocument(data.incomeProof)) {
+    errors.incomeProof = 'Debés subir al menos uno: contrato laboral o certificado de ingresos';
+  }
 
   return {
     isValid: Object.keys(errors).length === 0,
@@ -470,7 +473,8 @@ export function getMissingFieldsList(step: number, errors: Record<string, string
     personalReferences: 'Referencias personales',
     // Documents
     idDocument: 'Documento de identidad',
-    incomeProof: 'Comprobante de ingresos',
+    bankStatement: 'Extracto bancario',
+    incomeProof: 'Contrato laboral o certificado de ingresos',
     // Review
     acceptTerms: 'Terminos y condiciones',
     authorizeVerification: 'Autorizacion de verificacion',

@@ -3,17 +3,21 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { PricingCard } from './PricingCard';
+import { AgencyTierCard } from './AgencyTierCard';
 import { PLANS, PLAN_COMPARISON } from '@/lib/constants/subscription-plans';
 import { Check, X } from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { BillingCycle, PlanId } from '@/lib/types/subscription';
+import type { BillingCycle, PlanId, AgencyPlan, AgencyPlanId } from '@/lib/types/subscription';
+import { formatCurrency } from '@/lib/format';
 
 export interface PricingTableProps {
-  currentPlanId?: PlanId;
-  onSelectPlan?: (planId: PlanId) => void;
+  currentPlanId?: PlanId | AgencyPlanId;
+  onSelectPlan?: (planId: string) => void;
   showComparison?: boolean;
   className?: string;
+  /** When provided, renders agency tier cards instead of landlord plan cards */
+  agencyPlans?: AgencyPlan[];
 }
 
 /**
@@ -24,19 +28,88 @@ export interface PricingTableProps {
  * - Plan cards in responsive grid
  * - Optional detailed feature comparison table
  */
+function formatAgencyPrice(plan: AgencyPlan, cycle: BillingCycle): { price: string; period: string } {
+  if (plan.pricingModel === 'percentage') {
+    return { price: `${plan.canonPercentage ?? 1}% del canon`, period: 'mensual' };
+  }
+  if (plan.pricingModel === 'custom' || plan.price.monthly === null) {
+    return { price: 'A la medida', period: '' };
+  }
+  const amount = cycle === 'yearly' && plan.price.yearly ? plan.price.yearly : (plan.price.monthly ?? 0);
+  return {
+    price: formatCurrency(amount).replace('$', '').trim(),
+    period: cycle === 'yearly' ? '/año' : '/mes',
+  };
+}
+
 export function PricingTable({
   currentPlanId,
   onSelectPlan,
   showComparison = false,
   className,
+  agencyPlans,
 }: PricingTableProps) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
-  const handlePlanSelect = (planId: PlanId) => {
-    if (onSelectPlan) {
-      onSelectPlan(planId);
-    }
+  const handlePlanSelect = (planId: string) => {
+    onSelectPlan?.(planId);
   };
+
+  // Agency mode: render AgencyTierCard grid
+  if (agencyPlans && agencyPlans.length > 0) {
+    return (
+      <div className={cn('', className)}>
+        {/* Billing cycle toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={cn(
+                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
+                billingCycle === 'monthly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Mensual
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={cn(
+                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
+                billingCycle === 'yearly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Anual
+              <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">-20%</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {agencyPlans.map((plan) => {
+            const { price, period } = formatAgencyPrice(plan, billingCycle);
+            return (
+              <AgencyTierCard
+                key={plan.id}
+                name={plan.name}
+                price={price}
+                period={period}
+                description={plan.description}
+                features={plan.features}
+                properties={plan.limits.properties ?? undefined}
+                users={plan.limits.users ?? undefined}
+                popular={plan.highlighted}
+                isFlex={plan.id === 'flex'}
+                isEnterprise={plan.id === 'enterprise'}
+                selected={plan.id === currentPlanId}
+                noCurrencySymbol={plan.pricingModel !== 'flat'}
+                onSelect={() => handlePlanSelect(plan.id)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('', className)}>
@@ -79,7 +152,7 @@ export function PricingTable({
             plan={plan}
             billingCycle={billingCycle}
             isCurrentPlan={plan.id === currentPlanId}
-            onSelect={handlePlanSelect}
+            onSelect={(id) => handlePlanSelect(id)}
           />
         ))}
       </div>
@@ -117,13 +190,13 @@ export function PricingTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-center py-4">
-                      <ComparisonCell value={row.free} />
+                      <ComparisonCell value={row.starter} />
                     </TableCell>
                     <TableCell className="text-center py-4 bg-primary/5">
                       <ComparisonCell value={row.pro} highlighted />
                     </TableCell>
                     <TableCell className="text-center py-4">
-                      <ComparisonCell value={row.business} />
+                      <ComparisonCell value={row.flex} />
                     </TableCell>
                   </TableRow>
                 ))}

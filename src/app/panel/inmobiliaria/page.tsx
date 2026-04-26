@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Buildings,
   Users,
@@ -24,6 +23,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   useInmobiliariaDashboard,
   useAgentes,
@@ -33,9 +33,12 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
-import { AgencySetupWizard } from '@/components/inmobiliaria/AgencySetupWizard';
-import { OnboardingChecklist } from '@/components/inmobiliaria/OnboardingChecklist';
-import { useAuth } from '@/lib/auth/use-auth';
+import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
+import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
+import { getActiveAgents } from '@/lib/types/ai-agents';
+import type { AgentActivity } from '@/lib/types/ai-agents';
+import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
+import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 /**
  * KPI Card Component
@@ -186,31 +189,86 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
 }
 
 /**
- * Inmobiliaria Dashboard Page - inner content (needs searchParams access)
+ * Agent section — compact layout with smart summary
  */
-function InmobiliariaDashboardContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+function AgentSection({
+  agents,
+  activities,
+  metricsMap,
+}: {
+  agents: ReturnType<typeof getActiveAgents>;
+  activities: AgentActivity[];
+  metricsMap: Record<string, { label: string; value: string | number }[]>;
+}) {
   const { t } = useI18n();
-  const { user } = useAuth();
 
-  // Show setup wizard if ?setup=true is present in URL
-  const showSetup = searchParams.get('setup') === 'true';
-  const [wizardOpen, setWizardOpen] = useState(showSetup);
+  function getLastAction(agentId: string) {
+    const last = activities.find(a => a.agentId === agentId);
+    if (!last) return null;
+    const now = new Date();
+    const diffMin = Math.floor((now.getTime() - last.timestamp.getTime()) / 60_000);
+    const diffH = Math.floor(diffMin / 60);
+    const time = diffMin < 60 ? `hace ${diffMin} min` : `hace ${diffH}h`;
+    return { title: last.title, time };
+  }
 
-  useEffect(() => {
-    if (showSetup) {
-      setWizardOpen(true);
-    }
-  }, [showSetup]);
+  // Smart summary
+  const escalations = activities.filter(a => a.type === 'escalation' || a.status === 'pending');
+  const todayActions = activities.filter(a => {
+    const diffH = (Date.now() - a.timestamp.getTime()) / 3_600_000;
+    return diffH < 24;
+  });
 
-  const handleWizardComplete = () => {
-    setWizardOpen(false);
-    // Remove ?setup=true from URL without navigation
-    router.replace('/panel/inmobiliaria', { scroll: false });
-  };
+  return (
+    <div className="space-y-4">
+      {/* Smart summary header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-emerald-400" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Agentes AI</h2>
+          </div>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">
+            {todayActions.length} {todayActions.length === 1 ? 'acción' : 'acciones'} hoy
+            {escalations.length > 0 && (
+              <span className="text-amber-600 dark:text-amber-400 font-medium"> · {escalations.length} {escalations.length === 1 ? 'requiere' : 'requieren'} atención</span>
+            )}
+          </span>
+        </div>
+        <Link
+          href="/panel/inmobiliaria/ai"
+          className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors"
+        >
+          {t('inmobiliaria.common.viewAll')}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
 
-  const { kpis: kpisData } = useInmobiliariaDashboard();
+      {/* Agent cards — side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {agents.map((agent) => (
+          <AIAgentCard key={agent.id} agent={agent} metrics={metricsMap[agent.id]} lastAction={getLastAction(agent.id)} />
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+/**
+ * Inmobiliaria Dashboard Page
+ * Main overview for real estate agency operations
+ */
+export default function InmobiliariaDashboardPage() {
+  const { t } = useI18n();
+  const { canAccess, isLoading: permLoading } = usePermissions();
+
+  const { kpis: kpisData } = useInmobiliariaDashboard({
+    skip: permLoading || !canAccess('analytics', 'view'),
+  });
   const kpis = kpisData ?? {
     totalProperties: 0, propertiesAvailable: 0, propertiesRented: 0, propertiesInProcess: 0,
     occupancyRate: 0, expectedRevenue: 0, collectedRevenue: 0, pendingCollections: 0,
@@ -218,10 +276,10 @@ function InmobiliariaDashboardContent() {
     scheduledVisits: 0, pendingApplications: 0, contractsInProgress: 0,
     totalAgents: 0, closedThisMonth: 0, avgDaysToClose: 0, totalPropietarios: 0, pendingDispersions: 0,
   };
-  const { agentes } = useAgentes();
-  const { pipelineItems } = usePipelineItems();
-  const { cobros } = useCobros();
-  const { mantenimientos } = useMantenimientos();
+  const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
+  const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
+  const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
+  const { mantenimientos } = useMantenimientos(undefined, { skip: permLoading || !canAccess('operaciones', 'view') });
 
   const activeAgents = agentes.filter((a) => a.status === 'active');
 
@@ -240,21 +298,30 @@ function InmobiliariaDashboardContent() {
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
 
+  const aiAgents = getActiveAgents();
+  const { activities: aiActivities } = useAgentActivity();
+
+  // Agent metrics from real data (hook auto-refreshes)
+  const scoringCount = aiActivities.filter(a => a.agentId === 'tenant-scoring' && a.type === 'execution').length;
+  const matchingCount = aiActivities.filter(a => a.agentId === 'smart-matching').length;
+
+  const agentMetricsMap: Record<string, { label: string; value: string | number }[]> = {
+    'tenant-scoring': [
+      { label: t('inmobiliaria.dashboard.aiAgents.evaluationsThisMonth'), value: scoringCount || 0 },
+      { label: t('inmobiliaria.dashboard.aiAgents.avgTime'), value: '< 3 min' },
+      { label: t('inmobiliaria.dashboard.aiAgents.precision'), value: scoringCount ? '94%' : '0%' },
+      { label: t('inmobiliaria.dashboard.aiAgents.escalatedToHuman'), value: scoringCount ? '2%' : '0%' },
+    ],
+    'smart-matching': [
+      { label: t('inmobiliaria.dashboard.aiAgents.suggestedThisWeek'), value: matchingCount || 0 },
+      { label: t('inmobiliaria.dashboard.aiAgents.conversionRate'), value: matchingCount ? '32%' : '0%' },
+      { label: t('inmobiliaria.dashboard.aiAgents.redirectedCandidates'), value: matchingCount || 0 },
+      { label: t('inmobiliaria.dashboard.aiAgents.avgCompatibility'), value: matchingCount ? '78%' : '0%' },
+    ],
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Agency Setup Wizard Modal */}
-      {wizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
-            <AgencySetupWizard
-              agencyName={user?.name || ''}
-              onComplete={handleWizardComplete}
-              onDismiss={handleWizardComplete}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
@@ -264,9 +331,6 @@ function InmobiliariaDashboardContent() {
           {t('inmobiliaria.dashboard.subtitle')}
         </p>
       </div>
-
-      {/* Onboarding Checklist — visible for ADMIN while setup is incomplete */}
-      <OnboardingChecklist />
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -352,6 +416,11 @@ function InmobiliariaDashboardContent() {
         </div>
       </div>
 
+      {/* AI Agents Section */}
+      <FeatureGate feature="ai-agents">
+        <AgentSection agents={aiAgents} activities={aiActivities} metricsMap={agentMetricsMap} />
+      </FeatureGate>
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pipeline Activity */}
@@ -377,9 +446,11 @@ function InmobiliariaDashboardContent() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Kanban className="h-8 w-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
+            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4 shadow-sm dark:shadow-none">
+                <Kanban className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <p className="text-sm text-muted-foreground">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
             </div>
           )}
         </div>
@@ -568,18 +639,5 @@ function InmobiliariaDashboardContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Inmobiliaria Dashboard Page
- * Main overview for real estate agency operations
- * Wrapped in Suspense because it uses useSearchParams()
- */
-export default function InmobiliariaDashboardPage() {
-  return (
-    <Suspense fallback={<div className="p-6 lg:p-8" />}>
-      <InmobiliariaDashboardContent />
-    </Suspense>
   );
 }

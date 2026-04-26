@@ -17,7 +17,7 @@ import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import { cn } from '@/lib/utils';
 
-const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, growth: Sparkle, 'agency-business': Buildings, enterprise: Buildings } as const;
+const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, flex: Buildings, enterprise: Buildings } as const;
 
 const PLAN_INFO = Object.fromEntries([
   ...PLANS.map((plan) => [
@@ -169,7 +169,7 @@ export function StepReview() {
                 className="w-full h-full object-cover"
               />
               {index === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] rounded-md">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-md">
                   Principal
                 </span>
               )}

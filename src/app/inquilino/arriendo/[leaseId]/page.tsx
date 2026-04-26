@@ -1,25 +1,48 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, ArrowSquareOut, Chat } from '@phosphor-icons/react';
+import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
-import { useLease, useLeasePayments } from '@/lib/hooks/useLeases';
+import {
+  useLease,
+  useMyPaymentRequests,
+  useLeasePaymentInfo,
+} from '@/lib/hooks/useLeases';
 import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
+import { PayRentModal } from '@/components/tenant/PayRentModal';
+import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
+
+const MONTH_NAMES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const MONTH_NAMES_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 export default function LeaseDetailPage() {
   const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
-  const router = useRouter();
   const leaseId = params.leaseId as string;
 
-  const { lease, isLoading: leaseLoading, error: leaseError } = useLease(leaseId);
-  const { payments, getNextPayment } = useLeasePayments(leaseId);
-  const nextPayment = getNextPayment();
+  const { lease, isLoading: leaseLoading } = useLease(leaseId);
+  const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
+  const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
+  const requests = getForLease(leaseId);
+  const [payModalOpen, setPayModalOpen] = useState(false);
+
+  const isActive = lease?.status === 'active' || lease?.status === 'ending_soon';
+  const periodStatus = paymentInfo?.currentPeriodStatus;
+  // Si lease está activo y el período actual no tiene pago aprobado/pendiente,
+  // o fue rechazado, el tenant puede pagar.
+  const canPay = isActive && (periodStatus === 'NONE' || periodStatus === 'REJECTED' || !paymentInfo);
 
   if (leaseLoading) {
     return (
@@ -87,30 +110,33 @@ export default function LeaseDetailPage() {
     return Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
   };
 
-  const getPaymentStatusInfo = (status: string) => {
+  const getRequestStatusInfo = (status: TenantPaymentRequestStatus) => {
     switch (status) {
-      case 'paid':
-        return { label: locale === 'es' ? 'Pagado' : 'Paid', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', icon: CheckCircle };
-      case 'pending':
-        return { label: locale === 'es' ? 'Pendiente' : 'Pending', bgColor: 'bg-amber-50', textColor: 'text-amber-700', icon: Clock };
-      case 'late':
-        return { label: locale === 'es' ? 'Atrasado' : 'Late', bgColor: 'bg-red-50', textColor: 'text-red-700', icon: WarningCircle };
-      case 'overdue':
-        return { label: locale === 'es' ? 'Vencido' : 'Overdue', bgColor: 'bg-red-50', textColor: 'text-red-700', icon: WarningCircle };
-      default:
-        return { label: status, bgColor: 'bg-neutral-100', textColor: 'text-neutral-600', icon: Clock };
+      case 'APPROVED':
+        return { label: locale === 'es' ? 'Aprobado' : 'Approved', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', icon: CheckCircle };
+      case 'PENDING_VALIDATION':
+        return { label: locale === 'es' ? 'En verificación' : 'In verification', bgColor: 'bg-amber-50', textColor: 'text-amber-700', icon: Clock };
+      case 'REJECTED':
+      case 'DISPUTED':
+        return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-rose-50', textColor: 'text-rose-700', icon: XCircle };
+      case 'CANCELLED':
+        return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-neutral-100', textColor: 'text-neutral-600', icon: Prohibit };
     }
   };
 
-  const getPaymentMethodInfo = (methodId?: string) => {
-    if (!methodId) return null;
-    return PAYMENT_METHODS.find(m => m.id === methodId);
+  const formatPeriod = (month: number, year: number) => {
+    const names = locale === 'es' ? MONTH_NAMES_ES : MONTH_NAMES_EN;
+    return `${names[month - 1]} ${year}`;
   };
 
   const daysRemaining = getDaysRemaining(lease.endDate);
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
-  const paidPayments = payments.filter(p => p.status === 'paid' || p.status === 'late');
-  const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
+  const approvedRequests = requests.filter(r => r.status === 'APPROVED');
+  const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+  const handlePaid = () => {
+    refetchRequests();
+    refetchPaymentInfo();
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
@@ -171,7 +197,7 @@ export default function LeaseDetailPage() {
                 </div>
                 <div className="text-left sm:text-right">
                   <p className="text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-white tracking-tight">
-                    {formatCurrency(lease.monthlyRent + lease.adminFee)}
+                    {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">/{locale === 'es' ? 'mes' : 'mo'}</p>
                 </div>
@@ -185,11 +211,11 @@ export default function LeaseDetailPage() {
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Admin</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.adminFee)}</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.adminFee ?? 0)}</p>
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDueDay}</p>
+                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDay}</p>
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
@@ -243,34 +269,80 @@ export default function LeaseDetailPage() {
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Next Payment CTA */}
-            {nextPayment && (
+            {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
+            {isActive && paymentInfo && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6 lg:p-8"
+                className={cn(
+                  'rounded-3xl border p-6 lg:p-8',
+                  periodStatus === 'PENDING_VALIDATION'
+                    ? 'bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-amber-900/20 border-amber-200 dark:border-amber-800/60'
+                    : periodStatus === 'APPROVED'
+                      ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800/60'
+                      : 'bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border-indigo-100 dark:border-indigo-800/60'
+                )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{t('dashboard.nextPayment')}</span>
+                      {periodStatus === 'PENDING_VALIDATION' ? (
+                        <>
+                          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                            {locale === 'es' ? 'Pago en verificación bancaria' : 'Payment in bank verification'}
+                          </span>
+                        </>
+                      ) : periodStatus === 'APPROVED' ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+                            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
+                          </span>
+                        </>
+                      ) : periodStatus === 'REJECTED' ? (
+                        <>
+                          <WarningCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                          <span className="text-sm text-rose-700 dark:text-rose-400 font-medium">
+                            {locale === 'es' ? 'Pago rechazado — reintentar' : 'Payment rejected — retry'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                            {locale === 'es' ? 'Pagar arriendo' : 'Pay rent'}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    <p className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">{formatCurrency(nextPayment.amount)}</p>
-                    <p className="text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      {locale === 'es' ? 'Vence el' : 'Due on'} {formatFullDate(nextPayment.dueDate)}
+                    <p className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                      {formatCurrency(paymentInfo.monthlyRent)}
                     </p>
+                    <p className="text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5 capitalize">
+                      <Calendar className="w-4 h-4" />
+                      {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
+                    </p>
+                    {periodStatus === 'REJECTED' && paymentInfo.currentPeriodRejectionReason && (
+                      <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 italic max-w-md">
+                        {paymentInfo.currentPeriodRejectionReason}
+                      </p>
+                    )}
                   </div>
-                  <Link
-                    href="/inquilino/pagos"
-                    className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
-                  >
-                    <Wallet className="w-5 h-5" />
-                    {locale === 'es' ? 'Pagar ahora' : 'Pay now'}
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
+                  {canPay && (
+                    <button
+                      type="button"
+                      onClick={() => setPayModalOpen(true)}
+                      className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-2xl font-semibold hover:bg-indigo-700 transition-colors"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      {periodStatus === 'REJECTED'
+                        ? (locale === 'es' ? 'Reintentar' : 'Retry')
+                        : (locale === 'es' ? 'Pagar arriendo' : 'Pay rent')}
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -293,7 +365,7 @@ export default function LeaseDetailPage() {
                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
                   <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{paidPayments.length}</p>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{approvedRequests.length}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 p-5 col-span-2 sm:col-span-1">
@@ -319,27 +391,31 @@ export default function LeaseDetailPage() {
                   </div>
                   <div>
                     <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{payments.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{requests.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
                   </div>
                 </div>
               </div>
 
-              {payments.length > 0 ? (
+              {requests.length > 0 ? (
                 <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                  {payments.map((payment, index) => {
-                    const statusInfo = getPaymentStatusInfo(payment.status);
+                  {requests.map((request, index) => {
+                    const statusInfo = getRequestStatusInfo(request.status);
                     const StatusIcon = statusInfo.icon;
-                    const methodInfo = getPaymentMethodInfo(payment.method);
+                    const dateText =
+                      request.status === 'APPROVED' && request.validatedAt
+                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatDate(request.validatedAt)}`
+                        : request.status === 'PENDING_VALIDATION'
+                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatDate(request.createdAt)}`
+                          : `${locale === 'es' ? 'Vence el' : 'Due on'} ${formatDate(request.dueDate)}`;
 
                     return (
                       <motion.div
-                        key={payment.id}
+                        key={request.id}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 + index * 0.05 }}
                         className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 dark:hover:bg-[#222224] transition-colors"
                       >
-                        {/* Status Icon */}
                         <div className={cn(
                           'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
                           statusInfo.bgColor
@@ -347,16 +423,10 @@ export default function LeaseDetailPage() {
                           <StatusIcon className={cn('w-5 h-5', statusInfo.textColor)} />
                         </div>
 
-                        {/* Details */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-medium text-neutral-900 dark:text-white">
-                              {payment.concept === 'rent' ? (locale === 'es' ? 'Arriendo mensual' : 'Monthly rent') :
-                               payment.concept === 'deposit' ? (locale === 'es' ? 'Depósito de garantía' : 'Security deposit') :
-                               payment.concept === 'admin_fee' ? (locale === 'es' ? 'Administración' : 'Admin fee') :
-                               payment.concept === 'late_fee' ? (locale === 'es' ? 'Recargo por mora' : 'Late fee') :
-                               payment.concept === 'repair' ? (locale === 'es' ? 'Reparación' : 'Repair') :
-                               payment.concept}
+                              {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                             </p>
                             <span className={cn(
                               'text-xs px-2 py-0.5 rounded-full font-medium',
@@ -367,24 +437,22 @@ export default function LeaseDetailPage() {
                             </span>
                           </div>
                           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                            {payment.paidDate ? (
-                              <>{locale === 'es' ? 'Pagado el' : 'Paid on'} {formatDate(payment.paidDate)}</>
-                            ) : (
-                              <>{locale === 'es' ? 'Vence el' : 'Due on'} {formatDate(payment.dueDate)}</>
-                            )}
-                            {methodInfo && (
-                              <> · {methodInfo.icon} {methodInfo.name}</>
-                            )}
+                            {dateText}
+                            {request.bankName && <> · {request.bankName}</>}
                           </p>
-                          {payment.reference && (
-                            <p className="text-xs text-neutral-400 mt-1">Ref: {payment.reference}</p>
+                          {request.referenceNumber && (
+                            <p className="text-xs text-neutral-400 mt-1">Ref: {request.referenceNumber}</p>
+                          )}
+                          {request.rejectionReason && (
+                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 italic">
+                              {request.rejectionReason}
+                            </p>
                           )}
                         </div>
 
-                        {/* Amount */}
                         <div className="text-right flex-shrink-0">
                           <p className="text-lg font-semibold text-neutral-900 dark:text-white">
-                            {formatCurrency(payment.amount)}
+                            {formatCurrency(request.amount)}
                           </p>
                         </div>
                       </motion.div>
@@ -573,6 +641,14 @@ export default function LeaseDetailPage() {
           </div>
         </div>
       </div>
+
+      <PayRentModal
+        open={payModalOpen}
+        leaseId={leaseId}
+        onClose={() => setPayModalOpen(false)}
+        onPaid={handlePaid}
+        prefill={{ fullName: lease.tenantName, email: lease.tenantEmail }}
+      />
     </div>
   );
 }

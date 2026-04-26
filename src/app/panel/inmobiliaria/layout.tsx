@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Toaster } from 'sonner';
 import {
   SquaresFour,
   Buildings,
+  House,
   Users,
   Chat,
   Gear,
@@ -16,12 +17,13 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
-  // Sparkle, — re-add when AI Beta nav item is uncommented
+  Robot,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
+import { PermissionsProvider, usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -35,77 +37,31 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
+  const { canAccess, isLoading: permissionsLoading } = usePermissionsContext();
 
-  const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => [
-    {
-      label: t('inmobiliaria.nav.dashboard'),
-      href: '/panel/inmobiliaria',
-      icon: SquaresFour,
-      exact: true,
-    },
-    {
-      label: t('inmobiliaria.nav.propietarios'),
-      href: '/panel/inmobiliaria/propietarios',
-      icon: UserCircle,
-    },
-    {
-      label: t('inmobiliaria.nav.portafolio'),
-      href: '/panel/inmobiliaria/portafolio',
-      icon: Buildings,
-    },
-    {
-      label: t('inmobiliaria.nav.pipeline'),
-      href: '/panel/inmobiliaria/pipeline',
-      icon: Kanban,
-    },
-    {
-      label: t('inmobiliaria.nav.agentes'),
-      href: '/panel/inmobiliaria/agentes',
-      icon: Users,
-    },
-    {
-      label: t('inmobiliaria.nav.cobros'),
-      href: '/panel/inmobiliaria/cobros',
-      icon: CurrencyDollar,
-    },
-    {
-      label: t('inmobiliaria.nav.dispersiones'),
-      href: '/panel/inmobiliaria/dispersiones',
-      icon: PaperPlaneTilt,
-    },
-    {
-      label: t('inmobiliaria.nav.operaciones'),
-      href: '/panel/inmobiliaria/operaciones',
-      icon: Wrench,
-    },
-    {
-      label: t('inmobiliaria.nav.documentos'),
-      href: '/panel/inmobiliaria/documentos',
-      icon: FileText,
-    },
-    {
-      label: t('inmobiliaria.nav.reportes'),
-      href: '/panel/inmobiliaria/reportes',
-      icon: ChartLine,
-    },
-    {
-      label: t('inmobiliaria.nav.analitica'),
-      href: '/panel/inmobiliaria/analytics',
-      icon: ChartLineUp,
-    },
-    {
-      label: t('inmobiliaria.nav.mensajes'),
-      href: '/panel/inmobiliaria/mensajes',
-      icon: Chat,
-      badge: 5,
-    },
-    // --- AI Beta section (hidden — re-enable when ready) ---
-    // {
-    //   label: t('inmobiliaria.nav.aiBeta'),
-    //   href: '/panel/inmobiliaria/beta',
-    //   icon: Sparkle,
-    // },
+  // All nav items with their corresponding permission module (null = always visible)
+  const ALL_NAV_ITEMS = useMemo(() => [
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
+    { label: t('inmobiliaria.nav.aiAgents'),     href: '/panel/inmobiliaria/ai',           icon: Robot,                      module: null },
+    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,                 module: 'propietarios' },
+    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,                      module: 'portafolio' },
+    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,                  module: 'portafolio' },
+    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,                     module: 'pipeline' },
+    { label: t('inmobiliaria.nav.agentes'),      href: '/panel/inmobiliaria/agentes',      icon: Users,                      module: 'agentes' },
+    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar,             module: 'cobros' },
+    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt,             module: 'dispersiones' },
+    { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,                     module: 'operaciones' },
+    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,                   module: 'documentos' },
+    { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,                  module: 'reportes' },
+    { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,                module: 'analytics' },
+    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5,    module: null },
   ], [t]);
+
+  const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
+    // While loading, show all items to avoid flash
+    if (permissionsLoading) return ALL_NAV_ITEMS;
+    return ALL_NAV_ITEMS.filter(({ module }) => !module || canAccess(module, 'view'));
+  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -155,9 +111,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
   return (
     <ProtectedRoute allowedRoles={['agency']}>
       <I18nProvider>
-        <SidebarProvider>
-          <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
-        </SidebarProvider>
+        <PermissionsProvider>
+          <SidebarProvider>
+            <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+          </SidebarProvider>
+        </PermissionsProvider>
       </I18nProvider>
     </ProtectedRoute>
   );

@@ -3,19 +3,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { SpinnerGap, WarningCircle, CheckCircle, Confetti, ArrowRight, Clock } from '@phosphor-icons/react';
+import { SpinnerGap, WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { AuditTrail } from '@/components/contract/AuditTrail';
-import { useContract, useContractActions } from '@/lib/hooks/useContracts';
+import { RejectContractModal } from '@/components/contract/RejectContractModal';
+import { CancelContractModal } from '@/components/contract/CancelContractModal';
+import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
+import Link from 'next/link';
+import { useContract, useContractActions, useContractPreview, useSignedPdfUrl, useContractRejections } from '@/lib/hooks/useContracts';
+import type { ContractPreview as ContractPreviewResponse } from '@/lib/api/contracts.types';
 import { getTemplateById } from '@/lib/constants/contract-templates';
-import { CONTRACT_STATUS_LABELS, CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import { CONTRACT_STATUS_LABELS, getContractTypeLabel } from '@/lib/types/contract';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { Contract } from '@/lib/types/contract';
+import type { Contract, RejectionType, ContractRejection } from '@/lib/types/contract';
 
 // ============================================================================
 // Types
@@ -53,7 +58,7 @@ function SigningSuccess({ locale }: { locale: string }) {
       </p>
       <button
         onClick={() => router.push('/inquilino/contratos')}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/25"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-2xl text-sm font-semibold transition-colors"
       >
         {locale === 'es' ? 'Ver mis contratos' : 'View my contracts'}
         <ArrowRight className="w-4 h-4" />
@@ -66,60 +71,202 @@ function SigningSuccess({ locale }: { locale: string }) {
 // Read-Only View (contract not in pending_tenant state)
 // ============================================================================
 
-function ReadOnlyView({ contract, locale }: { contract: Contract; locale: string }) {
+/**
+ * Renderiza el documento del contrato: si hay un template conocido (contratos GENERATED
+ * generados desde plantilla), usa ContractPreview con las cláusulas. Si no (contratos
+ * UPLOADED_PDF), usa el preview del backend que devuelve una signed URL al PDF y lo
+ * muestra en iframe. Nunca queda en blanco.
+ */
+function ContractDocumentView({
+  contract,
+  preview,
+  signedPdfUrl,
+}: {
+  contract: Contract;
+  preview: ContractPreviewResponse | null;
+  /** Si viene definido, gana sobre el preview — muestra el PDF con estampado firmado. */
+  signedPdfUrl: string | null;
+}) {
   const template = getTemplateById(contract.templateId);
+
+  // Cuando el contrato ya tiene firma(s), priorizamos el PDF estampado via /pdf.
+  if (signedPdfUrl) {
+    return (
+      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden bg-white">
+        <iframe
+          src={signedPdfUrl}
+          className="w-full h-[720px] bg-white"
+          title="Contrato"
+        />
+      </div>
+    );
+  }
+
+  if (template) {
+    return <ContractPreview contract={contract} template={template} />;
+  }
+  if (preview?.origin === 'UPLOADED_PDF') {
+    return (
+      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden bg-white">
+        <iframe
+          src={preview.pdfUrl}
+          className="w-full h-[720px] bg-white"
+          title="Contrato"
+        />
+      </div>
+    );
+  }
+  if (preview?.origin === 'GENERATED') {
+    return (
+      <div
+        className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white p-6 prose prose-sm max-w-none dark:prose-invert"
+        dangerouslySetInnerHTML={{ __html: preview.html }}
+      />
+    );
+  }
+  return (
+    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-8 flex items-center justify-center">
+      <SpinnerGap className="w-6 h-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+type StatusBannerTone = 'emerald' | 'amber' | 'rose' | 'neutral';
+
+function readOnlyBanner(status: Contract['status'], locale: string): { tone: StatusBannerTone; icon: typeof CheckCircle; message: string } {
+  if (status === 'active' || status === 'signed') {
+    return {
+      tone: 'emerald',
+      icon: CheckCircle,
+      message: locale === 'es'
+        ? (status === 'active' ? 'Contrato activo — ambas partes firmaron' : 'Firmado — pendiente activar')
+        : (status === 'active' ? 'Contract active — both parties signed' : 'Signed — pending activation'),
+    };
+  }
+  if (status === 'pending_landlord') {
+    return {
+      tone: 'emerald',
+      icon: CheckCircle,
+      message: locale === 'es'
+        ? 'Ya firmaste. Esperando que el propietario firme para cerrar el contrato.'
+        : 'You already signed. Waiting for the landlord to sign to close the contract.',
+    };
+  }
+  if (status === 'rejected_pending_modifications') {
+    return {
+      tone: 'amber',
+      icon: PencilSimple,
+      message: locale === 'es'
+        ? 'Esperando cambios del propietario — pediste modificaciones al contrato.'
+        : 'Waiting for landlord changes — you requested contract modifications.',
+    };
+  }
+  if (status === 'cancelled') {
+    return {
+      tone: 'rose',
+      icon: XCircle,
+      message: locale === 'es' ? 'Proceso cancelado' : 'Process cancelled',
+    };
+  }
+  return { tone: 'neutral', icon: Clock, message: CONTRACT_STATUS_LABELS[status] };
+}
+
+const BANNER_TONES: Record<StatusBannerTone, { container: string; iconBg: string; iconColor: string; text: string }> = {
+  emerald: {
+    container: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    text: 'text-emerald-800 dark:text-emerald-200',
+  },
+  amber: {
+    container: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    text: 'text-amber-800 dark:text-amber-200',
+  },
+  rose: {
+    container: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50',
+    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+    text: 'text-rose-800 dark:text-rose-200',
+  },
+  neutral: {
+    container: 'bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700',
+    iconBg: 'bg-neutral-100 dark:bg-neutral-800',
+    iconColor: 'text-neutral-500',
+    text: 'text-neutral-700 dark:text-neutral-300',
+  },
+};
+
+function ReadOnlyView({
+  contract,
+  locale,
+  chatHref,
+  canCancel,
+  onCancelRequest,
+  isCancelling,
+  preview,
+  signedPdfUrl,
+  rejections,
+}: {
+  contract: Contract;
+  locale: string;
+  chatHref: string | null;
+  canCancel: boolean;
+  onCancelRequest: () => void;
+  isCancelling: boolean;
+  preview: ContractPreviewResponse | null;
+  signedPdfUrl: string | null;
+  rejections: ContractRejection[];
+}) {
+  const banner = readOnlyBanner(contract.status, locale);
+  const tone = BANNER_TONES[banner.tone];
+  const Icon = banner.icon;
 
   return (
     <div>
-      {/* Status Banner */}
-      <div className={cn(
-        'mb-6 rounded-2xl px-5 py-4 flex items-center gap-3',
-        contract.status === 'active'
-          ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50'
-          : contract.status === 'pending_landlord'
-            ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50'
-            : 'bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700'
-      )}>
-        <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-          contract.status === 'active'
-            ? 'bg-emerald-100 dark:bg-emerald-900/40'
-            : contract.status === 'pending_landlord'
-              ? 'bg-amber-100 dark:bg-amber-900/40'
-              : 'bg-neutral-100 dark:bg-neutral-800'
-        )}>
-          {contract.status === 'active' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          ) : contract.status === 'pending_landlord' ? (
-            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          ) : (
-            <Clock className="w-5 h-5 text-neutral-500" />
-          )}
+      <div className={cn('mb-6 rounded-2xl px-5 py-4 border space-y-3', tone.container)}>
+        <div className="flex items-center gap-3">
+          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tone.iconBg)}>
+            <Icon className={cn('w-5 h-5', tone.iconColor)} />
+          </div>
+          <p className={cn('text-sm font-medium', tone.text)}>{banner.message}</p>
         </div>
-        <div>
-          <p className={cn(
-            'text-sm font-medium',
-            contract.status === 'active'
-              ? 'text-emerald-800 dark:text-emerald-200'
-              : contract.status === 'pending_landlord'
-                ? 'text-amber-800 dark:text-amber-200'
-                : 'text-neutral-700 dark:text-neutral-300'
-          )}>
-            {contract.status === 'active'
-              ? (locale === 'es' ? 'Contrato activo — ambas partes firmaron' : 'Contract active — both parties signed')
-              : contract.status === 'pending_landlord'
-                ? (locale === 'es' ? 'Esperando firma del propietario' : 'Waiting for landlord signature')
-                : CONTRACT_STATUS_LABELS[contract.status]}
-          </p>
+
+        <div className="flex items-center gap-3 pt-2 border-t border-current/10 flex-wrap">
+          <DownloadContractPdfButton
+            contractId={contract.id}
+            contractStatus={contract.status}
+            variant="ghost"
+            label={locale === 'es' ? 'Descargar PDF' : 'Download PDF'}
+          />
+          {chatHref && (
+            <Link
+              href={chatHref}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              <ChatCircle className="w-3.5 h-3.5" />
+              {locale === 'es' ? 'Abrir chat con el propietario' : 'Open chat with landlord'}
+            </Link>
+          )}
+          {canCancel && (
+            <button
+              type="button"
+              onClick={onCancelRequest}
+              disabled={isCancelling}
+              className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline disabled:opacity-50"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
+            </button>
+          )}
         </div>
       </div>
 
-      {template && (
-        <div className="space-y-6">
-          <ContractPreview contract={contract} template={template} />
-          <AuditTrail contract={contract} />
-        </div>
-      )}
+      <div className="space-y-6">
+        <ContractDocumentView contract={contract} preview={preview} signedPdfUrl={signedPdfUrl} />
+        <AuditTrail contract={contract} rejections={rejections} />
+      </div>
     </div>
   );
 }
@@ -134,24 +281,45 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   const router = useRouter();
 
   const { contract, isLoading, error } = useContract(contractId);
+  const { preview } = useContractPreview(contractId);
+  const { rejections } = useContractRejections(contractId);
   const actions = useContractActions();
+
+  // Si alguna de las partes ya firmó, usamos /pdf para ver el estampado actualizado.
+  const hasAnySignature = !!(contract?.tenantSignature || contract?.landlordSignature);
+  const { url: signedPdfUrl } = useSignedPdfUrl(contractId, { enabled: hasAnySignature });
 
   const [localContract, setLocalContract] = useState<Contract | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [signedSuccess, setSignedSuccess] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Use local contract if updated after signing, else use fetched
   const activeContract = localContract ?? contract;
-  const template = activeContract ? getTemplateById(activeContract.templateId) : undefined;
 
   const isPendingTenant = activeContract?.status === 'pending_tenant';
+  const canCancel = activeContract
+    ? (['pending_tenant', 'rejected_pending_modifications'] as const).includes(activeContract.status as 'pending_tenant' | 'rejected_pending_modifications')
+    : false;
+  const chatHref = activeContract?.applicationId
+    ? `/inquilino/mensajes?applicationId=${activeContract.applicationId}`
+    : null;
 
   // Handle signing
-  const handleSign = async (otpVerified: boolean) => {
+  const handleSign = async ({ otpVerified, signatureData, otpVerificationToken }: { otpVerified: boolean; signatureData: string; otpVerificationToken?: string }) => {
     if (!activeContract) return;
+    void otpVerified;
 
     setIsSigning(true);
-    const updated = await actions.sign(activeContract.id, { otpVerified });
+    const updated = await actions.signAsTenant(activeContract.id, {
+      acceptedTerms: true,
+      consentText: 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.',
+      signatureData,
+      otpVerificationToken,
+    });
     if (updated) {
       setLocalContract(updated);
       setSignedSuccess(true);
@@ -160,6 +328,43 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
       toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract');
     }
     setIsSigning(false);
+  };
+
+  const handleCancel = async (reason: string | undefined) => {
+    if (!activeContract) return;
+    setIsCancelling(true);
+    const updated = await actions.cancel(activeContract.id, reason ? { reason } : {});
+    setIsCancelling(false);
+    if (!updated) {
+      toast.error(locale === 'es' ? 'No se pudo cancelar el contrato.' : 'Could not cancel the contract.');
+      return;
+    }
+    toast.success(locale === 'es' ? 'Contrato cancelado.' : 'Contract cancelled.');
+    setIsCancelModalOpen(false);
+    router.push('/inquilino/contratos');
+  };
+
+  const handleReject = async (type: RejectionType, reason: string) => {
+    if (!activeContract) return;
+    setIsRejecting(true);
+    const updated = await actions.rejectAsTenant(activeContract.id, { type, reason });
+    setIsRejecting(false);
+    if (!updated) {
+      toast.error(
+        type === 'MODIFICATIONS'
+          ? (locale === 'es' ? 'No se pudo enviar el pedido de cambios.' : 'Could not submit the change request.')
+          : (locale === 'es' ? 'No se pudo enviar el rechazo.' : 'Could not submit the rejection.')
+      );
+      return;
+    }
+    setLocalContract(updated);
+    setIsRejectModalOpen(false);
+    if (type === 'DEFINITIVE') {
+      toast.success(locale === 'es' ? 'Contrato rechazado. El proceso se cerró.' : 'Contract rejected. Process closed.');
+      router.push('/inquilino/contratos');
+    } else {
+      toast.success(locale === 'es' ? 'Pedido de cambios enviado al propietario.' : 'Change request sent to the landlord.');
+    }
   };
 
   // Loading
@@ -237,27 +442,67 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
 
         {/* Non-signing state — read only */}
         {!isPendingTenant && (
-          <ReadOnlyView contract={activeContract} locale={locale} />
+          <ReadOnlyView
+            contract={activeContract}
+            locale={locale}
+            chatHref={chatHref}
+            canCancel={canCancel}
+            onCancelRequest={() => setIsCancelModalOpen(true)}
+            isCancelling={isCancelling}
+            preview={preview}
+            signedPdfUrl={signedPdfUrl}
+            rejections={rejections}
+          />
         )}
 
+        {/* "Pedir cambios" — modal fijado a MODIFICATIONS (sin opción de rechazo definitivo).
+            Para rechazar definitivamente el tenant usa el link "Cancelar contrato" abajo. */}
+        <RejectContractModal
+          open={isRejectModalOpen}
+          onClose={() => setIsRejectModalOpen(false)}
+          onConfirm={handleReject}
+          isSubmitting={isRejecting}
+          lockToType="MODIFICATIONS"
+        />
+
+        {/* Cancel modal — mounted once */}
+        <CancelContractModal
+          open={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          onConfirm={handleCancel}
+          isSubmitting={isCancelling}
+          actor="tenant"
+        />
+
         {/* Signing state — two column layout */}
-        {isPendingTenant && template && (
+        {isPendingTenant && (
           <>
             {/* Status Banner */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="mb-6 rounded-2xl px-5 py-4 flex items-center gap-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/50"
+              className="mb-6 rounded-2xl px-5 py-4 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-between gap-3 flex-wrap"
             >
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
-                <WarningCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                  <WarningCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                  {locale === 'es'
+                    ? 'Revisá el contrato y firmá. El propietario firmará después para cerrar el proceso.'
+                    : 'Review the contract and sign. The landlord will sign next to close the process.'}
+                </p>
               </div>
-              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                {locale === 'es'
-                  ? 'Revisa las cláusulas del contrato y firma para completar el proceso'
-                  : 'Review the contract clauses and sign to complete the process'}
-              </p>
+              {chatHref && (
+                <Link
+                  href={chatHref}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                >
+                  <ChatCircle className="w-3.5 h-3.5" />
+                  {locale === 'es' ? 'Abrir chat' : 'Open chat'}
+                </Link>
+              )}
             </motion.div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -268,7 +513,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                 transition={{ delay: 0.2 }}
                 className="lg:col-span-2 space-y-6"
               >
-                <ContractPreview contract={activeContract} template={template} />
+                <ContractDocumentView contract={activeContract} preview={preview} signedPdfUrl={signedPdfUrl} />
                 <AuditTrail contract={activeContract} />
               </motion.div>
 
@@ -283,12 +528,42 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                   {/* Signing Form */}
                   <SignatureForm
                     onSign={handleSign}
+                    contractId={activeContract.id}
                     isLandlord={false}
                     isLoading={isSigning}
                     signerName={activeContract.tenantName}
-                    signerPhone={activeContract.tenantPhone || '+57 300 000 0000'}
                     requireOTP={true}
                   />
+
+                  {/* Pedir cambios — no-terminal, solicita al propietario que modifique el contrato */}
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectModalOpen(true)}
+                    disabled={isSigning || isRejecting || isCancelling}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-white dark:bg-[#1a1a1c] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <PencilSimple className="w-4 h-4" />
+                    {locale === 'es' ? 'Pedir cambios al propietario' : 'Request changes'}
+                  </button>
+
+                  {/* Descargar PDF — disponible en cualquier momento para transparencia */}
+                  <DownloadContractPdfButton
+                    contractId={activeContract.id}
+                    contractStatus={activeContract.status}
+                    variant="secondary"
+                    className="w-full justify-center"
+                    label={locale === 'es' ? 'Descargar PDF' : 'Download PDF'}
+                  />
+
+                  {/* Cancelar proceso (terminal) — último recurso */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCancelModalOpen(true)}
+                    disabled={isSigning || isRejecting || isCancelling}
+                    className="w-full text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline inline-flex items-center justify-center gap-1 py-1 disabled:opacity-50"
+                  >
+                    {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
+                  </button>
 
                   {/* Contract Info Card */}
                   <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
@@ -296,10 +571,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                       {locale === 'es' ? 'Tipo de contrato' : 'Contract type'}
                     </h4>
                     <p className="mt-1 font-medium text-neutral-900 dark:text-white">
-                      {CONTRACT_TYPE_LABELS[activeContract.type]}
-                    </p>
-                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                      {template.clauses.length} {locale === 'es' ? 'cláusulas' : 'clauses'}
+                      {getContractTypeLabel(activeContract, locale as 'es' | 'en')}
                     </p>
                   </div>
 

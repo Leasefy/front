@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ import {
   Wrench,
   CaretLeft,
   CaretRight,
+  FileArrowUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -32,7 +34,7 @@ const ITEMS_PER_PAGE = 12;
  * Portafolio Page - Main view for managing all consigned properties
  * Route: /panel/inmobiliaria/portafolio
  */
-export default function PortafolioPage() {
+function PortafolioContent() {
   const { t } = useI18n();
   const router = useRouter();
   const { consignaciones: allConsignaciones } = useConsignaciones();
@@ -42,7 +44,7 @@ export default function PortafolioPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
-    availability: 'all',
+    availability: 'available',
     agenteId: 'all',
     propietarioId: 'all',
     city: 'all',
@@ -68,6 +70,9 @@ export default function PortafolioPage() {
 
   // Filter consignaciones
   const filteredConsignaciones = useMemo(() => {
+    // Normalize backend values to lowercase to match frontend enum definitions
+    const normalize = (val: string) => val?.toLowerCase() ?? '';
+
     let result = [...allConsignaciones];
 
     // Search filter
@@ -82,7 +87,7 @@ export default function PortafolioPage() {
 
     // Availability filter
     if (filters.availability !== 'all') {
-      result = result.filter((c) => c.availability === filters.availability);
+      result = result.filter((c) => normalize(c.availability) === filters.availability);
     }
 
     // Agente filter
@@ -97,12 +102,12 @@ export default function PortafolioPage() {
 
     // City filter
     if (filters.city !== 'all') {
-      result = result.filter((c) => c.propertyCity === filters.city);
+      result = result.filter((c) => normalize(c.propertyCity) === normalize(filters.city));
     }
 
     // Property type filter
     if (filters.propertyType !== 'all') {
-      result = result.filter((c) => c.propertyType === filters.propertyType);
+      result = result.filter((c) => normalize(c.propertyType) === normalize(filters.propertyType));
     }
 
     return result;
@@ -148,6 +153,10 @@ export default function PortafolioPage() {
     router.push('/panel/inmobiliaria/portafolio/nuevo');
   }, [router]);
 
+  const handleImportar = useCallback(() => {
+    router.push('/panel/inmobiliaria/portafolio/importar');
+  }, [router]);
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
@@ -160,13 +169,24 @@ export default function PortafolioPage() {
             {t('inmobiliaria.portafolio.subtitle')}
           </p>
         </div>
-        <button
-          onClick={handleNuevaConsignacion}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
-        >
-          <Plus className="w-5 h-5" />
-          {t('inmobiliaria.portafolio.addProperty')}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Import Button */}
+          <button
+            onClick={handleImportar}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <FileArrowUp className="w-5 h-5" />
+            {t('inmobiliaria.import.title')}
+          </button>
+          {/* Nueva consignación */}
+          <button
+            onClick={handleNuevaConsignacion}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            {t('inmobiliaria.portafolio.addProperty')}
+          </button>
+        </div>
       </div>
 
       {/* Stats Row */}
@@ -413,17 +433,35 @@ export default function PortafolioPage() {
 // Empty State Component
 function EmptyState() {
   const { t } = useI18n();
+  const router = useRouter();
   return (
-    <div className="p-12 text-center">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-        <Buildings className="w-8 h-8 text-muted-foreground" />
+    <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+        <Buildings className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-1">
+      <h3 className="text-base font-semibold text-foreground mb-1.5">
         {t('inmobiliaria.portafolio.noProperties')}
       </h3>
-      <p className="text-muted-foreground max-w-md mx-auto">
+      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
         {t('inmobiliaria.portafolio.noPropertiesDesc')}
       </p>
+      <div className="flex items-center justify-center gap-3 mt-4">
+        <button
+          onClick={() => router.push('/panel/inmobiliaria/portafolio/importar')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        >
+          <FileArrowUp className="w-4 h-4" />
+          {t('inmobiliaria.import.title')}
+        </button>
+      </div>
     </div>
+  );
+}
+
+export default function PortafolioPage() {
+  return (
+    <PageGuard module="portafolio">
+      <PortafolioContent />
+    </PageGuard>
   );
 }

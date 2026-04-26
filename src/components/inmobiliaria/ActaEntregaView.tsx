@@ -333,7 +333,7 @@ export function ActaEntregaView({
             </p>
             <button
               onClick={onAddItem}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors text-sm opacity-50 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors text-sm opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
@@ -351,7 +351,7 @@ export function ActaEntregaView({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div

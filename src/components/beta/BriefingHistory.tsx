@@ -65,7 +65,7 @@ export function BriefingHistory() {
                 'px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap',
                 'transition-colors duration-150',
                 isActive
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-muted-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700'
               )}
             >

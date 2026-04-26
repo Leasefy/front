@@ -14,7 +14,7 @@ import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { landlordApi } from '@/lib/api/landlord.service';
 import { useVisits } from '@/lib/hooks/useVisits';
 import { useContracts } from '@/lib/hooks/useContracts';
-import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import { getContractTypeLabel } from '@/lib/types/contract';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
@@ -24,11 +24,13 @@ import { PlanDetailSheet, QuickAction, DetailSection, SecondaryPanel } from '@/c
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 
 const VISIT_STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
-  requested: 'new',
-  confirmed: 'in_progress',
-  completed: 'completed',
-  cancelled: 'rejected',
-  no_show: 'important',
+  requested:   'new',
+  confirmed:   'in_progress',
+  completed:   'completed',
+  cancelled:   'rejected',
+  no_show:     'important',
+  rejected:    'rejected',
+  rescheduled: 'archived',
 };
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';
@@ -36,6 +38,10 @@ import type { Candidate } from '@/lib/types/candidate';
 import { RISK_LEVELS } from '@/lib/types/risk-score';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
 import { DEFAULT_AVAILABILITY_SCHEDULE, type AvailabilitySchedule } from '@/lib/types/property';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { canPlanAccessFeature } from '@/lib/constants/subscription-plans';
+import type { PlanId } from '@/lib/types/subscription';
+import { LockedFeatureOverlay, LockedBadge } from '@/components/ui/LockedFeatureOverlay';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
@@ -65,6 +71,11 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const { locale } = useI18n();
   const { propertyId } = params;
   const router = useRouter();
+
+  // Subscription check for feature gating
+  const { subscription } = useMySubscription();
+  const planId = (subscription?.planId || 'starter') as PlanId;
+  const hasAiScoring = canPlanAccessFeature(planId, 'ai_scoring');
 
   // Fetch property with candidates from API
   const { property, isLoading: propertyLoading } = useLandlordProperty(propertyId);
@@ -209,7 +220,11 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       header: 'Riesgo',
       sortable: true,
       render: (row) => (
-        <PlanRiskBadge level={row.riskLevel} />
+        hasAiScoring ? (
+          <PlanRiskBadge level={row.riskLevel} />
+        ) : (
+          <LockedBadge label="Pro" />
+        )
       ),
     },
     {
@@ -217,16 +232,20 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       header: 'Score',
       sortable: true,
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <div className="w-16">
-            <PlanProgressBar
-              value={row.score}
-              size="sm"
-              variant={row.score >= 70 ? 'success' : row.score >= 50 ? 'warning' : 'danger'}
-            />
+        hasAiScoring ? (
+          <div className="flex items-center gap-2">
+            <div className="w-16">
+              <PlanProgressBar
+                value={row.score}
+                size="sm"
+                variant={row.score >= 70 ? 'success' : row.score >= 50 ? 'warning' : 'danger'}
+              />
+            </div>
+            <span className="text-xs text-plan-secondary">{row.score}</span>
           </div>
-          <span className="text-xs text-plan-secondary">{row.score}</span>
-        </div>
+        ) : (
+          <span className="text-xs text-plan-muted">—</span>
+        )
       ),
     },
     {
@@ -379,7 +398,40 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
     {
       id: 'risk-evaluation',
       title: 'Evaluacion de Riesgo',
-      content: (
+      content: !hasAiScoring ? (
+        <LockedFeatureOverlay
+          title="Análisis AI de candidatos"
+          description="Mejora tu plan para ver el score detallado, desglose por categoría, factores positivos y recomendaciones de cada candidato."
+          upgradeHref="/panel/upgrade"
+          upgradeLabel="Mejorar plan"
+          variant="blur"
+        >
+          {/* Decorative blurred content */}
+          <div className="space-y-5">
+            <div className="bg-muted p-4 rounded-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100" />
+                  <div>
+                    <p className="text-sm font-medium text-plan-primary">Excelente</p>
+                    <p className="text-xs text-plan-secondary">Perfil muy confiable</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-plan-primary">92</p>
+                  <p className="text-xs text-plan-secondary">de 100</p>
+                </div>
+              </div>
+              <div className="h-2 bg-emerald-200 rounded-full" />
+            </div>
+            <div className="space-y-3">
+              <div className="h-2 bg-neutral-200 rounded-full w-3/4" />
+              <div className="h-2 bg-neutral-200 rounded-full w-1/2" />
+              <div className="h-2 bg-neutral-200 rounded-full w-2/3" />
+            </div>
+          </div>
+        </LockedFeatureOverlay>
+      ) : (
         <div className="space-y-5">
           {/* Score Summary */}
           <div className="bg-muted p-4 rounded-sm">
@@ -869,7 +921,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
                   <div>
                     <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</p>
-                    <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{CONTRACT_TYPE_LABELS[activeContract.type]}</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{getContractTypeLabel(activeContract)}</p>
                   </div>
 
                   <div className="h-px bg-neutral-100 dark:bg-neutral-700" />
@@ -1237,7 +1289,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   onClick={() => {
                     toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Descargar

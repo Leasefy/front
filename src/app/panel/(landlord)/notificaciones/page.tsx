@@ -36,75 +36,41 @@ import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
 import type { LandlordNotification, LandlordNotificationCategory } from '@/lib/types/notification';
 
-// Icon mapping for notification types
+/**
+ * Icon mapping for notification types.
+ * Keys are the canonical codes emitted by the backend (templateCode in
+ * prisma/seed-templates.ts). Single source of truth — no aliases.
+ */
 const getNotificationIcon = (type: string) => {
   const iconMap: Record<string, typeof Bell> = {
     // Applications
-    APP_NEW: UserPlus,
-    APP_DOCS_UPLOADED: FileText,
-    APP_DOCS_PENDING: FileText,
-    APP_WITHDRAWN: Users,
-    // Verifications
-    VER_COMPLETED: ShieldCheck,
-    VER_SCORE_HIGH: ShieldCheck,
-    VER_SCORE_LOW: Warning,
-    VER_RED_FLAGS: Warning,
-    VER_INCOME_VERIFIED: ShieldCheck,
-    // Contracts
-    CON_READY: FileText,
-    CON_TENANT_SIGNED: PenNib,
-    CON_COMPLETED: Check,
-    CON_PENDING_SIGNATURE: PenNib,
-    CON_CANCELLED: FileText,
-    CON_AMENDMENT: FileText,
+    APPLICATION_RECEIVED: UserPlus,
+    APPLICATION_APPROVED: Check,
+    APPLICATION_REJECTED: Warning,
+    APPLICATION_INFO_REQUESTED: FileText,
+    APPLICATION_INFO_PROVIDED: FileText,
     // Payments
-    PAY_RECEIVED: CurrencyDollar,
-    PAY_DEPOSITED: Bank,
-    PAY_OVERDUE: Warning,
-    PAY_PARTIAL: CurrencyDollar,
-    PAY_FAILED: Warning,
-    PAY_REMINDER_SENT: Bell,
-    // Leases
-    LEA_STARTED: House,
-    LEA_EXPIRING_90: Clock,
-    LEA_EXPIRING_30: Clock,
-    LEA_EXPIRED: Warning,
-    LEA_RENEWED: House,
-    LEA_TERMINATED: House,
-    LEA_EARLY_TERMINATION: Warning,
+    PAYMENT_RECEIPT_UPLOADED: CurrencyDollar,
+    PAYMENT_APPROVED: Check,
+    PAYMENT_REJECTED: Warning,
+    PAYMENT_DISPUTE_OPENED: Warning,
+    PAYMENT_REMINDER: Clock,
+    PAYMENT_OVERDUE: Warning,
     // Visits
-    VIS_SCHEDULED: Calendar,
-    VIS_REMINDER: Bell,
-    VIS_COMPLETED: Check,
-    VIS_CANCELLED: Calendar,
-    VIS_RESCHEDULED: Calendar,
-    VIS_NO_SHOW: Warning,
-    // Properties
-    PRO_PUBLISHED: Megaphone,
-    PRO_VIEWS_MILESTONE: Eye,
-    PRO_FEATURED: Star,
-    PRO_EXPIRED: Warning,
-    PRO_DEACTIVATED: Buildings,
-    PRO_PRICE_SUGGESTION: Buildings,
-    // Messages
-    MSG_NEW: ChatCircle,
-    MSG_REPLY: ChatCircle,
-    // Maintenance
-    MNT_REQUEST: Wrench,
-    MNT_UPDATED: Wrench,
-    MNT_COMPLETED: Check,
-    // Reviews
-    REV_RECEIVED: Star,
-    REV_RESPONSE_NEEDED: Star,
-    // System
-    SYS_SUBSCRIPTION_EXPIRING: Warning,
-    SYS_SUBSCRIPTION_EXPIRED: Warning,
-    SYS_PAYMENT_METHOD_EXPIRING: CurrencyDollar,
-    SYS_SECURITY_ALERT: ShieldCheck,
-    SYS_WELCOME: Sparkle,
-    SYS_PROFILE_INCOMPLETE: Users,
-    SYS_NEW_FEATURE: Sparkle,
-    SYS_REPORT_READY: FileText,
+    VISIT_REQUESTED: Calendar,
+    VISIT_ACCEPTED: Check,
+    VISIT_REJECTED: Calendar,
+    VISIT_CANCELLED: Calendar,
+    VISIT_RESCHEDULED: Calendar,
+    VISIT_REMINDER_24H: Bell,
+    // Contracts
+    CONTRACT_READY_TO_SIGN: PenNib,
+    CONTRACT_LANDLORD_SIGNED: PenNib,
+    CONTRACT_TENANT_SIGNED: PenNib,
+    CONTRACT_COMPLETED: Check,
+    // Leases
+    LEASE_EXPIRING_SOON: Clock,
+    LEASE_EXPIRED: Warning,
   };
 
   return iconMap[type] || Bell;
@@ -221,7 +187,7 @@ export default function NotificacionesPage() {
             className={cn(
               'px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-2',
               filter === f.id
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                 : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
             )}
           >
@@ -284,7 +250,7 @@ export default function NotificacionesPage() {
                     'flex items-start gap-4 px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer group',
                     index !== filteredNotifications.length - 1 &&
                       'border-b border-neutral-100 dark:border-neutral-800',
-                    !notification.read && 'bg-indigo-50/50 dark:bg-indigo-500/5'
+                    !notification.read && 'bg-indigo-50/50 dark:bg-indigo-600/5'
                   )}
                 >
                   {/* Icon */}
@@ -347,7 +313,7 @@ export default function NotificacionesPage() {
                             router.push(notification.actionUrl);
                           }
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-700/20 transition-colors"
                       >
                         {notification.actionLabel}
                         <ArrowRight className="w-3 h-3" />
@@ -381,7 +347,7 @@ export default function NotificacionesPage() {
                   {/* Unread indicator and arrow */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {!notification.read && (
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full" />
+                      <div className="w-2 h-2 bg-indigo-600 rounded-full" />
                     )}
                     <CaretRight className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
                   </div>

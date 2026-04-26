@@ -209,17 +209,21 @@ export function StepReview() {
             required
           />
           <DocumentStatus
-            label="Comprobante de ingresos"
-            uploaded={!!documents.incomeProof?.fileName || !!documents.incomeProof?.file}
+            label="Extracto bancario"
+            uploaded={!!documents.bankStatement?.fileName || !!documents.bankStatement?.file}
             required
           />
           <DocumentStatus
-            label="Carta laboral"
+            label="Contrato laboral"
             uploaded={!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file}
           />
           <DocumentStatus
-            label="Extractos bancarios"
-            uploaded={!!documents.bankStatements?.fileName || !!documents.bankStatements?.file}
+            label="Certificado de ingresos"
+            uploaded={!!documents.incomeProof?.fileName || !!documents.incomeProof?.file}
+          />
+          <DocumentStatus
+            label="Colilla de nómina"
+            uploaded={!!documents.payStub?.fileName || !!documents.payStub?.file}
           />
           <DocumentStatus
             label="Reporte de crédito"

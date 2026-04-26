@@ -117,7 +117,7 @@ export default function InvitacionPage() {
   const params = useParams();
   const token = typeof params.token === 'string' ? params.token : '';
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, needsOnboarding } = useAuth();
   const { invitation, status } = useInvitation(token);
 
   const [accepting, setAccepting] = useState(false);
@@ -130,10 +130,18 @@ export default function InvitacionPage() {
 
   // ---- Redirect helpers ----
   const loginUrl = `/auth?redirect=/invitacion/${token}`;
-  const registerUrl = `/auth?mode=register&redirect=/invitacion/${token}`;
+  // New users go through /registro which creates backend profile (AGENCY type) + accepts invitation.
+  // The generic /auth flow only creates a Supabase account and leaves needsOnboarding: true.
+  const registerUrl = `/registro?invitationToken=${token}`;
 
   // ---- Accept ----
   async function handleAccept() {
+    // User authenticated in Supabase but has no backend profile yet → complete registration first
+    if (needsOnboarding) {
+      router.push(`/registro?invitationToken=${token}`);
+      return;
+    }
+
     setAccepting(true);
     setActionError(null);
     try {
@@ -154,7 +162,8 @@ export default function InvitacionPage() {
         throw new Error(body.message || 'No se pudo aceptar la invitación');
       }
 
-      router.push('/panel/inmobiliaria');
+      // Hard navigation so auth context reinitializes with the updated role from backend
+      window.location.replace('/panel/inmobiliaria');
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Error al aceptar la invitación');
       setAccepting(false);
@@ -300,7 +309,7 @@ export default function InvitacionPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           {user ? (
-            // Logged in: accept / decline
+            // Logged in with full profile: accept / decline
             <>
               <button
                 onClick={handleAccept}
@@ -314,6 +323,23 @@ export default function InvitacionPage() {
                 onClick={handleDecline}
                 disabled={accepting || declining}
                 className="w-full rounded-xl border border-red-200 dark:border-red-900/50 px-6 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {declining ? 'Rechazando…' : 'Rechazar invitación'}
+              </button>
+            </>
+          ) : needsOnboarding ? (
+            // Supabase session exists but no backend profile yet → complete registration
+            <>
+              <Link
+                href={registerUrl}
+                className="block w-full text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-sm font-medium text-white transition-colors"
+              >
+                Completar registro para unirme
+              </Link>
+              <button
+                onClick={handleDecline}
+                disabled={declining}
+                className="w-full text-center text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-60 py-1 transition-colors"
               >
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>

@@ -89,7 +89,7 @@ function GoogleIcon({ className }: { className?: string }) {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
@@ -97,21 +97,37 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
+  // Only redirect when the user explicitly authenticated via THIS form in this session.
+  // Without this guard, a pre-existing session would auto-redirect away from /auth,
+  // preventing users from logging in as a different account.
+  const didAuthenticateInForm = React.useRef(false);
 
   const returnUrl = returnUrlProp || searchParams.get('returnUrl') || '/';
 
-  // Redirigir automáticamente cuando el usuario se autentica
+  // Redirigir automáticamente SOLO cuando el usuario inició sesión en este formulario
   React.useEffect(() => {
+    if (!didAuthenticateInForm.current) return;
     if (authLoading) return;
+    // JWT valid but backend has no user record yet → onboarding
+    if (needsOnboarding) {
+      window.location.href = '/onboarding/seleccionar-rol';
+      return;
+    }
     if (!isAuthenticated || !user) return;
     // Si el onboarding no está completo, siempre ir a seleccionar rol
     if (!user.onboardingCompleted) {
       window.location.href = '/onboarding/seleccionar-rol';
       return;
     }
-    const destination = (returnUrl && returnUrl !== '/') ? returnUrl : '/';
-    window.location.href = destination;
-  }, [isAuthenticated, user, authLoading, returnUrl]);
+    if (returnUrl && returnUrl !== '/') {
+      window.location.href = returnUrl;
+      return;
+    }
+    // No returnUrl — redirect to the correct panel based on role
+    if (user.role === 'agency') window.location.href = '/panel/inmobiliaria';
+    else if (user.role === 'landlord') window.location.href = '/panel';
+    else window.location.href = '/inquilino';
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 
@@ -188,9 +204,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
+      didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
     } catch {
+      didAuthenticateInForm.current = false;
       setError('Error con Google. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
@@ -201,10 +219,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
+      didAuthenticateInForm.current = true;
       const userData = await signInWithEmail(data.email, data.password);
       onSuccess?.();
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
+      didAuthenticateInForm.current = false;
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError('Correo o contraseña incorrectos.');
@@ -222,9 +242,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
+      didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
     } catch {
+      didAuthenticateInForm.current = false;
       setError('Error con Google. Intenta de nuevo.');
     } finally {
       setIsLoading(false);

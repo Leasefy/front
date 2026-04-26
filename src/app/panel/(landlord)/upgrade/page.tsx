@@ -21,7 +21,7 @@ export default function UpgradePage() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { subscription } = useMySubscription();
-  const currentPlanId = subscription?.planId ?? 'free';
+  const currentPlanId = subscription?.planId ?? 'starter';
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,9 +29,9 @@ export default function UpgradePage() {
   const currentPlan = getPlanById(currentPlanId);
   const newPlan = selectedPlan ? getPlanById(selectedPlan) : null;
 
-  const handleSelectPlan = (planId: PlanId) => {
+  const handleSelectPlan = (planId: string) => {
     if (planId !== currentPlanId) {
-      setSelectedPlan(planId);
+      setSelectedPlan(planId as PlanId);
     }
   };
 
@@ -50,8 +50,8 @@ export default function UpgradePage() {
   const canUpgrade =
     selectedPlan &&
     selectedPlan !== currentPlanId &&
-    (selectedPlan !== 'free' ||
-      currentPlanId === 'business' ||
+    (selectedPlan !== 'starter' ||
+      currentPlanId === 'flex' ||
       currentPlanId === 'pro');
 
   return (
@@ -212,7 +212,7 @@ export default function UpgradePage() {
                 disabled={isProcessing}
                 className={cn(
                   'flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all min-w-[200px]',
-                  'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25',
+                  'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
                   isProcessing && 'opacity-70 cursor-not-allowed'
                 )}
               >

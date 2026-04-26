@@ -55,6 +55,9 @@ interface ApplicationContextValue {
   application: Application;
   isLoading: boolean;
   isHydrated: boolean;
+  mode: 'create' | 'update';
+  /** Present only when mode === 'update' — the backend id of the application being edited */
+  existingApplicationId?: string;
 
   // Compass
   currentStep: number;
@@ -120,6 +123,10 @@ interface ApplicationProviderProps {
   // Agent attribution (from shareable links)
   agentCode?: string;
   linkCode?: string;
+  // Update mode (NEEDS_INFO flow)
+  mode?: 'create' | 'update';
+  existingApplicationId?: string;
+  initialApplication?: Application;
 }
 
 // ============================================================================
@@ -133,8 +140,15 @@ export function ApplicationProvider({
   initialEmail,
   agentCode,
   linkCode,
+  mode = 'create',
+  existingApplicationId,
+  initialApplication,
 }: ApplicationProviderProps) {
   const [application, setApplication] = useState<Application>(() => {
+    // Update mode: start from the existing application data
+    if (mode === 'update' && initialApplication) {
+      return { ...initialApplication, currentStep: 1 };
+    }
     const emptyApp = createEmptyApplication(propertyId);
     // Pre-fill name and email if provided from lead capture
     if (initialName || initialEmail) {
@@ -159,10 +173,15 @@ export function ApplicationProvider({
   const totalSteps = WIZARD_STEPS.length;
 
   // ========================================================================
-  // Load from localStorage on mount
+  // Load from localStorage on mount (skip in update mode — data comes from backend)
   // ========================================================================
 
   useEffect(() => {
+    if (mode === 'update') {
+      setIsHydrated(true);
+      return;
+    }
+
     const storage = createApplicationStorage(propertyId);
     const stored = storage.get({
       suppressErrors: true, // Silently fail for parse errors
@@ -176,14 +195,14 @@ export function ApplicationProvider({
     }
 
     setIsHydrated(true);
-  }, [propertyId]);
+  }, [propertyId, mode]);
 
   // ========================================================================
-  // FloppyDisk to localStorage on changes (after hydration)
+  // FloppyDisk to localStorage on changes (after hydration, skip in update mode)
   // ========================================================================
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || mode === 'update') return;
 
     const storage = createApplicationStorage(propertyId);
     // Don't save File objects to localStorage (they can't be serialized)
@@ -379,7 +398,81 @@ export function ApplicationProvider({
 
       let applicationId: string;
 
-      if (isAuthenticated) {
+      if (mode === 'update' && existingApplicationId) {
+        // Update mode: PATCH per-step (backend requires step-specific DTOs)
+        applicationId = existingApplicationId;
+
+        // Step 1 — Personal
+        await applicationsApi.updateStep(existingApplicationId, 1, {
+          fullName: application.personal.fullName,
+          documentType: application.personal.documentType,
+          documentNumber: application.personal.documentNumber,
+          dateOfBirth: application.personal.dateOfBirth,
+          phone: application.personal.phone,
+          email: application.personal.email,
+          currentAddress: application.personal.currentAddress,
+          timeAtCurrentAddress: application.personal.timeAtCurrentAddress,
+          maritalStatus: application.personal.maritalStatus,
+          dependents: application.personal.dependents,
+        });
+
+        // Step 2 — Employment
+        await applicationsApi.updateStep(existingApplicationId, 2, {
+          employmentStatus: application.employment.employmentStatus,
+          companyName: application.employment.companyName,
+          industry: application.employment.industry,
+          position: application.employment.position,
+          contractType: application.employment.contractType,
+          timeAtJob: application.employment.timeAtJob,
+          employerPhone: application.employment.employerPhone,
+          employerAddress: application.employment.employerAddress,
+        });
+
+        // Step 3 — Income
+        await applicationsApi.updateStep(existingApplicationId, 3, {
+          monthlySalary: application.income.monthlySalary,
+          additionalIncome: application.income.additionalIncome,
+          additionalIncomeSource: application.income.additionalIncomeSource,
+          totalMonthlyIncome: application.income.totalMonthlyIncome,
+          monthlyObligations: application.income.monthlyObligations,
+          availableForRent: application.income.availableForRent,
+        });
+
+        // Step 4 — References
+        await applicationsApi.updateStep(existingApplicationId, 4, {
+          references: application.references as Record<string, unknown>,
+        });
+
+        // Upload any new documents — in update mode we do NOT silently swallow
+        // upload errors. If an upload fails, the whole flow fails so we don't
+        // notify the agency of a partial update.
+        const docs = application.documents;
+        const docEntries: Array<{ file: File | null | undefined; type: string }> = [
+          { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
+          { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
+          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
+          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
+          { file: docs.payStub?.file, type: 'PAY_STUB' },
+          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
+        ];
+        for (const { file, type } of docEntries) {
+          if (file) {
+            try {
+              await applicationsApi.uploadDocument(file, type);
+            } catch (uploadErr) {
+              const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
+              throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
+            }
+          }
+        }
+
+        // Notify agency and mark ready — backend transitions NEEDS_INFO → UNDER_REVIEW
+        await applicationsApi.respondToInfoRequest(
+          existingApplicationId,
+          'El solicitante actualizó su información y documentos.',
+          true
+        );
+      } else if (isAuthenticated) {
         // 1a. Authenticated: create via authenticated endpoint
         const created = await applicationsApi.create(payload);
         applicationId = created.id;
@@ -387,11 +480,12 @@ export function ApplicationProvider({
         // Upload documents (only possible when authenticated)
         const docs = application.documents;
         const docEntries: Array<{ file: File | null | undefined; type: string }> = [
-          { file: docs.idDocument?.file, type: 'id_document' },
-          { file: docs.incomeProof?.file, type: 'income_proof' },
-          { file: docs.employmentLetter?.file, type: 'employment_letter' },
-          { file: docs.bankStatements?.file, type: 'bank_statements' },
-          { file: docs.creditReport?.file, type: 'credit_report' },
+          { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
+          { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
+          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
+          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
+          { file: docs.payStub?.file, type: 'PAY_STUB' },
+          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
         ];
         for (const { file, type } of docEntries) {
           if (file) {
@@ -498,6 +592,8 @@ export function ApplicationProvider({
     application,
     isLoading,
     isHydrated,
+    mode,
+    existingApplicationId,
 
     currentStep,
     totalSteps,
@@ -590,11 +686,18 @@ function sanitizeDocumentsForStorage(
       uploadedAt: documents.employmentLetter.uploadedAt,
     };
   }
-  if (documents.bankStatements) {
-    sanitized.bankStatements = {
+  if (documents.bankStatement) {
+    sanitized.bankStatement = {
       file: null,
-      fileName: documents.bankStatements.fileName,
-      uploadedAt: documents.bankStatements.uploadedAt,
+      fileName: documents.bankStatement.fileName,
+      uploadedAt: documents.bankStatement.uploadedAt,
+    };
+  }
+  if (documents.payStub) {
+    sanitized.payStub = {
+      file: null,
+      fileName: documents.payStub.fileName,
+      uploadedAt: documents.payStub.uploadedAt,
     };
   }
   if (documents.creditReport) {

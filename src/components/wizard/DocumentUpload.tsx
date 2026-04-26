@@ -13,10 +13,17 @@ interface DocumentUploadProps {
   required?: boolean;
   accept?: string;
   maxSizeMB?: number;
-  value: { file: File | null; fileName?: string } | null;
+  value: { file: File | null; fileName?: string; remoteId?: string } | null;
   onChange: (data: { file: File; fileName: string; uploadedAt: string } | null) => void;
   error?: string;
   hint?: string;
+  /**
+   * Optional hook called when the user clicks the remove button AND the current
+   * value has a `remoteId` (i.e. the doc already exists on the backend).
+   * Should perform the actual DELETE against the backend and resolve when done.
+   * Return `false` to cancel the local removal (e.g. on error).
+   */
+  onDelete?: (remoteId: string) => Promise<boolean | void>;
 }
 
 type UploadState = 'idle' | 'dragging' | 'uploading' | 'success' | 'error';
@@ -37,6 +44,7 @@ export function DocumentUpload({
   onChange,
   error,
   hint,
+  onDelete,
 }: DocumentUploadProps) {
   const [state, setState] = useState<UploadState>(value?.file || value?.fileName ? 'success' : 'idle');
   const [uploadError, setUploadError] = useState<string>('');
@@ -144,11 +152,32 @@ export function DocumentUpload({
   );
 
   // Handle remove
-  const handleRemove = useCallback(() => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleRemove = useCallback(async () => {
+    // If this is a remote doc and an onDelete hook is wired, call it first.
+    // Only clear local state if the backend delete succeeded.
+    if (value?.remoteId && onDelete) {
+      setIsDeleting(true);
+      setUploadError('');
+      try {
+        const result = await onDelete(value.remoteId);
+        if (result === false) {
+          setIsDeleting(false);
+          return;
+        }
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'No pudimos eliminar el documento');
+        setState('error');
+        setIsDeleting(false);
+        return;
+      }
+      setIsDeleting(false);
+    }
     onChange(null);
     setState('idle');
     setUploadError('');
-  }, [onChange]);
+  }, [onChange, onDelete, value?.remoteId]);
 
   // Format file size
   const formatFileSize = (bytes: number): string => {
@@ -186,13 +215,18 @@ export function DocumentUpload({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Check className="h-4 w-4 text-emerald-600" />
+            {!isDeleting && <Check className="h-4 w-4 text-emerald-600" />}
             <button
               type="button"
               onClick={handleRemove}
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+              disabled={isDeleting}
+              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-wait"
             >
-              <X className="h-4 w-4" />
+              {isDeleting ? (
+                <SpinnerGap className="h-4 w-4 animate-spin" />
+              ) : (
+                <X className="h-4 w-4" />
+              )}
               <span className="sr-only">Eliminar</span>
             </button>
           </div>

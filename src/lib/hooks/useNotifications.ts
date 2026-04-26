@@ -4,7 +4,9 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+const POLL_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 import { notificationsApi } from '@/lib/api/notifications.service';
 import type { LandlordNotification, TenantNotification } from '@/lib/types/notification';
 
@@ -28,6 +30,7 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -45,6 +48,10 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
 
   useEffect(() => {
     fetchNotifications();
+    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
@@ -112,6 +119,7 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -129,6 +137,10 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
 
   useEffect(() => {
     fetchNotifications();
+    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {

@@ -171,7 +171,7 @@ export function CobroFilters({
           <Funnel className="w-4 h-4" />
           <span>{t('inmobiliaria.cobros.filters.filtersLabel')}</span>
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
+            <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
             </span>
           )}

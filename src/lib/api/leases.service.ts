@@ -4,7 +4,7 @@
  */
 
 import { apiClient, ApiError } from './client';
-import type { BackendLease, BackendPayment } from './leases.types';
+import type { BackendLease, BackendPayment, BackendPaymentInfo } from './leases.types';
 import type {
   Lease,
   LeaseStatus,
@@ -61,12 +61,10 @@ function mapBackendLease(bl: BackendLease): Lease {
     tenantId: bl.tenantId,
     status: (LEASE_STATUS_MAP[bl.status] ?? bl.status) as LeaseStatus,
     monthlyRent: bl.monthlyRent,
-    adminFee: bl.adminFee,
-    guaranteeType: bl.guaranteeType as Lease['guaranteeType'],
-    guaranteeDetails: bl.guaranteeDetails,
+    deposit: bl.deposit,
     startDate: bl.startDate,
     endDate: bl.endDate,
-    paymentDueDay: bl.paymentDueDay,
+    paymentDay: bl.paymentDay,
     propertyTitle: bl.propertyTitle,
     propertyAddress: bl.propertyAddress,
     propertyCity: bl.propertyCity,
@@ -83,6 +81,10 @@ function mapBackendLease(bl: BackendLease): Lease {
     inventoryUrl: bl.inventoryUrl,
     createdAt: bl.createdAt,
     updatedAt: bl.updatedAt,
+    // Legacy: el backend NO devuelve estos campos. Los pasamos solo si vinieran (compat).
+    adminFee: bl.adminFee,
+    guaranteeType: bl.guaranteeType as Lease['guaranteeType'],
+    guaranteeDetails: bl.guaranteeDetails,
   };
 }
 
@@ -139,6 +141,15 @@ export const leasesApi = {
       }
       throw err;
     }
+  },
+
+  /**
+   * GET /leases/:leaseId/payment-info — info del lease para mostrar el modal de pago.
+   * Devuelve monto + día de pago + cuentas del landlord + período actual (month/year).
+   * Solo accesible para el TENANT del lease.
+   */
+  async getPaymentInfo(leaseId: string): Promise<BackendPaymentInfo> {
+    return apiClient.get<BackendPaymentInfo>(`/leases/${leaseId}/payment-info`);
   },
 
   /** GET /tenant-payments/mine — all payments for the authenticated tenant */

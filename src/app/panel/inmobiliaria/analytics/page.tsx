@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { PageGuard } from '@/components/auth/PageGuard';
 import {
   ChartLineUp,
   ChartBar,
@@ -14,8 +15,6 @@ import {
   CalendarBlank,
   CaretDown,
   CaretRight,
-  Buildings,
-  CurrencyDollar,
   Percent,
   Lightning,
   Target,
@@ -25,14 +24,13 @@ import {
 import { cn } from '@/lib/utils';
 import {
   AnalyticsDashboard,
-  AnalyticsTrends,
-  AnalyticsForecasting,
 } from '@/components/inmobiliaria';
 import {
-  useAnalyticsData,
-  useTrendAnalysis,
-  useForecastData,
+  useAiMetrics,
+  useAiActivity,
 } from '@/lib/hooks/useInmobiliaria';
+import type { AiMetricsResponse } from '@/lib/api/inmobiliaria.service';
+import type { AnalyticsData } from '@/lib/types/inmobiliaria';
 import {
   DropdownList,
   DropdownListContent,
@@ -44,7 +42,7 @@ import {
 // Types
 // ============================================================================
 
-type AnalyticsView = 'dashboard' | 'trends' | 'forecasting';
+type AnalyticsView = 'dashboard';
 type DateRange = '7d' | '30d' | '90d' | '1y';
 
 interface ViewConfig {
@@ -89,7 +87,7 @@ function HeroKPICard({
       bg: 'bg-indigo-50 dark:bg-indigo-900/20',
       icon: 'text-indigo-600 dark:text-indigo-400',
       border: 'border-indigo-100 dark:border-indigo-800/50',
-      progress: 'bg-indigo-500',
+      progress: 'bg-indigo-600',
       progressBg: 'bg-indigo-100 dark:bg-indigo-900/40',
     },
     emerald: {
@@ -275,23 +273,113 @@ function InsightCard({ type, title, description, action }: InsightProps) {
 // Main Component
 // ============================================================================
 
+// ============================================================================
+// AI metrics helpers
+// ============================================================================
+
+function parsePercentage(s: string): number {
+  return parseFloat(s.replace('%', '')) || 0;
+}
+
+function parseNumber(s: string): number {
+  return parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+}
+
+function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
+  const stable = { direction: 'stable' as const, percentage: 0, previousValue: 0, currentValue: 0 };
+  const up = { direction: 'up' as const, percentage: 0, previousValue: 0, currentValue: 0 };
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    charts: [],
+    kpis: [
+      {
+        id: 'ai-evaluations',
+        label: 'Evaluaciones este mes',
+        value: metrics.scoring.evaluationsThisMonth,
+        formattedValue: String(metrics.scoring.evaluationsThisMonth),
+        trend: stable,
+        sparkline: [],
+        category: 'operational',
+      },
+      {
+        id: 'ai-avg-time',
+        label: 'Tiempo promedio',
+        value: parseNumber(metrics.scoring.avgTimeMin),
+        formattedValue: metrics.scoring.avgTimeMin,
+        trend: stable,
+        sparkline: [],
+        category: 'operational',
+        target: 3,
+        targetLabel: 'Meta: < 3 min',
+      },
+      {
+        id: 'ai-escalation',
+        label: 'Tasa de escalación',
+        value: parsePercentage(metrics.scoring.escalationRate),
+        formattedValue: metrics.scoring.escalationRate,
+        trend: stable,
+        sparkline: [],
+        category: 'performance',
+        target: 10,
+        targetLabel: 'Meta: < 10%',
+      },
+      {
+        id: 'ai-accuracy',
+        label: 'Tasa de precisión',
+        value: parsePercentage(metrics.scoring.accuracyRate),
+        formattedValue: metrics.scoring.accuracyRate,
+        trend: stable,
+        sparkline: [],
+        category: 'performance',
+        target: 95,
+        targetLabel: 'Meta: 95%',
+      },
+      {
+        id: 'ai-actions-week',
+        label: 'Acciones esta semana',
+        value: metrics.summary.actionsThisWeek,
+        formattedValue: String(metrics.summary.actionsThisWeek),
+        trend: stable,
+        sparkline: [],
+        category: 'operational',
+      },
+      {
+        id: 'ai-hours-saved',
+        label: 'Horas ahorradas',
+        value: parseNumber(metrics.summary.hoursSavedThisMonth),
+        formattedValue: metrics.summary.hoursSavedThisMonth,
+        trend: up,
+        sparkline: [],
+        category: 'performance',
+      },
+    ],
+  };
+}
+
 // TODO: Backend - Implementar actualizaciones en tiempo real via WebSocket o SSE
 // Las métricas deben actualizarse automáticamente sin necesidad de refresh manual
 
-export default function AnalyticsPage() {
+function AnalyticsContent() {
   const { t } = useI18n();
   const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
   const [dateRange, setDateRange] = useState<DateRange>('30d');
 
-  // API hooks
-  const { analyticsData, isLoading: loadingAnalytics, error: analyticsError } = useAnalyticsData(dateRange);
-  const { trends, isLoading: loadingTrends, error: trendsError } = useTrendAnalysis();
-  const { forecasts, isLoading: loadingForecasts, error: forecastsError } = useForecastData();
+  // API hooks — PageGuard guarantees this only mounts when analytics:view is granted
+  const { metrics, isLoading: loadingMetrics, error: metricsError } = useAiMetrics();
+  const { isLoading: loadingActivity } = useAiActivity(20);
+
+  const isLoading = loadingMetrics || loadingActivity;
+  const analyticsError = metricsError;
+
+  // Map AI metrics → AnalyticsData for AnalyticsDashboard
+  const analyticsData = useMemo<AnalyticsData | null>(() => {
+    if (!metrics) return null;
+    return metricsToAnalyticsData(metrics);
+  }, [metrics]);
 
   const VIEWS: ViewConfig[] = useMemo(() => [
-    { id: 'dashboard', label: t('inmobiliaria.analytics.tabs.dashboard'), icon: ChartBar },
-    { id: 'trends', label: t('inmobiliaria.analytics.tabs.trends'), icon: ChartLineUp },
-    { id: 'forecasting', label: t('inmobiliaria.analytics.tabs.forecasting'), icon: TrendUp },
+    { id: 'dashboard' as const, label: t('inmobiliaria.analytics.tabs.dashboard'), icon: ChartBar },
   ], [t]);
 
   const DATE_RANGES = useMemo(() => [
@@ -301,47 +389,29 @@ export default function AnalyticsPage() {
     { id: '1y' as const, label: t('inmobiliaria.analytics.dateRanges.1y') },
   ], [t]);
 
-  // Hero KPI data
+  // Hero KPI data from AI metrics
   const heroKPIs = useMemo(() => {
-    if (!analyticsData) {
+    if (!metrics) {
       return {
-        revenue: { value: '$0', trend: undefined, sparkline: [] },
-        occupancy: { value: '0%', trend: undefined, target: undefined, sparkline: [] },
-        collection: { value: '0%', trend: undefined, target: undefined },
-        properties: { value: '0', trend: undefined },
+        evaluations: { value: '—' },
+        accuracy: { value: '—', target: undefined },
+        escalation: { value: '—', target: undefined },
+        hoursSaved: { value: '—' },
       };
     }
-
-    const getKpi = (id: string) => analyticsData.kpis.find((k) => k.id === id);
-
-    const revenue = getKpi('kpi-revenue');
-    const occupancy = getKpi('kpi-occupancy');
-    const collection = getKpi('kpi-collection-rate');
-    const properties = getKpi('kpi-properties');
-
     return {
-      revenue: {
-        value: revenue?.formattedValue || '$0',
-        trend: revenue?.trend,
-        sparkline: revenue?.sparkline?.map((s) => s.value) || [],
+      evaluations: { value: String(metrics.scoring.evaluationsThisMonth) },
+      accuracy: {
+        value: metrics.scoring.accuracyRate,
+        target: { value: 95, current: parsePercentage(metrics.scoring.accuracyRate), label: t('inmobiliaria.analytics.kpi.target') },
       },
-      occupancy: {
-        value: occupancy?.formattedValue || '0%',
-        trend: occupancy?.trend,
-        target: occupancy?.target ? { value: occupancy.target, current: occupancy.value, label: t('inmobiliaria.analytics.kpi.target') } : undefined,
-        sparkline: occupancy?.sparkline?.map((s) => s.value) || [],
+      escalation: {
+        value: metrics.scoring.escalationRate,
+        target: { value: 10, current: parsePercentage(metrics.scoring.escalationRate), label: t('inmobiliaria.analytics.kpi.target') },
       },
-      collection: {
-        value: collection?.formattedValue || '0%',
-        trend: collection?.trend,
-        target: collection?.target ? { value: collection.target, current: collection.value, label: t('inmobiliaria.analytics.kpi.target') } : undefined,
-      },
-      properties: {
-        value: properties?.formattedValue || '0',
-        trend: properties?.trend,
-      },
+      hoursSaved: { value: metrics.summary.hoursSavedThisMonth },
     };
-  }, [analyticsData, t]);
+  }, [metrics, t]);
 
   // Insights
   const insights = useMemo(() => [
@@ -396,7 +466,7 @@ export default function AnalyticsPage() {
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium font-mono uppercase tracking-wide hover:bg-muted transition-colors">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}
@@ -420,7 +490,7 @@ export default function AnalyticsPage() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-medium shadow-lg shadow-indigo-500/20 transition-colors">
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
               </button>
@@ -444,35 +514,29 @@ export default function AnalyticsPage() {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <HeroKPICard
-          icon={CurrencyDollar}
-          label={t('inmobiliaria.analytics.kpi.totalRevenue')}
-          value={heroKPIs.revenue.value}
-          trend={heroKPIs.revenue.trend}
-          sparkline={heroKPIs.revenue.sparkline}
+          icon={Lightning}
+          label="Evaluaciones este mes"
+          value={heroKPIs.evaluations.value}
           accentColor="indigo"
         />
         <HeroKPICard
-          icon={Percent}
-          label={t('inmobiliaria.analytics.kpi.occupancyRate')}
-          value={heroKPIs.occupancy.value}
-          trend={heroKPIs.occupancy.trend}
-          target={heroKPIs.occupancy.target}
-          sparkline={heroKPIs.occupancy.sparkline}
+          icon={Target}
+          label="Tasa de precisión"
+          value={heroKPIs.accuracy.value}
+          target={heroKPIs.accuracy.target}
           accentColor="emerald"
         />
         <HeroKPICard
-          icon={CurrencyDollar}
-          label={t('inmobiliaria.analytics.kpi.collectionRate')}
-          value={heroKPIs.collection.value}
-          trend={heroKPIs.collection.trend}
-          target={heroKPIs.collection.target}
+          icon={Percent}
+          label="Tasa de escalación"
+          value={heroKPIs.escalation.value}
+          target={heroKPIs.escalation.target}
           accentColor="amber"
         />
         <HeroKPICard
-          icon={Buildings}
-          label={t('inmobiliaria.analytics.kpi.activeProperties')}
-          value={heroKPIs.properties.value}
-          trend={heroKPIs.properties.trend}
+          icon={ChartLineUp}
+          label="Horas ahorradas este mes"
+          value={heroKPIs.hoursSaved.value}
           accentColor="violet"
         />
       </motion.div>
@@ -531,30 +595,9 @@ export default function AnalyticsPage() {
             >
               {activeView === 'dashboard' && (
                 <>
-                  {loadingAnalytics && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
+                  {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
                   {analyticsError && <p className="text-sm text-rose-600">{analyticsError}</p>}
                   {analyticsData && <AnalyticsDashboard data={analyticsData} />}
-                </>
-              )}
-
-              {activeView === 'trends' && (
-                <>
-                  {loadingTrends && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {trendsError && <p className="text-sm text-rose-600">{trendsError}</p>}
-                  {trends && <AnalyticsTrends data={trends} />}
-                </>
-              )}
-
-              {activeView === 'forecasting' && (
-                <>
-                  {loadingForecasts && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {forecastsError && <p className="text-sm text-rose-600">{forecastsError}</p>}
-                  {forecasts && (
-                    <AnalyticsForecasting
-                      data={forecasts}
-                      onExport={() => toast.success(t('inmobiliaria.analytics.toasts.exportingForecasts'))}
-                    />
-                  )}
                 </>
               )}
             </motion.div>
@@ -562,5 +605,13 @@ export default function AnalyticsPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <PageGuard module="analytics">
+      <AnalyticsContent />
+    </PageGuard>
   );
 }

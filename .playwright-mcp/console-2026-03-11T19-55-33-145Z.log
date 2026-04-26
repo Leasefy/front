@@ -1,0 +1,36 @@
+[    1726ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://o1211169.ingest.us.sentry.io/api/4507438958968832/envelope/?sentry_key=299f2435e881cba056461a554519ec86&sentry_version=7&sentry_client=sentry.javascript.nextjs%2F7.77.0:0
+[    2520ms] [ERROR] Access to XMLHttpRequest at 'https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event' from origin 'https://www.fincaraiz.com.co' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://www.fincaraiz.com.co/informacion:0
+[    2520ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event:0
+[    5418ms] [ERROR] Access to fetch at 'https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event' from origin 'https://www.fincaraiz.com.co' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://www.fincaraiz.com.co/informacion:0
+[    5418ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event:0
+[    5428ms] TypeError: Failed to fetch
+    at t (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:227897)
+    at n.exports.sendFetchRequest (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:93295)
+    at f (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78425)
+    at n.exports.sendEvent (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78376)
+    at Wn (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:102838)
+    at https://tgtag.io/tg.js?pid=tg-g-007123-001:1:101993
+    at i (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:177642)
+[   10628ms] [WARNING] [Meta Pixel] - Duplicate Pixel ID: 855921464443427. @ https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:0
+[   15337ms] [ERROR] Access to fetch at 'https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event' from origin 'https://www.fincaraiz.com.co' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://www.fincaraiz.com.co/informacion#terminos-y-condiciones:0
+[   15338ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event:0
+[   15346ms] TypeError: Failed to fetch
+    at t (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:227897)
+    at n.exports.sendFetchRequest (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:93295)
+    at f (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78425)
+    at n.exports.sendEvent (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78376)
+    at Wn (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:102838)
+    at Xn (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:110970)
+    at https://tgtag.io/tg.js?pid=tg-g-007123-001:1:110842
+    at i (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:177642)
+[   35327ms] [ERROR] Access to fetch at 'https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event' from origin 'https://www.fincaraiz.com.co' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://www.fincaraiz.com.co/informacion#terminos-y-condiciones:0
+[   35327ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.trafficguard.ai/tg-g-007123-001/api/v4/client-side/validate/event:0
+[   35339ms] TypeError: Failed to fetch
+    at t (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:227897)
+    at n.exports.sendFetchRequest (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:93295)
+    at f (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78425)
+    at n.exports.sendEvent (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:78376)
+    at Wn (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:102838)
+    at Xn (https://tgtag.io/tg.js?pid=tg-g-007123-001:1:110970)
+    at https://tgtag.io/tg.js?pid=tg-g-007123-001:1:110898
+    at i (https://cdn4.fincaraiz.com.co/frontend-fincaraiz/3468/_next/static/chunks/99.5220ac38773308128f03.js:1:177642)

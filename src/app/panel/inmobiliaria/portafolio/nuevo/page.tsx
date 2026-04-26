@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import Link from 'next/link';
 import { CaretLeft, Buildings } from '@phosphor-icons/react';
@@ -6,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
 import { usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 
-export default function NuevaConsignacionPage() {
+function NuevaConsignacionContent() {
   const { t } = useI18n();
   const { propietarios } = usePropietarios();
   const { agentes } = useAgentes();
@@ -48,5 +49,13 @@ export default function NuevaConsignacionPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function NuevaConsignacionPage() {
+  return (
+    <PageGuard module="portafolio">
+      <NuevaConsignacionContent />
+    </PageGuard>
   );
 }

@@ -73,7 +73,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
     text: 'text-pink-600 dark:text-pink-400',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-500/10',
+    bg: 'bg-indigo-50 dark:bg-indigo-600/10',
     text: 'text-indigo-600 dark:text-indigo-400',
   },
 };
@@ -193,7 +193,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
                         'text-[12px] font-medium',
                         'transition-all duration-150',
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-sm'
+                          ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >

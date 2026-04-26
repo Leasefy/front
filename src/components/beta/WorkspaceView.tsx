@@ -64,7 +64,7 @@ const AGENT_BG: Record<string, string> = {
     'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
   pink: 'bg-pink-100 dark:bg-pink-500/15 text-pink-700 dark:text-pink-400',
   indigo:
-    'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400',
+    'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400',
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -73,7 +73,7 @@ const STATUS_DOT: Record<string, string> = {
   amber: 'bg-amber-500',
   purple: 'bg-purple-500',
   pink: 'bg-pink-500',
-  indigo: 'bg-indigo-500',
+  indigo: 'bg-indigo-600',
 };
 
 // ============================================================================
@@ -203,13 +203,13 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const baseClasses = cn(
     'inline-flex items-center gap-2',
-    'px-4 py-2 rounded-lg',
+    'px-4 py-2 rounded-xl',
     'text-[13px] font-medium',
     'transition-all duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-1',
     action.variant === 'primary' && [
-      'bg-indigo-500 text-white',
-      'hover:bg-indigo-600 active:bg-indigo-700',
+      'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+      'hover:bg-indigo-700 active:bg-indigo-700',
       'shadow-sm',
     ],
     action.variant === 'secondary' && [
@@ -305,7 +305,7 @@ function MiniChatInput({
           'transition-all duration-150',
           disabled || isEmpty
             ? 'text-muted-foreground/40 cursor-not-allowed'
-            : 'text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 active:scale-95'
+            : 'text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-700/10 active:scale-95'
         )}
         aria-label={t('beta.workspace.sendMessage')}
       >
@@ -502,7 +502,7 @@ export function WorkspaceView({
                   'rounded-full text-[11px] font-semibold',
                   completedCount === totalSteps
                     ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                    : 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400'
+                    : 'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400'
                 )}
               >
                 {completedCount}/{totalSteps}
@@ -694,7 +694,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-indigo-500 text-white',
+                          'bg-indigo-600 text-white uppercase tracking-wide font-mono',
                           'rounded-br-sm',
                         ]
                       : [

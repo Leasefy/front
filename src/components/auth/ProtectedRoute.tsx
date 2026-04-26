@@ -3,17 +3,25 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
+import type { AgencyMemberRole } from '@/lib/auth/types'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
 const TENANT_ONBOARDING_KEY = 'plan_onboarding_tenant'
+const PENDING_INVITATION_KEY = 'pending-invitation-token'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   /**
-   * Roles allowed to access this route
-   * If not specified, any authenticated user can access
+   * Roles allowed to access this route.
+   * If not specified, any authenticated user can access.
    */
   allowedRoles?: ('tenant' | 'landlord' | 'agency')[]
+  /**
+   * Agency team roles that are explicitly blocked from this route.
+   * Applied after allowedRoles — useful to block CONTADOR/VIEWER within 'agency'.
+   * Blocked users are redirected to /panel/inmobiliaria.
+   */
+  blockedAgencyRoles?: AgencyMemberRole[]
 }
 
 /**
@@ -30,8 +38,8 @@ interface ProtectedRouteProps {
  * // Landlord only
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired } = useAuth()
+export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: ProtectedRouteProps) {
+  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, agencyRole } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -56,9 +64,21 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const effectiveUser = user || storageUser
   const effectiveIsAuthenticated = isAuthenticated || !!storageUser
 
+  // Agency users (owners and invited agents) skip generic onboarding
+  const isAgencyUser = user?.role === 'agency' || user?.backendRole === 'AGENT'
+
   useEffect(() => {
     // Wait for both auth context and storage check to complete
     if (isLoading || isCheckingStorage) return
+
+    // JWT valid but backend has no user record yet → send to onboarding
+    // IMPORTANT: this check must come BEFORE !effectiveIsAuthenticated, because
+    // in this state `user` is null but the session is valid and we don't want
+    // to kick the user back to /auth in a loop.
+    if (needsOnboarding && !pathname.startsWith('/onboarding')) {
+      router.replace('/onboarding/seleccionar-rol')
+      return
+    }
 
     // Redirect to auth if not authenticated (neither context nor localStorage)
     if (!effectiveIsAuthenticated) {
@@ -80,8 +100,19 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         return false
       }
     })()
-    if (user && !user.onboardingCompleted && !tenantOnboardingDone && !pathname.startsWith('/onboarding')) {
-      router.replace('/onboarding/seleccionar-rol')
+    // Agency users (owners and invited agents) skip the generic onboarding —
+    // their onboarding happens via the invitation flow or the inmobiliaria setup.
+    if (user && !user.onboardingCompleted && !tenantOnboardingDone && !pathname.startsWith('/onboarding') && !isAgencyUser) {
+      // If there's a pending invitation token (user confirmed email but lost the URL),
+      // send them back to /registro so the auto-accept can fire with the stored token.
+      const pendingInvitation = (() => {
+        try { return localStorage.getItem(PENDING_INVITATION_KEY) } catch { return null }
+      })()
+      if (pendingInvitation) {
+        router.replace('/registro')
+      } else {
+        router.replace('/onboarding/seleccionar-rol')
+      }
       return
     }
 
@@ -102,8 +133,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       } else {
         router.replace('/inquilino')
       }
+      return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, pathname, router, mfaRequired, user])
+
+    // Check blocked agency team roles (e.g. CONTADOR, VIEWER blocked from /publicar)
+    if (blockedAgencyRoles && agencyRole && blockedAgencyRoles.includes(agencyRole)) {
+      router.replace('/panel/inmobiliaria')
+      return
+    }
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, agencyRole, pathname, router, mfaRequired, user, needsOnboarding])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -117,8 +155,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     )
   }
 
-  // Not authenticated - will redirect
-  if (!effectiveIsAuthenticated) {
+  // needsOnboarding or not authenticated - will redirect (handled in effect)
+  if (needsOnboarding || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
@@ -140,7 +178,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       return false
     }
   })()
-  if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding')) {
+  if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding') && !isAgencyUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
@@ -165,6 +203,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   // Check role restriction
   if (allowedRoles && effectiveUser && !allowedRoles.includes(effectiveUser.role as 'tenant' | 'landlord' | 'agency')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Check blocked agency team roles
+  if (blockedAgencyRoles && agencyRole && blockedAgencyRoles.includes(agencyRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

@@ -16,7 +16,7 @@ import type { SelectedInsurance } from '@/lib/types/insurance';
 import { CONTRACT_TEMPLATES, getTemplateById } from '@/lib/constants/contract-templates';
 import { useContracts, useContractActions } from '@/lib/hooks/useContracts';
 import { useLandlordProperty, useCandidate } from '@/lib/hooks/useLandlord';
-import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS } from '@/lib/types/contract';
+import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS, getContractTypeLabel } from '@/lib/types/contract';
 import type { Contract, ContractType } from '@/lib/types/contract';
 
 // ============================================================================
@@ -272,14 +272,27 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Handle contract creation via API
   const handleCreateContract = async () => {
-    if (!selectedType) return;
+    if (!selectedType || !property) return;
+
+    // TODO (paso 2): reemplazar por un form real que capture fechas, depósito y día de pago.
+    // Hoy usamos defaults razonables derivados de la propiedad.
+    const today = new Date();
+    const startDate = today.toISOString().slice(0, 10);
+    const end = new Date(today);
+    end.setFullYear(end.getFullYear() + 1);
+    const endDate = end.toISOString().slice(0, 10);
 
     setIsCreating(true);
     const newContract = await actions.create({
-      propertyId,
-      tenantId: candidateId,
-      templateType: selectedType,
+      applicationId: candidateId, // candidateId === applicationId en esta ruta
+      startDate,
+      endDate,
+      monthlyRent: property.monthlyRent,
+      deposit: property.deposit ?? property.monthlyRent,
+      paymentDay: 1,
+      insuranceTier: 'NONE',
     });
+    void selectedType;
     if (newContract) {
       setContract(newContract);
       refetchContracts();
@@ -288,11 +301,19 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   };
 
   // Handle signing via API
-  const handleSign = async (otpVerified: boolean = false) => {
+  const handleSign = async ({ signatureData, otpVerificationToken }: { otpVerified: boolean; signatureData: string; otpVerificationToken?: string }) => {
     if (!contract) return;
 
     setIsSigning(true);
-    const updated = await actions.sign(contract.id, { otpVerified });
+    const consent = contract.uploadedPdfPath
+      ? 'Confirmo digitalmente que el PDF adjunto contiene mi firma manuscrita/presencial y acepto todos sus términos.'
+      : 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.';
+    const updated = await actions.signAsLandlord(contract.id, {
+      acceptedTerms: true,
+      consentText: consent,
+      signatureData,
+      otpVerificationToken,
+    });
     if (updated) {
       setContract(updated);
       refetchContracts();
@@ -474,8 +495,8 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all',
-                          isCompleted && 'bg-indigo-600 text-white',
-                          isCurrent && 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25',
+                          isCompleted && 'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+                          isCurrent && 'bg-indigo-600 text-white uppercase tracking-wide font-mono',
                           !isCompleted && !isCurrent && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500',
                         )}>
                           {isCompleted ? <Check className="h-4 w-4" /> : i + 1}
@@ -522,7 +543,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     className={cn(
                       'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all',
                       selectedType
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono hover: hover:'
                         : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                     )}
                   >
@@ -600,10 +621,10 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       {isLandlordTurn && (
                         <SignatureForm
                           onSign={handleSign}
+                          contractId={contract.id}
                           isLandlord={true}
                           isLoading={isSigning}
                           signerName={contract.landlordName}
-                          signerPhone="+57 310 456 7890"
                           requireOTP={true}
                         />
                       )}
@@ -623,7 +644,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           </div>
                           <Link
                             href={`/panel/${propertyId}`}
-                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
                           >
                             Entendido, volver a la propiedad
                           </Link>
@@ -636,7 +657,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           Tipo de contrato
                         </h4>
                         <p className="mt-1 font-medium text-neutral-900 dark:text-white">
-                          {CONTRACT_TYPE_LABELS[contract.type]}
+                          {getContractTypeLabel(contract)}
                         </p>
                         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                           {template.clauses.length} cláusulas

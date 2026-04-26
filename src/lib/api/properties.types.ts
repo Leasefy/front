@@ -11,6 +11,18 @@ export interface BackendPropertyImage {
   createdAt: string;
 }
 
+export interface BackendPropertyAccessAgent {
+  id: string; // access record id
+  agentId: string;
+  agent: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
+}
+
 export interface BackendProperty {
   id: string;
   landlordId: string;
@@ -47,6 +59,7 @@ export interface BackendProperty {
 
   // Relations (included by backend)
   images?: BackendPropertyImage[];
+  propertyAccess?: BackendPropertyAccessAgent[];
 }
 
 export interface PaginationMeta {

@@ -88,34 +88,65 @@ function mapSupabaseUser(session: Session): User {
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
     role: 'tenant',
-    onboardingCompleted: false,
+    // When the backend is unreachable we have no way to confirm onboarding status.
+    // Default to true so the user isn't incorrectly sent to the onboarding flow —
+    // the panel will gracefully degrade on its own since all API calls will fail too.
+    onboardingCompleted: true,
   }
+}
+
+/**
+ * Detects the specific 401 case where Supabase Auth has a valid JWT but the
+ * user has no record in `public.users` on the backend (onboarding never ran).
+ * The backend returns: "User not found. Please ensure your account is set up correctly."
+ *
+ * See .planning/FRONTEND-AUTH-CONTEXT-FIX.md for full context.
+ */
+function isUserNotFoundError(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 401) return false
+  const msg = err.message?.toLowerCase() ?? ''
+  return msg.includes('user not found')
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [agency, setAgencyState] = useState<Agency | null>(null)
   const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
-  /** Fetch the user profile from the backend, fallback to Supabase session */
-  const fetchUser = useCallback(async (session?: Session | null): Promise<User | null> => {
+  /**
+   * Fetch the user profile from the backend.
+   * Returns one of three states:
+   *  - { user: User }            → authenticated, profile loaded
+   *  - { needsOnboarding: true } → JWT valid but no backend record yet → go to /onboarding
+   *  - { user: null }            → real auth failure (logout) or fallback to Supabase session
+   */
+  const fetchUser = useCallback(async (
+    session?: Session | null,
+  ): Promise<{ user: User | null; needsOnboarding: boolean }> => {
     // Use token directly from session to avoid calling getSession() again (can deadlock during init)
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
-      return mapBackendUser(data)
+      return { user: mapBackendUser(data), needsOnboarding: false }
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        return null
+      // JWT valid but user doesn't exist in public.users yet → needs onboarding
+      if (isUserNotFoundError(err)) {
+        return { user: null, needsOnboarding: true }
       }
-      // Backend unavailable — fallback to Supabase session data
+      // Any other 401 = real token failure → logout (handled by caller returning null user)
+      if (err instanceof ApiError && err.status === 401) {
+        return { user: null, needsOnboarding: false }
+      }
+      // Backend unavailable (5xx, network) — fallback to Supabase session data so
+      // the user isn't kicked out just because the API is down
       if (session) {
-        return mapSupabaseUser(session)
+        return { user: mapSupabaseUser(session), needsOnboarding: false }
       }
       console.error('[Auth] Error fetching user profile:', err)
-      return null
+      return { user: null, needsOnboarding: false }
     }
   }, [])
 
@@ -143,8 +174,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
     // If the stored token is still valid the backend will respond; if not, fetchUser
     // handles the 401 gracefully.
-    const userData = await fetchUser()
+    const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
     setUser(userData)
+    setNeedsOnboarding(needsOnb)
     // Also refresh agency data for agency/agent roles (or when just completing inmobiliaria onboarding)
     if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
       const { agency: agencyData, role } = await fetchAgency()
@@ -179,6 +211,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const supabase = getSupabase()
 
+    // Safety net: if no known auth event fires within 5s of mount, release the
+    // loader so ProtectedRoute can decide what to do with whatever state we have.
+    // Covers edge cases where Supabase never emits INITIAL_SESSION (some refresh flows).
+    const safetyTimeout = setTimeout(() => {
+      setIsLoading((prev) => {
+        if (prev) {
+          console.warn('[Auth] onAuthStateChange did not settle within 5s — releasing loader')
+        }
+        return false
+      })
+    }, 5000)
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         /** Derive hasPassword from session providers — no extra API call needed */
@@ -190,9 +234,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (event === 'INITIAL_SESSION') {
           if (session) {
             setAccessToken(session.access_token)
-            const userData = await fetchUser(session)
+            const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
+            setNeedsOnboarding(needsOnb)
             await checkMfaLevel()
             if (userData?.onboardingCompleted) {
               requestNotificationPermission().catch(() => {})
@@ -206,9 +251,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
           setAccessToken(session.access_token)
-          const userData = await fetchUser(session)
+          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
+          setNeedsOnboarding(needsOnb)
           setIsLoading(false)
           await checkMfaLevel()
           if (userData?.onboardingCompleted) {
@@ -225,18 +271,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAgencyState(null)
           setAgencyRole(null)
           setMfaRequired(false)
+          setNeedsOnboarding(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setAccessToken(session.access_token)
-          const userData = await fetchUser(session)
+          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
+          setNeedsOnboarding(needsOnb)
           await checkMfaLevel()
+          // Also refresh agency data for agency/agent roles
+          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
+            const { agency: agencyData, role } = await fetchAgency(session.access_token)
+            setAgencyState(agencyData)
+            setAgencyRole(role)
+          }
+          // CRITICAL: if the very first event on page load is TOKEN_REFRESHED
+          // (Supabase auto-refreshed the expired token before emitting INITIAL_SESSION),
+          // we must still flip isLoading to false or ProtectedRoute stays stuck forever.
+          setIsLoading(false)
         }
       }
     )
 
     return () => {
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [fetchUser, checkMfaLevel, fetchAgency])
@@ -263,17 +322,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Immediately set token and fetch user so the caller can use role info for redirect
     if (data.session) {
       setAccessToken(data.session.access_token)
-      const userData = await fetchUser(data.session)
+      const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
       setUser(userData)
+      setNeedsOnboarding(needsOnb)
       return userData
     }
     return null
   }, [fetchUser])
 
   /** Sign up with email and password. Returns whether email confirmation is required. */
-  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {
     const supabase = getSupabase()
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+    })
     if (error) throw error
     const requiresConfirmation = !data.session
     return { requiresConfirmation }
@@ -316,19 +380,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(mapBackendUser(updated))
   }, [])
 
-  /** Sign out and clear state */
+  /** Sign out and clear state. Synchronous cleanup runs first; backend
+   *  cleanup (FCM, Supabase) is fire-and-forget so a hung lock or network
+   *  failure can never block the UI from logging out. */
   const signOut = useCallback(async () => {
-    // Clear local state immediately so UI updates
+    // Best-effort FCM cleanup with the token still in memory.
+    // Awaited but with a hard timeout so a slow backend can't stall logout.
+    await Promise.race([
+      removeFcmToken().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+
+    // Synchronous cleanup — must succeed even if Supabase hangs below.
+    if (typeof document !== 'undefined') {
+      document.cookie.split(';').forEach((c) => {
+        const name = c.split('=')[0]?.trim()
+        if (name && (name.startsWith('sb-') || name.startsWith('supabase'))) {
+          document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`
+          document.cookie = `${name}=; Max-Age=0; path=/`
+        }
+      })
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        Object.keys(window.localStorage)
+          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
+          .forEach((k) => window.localStorage.removeItem(k))
+        Object.keys(window.sessionStorage)
+          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
+          .forEach((k) => window.sessionStorage.removeItem(k))
+      } catch {}
+    }
+
     setAccessToken(null)
     setUser(null)
-    // Remove FCM token and sign out from Supabase in background
-    removeFcmToken().catch(() => {})
+    setNeedsOnboarding(false)
+    setAgencyState(null)
+    setAgencyRole(null)
+    setMfaRequired(false)
+
+    // Fire-and-forget — never await, supabase's internal lock can hang here.
     try {
       const supabase = getSupabase()
-      await supabase.auth.signOut()
-    } catch (err) {
-      console.error('[Auth] signOut error:', err)
-    }
+      supabase?.auth.signOut({ scope: 'local' }).catch(() => {})
+    } catch {}
   }, [])
 
   const value: AuthContextType = {
@@ -336,6 +431,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    needsOnboarding,
     agency,
     agencyRole,
     signInWithGoogle,

@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -161,7 +162,7 @@ function Modal({
  * Propietarios List Page
  * Main CRM view for managing property owners
  */
-export default function PropietariosPage() {
+function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -326,7 +327,7 @@ export default function PropietariosPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors shadow-lg shadow-indigo-500/25"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
         >
           <UserPlus className="w-5 h-5" />
           {t('inmobiliaria.propietarios.addOwner')}
@@ -624,7 +625,7 @@ export default function PropietariosPage() {
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors"
               >
                 {t('inmobiliaria.common.delete')}
               </button>
@@ -633,5 +634,13 @@ export default function PropietariosPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function PropietariosPage() {
+  return (
+    <PageGuard module="propietarios">
+      <PropietariosContent />
+    </PageGuard>
   );
 }

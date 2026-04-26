@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -145,7 +146,7 @@ function Modal({
  * Consignacion Detail Page
  * Route: /panel/inmobiliaria/portafolio/[id]
  */
-export default function ConsignacionDetailPage() {
+function ConsignacionDetailContent() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -257,7 +258,7 @@ export default function ConsignacionDetailPage() {
           </p>
           <Link
             href="/panel/inmobiliaria/portafolio"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.portafolio.detail.backToPortfolio')}
@@ -392,5 +393,13 @@ export default function ConsignacionDetailPage() {
         />
       </Modal>
     </div>
+  );
+}
+
+export default function ConsignacionDetailPage() {
+  return (
+    <PageGuard module="portafolio">
+      <ConsignacionDetailContent />
+    </PageGuard>
   );
 }

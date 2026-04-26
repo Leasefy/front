@@ -2,17 +2,28 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { PencilLine, Info, Check, SpinnerGap, Shield, DeviceMobile, ArrowRight, Scales, SealCheck, FileText } from '@phosphor-icons/react';
+import { Check, SpinnerGap, ArrowRight, SealCheck, FileText } from '@phosphor-icons/react';
 import { OTPVerification } from './OTPVerification';
+import { SignaturePad } from './SignaturePad';
 
 // ============================================================================
 // TextTs
 // ============================================================================
 
+export interface SignaturePayload {
+  /** true si el OTP fue verificado en este flow */
+  otpVerified: boolean;
+  /** Base64 PNG de la firma dibujada (data URL con prefix data:image/png;base64,) */
+  signatureData: string;
+  /** Token one-use devuelto por /otp/verify — incluirlo en el DTO de firma. */
+  otpVerificationToken?: string;
+}
+
 export interface SignatureFormProps {
-  /** Callback when user signs the contract (receives OTP verification status) */
-  onSign: (otpVerified: boolean) => void;
+  /** Callback when user signs the contract */
+  onSign: (payload: SignaturePayload) => void;
+  /** Contract ID — used to send/verify OTP against the backend */
+  contractId: string;
   /** Whether this is the landlord or tenant signing */
   isLandlord: boolean;
   /** Loading state during signing */
@@ -21,8 +32,8 @@ export interface SignatureFormProps {
   isSigned?: boolean;
   /** Name of the signer for display */
   signerName?: string;
-  /** Phone number for OTP verification */
-  signerPhone?: string;
+  /** @deprecated The email mask now comes from the backend in /otp/send response */
+  signerEmail?: string;
   /** Whether OTP verification is required */
   requireOTP?: boolean;
   /** Additional CSS classes */
@@ -46,46 +57,52 @@ export interface SignatureFormProps {
  */
 export function SignatureForm({
   onSign,
+  contractId,
   isLandlord,
   isLoading = false,
   isSigned = false,
   signerName,
-  signerPhone = '+57 300 000 0000',
   requireOTP = true,
   className,
 }: SignatureFormProps) {
+  const [signatureData, setSignatureData] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [acceptedData, setAcceptedData] = useState(false);
   const [showOTP, setShowOTP] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpToken, setOtpToken] = useState<string | null>(null);
 
-  const canSign = acceptedTerms && acceptedLegal && acceptedData;
+  const canSign = !!signatureData && acceptedTerms && acceptedLegal && acceptedData;
   const role = isLandlord ? 'Arrendador' : 'Arrendatario';
+  const otpRole = isLandlord ? 'landlord' : 'tenant';
 
   // Handle sign button click
   const handleSignClick = () => {
-    if (requireOTP && !otpVerified) {
+    if (!signatureData) return;
+    if (requireOTP && !otpToken) {
       setShowOTP(true);
     } else {
-      onSign(otpVerified);
+      onSign({
+        otpVerified: !!otpToken,
+        signatureData,
+        otpVerificationToken: otpToken ?? undefined,
+      });
     }
   };
 
-  // Handle OTP verification success
-  const handleOTPVerified = () => {
-    setOtpVerified(true);
+  // Handle OTP verification success — backend devuelve el token one-use que viaja en el DTO
+  const handleOTPVerified = (verificationToken: string) => {
+    if (!signatureData) return;
+    setOtpToken(verificationToken);
     setShowOTP(false);
-    // Proceed with signing after brief delay
+    const data = signatureData;
     setTimeout(() => {
-      onSign(true);
+      onSign({
+        otpVerified: true,
+        signatureData: data,
+        otpVerificationToken: verificationToken,
+      });
     }, 300);
-  };
-
-  // Handle OTP resend
-  const handleOTPResend = () => {
-    // In production, this would trigger a new OTP send via API
-    console.log('Resending OTP to:', signerPhone);
   };
 
   // Handle OTP cancel
@@ -93,9 +110,10 @@ export function SignatureForm({
     setShowOTP(false);
   };
 
-  // Calculate progress
-  const acceptedCount = [acceptedTerms, acceptedLegal, acceptedData].filter(Boolean).length;
-  const progress = (acceptedCount / 3) * 100;
+  // Calculate progress: firma + 3 checkboxes
+  const completedSteps = [!!signatureData, acceptedTerms, acceptedLegal, acceptedData].filter(Boolean).length;
+  const progress = (completedSteps / 4) * 100;
+  void progress;
 
   // Already signed state
   if (isSigned) {
@@ -137,6 +155,13 @@ export function SignatureForm({
             {role}
           </span>
         </div>
+
+        {/* Signature canvas */}
+        <SignaturePad
+          onChange={setSignatureData}
+          signerName={signerName}
+          disabled={isLoading}
+        />
 
         {/* Checkboxes - Single card with dividers */}
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] overflow-hidden">
@@ -250,7 +275,7 @@ export function SignatureForm({
           className={cn(
             'w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm transition-all',
             canSign && !isLoading
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25'
+              ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
           )}
         >
@@ -258,6 +283,11 @@ export function SignatureForm({
             <>
               <SpinnerGap className="w-4 h-4 animate-spin" />
               Procesando...
+            </>
+          ) : !signatureData ? (
+            <>
+              <FileText className="w-4 h-4" />
+              Dibujá tu firma para continuar
             </>
           ) : (
             <>
@@ -270,16 +300,16 @@ export function SignatureForm({
 
         {/* Legal footnote */}
         <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-          Firma válida según Ley 527/1999 · Verificación SMS requerida
+          Firma válida según Ley 527/1999 · Verificación por correo requerida
         </p>
       </div>
 
       {/* OTP Verification Modal */}
       <OTPVerification
         isOpen={showOTP}
-        phone={signerPhone}
+        contractId={contractId}
+        role={otpRole}
         onVerified={handleOTPVerified}
-        onResend={handleOTPResend}
         onCancel={handleOTPCancel}
       />
     </>

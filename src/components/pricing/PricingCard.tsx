@@ -148,7 +148,7 @@ export function PricingCard({
       >
         {isCurrentPlan
           ? 'Plan actual'
-          : plan.id === 'free'
+          : plan.id === 'starter'
           ? 'Comenzar gratis'
           : 'Elegir plan'}
       </Button>

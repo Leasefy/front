@@ -26,10 +26,12 @@ export interface DocumentItem {
 }
 
 function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
+  // BackendDocument uses `originalName` as canonical; BackendDocumentFull uses `fileName`
+  const name = ('originalName' in bd ? bd.originalName : undefined) ?? bd.fileName ?? 'documento';
   return {
     id: bd.id,
     type: bd.type ?? 'other',
-    fileName: bd.fileName ?? 'documento',
+    fileName: name,
     url: bd.url ?? '',
     mimeType: bd.mimeType ?? 'application/octet-stream',
     size: bd.size ?? 0,

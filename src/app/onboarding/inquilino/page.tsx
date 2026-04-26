@@ -5,7 +5,6 @@ import {
   TenantOnboardingShell,
   TenantOnboardingSuccess,
   StepTenantWelcome,
-  StepEmployment,
   StepHousingPreferences,
 } from '@/components/onboarding/tenant'
 
@@ -23,8 +22,6 @@ function TenantOnboardingContent() {
       case 1:
         return <StepTenantWelcome />
       case 2:
-        return <StepEmployment />
-      case 3:
         return <StepHousingPreferences />
       default:
         return <StepTenantWelcome />

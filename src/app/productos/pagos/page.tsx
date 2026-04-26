@@ -173,11 +173,11 @@ export default function PagosPage() {
                       </div>
                       <p className="text-[28px] font-bold text-white tracking-tight">$34.200.000</p>
                       <div className="flex items-center gap-2 mt-3">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-[11px] font-medium text-foreground">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl text-[11px] font-medium text-foreground">
                           <PaperPlaneTilt className="w-3 h-3" />
                           Retirar
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-lg text-[11px] font-medium text-white/70">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-xl text-[11px] font-medium text-white/70">
                           <ChartBar className="w-3 h-3" />
                           Reporte
                         </button>

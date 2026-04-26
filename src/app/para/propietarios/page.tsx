@@ -1153,7 +1153,7 @@ export default function PropietariosPage() {
                       <span className="text-[12px] text-red-600 font-bold">$5.0M</span>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white uppercase tracking-wide font-mono text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
                     <Bell className="w-3 h-3" />
                     4 meses
                   </div>

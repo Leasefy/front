@@ -44,12 +44,17 @@ const TENANT_BADGES: Record<TenantSubscriptionTextT, {
       bg: 'bg-gradient-to-r from-indigo-500/10 to-violet-500/10',
       text: 'text-indigo-700 dark:text-indigo-300',
       border: 'border-indigo-500/20',
-      iconBg: 'bg-indigo-500',
+      iconBg: 'bg-indigo-600',
     },
   },
   none: null,
 };
 
+/**
+ * Plan tier badges keyed by canonical PlanId (matches backend SubscriptionPlan enum
+ * lowercased: starter | pro | flex). Legacy keys `free` / `business` are aliases
+ * that point to the same visual treatment as `starter` / `flex`.
+ */
 const LANDLORD_BADGES: Record<PlanId, {
   label: string;
   shortLabel: string;
@@ -61,9 +66,9 @@ const LANDLORD_BADGES: Record<PlanId, {
     iconBg: string;
   };
 }> = {
-  free: {
-    label: 'Plan Gratis',
-    shortLabel: 'Gratis',
+  starter: {
+    label: 'Plan Starter',
+    shortLabel: 'Starter',
     icon: Lightning,
     colors: {
       bg: 'bg-neutral-100 dark:bg-neutral-800',
@@ -73,7 +78,7 @@ const LANDLORD_BADGES: Record<PlanId, {
     },
   },
   pro: {
-    label: 'Plan Propietario',
+    label: 'Plan Pro',
     shortLabel: 'Pro',
     icon: Shield,
     colors: {
@@ -83,9 +88,9 @@ const LANDLORD_BADGES: Record<PlanId, {
       iconBg: 'bg-blue-500',
     },
   },
-  business: {
-    label: 'Plan Inversionista',
-    shortLabel: 'Business',
+  flex: {
+    label: 'Plan Flex',
+    shortLabel: 'Flex',
     icon: Crown,
     colors: {
       bg: 'bg-gradient-to-r from-amber-500/10 to-orange-500/10',
@@ -121,7 +126,7 @@ const SIZE_CONFIG = {
 export function SubscriptionBadge({
   variant,
   tenantSubscription = 'none',
-  planId = 'free',
+  planId = 'starter',
   size = 'sm',
   showLabel = true,
   className,
@@ -184,7 +189,7 @@ export interface AvatarSubscriptionIndicatorProps {
 export function AvatarSubscriptionIndicator({
   variant,
   tenantSubscription = 'none',
-  planId = 'free',
+  planId = 'starter',
   className,
 }: AvatarSubscriptionIndicatorProps) {
   // Get badge config based on variant
@@ -197,8 +202,8 @@ export function AvatarSubscriptionIndicator({
     return null;
   }
 
-  // For free tier landlords, only show if explicitly requested
-  if (variant === 'landlord' && planId === 'free') {
+  // For base tier landlords, only show if explicitly requested
+  if (variant === 'landlord' && planId === 'starter') {
     return null;
   }
 
@@ -246,16 +251,16 @@ export function UserAvatarWithBadge({
   name,
   variant,
   tenantSubscription = 'none',
-  planId = 'free',
+  planId = 'starter',
   size = 'md',
   className,
 }: UserAvatarWithBadgeProps) {
   const initial = name?.charAt(0).toUpperCase() || 'U';
 
-  // Get badge config
+  // Get badge config (hide for base tier)
   const badgeConfig = variant === 'tenant'
     ? TENANT_BADGES[tenantSubscription]
-    : (planId !== 'free' ? LANDLORD_BADGES[planId] : null);
+    : (planId === 'starter' ? null : LANDLORD_BADGES[planId]);
 
   const hasBadge = !!badgeConfig;
 

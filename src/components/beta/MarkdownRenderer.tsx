@@ -140,7 +140,7 @@ export function MarkdownRenderer({
         {content}
       </ReactMarkdown>
       {isStreaming && (
-        <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
+        <span className="inline-block w-0.5 h-4 bg-indigo-600 ml-0.5 align-middle animate-pulse" />
       )}
     </div>
   );

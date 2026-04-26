@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Contract, ContractTemplate } from '@/lib/types/contract';
-import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import { getContractTypeLabel } from '@/lib/types/contract';
 
 function formatCLP(amount: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
@@ -44,7 +44,7 @@ export function generateContractPdf(contract: Contract, template: ContractTempla
   doc.setFontSize(16);
   doc.setTextColor(20);
   doc.setFont('helvetica', 'bold');
-  doc.text(CONTRACT_TYPE_LABELS[contract.type].toUpperCase(), pageWidth / 2, y, { align: 'center' });
+  doc.text(getContractTypeLabel(contract).toUpperCase(), pageWidth / 2, y, { align: 'center' });
   y += 7;
 
   doc.setFontSize(9);

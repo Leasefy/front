@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -30,7 +31,7 @@ import { Spinner } from '@/components/ui/spinner';
  * Pipeline Page - Kanban board for managing the rental pipeline
  * Route: /panel/inmobiliaria/pipeline
  */
-export default function PipelinePage() {
+function PipelineContent() {
   const { t } = useI18n();
 
   // Fetch data from API
@@ -351,5 +352,13 @@ export default function PipelinePage() {
         onStageChange={handleStageChange}
       />
     </div>
+  );
+}
+
+export default function PipelinePage() {
+  return (
+    <PageGuard module="pipeline">
+      <PipelineContent />
+    </PageGuard>
   );
 }

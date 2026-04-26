@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -27,7 +28,7 @@ import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
  * Agente Detail Page
  * Route: /panel/inmobiliaria/agentes/[id]
  */
-export default function AgenteDetailPage() {
+function AgenteDetailContent() {
   const { t } = useI18n();
   const params = useParams();
   const agenteId = params.id as string;
@@ -66,7 +67,7 @@ export default function AgenteDetailPage() {
           </p>
           <Link
             href="/panel/inmobiliaria/agentes"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.agentes.backToList')}
@@ -176,5 +177,13 @@ export default function AgenteDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AgenteDetailPage() {
+  return (
+    <PageGuard module="agentes">
+      <AgenteDetailContent />
+    </PageGuard>
   );
 }

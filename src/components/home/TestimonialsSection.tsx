@@ -5,37 +5,44 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
+// --- Original multi-audience testimonials (commented for agency-only launch) ---
+// const _originalTestimonials = [
+//   { quote: "En 5 días encontré apartamento...", author: "María Rodríguez", role: "Inquilina · Chapinero", result: "Aprobada en 48h" },
+//   { quote: "Soy independiente, siempre me pedían codeudor...", author: "Diego Fernández", role: "Freelancer · Medellín", result: "Sin codeudor" },
+// ];
+// ---
+
 const testimonials = [
   {
     quote:
-      "En 5 días encontré apartamento. Me rechazaron 3 veces antes, aquí me aprobaron en 48 horas. El scoring AI mostró mi perfil real.",
-    author: "María Rodríguez",
-    role: "Inquilina · Chapinero",
-    result: "Aprobada en 48h",
-    image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400",
-  },
-  {
-    quote:
-      "Tenía mi apartamento vacío 4 meses. Lo publiqué acá y en 2 semanas ya tenía inquilino verificado. Lleva 8 meses pagando puntual.",
-    author: "Nicolás Martínez",
-    role: "Propietario · 3 propiedades",
-    result: "0 meses vacancia",
-    image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400",
-  },
-  {
-    quote:
-      "Como inversionista, necesitaba escalar. Antes perdía 2 días evaluando inquilinos. Ahora el scoring me da todo en minutos.",
-    author: "Ana Gómez",
-    role: "Inversionista · 8 propiedades",
-    result: "100% ocupación",
+      "Administramos 120 propiedades con el mismo equipo de 4 personas. Antes necesitábamos 8. El scoring AI eliminó el 90% del trabajo manual de evaluación.",
+    author: "Carolina Vargas",
+    role: "Directora · Inmobiliaria Vargas & Asociados",
+    result: "120 propiedades",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
   {
     quote:
-      "Soy independiente, siempre me pedían codeudor. Aquí evaluaron mis ingresos reales y me aprobaron. Firmé desde mi celular.",
-    author: "Diego Fernández",
-    role: "Freelancer · Medellín",
-    result: "Sin codeudor",
+      "Los cobros automáticos nos cambiaron la vida. Pasamos de perseguir pagos a que todo llegue solo. La morosidad bajó del 12% al 2%.",
+    author: "Andrés Restrepo",
+    role: "Gerente · AR Inmobiliaria · 85 propiedades",
+    result: "2% morosidad",
+    image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400",
+  },
+  {
+    quote:
+      "Como inversionista con 8 propiedades, necesitaba escalar sin dolor. El scoring me da todo en minutos, no en días. Ocupación al 100%.",
+    author: "Ana Gómez",
+    role: "Inversionista · 8 propiedades",
+    result: "100% ocupación",
+    image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400",
+  },
+  {
+    quote:
+      "Las dispersiones automáticas a propietarios nos ahorraron horas de trabajo cada mes. Los propietarios están felices porque reciben puntual.",
+    author: "Felipe Morales",
+    role: "COO · Grupo Inmobiliario Morales · 350 propiedades",
+    result: "350 propiedades",
     image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400",
   },
 ];

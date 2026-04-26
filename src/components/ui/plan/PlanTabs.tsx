@@ -87,7 +87,7 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-full text-xs font-semibold',
                   activeTab === tab.id
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-white uppercase tracking-wide font-mono'
                     : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
@@ -132,7 +132,7 @@ export function PlanTabs({
                 <span className={cn(
                   'px-1.5 py-0.5 rounded-sm text-[10px] font-semibold',
                   activeTab === tab.id
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-white uppercase tracking-wide font-mono'
                     : 'bg-muted text-plan-secondary'
                 )}>
                   {tab.count}
@@ -170,7 +170,7 @@ export function PlanTabs({
             sizeClasses[size],
             fullWidth && 'flex-1',
             activeTab === tab.id
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-white uppercase tracking-wide font-mono'
               : 'text-plan-secondary hover:bg-muted hover:text-plan-primary',
             tab.disabled && 'opacity-50 cursor-not-allowed'
           )}

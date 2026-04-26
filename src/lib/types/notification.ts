@@ -7,141 +7,51 @@
 // Notification Types - Landlords
 // ============================================================================
 
-export type LandlordNotificationType =
+/**
+ * Canonical notification type codes from the backend (single source of truth).
+ * These match the `templateCode` values in backend `prisma/seed-templates.ts`.
+ *
+ * One convention across the whole stack — no aliases, no translations.
+ */
+export type NotificationType =
   // Applications
-  | 'APP_NEW'
-  | 'APP_DOCS_UPLOADED'
-  | 'APP_DOCS_PENDING'
-  | 'APP_WITHDRAWN'
-  // Verifications
-  | 'VER_COMPLETED'
-  | 'VER_SCORE_HIGH'
-  | 'VER_SCORE_LOW'
-  | 'VER_RED_FLAGS'
-  | 'VER_INCOME_VERIFIED'
-  // Contracts
-  | 'CON_READY'
-  | 'CON_TENANT_SIGNED'
-  | 'CON_COMPLETED'
-  | 'CON_PENDING_SIGNATURE'
-  | 'CON_CANCELLED'
-  | 'CON_AMENDMENT'
+  | 'APPLICATION_RECEIVED'
+  | 'APPLICATION_APPROVED'
+  | 'APPLICATION_REJECTED'
+  | 'APPLICATION_INFO_REQUESTED'
+  | 'APPLICATION_INFO_PROVIDED'
   // Payments
-  | 'PAY_RECEIVED'
-  | 'PAY_DEPOSITED'
-  | 'PAY_OVERDUE'
-  | 'PAY_PARTIAL'
-  | 'PAY_FAILED'
-  | 'PAY_REMINDER_SENT'
-  // Leases
-  | 'LEA_STARTED'
-  | 'LEA_EXPIRING_90'
-  | 'LEA_EXPIRING_30'
-  | 'LEA_EXPIRED'
-  | 'LEA_RENEWED'
-  | 'LEA_TERMINATED'
-  | 'LEA_EARLY_TERMINATION'
+  | 'PAYMENT_RECEIPT_UPLOADED'
+  | 'PAYMENT_APPROVED'
+  | 'PAYMENT_REJECTED'
+  | 'PAYMENT_DISPUTE_OPENED'
+  | 'PAYMENT_REMINDER'
+  | 'PAYMENT_OVERDUE'
   // Visits
-  | 'VIS_SCHEDULED'
-  | 'VIS_REMINDER'
-  | 'VIS_COMPLETED'
-  | 'VIS_CANCELLED'
-  | 'VIS_RESCHEDULED'
-  | 'VIS_NO_SHOW'
-  // Properties
-  | 'PRO_PUBLISHED'
-  | 'PRO_VIEWS_MILESTONE'
-  | 'PRO_FEATURED'
-  | 'PRO_EXPIRED'
-  | 'PRO_DEACTIVATED'
-  | 'PRO_PRICE_SUGGESTION'
-  // Messages
-  | 'MSG_NEW'
-  | 'MSG_REPLY'
-  // Maintenance
-  | 'MNT_REQUEST'
-  | 'MNT_UPDATED'
-  | 'MNT_COMPLETED'
-  // Reviews
-  | 'REV_RECEIVED'
-  | 'REV_RESPONSE_NEEDED'
-  // System
-  | 'SYS_SUBSCRIPTION_EXPIRING'
-  | 'SYS_SUBSCRIPTION_EXPIRED'
-  | 'SYS_PAYMENT_METHOD_EXPIRING'
-  | 'SYS_SECURITY_ALERT'
-  | 'SYS_WELCOME'
-  | 'SYS_PROFILE_INCOMPLETE'
-  | 'SYS_NEW_FEATURE'
-  | 'SYS_REPORT_READY';
+  | 'VISIT_REQUESTED'
+  | 'VISIT_ACCEPTED'
+  | 'VISIT_REJECTED'
+  | 'VISIT_CANCELLED'
+  | 'VISIT_RESCHEDULED'
+  | 'VISIT_REMINDER_24H'
+  // Contracts
+  | 'CONTRACT_READY_TO_SIGN'
+  | 'CONTRACT_LANDLORD_SIGNED'
+  | 'CONTRACT_TENANT_SIGNED'
+  | 'CONTRACT_COMPLETED'
+  // Leases
+  | 'LEASE_EXPIRING_SOON'
+  | 'LEASE_EXPIRED';
+
+/** @deprecated Use NotificationType — backend emits the same codes to both audiences */
+export type LandlordNotificationType = NotificationType;
 
 // ============================================================================
 // Notification Types - Tenants
 // ============================================================================
 
-export type TenantNotificationType =
-  // Applications
-  | 'APP_SUBMITTED'
-  | 'APP_PREAPPROVED'
-  | 'APP_APPROVED'
-  | 'APP_REJECTED'
-  | 'APP_DOCS_REQUESTED'
-  | 'APP_UNDER_REVIEW'
-  // Contracts
-  | 'CON_READY'
-  | 'CON_PENDING_SIGNATURE'
-  | 'CON_LANDLORD_SIGNED'
-  | 'CON_COMPLETED'
-  | 'CON_CANCELLED'
-  // Payments
-  | 'PAY_CONFIRMED'
-  | 'PAY_REMINDER_7'
-  | 'PAY_REMINDER_3'
-  | 'PAY_REMINDER_1'
-  | 'PAY_DUE_TODAY'
-  | 'PAY_OVERDUE'
-  | 'PAY_FAILED'
-  | 'PAY_RECEIPT'
-  | 'PAY_AUTO_SCHEDULED'
-  // Leases
-  | 'LEA_STARTED'
-  | 'LEA_EXPIRING_90'
-  | 'LEA_EXPIRING_30'
-  | 'LEA_RENEWAL_OFFERED'
-  | 'LEA_RENEWED'
-  | 'LEA_TERMINATED'
-  | 'LEA_TERMINATION_APPROVED'
-  // Visits
-  | 'VIS_CONFIRMED'
-  | 'VIS_REMINDER_24H'
-  | 'VIS_REMINDER_1H'
-  | 'VIS_CANCELLED_BY_LANDLORD'
-  | 'VIS_RESCHEDULED'
-  // Documents
-  | 'DOC_REQUESTED'
-  | 'DOC_APPROVED'
-  | 'DOC_REJECTED'
-  | 'DOC_EXPIRING'
-  | 'DOC_CONTRACT_READY'
-  // Messages
-  | 'MSG_NEW'
-  | 'MSG_REPLY'
-  // Properties
-  | 'FAV_PRICE_DROP'
-  | 'FAV_AVAILABLE'
-  | 'FAV_ABOUT_TO_RENT'
-  | 'SEARCH_NEW_MATCH'
-  // Maintenance
-  | 'MNT_RECEIVED'
-  | 'MNT_IN_PROGRESS'
-  | 'MNT_SCHEDULED'
-  | 'MNT_COMPLETED'
-  // System
-  | 'SYS_WELCOME'
-  | 'SYS_PROFILE_INCOMPLETE'
-  | 'SYS_SCORE_UPDATED'
-  | 'SYS_SECURITY_ALERT'
-  | 'SYS_NEW_FEATURE';
+/** @deprecated Use NotificationType — backend emits the same canonical codes to both audiences */
+export type TenantNotificationType = NotificationType;
 
 // ============================================================================
 // Categories
@@ -455,58 +365,40 @@ export function formatNotificationTime(createdAt: string): string {
   return date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
+/**
+ * Icon name lookup by canonical notification type.
+ * Keys match backend templateCode (prisma/seed-templates.ts) — no aliases.
+ */
 export function getNotificationIcon(type: string): string {
   const iconMap: Record<string, string> = {
     // Applications
-    APP_NEW: 'UserPlus',
-    APP_SUBMITTED: 'PaperPlaneTilt',
-    APP_APPROVED: 'CheckCircle',
-    APP_PREAPPROVED: 'CheckCircle',
-    APP_REJECTED: 'XCircle',
-    APP_DOCS_UPLOADED: 'FileArrowUp',
-    APP_DOCS_REQUESTED: 'FileArrowDown',
-    APP_UNDER_REVIEW: 'MagnifyingGlass',
+    APPLICATION_RECEIVED: 'UserPlus',
+    APPLICATION_APPROVED: 'CheckCircle',
+    APPLICATION_REJECTED: 'XCircle',
+    APPLICATION_INFO_REQUESTED: 'FileText',
+    APPLICATION_INFO_PROVIDED: 'FileText',
     // Payments
-    PAY_RECEIVED: 'CurrencyDollar',
-    PAY_CONFIRMED: 'CheckCircle',
-    PAY_DEPOSITED: 'Bank',
-    PAY_OVERDUE: 'Warning',
-    PAY_REMINDER_7: 'Bell',
-    PAY_REMINDER_3: 'Bell',
-    PAY_REMINDER_1: 'Bell',
-    PAY_DUE_TODAY: 'Bell',
-    PAY_FAILED: 'XCircle',
-    // Contracts
-    CON_READY: 'FileText',
-    CON_TENANT_SIGNED: 'PenNib',
-    CON_LANDLORD_SIGNED: 'PenNib',
-    CON_COMPLETED: 'CheckCircle',
-    CON_PENDING_SIGNATURE: 'PenNib',
+    PAYMENT_RECEIPT_UPLOADED: 'CurrencyDollar',
+    PAYMENT_APPROVED: 'CheckCircle',
+    PAYMENT_REJECTED: 'XCircle',
+    PAYMENT_DISPUTE_OPENED: 'Warning',
+    PAYMENT_REMINDER: 'Bell',
+    PAYMENT_OVERDUE: 'Warning',
     // Visits
-    VIS_SCHEDULED: 'Calendar',
-    VIS_CONFIRMED: 'CalendarCheck',
-    VIS_REMINDER: 'Bell',
-    VIS_CANCELLED: 'CalendarX',
-    // Properties
-    PRO_PUBLISHED: 'Megaphone',
-    PRO_VIEWS_MILESTONE: 'Eye',
-    FAV_PRICE_DROP: 'Tag',
+    VISIT_REQUESTED: 'Calendar',
+    VISIT_ACCEPTED: 'CalendarCheck',
+    VISIT_REJECTED: 'XCircle',
+    VISIT_CANCELLED: 'CalendarX',
+    VISIT_RESCHEDULED: 'Calendar',
+    VISIT_REMINDER_24H: 'Bell',
+    // Contracts
+    CONTRACT_READY_TO_SIGN: 'PenNib',
+    CONTRACT_LANDLORD_SIGNED: 'PenNib',
+    CONTRACT_TENANT_SIGNED: 'PenNib',
+    CONTRACT_COMPLETED: 'CheckCircle',
     // Leases
-    LEA_STARTED: 'House',
-    LEA_EXPIRING_30: 'Clock',
-    LEA_EXPIRING_90: 'Clock',
-    // Messages
-    MSG_NEW: 'ChatCircle',
-    MSG_REPLY: 'ChatCircle',
-    // Maintenance
-    MNT_REQUEST: 'Wrench',
-    MNT_COMPLETED: 'CheckCircle',
-    // Verification
-    VER_COMPLETED: 'ShieldCheck',
-    VER_RED_FLAGS: 'Warning',
-    // System
-    SYS_WELCOME: 'Sparkle',
-    SYS_SECURITY_ALERT: 'Shield',
+    LEASE_EXPIRING_SOON: 'Clock',
+    LEASE_EXPIRED: 'Warning',
   };
 
   return iconMap[type] || 'Bell';

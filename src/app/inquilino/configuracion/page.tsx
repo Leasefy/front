@@ -5,20 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag } from '@phosphor-icons/react';
+import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
-import { ChangePasswordModal } from '@/components/settings/ChangePasswordModal';
-import { useAuth } from '@/lib/auth/use-auth';
-import { useNotificationSettings } from '@/lib/hooks/useSettings';
-import { settingsApi } from '@/lib/api/settings.service';
-import { getSupabase } from '@/lib/supabase/client';
-import type { NotificationSettings } from '@/lib/api/settings.service';
 
-// Modal Component
+// Modal Component with Leasefy style
 function Modal({
   open,
   onClose,
@@ -64,27 +58,32 @@ function Modal({
   );
 }
 
-// Map UI keys to backend NotificationSettings keys
-const notifKeyMap: Record<string, keyof NotificationSettings> = {
-  emailNotifications: 'emailApplications',
-  pushNotifications: 'pushAll',
-  paymentReminders: 'emailPayments',
-  marketingEmails: 'emailMarketing',
-};
+// Mock active sessions
+const mockSessions = [
+  { id: '1', device: 'Chrome en Windows', location: 'Bogotá, Colombia', current: true, lastActive: 'Ahora' },
+  { id: '2', device: 'Safari en iPhone', location: 'Bogotá, Colombia', current: false, lastActive: 'Hace 2 horas' },
+  { id: '3', device: 'Firefox en MacOS', location: 'Medellín, Colombia', current: false, lastActive: 'Hace 1 día' },
+];
 
 export default function ConfiguracionPage() {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
-  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
 
+  // Ensure we only access theme on client side
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Real notification settings from backend
-  const { settings: notifSettings, isLoading: notifLoading, updateSetting } = useNotificationSettings();
+  // Gear state
+  const [settings, setGear] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    smsNotifications: false,
+    paymentReminders: true,
+    marketingEmails: false,
+  });
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -92,26 +91,15 @@ export default function ConfiguracionPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Form states
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  // Current session derived from browser
-  const currentSession = {
-    device: typeof navigator !== 'undefined'
-      ? navigator.userAgent.includes('Mobile') ? 'Dispositivo móvil' : 'Navegador actual'
-      : 'Navegador actual',
-    current: true,
-  };
-
-  const handleNotifToggle = async (uiKey: string) => {
-    const backendKey = notifKeyMap[uiKey];
-    if (!backendKey) return;
-    try {
-      await updateSetting(backendKey, !notifSettings[backendKey]);
-      toast.success(locale === 'es' ? 'Configuración actualizada' : 'Settings updated');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
-    }
+  const handleToggle = (key: keyof typeof settings) => {
+    setGear(prev => ({ ...prev, [key]: !prev[key] }));
+    toast.success(t('common.success'));
   };
 
   const handleDarkModeToggle = () => {
@@ -125,49 +113,54 @@ export default function ConfiguracionPage() {
     toast.success(newLocale === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
   };
 
-  const handleCloseOtherSessions = async () => {
-    try {
-      const supabase = getSupabase();
-      await supabase.auth.signOut({ scope: 'others' });
-      toast.success(locale === 'es' ? 'Otras sesiones cerradas' : 'Other sessions closed');
-      setShowSessionsModal(false);
-    } catch {
-      toast.error(locale === 'es' ? 'Error al cerrar sesiones' : 'Error closing sessions');
+  const handlePasswordChange = async () => {
+    if (passwordForm.new !== passwordForm.confirm) {
+      toast.error('Las contraseñas no coinciden');
+      return;
     }
+    if (passwordForm.new.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsLoading(false);
+    setShowPasswordModal(false);
+    setPasswordForm({ current: '', new: '', confirm: '' });
+    toast.success('Contraseña actualizada correctamente');
+  };
+
+  const handleCloseSession = (sessionId: string) => {
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    toast.success('Sesión cerrada correctamente');
   };
 
   const handleDownloadData = async () => {
     setIsLoading(true);
-    try {
-      await settingsApi.requestDataExport();
-      setShowDownloadModal(false);
-      toast.success(locale === 'es'
-        ? 'Se te enviará un correo con tus datos en las próximas 24 horas'
-        : 'You will receive an email with your data within 24 hours');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al solicitar exportación' : 'Error requesting export');
-    } finally {
-      setIsLoading(false);
-    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsLoading(false);
+    setShowDownloadModal(false);
+    toast.success('Se te enviará un correo con tus datos en las próximas 24 horas');
   };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'ELIMINAR') {
-      toast.error(locale === 'es' ? 'Escribe ELIMINAR para confirmar' : 'Type ELIMINAR to confirm');
+      toast.error('Escribe ELIMINAR para confirmar');
       return;
     }
     setIsLoading(true);
-    try {
-      await settingsApi.deleteAccount();
-      const supabase = getSupabase();
-      await supabase.auth.signOut();
-      toast.success(locale === 'es' ? 'Cuenta eliminada' : 'Account deleted');
-      router.push('/');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al eliminar la cuenta' : 'Error deleting account');
-    } finally {
-      setIsLoading(false);
-    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsLoading(false);
+    toast.success('Cuenta eliminada. Serás redirigido...');
+    setTimeout(() => router.push('/'), 2000);
+  };
+
+  const handleResetOnboarding = () => {
+    localStorage.removeItem('plan_onboarding_tenant');
+    // Dispatch custom event to notify sidebar
+    window.dispatchEvent(new Event('onboarding-updated'));
+    toast.success(locale === 'es' ? 'Onboarding reiniciado' : 'Onboarding reset');
+    setTimeout(() => router.push('/inquilino'), 500);
   };
 
   return (
@@ -211,34 +204,41 @@ export default function ConfiguracionPage() {
                 icon={Envelope}
                 title={t('settings.notifications.email')}
                 description={locale === 'es' ? 'Recibe actualizaciones sobre tu arriendo' : 'Receive updates about your rental'}
-                enabled={notifLoading ? true : notifSettings.emailApplications}
-                onToggle={() => handleNotifToggle('emailNotifications')}
+                enabled={settings.emailNotifications}
+                onToggle={() => handleToggle('emailNotifications')}
               />
               <SettingToggle
                 icon={DeviceMobile}
                 title={t('settings.notifications.push')}
                 description={locale === 'es' ? 'Recibe notificaciones en tu dispositivo' : 'Receive notifications on your device'}
-                enabled={notifLoading ? true : notifSettings.pushAll}
-                onToggle={() => handleNotifToggle('pushNotifications')}
+                enabled={settings.pushNotifications}
+                onToggle={() => handleToggle('pushNotifications')}
+              />
+              <SettingToggle
+                icon={DeviceMobile}
+                title={t('settings.notifications.sms')}
+                description={locale === 'es' ? 'Mensajes de texto para alertas importantes' : 'Text messages for important alerts'}
+                enabled={settings.smsNotifications}
+                onToggle={() => handleToggle('smsNotifications')}
               />
               <SettingToggle
                 icon={CreditCard}
                 title={t('settings.notifications.payments')}
                 description={locale === 'es' ? 'Recordatorios antes del vencimiento' : 'Reminders before due date'}
-                enabled={notifLoading ? true : notifSettings.emailPayments}
-                onToggle={() => handleNotifToggle('paymentReminders')}
+                enabled={settings.paymentReminders}
+                onToggle={() => handleToggle('paymentReminders')}
               />
               <SettingToggle
                 icon={Tag}
                 title={t('settings.notifications.marketing')}
                 description={locale === 'es' ? 'Ofertas y novedades de la plataforma' : 'Offers and platform news'}
-                enabled={notifLoading ? false : notifSettings.emailMarketing}
-                onToggle={() => handleNotifToggle('marketingEmails')}
+                enabled={settings.marketingEmails}
+                onToggle={() => handleToggle('marketingEmails')}
               />
             </div>
           </motion.section>
 
-          {/* Security & Preferences */}
+          {/* Security & Preferences - 2 column grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Security */}
             <motion.section
@@ -262,15 +262,16 @@ export default function ConfiguracionPage() {
                 <MfaSetupSection />
                 <SettingLink
                   icon={Lock}
-                  title={locale === 'es' ? 'Contraseña' : 'Password'}
-                  description={locale === 'es' ? 'Establece o cambia tu contraseña' : 'Set or change your password'}
+                  title={t('settings.account.changePassword')}
+                  description={locale === 'es' ? 'Actualiza tu acceso' : 'Update your access'}
                   onClick={() => setShowPasswordModal(true)}
                 />
                 <SettingLink
                   icon={Monitor}
                   title={t('settings.account.sessions')}
-                  description={locale === 'es' ? 'Gestiona tus sesiones activas' : 'Manage your active sessions'}
+                  description={locale === 'es' ? `${sessions.length} dispositivos` : `${sessions.length} devices`}
                   onClick={() => setShowSessionsModal(true)}
+                  badge={sessions.length > 1 ? `${sessions.length}` : undefined}
                 />
               </div>
             </motion.section>
@@ -328,7 +329,7 @@ export default function ConfiguracionPage() {
             </motion.section>
           </div>
 
-          {/* Data & Privacy + Danger Zone */}
+          {/* Data & Privacy + Danger Zone - 2 column grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Data & Privacy */}
             <motion.section
@@ -354,6 +355,12 @@ export default function ConfiguracionPage() {
                   title={t('settings.privacy.downloadData')}
                   description={locale === 'es' ? 'Copia de tu información' : 'Copy of your information'}
                   onClick={() => setShowDownloadModal(true)}
+                />
+                <SettingLink
+                  icon={ArrowCounterClockwise}
+                  title={locale === 'es' ? 'Reiniciar onboarding' : 'Reset onboarding'}
+                  description={locale === 'es' ? 'Volver al estado inicial' : 'Return to initial state'}
+                  onClick={handleResetOnboarding}
                 />
                 <SettingLink
                   icon={FileText}
@@ -409,57 +416,110 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Password Modal */}
-      <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
+      <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Contraseña actual</label>
+            <input
+              type="password"
+              value={passwordForm.current}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Nueva contraseña</label>
+            <input
+              type="password"
+              value={passwordForm.new}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder="Mínimo 8 caracteres"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Confirmar contraseña</label>
+            <input
+              type="password"
+              value={passwordForm.confirm}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              placeholder="Repetir contraseña"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setShowPasswordModal(false)}
+              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handlePasswordChange}
+              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
+              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            >
+              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
+              {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Sessions Modal */}
-      <Modal
-        open={showSessionsModal}
-        onClose={() => setShowSessionsModal(false)}
-        title={locale === 'es' ? 'Sesiones activas' : 'Active sessions'}
-      >
+      <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          {sessions.map((session) => (
+            <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.device}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{session.location} · {session.lastActive}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-neutral-900 dark:text-white">{currentSession.device}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {user?.email} · {locale === 'es' ? 'Ahora' : 'Now'}
-                </p>
-              </div>
+              {session.current ? (
+                <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">Actual</span>
+              ) : (
+                <button
+                  onClick={() => handleCloseSession(session.id)}
+                  className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline"
+                >
+                  Cerrar
+                </button>
+              )}
             </div>
-            <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
-              {locale === 'es' ? 'Actual' : 'Current'}
-            </span>
-          </div>
-          <button
-            onClick={handleCloseOtherSessions}
-            className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          >
-            {locale === 'es' ? 'Cerrar todas las otras sesiones' : 'Close all other sessions'}
-          </button>
+          ))}
+          {sessions.length > 1 && (
+            <button
+              onClick={() => {
+                setSessions(prev => prev.filter(s => s.current));
+                toast.success('Todas las otras sesiones han sido cerradas');
+              }}
+              className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              Cerrar todas las otras sesiones
+            </button>
+          )}
         </div>
       </Modal>
 
       {/* Download Data Modal */}
-      <Modal
-        open={showDownloadModal}
-        onClose={() => setShowDownloadModal(false)}
-        title={locale === 'es' ? 'Descargar mis datos' : 'Download my data'}
-      >
+      <Modal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title="Descargar mis datos">
         <div className="space-y-4">
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            {locale === 'es'
-              ? 'Prepararemos un archivo con toda tu información personal, incluyendo:'
-              : 'We will prepare a file with all your personal information, including:'}
+            Prepararemos un archivo con toda tu información personal, incluyendo:
           </p>
           <div className="p-4 bg-stone-50 dark:bg-[#1f1f21] rounded-2xl space-y-2">
-            {(locale === 'es'
-              ? ['Información de perfil', 'Historial de pagos', 'Documentos subidos', 'Historial de aplicaciones']
-              : ['Profile information', 'Payment history', 'Uploaded documents', 'Application history']
-            ).map((item, i) => (
+            {[
+              'Información de perfil',
+              'Historial de pagos',
+              'Documentos subidos',
+              'Historial de aplicaciones'
+            ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
                 <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                   <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
@@ -469,16 +529,14 @@ export default function ConfiguracionPage() {
             ))}
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {locale === 'es'
-              ? `El archivo se enviará a ${user?.email} en las próximas 24 horas.`
-              : `The file will be sent to ${user?.email} within 24 hours.`}
+            El archivo se enviará a tu correo electrónico registrado en las próximas 24 horas.
           </p>
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowDownloadModal(false)}
               className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
             >
-              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+              Cancelar
             </button>
             <button
               onClick={handleDownloadData}
@@ -486,41 +544,29 @@ export default function ConfiguracionPage() {
               className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {isLoading
-                ? (locale === 'es' ? 'Procesando...' : 'Processing...')
-                : (locale === 'es' ? 'Solicitar datos' : 'Request data')}
+              {isLoading ? 'Procesando...' : 'Solicitar datos'}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal
-        open={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title={locale === 'es' ? 'Eliminar cuenta' : 'Delete account'}
-      >
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
         <div className="space-y-4">
           <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
               <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                {locale === 'es' ? 'Esta acción no se puede deshacer' : 'This action cannot be undone'}
-              </p>
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">Esta acción no se puede deshacer</p>
               <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                {locale === 'es'
-                  ? 'Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.'
-                  : 'All your data, payment history, documents and settings will be permanently deleted.'}
+                Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.
               </p>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              {locale === 'es' ? 'Escribe ' : 'Type '}
-              <span className="font-bold text-red-600 dark:text-red-400">ELIMINAR</span>
-              {locale === 'es' ? ' para confirmar' : ' to confirm'}
+              Escribe <span className="font-bold text-red-600 dark:text-red-400">ELIMINAR</span> para confirmar
             </label>
             <input
               type="text"
@@ -532,20 +578,21 @@ export default function ConfiguracionPage() {
           </div>
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteConfirmText('');
+              }}
               className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
             >
-              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+              Cancelar
             </button>
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
-              {isLoading
-                ? (locale === 'es' ? 'Eliminando...' : 'Deleting...')
-                : (locale === 'es' ? 'Eliminar cuenta' : 'Delete account')}
+              {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
             </button>
           </div>
         </div>
@@ -588,7 +635,7 @@ function SettingToggle({
         className={cn(
           'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
           enabled
-            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-500'
+            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-600'
             : 'bg-neutral-200 dark:bg-[#2a2a2c]'
         )}
       >

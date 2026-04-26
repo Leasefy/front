@@ -331,7 +331,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
                   onClick={handleSubmit(handleFormSubmit)}
                   disabled={isSubmitting}
                 >
@@ -608,7 +608,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
                   disabled={isSubmitting || !isValid}
                 >
                   {isSubmitting ? (

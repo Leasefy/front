@@ -35,7 +35,7 @@ export interface Coupon {
   currentUses: number;
 
   // Plan restrictions
-  applicablePlans: ('free' | 'pro' | 'business')[] | 'all';
+  applicablePlans: ('starter' | 'pro' | 'flex')[] | 'all';
 
   // Minimum purchase requirement in COP
   minimumPurchase?: number;

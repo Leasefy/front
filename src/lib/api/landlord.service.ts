@@ -461,7 +461,7 @@ export const landlordApi = {
       hasIdDocument: detail.documents.some(d => d.type === 'CEDULA' || d.type === 'ID'),
       hasIncomeProof: detail.documents.some(d => d.type === 'INCOME_PROOF'),
       hasEmploymentLetter: detail.documents.some(d => d.type === 'EMPLOYMENT_LETTER'),
-      hasBankStatements: detail.documents.some(d => d.type === 'BANK_STATEMENTS'),
+      hasBankStatements: detail.documents.some(d => d.type === 'BANK_STATEMENT' || d.type === 'BANK_STATEMENTS'),
     };
   },
 

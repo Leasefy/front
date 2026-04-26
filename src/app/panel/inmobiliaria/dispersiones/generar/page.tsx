@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -13,7 +14,7 @@ import { useI18n } from '@/lib/i18n';
  * GenerarDispersionesPage - Wrapper page for DispersionWizard
  * Route: /panel/inmobiliaria/dispersiones/generar
  */
-export default function GenerarDispersionesPage() {
+function GenerarDispersionesContent() {
   const { t } = useI18n();
   const router = useRouter();
 
@@ -75,5 +76,13 @@ export default function GenerarDispersionesPage() {
         />
       </motion.div>
     </div>
+  );
+}
+
+export default function GenerarDispersionesPage() {
+  return (
+    <PageGuard module="dispersiones">
+      <GenerarDispersionesContent />
+    </PageGuard>
   );
 }

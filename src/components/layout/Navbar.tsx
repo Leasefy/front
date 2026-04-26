@@ -14,22 +14,16 @@ import { Button } from "@/components/ui/button";
  */
 const audienceLinks = [
   {
-    href: '/para/propietarios',
-    label: 'Propietarios',
-    icon: Key,
-    description: 'Arrienda tu propiedad sin comisiones de intermediación',
-  },
-  {
-    href: '/para/inquilinos',
-    label: 'Inquilinos',
-    icon: MagnifyingGlass,
-    description: 'Encuentra y aplica a propiedades verificadas',
-  },
-  {
     href: '/para/inmobiliarias',
     label: 'Inmobiliarias',
     icon: Bank,
-    description: 'Escala tu operación con tecnología',
+    description: 'Escala tu operación con tecnología e IA',
+  },
+  {
+    href: '/para/propietarios',
+    label: 'Propietarios',
+    icon: Key,
+    description: 'Arrienda tu propiedad sin comisiones',
   },
   {
     href: '/para/agentes',
@@ -37,6 +31,14 @@ const audienceLinks = [
     icon: Trophy,
     description: 'Herramientas para cerrar más arriendos',
   },
+  // --- Commented out for agency-only launch ---
+  // {
+  //   href: '/para/inquilinos',
+  //   label: 'Inquilinos',
+  //   icon: MagnifyingGlass,
+  //   description: 'Encuentra y aplica a propiedades verificadas',
+  // },
+  // ---
 ];
 
 const productLinks = [
@@ -54,13 +56,19 @@ export function Navbar() {
   const [isParaQuienOpen, setIsParaQuienOpen] = useState(false);
   const [isProductosOpen, setIsProductosOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, agencyRole } = useAuth();
+
+  // Tenants and agency members with read-only roles cannot publish properties
+  const canPublish = !isAuthenticated || !user || (
+    user.role !== 'tenant' &&
+    !(user.role === 'agency' && (agencyRole === 'CONTADOR' || agencyRole === 'VIEWER'))
+  );
   const pathname = usePathname();
   const router = useRouter();
 
   // Check if we're on a page without a dark hero (should always show solid navbar)
   // Includes both /propiedades (listing) and /propiedades/[id] (detail pages)
-  const isLightPage = pathname === '/propiedades' || pathname.startsWith('/propiedades/');
+  const isLightPage = pathname === '/propiedades' || pathname.startsWith('/propiedades/') || pathname === '/terminos' || pathname === '/privacidad';
 
   // Detect scroll to change navbar style
   useEffect(() => {
@@ -90,14 +98,13 @@ export function Navbar() {
   };
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error('[Navbar] Logout error:', err);
-    }
     setIsUserListOpen(false);
     setIsMobileListOpen(false);
-    router.push('/auth');
+    try {
+      await logout();
+    } finally {
+      window.location.replace('/auth');
+    }
   };
 
   // Get dashboard link based on user role
@@ -115,22 +122,24 @@ export function Navbar() {
     return 'Mi panel';
   };
 
-  const isTenant = isAuthenticated && user?.role === 'tenant';
-
   // Get leases link based on user role
   const getLeasesLink = () => {
     if (!user) return '/';
-    return user.role === 'landlord' ? '/panel/leases' : '/inquilino/arriendo';
+    if (user.role === 'landlord') return '/panel/leases';
+    if (user.role === 'agency') return '/panel/inmobiliaria';
+    return '/inquilino/arriendo';
   };
 
   const getLeasesLabel = () => {
     if (!user) return 'Mis arriendos';
-    return user.role === 'landlord' ? 'Mis arriendos' : 'Mi arriendo';
+    if (user.role === 'landlord') return 'Mis arriendos';
+    if (user.role === 'agency') return 'Panel';
+    return 'Mi arriendo';
   };
 
   return (
     <nav className={cn(
-      "z-[200] fixed top-4 left-4 right-4 md:left-[72px] md:right-[72px]"
+      "z-50 fixed top-4 left-4 right-4 md:left-[72px] md:right-[72px]"
     )}>
       {/* Navbar bar with glass effect */}
       <div className={cn(
@@ -158,7 +167,7 @@ export function Navbar() {
 
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              {!isTenant && (
+              {canPublish && (
                 <Button
                   variant={isActive('/publicar') ? "default" : "secondary"}
                   size="sm"
@@ -430,18 +439,15 @@ export function Navbar() {
 
               {/* Footer with CTA */}
               <div className="px-8 py-4 bg-white/5 border-t border-white/10 flex items-center justify-between">
-                <p className="text-[12px] text-white/50">
-                  ¿No sabes cuál elegir? <span className="text-white/70">Habla con nuestro equipo</span>
-                </p>
-                {isTenant ? (
-                  <button
-                    onClick={() => { setIsParaQuienOpen(false); handleLogout(); }}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
-                  >
-                    Cerrar sesión
-                    <SignOut className="w-3 h-3" />
-                  </button>
-                ) : (
+                <a
+                  href="https://wa.me/573116558833"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] text-white/50 hover:text-white/70 transition-colors"
+                >
+                  ¿No sabes cuál elegir? <span className="text-white/70 underline underline-offset-2">Habla con nuestro equipo</span>
+                </a>
+                {canPublish && (
                   <Link
                     href="/publicar"
                     onClick={() => setIsParaQuienOpen(false)}
@@ -595,15 +601,7 @@ export function Navbar() {
                 <p className="text-[12px] text-white/50">
                   Todos los productos se integran automáticamente
                 </p>
-                {isTenant ? (
-                  <button
-                    onClick={() => { setIsProductosOpen(false); handleLogout(); }}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
-                  >
-                    Cerrar sesión
-                    <SignOut className="w-3 h-3" />
-                  </button>
-                ) : (
+                {canPublish && (
                   <Link
                     href="/publicar"
                     onClick={() => setIsProductosOpen(false)}
@@ -637,7 +635,7 @@ export function Navbar() {
               transition={{ duration: 0.2, delay: 0.05 }}
               className="px-6 py-4 space-y-1"
             >
-              {!isTenant && (
+              {canPublish && (
                 <Link
                   href="/publicar"
                   className={cn(

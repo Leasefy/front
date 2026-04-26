@@ -1,8 +1,10 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -28,7 +30,8 @@ import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/Age
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
-import type { AgenteFormData } from '@/lib/types/inmobiliaria';
+import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
+import type { UserInvite } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
@@ -39,10 +42,11 @@ const ITEMS_PER_PAGE = 6;
  * Agentes Page - Main view for managing all real estate agents
  * Route: /panel/inmobiliaria/agentes
  */
-export default function AgentesPage() {
+function AgentesContent() {
   const { t } = useI18n();
   const router = useRouter();
   const { agentes: allAgentes } = useAgentes();
+  const { canAccess } = usePermissions();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
     { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
@@ -140,16 +144,17 @@ export default function AgentesPage() {
     setShowAddModal(true);
   }, []);
 
-  const handleCreateAgente = useCallback(async (data: AgenteFormData) => {
-    // TODO Backend: Create agent via API
-    // For now, just show success toast
-    toast.success(t('inmobiliaria.agentes.toasts.created'), {
-      description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
-    });
-    // In production, this would:
-    // 1. POST to /api/agentes
-    // 2. Refresh the agentes list
-    // 3. Show success/error toast
+  const handleCreateAgente = useCallback(async (data: UserInvite) => {
+    try {
+      await inmobiliariaConfigApi.inviteUser(data);
+      toast.success(t('inmobiliaria.agentes.toasts.created'), {
+        description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
+      });
+    } catch (error) {
+      toast.error('Error al invitar al agente', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
   }, [t]);
 
   return (
@@ -164,13 +169,15 @@ export default function AgentesPage() {
             {t('inmobiliaria.agentes.subtitle')}
           </p>
         </div>
-        <button
-          onClick={handleNuevoAgente}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
-        >
-          <Plus className="w-5 h-5" />
-          {t('inmobiliaria.agentes.addAgent')}
-        </button>
+        {canAccess('agentes', 'create') && (
+          <button
+            onClick={handleNuevoAgente}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            {t('inmobiliaria.agentes.addAgent')}
+          </button>
+        )}
       </div>
 
       {/* Stats Row */}
@@ -456,16 +463,24 @@ export default function AgentesPage() {
 function EmptyState() {
   const { t } = useI18n();
   return (
-    <div className="p-12 text-center">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-        <Users className="w-8 h-8 text-muted-foreground" />
+    <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+        <Users className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-1">
+      <h3 className="text-base font-semibold text-foreground mb-1.5">
         {t('inmobiliaria.agentes.noAgents')}
       </h3>
-      <p className="text-muted-foreground max-w-md mx-auto">
+      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
         {t('inmobiliaria.agentes.noAgentsDesc')}
       </p>
     </div>
+  );
+}
+
+export default function AgentesPage() {
+  return (
+    <PageGuard module="agentes">
+      <AgentesContent />
+    </PageGuard>
   );
 }

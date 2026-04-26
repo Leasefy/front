@@ -47,14 +47,35 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     : getAuthHeaders()
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  } catch (err) {
+    // Network-level failure: ERR_CONNECTION_REFUSED, DNS error, offline, CORS, etc.
+    // `fetch` throws a plain TypeError in these cases — wrap it in ApiError(0)
+    // with a user-friendly message so UI code can distinguish "backend down"
+    // from "backend returned 4xx/5xx".
+    const raw = err instanceof Error ? err.message : String(err)
+    const message = typeof navigator !== 'undefined' && !navigator.onLine
+      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+  }
 
   if (res.status === 401) {
-    throw new ApiError(401, 'No autorizado')
+    // Preserve the backend message so callers can distinguish "User not found"
+    // (onboarding needed) from real auth failures (token invalid/expired).
+    const errorBody = await res.json().catch(() => ({}))
+    throw new ApiError(401, errorBody.message || 'No autorizado')
+  }
+
+  if (res.status === 403) {
+    const errorBody = await res.json().catch(() => ({}))
+    throw new ApiError(403, errorBody.message || 'No tienes permiso para realizar esta acción')
   }
 
   if (!res.ok) {
@@ -78,6 +99,7 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
 export const apiClient = {
   get: <T>(path: string, token?: string) => request<T>('GET', path, undefined, token),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
+  put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
   delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),
 }

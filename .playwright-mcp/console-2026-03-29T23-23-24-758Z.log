@@ -1,0 +1,940 @@
+[    3526ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[    3527ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[    3527ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[    3535ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[    3536ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[    3536ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[   13870ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[   14148ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[   14149ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[ 1044570ms] [ERROR] ./src/components/inmobiliaria/AgencyPricingModal.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState, useEffect } from 'react';
+ 5 | import { createPortal } from 'react-dom';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 | 
+ 395 |   if (typeof window === 'undefined') return null;
+ 396 |   return createPortal(content, document.body);
+ 397 | =======
+     : ^^^^^^^
+ 398 | import { useState } from 'react';
+ 399 | import Link from 'next/link';
+ 400 | import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+     `----
+
+  x 'import', and 'export' cannot be used outside of module code
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 |     
+ 395 |       if (typeof window === 'undefined') return null;
+ 396 |       return createPortal(content, document.body);
+ 397 | ,-> =======
+ 398 | `-> import { useState } from 'react';
+ 399 |     import Link from 'next/link';
+ 400 |     import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+ 401 |     import { Button } from '@/components/ui/button';
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/AgencyPricingModal.tsx
+./src/components/inmobiliaria/UpgradePrompt.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1044571ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState } from 'react';
+ 5 | import Link from 'next/link';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |   Warning,
+ 13 |   CircleNotch,
+ 14 |   CaretRight,
+ 15 | =======
+    : ^^^^^^^
+ 16 | import {
+ 17 |   ShieldCheck,
+ 18 |   GitMerge,
+    `----
+
+  x cannot import as reserved word
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |       Warning,
+ 13 |       CircleNotch,
+ 14 |       CaretRight,
+ 15 | ,-> =======
+ 16 | `-> import {
+ 17 |       ShieldCheck,
+ 18 |       GitMerge,
+ 19 |       CheckCircle,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1044571ms] [ERROR] ./src/lib/types/ai-agents.ts
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:1:1]
+ 1 | <<<<<<< HEAD
+   : ^^^^^^^
+ 2 | /**
+ 3 |  * AI Agent types for the inmobiliaria agent ecosystem
+ 4 |  * These represent the autonomous agents that power the platform
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:25:1]
+ 25 |   | 'retention';
+ 26 | 
+ 27 | export type AIAgentStatus = 'active' | 'coming_soon' | 'beta';
+ 28 | =======
+    : ^^^^^^^
+ 29 | // =============================================================================
+ 30 | // AI Agent Type Definitions & Data
+ 31 | // =============================================================================
+    `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:56:1]
+ 56 |     }[];
+ 57 |   };
+ 58 | }
+ 59 | >>>>>>> sandbox/mastra-agents
+    : ^^^^^^^
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+    `----
+
+  x Expected '{', got 'interface'
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:60:1]
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+ 62 | 
+ 63 | export interface ExecutionStep {
+    :        ^^^^^^^^^
+ 64 |   id: string;
+ 65 |   label: string;
+ 66 | <<<<<<< HEAD
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/types/ai-agents.ts
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1044996ms] [ERROR] ./src/components/inmobiliaria/AgencyPricingModal.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState, useEffect } from 'react';
+ 5 | import { createPortal } from 'react-dom';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 | 
+ 395 |   if (typeof window === 'undefined') return null;
+ 396 |   return createPortal(content, document.body);
+ 397 | =======
+     : ^^^^^^^
+ 398 | import { useState } from 'react';
+ 399 | import Link from 'next/link';
+ 400 | import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+     `----
+
+  x 'import', and 'export' cannot be used outside of module code
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 |     
+ 395 |       if (typeof window === 'undefined') return null;
+ 396 |       return createPortal(content, document.body);
+ 397 | ,-> =======
+ 398 | `-> import { useState } from 'react';
+ 399 |     import Link from 'next/link';
+ 400 |     import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+ 401 |     import { Button } from '@/components/ui/button';
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/AgencyPricingModal.tsx
+./src/components/inmobiliaria/UpgradePrompt.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1044996ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState } from 'react';
+ 5 | import Link from 'next/link';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |   Warning,
+ 13 |   CircleNotch,
+ 14 |   CaretRight,
+ 15 | =======
+    : ^^^^^^^
+ 16 | import {
+ 17 |   ShieldCheck,
+ 18 |   GitMerge,
+    `----
+
+  x cannot import as reserved word
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |       Warning,
+ 13 |       CircleNotch,
+ 14 |       CaretRight,
+ 15 | ,-> =======
+ 16 | `-> import {
+ 17 |       ShieldCheck,
+ 18 |       GitMerge,
+ 19 |       CheckCircle,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1044996ms] [ERROR] ./src/lib/types/ai-agents.ts
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:1:1]
+ 1 | <<<<<<< HEAD
+   : ^^^^^^^
+ 2 | /**
+ 3 |  * AI Agent types for the inmobiliaria agent ecosystem
+ 4 |  * These represent the autonomous agents that power the platform
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:25:1]
+ 25 |   | 'retention';
+ 26 | 
+ 27 | export type AIAgentStatus = 'active' | 'coming_soon' | 'beta';
+ 28 | =======
+    : ^^^^^^^
+ 29 | // =============================================================================
+ 30 | // AI Agent Type Definitions & Data
+ 31 | // =============================================================================
+    `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:56:1]
+ 56 |     }[];
+ 57 |   };
+ 58 | }
+ 59 | >>>>>>> sandbox/mastra-agents
+    : ^^^^^^^
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+    `----
+
+  x Expected '{', got 'interface'
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:60:1]
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+ 62 | 
+ 63 | export interface ExecutionStep {
+    :        ^^^^^^^^^
+ 64 |   id: string;
+ 65 |   label: string;
+ 66 | <<<<<<< HEAD
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/types/ai-agents.ts
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1046963ms] [ERROR] ./src/components/inmobiliaria/AgencyPricingModal.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState, useEffect } from 'react';
+ 5 | import { createPortal } from 'react-dom';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 | 
+ 395 |   if (typeof window === 'undefined') return null;
+ 396 |   return createPortal(content, document.body);
+ 397 | =======
+     : ^^^^^^^
+ 398 | import { useState } from 'react';
+ 399 | import Link from 'next/link';
+ 400 | import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+     `----
+
+  x 'import', and 'export' cannot be used outside of module code
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 |     
+ 395 |       if (typeof window === 'undefined') return null;
+ 396 |       return createPortal(content, document.body);
+ 397 | ,-> =======
+ 398 | `-> import { useState } from 'react';
+ 399 |     import Link from 'next/link';
+ 400 |     import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+ 401 |     import { Button } from '@/components/ui/button';
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/AgencyPricingModal.tsx
+./src/components/inmobiliaria/UpgradePrompt.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1046966ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState } from 'react';
+ 5 | import Link from 'next/link';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |   Warning,
+ 13 |   CircleNotch,
+ 14 |   CaretRight,
+ 15 | =======
+    : ^^^^^^^
+ 16 | import {
+ 17 |   ShieldCheck,
+ 18 |   GitMerge,
+    `----
+
+  x cannot import as reserved word
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |       Warning,
+ 13 |       CircleNotch,
+ 14 |       CaretRight,
+ 15 | ,-> =======
+ 16 | `-> import {
+ 17 |       ShieldCheck,
+ 18 |       GitMerge,
+ 19 |       CheckCircle,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1046966ms] [ERROR] ./src/lib/types/ai-agents.ts
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:1:1]
+ 1 | <<<<<<< HEAD
+   : ^^^^^^^
+ 2 | /**
+ 3 |  * AI Agent types for the inmobiliaria agent ecosystem
+ 4 |  * These represent the autonomous agents that power the platform
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:25:1]
+ 25 |   | 'retention';
+ 26 | 
+ 27 | export type AIAgentStatus = 'active' | 'coming_soon' | 'beta';
+ 28 | =======
+    : ^^^^^^^
+ 29 | // =============================================================================
+ 30 | // AI Agent Type Definitions & Data
+ 31 | // =============================================================================
+    `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:56:1]
+ 56 |     }[];
+ 57 |   };
+ 58 | }
+ 59 | >>>>>>> sandbox/mastra-agents
+    : ^^^^^^^
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+    `----
+
+  x Expected '{', got 'interface'
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:60:1]
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+ 62 | 
+ 63 | export interface ExecutionStep {
+    :        ^^^^^^^^^
+ 64 |   id: string;
+ 65 |   label: string;
+ 66 | <<<<<<< HEAD
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/types/ai-agents.ts
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1048853ms] [ERROR] ./src/components/inmobiliaria/AgencyPricingModal.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState, useEffect } from 'react';
+ 5 | import { createPortal } from 'react-dom';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 | 
+ 395 |   if (typeof window === 'undefined') return null;
+ 396 |   return createPortal(content, document.body);
+ 397 | =======
+     : ^^^^^^^
+ 398 | import { useState } from 'react';
+ 399 | import Link from 'next/link';
+ 400 | import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+     `----
+
+  x 'import', and 'export' cannot be used outside of module code
+     ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/AgencyPricingModal.tsx:394:1]
+ 394 |     
+ 395 |       if (typeof window === 'undefined') return null;
+ 396 |       return createPortal(content, document.body);
+ 397 | ,-> =======
+ 398 | `-> import { useState } from 'react';
+ 399 |     import Link from 'next/link';
+ 400 |     import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
+ 401 |     import { Button } from '@/components/ui/button';
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/AgencyPricingModal.tsx
+./src/components/inmobiliaria/UpgradePrompt.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1048855ms] [ERROR] ./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:1:1]
+ 1 | 'use client';
+ 2 | 
+ 3 | <<<<<<< HEAD
+   : ^^^^^^^
+ 4 | import { useState } from 'react';
+ 5 | import Link from 'next/link';
+ 6 | import {
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |   Warning,
+ 13 |   CircleNotch,
+ 14 |   CaretRight,
+ 15 | =======
+    : ^^^^^^^
+ 16 | import {
+ 17 |   ShieldCheck,
+ 18 |   GitMerge,
+    `----
+
+  x cannot import as reserved word
+    ,-[/Users/nicolasgarcia/rent/mvp/src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx:12:1]
+ 12 |       Warning,
+ 13 |       CircleNotch,
+ 14 |       CaretRight,
+ 15 | ,-> =======
+ 16 | `-> import {
+ 17 |       ShieldCheck,
+ 18 |       GitMerge,
+ 19 |       CheckCircle,
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1048856ms] [ERROR] ./src/lib/types/ai-agents.ts
+Error: 
+  x Merge conflict marker encountered.
+   ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:1:1]
+ 1 | <<<<<<< HEAD
+   : ^^^^^^^
+ 2 | /**
+ 3 |  * AI Agent types for the inmobiliaria agent ecosystem
+ 4 |  * These represent the autonomous agents that power the platform
+   `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:25:1]
+ 25 |   | 'retention';
+ 26 | 
+ 27 | export type AIAgentStatus = 'active' | 'coming_soon' | 'beta';
+ 28 | =======
+    : ^^^^^^^
+ 29 | // =============================================================================
+ 30 | // AI Agent Type Definitions & Data
+ 31 | // =============================================================================
+    `----
+
+  x Merge conflict marker encountered.
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:56:1]
+ 56 |     }[];
+ 57 |   };
+ 58 | }
+ 59 | >>>>>>> sandbox/mastra-agents
+    : ^^^^^^^
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+    `----
+
+  x Expected '{', got 'interface'
+    ,-[/Users/nicolasgarcia/rent/mvp/src/lib/types/ai-agents.ts:60:1]
+ 60 | 
+ 61 | export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
+ 62 | 
+ 63 | export interface ExecutionStep {
+    :        ^^^^^^^^^
+ 64 |   id: string;
+ 65 |   label: string;
+ 66 | <<<<<<< HEAD
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/types/ai-agents.ts
+./src/app/panel/inmobiliaria/page.tsx @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1050189ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1050711ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050712ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050712ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050712ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050725ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050725ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050725ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050725ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050783ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050785ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050785ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050785ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050786ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050786ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050787ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050787ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050849ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1050849ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1050849ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[ 1050849ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[ 1050849ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[ 1050850ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[ 1050857ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050857ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050857ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050858ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050859ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050859ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050859ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1050859ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1051589ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1052038ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1052082ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1053215ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1053834ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:32
+[ 1053884ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1053901ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[ 1053904ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053905ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053905ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053905ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053908ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053908ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053908ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053908ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053958ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1053968ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[ 1053969ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053969ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053969ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053969ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053970ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053970ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053970ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1053970ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1054061ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1054098ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1054127ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria?_rsc=1fd1c:0
+[ 1054247ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria:0
+[ 1054700ms] Error: Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at getNotFoundError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/parseNotFoundError.js:124:16)
+    at async getModuleBuildError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/webpackModuleError.js:104:27)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:29:49)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:27:21)
+[ 1054696ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1072874ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1074078ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1074463ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/_next/static/webpack/e911507f8f2908f5.webpack.hot-update.json:0
+[ 1074464ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 1074540ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria:0
+[ 1074910ms] Error: Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at getNotFoundError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/parseNotFoundError.js:124:16)
+    at async getModuleBuildError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/webpackModuleError.js:104:27)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:29:49)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:27:21)
+[ 1074910ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1075702ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1076329ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1076361ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/_next/static/webpack/e911507f8f2908f5.webpack.hot-update.json:0
+[ 1076361ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:347
+[ 1076369ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/favicon.ico:0
+[ 1076436ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/panel/inmobiliaria:0
+[ 1076602ms] Error: Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at getNotFoundError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/parseNotFoundError.js:124:16)
+    at async getModuleBuildError (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/webpackModuleError.js:104:27)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:29:49)
+    at async (file:///Users/nicolasgarcia/rent/mvp/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:27:21)
+[ 1076603ms] [ERROR] ./src/lib/db.ts:10:1
+Module not found: Can't resolve '@prisma/adapter-pg'
+   8 |
+   9 | import { PrismaClient } from '@prisma/client'
+> 10 | import { PrismaPg } from '@prisma/adapter-pg'
+     | ^
+  11 |
+  12 | function createPrismaClient() {
+  13 |   const connectionString = process.env.DATABASE_URL
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/api/agents/activity/route.ts @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[ 1099561ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/_next/static/webpack/e911507f8f2908f5.webpack.hot-update.json:0
+[ 1099561ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:349
+[ 1101676ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[ 1101676ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[ 1101676ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[ 1101680ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[ 1101680ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
+[ 1101680ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
+[ 1101745ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101745ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101745ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101745ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101752ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101752ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101752ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101752ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101776ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101777ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/notifications:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/subscriptions/me:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/analytics/kpis:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/agentes:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/pipeline:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/cobros:0
+[ 1101811ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/inmobiliaria/mantenimiento:0
+[ 1101814ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101814ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101814ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101814ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101815ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101815ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101815ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101815ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101817ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[ 1101821ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101822ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101839ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/api/agents/activity?limit=20:0
+[ 1101839ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101839ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101839ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101839ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101840ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.evaluationsThisMonth" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101840ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.avgTime" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101840ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.suggestedThisWeek" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72
+[ 1101840ms] [WARNING] [i18n] Missing translation for key: "inmobiliaria.dashboard.aiAgents.conversionRate" in locale: "es" @ webpack-internal:///(app-pages-browser)/./src/lib/i18n/i18n-context.tsx:72

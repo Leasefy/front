@@ -480,11 +480,35 @@ export interface CarteraReport {
     bucket61to90: number;
     bucket90plus: number;
   };
+  /** Optional monthly breakdown (backend may not return this yet) */
+  byMonth?: CarteraMonthItem[];
 }
 
 // ============================================================================
 // Ocupacion Report
 // ============================================================================
+
+export interface OcupacionPropertyItem {
+  consignacionId: string;
+  propertyTitle: string;
+  propertyZone: string;
+  availability: string;
+  tenantName?: string;
+  monthlyRent: number;
+}
+
+export interface OcupacionTrendItem {
+  month: string;
+  rate: number;
+}
+
+export interface CarteraMonthItem {
+  month: string;
+  total: number;
+  collected: number;
+  overdue: number;
+  collectionRate: number;
+}
 
 export interface OcupacionZone {
   zone: string;
@@ -504,6 +528,10 @@ export interface OcupacionReport {
   overallOccupancyRate: number;
   previousMonthOccupancyRate?: number;
   zones: OcupacionZone[];
+  /** Optional per-property breakdown (backend may not return this yet) */
+  byProperty?: OcupacionPropertyItem[];
+  /** Optional monthly occupancy trend (backend may not return this yet) */
+  monthlyTrend?: OcupacionTrendItem[];
 }
 
 // ============================================================================
@@ -759,6 +787,8 @@ export interface ReportDefinition {
   frequency: ReportFrequency;
   lastGenerated?: string;
   isFavorite?: boolean;
+  /** Reports marked premium require Pro+ agency plan */
+  premium?: boolean;
 }
 
 export interface ReportFiltersState {
@@ -1079,6 +1109,76 @@ export interface BillingInvoice {
   pdfUrl?: string;
 }
 
+// ============================================================================
+// Inmobiliaria Config endpoints — canonical shapes from the backend
+// GET /inmobiliaria/config
+// GET /inmobiliaria/config/billing
+// GET /inmobiliaria/config/billing/invoices
+// ============================================================================
+
+export interface AgencyConfigPermissions {
+  canManageBilling: boolean;
+  canManageMembers: boolean;
+  canManageIntegrations: boolean;
+}
+
+export interface AgencyConfigCounts {
+  members: number;
+  integrations: number;
+  integrationsEnabled: number;
+}
+
+export interface AgencyConfigOverview {
+  agency: {
+    id: string;
+    name: string;
+    nit?: string;
+    logo?: string;
+    [key: string]: unknown;
+  };
+  counts: AgencyConfigCounts;
+  /** Full subscription detail (null if caller is not admin) */
+  subscription: import('../api/subscriptions.types').BackendSubscription | null;
+  /** PlanEnforcementService summary (null if caller is not admin) */
+  usage: Record<string, unknown> | null;
+  permissions: AgencyConfigPermissions;
+}
+
+export interface AgencyBillingLimits {
+  maxProperties: number; // -1 = unlimited
+  maxScoringViews: number; // -1 = unlimited
+  hasPremiumScoring: boolean;
+  hasApiAccess: boolean;
+}
+
+export interface AgencyBillingDetail {
+  subscription: import('../api/subscriptions.types').BackendSubscription;
+  /** null if autoRenew is false or subscription is cancelled */
+  nextCharge: {
+    amount: number;
+    date: string;
+  } | null;
+  limits: AgencyBillingLimits;
+}
+
+export interface AgencyInvoice {
+  id: string;
+  amount: number;
+  cycle: 'MONTHLY' | 'ANNUAL';
+  status: 'SUCCESS' | 'PENDING' | 'FAILED';
+  pseTransactionId?: string;
+  periodStart: string;
+  periodEnd: string;
+  createdAt: string;
+  planName: string;
+  planTier: 'STARTER' | 'PRO' | 'FLEX';
+}
+
+export interface AgencyInvoicesResponse {
+  invoices: AgencyInvoice[];
+  total: number;
+}
+
 // Helper functions for Integrations & Billing
 export function getPlanLabel(plan: BillingPlan): string {
   const labels: Record<BillingPlan, string> = {
@@ -1180,7 +1280,8 @@ export type PermissionModule =
   | 'reportes'
   | 'configuracion'
   | 'documentos'
-  | 'analytics';
+  | 'analytics'
+  | 'contratos';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -1212,6 +1313,13 @@ export interface UserInvite {
   name: string;
   role: AgencyRole;
   message?: string;
+  // Extended fields used by AgenteFormModal and ConfigUsuarios
+  phone?: string;
+  zone?: string;
+  specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
+  commissionSplit?: number;
+  agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
+  position?: string;
 }
 
 // Helper functions for users/roles
@@ -1267,6 +1375,7 @@ export function getModuleLabel(module: PermissionModule): string {
     configuracion: 'Configuracion',
     documentos: 'Documentos',
     analytics: 'Analitica',
+    contratos: 'Contratos',
   };
   return labels[module];
 }
@@ -1351,6 +1460,7 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'configuracion',
   'documentos',
   'analytics',
+  'contratos',
 ];
 
 // All actions for permission matrix
@@ -1487,6 +1597,76 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// ============================================================================
+// Onboarding Step (Checklist)
+// ============================================================================
+
+export interface OnboardingStep {
+  key: string;
+  label: string;
+  completed: boolean;
+  action?: {
+    label: string;
+    href: string;
+  };
+}
+
+// ============================================================================
+// Agency Member (extended AgencyUser with agency-level role info)
+// ============================================================================
+
+export interface AgencyMember extends AgencyUser {
+  agencyRole?: string;
+  joinedAt?: string;
+  permissions?: Record<string, string[]> | null;
+}
+
+// ============================================================================
+// Agency Onboarding Status (backend response)
+// ============================================================================
+
+export interface AgencyOnboardingStatus {
+  isComplete: boolean;
+  completionPercent: number;
+  steps: OnboardingStep[];
+}
+
+// ============================================================================
+// Invitation Info (public invitation details for /invitacion/[token])
+// ============================================================================
+
+export interface InvitationInfo {
+  token: string;
+  email: string;
+  name?: string;
+  role: AgencyRole;
+  agencyName?: string;
+  agencyCity?: string;
+  invitedBy?: string;
+  invitedEmail?: string;
+  expiresAt?: string;
+}
+
+// ============================================================================
+// Rendimiento Agentes Report
+// ============================================================================
+
+export interface RendimientoAgente {
+  userId: string;
+  agenteName?: string;
+  activeLeads: number;
+  completedDeals: number;
+  conversionRate: number;
+  avgDaysToClose: number;
+}
+
+export interface RendimientoAgentesReport {
+  generatedAt: string;
+  period?: string;
+  agentes: RendimientoAgente[];
+}
+
 
 // Helper to check if role has permission
 export function hasPermission(
@@ -2074,46 +2254,4 @@ export function getPeriodLabel(period: AnalyticsPeriod): string {
     custom: 'Personalizado',
   };
   return labels[period];
-}
-
-// ============================================================================
-// Agency Registration & Invitations (P1-inmobiliaria-registration)
-// ============================================================================
-
-export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER';
-
-export interface AgencyMember {
-  id: string;
-  agencyId: string;
-  userId: string;
-  email: string;
-  name?: string;
-  role: AgencyMemberRole;
-  status: 'active' | 'invited' | 'inactive';
-  joinedAt?: string;
-  invitedAt: string;
-}
-
-/** Returned by GET /inmobiliaria/agency/invitations/:token (public) */
-export interface InvitationInfo {
-  agencyName: string;
-  agencyCity: string;
-  role: AgencyMemberRole;
-  invitedEmail: string;
-  expiresAt: string;
-}
-
-/** A single step in the agency onboarding checklist */
-export interface OnboardingStep {
-  key: string;
-  label: string;
-  completed: boolean;
-  action?: { label: string; href: string };
-}
-
-/** Returned by GET /inmobiliaria/agency/onboarding-status */
-export interface AgencyOnboardingStatus {
-  steps: OnboardingStep[];
-  completionPercent: number;
-  isComplete: boolean;
 }

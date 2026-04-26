@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
@@ -67,7 +68,7 @@ function getCurrentMonth(): string {
  * - Actualizaciones de montos o datos de propietarios
  * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
-export default function DispersionesPage() {
+function DispersionesContent() {
   const { t, locale } = useI18n();
 
   // State for filters
@@ -376,7 +377,7 @@ export default function DispersionesPage() {
         </div>
         <Link
           href="/panel/inmobiliaria/dispersiones/generar"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/25"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
         >
           <Lightning className="w-5 h-5" weight="fill" />
           {t('inmobiliaria.dispersiones.wizard.title')}
@@ -472,12 +473,14 @@ export default function DispersionesPage() {
               </div>
             )
           ) : (
-            <div className="p-12 text-center">
-              <PaperPlaneTilt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                <PaperPlaneTilt className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1.5">
                 {t('inmobiliaria.dispersiones.noDispersions')}
               </h3>
-              <p className="text-muted-foreground max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 {t('inmobiliaria.dispersiones.noDispersionsDesc')}
               </p>
               {filters.status !== 'all' && (
@@ -493,7 +496,7 @@ export default function DispersionesPage() {
                   <div className="mt-6">
                     <Link
                       href="/panel/inmobiliaria/dispersiones/generar"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
                     >
                       <Lightning className="w-4 h-4" weight="fill" />
                       {t('inmobiliaria.dispersiones.wizard.title')}
@@ -590,5 +593,13 @@ export default function DispersionesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function DispersionesPage() {
+  return (
+    <PageGuard module="dispersiones">
+      <DispersionesContent />
+    </PageGuard>
   );
 }

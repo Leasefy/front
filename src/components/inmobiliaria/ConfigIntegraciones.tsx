@@ -507,7 +507,7 @@ export function ConfigIntegraciones({
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                 !apiKey || isSaving
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
               )}
             >
               {isSaving ? (

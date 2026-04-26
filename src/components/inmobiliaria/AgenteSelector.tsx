@@ -179,7 +179,7 @@ export function AgenteSelector({
             >
               {/* Selected Indicator */}
               {value === null && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -237,7 +237,7 @@ export function AgenteSelector({
 
               {/* Selected Indicator */}
               {value === agente.id && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}

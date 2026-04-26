@@ -30,9 +30,13 @@ import type {
   AgencyIntegration,
   AgencyBilling,
   BillingInvoice,
+  AgencyConfigOverview,
+  AgencyBillingDetail,
+  AgencyInvoicesResponse,
   CarteraReport,
   OcupacionReport,
   ComisionesAgenteReport,
+  RendimientoAgentesReport,
   VencimientosReport,
   FlujoCajaReport,
   ExtractoPropietario,
@@ -46,6 +50,27 @@ import type {
 } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
+
+// Permission response types
+export interface UserPermissionsResponse {
+  role: string;
+  context: string;
+  agencyId?: string;
+  agencyRole?: string;
+  teamRole?: string | null;
+  ownerId?: string;
+  permissions: 'FULL_ACCESS' | Record<string, string[]> | null;
+}
+
+export interface MemberPermissionsResponse {
+  memberId: string;
+  role: string;
+  isAdmin: boolean;
+  permissions: Record<string, string[]> | null;
+  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
+  usingDefaults: boolean;
+  note?: string;
+}
 
 // ============================================================================
 // Propietarios
@@ -253,7 +278,8 @@ export const cobrosApi = {
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
-    return apiClient.get<CobroSummary>(`${BASE}/cobros/summary?month=${month}`);
+    const res = await apiClient.get<{ data: CobroSummary }>(`${BASE}/cobros/summary?month=${month}`);
+    return res.data;
   },
 
   async generate(month: string): Promise<void> {
@@ -297,7 +323,8 @@ export const dispersionesApi = {
   },
 
   async getSummary(month: string): Promise<DispersionSummary> {
-    return apiClient.get<DispersionSummary>(`${BASE}/dispersiones/summary?month=${month}`);
+    const res = await apiClient.get<{ data: DispersionSummary }>(`${BASE}/dispersiones/summary?month=${month}`);
+    return res.data;
   },
 
   async getExtracto(propietarioId: string, month?: string): Promise<ExtractoPropietario> {
@@ -404,7 +431,7 @@ export const renovacionesApi = {
 
 export const reportesApi = {
   async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reportes/definitions`);
+    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reports/definitions`);
     return res.data;
   },
 
@@ -413,29 +440,94 @@ export const reportesApi = {
     if (params?.startDate) query.set('startDate', params.startDate);
     if (params?.endDate) query.set('endDate', params.endDate);
     const qs = query.toString();
-    return apiClient.get<CarteraReport>(`${BASE}/reportes/cartera${qs ? `?${qs}` : ''}`);
+    return apiClient.get<CarteraReport>(`${BASE}/reports/cartera${qs ? `?${qs}` : ''}`);
   },
 
   async getOcupacion(): Promise<OcupacionReport> {
-    return apiClient.get<OcupacionReport>(`${BASE}/reportes/ocupacion`);
+    return apiClient.get<OcupacionReport>(`${BASE}/reports/ocupacion`);
   },
 
-  async getComisiones(period: string): Promise<ComisionesAgenteReport> {
-    return apiClient.get<ComisionesAgenteReport>(`${BASE}/reportes/comisiones?period=${period}`);
+  async getComisiones(month: string): Promise<ComisionesAgenteReport> {
+    return apiClient.get<ComisionesAgenteReport>(`${BASE}/reports/comisiones?month=${month}`);
   },
 
   async getVencimientos(): Promise<VencimientosReport> {
-    return apiClient.get<VencimientosReport>(`${BASE}/reportes/vencimientos`);
+    return apiClient.get<VencimientosReport>(`${BASE}/reports/vencimientos`);
   },
 
-  async getFlujoCaja(periodType?: 'quarter' | 'semester' | 'year'): Promise<FlujoCajaReport> {
-    const qs = periodType ? `?period=${periodType}` : '';
-    return apiClient.get<FlujoCajaReport>(`${BASE}/reportes/flujo-caja${qs}`);
+  async getFlujoCaja(months?: number): Promise<FlujoCajaReport> {
+    const qs = months ? `?months=${months}` : '';
+    return apiClient.get<FlujoCajaReport>(`${BASE}/reports/flujo-caja${qs}`);
+  },
+
+  async getRendimientoAgentes(month?: string): Promise<RendimientoAgentesReport> {
+    const qs = month ? `?month=${month}` : '';
+    return apiClient.get<RendimientoAgentesReport>(`${BASE}/reports/rendimiento-agentes${qs}`);
+  },
+
+  async getExtracto(propietarioId: string, month?: string): Promise<unknown> {
+    const qs = month ? `?month=${month}` : '';
+    return apiClient.get(`${BASE}/reports/extracto/${propietarioId}${qs}`);
   },
 
   async export(reportId: string, format: 'pdf' | 'xlsx', params?: Record<string, string>): Promise<Blob> {
     const query = new URLSearchParams({ reportId, format, ...params });
-    return apiClient.get<Blob>(`${BASE}/reportes/export?${query.toString()}`);
+    return apiClient.get<Blob>(`${BASE}/reports/export?${query.toString()}`);
+  },
+};
+
+// ============================================================================
+// AI Agents (metrics + activity)
+// ============================================================================
+
+export interface AiMetricsResponse {
+  scoring: {
+    evaluationsThisMonth: number;
+    avgTimeMin: string;
+    escalationRate: string;
+    accuracyRate: string;
+  };
+  matching: {
+    suggestionsSent: number;
+    conversionRate: string;
+    candidatesRedirected: number;
+    avgCompatibility: string;
+  };
+  summary: {
+    actionsThisWeek: number;
+    hoursSavedThisMonth: string;
+  };
+}
+
+export interface AiActivityItem {
+  id: string;
+  agentId: string;
+  agentName: string;
+  type: string;
+  title: string;
+  description: string;
+  status: 'success' | 'pending' | 'failed';
+  timestamp: string;
+  metadata: {
+    applicationId?: string;
+    durationMs?: number;
+    result?: string;
+  };
+}
+
+export interface AiActivityResponse {
+  activities: AiActivityItem[];
+  source: string;
+}
+
+export const aiApi = {
+  async getMetrics(): Promise<AiMetricsResponse> {
+    return apiClient.get<AiMetricsResponse>(`${BASE}/ai/metrics`);
+  },
+
+  async getActivity(limit?: number): Promise<AiActivityResponse> {
+    const qs = limit ? `?limit=${limit}` : '';
+    return apiClient.get<AiActivityResponse>(`${BASE}/ai/activity${qs}`);
   },
 };
 
@@ -541,25 +633,34 @@ export const inmobiliariaConfigApi = {
     await apiClient.patch(`${BASE}/config/defaults`, data);
   },
 
-  // Users
+  // Users — canonical route is /inmobiliaria/agency/members
   async getUsers(): Promise<AgencyUser[]> {
-    const res = await apiClient.get<{ data: AgencyUser[] }>(`${BASE}/config/users`);
-    return res.data;
+    const res = await apiClient.get<{ data: AgencyUser[] } | AgencyUser[]>(
+      `${BASE}/agency/members`
+    );
+    return Array.isArray(res) ? res : res.data;
   },
 
   async inviteUser(invite: UserInvite): Promise<AgencyUser> {
-    return apiClient.post<AgencyUser>(`${BASE}/config/users/invite`, invite);
+    // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
+    // Backend DTO rejects: message (UI-only), phone (not in DTO)
+    const { message: _msg, phone: _phone, ...rest } = invite;
+    const payload = {
+      ...rest,
+      role: invite.role.toUpperCase(),
+    };
+    return apiClient.post<AgencyUser>(`${BASE}/agency/members`, payload);
   },
 
   async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
-    return apiClient.patch<AgencyUser>(`${BASE}/config/users/${id}`, data);
+    return apiClient.patch<AgencyUser>(`${BASE}/agency/members/${id}`, data);
   },
 
   async deleteUser(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/config/users/${id}`);
+    await apiClient.delete(`${BASE}/agency/members/${id}`);
   },
 
-  // Billing
+  // Billing (legacy shape — kept for existing consumers)
   async getBilling(): Promise<AgencyBilling> {
     return apiClient.get<AgencyBilling>(`${BASE}/config/billing`);
   },
@@ -569,14 +670,38 @@ export const inmobiliariaConfigApi = {
     return res.data;
   },
 
-  // Integrations
+  // ==========================================================================
+  // Canonical config endpoints (backend source of truth)
+  // ==========================================================================
+
+  /** GET /inmobiliaria/config — overview with subscription, usage, permissions */
+  async getConfigOverview(): Promise<AgencyConfigOverview> {
+    return apiClient.get<AgencyConfigOverview>(`${BASE}/config`);
+  },
+
+  /** GET /inmobiliaria/config/billing — admin-only detailed billing + limits */
+  async getConfigBilling(): Promise<AgencyBillingDetail> {
+    return apiClient.get<AgencyBillingDetail>(`${BASE}/config/billing`);
+  },
+
+  /** GET /inmobiliaria/config/billing/invoices?limit=N — admin-only payment history */
+  async getConfigInvoices(limit = 50): Promise<AgencyInvoicesResponse> {
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    return apiClient.get<AgencyInvoicesResponse>(
+      `${BASE}/config/billing/invoices?limit=${safeLimit}`
+    );
+  },
+
+  // Integrations — canonical route is /inmobiliaria/agency/integrations
   async getIntegrations(): Promise<AgencyIntegration[]> {
-    const res = await apiClient.get<{ data: AgencyIntegration[] }>(`${BASE}/config/integrations`);
-    return res.data;
+    const res = await apiClient.get<{ data: AgencyIntegration[] } | AgencyIntegration[]>(
+      `${BASE}/agency/integrations`
+    );
+    return Array.isArray(res) ? res : res.data;
   },
 
   async toggleIntegration(id: string, enabled: boolean): Promise<AgencyIntegration> {
-    return apiClient.patch<AgencyIntegration>(`${BASE}/config/integrations/${id}`, { isEnabled: enabled });
+    return apiClient.patch<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
   },
 };
 
@@ -629,10 +754,72 @@ export const agencyApi = {
   },
 
   /**
+   * PATCH /inmobiliaria/agency/members/:memberId/profile
+   * Updates a member's profile fields (position, agent business fields). Admin only.
+   */
+  async updateMemberProfile(memberId: string, data: {
+    position?: string | null;
+    agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
+    agentStatus?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+    specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
+    commissionSplit?: number;
+    zone?: string | null;
+    hireDate?: string | null;
+  }): Promise<AgencyMember> {
+    return apiClient.patch<AgencyMember>(`${BASE}/agency/members/${memberId}/profile`, data);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency
+   * Updates agency settings (including reminder config).
+   */
+  async updateAgency(data: { reminderDaysBefore?: number[]; reminderDaysAfter?: number[] }): Promise<unknown> {
+    return apiClient.put(`${BASE}/agency`, data);
+  },
+
+  /**
    * GET /inmobiliaria/agency/onboarding-status
    * Returns the agency admin's onboarding checklist with completion state.
    */
   async getOnboardingStatus(): Promise<AgencyOnboardingStatus> {
     return apiClient.get<AgencyOnboardingStatus>(`${BASE}/agency/onboarding-status`);
+  },
+};
+
+// ============================================================================
+// Permissions (Phase 24 — Granular Agency Permissions)
+// ============================================================================
+
+export const permissionsApi = {
+  /**
+   * GET /users/me/permissions
+   * Returns the current user's effective permissions based on role and context.
+   */
+  async getMyPermissions(): Promise<UserPermissionsResponse> {
+    return apiClient.get<UserPermissionsResponse>('/users/me/permissions');
+  },
+
+  /**
+   * GET /inmobiliaria/agency/members/:memberId/permissions
+   * Returns a member's effective permissions (admin only).
+   */
+  async getMemberPermissions(memberId: string): Promise<MemberPermissionsResponse> {
+    return apiClient.get<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/permissions
+   * Updates a member's custom permissions (admin only). Pass null to reset to role defaults.
+   */
+  async updateMemberPermissions(memberId: string, permissions: Record<string, string[]> | null): Promise<MemberPermissionsResponse> {
+    return apiClient.patch<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/role
+   * Updates a member's role (admin only).
+   */
+  async updateMemberRole(memberId: string, role: string): Promise<unknown> {
+    return apiClient.patch(`${BASE}/agency/members/${memberId}/role`, { role });
   },
 };

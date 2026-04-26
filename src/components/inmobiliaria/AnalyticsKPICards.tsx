@@ -119,7 +119,7 @@ function KPICard({
     <motion.div
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className="flex flex-col h-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-indigo-500/5 hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
+      className="flex flex-col h-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover: hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
     >
       {/* Header - Icon + Title */}
       <div className="flex items-center gap-3 mb-4">
@@ -177,7 +177,7 @@ function KPICard({
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
-                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'
+                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'
               )}
               style={{ width: `${Math.min(100, progress)}%` }}
             />
@@ -278,7 +278,7 @@ export function AnalyticsKPICards({
           className={cn(
             'px-4 py-2 rounded-xl text-sm font-medium transition-all',
             selectedCategory === null
-              ? 'bg-indigo-600 text-white shadow-md'
+              ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
           )}
         >
@@ -291,7 +291,7 @@ export function AnalyticsKPICards({
             className={cn(
               'px-4 py-2 rounded-xl text-sm font-medium transition-all',
               selectedCategory === category
-                ? 'bg-indigo-600 text-white shadow-md'
+                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                 : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
             )}
           >

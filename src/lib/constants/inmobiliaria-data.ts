@@ -88,6 +88,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     category: 'agentes',
     format: 'excel',
     frequency: 'monthly',
+    premium: true,
   },
   {
     id: 'ocupacion-portafolio',
@@ -116,6 +117,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     category: 'agentes',
     format: 'pdf',
     frequency: 'monthly',
+    premium: true,
   },
   {
     id: 'flujo-caja',
@@ -125,5 +127,6 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     category: 'financiero',
     format: 'excel',
     frequency: 'monthly',
+    premium: true,
   },
 ];

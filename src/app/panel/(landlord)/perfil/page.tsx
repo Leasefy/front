@@ -3,8 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, FileText, ArrowClockwise } from '@phosphor-icons/react';
-import Link from 'next/link';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -24,7 +23,7 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -39,53 +38,51 @@ export default function PropietarioPerfilPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    rut: user?.rut || '',
-    address: user?.address || '',
-    birthDate: user?.birthDate ? user.birthDate.split('T')[0] : '',
-    emergencyContactName: user?.emergencyContactName || '',
-    emergencyContactPhone: user?.emergencyContactPhone || '',
+    name: user?.name || 'Propietario',
+    email: user?.email || 'propietario@example.com',
+    phone: '+56 9 1234 5678',
+    rut: '12.345.678-9',
+    address: 'Av. Providencia 1234, Providencia',
+    birthDate: '1980-08-15',
+    emergencyContact: 'Ana López - +56 9 8765 4321',
   });
 
-  // Setup steps with completion status derived from real user data
-  const landlordData = user?.onboardingData
+  // Setup steps
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
       description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
       icon: User,
-      completed: !!(user?.firstName || user?.name),
+      completed: true,
     },
     {
       id: 'phone-verify',
       label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
       description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
       icon: Phone,
-      completed: !!user?.phone,
+      completed: true,
     },
     {
       id: 'identity-verify',
       label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
       description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
       icon: Shield,
-      completed: !!user?.rut,
+      completed: true,
     },
     {
       id: 'property-verify',
       label: locale === 'es' ? 'Publicar propiedad' : 'Publish property',
       description: locale === 'es' ? 'Publica tu primera propiedad' : 'Publish your first property',
       icon: Buildings,
-      completed: !!(landlordData?.propertyCity || landlordData?.propertyType),
+      completed: true,
     },
     {
       id: 'emergency-contact',
       label: locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact',
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: !!user?.emergencyContactName,
+      completed: true,
     },
   ];
 
@@ -101,33 +98,15 @@ export default function PropietarioPerfilPage() {
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    try {
-      if (section === 'personal') {
-        const [firstName, ...rest] = formData.name.trim().split(' ');
-        const lastName = rest.join(' ') || undefined;
-        await updateProfile({
-          firstName: firstName || undefined,
-          lastName,
-          phone: formData.phone || undefined,
-          rut: formData.rut || undefined,
-          address: formData.address || undefined,
-          birthDate: formData.birthDate || undefined,
-        });
-      } else if (section === 'emergency') {
-        await updateProfile({
-          emergencyContactName: formData.emergencyContactName || undefined,
-          emergencyContactPhone: formData.emergencyContactPhone || undefined,
-        });
-      } else if (section === 'avatar' && avatarPreview) {
-        setSavedAvatar(avatarPreview);
-      }
-      setEditingSection(null);
-      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
-    } finally {
-      setIsSaving(false);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    if (section === 'avatar' && avatarPreview) {
+      setSavedAvatar(avatarPreview);
     }
+
+    setIsSaving(false);
+    setEditingSection(null);
+    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
@@ -341,13 +320,13 @@ export default function PropietarioPerfilPage() {
                     {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
                       <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white font-bold text-4xl">
+                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button onClick={handleAvatarClick} className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg">
+                    <button onClick={handleAvatarClick} className="absolute bottom-1 right-1 p-2.5 bg-indigo-600 rounded-xl text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg">
                       <Camera className="w-4 h-4" />
                     </button>
                   )}
@@ -402,7 +381,7 @@ export default function PropietarioPerfilPage() {
 
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
-                    <button onClick={handleCancelEdit} className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('avatar')} disabled={isSaving}
@@ -491,7 +470,7 @@ export default function PropietarioPerfilPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('personal')} disabled={isSaving}
@@ -559,9 +538,7 @@ export default function PropietarioPerfilPage() {
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">
-                        {formData.birthDate
-                          ? new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-                          : (locale === 'es' ? 'No especificada' : 'Not specified')}
+                        {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </span>
                     </div>
                   )}
@@ -594,7 +571,7 @@ export default function PropietarioPerfilPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button onClick={() => handleSave('emergency')} disabled={isSaving}
@@ -605,58 +582,19 @@ export default function PropietarioPerfilPage() {
                   </div>
                 )}
               </div>
-              {editingSection === 'emergency' ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre' : 'Name'}</label>
-                    <input type="text" value={formData.emergencyContactName} onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      placeholder={locale === 'es' ? 'Ej: Carlos Pérez' : 'E.g. Carlos Pérez'} />
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
+                {editingSection === 'emergency' ? (
+                  <input type="text" value={formData.emergencyContact} onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
+                ) : (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Teléfono' : 'Phone'}</label>
-                    <input type="tel" value={formData.emergencyContactPhone} onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      placeholder="3001234567" />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                  <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500 shrink-0" />
-                  {formData.emergencyContactName || formData.emergencyContactPhone ? (
-                    <div>
-                      {formData.emergencyContactName && (
-                        <p className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactName}</p>
-                      )}
-                      {formData.emergencyContactPhone && (
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{formData.emergencyContactPhone}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-neutral-400 dark:text-neutral-500">{locale === 'es' ? 'No configurado' : 'Not set'}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Redo Onboarding */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-white/[0.02] p-6">
-              <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2 flex items-center gap-2">
-                <ArrowClockwise className="w-5 h-5" />
-                {locale === 'es' ? 'Reconfigurar perfil' : 'Reconfigure profile'}
-              </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                {locale === 'es'
-                  ? 'Vuelve a completar el proceso de configuración para actualizar tu información de propietario.'
-                  : 'Complete the setup process again to update your landlord profile.'}
-              </p>
-              <Link
-                href="/onboarding/propietario"
-                className="inline-flex items-center gap-2 px-4 py-2.5 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-100 dark:hover:bg-white/[0.05] transition-colors"
-              >
-                <ArrowClockwise className="w-4 h-4" />
-                {locale === 'es' ? 'Re-hacer onboarding' : 'Redo onboarding'}
-              </Link>
+                )}
+              </div>
             </div>
 
             {/* Danger Zone */}
@@ -711,8 +649,8 @@ export default function PropietarioPerfilPage() {
                     ))}
                   </ul>
                   <div className="flex gap-3">
-                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
-                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
+                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium font-mono uppercase tracking-wide hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium hover:bg-red-700 transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
                   </div>
                 </div>
               </>
@@ -730,10 +668,10 @@ export default function PropietarioPerfilPage() {
                   <input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
                     className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest" />
                   <div className="flex gap-3 mt-6">
-                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
+                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium font-mono uppercase tracking-wide hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
                     <button onClick={handleDeleteAccount} disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
                       className={cn('flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
-                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>
+                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>
                       {isDeleting ? <><SpinnerGap className="w-4 h-4 animate-spin" />{locale === 'es' ? 'Eliminando...' : 'Deleting...'}</> : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
                     </button>
                   </div>

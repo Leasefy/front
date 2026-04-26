@@ -4,21 +4,23 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { SpinnerGap, CheckCircle, WarningCircle, DeviceMobile, ArrowsClockwise } from '@phosphor-icons/react';
+import { SpinnerGap, CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
+import { contractsApi } from '@/lib/api/contracts.service';
+import type { ContractOtpRole } from '@/lib/api/contracts.types';
 
 // ============================================================================
-// TextTs
+// Props
 // ============================================================================
 
 export interface OTPVerificationProps {
   /** Whether the OTP modal is open */
   isOpen: boolean;
-  /** Phone number to verify (partially masked: ***-***-4567) */
-  phone: string;
-  /** Callback when OTP is verified successfully */
-  onVerified: () => void;
-  /** Callback to resend OTP code */
-  onResend: () => void;
+  /** Contract ID to send the OTP for */
+  contractId: string;
+  /** Who is signing — determines which endpoint validates membership */
+  role: ContractOtpRole;
+  /** Callback when OTP is verified successfully — recibe el verificationToken one-use */
+  onVerified: (verificationToken: string) => void;
   /** Callback to cancel verification */
   onCancel: () => void;
   /** Additional CSS classes */
@@ -27,226 +29,226 @@ export interface OTPVerificationProps {
 
 type OTPStatus = 'idle' | 'sending' | 'verifying' | 'verified' | 'error';
 
-// Mock OTP code for development
-const MOCK_OTP_CODE = '123456';
 const OTP_LENGTH = 6;
-const RESEND_COOLDOWN = 60; // seconds
-
-// ============================================================================
-// Helper: Mask phone number
-// ============================================================================
-
-function maskPhoneNumber(phone: string): string {
-  // Remove all non-digit characters
-  const digits = phone.replace(/\D/g, '');
-
-  // Show only last 4 digits
-  if (digits.length >= 4) {
-    const lastFour = digits.slice(-4);
-    return `***-***-${lastFour}`;
-  }
-
-  return '***-***-****';
-}
 
 // ============================================================================
 // Component
 // ============================================================================
 
 /**
- * OTPVerification - Modal component for phone verification via OTP
+ * OTPVerification - Modal de verificación de identidad por código enviado al email.
  *
- * Features:
- * - 6-digit OTP input with auto-focus
- * - 60-second countdown for resend
- * - States: idle, sending, verifying, verified, error
- * - Mock validation (123456 always valid)
+ * Flow:
+ *  1. Al abrir, llama POST /contracts/:id/otp/send → recibe { sentTo, expiresAt, cooldownSeconds }.
+ *  2. Usuario ingresa el código → auto-submit al 6to dígito.
+ *  3. POST /contracts/:id/otp/verify → recibe { verificationToken }.
+ *  4. `onVerified(verificationToken)` — el caller pasa ese token al endpoint de firma.
+ *
+ * Backend: rate limit 1 send/60s, 5 intentos por código, TTL 10min (código) / 5min (token).
  */
 export function OTPVerification({
   isOpen,
-  phone,
+  contractId,
+  role,
   onVerified,
-  onResend,
   onCancel,
   className,
 }: OTPVerificationProps) {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [status, setStatus] = useState<OTPStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
-  const [canResend, setCanResend] = useState(false);
+  const [sentTo, setSentTo] = useState<string>('');
+  const [cooldown, setCooldown] = useState(0);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const maskedPhone = maskPhoneNumber(phone);
+  const hasSentRef = useRef(false);
 
-  // Countdown timer for resend
+  // Send OTP al abrir el modal
+  const sendOtp = useCallback(async () => {
+    setStatus('sending');
+    setSendError(null);
+    try {
+      const { sentTo: maskedEmail, cooldownSeconds } = await contractsApi.sendOtp(contractId, { role });
+      setSentTo(maskedEmail);
+      setCooldown(cooldownSeconds || 60);
+      setStatus('idle');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo enviar el código. Intentá de nuevo.';
+      setSendError(msg);
+      setStatus('error');
+    }
+  }, [contractId, role]);
+
+  // Trigger send cuando abre el modal — una sola vez por apertura
   useEffect(() => {
-    if (!isOpen) return;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isOpen]);
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasSentRef.current) {
+      hasSentRef.current = true;
+      sendOtp();
+    }
+    if (!isOpen) {
+      // Reset para el próximo open
+      hasSentRef.current = false;
       setOtp(Array(OTP_LENGTH).fill(''));
       setStatus('idle');
       setError(null);
-      setCountdown(RESEND_COOLDOWN);
-      setCanResend(false);
-      // Focus first input after a short delay
+      setSentTo('');
+      setCooldown(0);
+      setSendError(null);
+    }
+  }, [isOpen, sendOtp]);
+
+  // Focus primer input después de sentTo llega
+  useEffect(() => {
+    if (sentTo && status === 'idle') {
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [sentTo, status]);
 
-  // Verify OTP - defined first to be used in callbacks
-  const verifyOTP = useCallback(async (code: string) => {
+  // Countdown para cooldown de reenvío
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // Verificar el código contra el backend
+  const verifyCode = useCallback(async (code: string) => {
     setStatus('verifying');
     setError(null);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (code === MOCK_OTP_CODE) {
+    try {
+      const { verificationToken } = await contractsApi.verifyOtp(contractId, { role, code });
       setStatus('verified');
-      // Brief delay to show success state
-      setTimeout(() => {
-        onVerified();
-      }, 800);
-    } else {
+      setTimeout(() => onVerified(verificationToken), 600);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Código incorrecto.';
       setStatus('error');
-      setError('Código incorrecto. Intenta de nuevo.');
-      // Clear OTP and focus first input
+      setError(msg);
       setOtp(Array(OTP_LENGTH).fill(''));
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
-  }, [onVerified]);
+  }, [contractId, role, onVerified]);
 
   // Handle input change
   const handleChange = useCallback((index: number, value: string) => {
-    // Only allow digits
     if (value && !/^\d$/.test(value)) return;
 
     setOtp((prevOtp) => {
       const newOtp = [...prevOtp];
       newOtp[index] = value;
 
-      // Auto-focus next input
       if (value && index < OTP_LENGTH - 1) {
         inputRefs.current[index + 1]?.focus();
       }
 
-      // Auto-verify when all digits are entered
       if (value && index === OTP_LENGTH - 1) {
         const fullCode = newOtp.join('');
         if (fullCode.length === OTP_LENGTH) {
-          verifyOTP(fullCode);
+          verifyCode(fullCode);
         }
       }
 
       return newOtp;
     });
     setError(null);
-  }, [verifyOTP]);
+  }, [verifyCode]);
 
-  // Handle paste
+  // Paste 6 dígitos
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
 
-    if (pastedData) {
-      const newOtp = Array(OTP_LENGTH).fill('');
-      pastedData.split('').forEach((digit, i) => {
-        newOtp[i] = digit;
-      });
-      setOtp(newOtp);
-      setError(null);
+    const newOtp = Array(OTP_LENGTH).fill('');
+    pasted.split('').forEach((digit, i) => { newOtp[i] = digit; });
+    setOtp(newOtp);
+    setError(null);
 
-      // Focus last filled input or verify if complete
-      if (pastedData.length === OTP_LENGTH) {
-        verifyOTP(pastedData);
-      } else {
-        inputRefs.current[pastedData.length]?.focus();
-      }
+    if (pasted.length === OTP_LENGTH) {
+      verifyCode(pasted);
+    } else {
+      inputRefs.current[pasted.length]?.focus();
     }
-  }, [verifyOTP]);
+  }, [verifyCode]);
 
-  // Handle keydown for backspace navigation
+  // Backspace salta al input previo
   const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   }, [otp]);
 
-  // Handle resend
-  const handleResend = () => {
-    if (!canResend) return;
-
-    setStatus('sending');
+  const handleResend = async () => {
+    if (cooldown > 0) return;
     setOtp(Array(OTP_LENGTH).fill(''));
     setError(null);
-
-    // Simulate sending
-    setTimeout(() => {
-      setStatus('idle');
-      setCountdown(RESEND_COOLDOWN);
-      setCanResend(false);
-      onResend();
-      inputRefs.current[0]?.focus();
-    }, 1000);
+    await sendOtp();
   };
+
+  const canResend = cooldown === 0 && status !== 'sending' && status !== 'verifying';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className={cn('sm:max-w-md', className)}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <DeviceMobile className="h-5 w-5 text-primary" />
+            <EnvelopeSimple className="h-5 w-5 text-primary" />
             Verificación de identidad
           </DialogTitle>
           <DialogDescription>
-            Enviamos un código de 6 dígitos a tu teléfono {maskedPhone}
+            {sentTo
+              ? <>Enviamos un código de 6 dígitos a <span className="font-medium text-foreground">{sentTo}</span></>
+              : 'Preparando el envío del código a tu correo...'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* OTP Input */}
-          <div className="flex justify-center gap-2" onPaste={handlePaste}>
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                disabled={status === 'verifying' || status === 'verified'}
-                className={cn(
-                  'h-14 w-12 rounded-sm border-2 bg-background text-center text-2xl font-semibold transition-all',
-                  'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  digit ? 'border-foreground/30' : 'border-border',
-                  status === 'error' && 'border-destructive animate-shake',
-                  status === 'verified' && 'border-emerald-500 bg-emerald-50',
-                  (status === 'verifying' || status === 'verified') && 'opacity-70'
-                )}
-              />
-            ))}
-          </div>
+          {/* Error de envío (antes de poder ingresar código) */}
+          {sendError && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <span>{sendError}</span>
+            </div>
+          )}
 
-          {/* Status messages */}
+          {/* OTP inputs — solo si ya se envió */}
+          {sentTo && !sendError && (
+            <div className="flex justify-center gap-2" onPaste={handlePaste}>
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  disabled={status === 'verifying' || status === 'verified'}
+                  className={cn(
+                    'h-14 w-12 rounded-sm border-2 bg-background text-center text-2xl font-semibold transition-all',
+                    'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
+                    digit ? 'border-foreground/30' : 'border-border',
+                    status === 'error' && 'border-destructive animate-shake',
+                    status === 'verified' && 'border-emerald-500 bg-emerald-50',
+                    (status === 'verifying' || status === 'verified') && 'opacity-70'
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Loader inicial */}
+          {!sentTo && !sendError && (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+              <SpinnerGap className="h-4 w-4 animate-spin" />
+              Enviando código a tu correo...
+            </div>
+          )}
+
+          {/* Estado en vivo */}
           {status === 'verifying' && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <SpinnerGap className="h-4 w-4 animate-spin" />
@@ -268,33 +270,23 @@ export function OTPVerification({
             </div>
           )}
 
-          {/* Resend section */}
-          {status !== 'verified' && (
+          {/* Reenviar */}
+          {status !== 'verified' && sentTo && (
             <div className="text-center">
               {canResend ? (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleResend}
-                  disabled={status === 'sending'}
                   className="text-primary"
                 >
-                  {status === 'sending' ? (
-                    <>
-                      <SpinnerGap className="mr-2 h-3 w-3 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowsClockwise className="mr-2 h-3 w-3" />
-                      Reenviar código
-                    </>
-                  )}
+                  <ArrowsClockwise className="mr-2 h-3 w-3" />
+                  Reenviar código
                 </Button>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Puedes reenviar el código en{' '}
-                  <span className="font-medium text-foreground">{countdown}s</span>
+                  Podés reenviar el código en{' '}
+                  <span className="font-medium text-foreground">{cooldown}s</span>
                 </p>
               )}
             </div>
@@ -303,13 +295,13 @@ export function OTPVerification({
           {/* Help text */}
           <div className="rounded-sm bg-muted p-3 text-xs text-muted-foreground">
             <p>
-              <strong>Nota:</strong> La verificación por código SMS garantiza que solo tú puedes
-              firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre firmas electrónicas.
+              <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
+              solo vos podés firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
+              firmas electrónicas.
             </p>
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-3">
           <Button
             variant="outline"

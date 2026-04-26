@@ -14,6 +14,7 @@ import type {
   PlanId,
   PlanComparisonRow,
   AgencyPlan,
+  AgencyPlanId,
 } from '@/lib/types/subscription';
 
 // ============================================================================
@@ -104,8 +105,8 @@ export const PLAN_FEATURES: Record<string, Omit<PlanFeature, 'included'>> = {
 
 export const PLANS: Plan[] = [
   {
-    id: 'free',
-    name: 'Gratis',
+    id: 'starter',
+    name: 'Starter',
     description: 'Perfecto para empezar',
     price: {
       monthly: 0,
@@ -143,8 +144,8 @@ export const PLANS: Plan[] = [
     badge: 'Mas popular',
   },
   {
-    id: 'business',
-    name: 'Inversionista',
+    id: 'flex',
+    name: 'Flex',
     description: 'Para propietarios con múltiples inmuebles',
     price: {
       monthly: 299900,
@@ -168,67 +169,127 @@ export const PLANS: Plan[] = [
 // Agency plans (Prices in COP)
 // ============================================================================
 
+/** Base evaluation price in COP (~$10 USD) */
+export const BASE_EVALUATION_PRICE_COP = 42000;
+
 export const AGENCY_PLANS: AgencyPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    description: 'Para inmobiliarias pequeñas',
-    price: { monthly: 149000 },
-    limits: { properties: 20, users: 3 },
+    description: 'Probar la plataforma',
+    pricingModel: 'free',
+    price: { monthly: 0, yearly: 0 },
+    evaluation: {
+      price: BASE_EVALUATION_PRICE_COP, // $42,000 COP (~$10 USD)
+      discount: 0,
+      limit: null, // pay-per-use, no monthly cap
+    },
+    limits: { properties: 10, users: 2 },
     features: [
-      'CRM de candidatos',
-      'Publicación en portales',
-      'Contratos digitales',
-      'Scoring de arrendatarios',
+      'Scoring básico de arrendatarios',
+      'Dashboard limitado',
+      'Evaluaciones AI a $42,000 COP c/u',
       'Soporte por email',
     ],
   },
   {
-    id: 'growth',
-    name: 'Growth',
-    description: 'Para inmobiliarias en crecimiento',
-    price: { monthly: 399000 },
+    id: 'pro',
+    name: 'Pro',
+    description: 'Scoring + Matching + Reportes para tu inmobiliaria',
+    pricingModel: 'flat',
+    price: { monthly: 149000, yearly: 1439000 },
+    evaluation: {
+      price: 21000, // 50% discount → $21,000 COP (~$5 USD)
+      discount: 50,
+      limit: 30, // 30 evaluaciones/mes
+    },
     limits: { properties: 100, users: 10 },
     features: [
       'Todo en Starter',
-      'API REST básica',
-      'Reportes avanzados',
-      'Recordatorios automáticos',
+      'Scoring + Matching + Reportes',
+      'Dashboard completo',
+      'Evaluaciones AI con 50% descuento ($21,000 COP c/u)',
+      'Hasta 30 evaluaciones/mes',
+      'Hasta 100 propiedades',
+      'Hasta 10 usuarios',
       'Soporte prioritario',
     ],
     highlighted: true,
-    badge: 'Popular',
+    badge: 'Más popular',
   },
   {
-    id: 'agency-business',
-    name: 'Business',
-    description: 'Para operaciones grandes',
-    price: { monthly: 899000 },
-    limits: { properties: 300, users: 25 },
+    id: 'flex',
+    name: 'Flex',
+    description: '1% del canon administrado — todos los agentes AI incluidos',
+    pricingModel: 'percentage',
+    price: { monthly: null, yearly: null },
+    canonPercentage: 1,
+    evaluation: {
+      price: 0, // Included — unlimited and free
+      discount: 100,
+      limit: null, // unlimited
+    },
+    limits: { properties: null, users: null },
     features: [
-      'Todo en Growth',
-      'API REST completa',
-      'Webhooks en tiempo real',
-      'Multi-sucursal',
-      'Gerente de cuenta dedicado',
+      'Todo en Pro',
+      'TODOS los 19 agentes AI',
+      'Evaluaciones AI ilimitadas y gratis',
+      'Propiedades ilimitadas',
+      'Usuarios ilimitados',
+      'Sin límites de evaluaciones',
+      'Soporte prioritario dedicado',
     ],
+    badge: 'Todo incluido',
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    description: '500+ propiedades',
-    price: { monthly: null },
+    description: '500+ unidades o necesidades especiales',
+    pricingModel: 'custom',
+    price: { monthly: null, yearly: null },
+    evaluation: {
+      price: 0, // Custom — included
+      discount: 100,
+      limit: null,
+    },
     limits: { properties: null, users: null },
     features: [
-      'Todo en Business',
+      'Todo en Flex',
       'Propiedades ilimitadas',
       'Usuarios ilimitados',
       'White-label completo',
       'SLA garantizado 99.9%',
       'Onboarding personalizado',
+      'Integraciones a medida',
     ],
   },
 ];
+
+/**
+ * Get an agency plan by its ID.
+ */
+export function getAgencyPlanById(id: AgencyPlanId): AgencyPlan {
+  return AGENCY_PLANS.find((p) => p.id === id) || AGENCY_PLANS[0];
+}
+
+/**
+ * Calculate the evaluation price for a given agency plan.
+ * Returns the per-evaluation cost in COP.
+ */
+export function getEvaluationPrice(planId: AgencyPlanId): number {
+  const plan = getAgencyPlanById(planId);
+  return plan.evaluation.price;
+}
+
+/**
+ * Calculate estimated monthly cost for a Flex plan.
+ * @param totalMonthlyCanon - Total monthly canon administered in COP
+ * @returns Monthly fee in COP
+ */
+export function calculateFlexMonthlyFee(totalMonthlyCanon: number): number {
+  const flexPlan = getAgencyPlanById('flex');
+  return Math.round(totalMonthlyCanon * (flexPlan.canonPercentage ?? 1) / 100);
+}
 
 // ============================================================================
 // Management tiers (fee % of monthly rent)
@@ -331,22 +392,53 @@ export const ADD_ONS: AddOn[] = [
 // ============================================================================
 
 export const PLAN_COMPARISON: PlanComparisonRow[] = [
-  { feature: 'Propiedades', description: 'Numero de propiedades que puedes publicar', free: '1', pro: '10', business: '25' },
-  { feature: 'Contratos digitales', description: 'Genera contratos listos para firmar', free: '1/mes', pro: 'Ilimitados', business: 'Ilimitados' },
-  { feature: 'Analisis AI', description: 'Puntuacion y analisis inteligente de candidatos', free: false, pro: true, business: true },
-  { feature: 'Verificacion de documentos', description: 'Validacion automatica de identidad', free: false, pro: true, business: true },
-  { feature: 'Verificacion de antecedentes', description: 'Consulta en bases de datos oficiales', free: false, pro: true, business: true },
-  { feature: 'Soporte prioritario', description: 'Respuesta en menos de 24 horas', free: false, pro: true, business: true },
-  { feature: 'Analiticas avanzadas', description: 'Reportes de conversion y candidatos', free: false, pro: true, business: true },
-  { feature: 'Multi-propiedad', description: 'Panel unificado para todas tus propiedades', free: false, pro: false, business: true },
+  { feature: 'Propiedades', description: 'Numero de propiedades que puedes publicar', starter: '1', pro: '10', flex: '25' },
+  { feature: 'Contratos digitales', description: 'Genera contratos listos para firmar', starter: '1/mes', pro: 'Ilimitados', flex: 'Ilimitados' },
+  { feature: 'Analisis AI', description: 'Puntuacion y analisis inteligente de candidatos', starter: false, pro: true, flex: true },
+  { feature: 'Verificacion de documentos', description: 'Validacion automatica de identidad', starter: false, pro: true, flex: true },
+  { feature: 'Verificacion de antecedentes', description: 'Consulta en bases de datos oficiales', starter: false, pro: true, flex: true },
+  { feature: 'Soporte prioritario', description: 'Respuesta en menos de 24 horas', starter: false, pro: true, flex: true },
+  { feature: 'Analiticas avanzadas', description: 'Reportes de conversion y candidatos', starter: false, pro: true, flex: true },
+  { feature: 'Multi-propiedad', description: 'Panel unificado para todas tus propiedades', starter: false, pro: false, flex: true },
 ];
 
 // ============================================================================
 // Utility functions
 // ============================================================================
 
+/**
+ * Look up a plan by canonical tier id.
+ * Searches landlord PLANS first; if not found (e.g. tier is 'starter' or 'flex'
+ * coming from an agency subscription), falls back to AGENCY_PLANS mapped into
+ * the Plan shape. Guarantees a return value for any known tier.
+ */
 export function getPlanById(id: PlanId): Plan {
-  return PLANS.find((p) => p.id === id) || PLANS[0];
+  const landlordPlan = PLANS.find((p) => p.id === id);
+  if (landlordPlan) return landlordPlan;
+
+  // Fallback: agency tier — map AgencyPlan to a minimal Plan shape for UI
+  const agencyPlan = AGENCY_PLANS.find((p) => p.id === id);
+  if (agencyPlan) {
+    return {
+      id: agencyPlan.id as PlanId,
+      name: agencyPlan.name,
+      description: agencyPlan.description,
+      price: {
+        monthly: agencyPlan.price.monthly ?? 0,
+        yearly: agencyPlan.price.yearly ?? 0,
+      },
+      features: agencyPlan.features.map((f, i) => ({
+        id: `${agencyPlan.id}-feature-${i}`,
+        name: f,
+        description: '',
+        included: true,
+      })),
+      highlighted: agencyPlan.highlighted,
+      badge: agencyPlan.badge,
+    };
+  }
+
+  return PLANS[0];
 }
 
 export function getPlanFeature(planId: PlanId, featureId: string): PlanFeature | undefined {

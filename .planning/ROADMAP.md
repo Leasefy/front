@@ -2,292 +2,168 @@
 
 ## Overview
 
-Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde propietarios e inmobiliarias hablan con un orquestador que despacha agentes especializados. Este roadmap cubre el frontend de la experiencia Beta — la interfaz conversacional, visualización de agentes, sistema de decisiones y briefings. El backend (orquestador, agentes, memoria) lo construye un desarrollador independiente usando nuestra documentación.
+Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde propietarios e inmobiliarias hablan con un orquestador que despacha agentes especializados. v5.0 hace que la plataforma se sienta agéntica desde el minuto 0 para inmobiliarias y construye features que diferencian los planes Flex (pago por adjudicación).
 
 ## Milestones
 
 - ✅ **v1.0 Frontend MVP** - Phases 1-11 (shipped 2026-01-29)
 - ✅ **v2.0 Design System & QA** - Phases 12-16 (shipped 2026-02-02)
-- ✅ **v3.0 Inmobiliaria Module** - Inmobiliaria 1-10 (shipped 2026-02-08)
-- ✅ **v3.1 Landing & SEO** - i18n, pricing, SEO (shipped 2026-02-10)
-- ✅ **v4.0 AI Agent Platform Beta** - Phases 17-25 (shipped 2026-02-10)
-- ✅ **v5.0 Inmobiliaria Registration** - Phase 26 (shipped 2026-03-11)
+- ✅ **v3.0 Inmobiliaria Module** - 10 phases (shipped 2026-02-08)
+- ✅ **v3.1 Landing & SEO** - (shipped 2026-02-10)
+- ✅ **v4.0 AI Agent Beta** - Phases 17-25 (shipped 2026-02-10)
+- 🚧 **v5.0 Agency Plan-Gated Features** - Phases 26-32 (in progress)
 
 ## Phases
 
-**Phase Numbering:**
-- Phases 1-16: v1.0-v2.0 (complete)
-- Inmobiliaria 1-10: v3.0 (complete)
-- Phases 17-25: v4.0 AI Agent Platform Beta (current)
-
-- [x] **Phase 1-16**: v1.0-v2.0 complete (see collapsed details below)
-- [x] **Inmobiliaria 1-10**: v3.0 complete
-- [x] **Phase 17: Beta Sidebar Integration** - Add Beta section to both dashboards with AI-optimized layout
-- [x] **Phase 18: Chat Interface** - Core conversational UI with streaming, markdown, suggested prompts
-- [x] **Phase 19: Conversation Management** - History, search, conversation list with date grouping
-- [x] **Phase 20: Agent Activity Display** - Visual agent execution indicators and inline result cards
-- [x] **Phase 21: Decision System** - Pending decision cards with options, recommendations, history
-- [x] **Phase 22: Briefing Display** - Daily/weekly AI briefings with sections and actions
-- [x] **Phase 23: Preferences & Autonomy** - AI autonomy settings, notification prefs, thresholds
-- [x] **Phase 24: API Client & Backend Docs** - Typed API client, mock layer, complete backend API spec
-- [x] **Phase 25: Polish & QA** - Dark mode, responsive, i18n, a11y, keyboard shortcuts
-- [x] **Phase 26: Inmobiliaria Registration Flow** - Wizard de registro, onboarding de agencia, invitaciones con token — [ver planes](phases/P1-inmobiliaria-registration/) — [archivo](milestones/v5.0-ROADMAP.md)
+- [x] **Phase 26: Plan Gating System** - Foundation hook + upgrade prompts for feature gating
+- [x] **Phase 27: Agent Dashboard UX** - Polish existing agent cards, feed, execution panel, detail sidebar
+- [x] **Phase 28: Agency Pricing Modal** - Polish Flex vs Subscription pricing modal
+- [x] **Phase 29: Advanced Reports** - Occupancy, collections, agent performance reports with charts
+- [x] **Phase 30: Executive Reports** - C-level summary dashboard with portfolio health score
+- [x] **Phase 31: Automatic Reminders** - Payment and contract reminders with configuration UI
+- [x] **Phase 32: Integration & QA** - Wire gating to all features, test all plan tiers, polish
 
 ## Phase Details
 
-<details>
-<summary>✅ v1.0 Frontend MVP (Phases 1-11) — SHIPPED 2026-01-29</summary>
-
-### Phase 1-11
-All phases complete. Property catalog, application wizard, risk score display, landlord/tenant dashboards, contracts, pricing, maps, auth UI, UX polish.
-
-</details>
-
-<details>
-<summary>✅ v2.0 Design System & QA (Phases 12-16) — SHIPPED 2026-02-02</summary>
-
-### Phase 12-16
-Design tokens, component redesign, QA functionality/visual audit, responsive/a11y audit, contract UX.
-
-</details>
-
-<details>
-<summary>✅ v3.0 Inmobiliaria Module (10 phases) — SHIPPED 2026-02-08</summary>
-
-### Inmobiliaria 1-10
-Dashboard KPIs, propietarios, consignaciones, agentes, pipeline, cobros, dispersiones, reportes, operaciones, configuracion/docs/analytics.
-
-</details>
-
-<details>
-<summary>✅ v3.1 Landing & SEO — SHIPPED 2026-02-10</summary>
-
-i18n across entire codebase (ES/EN), pricing page redesign, SEO optimization (OG images, metadata, JSON-LD), locale fix.
-
-</details>
-
-### ✅ v4.0 AI Agent Platform Beta
-
-**Milestone Goal:** Interfaz conversacional AI en sección "Beta" de los dashboards existentes. El usuario habla con un orquestador que despacha agentes especializados. Frontend completo con mock data; documentación completa para que el backend developer implemente el orquestador y agentes con Claude API.
-
-#### Phase 17: Beta Sidebar Integration
-**Goal**: Beta section integrada en ambos dashboards sin romper funcionalidad existente
-**Depends on**: Nothing (first v4.0 phase)
-**Requirements**: BETA-01, BETA-02, BETA-03, BETA-04, BETA-05, BETA-06
+### Phase 26: Plan Gating System
+**Goal**: Feature gating infrastructure that blocks premium features based on agency plan tier
+**Depends on**: Nothing (foundation phase)
+**Requirements**: GATE-01, GATE-02, GATE-03, GATE-04, GATE-05
 **Success Criteria** (what must be TRUE):
-  1. Sidebar de propietarios muestra item "Beta" con ícono AI/sparkle
-  2. Sidebar de inmobiliarias muestra item "Beta" con ícono AI/sparkle
-  3. Rutas /panel/beta y /panel/inmobiliaria/beta cargan layout dedicado
-  4. Layout Beta tiene estructura optimizada para chat (no el layout estándar de páginas)
-  5. Badge "Beta" visible indicando estado experimental
-  6. Todas las páginas existentes del dashboard siguen funcionando sin cambios
-**Research**: Likely (chat layout patterns, Claude Code-style UX)
-**Research topics**: Chat-first layouts, sidebar integration patterns for AI assistants
+  1. `useAgencyPlan` returns current tier and `hasFeature(featureName)` check
+  2. Gating config maps feature names to minimum plan tiers
+  3. Attempting to access a gated feature without the required plan shows an upgrade prompt
+  4. Upgrade prompt opens the agency pricing modal
+  5. Plan can be changed via localStorage for testing
+**Research**: Unlikely (internal hook, existing patterns)
 **Plans**: 2 plans
 
 Plans:
-- [x] 17-01: Sidebar nav items + route structure for Beta in both dashboards
-- [x] 17-02: Beta layout shell with chat-optimized structure
+- [ ] 26-01: Build useAgencyPlan hook with feature gating config
+- [ ] 26-02: Build UpgradePrompt component and wire to pricing modal
 
-#### Phase 18: Chat Interface
-**Goal**: Experiencia de chat conversacional completa con streaming y markdown
-**Depends on**: Phase 17
-**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-08, CHAT-09, CHAT-10
+### Phase 27: Agent Dashboard UX
+**Goal**: Polish and commit the agentic dashboard experience (already built in session)
+**Depends on**: Phase 26 (needs gating to show agents only on Flex plans)
+**Requirements**: ADUX-01, ADUX-02, ADUX-03, ADUX-04, ADUX-05
 **Success Criteria** (what must be TRUE):
-  1. Usuario puede escribir mensaje y enviarlo (Enter o botón)
-  2. Mensajes del usuario aparecen como burbujas a la derecha
-  3. Respuestas del asistente aparecen a la izquierda con branding Leasefy AI
-  4. Texto del asistente aparece con efecto streaming (carácter por carácter)
-  5. Respuestas soportan markdown (negritas, listas, tablas)
-  6. Indicador de "escribiendo" visible mientras AI procesa
-  7. Chat auto-scroll al último mensaje
-  8. Mensaje de bienvenida con prompts sugeridos para nuevos usuarios
-**Research**: Likely (SSE streaming patterns, markdown rendering in React)
-**Research topics**: react-markdown, SSE client patterns, Vercel AI SDK chat hooks
+  1. Dashboard shows agent cards + activity feed as primary section
+  2. Agent Hub page at /panel/inmobiliaria/ai works with full agent list
+  3. Clicking "¿Cómo funciona?" opens detail sidebar with step-by-step explanation
+  4. Clicking activity item opens execution panel with step-by-step view
+  5. Sidebar nav shows "Agentes AI" item with badge
+**Research**: Unlikely (already built, polish only)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 27-01: Polish agent cards, activity feed height sync, colors
+- [ ] 27-02: Polish execution panel and detail sidebar
+
+### Phase 28: Agency Pricing Modal
+**Goal**: Polish pricing modal with Flex vs Subscription models
+**Depends on**: Phase 26 (upgrade prompt triggers modal)
+**Requirements**: PRIC-01, PRIC-02, PRIC-03, PRIC-04
+**Success Criteria** (what must be TRUE):
+  1. "Mejorar Plan" button opens pricing modal (not navigates away)
+  2. Modal shows Flex (per-lease) as default/recommended tab
+  3. Flex plans highlight AI agents as differentiator with Sparkle icon
+  4. Calculator slider shows monthly cost estimate based on adjudicaciones
+**Research**: Unlikely (already built, polish only)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 28-01: Polish pricing modal, fix features, verify UX flow
+
+### Phase 29: Advanced Reports
+**Goal**: New report pages for occupancy, collections, and agent performance with trend charts
+**Depends on**: Phase 26 (reports gated to Growth+)
+**Requirements**: REPT-01, REPT-02, REPT-03, REPT-04, REPT-05, REPT-06
+**Success Criteria** (what must be TRUE):
+  1. Occupancy report shows vacancy rate, avg days vacant, breakdown by property
+  2. Collections report shows mora rate, avg days late, recovery rate by month
+  3. Agent performance report shows closings, conversion rate, days to close per agent
+  4. Trend charts display 6-12 month history for each metric
+  5. Reports only visible to Growth+ / Growth Flex+ plans (others see upgrade prompt)
+  6. Basic PDF export available
+**Research**: Unlikely (charting with existing patterns, mock data)
 **Plans**: 3 plans
 
 Plans:
-- [x] 18-01: Chat input component + message bubble components
-- [x] 18-02: Streaming text renderer + markdown support
-- [x] 18-03: Welcome state, suggested prompts, auto-scroll, typing indicator
+- [ ] 29-01: Build occupancy and collections report pages with mock data
+- [ ] 29-02: Build agent performance report and trend charts
+- [ ] 29-03: Add PDF export and wire plan gating
 
-#### Phase 19: Conversation Management
-**Goal**: Historial de conversaciones navegable con búsqueda
-**Depends on**: Phase 18
-**Requirements**: CONV-01, CONV-02, CONV-03, CONV-04, CONV-05, CONV-06
+### Phase 30: Executive Reports
+**Goal**: C-level summary dashboard with portfolio health score and month-over-month comparison
+**Depends on**: Phase 29 (uses same data patterns)
+**Requirements**: EXEC-01, EXEC-02, EXEC-03, EXEC-04
 **Success Criteria** (what must be TRUE):
-  1. Panel lateral muestra lista de conversaciones pasadas
-  2. Botón "Nueva conversación" crea thread limpio
-  3. Títulos auto-generados del primer mensaje del usuario
-  4. Conversaciones agrupadas por fecha (Hoy, Ayer, Esta semana, Anterior)
-  5. Acción de eliminar conversación con confirmación
-  6. Búsqueda filtra conversaciones por texto
-**Research**: Unlikely (standard list/search UI patterns)
+  1. Executive summary shows key metrics on single page
+  2. Month-over-month deltas show improvement/decline indicators
+  3. Portfolio health score combines occupancy + collections + maintenance
+  4. Only visible to Business+ / Business Flex+ plans
+**Research**: Unlikely (extends Phase 29 patterns)
 **Plans**: 2 plans
 
 Plans:
-- [x] 19-01: Conversation list panel with date grouping and search
-- [x] 19-02: New conversation, delete, title generation
+- [ ] 30-01: Build executive summary page with health score
+- [ ] 30-02: Add MoM comparison and wire plan gating
 
-#### Phase 20: Agent Activity Display
-**Goal**: Visualización clara de qué agentes están ejecutando y sus resultados
-**Depends on**: Phase 18
-**Requirements**: AGNT-01, AGNT-02, AGNT-03, AGNT-04, AGNT-05, AGNT-06
+### Phase 31: Automatic Reminders
+**Goal**: Configurable reminder system for payments and contract expiry with log
+**Depends on**: Phase 26 (reminders gated to Growth+)
+**Requirements**: RMDR-01, RMDR-02, RMDR-03, RMDR-04, RMDR-05, RMDR-06, RMDR-07
 **Success Criteria** (what must be TRUE):
-  1. Indicador visual cuando el orquestador está despachando agentes
-  2. Badges con nombre e ícono de cada agente (Cobranza, Pipeline, Documentos, etc.)
-  3. Estado de ejecución visible (ejecutando/completado/fallido) inline
-  4. Cards de resultado del agente colapsables dentro de la conversación
-  5. Múltiples agentes pueden mostrarse ejecutando simultáneamente
-  6. Estado de error con opción de reintentar
-**Research**: Likely (agent visualization patterns, real-time status updates)
-**Research topics**: Tool use visualization, Claude Code-style agent indicators, SSE event patterns
-**Plans**: 2 plans
-
-Plans:
-- [x] 20-01: Agent execution indicators + status badges
-- [x] 20-02: Agent result cards (collapsible, inline) + error states
-
-#### Phase 21: Decision System
-**Goal**: Sistema de decisiones pendientes donde AI presenta opciones y usuario decide
-**Depends on**: Phase 18
-**Requirements**: DCSN-01, DCSN-02, DCSN-03, DCSN-04, DCSN-05, DCSN-06
-**Success Criteria** (what must be TRUE):
-  1. Cards de decisión pendiente con 2-4 opciones integradas en el chat
-  2. Cada opción muestra indicador de recomendación AI
-  3. Usuario puede seleccionar opción que se envía como respuesta
-  4. Cards de decisión se vuelven read-only después de seleccionar
-  5. Contador de decisiones pendientes visible en sidebar
-  6. Historial de decisiones accesible
-**Research**: Unlikely (card-based selection UI, existing shadcn patterns)
-**Plans**: 2 plans
-
-Plans:
-- [x] 21-01: Decision card component with options, recommendations, selection
-- [x] 21-02: Decision counter badge, history view, read-only state
-
-#### Phase 22: Briefing Display
-**Goal**: Briefings diarios/semanales del AI con resumen ejecutivo y acciones
-**Depends on**: Phase 18
-**Requirements**: BRFG-01, BRFG-02, BRFG-03, BRFG-04, BRFG-05, BRFG-06
-**Success Criteria** (what must be TRUE):
-  1. Card de briefing diario visible al tope de la sección Beta
-  2. Secciones del briefing: cobros, pipeline, mantenimiento, decisiones pendientes
-  3. Cada sección expandible/colapsable
-  4. Acciones tipo "Cuéntame más sobre cobros" abren chat con contexto
-  5. Badge de notificación cuando hay nuevo briefing
-  6. Briefings históricos navegables por fecha
-**Research**: Unlikely (dashboard card patterns, existing component library)
-**Plans**: 2 plans
-
-Plans:
-- [x] 22-01: Briefing card with sections (cobros, pipeline, maint, decisions)
-- [x] 22-02: Briefing history, notification badge, chat integration actions
-
-#### Phase 23: Preferences & Autonomy
-**Goal**: Configuración de autonomía AI y preferencias del usuario
-**Depends on**: Phase 17
-**Requirements**: PREF-01, PREF-02, PREF-03, PREF-04, PREF-05
-**Success Criteria** (what must be TRUE):
-  1. Página de configuración de autonomía por categoría de agente
-  2. Toggles auto/preguntar-primero/manual para cada tipo de agente
-  3. Preferencias de notificación configurables
-  4. Selector de tono de comunicación (formal/casual/profesional)
-  5. Umbrales configurables (tolerancia mora, límites presupuesto mantenimiento)
-**Research**: Unlikely (form/settings page patterns, existing config pages in inmobiliaria)
-**Plans**: 2 plans
-
-Plans:
-- [x] 23-01: Autonomy settings page with per-agent toggles
-- [x] 23-02: Notification preferences, tone selector, threshold settings
-
-#### Phase 24: API Client & Backend Documentation
-**Goal**: Capa de integración frontend-backend completa + documentación para backend dev
-**Depends on**: Phase 18, Phase 20, Phase 21, Phase 22, Phase 23
-**Requirements**: APIC-01, APIC-02, APIC-03, APIC-04, APIC-05, APIC-06, DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, DOCS-08
-**Success Criteria** (what must be TRUE):
-  1. Módulo de API client con TypeScript types para todos los endpoints
-  2. Cliente SSE/streaming funcional para respuestas de chat en tiempo real
-  3. Mock API responses que simulan comportamiento realista del orquestador
-  4. Simulación de ejecución de agentes (delays, status updates)
-  5. Flag de entorno para cambiar entre mock y API real
-  6. Documento docs/BACKEND-API-V4.md con spec OpenAPI-style completa
-  7. AI-AGENT-ARCHITECTURE.md actualizado con contrato exacto del frontend
-**Research**: Likely (SSE patterns, Vercel AI SDK, OpenAPI spec format)
-**Research topics**: Vercel AI SDK streaming, EventSource API, OpenAPI 3.0 spec patterns
+  1. Pre-payment reminder configuration exists (toggle + days before)
+  2. Overdue reminder with first notice at configurable days
+  3. Escalation reminder with second notice at configurable days
+  4. Contract expiry alerts at 90/60/30 days configurable
+  5. Configuration UI where user can toggle and set timing per type
+  6. Reminder log shows history of sent reminders with status
+  7. Reminders only configurable on Growth+ / Growth Flex+ plans
+**Research**: Unlikely (UI configuration + mock scheduler)
 **Plans**: 3 plans
 
 Plans:
-- [x] 24-01: API client module + TypeScript types + environment switching
-- [x] 24-02: SSE streaming client + mock API layer with agent simulation
-- [x] 24-03: Backend API documentation (OpenAPI spec + architecture update)
+- [ ] 31-01: Build reminder configuration UI with types and timing
+- [ ] 31-02: Build reminder log and mock scheduler
+- [ ] 31-03: Wire contract expiry alerts and plan gating
 
-#### Phase 25: Polish & QA
-**Goal**: Beta section pulida, accesible, responsive, i18n, sin errores
-**Depends on**: All previous v4.0 phases
-**Requirements**: PLSH-01, PLSH-02, PLSH-03, PLSH-04, PLSH-05, PLSH-06, PLSH-07
+### Phase 32: Integration & QA
+**Goal**: Wire all gating, test plan tiers end-to-end, polish edge cases
+**Depends on**: Phases 26-31
+**Requirements**: Cross-cutting (GATE, REPT, EXEC, RMDR gating verification)
 **Success Criteria** (what must be TRUE):
-  1. Dark mode funcional en toda la UI de Beta
-  2. Experiencia mobile: chat full-screen, conversaciones como drawer
-  3. Todos los strings Beta disponibles en ES y EN
-  4. Atajos de teclado: Cmd+K nueva conversación, Esc cerrar
-  5. Accesibilidad: screen reader, focus management, ARIA labels
-  6. Loading states y error boundaries en todas las páginas Beta
-  7. TypeScript strict, zero warnings en build
-**Research**: Unlikely (established QA patterns from v2.0)
-**Plans**: 3 plans
+  1. Starter plan user sees upgrade prompts on reports, reminders, executive dashboard
+  2. Growth plan user can access reports and reminders but not executive dashboard
+  3. Business plan user can access everything
+  4. Flex plan users see AI agents in their features
+  5. All pages work without errors, no broken links
+**Research**: Unlikely (testing and verification)
+**Plans**: 2 plans
 
 Plans:
-- [x] 25-01: Dark mode + responsive mobile chat
-- [x] 25-02: i18n strings + keyboard shortcuts + accessibility
-- [x] 25-03: Loading states, error boundaries, TypeScript strict, build validation
+- [ ] 32-01: Wire gating to all pages and test each plan tier
+- [ ] 32-02: Polish UX, fix edge cases, final QA
 
 ## Progress
 
-**Execution Order:**
-Phases 17 → 18 → 19 (can parallel with 20, 21, 22) → 23 → 24 → 25 → **26**
-
 | Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 17. Beta Sidebar Integration | 2/2 | Complete | 2026-02-10 |
-| 18. Chat Interface | 3/3 | Complete | 2026-02-10 |
-| 19. Conversation Management | 2/2 | Complete | 2026-02-10 |
-| 20. Agent Activity Display | 2/2 | Complete | 2026-02-10 |
-| 21. Decision System | 2/2 | Complete | 2026-02-10 |
-| 22. Briefing Display | 2/2 | Complete | 2026-02-10 |
-| 23. Preferences & Autonomy | 2/2 | Complete | 2026-02-10 |
-| 24. API Client & Backend Docs | 3/3 | Complete | 2026-02-10 |
-| 25. Polish & QA | 3/3 | Complete | 2026-02-10 |
-| **26. Inmobiliaria Registration Flow** | **3/3** | **Complete** | 2026-03-11 |
+|-------|---------------|--------|-----------|
+| 26. Plan Gating | 2/2 | Complete | 2026-03-26 |
+| 27. Agent Dashboard UX | 2/2 | Complete | 2026-03-26 |
+| 28. Agency Pricing | 1/1 | Complete | 2026-03-26 |
+| 29. Advanced Reports | 3/3 | Complete | 2026-03-26 |
+| 30. Executive Reports | 2/2 | Complete | 2026-03-26 |
+| 31. Automatic Reminders | 3/3 | Complete | 2026-03-26 |
+| 32. Integration & QA | 2/2 | Complete | 2026-03-26 |
 
-## Notes
+### Phase 33: Property Import System — Excel/CSV import with AI column mapping and gap-filling, software migration guides, and portal import for real estate agencies
 
-### What We Build (Frontend)
-- Chat UI with streaming, markdown, conversation management
-- Agent execution visualization (badges, spinners, result cards)
-- Decision system (pending options, selection, history)
-- Briefing display (daily summary, sections, actions)
-- Preferences & autonomy settings
-- Mock API layer simulating real backend behavior
-- All Beta UI components
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 32
+**Plans:** 0 plans
 
-### What Backend Dev Builds (Using Our Docs)
-- Claude API orchestrator with tool use
-- Specialized agents (cobranza, pipeline, mantenimiento, documentos, comunicación, proactivo)
-- 3-level memory system (short/medium/long term)
-- WhatsApp gateway via Twilio
-- Real database models and migrations
-- SSE/streaming endpoints
-- Background jobs for proactive briefings
-- Architecture reference: `docs/AI-AGENT-ARCHITECTURE.md`
-
-### Mock Data Strategy (v4.0)
-- Mock conversations with realistic Colombian rental scenarios
-- Mock agent executions with simulated delays (1-3s per agent)
-- Mock briefing data with cobros, pipeline, mantenimiento summaries
-- Mock decisions: "Renovar contrato?", "Aprobar candidato score 78?", "Autorizar reparación $450K?"
-- Environment flag (`NEXT_PUBLIC_USE_MOCK_API=true`) for seamless switch to real backend
-
----
-*Roadmap created: 2026-01-18 (v1.0)*
-*Last updated: 2026-02-10 (v4.0 AI Agent Platform Beta)*
+Plans:
+- [ ] TBD (run /gsd:plan-phase 33 to break down)

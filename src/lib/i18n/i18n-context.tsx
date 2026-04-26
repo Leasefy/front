@@ -83,15 +83,15 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     [locale]
   );
 
-  // Format currency — delegates to shared format.ts utility
+  // Format currency — delegates to shared format.ts utility (null-safe).
   const formatCurrency = useCallback(
-    (amount: number): string => formatCurrencyUtil(amount, locale),
+    (amount: number | null | undefined): string => formatCurrencyUtil(amount, locale),
     [locale]
   );
 
-  // Format number — delegates to shared format.ts utility
+  // Format number — delegates to shared format.ts utility (null-safe).
   const formatNumber = useCallback(
-    (value: number): string => formatNumberUtil(value, locale),
+    (value: number | null | undefined): string => formatNumberUtil(value, locale),
     [locale]
   );
 

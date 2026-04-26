@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -289,7 +290,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
  * Propietario Detail Page
  * Full profile view with properties, payments, and history
  */
-export default function PropietarioDetailPage() {
+function PropietarioDetailContent() {
   const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -335,7 +336,7 @@ export default function PropietarioDetailPage() {
           </p>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propietarios')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.propietarios.backToList')}
@@ -473,11 +474,11 @@ export default function PropietarioDetailPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
                 >
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <FileText className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <Download className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
                   </button>
@@ -648,7 +649,7 @@ export default function PropietarioDetailPage() {
                     <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                       {t('inmobiliaria.propietarios.detail.noProperties')}
                     </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors">
+                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors">
                       <Plus className="w-4 h-4" />
                       {t('inmobiliaria.propietarios.detail.newConsignment')}
                     </button>
@@ -766,7 +767,7 @@ export default function PropietarioDetailPage() {
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors"
             >
               {t('inmobiliaria.common.delete')}
             </button>
@@ -807,7 +808,7 @@ export default function PropietarioDetailPage() {
             <button
               onClick={handleSaveNotes}
               disabled={isSavingNotes}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSavingNotes ? (
                 <>
@@ -822,5 +823,13 @@ export default function PropietarioDetailPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function PropietarioDetailPage() {
+  return (
+    <PageGuard module="propietarios">
+      <PropietarioDetailContent />
+    </PageGuard>
   );
 }

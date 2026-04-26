@@ -112,7 +112,7 @@ function CommissionRatioBar({
           initial={{ width: 0 }}
           animate={{ width: `${commissionPercent}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full bg-indigo-500"
+          className="h-full bg-indigo-600"
         />
         <motion.div
           initial={{ width: 0 }}

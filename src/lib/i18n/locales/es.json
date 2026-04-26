@@ -850,8 +850,10 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
+      "aiAgents": "Agentes AI",
       "propietarios": "Propietarios",
       "portafolio": "Portafolio",
+      "propiedades": "Propiedades",
       "pipeline": "Pipeline",
       "agentes": "Agentes",
       "cobros": "Cobros",
@@ -960,6 +962,16 @@
         "late": "En mora",
         "pendingDispersions": "Dispersiones pendientes",
         "collectionRate": "Tasa de recaudo"
+      },
+      "aiAgents": {
+        "evaluationsThisMonth": "Evaluaciones este mes",
+        "avgTime": "Tiempo promedio",
+        "precision": "Precisión",
+        "escalatedToHuman": "Escalados a humano",
+        "suggestedThisWeek": "Sugerencias enviadas",
+        "conversionRate": "Tasa de conversión",
+        "redirectedCandidates": "Candidatos redirigidos",
+        "avgCompatibility": "Compatibilidad promedio"
       }
     },
     "config": {
@@ -2487,6 +2499,146 @@
         "review": "Revisar y confirmar",
         "submit": "Crear consignación",
         "submitting": "Creando..."
+      }
+    },
+    "import": {
+      "title": "Importar propiedades",
+      "subtitle": "Migra tu portafolio completo en minutos",
+      "steps": {
+        "method": "Método",
+        "upload": "Archivo",
+        "mapping": "Mapeo",
+        "review": "Revisión AI",
+        "confirm": "Confirmar"
+      },
+      "methods": {
+        "excel": {
+          "title": "Excel / CSV",
+          "desc": "Sube un archivo Excel o CSV con tus propiedades",
+          "badge": "Recomendado"
+        },
+        "software": {
+          "title": "Desde software",
+          "desc": "Exporta desde SIMI, Daytona, DOMUS y más",
+          "badge": "Guiado"
+        },
+        "portal": {
+          "title": "Desde portales",
+          "desc": "Importa desde FincaRaíz, Metrocuadrado",
+          "badge": "Próximamente"
+        }
+      },
+      "upload": {
+        "dragText": "Arrastra tu archivo aquí o haz clic para seleccionar",
+        "formats": "Formatos soportados: .xlsx, .xls, .csv",
+        "parsing": "Analizando archivo...",
+        "rowsDetected": "{{count}} filas detectadas",
+        "selectSheet": "Seleccionar hoja",
+        "downloadTemplate": "Descargar plantilla",
+        "fileLoaded": "Archivo cargado: {{name}} ({{size}})"
+      },
+      "mapping": {
+        "title": "Mapeo de columnas",
+        "subtitle": "Hemos detectado automáticamente las columnas. Revisa y ajusta si es necesario.",
+        "mapped": "{{count}} de {{total}} columnas mapeadas",
+        "confidence": {
+          "detected": "Detectado",
+          "probable": "Probable",
+          "unmapped": "Sin mapear",
+          "manual": "Manual"
+        },
+        "ignore": "Ignorar",
+        "reset": "Restablecer mapeo",
+        "requiredMissing": "Campos requeridos sin mapear:",
+        "sampleValues": "Ej:"
+      },
+      "fields": {
+        "propertyTitle": "Título",
+        "propertyAddress": "Dirección",
+        "propertyCity": "Ciudad",
+        "propertyZone": "Barrio / Zona",
+        "propertyType": "Tipo de inmueble",
+        "monthlyRent": "Canon mensual",
+        "adminFee": "Administración",
+        "commissionPercent": "Comisión %"
+      },
+      "wizard": {
+        "cancel": "Cancelar",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "mobileProgress": "Paso {{current}} de {{total}}: {{label}}",
+        "cancelDialog": {
+          "title": "¿Cancelar importación?",
+          "description": "Perderás el progreso de esta importación.",
+          "continueEditing": "Continuar",
+          "yesCancel": "Sí, cancelar"
+        }
+      },
+      "review": {
+        "analyzing": "Analizando {{count}} propiedades...",
+        "readyCount": "{{ready}} propiedades listas.",
+        "issueCount": "{{issues}} necesitan atención.",
+        "complete": "Completo",
+        "suggestions": "{{count}} sugerencias",
+        "error": "Error",
+        "ready": "Listo",
+        "acceptAll": "Aceptar todas las sugerencias",
+        "acceptAllProperty": "Aceptar todas",
+        "selectAll": "Seleccionar todas",
+        "deselectAll": "Deseleccionar todas",
+        "accepted": "Aceptado",
+        "rejected": "Rechazado",
+        "completeStat": "{{count}} completas",
+        "suggestionStat": "{{count}} con sugerencias",
+        "errorStat": "{{count}} con errores"
+      },
+      "confirm": {
+        "title": "Resumen de importación",
+        "propertiesToImport": "Propiedades a importar",
+        "propertiesExcluded": "Propiedades excluidas",
+        "suggestionsAccepted": "Sugerencias AI aceptadas",
+        "remainingErrors": "Errores restantes",
+        "assignAgent": "Asignar agente",
+        "assignAgentDesc": "Selecciona el agente que gestionará las propiedades importadas",
+        "assignLater": "Podrás asignar agentes después",
+        "importButton": "Importar {{count}} propiedades",
+        "importing": "Importando propiedad {{current}} de {{total}}...",
+        "successTitle": "¡Importación completada!",
+        "successDesc": "Se importaron {{count}} propiedades a tu portafolio",
+        "viewPortfolio": "Ver portafolio",
+        "importMore": "Importar más",
+        "toast": {
+          "successTitle": "Importación exitosa",
+          "successDesc": "{{count}} propiedades importadas correctamente"
+        }
+      },
+      "software": {
+        "title": "Exporta desde tu software",
+        "subtitle": "Selecciona tu sistema actual y sigue las instrucciones para exportar",
+        "popular": "Popular",
+        "exportSteps": {
+          "step1": "Ir a la sección de Propiedades / Inmuebles",
+          "step2": "Seleccionar todas o filtrar las que desea importar",
+          "step3": "Buscar botón 'Exportar' o 'Descargar' (usualmente en formato .xlsx o .csv)",
+          "step4": "Descargar el archivo y cargarlo aquí"
+        },
+        "otherSoftware": "¿Usas otro software?",
+        "otherSoftwareDesc": "Contáctanos y te ayudamos con la migración",
+        "haveFile": "Ya tengo mi archivo",
+        "requestHelp": "Solicitar ayuda"
+      },
+      "portal": {
+        "title": "Importar desde portales",
+        "subtitle": "Conecta tu perfil de agencia para importar propiedades automáticamente",
+        "comingSoon": "Próximamente",
+        "backToPortfolio": "Volver al portafolio",
+        "emailCapture": {
+          "title": "¿Te interesa esta función?",
+          "subtitle": "Déjanos tu email y te avisamos cuando esté disponible",
+          "placeholder": "tu@email.com",
+          "submit": "Avisar",
+          "success": "¡Registrado! Te avisaremos cuando esté disponible."
+        }
       }
     },
     "consignaciones": {
@@ -4986,113 +5138,6 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
-    }
-  },
-  "registration": {
-    "accountType": {
-      "title": "¿Cómo quieres usar Leasefy?",
-      "subtitle": "Selecciona el tipo de cuenta que mejor describe tu rol",
-      "tenant": "Inquilino",
-      "tenantDesc": "Busco propiedades en arriendo",
-      "landlord": "Propietario",
-      "landlordDesc": "Tengo propiedades para arrendar",
-      "inmobiliaria": "Inmobiliaria",
-      "inmobiliariaDesc": "Administro propiedades para terceros"
-    },
-    "agencyFields": {
-      "agencyName": "Nombre de la agencia",
-      "agencyNamePlaceholder": "Inmobiliaria Rodríguez & Asociados",
-      "nit": "NIT / RUT",
-      "nitPlaceholder": "900.123.456-7",
-      "nitOptional": "NIT / RUT (opcional)",
-      "address": "Dirección",
-      "addressOptional": "Dirección (opcional)",
-      "addressPlaceholder": "Calle 123 # 45-67",
-      "city": "Ciudad principal",
-      "cityPlaceholder": "Selecciona una ciudad",
-      "phone": "Teléfono de la agencia",
-      "phoneOptional": "Teléfono de la agencia (opcional)",
-      "phonePlaceholder": "601 234 5678",
-      "email": "Email de la agencia",
-      "emailOptional": "Email de la agencia (opcional)",
-      "emailPlaceholder": "contacto@miinmobiliaria.com",
-      "defaultCommission": "Comisión por defecto",
-      "defaultCommissionDesc": "Porcentaje que cobras sobre el arriendo mensual",
-      "collectionDay": "Día de cobro",
-      "collectionDayDesc": "Día del mes en que se cobra el arriendo a los inquilinos",
-      "dispersionDay": "Día de dispersión",
-      "dispersionDayDesc": "Día del mes en que se transfiere el pago a los propietarios",
-      "valueBetween": "Valor entre {{min}} y {{max}}"
-    }
-  },
-  "invitation": {
-    "validating": "Validando invitación…",
-    "notFound": "Invitación no encontrada",
-    "notFoundDesc": "Este enlace no es válido o ya fue usado. Solicita una nueva invitación a tu agencia.",
-    "expired": "Invitación expirada",
-    "expiredDesc": "Este enlace de invitación ya no está vigente. Pide al administrador de la agencia que te envíe una nueva invitación.",
-    "validUntil": "Válida hasta el {{date}}",
-    "roleAssigned": "Rol asignado",
-    "invitedAs": "Invitado como",
-    "atAgency": "en {{agencyName}}",
-    "greetingLoggedIn": "Hola {{name}}, te han invitado a unirte como",
-    "loginToAccept": "Iniciar sesión para aceptar",
-    "createAccount": "Crear cuenta nueva",
-    "accept": "Aceptar invitación",
-    "accepting": "Aceptando…",
-    "decline": "Rechazar invitación",
-    "declining": "Rechazando…",
-    "helpText": "¿Necesitas ayuda?",
-    "helpLink": "Visita el centro de ayuda",
-    "goHome": "Ir al inicio",
-    "roles": {
-      "ADMIN": "Administrador",
-      "AGENTE": "Agente",
-      "CONTADOR": "Contador",
-      "VIEWER": "Observador"
-    }
-  },
-  "onboarding": {
-    "checklist": {
-      "title": "Configura tu agencia",
-      "subtitle": "Completa estos pasos para aprovechar al máximo Leasefy",
-      "completionPercent": "{{percent}}% completado",
-      "steps": {
-        "profile": "Completa el perfil de tu agencia",
-        "first_property": "Agrega tu primera propiedad en consignación",
-        "invite_agent": "Invita a un agente a tu equipo",
-        "first_collection": "Registra tu primer cobro"
-      },
-      "actions": {
-        "edit": "Editar",
-        "add": "Agregar",
-        "invite": "Invitar",
-        "view": "Ver cobros"
-      }
-    },
-    "wizard": {
-      "title": "Configura tu agencia",
-      "subtitle": "Solo tomará un par de minutos",
-      "close": "Cerrar wizard",
-      "step1Title": "Información básica",
-      "step1Desc": "Completa el perfil de tu agencia",
-      "step2Title": "Configuración operacional",
-      "step2Desc": "Define tus parámetros de operación",
-      "step3Title": "Invitar primer miembro",
-      "step3Desc": "Opcional — agrega a tu equipo",
-      "optional": "Opcional",
-      "saving": "Guardando...",
-      "sending": "Enviando...",
-      "skip": "Omitir por ahora",
-      "sendInvitation": "Enviar invitación",
-      "complete": "¡Agencia configurada!",
-      "completeRedirecting": "Tu agencia está lista. Redirigiendo al panel...",
-      "inviteError": "No se pudo enviar la invitación. Puedes intentarlo más tarde desde Configuración.",
-      "inviteMember": "Invita a tu primer colaborador. Recibirán un correo para unirse a tu agencia. Este paso es completamente opcional.",
-      "memberEmail": "Email del miembro",
-      "memberEmailPlaceholder": "colaborador@tuagencia.com",
-      "memberRole": "Rol",
-      "operationsDesc": "Configura los valores por defecto para tu operación. Puedes cambiarlos en cualquier momento desde Configuración."
     }
   }
 }

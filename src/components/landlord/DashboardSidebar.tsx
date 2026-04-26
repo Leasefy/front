@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { SquaresFour, Buildings, Users, Chat, Gear, SignOut, List, X, CaretRight, Sparkle, FileText, House, Bell, Calendar } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -98,9 +98,18 @@ interface SidebarContentProps {
 
 function SidebarContent({ onItemClick }: SidebarContentProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { subscription } = useMySubscription();
   const { unreadCount } = useUnreadMessages();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      window.location.replace('/auth');
+    }
+  };
 
   const isActive = (item: NavItemDef) => {
     if (item.exact) {
@@ -148,8 +157,8 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
         })}
       </nav>
 
-      {/* Upgrade CTA for free users - Premium design */}
-      {subscription?.planId === 'free' && (
+      {/* Upgrade CTA for base-tier users - Premium design */}
+      {subscription?.planId === 'starter' && (
         <div className="px-4 py-4">
           <div className="relative overflow-hidden rounded-sm bg-gradient-to-br from-foreground to-foreground/80 p-4 shadow-lg shadow-foreground/25">
             {/* Decorative elements */}
@@ -199,7 +208,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-sm transition-all duration-200"
-          onClick={logout}
+          onClick={handleLogout}
         >
           <SignOut className="w-4 h-4" />
           <span className="text-sm">Cerrar sesion</span>

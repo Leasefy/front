@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { ConditionalTheme } from "@/components/providers/ConditionalTheme";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export const metadata: Metadata = {
   title: "Publicar Propiedad",
@@ -20,8 +21,13 @@ export default function PublicarLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={children}>
-      <ConditionalTheme>{children}</ConditionalTheme>
-    </Suspense>
+    <ProtectedRoute
+      allowedRoles={['landlord', 'agency']}
+      blockedAgencyRoles={['CONTADOR', 'VIEWER']}
+    >
+      <Suspense fallback={children}>
+        <ConditionalTheme>{children}</ConditionalTheme>
+      </Suspense>
+    </ProtectedRoute>
   );
 }

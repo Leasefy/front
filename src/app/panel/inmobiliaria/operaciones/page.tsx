@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +24,7 @@ import {
   MagnifyingGlass,
   SquaresFour,
   Kanban,
+  Bell,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -58,12 +60,21 @@ import {
   MantenimientoViewer,
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
+import { ReminderConfigPanel } from '@/components/inmobiliaria/reminders/ReminderConfig';
+import { ReminderLog } from '@/components/inmobiliaria/reminders/ReminderLog';
+import type { ReminderConfig } from '@/lib/types/reminders';
+
+const DEFAULT_REMINDER_CONFIG: ReminderConfig = {
+  globalEnabled: false,
+  types: [],
+};
+import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc';
+type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc' | 'recordatorios';
 type MantenimientoViewMode = 'cards' | 'kanban';
 
 // ============================================================================
@@ -158,7 +169,7 @@ function StatCard({
  * OperacionesPage - Operations center for the inmobiliaria module
  * Route: /panel/inmobiliaria/operaciones
  */
-export default function OperacionesPage() {
+function OperacionesContent() {
   const { t } = useI18n();
 
   // API Hooks
@@ -510,6 +521,13 @@ export default function OperacionesPage() {
                 <Calculator className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.ipc')}
               </TabsTrigger>
+              <TabsTrigger
+                value="recordatorios"
+                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Recordatorios
+              </TabsTrigger>
             </TabsList>
 
             {/* Tab-specific Actions */}
@@ -521,7 +539,7 @@ export default function OperacionesPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   onClick={handleNewMantenimiento}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   {t('inmobiliaria.operaciones.maintenance.new')}
@@ -631,6 +649,16 @@ export default function OperacionesPage() {
               }}
             />
           </TabsContent>
+
+          {/* Recordatorios Tab */}
+          <TabsContent value="recordatorios" className="mt-0 p-5">
+            <FeatureGate feature="automatic-reminders">
+              <div className="space-y-6">
+                <ReminderConfigPanel config={DEFAULT_REMINDER_CONFIG} />
+                <ReminderLog entries={[]} />
+              </div>
+            </FeatureGate>
+          </TabsContent>
         </Tabs>
       </motion.div>
 
@@ -712,5 +740,13 @@ export default function OperacionesPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function OperacionesPage() {
+  return (
+    <PageGuard module="operaciones">
+      <OperacionesContent />
+    </PageGuard>
   );
 }

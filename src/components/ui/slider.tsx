@@ -49,7 +49,7 @@ const sliderRangeVariants = cva(
         success: 'bg-emerald-500',
         warning: 'bg-amber-500',
         error: 'bg-rose-500',
-        indigo: 'bg-indigo-500',
+        indigo: 'bg-indigo-600',
         gradient: 'bg-gradient-to-r from-indigo-500 to-violet-500',
       },
     },

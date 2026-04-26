@@ -213,7 +213,7 @@ export function StepPayments() {
                 <div
                   className={cn(
                     'w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'
+                    isSelected ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -258,7 +258,7 @@ export function StepPayments() {
                 className={cn(
                   'w-12 h-12 rounded-xl border font-semibold transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                    ? 'border-indigo-500 bg-indigo-600 text-white uppercase tracking-wide font-mono'
                     : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                 )}
               >

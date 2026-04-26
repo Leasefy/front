@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPlaneTilt, Phone, Envelope } from '@phosphor-icons/react';
-import type { Contract } from '@/lib/types/contract';
-import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import type { Contract, ContractStatus } from '@/lib/types/contract';
+import { getContractTypeLabel } from '@/lib/types/contract';
 import { getTemplateById } from '@/lib/constants/contract-templates';
 import { generateContractPdf } from '@/lib/utils/generate-contract-pdf';
 
@@ -90,13 +90,15 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
   const needsLandlordAction = contract.status === 'pending_landlord';
   const needsTenantAction = contract.status === 'pending_tenant';
   const isActive = contract.status === 'active';
-  const contractUrl = `/panel/${contract.propertyId}/contract/${contract.tenantId}`;
+  const contractUrl = `/panel/inmobiliaria/contratos/${contract.id}`;
 
   // Status badge config
-  const statusConfig = {
+  const statusConfig: Record<ContractStatus, { text: string; className: string }> = {
     draft: { text: 'Borrador', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
-    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-600 text-white' },
+    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-600 text-white uppercase tracking-wide font-mono' },
     pending_tenant: { text: 'Esperando', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+    rejected_pending_modifications: { text: 'Cambios pedidos', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+    signed: { text: 'Firmado', className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
     active: { text: 'Activo', className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
     expired: { text: 'Expirado', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
     cancelled: { text: 'Cancelado', className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
@@ -200,7 +202,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 <div className="flex justify-between items-baseline">
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">Tipo</span>
                   <span className="text-sm text-neutral-900 dark:text-white font-medium">
-                    {CONTRACT_TYPE_LABELS[contract.type]}
+                    {getContractTypeLabel(contract)}
                   </span>
                 </div>
                 <div className="flex justify-between items-baseline">
@@ -267,7 +269,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-700">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
-                    <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
+                    <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl">
                       <PencilLine className="w-4 h-4" />
                       Firmar
                     </Button>

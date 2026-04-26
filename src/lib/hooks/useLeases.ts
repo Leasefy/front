@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { leasesApi } from '@/lib/api/leases.service';
+import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
 import type { Lease, Payment, LeaseSummaryStats } from '@/lib/types/lease';
+import type { BackendPaymentInfo } from '@/lib/api/leases.types';
+import type { BackendTenantPaymentRequest } from '@/lib/api/tenant-payment-requests.types';
 
 // ============================================================================
 // useLeases — list leases for the authenticated user with stats & helpers
@@ -45,7 +48,7 @@ export function useLeases() {
       activeLeases: active.length,
       endingSoon: endingSoon.length,
       totalMonthlyIncome: active.reduce(
-        (sum, l) => sum + l.monthlyRent + l.adminFee,
+        (sum, l) => sum + l.monthlyRent + (l.adminFee ?? 0),
         0
       ),
       pendingPayments: 0,
@@ -218,4 +221,84 @@ export function useMyPayments() {
     getForLease,
     getNextPayment,
   };
+}
+
+// ============================================================================
+// useMyPaymentRequests — TenantPaymentRequest del tenant (fuente única del
+// historial: incluye PENDING_VALIDATION, APPROVED, REJECTED, etc).
+// ============================================================================
+
+export function useMyPaymentRequests() {
+  const [requests, setRequests] = useState<BackendTenantPaymentRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRequests = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await tenantPaymentRequestsApi.getMine();
+      setRequests(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error cargando pagos';
+      setError(message);
+      setRequests([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  const getForLease = useCallback(
+    (leaseId: string) => requests.filter((r) => r.leaseId === leaseId),
+    [requests]
+  );
+
+  return {
+    requests,
+    isLoading,
+    error,
+    refetch: fetchRequests,
+    getForLease,
+  };
+}
+
+// ============================================================================
+// useLeasePaymentInfo — info del período actual del lease (monto, status,
+// motivo de rechazo). Necesario para gating del CTA "Pagar arriendo".
+// ============================================================================
+
+export function useLeasePaymentInfo(leaseId: string | null) {
+  const [info, setInfo] = useState<BackendPaymentInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchInfo = useCallback(async () => {
+    if (!leaseId) {
+      setInfo(null);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await leasesApi.getPaymentInfo(leaseId);
+      setInfo(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error cargando info de pago';
+      setError(message);
+      setInfo(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [leaseId]);
+
+  useEffect(() => {
+    fetchInfo();
+  }, [fetchInfo]);
+
+  return { info, isLoading, error, refetch: fetchInfo };
 }

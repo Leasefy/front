@@ -141,7 +141,7 @@ export function AgenteFilters({
           <Funnel className="w-4 h-4" />
           <span className="text-sm font-medium">{t('inmobiliaria.agente.filters')}</span>
           {activeFiltersCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-xs font-bold min-w-[20px] text-center">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
             </span>
           )}
@@ -169,7 +169,7 @@ export function AgenteFilters({
                     className={cn(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.role !== 'all'
-                        ? 'bg-indigo-500 text-white'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                         : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
@@ -213,7 +213,7 @@ export function AgenteFilters({
                     className={cn(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.status !== 'all'
-                        ? 'bg-indigo-500 text-white'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                         : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >
@@ -257,7 +257,7 @@ export function AgenteFilters({
                     className={cn(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.sortBy !== 'name'
-                        ? 'bg-indigo-500 text-white'
+                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
                         : 'bg-background text-muted-foreground hover:bg-muted'
                     )}
                   >

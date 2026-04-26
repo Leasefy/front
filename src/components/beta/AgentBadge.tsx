@@ -68,10 +68,10 @@ const COLOR_CLASSES: Record<
     activeBg: 'bg-pink-100 dark:bg-pink-500/20',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-500/10',
+    bg: 'bg-indigo-50 dark:bg-indigo-600/10',
     border: 'border-indigo-200 dark:border-indigo-500/30',
     text: 'text-indigo-600 dark:text-indigo-400',
-    activeBg: 'bg-indigo-100 dark:bg-indigo-500/20',
+    activeBg: 'bg-indigo-100 dark:bg-indigo-600/20',
   },
 };
 

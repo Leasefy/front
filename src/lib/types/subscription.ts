@@ -3,11 +3,20 @@
  * @module lib/types/subscription
  */
 
-// Plan identifiers
-export type PlanId = 'free' | 'pro' | 'business';
+/**
+ * Canonical plan tier identifiers — match backend enum `SubscriptionPlan`
+ * (STARTER | PRO | FLEX, lowercased for UI keys).
+ *
+ * The same three tiers apply to all planType values (TENANT | LANDLORD | AGENCY);
+ * role-specific labels are resolved via planType, not via a separate tier.
+ */
+export type PlanId = 'starter' | 'pro' | 'flex';
 
-// Agency plan identifiers
-export type AgencyPlanId = 'starter' | 'growth' | 'agency-business' | 'enterprise';
+/** @deprecated Use PlanId — tiers are unified across roles */
+export type AgencyPlanId = PlanId | 'enterprise';
+
+// Pricing model for agency plans
+export type PricingModel = 'free' | 'flat' | 'percentage' | 'custom';
 
 // Billing options
 export type BillingCycle = 'monthly' | 'yearly';
@@ -103,9 +112,9 @@ export interface SubscriptionContextValue {
 export interface PlanComparisonRow {
   feature: string;
   description: string;
-  free: boolean | string | number;
+  starter: boolean | string | number;
   pro: boolean | string | number;
-  business: boolean | string | number;
+  flex: boolean | string | number;
 }
 
 /**
@@ -115,9 +124,23 @@ export interface AgencyPlan {
   id: AgencyPlanId;
   name: string;
   description: string;
+  /** Pricing model: free, flat monthly, percentage of canon, or custom */
+  pricingModel: PricingModel;
   price: {
-    monthly: number | null; // null = custom pricing
+    monthly: number | null; // null = custom or percentage-based pricing
+    yearly: number | null; // null = custom or percentage-based pricing
   };
+  /** Per-evaluation AI pricing in COP */
+  evaluation: {
+    /** Price per evaluation in COP (0 = free/included) */
+    price: number;
+    /** Discount percentage off base price (0-100) */
+    discount: number;
+    /** Max evaluations per month (null = unlimited) */
+    limit: number | null;
+  };
+  /** For percentage-based plans: % of total monthly canon administered */
+  canonPercentage?: number;
   limits: {
     properties: number | null; // null = unlimited
     users: number | null;

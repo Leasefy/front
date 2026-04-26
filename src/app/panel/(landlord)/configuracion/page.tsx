@@ -58,7 +58,7 @@ export default function ConfiguracionPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const { subscription } = useMySubscription();
-  const currentPlanId = subscription?.planId ?? 'free';
+  const currentPlanId = subscription?.planId ?? 'starter';
   const currentPlan = getPlanById(currentPlanId);
 
   // Map UI toggle keys to backend notification setting keys
@@ -219,7 +219,7 @@ export default function ConfiguracionPage() {
                     <p className="text-indigo-600/70 dark:text-indigo-300/70 text-sm">{t('landlordSettings.subscription.currentPlan')}</p>
                     <p className="text-xl font-semibold text-indigo-900 dark:text-indigo-100">{currentPlan.name}</p>
                     <p className="text-indigo-600/60 dark:text-indigo-300/60 text-sm">
-                      {currentPlanId === 'free'
+                      {currentPlanId === 'starter'
                         ? t('landlordSettings.subscription.freePlan')
                         : `${formatCurrencyUtil(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
                     </p>
@@ -239,7 +239,7 @@ export default function ConfiguracionPage() {
                     <p className="text-xs text-indigo-600/60 dark:text-indigo-300/60">{t('landlordSettings.subscription.contracts')}</p>
                   </div>
                 </div>
-                {currentPlanId !== 'business' && (
+                {currentPlanId !== 'flex' && (
                   <Link
                     href="/panel/upgrade"
                     className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-colors flex items-center gap-2"

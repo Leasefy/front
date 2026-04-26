@@ -4,13 +4,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti, PenNib } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { useTenantApplication } from '@/lib/hooks/useApplications';
-import { useContracts } from '@/lib/hooks/useContracts';
+import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
@@ -45,6 +45,20 @@ function generateTimelineFromStatus(
   });
 
   if (status === 'submitted') return events;
+
+  if (status === 'needs_info') {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 1);
+    events.push({
+      id: `evt-${eventId++}`,
+      type: 'needs_info',
+      timestamp: d.toISOString(),
+      description: locale === 'es'
+        ? 'La inmobiliaria solicitó información adicional'
+        : 'The agency requested additional information',
+    });
+    return events;
+  }
 
   if (status === 'withdrawn') {
     const d = new Date(baseDate);
@@ -118,7 +132,8 @@ export default function ApplicationDetailPage() {
 
   const applicationId = params.applicationId as string;
   const { application, isLoading, error } = useTenantApplication(applicationId);
-  const { contracts } = useContracts();
+  const responseSubmitted = false; // will be true after navigating to /completar and coming back
+  const { contract: linkedContract } = useContractByApplication(applicationId);
 
   // Loading state
   if (isLoading) {
@@ -161,6 +176,7 @@ export default function ApplicationDetailPage() {
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof CheckCircle }> = {
     submitted: { label: locale === 'es' ? 'Enviada' : 'Submitted', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: PaperPlaneTilt },
     under_review: { label: locale === 'es' ? 'En revisión' : 'Under review', color: 'text-amber-600', bgColor: 'bg-amber-100', icon: Eye },
+    needs_info: { label: locale === 'es' ? 'Info. requerida' : 'Info required', color: 'text-orange-600', bgColor: 'bg-orange-100', icon: Warning },
     pre_approved: { label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', color: 'text-indigo-600', bgColor: 'bg-indigo-100', icon: ThumbsUp },
     approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-emerald-600', bgColor: 'bg-emerald-100', icon: Confetti },
     rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-red-600', bgColor: 'bg-red-100', icon: XCircle },
@@ -176,6 +192,7 @@ export default function ApplicationDetailPage() {
 
   const getCurrentStepIndex = () => {
     const statusOrder = ['submitted', 'under_review', 'pre_approved', 'approved'];
+    if (application.status === 'needs_info') return 0; // stays at "submitted" in the stepper
     return statusOrder.indexOf(application.status);
   };
 
@@ -211,6 +228,8 @@ export default function ApplicationDetailPage() {
         return PaperPlaneTilt;
       case 'under_review':
         return Eye;
+      case 'needs_info':
+        return Warning;
       case 'documents_verified':
         return SealCheck;
       case 'pre_approved':
@@ -236,10 +255,9 @@ export default function ApplicationDetailPage() {
   const status = statusConfig[application.status] || statusConfig.submitted;
   const StatusIcon = status.icon;
 
-  // Find pending_tenant contract for this application's property
-  const pendingContract = application.status === 'approved' && property
-    ? contracts.find(c => c.propertyId === property.id && c.status === 'pending_tenant')
-    : null;
+  // Use the contract tied to this application directly via GET /contracts/by-application/:id.
+  // Antes se buscaba por propertyId, lo que podía traer un contrato equivocado.
+  const contract = application.status === 'approved' ? linkedContract : null;
 
   // Generate timeline from status
   const events = generateTimelineFromStatus(application.status, application.submittedAt, locale);
@@ -388,52 +406,274 @@ export default function ApplicationDetailPage() {
                 </div>
               )}
 
-              {/* Final Status Message */}
-              {application.status === 'approved' && (
-                pendingContract ? (
-                  <div className="mt-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <PenNib className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-indigo-800 dark:text-indigo-300">
-                          {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
-                        </p>
-                        <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
-                          {locale === 'es'
-                            ? 'El propietario ya firmó el contrato. Solo falta tu firma para activarlo.'
-                            : 'The landlord has signed the contract. Only your signature is needed to activate it.'}
-                        </p>
-                        <Link
-                          href={`/inquilino/contratos/${pendingContract.id}/firmar`}
-                          className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-semibold transition-colors"
-                        >
-                          <PenNib className="w-4 h-4" />
-                          {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
-                        </Link>
+              {/* Final Status Message — approved: depende del contrato */}
+              {application.status === 'approved' && (() => {
+                const contractStatus = contract?.status;
+
+                // Sin contrato todavía: el landlord no lo creó.
+                if (!contract) {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <Confetti className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                            {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
+                          </p>
+                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                            {locale === 'es'
+                              ? 'El propietario está preparando el contrato. Te avisaremos cuando esté listo para firmar.'
+                              : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                        <Confetti className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-emerald-800 dark:text-emerald-300">
-                          {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
-                        </p>
-                        <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
-                          {locale === 'es'
-                            ? 'El propietario te contactará para coordinar la firma del contrato.'
-                            : 'The landlord will contact you to coordinate the contract signing.'}
-                        </p>
+                  );
+                }
+
+                // Pendiente firma del tenant → CTA principal (firmá primero — flow tenant-first).
+                if (contractStatus === 'pending_tenant') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                          <PenNib className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-indigo-800 dark:text-indigo-300">
+                            {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
+                          </p>
+                          <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                            {locale === 'es'
+                              ? 'Revisá el contrato y firmá. Después el propietario firmará para cerrar el proceso.'
+                              : 'Review the contract and sign. Then the landlord will sign to close the process.'}
+                          </p>
+                          <Link
+                            href={`/inquilino/contratos/${contract.id}/firmar`}
+                            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            <PenNib className="w-4 h-4" />
+                            {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
+                          </Link>
+                        </div>
                       </div>
                     </div>
+                  );
+                }
+
+                // DRAFT: landlord aún no envió el contrato.
+                if (contractStatus === 'draft') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-amber-800 dark:text-amber-300">
+                            {locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared'}
+                          </p>
+                          <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                            {locale === 'es'
+                              ? 'El propietario está preparando el contrato. Te avisamos cuando esté listo para firmar.'
+                              : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // PENDING_LANDLORD_SIGNATURE: tenant ya firmó, esperando al landlord.
+                if (contractStatus === 'pending_landlord') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <SealCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                            {locale === 'es' ? 'Ya firmaste el contrato' : 'You already signed the contract'}
+                          </p>
+                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                            {locale === 'es'
+                              ? 'Esperando que el propietario firme para cerrar el proceso.'
+                              : 'Waiting for the landlord to sign to close the process.'}
+                          </p>
+                          <Link
+                            href={`/inquilino/contratos/${contract.id}/firmar`}
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                          >
+                            {locale === 'es' ? 'Ver contrato' : 'View contract'}
+                            <ArrowUpRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // El propietario está aplicando los cambios que pediste antes de firmar.
+                if (contractStatus === 'rejected_pending_modifications') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                          <ArrowClockwise className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-amber-800 dark:text-amber-300">
+                            {locale === 'es' ? 'El propietario está aplicando los cambios' : 'The landlord is applying the changes'}
+                          </p>
+                          <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                            {locale === 'es'
+                              ? 'Pediste modificaciones al contrato. Te avisamos cuando el propietario las aplique así podés revisarlo y firmar.'
+                              : 'You requested modifications. We\'ll notify you once the landlord applies them so you can review and sign.'}
+                          </p>
+                          <Link
+                            href={`/inquilino/contratos/${contract.id}/firmar`}
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                          >
+                            {locale === 'es' ? 'Ver contrato' : 'View contract'}
+                            <ArrowUpRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Ambos firmaron, esperando que empiece a regir.
+                if (contractStatus === 'signed') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <SealCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                            {locale === 'es' ? '¡Contrato firmado por ambas partes!' : 'Contract signed by both parties!'}
+                          </p>
+                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                            {locale === 'es'
+                              ? 'Esperando que el contrato comience a regir en la fecha acordada.'
+                              : 'Waiting for the contract to start on the agreed date.'}
+                          </p>
+                          <Link
+                            href={`/inquilino/contratos/${contract.id}/firmar`}
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                          >
+                            {locale === 'es' ? 'Ver contrato' : 'View contract'}
+                            <ArrowUpRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Contrato vigente o expirado → acceso al detalle.
+                if (contractStatus === 'active' || contractStatus === 'expired') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <SealCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                            {locale === 'es'
+                              ? (contractStatus === 'active' ? 'Contrato vigente' : 'Contrato expirado')
+                              : (contractStatus === 'active' ? 'Contract active' : 'Contract expired')}
+                          </p>
+                          <Link
+                            href={`/inquilino/contratos/${contract.id}/firmar`}
+                            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                          >
+                            {locale === 'es' ? 'Ver contrato' : 'View contract'}
+                            <ArrowUpRight className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Cancelled (raro — normalmente el backend pasa la app a CONTRACT_FAILED).
+                if (contractStatus === 'cancelled') {
+                  return (
+                    <div className="mt-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-rose-500 flex items-center justify-center flex-shrink-0">
+                          <XCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-rose-800 dark:text-rose-300">
+                            {locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled'}
+                          </p>
+                          <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">
+                            {locale === 'es'
+                              ? 'El proceso se cerró. Para intentar de nuevo tenés que crear una nueva aplicación.'
+                              : 'The process is closed. To try again you need to create a new application.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
+
+              {(application.status === 'needs_info') && !responseSubmitted && (
+                <div className="mt-6 p-4 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                      <Warning className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-orange-800 dark:text-orange-300">
+                        {locale === 'es' ? 'La inmobiliaria solicitó más información' : 'The agency requested more information'}
+                      </p>
+                      <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                        {locale === 'es'
+                          ? 'Revisá la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
+                          : 'Check the Actions section to complete what was requested and notify the agency.'}
+                      </p>
+                      <button
+                        onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
+                        className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        <ArrowClockwise className="w-4 h-4" />
+                        {locale === 'es' ? 'Completar información' : 'Complete information'}
+                      </button>
+                    </div>
                   </div>
-                )
+                </div>
+              )}
+
+              {(application.status === 'needs_info') && responseSubmitted && (
+                <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                        {locale === 'es' ? 'Respuesta enviada a la inmobiliaria' : 'Response sent to the agency'}
+                      </p>
+                      <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                        {locale === 'es'
+                          ? 'La inmobiliaria fue notificada y revisará tu información a la brevedad.'
+                          : 'The agency has been notified and will review your information shortly.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {application.status === 'rejected' && (
@@ -442,15 +682,22 @@ export default function ApplicationDetailPage() {
                     <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
                       <XCircle className="w-5 h-5 text-white" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-semibold text-red-800 dark:text-red-300">
-                        {locale === 'es' ? 'Aplicación no aprobada' : 'Application not approved'}
+                        {locale === 'es' ? 'Proceso cerrado' : 'Process closed'}
                       </p>
                       <p className="text-sm text-red-700 dark:text-red-400 mt-1">
                         {locale === 'es'
-                          ? 'No te desanimes. Puedes explorar otras propiedades disponibles.'
-                          : 'Don\'t be discouraged. You can explore other available properties.'}
+                          ? 'Esta aplicación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
+                          : 'This application was closed. The property may have been rented to another candidate or the landlord chose differently. It\'s not a rejection of your profile — you\'ll receive alternatives shortly.'}
                       </p>
+                      <Link
+                        href="/inquilino/explorar"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        {locale === 'es' ? 'Explorar otras propiedades' : 'Explore other properties'}
+                        <ArrowUpRight className="w-4 h-4" />
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -582,7 +829,7 @@ export default function ApplicationDetailPage() {
 
               <div className="space-y-3">
                 <button
-                  onClick={() => router.push('/inquilino/mensajes')}
+                  onClick={() => router.push(`/inquilino/mensajes?applicationId=${applicationId}`)}
                   className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center group-hover:bg-indigo-700 transition-colors">
@@ -612,6 +859,25 @@ export default function ApplicationDetailPage() {
                   </div>
                 </button>
 
+                {application.status === 'needs_info' && !responseSubmitted && (
+                  <button
+                    onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
+                    className="flex items-center gap-3 w-full p-3 rounded-2xl bg-orange-50 dark:bg-orange-950/40 hover:shadow-md transition-all group border border-orange-200 dark:border-orange-800/60"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
+                      <ArrowClockwise className="w-5 h-5 text-orange-600 dark:text-orange-400 group-hover:text-white transition-colors" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                        {locale === 'es' ? 'Completar información' : 'Complete information'}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {locale === 'es' ? 'La inmobiliaria aguarda tu respuesta' : 'Agency awaiting your response'}
+                      </p>
+                    </div>
+                  </button>
+                )}
+
                 {!isFinalStatus && (
                   <button className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all group border border-transparent hover:border-red-200 dark:hover:border-red-800/60">
                     <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
@@ -631,6 +897,31 @@ export default function ApplicationDetailPage() {
             </motion.div>
 
             {/* Status Tips */}
+            {application.status === 'needs_info' && !responseSubmitted && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="rounded-3xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 p-6"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+                    <Warning className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-orange-800 dark:text-orange-300 mb-1">
+                      {locale === 'es' ? 'Acción requerida' : 'Action required'}
+                    </p>
+                    <p className="text-sm text-orange-700 dark:text-orange-400">
+                      {locale === 'es'
+                        ? 'La inmobiliaria necesita más información para continuar con tu solicitud. Hacé clic en "Completar información" para responder.'
+                        : 'The agency needs more information to proceed with your application. Click "Complete information" to respond.'}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {application.status === 'under_review' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -725,6 +1016,8 @@ export default function ApplicationDetailPage() {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }

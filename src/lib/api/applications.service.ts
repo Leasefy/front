@@ -9,6 +9,11 @@ import type {
   BackendDocument,
   CreateApplicationDto,
   PaginatedApplications,
+  LandlordCandidate,
+  LandlordApplicationDetail,
+  EvaluationResult,
+  EvaluationTriggerResponse,
+  SmartMatchingResponse,
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
@@ -45,6 +50,9 @@ const STATUS_MAP: Record<string, Application['status']> = {
   SUBMITTED: 'submitted',
   UNDER_REVIEW: 'under_review',
   INFO_REQUESTED: 'under_review',
+  NEEDS_INFO: 'under_review',
+  PREAPPROVED: 'under_review',
+  PRE_APPROVED: 'under_review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'rejected',
@@ -54,11 +62,14 @@ const STATUS_TO_TENANT_MAP: Record<string, TenantApplicationStatus> = {
   DRAFT: 'submitted',
   SUBMITTED: 'submitted',
   UNDER_REVIEW: 'under_review',
-  INFO_REQUESTED: 'under_review',
+  INFO_REQUESTED: 'needs_info',
+  NEEDS_INFO: 'needs_info',
+  PREAPPROVED: 'pre_approved',
   PRE_APPROVED: 'pre_approved',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'withdrawn',
+  CONTRACT_FAILED: 'contract_failed',
 };
 
 // ============================================================================
@@ -201,14 +212,36 @@ export const applicationsApi = {
     return result.map(mapBackendApplication);
   },
 
+  /**
+   * Update a single step of an application (NEEDS_INFO / DRAFT flow)
+   * Step 1 → personal, 2 → employment, 3 → income, 4 → references
+   */
+  async updateStep(
+    id: string,
+    step: 1 | 2 | 3 | 4,
+    data: Record<string, unknown>
+  ): Promise<void> {
+    await apiClient.patch(`/applications/${id}/steps/${step}`, data);
+  },
+
   /** Withdraw an application */
   async withdraw(id: string): Promise<void> {
     await apiClient.post(`/applications/${id}/withdraw`);
   },
 
-  /** Respond to info request */
-  async respondToInfoRequest(id: string, message: string): Promise<void> {
-    await apiClient.post(`/applications/${id}/respond-info`, { message });
+  /**
+   * Respond to an info request.
+   * When readyForReview=true the backend transitions NEEDS_INFO → UNDER_REVIEW.
+   */
+  async respondToInfoRequest(
+    id: string,
+    message: string,
+    readyForReview = false
+  ): Promise<void> {
+    await apiClient.post(`/applications/${id}/respond-info`, {
+      message,
+      readyForReview,
+    });
   },
 
   /** Upload a document for an application (multipart) */
@@ -242,5 +275,138 @@ export const applicationsApi = {
   /** Get documents for an application */
   async getDocuments(applicationId: string): Promise<BackendDocument[]> {
     return apiClient.get<BackendDocument[]>(`/documents/application/${applicationId}`);
+  },
+
+  /**
+   * Delete a specific document from an application.
+   * DELETE /applications/:applicationId/documents/:documentId
+   */
+  async deleteDocument(applicationId: string, documentId: string): Promise<void> {
+    await apiClient.delete(`/applications/${applicationId}/documents/${documentId}`);
+  },
+
+};
+
+// ============================================================================
+// Landlord / Agency API — manage candidates from the panel
+// ============================================================================
+
+export const landlordApplicationsApi = {
+  /** GET /landlord/properties/:propertyId/candidates */
+  async getCandidates(propertyId: string): Promise<LandlordCandidate[]> {
+    return apiClient.get<LandlordCandidate[]>(
+      `/landlord/properties/${propertyId}/candidates`
+    );
+  },
+
+  /** GET /landlord/applications/:applicationId */
+  async getDetail(applicationId: string): Promise<LandlordApplicationDetail> {
+    return apiClient.get<LandlordApplicationDetail>(
+      `/landlord/applications/${applicationId}`
+    );
+  },
+
+  /** POST /landlord/applications/:id/preapprove */
+  async preapprove(applicationId: string, data?: object): Promise<void> {
+    await apiClient.post(
+      `/landlord/applications/${applicationId}/preapprove`,
+      data ?? {}
+    );
+  },
+
+  /** POST /landlord/applications/:id/approve */
+  async approve(applicationId: string, data?: object): Promise<void> {
+    await apiClient.post(
+      `/landlord/applications/${applicationId}/approve`,
+      data ?? {}
+    );
+  },
+
+  /** POST /landlord/applications/:id/reject */
+  async reject(applicationId: string, reason: string): Promise<void> {
+    await apiClient.post(`/landlord/applications/${applicationId}/reject`, {
+      reason,
+    });
+  },
+
+  /** POST /landlord/applications/:id/request-info */
+  async requestInfo(applicationId: string, message: string): Promise<void> {
+    await apiClient.post(
+      `/landlord/applications/${applicationId}/request-info`,
+      { message }
+    );
+  },
+
+  /** POST /landlord/applications/:id/notes */
+  async saveNote(applicationId: string, content: string): Promise<void> {
+    await apiClient.post(`/landlord/applications/${applicationId}/notes`, {
+      content,
+    });
+  },
+
+  /** DELETE /landlord/applications/:id/notes */
+  async deleteNote(applicationId: string): Promise<void> {
+    await apiClient.delete(`/landlord/applications/${applicationId}/notes`);
+  },
+
+  // ==========================================================================
+  // AI Agent endpoints
+  // ==========================================================================
+
+  /**
+   * Trigger a re-evaluation of the applicant via the Tenant-Scoring agent.
+   * POST /evaluations/:applicationId → 202 Accepted (async).
+   * Backend may return 400 if the agency has no evaluation credits left.
+   */
+  async triggerReevaluation(applicationId: string): Promise<EvaluationTriggerResponse> {
+    return apiClient.post<EvaluationTriggerResponse>(`/evaluations/${applicationId}`, {});
+  },
+
+  /**
+   * Get the consolidated evaluation result for an application.
+   * GET /evaluations/:applicationId/result
+   *
+   * This is the landlord/agency-facing endpoint. The /scoring/* endpoints are
+   * tenant-only (they 403 for any other role).
+   */
+  async getEvaluationResult(applicationId: string): Promise<EvaluationResult> {
+    // Normalize the backend response: status comes uppercase, score/level may
+    // be at root or nested under `result`, depending on completion stage.
+    const raw = await apiClient.get<Record<string, unknown>>(`/evaluations/${applicationId}/result`);
+    const nested = (raw.result as Record<string, unknown> | undefined) ?? {};
+    const status = typeof raw.status === 'string' ? raw.status.toLowerCase() : undefined;
+    return {
+      ...(raw as unknown as EvaluationResult),
+      status: status as EvaluationResult['status'],
+      totalScore: (raw.totalScore as number | undefined) ?? (raw.score as number | undefined) ?? (nested.score as number | undefined),
+      level: (raw.level as EvaluationResult['level']) ?? (nested.level as EvaluationResult['level']),
+      requires_manual_review: (raw.requires_manual_review as boolean | undefined) ?? (nested.requires_manual_review as boolean | undefined),
+      integrity_flags: (raw.integrity_flags as EvaluationResult['integrity_flags']) ?? (nested.integrity_flags as EvaluationResult['integrity_flags']),
+      observations: (raw.observations as EvaluationResult['observations']) ?? (nested.observations as EvaluationResult['observations']),
+      score_breakdown: (raw.score_breakdown as EvaluationResult['score_breakdown']) ?? (nested.score_breakdown as EvaluationResult['score_breakdown']),
+    };
+  },
+
+  /**
+   * Get a short-lived signed download URL for a document (TTL 60s).
+   * GET /applications/:applicationId/documents/:documentId/download
+   */
+  async getDocumentDownloadUrl(applicationId: string, documentId: string): Promise<{ url: string; expiresAt: string }> {
+    return apiClient.get(`/applications/${applicationId}/documents/${documentId}/download`);
+  },
+
+  /**
+   * Trigger Smart-Matching agent on-demand: find compatible properties in the
+   * landlord's portfolio for this candidate.
+   * POST /applications/:id/smart-matching
+   */
+  async triggerSmartMatching(
+    applicationId: string,
+    limit = 10
+  ): Promise<SmartMatchingResponse> {
+    return apiClient.post<SmartMatchingResponse>(
+      `/applications/${applicationId}/smart-matching`,
+      { limit }
+    );
   },
 };

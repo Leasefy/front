@@ -12,23 +12,27 @@
  * Maps to landlord actions but with tenant-friendly naming
  */
 export type TenantApplicationStatus =
-  | 'submitted'     // Application sent, awaiting review
-  | 'under_review'  // Landlord is reviewing
-  | 'pre_approved'  // Initial approval, pending final decision
-  | 'approved'      // Final approval - accepted!
-  | 'rejected'      // Declined
-  | 'withdrawn';    // Tenant cancelled application
+  | 'submitted'        // Application sent, awaiting review
+  | 'under_review'     // Landlord is reviewing
+  | 'needs_info'       // Agency requested additional information from tenant
+  | 'pre_approved'     // Initial approval, pending final decision
+  | 'approved'         // Final approval - accepted!
+  | 'rejected'         // Declined
+  | 'withdrawn'        // Tenant cancelled application
+  | 'contract_failed'; // Contract flow collapsed (definitive rejection or cancellation) — terminal
 
 /**
  * Spanish labels for tenant-facing status display
  */
 export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> = {
   submitted: 'Enviada',
-  under_review: 'En revision',
+  under_review: 'En revisión',
+  needs_info: 'Info. requerida',
   pre_approved: 'Pre-aprobada',
   approved: 'Aprobada',
   rejected: 'Rechazada',
   withdrawn: 'Retirada',
+  contract_failed: 'Contrato fallido',
 };
 
 /**
@@ -38,10 +42,12 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
 export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> = {
   submitted: 'bg-muted text-foreground',
   under_review: 'bg-plan-status-blue-bg text-plan-status-blue',
+  needs_info: 'bg-orange-100 text-orange-700',
   pre_approved: 'bg-plan-status-purple-bg text-plan-status-purple',
   approved: 'bg-plan-status-green-bg text-plan-status-green',
   rejected: 'bg-plan-status-red-bg text-plan-status-red',
   withdrawn: 'bg-plan-status-yellow-bg text-plan-status-yellow',
+  contract_failed: 'bg-plan-status-red-bg text-plan-status-red',
 };
 
 // ============================================================================
@@ -100,10 +106,12 @@ export interface TenantApplication {
 const STATUS_PROGRESS: Record<TenantApplicationStatus, number> = {
   submitted: 20,
   under_review: 40,
+  needs_info: 30,
   pre_approved: 70,
   approved: 100,
   rejected: 100,
   withdrawn: 100,
+  contract_failed: 100,
 };
 
 /**
@@ -116,16 +124,21 @@ export function getStatusProgress(status: TenantApplicationStatus): number {
 }
 
 /**
- * Check if application is in a final state
+ * Terminal states — la aplicación ya no va a cambiar de status.
+ * `approved` NO es terminal: el proceso sigue en el flujo de contrato hasta que se active o colapse.
  */
 export function isApplicationFinal(status: TenantApplicationStatus): boolean {
-  return status === 'approved' || status === 'rejected' || status === 'withdrawn';
+  return status === 'rejected' || status === 'withdrawn' || status === 'contract_failed';
 }
 
 /**
- * Check if application can be withdrawn
- * Only non-final applications can be withdrawn
+ * El tenant puede retirar la aplicación sólo antes de que lo aprueben. Una vez `approved`
+ * existe trabajo adicional de contrato — allí corresponde rechazar/cancelar contrato, no
+ * retirar la aplicación.
  */
 export function canWithdraw(status: TenantApplicationStatus): boolean {
-  return !isApplicationFinal(status);
+  return status === 'submitted'
+    || status === 'under_review'
+    || status === 'needs_info'
+    || status === 'pre_approved';
 }

@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -95,7 +96,7 @@ const TAB_ICONS: Record<ConfigTab, React.ElementType> = {
  * ConfiguracionPage - Agency configuration hub
  * Route: /panel/inmobiliaria/configuracion
  */
-export default function ConfiguracionPage() {
+function ConfiguracionContent() {
   // API Hooks
   const { config, isLoading: configLoading, refetch: refetchConfig } = useInmobiliariaConfig();
   const { users, isLoading: usersLoading, refetch: refetchUsers } = useAgencyUsers();
@@ -717,5 +718,13 @@ export default function ConfiguracionPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function ConfiguracionPage() {
+  return (
+    <PageGuard adminOnly>
+      <ConfiguracionContent />
+    </PageGuard>
   );
 }

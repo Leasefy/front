@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { applicationsApi } from '@/lib/api/applications.service';
+import { contractsApi } from '@/lib/api/contracts.service';
 import type { TenantApplicationView } from '@/lib/api/applications.service';
 import type { Application } from '@/lib/types/application';
+import type { Contract } from '@/lib/types/contract';
+import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
 
 // ============================================================================
 // useMyApplications - tenant's own applications
@@ -40,10 +43,31 @@ export function useMyApplications() {
 // useTenantApplications - tenant display-oriented list with active/completed
 // ============================================================================
 
-const ACTIVE_STATUSES = new Set(['submitted', 'under_review', 'pre_approved']);
+/**
+ * Clasifica una aplicación como "completada" según:
+ * - Estados terminales de la app (rejected/withdrawn/contract_failed).
+ * - `approved` solo se considera completada cuando el contrato ya está vigente
+ *   (`active` o `expired`). Mientras el proceso de contrato esté en curso
+ *   (draft/pending firmas/rejected_pending_modifications/signed) la app sigue "en proceso".
+ *
+ * Esto acompaña la UX: el tenant sigue viendo la aplicación en "En Proceso" hasta que
+ * el contrato realmente arranque a regir.
+ */
+function isApplicationCompleted(
+  status: TenantApplicationStatus,
+  contract: Contract | undefined,
+): boolean {
+  if (status === 'rejected' || status === 'withdrawn' || status === 'contract_failed') return true;
+  if (status === 'approved') {
+    if (!contract) return false;
+    return contract.status === 'active' || contract.status === 'expired';
+  }
+  return false;
+}
 
 export function useTenantApplications() {
   const [applications, setApplications] = useState<TenantApplicationView[]>([]);
+  const [contractsByApp, setContractsByApp] = useState<Record<string, Contract>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +75,23 @@ export function useTenantApplications() {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await applicationsApi.getMineForDisplay();
-      setApplications(result);
+      // Traemos apps y contratos en paralelo: el criterio active/completed para `approved`
+      // depende del status del contrato asociado.
+      const [apps, contracts] = await Promise.all([
+        applicationsApi.getMineForDisplay(),
+        contractsApi.getMine().catch(() => [] as Contract[]),
+      ]);
+      setApplications(apps);
+      const map: Record<string, Contract> = {};
+      for (const c of contracts) {
+        if (c.applicationId) map[c.applicationId] = c;
+      }
+      setContractsByApp(map);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando aplicaciones';
       setError(message);
       setApplications([]);
+      setContractsByApp({});
     } finally {
       setIsLoading(false);
     }
@@ -67,16 +102,16 @@ export function useTenantApplications() {
   }, [fetchMine]);
 
   const active = useMemo(
-    () => applications.filter((a) => ACTIVE_STATUSES.has(a.status)),
-    [applications]
+    () => applications.filter((a) => !isApplicationCompleted(a.status, contractsByApp[a.id])),
+    [applications, contractsByApp],
   );
 
   const completed = useMemo(
-    () => applications.filter((a) => !ACTIVE_STATUSES.has(a.status)),
-    [applications]
+    () => applications.filter((a) => isApplicationCompleted(a.status, contractsByApp[a.id])),
+    [applications, contractsByApp],
   );
 
-  return { applications, active, completed, isLoading, error, refetch: fetchMine };
+  return { applications, active, completed, contractsByApp, isLoading, error, refetch: fetchMine };
 }
 
 // ============================================================================

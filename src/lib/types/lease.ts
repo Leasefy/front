@@ -25,12 +25,18 @@ export interface Lease {
 
   // Terms
   monthlyRent: number;
-  adminFee: number;
-  guaranteeType: 'poliza' | 'codeudor';
-  guaranteeDetails?: string;
+  deposit?: number;
   startDate: string;
   endDate: string;
-  paymentDueDay: number; // Day of month (1-31)
+  paymentDay: number; // Day of month (1-28)
+
+  // ─── Campos legacy / no modelados en backend ────────
+  /** @deprecated backend no modela adminFee en lease. Si necesitás, viene de la property. */
+  adminFee?: number;
+  /** @deprecated backend no modela garantías en lease todavía. */
+  guaranteeType?: 'poliza' | 'codeudor';
+  /** @deprecated backend no modela garantías en lease todavía. */
+  guaranteeDetails?: string;
 
   // Property info (denormalized for display)
   propertyTitle: string;

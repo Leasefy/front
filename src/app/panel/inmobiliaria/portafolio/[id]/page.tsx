@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -145,7 +146,7 @@ function Modal({
  * Consignacion Detail Page
  * Route: /panel/inmobiliaria/portafolio/[id]
  */
-export default function ConsignacionDetailPage() {
+function ConsignacionDetailContent() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -392,5 +393,13 @@ export default function ConsignacionDetailPage() {
         />
       </Modal>
     </div>
+  );
+}
+
+export default function ConsignacionDetailPage() {
+  return (
+    <PageGuard module="portafolio">
+      <ConsignacionDetailContent />
+    </PageGuard>
   );
 }

@@ -237,7 +237,7 @@ export function TenantProfileProvider({ children }: TenantProfileProviderProps) 
           hasIdDocument: !!mostRecentApp.documents?.idDocument?.fileName,
           hasIncomeProof: !!mostRecentApp.documents?.incomeProof?.fileName,
           hasEmploymentLetter: !!mostRecentApp.documents?.employmentLetter?.fileName,
-          hasBankStatements: !!mostRecentApp.documents?.bankStatements?.fileName,
+          hasBankStatements: !!mostRecentApp.documents?.bankStatement?.fileName,
 
           // Infer preferences from applied properties
           preferredCities: [],
@@ -332,7 +332,7 @@ interface ApplicationData {
     idDocument?: { fileName?: string };
     incomeProof?: { fileName?: string };
     employmentLetter?: { fileName?: string };
-    bankStatements?: { fileName?: string };
+    bankStatement?: { fileName?: string };
   };
 }
 
@@ -380,7 +380,7 @@ function calculateNumericScore(app: ApplicationData): number {
   if (docs?.idDocument?.fileName) score += 2.5;
   if (docs?.incomeProof?.fileName) score += 2.5;
   if (docs?.employmentLetter?.fileName) score += 2.5;
-  if (docs?.bankStatements?.fileName) score += 2.5;
+  if (docs?.bankStatement?.fileName) score += 2.5;
 
   return Math.min(100, Math.max(0, Math.round(score)));
 }

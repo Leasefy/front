@@ -88,7 +88,10 @@ function mapSupabaseUser(session: Session): User {
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
     role: 'tenant',
-    onboardingCompleted: false,
+    // When the backend is unreachable we have no way to confirm onboarding status.
+    // Default to true so the user isn't incorrectly sent to the onboarding flow —
+    // the panel will gracefully degrade on its own since all API calls will fail too.
+    onboardingCompleted: true,
   }
 }
 
@@ -208,6 +211,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const supabase = getSupabase()
 
+    // Safety net: if no known auth event fires within 5s of mount, release the
+    // loader so ProtectedRoute can decide what to do with whatever state we have.
+    // Covers edge cases where Supabase never emits INITIAL_SESSION (some refresh flows).
+    const safetyTimeout = setTimeout(() => {
+      setIsLoading((prev) => {
+        if (prev) {
+          console.warn('[Auth] onAuthStateChange did not settle within 5s — releasing loader')
+        }
+        return false
+      })
+    }, 5000)
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         /** Derive hasPassword from session providers — no extra API call needed */
@@ -265,11 +280,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           await checkMfaLevel()
+          // Also refresh agency data for agency/agent roles
+          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
+            const { agency: agencyData, role } = await fetchAgency(session.access_token)
+            setAgencyState(agencyData)
+            setAgencyRole(role)
+          }
+          // CRITICAL: if the very first event on page load is TOKEN_REFRESHED
+          // (Supabase auto-refreshed the expired token before emitting INITIAL_SESSION),
+          // we must still flip isLoading to false or ProtectedRoute stays stuck forever.
+          setIsLoading(false)
         }
       }
     )
 
     return () => {
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [fetchUser, checkMfaLevel, fetchAgency])
@@ -305,9 +331,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [fetchUser])
 
   /** Sign up with email and password. Returns whether email confirmation is required. */
-  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {
     const supabase = getSupabase()
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+    })
     if (error) throw error
     const requiresConfirmation = !data.session
     return { requiresConfirmation }
@@ -350,20 +380,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(mapBackendUser(updated))
   }, [])
 
-  /** Sign out and clear state */
+  /** Sign out and clear state. Synchronous cleanup runs first; backend
+   *  cleanup (FCM, Supabase) is fire-and-forget so a hung lock or network
+   *  failure can never block the UI from logging out. */
   const signOut = useCallback(async () => {
-    // Clear local state immediately so UI updates
+    // Best-effort FCM cleanup with the token still in memory.
+    // Awaited but with a hard timeout so a slow backend can't stall logout.
+    await Promise.race([
+      removeFcmToken().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+
+    // Synchronous cleanup — must succeed even if Supabase hangs below.
+    if (typeof document !== 'undefined') {
+      document.cookie.split(';').forEach((c) => {
+        const name = c.split('=')[0]?.trim()
+        if (name && (name.startsWith('sb-') || name.startsWith('supabase'))) {
+          document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`
+          document.cookie = `${name}=; Max-Age=0; path=/`
+        }
+      })
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        Object.keys(window.localStorage)
+          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
+          .forEach((k) => window.localStorage.removeItem(k))
+        Object.keys(window.sessionStorage)
+          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
+          .forEach((k) => window.sessionStorage.removeItem(k))
+      } catch {}
+    }
+
     setAccessToken(null)
     setUser(null)
     setNeedsOnboarding(false)
-    // Remove FCM token and sign out from Supabase in background
-    removeFcmToken().catch(() => {})
+    setAgencyState(null)
+    setAgencyRole(null)
+    setMfaRequired(false)
+
+    // Fire-and-forget — never await, supabase's internal lock can hang here.
     try {
       const supabase = getSupabase()
-      await supabase.auth.signOut()
-    } catch (err) {
-      console.error('[Auth] signOut error:', err)
-    }
+      supabase?.auth.signOut({ scope: 'local' }).catch(() => {})
+    } catch {}
   }, [])
 
   const value: AuthContextType = {

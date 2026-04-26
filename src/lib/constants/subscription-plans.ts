@@ -105,8 +105,8 @@ export const PLAN_FEATURES: Record<string, Omit<PlanFeature, 'included'>> = {
 
 export const PLANS: Plan[] = [
   {
-    id: 'free',
-    name: 'Gratis',
+    id: 'starter',
+    name: 'Starter',
     description: 'Perfecto para empezar',
     price: {
       monthly: 0,
@@ -144,8 +144,8 @@ export const PLANS: Plan[] = [
     badge: 'Mas popular',
   },
   {
-    id: 'business',
-    name: 'Inversionista',
+    id: 'flex',
+    name: 'Flex',
     description: 'Para propietarios con múltiples inmuebles',
     price: {
       monthly: 299900,
@@ -392,22 +392,53 @@ export const ADD_ONS: AddOn[] = [
 // ============================================================================
 
 export const PLAN_COMPARISON: PlanComparisonRow[] = [
-  { feature: 'Propiedades', description: 'Numero de propiedades que puedes publicar', free: '1', pro: '10', business: '25' },
-  { feature: 'Contratos digitales', description: 'Genera contratos listos para firmar', free: '1/mes', pro: 'Ilimitados', business: 'Ilimitados' },
-  { feature: 'Analisis AI', description: 'Puntuacion y analisis inteligente de candidatos', free: false, pro: true, business: true },
-  { feature: 'Verificacion de documentos', description: 'Validacion automatica de identidad', free: false, pro: true, business: true },
-  { feature: 'Verificacion de antecedentes', description: 'Consulta en bases de datos oficiales', free: false, pro: true, business: true },
-  { feature: 'Soporte prioritario', description: 'Respuesta en menos de 24 horas', free: false, pro: true, business: true },
-  { feature: 'Analiticas avanzadas', description: 'Reportes de conversion y candidatos', free: false, pro: true, business: true },
-  { feature: 'Multi-propiedad', description: 'Panel unificado para todas tus propiedades', free: false, pro: false, business: true },
+  { feature: 'Propiedades', description: 'Numero de propiedades que puedes publicar', starter: '1', pro: '10', flex: '25' },
+  { feature: 'Contratos digitales', description: 'Genera contratos listos para firmar', starter: '1/mes', pro: 'Ilimitados', flex: 'Ilimitados' },
+  { feature: 'Analisis AI', description: 'Puntuacion y analisis inteligente de candidatos', starter: false, pro: true, flex: true },
+  { feature: 'Verificacion de documentos', description: 'Validacion automatica de identidad', starter: false, pro: true, flex: true },
+  { feature: 'Verificacion de antecedentes', description: 'Consulta en bases de datos oficiales', starter: false, pro: true, flex: true },
+  { feature: 'Soporte prioritario', description: 'Respuesta en menos de 24 horas', starter: false, pro: true, flex: true },
+  { feature: 'Analiticas avanzadas', description: 'Reportes de conversion y candidatos', starter: false, pro: true, flex: true },
+  { feature: 'Multi-propiedad', description: 'Panel unificado para todas tus propiedades', starter: false, pro: false, flex: true },
 ];
 
 // ============================================================================
 // Utility functions
 // ============================================================================
 
+/**
+ * Look up a plan by canonical tier id.
+ * Searches landlord PLANS first; if not found (e.g. tier is 'starter' or 'flex'
+ * coming from an agency subscription), falls back to AGENCY_PLANS mapped into
+ * the Plan shape. Guarantees a return value for any known tier.
+ */
 export function getPlanById(id: PlanId): Plan {
-  return PLANS.find((p) => p.id === id) || PLANS[0];
+  const landlordPlan = PLANS.find((p) => p.id === id);
+  if (landlordPlan) return landlordPlan;
+
+  // Fallback: agency tier — map AgencyPlan to a minimal Plan shape for UI
+  const agencyPlan = AGENCY_PLANS.find((p) => p.id === id);
+  if (agencyPlan) {
+    return {
+      id: agencyPlan.id as PlanId,
+      name: agencyPlan.name,
+      description: agencyPlan.description,
+      price: {
+        monthly: agencyPlan.price.monthly ?? 0,
+        yearly: agencyPlan.price.yearly ?? 0,
+      },
+      features: agencyPlan.features.map((f, i) => ({
+        id: `${agencyPlan.id}-feature-${i}`,
+        name: f,
+        description: '',
+        included: true,
+      })),
+      highlighted: agencyPlan.highlighted,
+      badge: agencyPlan.badge,
+    };
+  }
+
+  return PLANS[0];
 }
 
 export function getPlanFeature(planId: PlanId, featureId: string): PlanFeature | undefined {

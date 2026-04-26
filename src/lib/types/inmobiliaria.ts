@@ -1109,6 +1109,76 @@ export interface BillingInvoice {
   pdfUrl?: string;
 }
 
+// ============================================================================
+// Inmobiliaria Config endpoints — canonical shapes from the backend
+// GET /inmobiliaria/config
+// GET /inmobiliaria/config/billing
+// GET /inmobiliaria/config/billing/invoices
+// ============================================================================
+
+export interface AgencyConfigPermissions {
+  canManageBilling: boolean;
+  canManageMembers: boolean;
+  canManageIntegrations: boolean;
+}
+
+export interface AgencyConfigCounts {
+  members: number;
+  integrations: number;
+  integrationsEnabled: number;
+}
+
+export interface AgencyConfigOverview {
+  agency: {
+    id: string;
+    name: string;
+    nit?: string;
+    logo?: string;
+    [key: string]: unknown;
+  };
+  counts: AgencyConfigCounts;
+  /** Full subscription detail (null if caller is not admin) */
+  subscription: import('../api/subscriptions.types').BackendSubscription | null;
+  /** PlanEnforcementService summary (null if caller is not admin) */
+  usage: Record<string, unknown> | null;
+  permissions: AgencyConfigPermissions;
+}
+
+export interface AgencyBillingLimits {
+  maxProperties: number; // -1 = unlimited
+  maxScoringViews: number; // -1 = unlimited
+  hasPremiumScoring: boolean;
+  hasApiAccess: boolean;
+}
+
+export interface AgencyBillingDetail {
+  subscription: import('../api/subscriptions.types').BackendSubscription;
+  /** null if autoRenew is false or subscription is cancelled */
+  nextCharge: {
+    amount: number;
+    date: string;
+  } | null;
+  limits: AgencyBillingLimits;
+}
+
+export interface AgencyInvoice {
+  id: string;
+  amount: number;
+  cycle: 'MONTHLY' | 'ANNUAL';
+  status: 'SUCCESS' | 'PENDING' | 'FAILED';
+  pseTransactionId?: string;
+  periodStart: string;
+  periodEnd: string;
+  createdAt: string;
+  planName: string;
+  planTier: 'STARTER' | 'PRO' | 'FLEX';
+}
+
+export interface AgencyInvoicesResponse {
+  invoices: AgencyInvoice[];
+  total: number;
+}
+
 // Helper functions for Integrations & Billing
 export function getPlanLabel(plan: BillingPlan): string {
   const labels: Record<BillingPlan, string> = {
@@ -1210,7 +1280,8 @@ export type PermissionModule =
   | 'reportes'
   | 'configuracion'
   | 'documentos'
-  | 'analytics';
+  | 'analytics'
+  | 'contratos';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -1304,6 +1375,7 @@ export function getModuleLabel(module: PermissionModule): string {
     configuracion: 'Configuracion',
     documentos: 'Documentos',
     analytics: 'Analitica',
+    contratos: 'Contratos',
   };
   return labels[module];
 }
@@ -1388,6 +1460,7 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'configuracion',
   'documentos',
   'analytics',
+  'contratos',
 ];
 
 // All actions for permission matrix

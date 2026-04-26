@@ -16,11 +16,13 @@ import { useI18n } from '@/lib/i18n';
 type TabFunnel = 'all' | VisitStatus;
 
 const STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
-  requested: 'new',
-  confirmed: 'in_progress',
-  completed: 'completed',
-  cancelled: 'rejected',
-  no_show: 'important',
+  requested:   'new',
+  confirmed:   'in_progress',
+  completed:   'completed',
+  cancelled:   'rejected',
+  no_show:     'important',
+  rejected:    'rejected',
+  rescheduled: 'archived',
 };
 
 function formatTime(time: string): string {
@@ -390,11 +392,13 @@ export default function VisitasPage() {
 
   // Visit status labels using i18n
   const visitStatusLabels: Record<VisitStatus, string> = {
-    requested: t('landlord.visits.visitStatusRequested'),
-    confirmed: t('landlord.visits.visitStatusConfirmed'),
-    completed: t('landlord.visits.visitStatusCompleted'),
-    cancelled: t('landlord.visits.visitStatusCancelled'),
-    no_show: t('landlord.visits.visitStatusNoShow'),
+    requested:   t('landlord.visits.visitStatusRequested'),
+    confirmed:   t('landlord.visits.visitStatusConfirmed'),
+    completed:   t('landlord.visits.visitStatusCompleted'),
+    cancelled:   t('landlord.visits.visitStatusCancelled'),
+    no_show:     t('landlord.visits.visitStatusNoShow'),
+    rejected:    'Rechazada',
+    rescheduled: 'Reprogramada',
   };
 
   const confirmedToday = stats.confirmedToday;
@@ -531,7 +535,7 @@ export default function VisitasPage() {
 
   const confirmReschedule = async (newDate: string, newTime: string) => {
     if (!rescheduleTarget) return;
-    const ok = await actions.reschedule(rescheduleTarget.id, { date: newDate, time: newTime });
+    const ok = await actions.reschedule(rescheduleTarget.id, { newDate, newStartTime: newTime });
     const name = rescheduleTarget.candidateName;
     setRescheduleTarget(null);
     if (ok) {
@@ -545,7 +549,7 @@ export default function VisitasPage() {
   };
 
   const handleCreateVisit = async (propertyId: string, date: string, time: string, notes?: string): Promise<boolean> => {
-    const ok = await actions.create({ propertyId, requestedDate: date, requestedTime: time, notes });
+    const ok = await actions.create({ propertyId, date, startTime: time, visitType: 'IN_PERSON', notes });
     if (ok) refetch();
     return ok;
   };

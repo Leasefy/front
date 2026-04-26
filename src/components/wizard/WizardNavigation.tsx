@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, PaperPlaneTilt } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, PaperPlaneTilt, ArrowClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { WIZARD_STEPS } from '@/lib/types/application';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface WizardNavigationProps {
   isValid?: boolean;
   isSubmitting?: boolean;
   className?: string;
+  mode?: 'create' | 'update';
 }
 
 // ============================================================================
@@ -37,6 +38,7 @@ export function WizardNavigation({
   isValid = true,
   isSubmitting = false,
   className,
+  mode = 'create',
 }: WizardNavigationProps) {
   const isFirstStep = currentStep === 1;
   const isReviewStep = currentStep === totalSteps;
@@ -80,12 +82,19 @@ export function WizardNavigation({
         hideArrow
       >
         {isSubmitting ? (
-          <span>Enviando...</span>
+          <span>{mode === 'update' ? 'Actualizando...' : 'Enviando...'}</span>
         ) : isReviewStep ? (
-          <>
-            <span>Enviar solicitud</span>
-            <PaperPlaneTilt className="h-4 w-4" />
-          </>
+          mode === 'update' ? (
+            <>
+              <span>Actualizar solicitud</span>
+              <ArrowClockwise className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              <span>Enviar solicitud</span>
+              <PaperPlaneTilt className="h-4 w-4" />
+            </>
+          )
         ) : (
           <>
             <span>Continuar</span>

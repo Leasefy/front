@@ -23,6 +23,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   useInmobiliariaDashboard,
   useAgentes,
@@ -263,7 +264,11 @@ function AgentSection({
  */
 export default function InmobiliariaDashboardPage() {
   const { t } = useI18n();
-  const { kpis: kpisData } = useInmobiliariaDashboard();
+  const { canAccess, isLoading: permLoading } = usePermissions();
+
+  const { kpis: kpisData } = useInmobiliariaDashboard({
+    skip: permLoading || !canAccess('analytics', 'view'),
+  });
   const kpis = kpisData ?? {
     totalProperties: 0, propertiesAvailable: 0, propertiesRented: 0, propertiesInProcess: 0,
     occupancyRate: 0, expectedRevenue: 0, collectedRevenue: 0, pendingCollections: 0,
@@ -271,10 +276,10 @@ export default function InmobiliariaDashboardPage() {
     scheduledVisits: 0, pendingApplications: 0, contractsInProgress: 0,
     totalAgents: 0, closedThisMonth: 0, avgDaysToClose: 0, totalPropietarios: 0, pendingDispersions: 0,
   };
-  const { agentes } = useAgentes();
-  const { pipelineItems } = usePipelineItems();
-  const { cobros } = useCobros();
-  const { mantenimientos } = useMantenimientos();
+  const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
+  const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
+  const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
+  const { mantenimientos } = useMantenimientos(undefined, { skip: permLoading || !canAccess('operaciones', 'view') });
 
   const activeAgents = agentes.filter((a) => a.status === 'active');
 

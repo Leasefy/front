@@ -20,6 +20,8 @@ const STATUS_CONFIG: Record<ContractStatus, { color: string; icon: typeof CheckC
   draft: { color: 'bg-neutral-100 text-neutral-600', icon: Clock },
   pending_landlord: { color: 'bg-amber-100 text-amber-700', icon: Clock },
   pending_tenant: { color: 'bg-indigo-100 text-indigo-700', icon: PenNib },
+  rejected_pending_modifications: { color: 'bg-amber-100 text-amber-700', icon: Clock },
+  signed: { color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
   active: { color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
   expired: { color: 'bg-neutral-100 text-neutral-500', icon: XCircle },
   cancelled: { color: 'bg-red-100 text-red-600', icon: XCircle },

@@ -129,7 +129,9 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
   const handleNext = () => {
     if (isLastStep) {
-      submitOnboarding()
+      submitOnboarding().catch((err) => {
+        console.error('[Onboarding] submitOnboarding failed:', err)
+      })
     } else {
       nextStep()
     }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { SquaresFour, House, FileMagnifyingGlass, CreditCard, FileText, Chat, Gear, SignOut, List, Bell, UserCircle, Heart, Question, TrendUp, ArrowUpRight, CheckCircle, Circle, User, Phone, Shield, Briefcase, UserPlus } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -67,8 +67,17 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
 
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { unreadCount } = useUnreadMessages();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      window.location.replace('/auth');
+    }
+  };
 
   const isActive = (item: (typeof NAV_ITEMS)[0]) => {
     if (item.exact) return pathname === item.href;
@@ -169,7 +178,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           </div>
         </div>
         <button
-          onClick={logout}
+          onClick={handleLogout}
           className="flex items-center gap-2 w-full px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <SignOut className="w-4 h-4" />

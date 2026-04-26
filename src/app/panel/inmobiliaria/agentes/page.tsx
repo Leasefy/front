@@ -1,8 +1,10 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -28,6 +30,7 @@ import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/Age
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
+import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
 import type { UserInvite } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
@@ -39,10 +42,11 @@ const ITEMS_PER_PAGE = 6;
  * Agentes Page - Main view for managing all real estate agents
  * Route: /panel/inmobiliaria/agentes
  */
-export default function AgentesPage() {
+function AgentesContent() {
   const { t } = useI18n();
   const router = useRouter();
   const { agentes: allAgentes } = useAgentes();
+  const { canAccess } = usePermissions();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
     { id: 'equipo', label: t('inmobiliaria.agentes.tabs.team'), icon: UsersThree },
@@ -141,15 +145,16 @@ export default function AgentesPage() {
   }, []);
 
   const handleCreateAgente = useCallback(async (data: UserInvite) => {
-    // TODO Backend: Create agent via API
-    // For now, just show success toast
-    toast.success(t('inmobiliaria.agentes.toasts.created'), {
-      description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
-    });
-    // In production, this would:
-    // 1. POST to /api/agentes
-    // 2. Refresh the agentes list
-    // 3. Show success/error toast
+    try {
+      await inmobiliariaConfigApi.inviteUser(data);
+      toast.success(t('inmobiliaria.agentes.toasts.created'), {
+        description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
+      });
+    } catch (error) {
+      toast.error('Error al invitar al agente', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
   }, [t]);
 
   return (
@@ -164,13 +169,15 @@ export default function AgentesPage() {
             {t('inmobiliaria.agentes.subtitle')}
           </p>
         </div>
-        <button
-          onClick={handleNuevoAgente}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          {t('inmobiliaria.agentes.addAgent')}
-        </button>
+        {canAccess('agentes', 'create') && (
+          <button
+            onClick={handleNuevoAgente}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            {t('inmobiliaria.agentes.addAgent')}
+          </button>
+        )}
       </div>
 
       {/* Stats Row */}
@@ -467,5 +474,13 @@ function EmptyState() {
         {t('inmobiliaria.agentes.noAgentsDesc')}
       </p>
     </div>
+  );
+}
+
+export default function AgentesPage() {
+  return (
+    <PageGuard module="agentes">
+      <AgentesContent />
+    </PageGuard>
   );
 }

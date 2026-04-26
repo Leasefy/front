@@ -43,7 +43,14 @@ export function useCandidateDocuments(candidateId: string | undefined) {
     setIsLoading(true);
     setError(null);
     try {
-      const docs = await documentsApi.getByCandidateApplication(candidateId);
+      // Prefer /documents/application/:id — more likely to include resolved URLs.
+      // Fall back to the application-scoped endpoint on error.
+      let docs: DocumentItem[];
+      try {
+        docs = await documentsApi.getByApplication(candidateId);
+      } catch {
+        docs = await documentsApi.getByCandidateApplication(candidateId);
+      }
       setDocuments(docs);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading documents');

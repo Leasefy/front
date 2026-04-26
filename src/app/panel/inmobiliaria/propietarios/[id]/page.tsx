@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -289,7 +290,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
  * Propietario Detail Page
  * Full profile view with properties, payments, and history
  */
-export default function PropietarioDetailPage() {
+function PropietarioDetailContent() {
   const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -822,5 +823,13 @@ export default function PropietarioDetailPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function PropietarioDetailPage() {
+  return (
+    <PageGuard module="propietarios">
+      <PropietarioDetailContent />
+    </PageGuard>
   );
 }

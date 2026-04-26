@@ -1,0 +1,620 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X,
+  Bank,
+  CheckCircle,
+  WarningCircle,
+  SpinnerGap,
+  Clock,
+  ArrowRight,
+  CaretLeft,
+  Receipt,
+} from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { leasesApi } from '@/lib/api/leases.service';
+import { psePaymentsApi } from '@/lib/api/pse-payments.service';
+import type { BackendPaymentInfo } from '@/lib/api/leases.types';
+import type {
+  PseBank,
+  PseProcessDto,
+  PseProcessResponse,
+  PseDocumentType,
+  PsePersonType,
+} from '@/lib/api/pse-payments.types';
+
+interface PayRentModalProps {
+  open: boolean;
+  leaseId: string;
+  /** Callback cuando se cierra el modal (éxito o cancelación). */
+  onClose: () => void;
+  /** Callback cuando un pago se procesó con éxito o queda PENDING — para refrescar historial. */
+  onPaid?: (result: PseProcessResponse) => void;
+  /** Valores iniciales sugeridos (ej. para pre-rellenar el form). */
+  prefill?: {
+    fullName?: string;
+    email?: string;
+  };
+}
+
+type Step =
+  | 'loading'
+  | 'period-blocked' // currentPeriodStatus === PENDING_VALIDATION | APPROVED
+  | 'confirm'
+  | 'form'
+  | 'processing'
+  | 'result';
+
+const DOCUMENT_TYPES: { value: PseDocumentType; label: string }[] = [
+  { value: 'CC', label: 'Cédula de ciudadanía' },
+  { value: 'CE', label: 'Cédula de extranjería' },
+  { value: 'NIT', label: 'NIT' },
+  { value: 'PASAPORTE', label: 'Pasaporte' },
+];
+
+/**
+ * Modal de pago de arriendo via PSE (mock). Flujo:
+ *  1. loading → carga /leases/:id/payment-info + /pse-mock/banks
+ *  2. confirm → muestra monto + período, CTA "Continuar"
+ *  3. form → select banco + datos del pagador
+ *  4. processing → spinner mientras /pse-mock/process responde
+ *  5. result → SUCCESS / FAILURE / PENDING con copy del backend
+ */
+export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRentModalProps) {
+  const { formatCurrency, locale } = useI18n();
+
+  const [step, setStep] = useState<Step>('loading');
+  const [paymentInfo, setPaymentInfo] = useState<BackendPaymentInfo | null>(null);
+  const [banks, setBanks] = useState<PseBank[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Form state
+  const [personType, setPersonType] = useState<PsePersonType>('NATURAL');
+  const [documentType, setDocumentType] = useState<PseDocumentType>('CC');
+  const [documentNumber, setDocumentNumber] = useState('');
+  const [fullName, setFullName] = useState(prefill?.fullName ?? '');
+  const [email, setEmail] = useState(prefill?.email ?? '');
+  const [bankCode, setBankCode] = useState<string>('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const [result, setResult] = useState<PseProcessResponse | null>(null);
+
+  // Cargar /payment-info + /banks al abrir
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setStep('loading');
+    setLoadError(null);
+
+    Promise.all([leasesApi.getPaymentInfo(leaseId), psePaymentsApi.getBanks()])
+      .then(([info, banksList]) => {
+        if (cancelled) return;
+        setPaymentInfo(info);
+        setBanks(banksList);
+        // Pre-flight: si ya hay request en validación o pago aprobado, bloquear.
+        // REJECTED y NONE caen al confirm (REJECTED muestra el motivo en el confirm).
+        if (
+          info.currentPeriodStatus === 'PENDING_VALIDATION' ||
+          info.currentPeriodStatus === 'APPROVED'
+        ) {
+          setStep('period-blocked');
+        } else {
+          setStep('confirm');
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : 'No se pudo cargar la información de pago.';
+        setLoadError(msg);
+      });
+
+    return () => { cancelled = true; };
+  }, [open, leaseId]);
+
+  // Reset form al cerrar
+  useEffect(() => {
+    if (!open) {
+      setStep('loading');
+      setPaymentInfo(null);
+      setBanks([]);
+      setLoadError(null);
+      setPersonType('NATURAL');
+      setDocumentType('CC');
+      setDocumentNumber('');
+      setFullName(prefill?.fullName ?? '');
+      setEmail(prefill?.email ?? '');
+      setBankCode('');
+      setFormErrors({});
+      setResult(null);
+    }
+  }, [open, prefill?.fullName, prefill?.email]);
+
+  // Validación form
+  const validateForm = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
+    if (!/^\d{6,15}$/.test(documentNumber.trim())) errors.documentNumber = 'Entre 6 y 15 dígitos.';
+    if (fullName.trim().length < 3) errors.fullName = 'Requerido (mínimo 3 caracteres).';
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Email inválido.';
+    if (!bankCode) errors.bankCode = 'Seleccioná un banco.';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [documentNumber, fullName, email, bankCode]);
+
+  const handleProcess = useCallback(async () => {
+    if (!paymentInfo) return;
+    if (!validateForm()) return;
+    setStep('processing');
+    try {
+      const dto: PseProcessDto = {
+        leaseId,
+        amount: paymentInfo.monthlyRent,
+        periodMonth: paymentInfo.currentPeriod.month,
+        periodYear: paymentInfo.currentPeriod.year,
+        personType,
+        documentType,
+        documentNumber: documentNumber.trim(),
+        fullName: fullName.trim(),
+        email: email.trim(),
+        bankCode,
+      };
+      const res = await psePaymentsApi.processPayment(dto);
+      setResult(res);
+      setStep('result');
+      if (res.status === 'SUCCESS' || res.status === 'PENDING') {
+        onPaid?.(res);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar el pago.';
+      // Backend tira 409 Conflict si el período ya fue pagado → mostrar como fallido inline.
+      setResult({
+        transactionId: '',
+        status: 'FAILURE',
+        message: msg,
+        bankName: banks.find((b) => b.code === bankCode)?.name ?? '',
+        timestamp: new Date().toISOString(),
+      });
+      setStep('result');
+    }
+  }, [
+    paymentInfo, validateForm, leaseId, personType, documentType, documentNumber,
+    fullName, email, bankCode, banks, onPaid,
+  ]);
+
+  const monthName = paymentInfo
+    ? new Date(paymentInfo.currentPeriod.year, paymentInfo.currentPeriod.month - 1, 1)
+        .toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { month: 'long', year: 'numeric' })
+    : '';
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={step === 'processing' ? undefined : onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 p-5 border-b border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+                    Pagar arriendo
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {step === 'form' ? 'Datos del pagador' : 'Método: PSE'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={step === 'processing'}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors disabled:opacity-40"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5">
+              {/* Loading */}
+              {step === 'loading' && !loadError && (
+                <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+                  <SpinnerGap className="w-6 h-6 animate-spin" />
+                  Cargando información de pago...
+                </div>
+              )}
+
+              {loadError && (
+                <div className="py-6 flex items-start gap-3 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4">
+                  <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-rose-700 dark:text-rose-400">{loadError}</p>
+                </div>
+              )}
+
+              {/* Step: period-blocked (PENDING_VALIDATION | APPROVED) */}
+              {step === 'period-blocked' &&
+                paymentInfo &&
+                (paymentInfo.currentPeriodStatus === 'PENDING_VALIDATION' ||
+                  paymentInfo.currentPeriodStatus === 'APPROVED') && (
+                  <PeriodBlockedPanel
+                    status={paymentInfo.currentPeriodStatus}
+                    monthName={monthName}
+                    amount={paymentInfo.monthlyRent}
+                    formatCurrency={formatCurrency}
+                  />
+                )}
+
+              {/* Step: confirm */}
+              {step === 'confirm' && paymentInfo && (
+                <div className="space-y-4">
+                  {paymentInfo.currentPeriodStatus === 'REJECTED' && (
+                    <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-3 flex items-start gap-2">
+                      <WarningCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs text-rose-700 dark:text-rose-400">
+                        <p className="font-medium mb-0.5">Tu pago anterior fue rechazado.</p>
+                        {paymentInfo.currentPeriodRejectionReason && (
+                          <p className="opacity-90">{paymentInfo.currentPeriodRejectionReason}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="rounded-xl border border-border bg-muted/30 p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Período</p>
+                    <p className="text-sm font-medium text-foreground capitalize">{monthName}</p>
+                    <div className="border-t border-border/50 my-3" />
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Monto a pagar</p>
+                    <p className="text-3xl font-bold text-foreground tabular-nums">
+                      {formatCurrency(paymentInfo.monthlyRent)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    El pago se procesa a través de <strong>PSE</strong>. Vas a completar los datos de
+                    tu cuenta en el siguiente paso.
+                  </p>
+                </div>
+              )}
+
+              {/* Step: form */}
+              {step === 'form' && paymentInfo && (
+                <div className="space-y-4">
+                  {/* Resumen */}
+                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground capitalize">{monthName}</span>
+                    <span className="font-semibold text-foreground tabular-nums">
+                      {formatCurrency(paymentInfo.monthlyRent)}
+                    </span>
+                  </div>
+
+                  {/* Banco */}
+                  <Field label="Banco" error={formErrors.bankCode}>
+                    <select
+                      value={bankCode}
+                      onChange={(e) => setBankCode(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                    >
+                      <option value="">Seleccioná tu banco</option>
+                      {banks.map((b) => (
+                        <option key={b.code} value={b.code}>{b.name}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Tipo de persona">
+                      <select
+                        value={personType}
+                        onChange={(e) => setPersonType(e.target.value as PsePersonType)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                      >
+                        <option value="NATURAL">Natural</option>
+                        <option value="JURIDICA">Jurídica</option>
+                      </select>
+                    </Field>
+                    <Field label="Tipo doc.">
+                      <select
+                        value={documentType}
+                        onChange={(e) => setDocumentType(e.target.value as PseDocumentType)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                      >
+                        {DOCUMENT_TYPES.map((d) => (
+                          <option key={d.value} value={d.value}>{d.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  <Field label="Número de documento" error={formErrors.documentNumber}>
+                    <input
+                      inputMode="numeric"
+                      value={documentNumber}
+                      onChange={(e) => setDocumentNumber(e.target.value.replace(/\D/g, ''))}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                      placeholder="1234567890"
+                    />
+                  </Field>
+
+                  <Field label="Nombre completo" error={formErrors.fullName}>
+                    <input
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                    />
+                  </Field>
+
+                  <Field label="Email" error={formErrors.email}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {/* Step: processing */}
+              {step === 'processing' && (
+                <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
+                  <SpinnerGap className="w-8 h-8 animate-spin text-indigo-600" />
+                  <p className="text-sm font-medium text-foreground">Procesando pago...</p>
+                  <p className="text-xs text-muted-foreground">No cierres esta ventana.</p>
+                </div>
+              )}
+
+              {/* Step: result */}
+              {step === 'result' && result && (
+                <ResultPanel
+                  result={result}
+                  amount={paymentInfo?.monthlyRent ?? 0}
+                  formatCurrency={formatCurrency}
+                />
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-2">
+              {step === 'period-blocked' && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                >
+                  Cerrar
+                </button>
+              )}
+
+              {step === 'confirm' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep('form')}
+                    disabled={!paymentInfo}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {paymentInfo?.currentPeriodStatus === 'REJECTED' ? 'Reintentar pago' : 'Continuar'}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+
+              {step === 'form' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setStep('confirm')}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <CaretLeft className="w-4 h-4" />
+                    Atrás
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleProcess}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                  >
+                    <Bank className="w-4 h-4" />
+                    Pagar con PSE
+                  </button>
+                </>
+              )}
+
+              {step === 'result' && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                >
+                  Cerrar
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Subcomponents ──────────────────────────────────────────────────────────
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-xs font-medium text-foreground">{label}</label>
+      {children}
+      {error && <p className="text-xs text-rose-600">{error}</p>}
+    </div>
+  );
+}
+
+function ResultPanel({
+  result,
+  amount,
+  formatCurrency,
+}: {
+  result: PseProcessResponse;
+  amount: number;
+  formatCurrency: (n: number) => string;
+}) {
+  if (result.status === 'SUCCESS') {
+    return (
+      <div className="py-6 flex flex-col items-center text-center space-y-3">
+        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-foreground">¡Pago procesado!</p>
+          <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
+          <Row label="Monto" value={formatCurrency(amount)} />
+          <Row label="Banco" value={result.bankName} />
+          <Row label="Transacción" value={result.transactionId} mono />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tu pago quedó registrado. Lo vas a ver en tu historial.
+        </p>
+      </div>
+    );
+  }
+
+  if (result.status === 'PENDING') {
+    return (
+      <div className="py-6 flex flex-col items-center text-center space-y-3">
+        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <Clock className="w-8 h-8 text-amber-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-foreground">En verificación bancaria</p>
+          <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
+          <Row label="Banco" value={result.bankName} />
+          <Row label="Transacción" value={result.transactionId} mono />
+        </div>
+      </div>
+    );
+  }
+
+  // FAILURE
+  return (
+    <div className="py-6 flex flex-col items-center text-center space-y-3">
+      <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+        <WarningCircle className="w-8 h-8 text-rose-600" />
+      </div>
+      <div>
+        <p className="text-lg font-semibold text-foreground">Pago no procesado</p>
+        <p className="text-sm text-rose-600 dark:text-rose-400 mt-1">{result.message}</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Podés intentar con otro banco o revisar los datos ingresados.
+      </p>
+    </div>
+  );
+}
+
+function Row({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          'text-foreground font-medium text-right break-all',
+          mono && 'font-mono text-[11px]'
+        )}
+      >
+        {value || '—'}
+      </span>
+    </div>
+  );
+}
+
+function PeriodBlockedPanel({
+  status,
+  monthName,
+  amount,
+  formatCurrency,
+}: {
+  status: 'PENDING_VALIDATION' | 'APPROVED';
+  monthName: string;
+  amount: number;
+  formatCurrency: (n: number) => string;
+}) {
+  if (status === 'APPROVED') {
+    return (
+      <div className="py-6 flex flex-col items-center text-center space-y-3">
+        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-foreground">Pago confirmado</p>
+          <p className="text-sm text-muted-foreground mt-1 capitalize">
+            {monthName}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full text-xs">
+          <Row label="Monto" value={formatCurrency(amount)} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tu pago de este mes ya fue confirmado por el propietario.
+        </p>
+      </div>
+    );
+  }
+
+  // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
+  return (
+    <div className="py-6 flex flex-col items-center text-center space-y-3">
+      <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+        <Clock className="w-8 h-8 text-amber-600" />
+      </div>
+      <div>
+        <p className="text-lg font-semibold text-foreground">Pago en verificación</p>
+        <p className="text-sm text-muted-foreground mt-1 capitalize">
+          {monthName}
+        </p>
+      </div>
+      <div className="rounded-lg border border-border bg-muted/30 p-3 w-full text-xs">
+        <Row label="Monto" value={formatCurrency(amount)} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Tu banco está verificando el pago. No hace falta volver a pagar — vas a
+        ver la confirmación en tu historial cuando termine.
+      </p>
+    </div>
+  );
+}
+

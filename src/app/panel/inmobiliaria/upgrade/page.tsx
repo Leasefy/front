@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils';
  * Upgrade page for agency users.
  * Fetches agency plan data from backend (falls back to static AGENCY_PLANS).
  */
-export default function AgencyUpgradePage() {
+function AgencyUpgradeContent() {
   const router = useRouter();
   const { subscription } = useMySubscription();
   const { plans, isLoading } = useAgencyPlans();
@@ -169,5 +170,13 @@ export default function AgencyUpgradePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AgencyUpgradePage() {
+  return (
+    <PageGuard adminOnly>
+      <AgencyUpgradeContent />
+    </PageGuard>
   );
 }

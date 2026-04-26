@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
@@ -67,7 +68,7 @@ function getCurrentMonth(): string {
  * - Actualizaciones de montos o datos de propietarios
  * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
-export default function DispersionesPage() {
+function DispersionesContent() {
   const { t, locale } = useI18n();
 
   // State for filters
@@ -592,5 +593,13 @@ export default function DispersionesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function DispersionesPage() {
+  return (
+    <PageGuard module="dispersiones">
+      <DispersionesContent />
+    </PageGuard>
   );
 }

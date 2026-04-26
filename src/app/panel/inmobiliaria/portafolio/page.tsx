@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,7 @@ const ITEMS_PER_PAGE = 12;
  * Portafolio Page - Main view for managing all consigned properties
  * Route: /panel/inmobiliaria/portafolio
  */
-export default function PortafolioPage() {
+function PortafolioContent() {
   const { t } = useI18n();
   const router = useRouter();
   const { consignaciones: allConsignaciones } = useConsignaciones();
@@ -43,7 +44,7 @@ export default function PortafolioPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
-    availability: 'all',
+    availability: 'available',
     agenteId: 'all',
     propietarioId: 'all',
     city: 'all',
@@ -69,6 +70,9 @@ export default function PortafolioPage() {
 
   // Filter consignaciones
   const filteredConsignaciones = useMemo(() => {
+    // Normalize backend values to lowercase to match frontend enum definitions
+    const normalize = (val: string) => val?.toLowerCase() ?? '';
+
     let result = [...allConsignaciones];
 
     // Search filter
@@ -83,7 +87,7 @@ export default function PortafolioPage() {
 
     // Availability filter
     if (filters.availability !== 'all') {
-      result = result.filter((c) => c.availability === filters.availability);
+      result = result.filter((c) => normalize(c.availability) === filters.availability);
     }
 
     // Agente filter
@@ -98,12 +102,12 @@ export default function PortafolioPage() {
 
     // City filter
     if (filters.city !== 'all') {
-      result = result.filter((c) => c.propertyCity === filters.city);
+      result = result.filter((c) => normalize(c.propertyCity) === normalize(filters.city));
     }
 
     // Property type filter
     if (filters.propertyType !== 'all') {
-      result = result.filter((c) => c.propertyType === filters.propertyType);
+      result = result.filter((c) => normalize(c.propertyType) === normalize(filters.propertyType));
     }
 
     return result;
@@ -451,5 +455,13 @@ function EmptyState() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function PortafolioPage() {
+  return (
+    <PageGuard module="portafolio">
+      <PortafolioContent />
+    </PageGuard>
   );
 }

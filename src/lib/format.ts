@@ -11,13 +11,16 @@ function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
 }
 
 /**
- * Formats a number as currency
+ * Formats a number as currency. Null-safe: si `amount` viene null/undefined/NaN,
+ * devuelve "$ 0" en vez de crashear. Necesario porque el backend puede no devolver
+ * algunos campos (ej. lease.adminFee opcional).
  * @example formatCurrency(2500000) → "$ 2.500.000"
  */
-export function formatCurrency(amount: number, locale?: 'es' | 'en'): string {
+export function formatCurrency(amount: number | null | undefined, locale?: 'es' | 'en'): string {
+  const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
   return (
     '$ ' +
-    amount.toLocaleString(getLocaleString(locale), {
+    safe.toLocaleString(getLocaleString(locale), {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })
@@ -25,11 +28,12 @@ export function formatCurrency(amount: number, locale?: 'es' | 'en'): string {
 }
 
 /**
- * Formats a number with locale-appropriate separators
+ * Formats a number with locale-appropriate separators. Null-safe.
  * @example formatNumber(2500000) → "2.500.000"
  */
-export function formatNumber(value: number, locale?: 'es' | 'en'): string {
-  return value.toLocaleString(getLocaleString(locale));
+export function formatNumber(value: number | null | undefined, locale?: 'es' | 'en'): string {
+  const safe = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+  return safe.toLocaleString(getLocaleString(locale));
 }
 
 /**

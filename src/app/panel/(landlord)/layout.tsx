@@ -80,7 +80,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { t, locale } = useI18n();
   const { subscription } = useMySubscription();
-  const showUpgrade = subscription?.planId === 'free';
+  const showUpgrade = subscription?.planId === 'starter';
 
   // Onboarding progress state
   const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(LANDLORD_SETUP_STEPS);

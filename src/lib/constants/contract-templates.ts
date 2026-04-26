@@ -223,7 +223,8 @@ export const CONTRACT_TEMPLATES: ContractTemplate[] = [
 // Helper Functions
 // ============================================================================
 
-export function getTemplateById(templateId: string): ContractTemplate | undefined {
+export function getTemplateById(templateId: string | undefined): ContractTemplate | undefined {
+  if (!templateId) return undefined;
   return CONTRACT_TEMPLATES.find((t) => t.id === templateId);
 }
 

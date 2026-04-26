@@ -39,71 +39,41 @@ import { TENANT_CATEGORIES } from '@/lib/types/notification';
 import type { TenantNotification, TenantNotificationCategory } from '@/lib/types/notification';
 import { EmptyState } from '@/components/ui/empty-state';
 
-// Icon mapping for notification types
+/**
+ * Icon mapping for notification types.
+ * Keys are the canonical codes emitted by the backend (templateCode in
+ * prisma/seed-templates.ts). Single source of truth — no aliases.
+ */
 const getNotificationIcon = (type: string) => {
   const iconMap: Record<string, typeof Bell> = {
     // Applications
-    APP_SUBMITTED: PaperPlaneTilt,
-    APP_PREAPPROVED: CheckCircle,
-    APP_APPROVED: CheckCircle,
-    APP_REJECTED: XCircle,
-    APP_DOCS_REQUESTED: FileText,
-    APP_UNDER_REVIEW: MagnifyingGlass,
-    // Contracts
-    CON_READY: FileText,
-    CON_PENDING_SIGNATURE: PenNib,
-    CON_LANDLORD_SIGNED: PenNib,
-    CON_COMPLETED: CheckCircle,
-    CON_CANCELLED: XCircle,
+    APPLICATION_RECEIVED: PaperPlaneTilt,
+    APPLICATION_APPROVED: CheckCircle,
+    APPLICATION_REJECTED: XCircle,
+    APPLICATION_INFO_REQUESTED: FileText,
+    APPLICATION_INFO_PROVIDED: FileText,
     // Payments
-    PAY_CONFIRMED: CheckCircle,
-    PAY_REMINDER_7: Bell,
-    PAY_REMINDER_3: Bell,
-    PAY_REMINDER_1: Bell,
-    PAY_DUE_TODAY: Warning,
-    PAY_OVERDUE: Warning,
-    PAY_FAILED: XCircle,
-    PAY_RECEIPT: FileText,
-    PAY_AUTO_SCHEDULED: CreditCard,
-    // Leases
-    LEA_STARTED: House,
-    LEA_EXPIRING_90: Clock,
-    LEA_EXPIRING_30: Clock,
-    LEA_RENEWAL_OFFERED: House,
-    LEA_RENEWED: CheckCircle,
-    LEA_TERMINATED: House,
-    LEA_TERMINATION_APPROVED: CheckCircle,
+    PAYMENT_RECEIPT_UPLOADED: FileText,
+    PAYMENT_APPROVED: CheckCircle,
+    PAYMENT_REJECTED: XCircle,
+    PAYMENT_DISPUTE_OPENED: Warning,
+    PAYMENT_REMINDER: Bell,
+    PAYMENT_OVERDUE: Warning,
     // Visits
-    VIS_CONFIRMED: CalendarCheck,
-    VIS_REMINDER_24H: Bell,
-    VIS_REMINDER_1H: Bell,
-    VIS_CANCELLED_BY_LANDLORD: Calendar,
-    VIS_RESCHEDULED: Calendar,
-    // Documents
-    DOC_REQUESTED: FileText,
-    DOC_APPROVED: CheckCircle,
-    DOC_REJECTED: XCircle,
-    DOC_EXPIRING: Warning,
-    DOC_CONTRACT_READY: FileText,
-    // Messages
-    MSG_NEW: ChatCircle,
-    MSG_REPLY: ChatCircle,
-    // Properties
-    FAV_PRICE_DROP: Tag,
-    FAV_AVAILABLE: Heart,
-    FAV_ABOUT_TO_RENT: Warning,
-    SEARCH_NEW_MATCH: House,
-    // Maintenance
-    MNT_RECEIVED: Wrench,
-    MNT_IN_PROGRESS: Wrench,
-    MNT_SCHEDULED: Calendar,
-    MNT_COMPLETED: CheckCircle,
-    // System
-    SYS_WELCOME: Sparkle,
-    SYS_PROFILE_INCOMPLETE: Info,
-    SYS_SCORE_UPDATED: ShieldCheck,
-    SYS_SECURITY_ALERT: ShieldCheck,
-    SYS_NEW_FEATURE: Sparkle,
+    VISIT_REQUESTED: Calendar,
+    VISIT_ACCEPTED: CalendarCheck,
+    VISIT_REJECTED: XCircle,
+    VISIT_CANCELLED: Calendar,
+    VISIT_RESCHEDULED: Calendar,
+    VISIT_REMINDER_24H: Bell,
+    // Contracts
+    CONTRACT_READY_TO_SIGN: PenNib,
+    CONTRACT_LANDLORD_SIGNED: PenNib,
+    CONTRACT_TENANT_SIGNED: PenNib,
+    CONTRACT_COMPLETED: CheckCircle,
+    // Leases
+    LEASE_EXPIRING_SOON: Clock,
+    LEASE_EXPIRED: Warning,
   };
 
   return iconMap[type] || Bell;

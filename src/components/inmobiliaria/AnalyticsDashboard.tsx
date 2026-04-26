@@ -418,7 +418,7 @@ export function AnalyticsDashboard({
       operational: [],
       performance: [],
     };
-    data.kpis.forEach((kpi) => groups[kpi.category].push(kpi));
+    data.kpis?.forEach((kpi) => groups[kpi.category].push(kpi));
     return groups;
   }, [data.kpis]);
 
@@ -453,7 +453,7 @@ export function AnalyticsDashboard({
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.charts.map((chart) => (
+          {data.charts?.map((chart) => (
             <ChartCard key={chart.id} chart={chart} />
           ))}
         </div>

@@ -118,7 +118,7 @@ export function AgenteFormModal({
     if (!email.trim()) newErrors.email = t('inmobiliaria.agente.errorEmailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t('inmobiliaria.agente.errorEmailInvalid');
     if (showAgentFields && !phone.trim()) newErrors.phone = t('inmobiliaria.agente.errorPhoneRequired');
-    if (showAgentFields && (commissionSplit < 0 || commissionSplit > 100)) newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
+    if (showAgentFields && agentRole === 'agent' && (commissionSplit < 0 || commissionSplit > 100)) newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [name, email, phone, commissionSplit, showAgentFields, t]);
@@ -144,7 +144,7 @@ export function AgenteFormModal({
         invite.phone = phone || undefined;
         invite.zone = zone || undefined;
         invite.specialization = specialization.toUpperCase() as UserInvite['specialization'];
-        invite.commissionSplit = commissionSplit;
+        if (agentRole === 'agent') invite.commissionSplit = commissionSplit;
         invite.agentRole = agentRole.toUpperCase() as UserInvite['agentRole'];
       }
 
@@ -294,45 +294,47 @@ export function AgenteFormModal({
                       </div>
                     </div>
 
-                    {/* Zone + Specialization */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Zone + Specialization — disabled until backend supports them */}
+                    <div className="grid grid-cols-2 gap-4 opacity-50 pointer-events-none select-none">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.zone')}
                         </label>
-                        <select value={zone} onChange={(e) => setZone(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                        <select disabled value={zone} onChange={(e) => setZone(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
                           <option value="">{t('inmobiliaria.agente.selectZone')}</option>
                           {ZONE_OPTIONS.map((z) => <option key={z} value={z}>{z}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Buildings className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.specialization')}
                         </label>
-                        <select value={specialization} onChange={(e) => setSpecialization(e.target.value as typeof specialization)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                        <select disabled value={specialization} onChange={(e) => setSpecialization(e.target.value as typeof specialization)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
                           {SPECIALIZATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
                     </div>
 
-                    {/* Commission */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Percent className="w-4 h-4 text-muted-foreground" />
-                        {t('inmobiliaria.agente.commissionPercentage')}
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input type="range" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(parseInt(e.target.value))} className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-indigo-500" />
-                        <div className="relative w-20">
-                          <input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-full px-3 py-2 pr-7 rounded-xl border border-border bg-background text-sm font-medium text-foreground text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                    {/* Commission — solo para agentes, no para coordinator/director */}
+                    {agentRole === 'agent' && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <Percent className="w-4 h-4 text-muted-foreground" />
+                          {t('inmobiliaria.agente.commissionPercentage')}
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <input type="range" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(parseInt(e.target.value))} className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-indigo-500" />
+                          <div className="relative w-20">
+                            <input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-full px-3 py-2 pr-7 rounded-xl border border-border bg-background text-sm font-medium text-foreground text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                          </div>
                         </div>
+                        <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
+                        {errors.commissionSplit && <p className="text-xs text-rose-500">{errors.commissionSplit}</p>}
                       </div>
-                      <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
-                      {errors.commissionSplit && <p className="text-xs text-rose-500">{errors.commissionSplit}</p>}
-                    </div>
+                    )}
                   </>
                 )}
 

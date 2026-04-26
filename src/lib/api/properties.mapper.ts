@@ -2,7 +2,7 @@
  * Maps backend property responses to frontend Property type
  */
 
-import type { Property, PropertyType, PropertyStatus, PropertyAmenity } from '@/lib/types/property';
+import type { Property, PropertyType, PropertyStatus, PropertyAmenity, AgencyProperty } from '@/lib/types/property';
 import { PROPERTY_AMENITIES } from '@/lib/types/property';
 import type { BackendProperty } from './properties.types';
 
@@ -90,5 +90,23 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     landlordId: bp.landlordId,
     createdAt: bp.createdAt,
     updatedAt: bp.updatedAt,
+  };
+}
+
+/**
+ * Convert a backend Property (with propertyAccess) to AgencyProperty
+ */
+export function mapBackendAgencyProperty(bp: BackendProperty): AgencyProperty {
+  const base = mapBackendProperty(bp);
+  return {
+    ...base,
+    agents: (bp.propertyAccess ?? []).map((pa) => ({
+      accessId: pa.id,
+      agentId: pa.agent.id,
+      firstName: pa.agent.firstName,
+      lastName: pa.agent.lastName,
+      email: pa.agent.email,
+      phone: pa.agent.phone,
+    })),
   };
 }

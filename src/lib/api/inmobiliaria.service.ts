@@ -30,6 +30,9 @@ import type {
   AgencyIntegration,
   AgencyBilling,
   BillingInvoice,
+  AgencyConfigOverview,
+  AgencyBillingDetail,
+  AgencyInvoicesResponse,
   CarteraReport,
   OcupacionReport,
   ComisionesAgenteReport,
@@ -474,6 +477,61 @@ export const reportesApi = {
 };
 
 // ============================================================================
+// AI Agents (metrics + activity)
+// ============================================================================
+
+export interface AiMetricsResponse {
+  scoring: {
+    evaluationsThisMonth: number;
+    avgTimeMin: string;
+    escalationRate: string;
+    accuracyRate: string;
+  };
+  matching: {
+    suggestionsSent: number;
+    conversionRate: string;
+    candidatesRedirected: number;
+    avgCompatibility: string;
+  };
+  summary: {
+    actionsThisWeek: number;
+    hoursSavedThisMonth: string;
+  };
+}
+
+export interface AiActivityItem {
+  id: string;
+  agentId: string;
+  agentName: string;
+  type: string;
+  title: string;
+  description: string;
+  status: 'success' | 'pending' | 'failed';
+  timestamp: string;
+  metadata: {
+    applicationId?: string;
+    durationMs?: number;
+    result?: string;
+  };
+}
+
+export interface AiActivityResponse {
+  activities: AiActivityItem[];
+  source: string;
+}
+
+export const aiApi = {
+  async getMetrics(): Promise<AiMetricsResponse> {
+    return apiClient.get<AiMetricsResponse>(`${BASE}/ai/metrics`);
+  },
+
+  async getActivity(limit?: number): Promise<AiActivityResponse> {
+    const qs = limit ? `?limit=${limit}` : '';
+    return apiClient.get<AiActivityResponse>(`${BASE}/ai/activity${qs}`);
+  },
+};
+
+// ============================================================================
 // Analytics
 // ============================================================================
 
@@ -575,15 +633,17 @@ export const inmobiliariaConfigApi = {
     await apiClient.patch(`${BASE}/config/defaults`, data);
   },
 
-  // Users
+  // Users — canonical route is /inmobiliaria/agency/members
   async getUsers(): Promise<AgencyUser[]> {
-    const res = await apiClient.get<{ data: AgencyUser[] }>(`${BASE}/config/users`);
-    return res.data;
+    const res = await apiClient.get<{ data: AgencyUser[] } | AgencyUser[]>(
+      `${BASE}/agency/members`
+    );
+    return Array.isArray(res) ? res : res.data;
   },
 
   async inviteUser(invite: UserInvite): Promise<AgencyUser> {
+    // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
     // Backend DTO rejects: message (UI-only), phone (not in DTO)
-    // Backend requires role in UPPERCASE
     const { message: _msg, phone: _phone, ...rest } = invite;
     const payload = {
       ...rest,
@@ -593,14 +653,14 @@ export const inmobiliariaConfigApi = {
   },
 
   async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
-    return apiClient.patch<AgencyUser>(`${BASE}/config/users/${id}`, data);
+    return apiClient.patch<AgencyUser>(`${BASE}/agency/members/${id}`, data);
   },
 
   async deleteUser(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/config/users/${id}`);
+    await apiClient.delete(`${BASE}/agency/members/${id}`);
   },
 
-  // Billing
+  // Billing (legacy shape — kept for existing consumers)
   async getBilling(): Promise<AgencyBilling> {
     return apiClient.get<AgencyBilling>(`${BASE}/config/billing`);
   },
@@ -610,14 +670,38 @@ export const inmobiliariaConfigApi = {
     return res.data;
   },
 
-  // Integrations
+  // ==========================================================================
+  // Canonical config endpoints (backend source of truth)
+  // ==========================================================================
+
+  /** GET /inmobiliaria/config — overview with subscription, usage, permissions */
+  async getConfigOverview(): Promise<AgencyConfigOverview> {
+    return apiClient.get<AgencyConfigOverview>(`${BASE}/config`);
+  },
+
+  /** GET /inmobiliaria/config/billing — admin-only detailed billing + limits */
+  async getConfigBilling(): Promise<AgencyBillingDetail> {
+    return apiClient.get<AgencyBillingDetail>(`${BASE}/config/billing`);
+  },
+
+  /** GET /inmobiliaria/config/billing/invoices?limit=N — admin-only payment history */
+  async getConfigInvoices(limit = 50): Promise<AgencyInvoicesResponse> {
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    return apiClient.get<AgencyInvoicesResponse>(
+      `${BASE}/config/billing/invoices?limit=${safeLimit}`
+    );
+  },
+
+  // Integrations — canonical route is /inmobiliaria/agency/integrations
   async getIntegrations(): Promise<AgencyIntegration[]> {
-    const res = await apiClient.get<{ data: AgencyIntegration[] }>(`${BASE}/config/integrations`);
-    return res.data;
+    const res = await apiClient.get<{ data: AgencyIntegration[] } | AgencyIntegration[]>(
+      `${BASE}/agency/integrations`
+    );
+    return Array.isArray(res) ? res : res.data;
   },
 
   async toggleIntegration(id: string, enabled: boolean): Promise<AgencyIntegration> {
-    return apiClient.patch<AgencyIntegration>(`${BASE}/config/integrations/${id}`, { isEnabled: enabled });
+    return apiClient.patch<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
   },
 };
 

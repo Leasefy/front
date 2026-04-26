@@ -25,11 +25,11 @@ export function useMySubscription() {
       setSubscription(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar suscripcion');
-      // Default to free plan on error
+      // Default to base tier on error
       setSubscription({
         id: '',
         userId: '',
-        planId: 'free',
+        planId: 'starter',
         status: 'active',
         billingCycle: 'monthly',
         currentPeriodStart: new Date().toISOString(),

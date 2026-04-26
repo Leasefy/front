@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
@@ -165,7 +166,7 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
  * DocumentosPage - Document management center
  * Route: /panel/inmobiliaria/documentos
  */
-export default function DocumentosPage() {
+function DocumentosContent() {
   const { t, locale } = useI18n();
 
   // API Hooks
@@ -573,5 +574,13 @@ export default function DocumentosPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function DocumentosPage() {
+  return (
+    <PageGuard module="documentos">
+      <DocumentosContent />
+    </PageGuard>
   );
 }

@@ -19,6 +19,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
+import { useAuth } from '@/lib/auth/use-auth';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { propertiesApi } from '@/lib/api/properties.service';
 import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
 import {
   StepSelectPropietario,
@@ -48,9 +51,16 @@ const STEPS = [
  * ConsignacionWizard - 6-step wizard for creating new property consignments
  * Used at /panel/inmobiliaria/portafolio/nuevo
  */
+// PropertyType values supported by the backend
+const SUPPORTED_TYPES = ['apartment', 'house', 'studio', 'room'] as const;
+
 export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const { user } = useAuth();
+  const { isAdmin } = usePermissions();
+  // Agents skip the "Assign agent" step — they get auto-assigned
+  const isAgentRole = !isAdmin;
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -90,38 +100,51 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         // Commission terms always valid with defaults
         return true;
       case 4:
-        // Must have assigned an agent
+        // Agents skip this step; admins must assign an agent
+        if (isAgentRole) return true;
         return Boolean(formData.agenteId);
       case 5:
         // Inventory is optional
         return true;
       case 6:
-        // Confirmation step - all previous steps must be valid
+        // Confirmation step - agenteId not required for agents (auto-assigned)
         return Boolean(
           formData.propietarioId &&
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
           formData.propertyZone &&
-          formData.agenteId
+          (isAgentRole || formData.agenteId)
         );
       default:
         return false;
     }
   }, [currentStep, formData]);
 
-  // Navigation handlers
+  // Navigation helpers — agents skip step 4
+  const getNextStep = useCallback((step: number) => {
+    const next = step + 1;
+    if (isAgentRole && next === 4) return 5;
+    return next;
+  }, [isAgentRole]);
+
+  const getPrevStep = useCallback((step: number) => {
+    const prev = step - 1;
+    if (isAgentRole && prev === 4) return 3;
+    return prev;
+  }, [isAgentRole]);
+
   const goToNextStep = useCallback(() => {
     if (currentStep < 6 && isStepValid) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep(getNextStep(currentStep));
     }
-  }, [currentStep, isStepValid]);
+  }, [currentStep, isStepValid, getNextStep]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep(getPrevStep(currentStep));
     }
-  }, [currentStep]);
+  }, [currentStep, getPrevStep]);
 
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= 6) {
@@ -129,28 +152,54 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     }
   }, []);
 
-  // Submit handler
+  // Submit handler — creates the property and assigns the agent
   const handleSubmit = useCallback(async () => {
     if (!isStepValid) return;
-
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - log data to console
-      console.log('Creating new consignacion:', formData);
+      // Map wizard type to backend-supported values
+      const rawType = formData.propertyType ?? 'apartment';
+      const type = (SUPPORTED_TYPES as readonly string[]).includes(rawType)
+        ? (rawType as typeof SUPPORTED_TYPES[number])
+        : 'apartment';
 
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const property = await propertiesApi.create({
+        title:        formData.propertyTitle ?? '',
+        description:  formData.propertyTitle ?? '', // wizard has no description field
+        type,
+        city:         formData.propertyCity ?? '',
+        neighborhood: formData.propertyZone ?? '',
+        address:      formData.propertyAddress ?? '',
+        monthlyRent:  formData.monthlyRent ?? 0,
+        bedrooms:     0, // wizard doesn't collect this — update after creation
+        bathrooms:    0,
+        area:         0,
+        adminFee:     formData.adminFee,
+      });
+
+      // Assign agent
+      if (isAgentRole && user?.email) {
+        // Agent creating → auto-assign to themselves
+        await propertiesApi.assignAgent(property.id, user.email);
+      } else if (!isAgentRole && formData.agenteId) {
+        // Admin → assign the selected agent by email
+        const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
+        if (selectedAgente?.email) {
+          await propertiesApi.assignAgent(property.id, selectedAgente.email);
+        }
+      }
 
       toast.success({
         title: t('inmobiliaria.consignaciones.wizard.toasts.successTitle'),
-        description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', { title: formData.propertyTitle || '' }),
+        description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
+          title: formData.propertyTitle || '',
+        }),
       });
 
-      // Redirect to portafolio
-      router.push('/panel/inmobiliaria/portafolio');
+      router.push('/panel/inmobiliaria/propiedades');
     } catch (error) {
-      console.error('Error creating consignacion:', error);
+      console.error('Error creating property:', error);
       toast.error({
         title: t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'),
         description: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
@@ -158,7 +207,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, isStepValid, router]);
+  }, [formData, isStepValid, isAgentRole, user, agentes, router, t]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -203,13 +252,19 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return 'upcoming';
   };
 
+  // Visible steps depend on role
+  const visibleSteps = isAgentRole ? STEPS.filter((s) => s.id !== 4) : STEPS;
+  const totalVisible = visibleSteps.length;
+  // Position of current step among visible steps (1-based)
+  const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Step Indicator */}
       <div className="mb-8">
         {/* Desktop Steps */}
         <div className="hidden md:flex items-center justify-between">
-          {STEPS.map((step, index) => {
+          {visibleSteps.map((step, index) => {
             const status = getStepStatus(step.id);
             const StepIcon = step.icon;
 
@@ -251,7 +306,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 </button>
 
                 {/* Connector Line */}
-                {index < STEPS.length - 1 && (
+                {index < visibleSteps.length - 1 && (
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
                     step.id < currentStep
@@ -268,15 +323,21 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-neutral-900 dark:text-white">
-              {t('inmobiliaria.consignaciones.wizard.mobileProgress', { current: currentStep, total: 6, label: t(STEPS[currentStep - 1]?.labelKey) })}
+              {t('inmobiliaria.consignaciones.wizard.mobileProgress', {
+                current: currentVisibleIndex + 1,
+                total: totalVisible,
+                label: t(visibleSteps[currentVisibleIndex]?.labelKey ?? ''),
+              })}
             </span>
-            <span className="text-sm text-neutral-500">{Math.round((currentStep / 6) * 100)}%</span>
+            <span className="text-sm text-neutral-500">
+              {Math.round(((currentVisibleIndex + 1) / totalVisible) * 100)}%
+            </span>
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-indigo-600"
               initial={false}
-              animate={{ width: `${(currentStep / 6) * 100}%` }}
+              animate={{ width: `${((currentVisibleIndex + 1) / totalVisible) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           </div>

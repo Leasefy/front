@@ -63,6 +63,7 @@ export function WizardShell({
     currentStepMissingFields,
     attemptedAdvance,
     tryAdvanceStep,
+    mode,
   } = useApplication();
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
@@ -318,6 +319,7 @@ export function WizardShell({
                   onSubmit={submitApplication}
                   isSubmitting={isLoading}
                   isValid={currentStep === totalSteps ? canSubmit : true}
+                  mode={mode}
                 />
               </div>
             </div>

@@ -1,10 +1,9 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Property } from '@/lib/types/property';
 import { wishlistsApi } from '@/lib/api/wishlists.service';
-import { apiClient } from '@/lib/api/client';
-import { getSupabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth';
 
 const STORAGE_KEY = 'arriendo-facil-wishlist';
 
@@ -28,58 +27,54 @@ interface WishlistContextTextT {
 const WishlistContext = createContext<WishlistContextTextT | null>(null);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const isAuthenticated = useRef(false);
 
-  // Load wishlist: try API first (authenticated), fallback to localStorage
+  // Wishlists son sólo para TENANT — los landlord/agency no las cargan.
+  const isTenant = isAuthenticated && user?.role === 'tenant';
+
+  // Cargar wishlist: API si es tenant autenticado, fallback a localStorage.
+  // CRÍTICO: NO llamar a supabase.auth.getSession() acá — choca con el AuthProvider
+  // por el navigator.locks de Supabase y produce AbortError que cuelga el cliente.
   useEffect(() => {
+    if (authLoading) return;
+
+    let cancelled = false;
     async function loadWishlist() {
-      // Check if user is authenticated
-      try {
-        const supabase = getSupabase();
-        if (!supabase) throw new Error('no supabase');
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.access_token) {
-          isAuthenticated.current = true;
-          // Check user role — wishlists are TENANT-only
-          try {
-            const user = await apiClient.get<{ role: string }>('/users/me');
-            if (user.role === 'LANDLORD') {
-              setIsLoaded(true);
-              return;
-            }
-          } catch { /* proceed to try wishlists anyway */ }
+      if (isTenant) {
+        try {
           const ids = await wishlistsApi.getMine();
+          if (cancelled) return;
           setWishlist(ids);
-          // Sync localStorage with API data
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
           } catch { /* ignore */ }
           setIsLoaded(true);
           return;
+        } catch {
+          // API falló, caemos al localStorage
         }
-      } catch {
-        // API failed, fall through to localStorage
       }
 
-      // Fallback: load from localStorage
+      // Fallback: localStorage
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && !cancelled) {
             setWishlist(parsed);
           }
         }
       } catch {
         console.warn('Could not load wishlist from localStorage');
       }
-      setIsLoaded(true);
+      if (!cancelled) setIsLoaded(true);
     }
 
     loadWishlist();
-  }, []);
+    return () => { cancelled = true; };
+  }, [authLoading, isTenant]);
 
   // Save to localStorage whenever wishlist changes (always, as cache)
   useEffect(() => {
@@ -99,8 +94,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const toggleWishlist = useCallback((propertyId: string) => {
     setWishlist((prev) => {
       const removing = prev.includes(propertyId);
-      // Fire-and-forget API sync
-      if (isAuthenticated.current) {
+      if (isTenant) {
         if (removing) {
           wishlistsApi.remove(propertyId).catch(() => {});
         } else {
@@ -112,24 +106,24 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, propertyId];
     });
-  }, []);
+  }, [isTenant]);
 
   const addToWishlist = useCallback((propertyId: string) => {
     setWishlist((prev) => {
       if (prev.includes(propertyId)) return prev;
-      if (isAuthenticated.current) {
+      if (isTenant) {
         wishlistsApi.add(propertyId).catch(() => {});
       }
       return [...prev, propertyId];
     });
-  }, []);
+  }, [isTenant]);
 
   const removeFromWishlist = useCallback((propertyId: string) => {
-    if (isAuthenticated.current) {
+    if (isTenant) {
       wishlistsApi.remove(propertyId).catch(() => {});
     }
     setWishlist((prev) => prev.filter((id) => id !== propertyId));
-  }, []);
+  }, [isTenant]);
 
   const getWishlistedProperties = useCallback((properties: Property[]) => {
     return properties.filter((p) => wishlist.includes(p.id));

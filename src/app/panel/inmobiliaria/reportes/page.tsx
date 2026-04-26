@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
@@ -118,7 +119,7 @@ function saveFavorites(favorites: Set<ReportId>): void {
  * ReportesPage - Reports center for the inmobiliaria module
  * Route: /panel/inmobiliaria/reportes
  */
-export default function ReportesPage() {
+function ReportesContent() {
   const { t, locale } = useI18n();
   const { hasAdvancedReports } = useAgencyPlan();
 
@@ -811,5 +812,13 @@ export default function ReportesPage() {
         onExport={handleViewerExport}
       />
     </div>
+  );
+}
+
+export default function ReportesPage() {
+  return (
+    <PageGuard module="reportes">
+      <ReportesContent />
+    </PageGuard>
   );
 }

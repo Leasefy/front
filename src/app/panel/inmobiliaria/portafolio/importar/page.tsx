@@ -1,11 +1,12 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import Link from 'next/link';
 import { CaretLeft, FileArrowUp } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { ImportWizard } from '@/components/inmobiliaria/import/ImportWizard';
 
-export default function ImportarPage() {
+function ImportarContent() {
   const { t } = useI18n();
 
   return (
@@ -39,5 +40,13 @@ export default function ImportarPage() {
         <ImportWizard />
       </div>
     </div>
+  );
+}
+
+export default function ImportarPage() {
+  return (
+    <PageGuard module="portafolio">
+      <ImportarContent />
+    </PageGuard>
   );
 }

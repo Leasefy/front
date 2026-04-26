@@ -13,9 +13,12 @@ import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/us
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
-import { TEAM_ROLES, type TeamRole } from '@/lib/types/team';
+import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
 import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
+import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
+import { toast } from 'sonner';
 import {
   searchData,
   groupSearchResults,
@@ -86,6 +89,7 @@ export function PlanHeader({
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -95,6 +99,11 @@ export function PlanHeader({
   // Use `isInmobiliaria` only where the two diverge — routing, plan CTAs, etc.
   const isInmobiliaria = pathname?.startsWith('/panel/inmobiliaria') ?? false;
   const isLandlord = pathname?.startsWith('/panel') ?? false;
+
+  // In the inmobiliaria context, only admins can invite members or upgrade the plan.
+  // Outside inmobiliaria (landlord/tenant), always show these actions.
+  const permsCtx = usePermissionsContextSafe();
+  const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
 
   // Route destinations depend on context
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
@@ -119,8 +128,12 @@ export function PlanHeader({
 
   // Get subscription data
   const { subscription } = useMySubscription();
-  const planId = subscription?.planId ?? 'free';
+  const planId = subscription?.planId ?? 'starter';
   const currentPlan = getPlanById(planId);
+
+  // Tier helpers — canonical tiers: starter | pro | flex
+  const isBaseTier = planId === 'starter';
+  const isTopTier = planId === 'flex';
   const teamMembers = getTeamMembers();
   const pendingInvites = getPendingInvites();
 
@@ -175,9 +188,12 @@ export function PlanHeader({
     return icons[category];
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/auth');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      window.location.replace('/auth');
+    }
   };
 
   return (
@@ -317,12 +333,12 @@ export function PlanHeader({
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
             <>
-              {/* Subscription Popover */}
-              <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+              {/* Subscription Popover — admin-only in inmobiliaria context */}
+              {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
-                    {planId === 'free' && (
+                    {isBaseTier && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
                     )}
                   </button>
@@ -350,9 +366,9 @@ export function PlanHeader({
                     <div className="flex items-center gap-3 mb-4">
                       <div className={cn(
                         'w-10 h-10 flex items-center justify-center rounded-sm',
-                        planId === 'free' ? 'bg-muted' : 'bg-plan-primary'
+                        isBaseTier ? 'bg-muted' : 'bg-plan-primary'
                       )}>
-                        {planId === 'free' ? (
+                        {isBaseTier ? (
                           <Lightning className="w-5 h-5 text-plan-secondary" />
                         ) : (
                           <Crown className="w-5 h-5 text-plan-accent" />
@@ -363,7 +379,7 @@ export function PlanHeader({
                           Plan {currentPlan.name}
                         </p>
                         <p className="text-[12px] text-plan-secondary">
-                          {planId === 'free'
+                          {isBaseTier
                             ? 'Funciones limitadas'
                             : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
                           }
@@ -392,14 +408,14 @@ export function PlanHeader({
                       ))}
                     </div>
 
-                    {/* Upgrade CTA */}
-                    {planId !== 'business' && (
+                    {/* Upgrade CTA — hide only when already on the top tier */}
+                    {!isTopTier && (
                       <Link
                         href={upgradePlanHref}
                         onClick={() => setSubscriptionOpen(false)}
                         className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide font-mono transition-colors"
                       >
-                        {planId === 'free' ? 'Mejorar Plan' : 'Ver Planes'}
+                        {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
                     )}
 
@@ -413,10 +429,10 @@ export function PlanHeader({
                     </Link>
                   </div>
                 </PopoverContent>
-              </Popover>
+              </Popover>}
 
-              {/* Team Invite Popover */}
-              <Popover open={teamInviteOpen} onOpenChange={(open) => {
+              {/* Team Invite Popover — admin-only in inmobiliaria context */}
+              {canShowAdminActions && <Popover open={teamInviteOpen} onOpenChange={(open) => {
                 setTeamInviteOpen(open);
                 if (!open) {
                   setInviteEmail('');
@@ -470,6 +486,7 @@ export function PlanHeader({
                           onClick={() => {
                             setInviteSent(false);
                             setInviteEmail('');
+                            setInviteRole('viewer');
                           }}
                           className="mt-4 text-[13px] text-plan-secondary hover:text-plan-primary"
                         >
@@ -535,24 +552,61 @@ export function PlanHeader({
                                 </div>
                               </button>
                             ))}
+
+                            {/* Agente — redirige a /panel/inmobiliaria/agentes */}
+                            <button
+                              onClick={() => {
+                                setTeamInviteOpen(false);
+                                router.push(AGENTE_TEAM_ENTRY.redirectTo);
+                              }}
+                              className="w-full flex items-start gap-3 p-3 text-left border rounded-xl transition-all border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600"
+                            >
+                              <div className="w-4 h-4 rounded-full border-2 border-neutral-300 dark:border-neutral-600 flex items-center justify-center mt-0.5" />
+                              <div className="flex-1">
+                                <p className="text-[13px] font-medium text-plan-primary">{AGENTE_TEAM_ENTRY.name}</p>
+                                <p className="text-[11px] text-plan-secondary">{AGENTE_TEAM_ENTRY.description}</p>
+                              </div>
+                            </button>
                           </div>
                         </div>
 
                         {/* Submit */}
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (!inviteEmail || !isValidEmail(inviteEmail)) return;
-                            setInviteSent(true);
+                            setInviteLoading(true);
+                            try {
+                              await inmobiliariaConfigApi.inviteUser({
+                                email: inviteEmail,
+                                name: '',
+                                role: inviteRole,
+                              });
+                              setInviteSent(true);
+                            } catch {
+                              toast.error('No se pudo enviar la invitación. Intentá de nuevo.');
+                            } finally {
+                              setInviteLoading(false);
+                            }
                           }}
-                          disabled={!inviteEmail || !isValidEmail(inviteEmail)}
+                          disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
                           className={cn(
-                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide transition-colors',
-                            inviteEmail && isValidEmail(inviteEmail)
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
+                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide transition-colors font-mono flex items-center justify-center gap-2',
+                            inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
-                          Enviar Invitación
+                          {inviteLoading ? (
+                            <>
+                              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                              </svg>
+                              Enviando...
+                            </>
+                          ) : (
+                            'Enviar Invitación'
+                          )}
                         </button>
                       </>
                     )}
@@ -583,12 +637,19 @@ export function PlanHeader({
                     )}
                   </div>
                 </PopoverContent>
-              </Popover>
+              </Popover>}
             </>
           )}
 
           {/* Notifications */}
-          <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+          <Popover
+            open={notificationsOpen}
+            onOpenChange={(open) => {
+              setNotificationsOpen(open);
+              // Fetch fresh notifications whenever the popover opens
+              if (open) activeNotifs.refetch();
+            }}
+          >
             <PopoverTrigger asChild>
               <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
@@ -669,22 +730,27 @@ export function PlanHeader({
                   (activeTab === 'unread' ? notifications.filter(n => !n.read) : notifications).map((notification) => (
                   <div
                     key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
                     className={cn(
-                      'flex gap-3 px-5 py-4 hover:bg-muted transition-colors border-b border-border last:border-0 cursor-pointer',
+                      'group flex gap-3 px-5 py-4 hover:bg-muted transition-colors border-b border-border last:border-0',
                       !notification.read && 'bg-muted'
                     )}
                   >
                     {/* Avatar */}
-                    <div className={cn(
-                      'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0',
-                      !notification.read ? 'bg-primary text-white uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
-                    )}>
+                    <div
+                      className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0 cursor-pointer',
+                        !notification.read ? 'bg-primary text-white uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
+                      )}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       {notification.title.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       <p className={cn(
                         'text-[13px] text-plan-primary line-clamp-2',
                         !notification.read && 'font-medium'
@@ -703,10 +769,25 @@ export function PlanHeader({
                       </p>
                     </div>
 
-                    {/* Unread indicator */}
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-plan-status-blue flex-shrink-0 mt-2" />
-                    )}
+                    {/* Actions */}
+                    <div className="flex-shrink-0 flex items-center">
+                      {!notification.read ? (
+                        <div className="w-2 h-2 rounded-full bg-plan-status-blue" />
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            activeNotifs.deleteNotification(notification.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
+                          title="Eliminar"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))
                 )}

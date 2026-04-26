@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -168,7 +169,7 @@ function StatCard({
  * OperacionesPage - Operations center for the inmobiliaria module
  * Route: /panel/inmobiliaria/operaciones
  */
-export default function OperacionesPage() {
+function OperacionesContent() {
   const { t } = useI18n();
 
   // API Hooks
@@ -739,5 +740,13 @@ export default function OperacionesPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function OperacionesPage() {
+  return (
+    <PageGuard module="operaciones">
+      <OperacionesContent />
+    </PageGuard>
   );
 }

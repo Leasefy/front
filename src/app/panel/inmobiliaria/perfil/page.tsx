@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings } from '@phosphor-icons/react';
@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { permissionsApi } from '@/lib/api/inmobiliaria.service';
 
 // Setup steps definition
 interface SetupStep {
@@ -21,10 +22,31 @@ interface SetupStep {
 
 type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
+const AGENCY_ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  AGENTE: 'Agente',
+  CONTADOR: 'Contador',
+  VIEWER: 'Visualizador',
+};
+
+const AGENCY_ROLE_DESC: Record<string, string> = {
+  ADMIN: 'Acceso completo',
+  AGENTE: 'Gestión de propiedades y pipeline',
+  CONTADOR: 'Acceso financiero y contable',
+  VIEWER: 'Solo lectura',
+};
+
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, agency, updateProfile } = useAuth();
+  const [memberRole, setMemberRole] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
+
+  useEffect(() => {
+    permissionsApi.getMyPermissions()
+      .then((data) => setMemberRole(data.agencyRole ?? null))
+      .catch(() => {});
+  }, []);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -36,16 +58,16 @@ export default function InmobiliariaPerfilPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
+  // Form state — sourced from auth context, no mock data
   const [formData, setFormData] = useState({
-    name: user?.name || 'Admin Inmobiliaria',
-    email: user?.email || 'admin@inmobiliaria.com',
-    phone: '+56 9 1234 5678',
-    rut: '76.543.210-K',
-    address: 'Av. Apoquindo 3000, Las Condes',
-    birthDate: '1985-03-20',
-    emergencyContact: 'Carlos Pérez - +56 9 8765 4321',
-    cargo: 'Administrador General',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate || '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
   });
 
   // Setup steps with completion status
@@ -100,15 +122,31 @@ export default function InmobiliariaPerfilPage() {
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    try {
+      if (section === 'avatar' && avatarPreview) {
+        // Avatar upload not yet wired to storage — save preview locally for now
+        setSavedAvatar(avatarPreview);
+      } else if (section === 'personal') {
+        await updateProfile({
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: formData.phone.trim() || undefined,
+          address: formData.address.trim() || undefined,
+          birthDate: formData.birthDate || undefined,
+        });
+      } else if (section === 'emergency') {
+        await updateProfile({
+          emergencyContactName: formData.emergencyContactName.trim() || undefined,
+          emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
+        });
+      }
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setEditingSection(null);
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
@@ -397,7 +435,7 @@ export default function InmobiliariaPerfilPage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
-                        {formData.name.charAt(0).toUpperCase()}
+                        {(formData.firstName || user?.email || '?').charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -474,18 +512,11 @@ export default function InmobiliariaPerfilPage() {
                   </div>
                 )}
 
-                {editingSection === 'avatar' ? (
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-semibold rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  />
-                ) : (
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{formData.name}</h2>
-                )}
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                  {[formData.firstName, formData.lastName].filter(Boolean).join(' ') || user?.email || '—'}
+                </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                  {formData.cargo}
+                  {memberRole ? (AGENCY_ROLE_LABELS[memberRole] ?? memberRole) : '—'}
                 </p>
 
                 {/* Save/Cancel buttons for avatar section */}
@@ -516,26 +547,26 @@ export default function InmobiliariaPerfilPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {locale === 'es' ? 'Rol: Administrador' : 'Role: Administrator'}
+                        {memberRole ? `Rol: ${AGENCY_ROLE_LABELS[memberRole] ?? memberRole}` : '—'}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {locale === 'es' ? 'Acceso completo' : 'Full access'}
+                        {memberRole ? (AGENCY_ROLE_DESC[memberRole] ?? '') : ''}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  {agency?.name && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{agency.name}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {agency.nit ? `NIT: ${agency.nit}` : (locale === 'es' ? 'Agencia actual' : 'Current agency')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                        {locale === 'es' ? 'Miembro desde Enero 2024' : 'Member since January 2024'}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {locale === 'es' ? 'Cuenta verificada' : 'Verified account'}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -612,107 +643,88 @@ export default function InmobiliariaPerfilPage() {
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Nombre */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    {locale === 'es' ? 'Nombre completo' : 'Full name'}
+                    {locale === 'es' ? 'Nombre' : 'First name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    />
+                    <input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.name}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.firstName || '—'}</span>
                     </div>
                   )}
                 </div>
 
+                {/* Apellido */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    RUT
+                    {locale === 'es' ? 'Apellido' : 'Last name'}
                   </label>
+                  {editingSection === 'personal' ? (
+                    <input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                      <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.lastName || '—'}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Email — read-only */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Email</label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <Shield className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.rut}</span>
+                    <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                    <span className="text-sm text-neutral-900 dark:text-white">{formData.email || '—'}</span>
                   </div>
                 </div>
 
+                {/* Teléfono */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Email
+                    {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.email}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    {locale === 'es' ? 'Telefono' : 'Phone'}
-                  </label>
-                  {editingSection === 'personal' ? (
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    />
+                    <input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.phone}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.phone || '—'}</span>
                     </div>
                   )}
                 </div>
 
+                {/* Rol — read-only, definido por la agencia */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    {locale === 'es' ? 'Cargo' : 'Position'}
+                    {locale === 'es' ? 'Rol en la agencia' : 'Agency role'}
                   </label>
-                  {editingSection === 'personal' ? (
-                    <input
-                      type="text"
-                      value={formData.cargo}
-                      onChange={(e) => handleInputChange('cargo', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <Briefcase className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.cargo}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <Briefcase className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                    <span className="text-sm text-neutral-900 dark:text-white">
+                      {memberRole ? (AGENCY_ROLE_LABELS[memberRole] ?? memberRole) : '—'}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="md:col-span-2">
+                {/* Dirección */}
+                <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    {locale === 'es' ? 'Direccion' : 'Address'}
+                    {locale === 'es' ? 'Dirección' : 'Address'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    />
+                    <input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.address}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.address || '—'}</span>
                     </div>
                   )}
                 </div>
@@ -752,24 +764,39 @@ export default function InmobiliariaPerfilPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  {locale === 'es' ? 'Nombre y telefono' : 'Name and phone'}
-                </label>
-                {editingSection === 'emergency' ? (
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    placeholder={locale === 'es' ? 'Nombre - Telefono' : 'Name - Phone'}
-                  />
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
-                  </div>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    {locale === 'es' ? 'Nombre' : 'Name'}
+                  </label>
+                  {editingSection === 'emergency' ? (
+                    <input type="text" value={formData.emergencyContactName}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                      <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactName || '—'}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    {locale === 'es' ? 'Teléfono' : 'Phone'}
+                  </label>
+                  {editingSection === 'emergency' ? (
+                    <input type="tel" value={formData.emergencyContactPhone}
+                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                      placeholder="3001234567"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                      <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+                      <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactPhone || '—'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

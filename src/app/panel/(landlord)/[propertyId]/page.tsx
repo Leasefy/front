@@ -14,7 +14,7 @@ import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { landlordApi } from '@/lib/api/landlord.service';
 import { useVisits } from '@/lib/hooks/useVisits';
 import { useContracts } from '@/lib/hooks/useContracts';
-import { CONTRACT_TYPE_LABELS } from '@/lib/types/contract';
+import { getContractTypeLabel } from '@/lib/types/contract';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
@@ -24,11 +24,13 @@ import { PlanDetailSheet, QuickAction, DetailSection, SecondaryPanel } from '@/c
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 
 const VISIT_STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
-  requested: 'new',
-  confirmed: 'in_progress',
-  completed: 'completed',
-  cancelled: 'rejected',
-  no_show: 'important',
+  requested:   'new',
+  confirmed:   'in_progress',
+  completed:   'completed',
+  cancelled:   'rejected',
+  no_show:     'important',
+  rejected:    'rejected',
+  rescheduled: 'archived',
 };
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';
@@ -72,7 +74,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
   // Subscription check for feature gating
   const { subscription } = useMySubscription();
-  const planId = (subscription?.planId || 'free') as PlanId;
+  const planId = (subscription?.planId || 'starter') as PlanId;
   const hasAiScoring = canPlanAccessFeature(planId, 'ai_scoring');
 
   // Fetch property with candidates from API
@@ -919,7 +921,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
                   <div>
                     <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</p>
-                    <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{CONTRACT_TYPE_LABELS[activeContract.type]}</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{getContractTypeLabel(activeContract)}</p>
                   </div>
 
                   <div className="h-px bg-neutral-100 dark:bg-neutral-700" />

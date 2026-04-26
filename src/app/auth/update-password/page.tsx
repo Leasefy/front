@@ -7,39 +7,87 @@ import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/re
 import { Button } from '@/components/ui/button';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
+import { getAccessToken } from '@/lib/api/client';
+
+/**
+ * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
+ * por el GoTrueClient JS. Lo hacemos así porque el cliente JS se cuelga
+ * indefinidamente en este flow (lock interno o algo similar) y no envía la
+ * request al backend. Con fetch directo tenemos el access_token cacheado por
+ * el AuthProvider y mandamos el PUT /auth/v1/user manualmente.
+ */
+async function updatePasswordDirect(newPassword: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const token = getAccessToken();
+
+  if (!url || !anonKey) throw new Error('Supabase no está configurado.');
+  if (!token) throw new Error('No hay sesión activa. Pedí un nuevo enlace de recuperación.');
+
+  const res = await fetch(`${url}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: anonKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+
+  if (!res.ok) {
+    let message = `Error ${res.status}`;
+    try {
+      const body = await res.json();
+      message = body.msg || body.error_description || body.error || message;
+    } catch { /* keep default */ }
+    throw new Error(message);
+  }
+}
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
-  const { updatePassword } = useAuth();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const passwordsMatch = password === confirm;
   const isStrong = password.length >= 8;
-  const canSubmit = password && confirm && passwordsMatch && isStrong;
+  // CRÍTICO: esperar a authLoading false antes de permitir submit, así
+  // el AuthProvider terminó su init (fetchUser + checkMfaLevel) y no
+  // chocan los locks de @supabase/auth-js cuando llamamos updateUser.
+  const canSubmit =
+    password && confirm && passwordsMatch && isStrong && !authLoading && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
 
-    setIsLoading(true);
+    if (!isAuthenticated) {
+      setError(
+        'El enlace de recuperación expiró o no es válido. Pedí uno nuevo desde "¿Olvidaste tu contraseña?"',
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
     setError(null);
 
     try {
-      await updatePassword!(password);
+      await updatePasswordDirect(password);
       setSuccess(true);
-      // Redirect to dashboard after 2 seconds
       setTimeout(() => router.push('/'), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error. Intenta de nuevo.');
+      const msg = err instanceof Error ? err.message : 'Ocurrió un error. Intenta de nuevo.';
+      console.error('[update-password] error:', err);
+      setError(msg);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -150,10 +198,14 @@ export default function UpdatePasswordPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 text-[14px]"
-                  disabled={!canSubmit || isLoading}
+                  disabled={!canSubmit}
                 >
-                  {isLoading ? 'Guardando...' : 'Guardar contraseña'}
-                  {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                  {authLoading
+                    ? 'Cargando sesión...'
+                    : isSubmitting
+                      ? 'Guardando...'
+                      : 'Guardar contraseña'}
+                  {!authLoading && !isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
               </form>
 

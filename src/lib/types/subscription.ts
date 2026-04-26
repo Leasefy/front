@@ -3,11 +3,17 @@
  * @module lib/types/subscription
  */
 
-// Plan identifiers
-export type PlanId = 'free' | 'pro' | 'business';
+/**
+ * Canonical plan tier identifiers — match backend enum `SubscriptionPlan`
+ * (STARTER | PRO | FLEX, lowercased for UI keys).
+ *
+ * The same three tiers apply to all planType values (TENANT | LANDLORD | AGENCY);
+ * role-specific labels are resolved via planType, not via a separate tier.
+ */
+export type PlanId = 'starter' | 'pro' | 'flex';
 
-// Agency plan identifiers
-export type AgencyPlanId = 'starter' | 'pro' | 'flex' | 'enterprise';
+/** @deprecated Use PlanId — tiers are unified across roles */
+export type AgencyPlanId = PlanId | 'enterprise';
 
 // Pricing model for agency plans
 export type PricingModel = 'free' | 'flat' | 'percentage' | 'custom';
@@ -106,9 +112,9 @@ export interface SubscriptionContextValue {
 export interface PlanComparisonRow {
   feature: string;
   description: string;
-  free: boolean | string | number;
+  starter: boolean | string | number;
   pro: boolean | string | number;
-  business: boolean | string | number;
+  flex: boolean | string | number;
 }
 
 /**

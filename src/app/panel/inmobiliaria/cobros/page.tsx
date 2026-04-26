@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -51,7 +52,7 @@ function getCurrentMonth(): string {
  * CobrosPage - Main page for collection management
  * Route: /panel/inmobiliaria/cobros
  */
-export default function CobrosPage() {
+function CobrosContent() {
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
 
@@ -563,5 +564,13 @@ export default function CobrosPage() {
         onSave={handleConfigSave}
       />
     </div>
+  );
+}
+
+export default function CobrosPage() {
+  return (
+    <PageGuard module="cobros">
+      <CobrosContent />
+    </PageGuard>
   );
 }

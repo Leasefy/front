@@ -4,9 +4,9 @@
  */
 
 import { apiClient, getAccessToken } from './client';
-import { mapBackendProperty, TYPE_TO_BACKEND } from './properties.mapper';
+import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND } from './properties.mapper';
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
-import type { Property } from '@/lib/types/property';
+import type { Property, AgencyProperty } from '@/lib/types/property';
 import type { PaginationMeta } from './properties.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -58,10 +58,26 @@ export const propertiesApi = {
     return mapBackendProperty(bp);
   },
 
-  /** Get properties owned by the authenticated landlord */
-  async getMine(): Promise<Property[]> {
+  /** Get properties owned by the authenticated landlord (with agent assignments) */
+  async getMine(): Promise<AgencyProperty[]> {
     const bps = await apiClient.get<BackendProperty[]>('/properties/mine');
-    return bps.map(mapBackendProperty);
+    return bps.map(mapBackendAgencyProperty);
+  },
+
+  /** Get properties assigned to the authenticated agent */
+  async getAssigned(): Promise<AgencyProperty[]> {
+    const bps = await apiClient.get<BackendProperty[]>('/properties/assigned');
+    return bps.map(mapBackendAgencyProperty);
+  },
+
+  /** Assign an agent to a property by email */
+  async assignAgent(propertyId: string, email: string): Promise<void> {
+    await apiClient.post(`/properties/${propertyId}/agents`, { email });
+  },
+
+  /** Remove an agent from a property */
+  async removeAgent(propertyId: string, agentId: string): Promise<void> {
+    await apiClient.delete(`/properties/${propertyId}/agents/${agentId}`);
   },
 
   /** Create a new property */

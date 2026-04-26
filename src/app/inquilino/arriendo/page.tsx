@@ -27,7 +27,7 @@ export default function ArriendoPage() {
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
-    (sum, lease) => sum + lease.monthlyRent + lease.adminFee,
+    (sum, lease) => sum + lease.monthlyRent + (lease.adminFee ?? 0),
     0
   );
 
@@ -230,7 +230,7 @@ export default function ArriendoPage() {
                               </div>
                               <div className="sm:text-right">
                                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                                  {formatCurrency(lease.monthlyRent + lease.adminFee)}
+                                  {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                                 </p>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
                               </div>
@@ -247,13 +247,13 @@ export default function ArriendoPage() {
                               <div>
                                 <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Administración' : 'Admin fee'}</p>
                                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  {formatCurrency(lease.adminFee)}
+                                  {formatCurrency(lease.adminFee ?? 0)}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
                                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  {locale === 'es' ? `Día ${lease.paymentDueDay}` : `Day ${lease.paymentDueDay}`}
+                                  {locale === 'es' ? `Día ${lease.paymentDay}` : `Day ${lease.paymentDay}`}
                                 </p>
                               </div>
                               <div>

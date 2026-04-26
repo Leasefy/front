@@ -2,25 +2,35 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, X, CheckCircle, Shield, Buildings, SpinnerGap, ArrowUpRight, CaretRight, CaretLeft, Receipt, Download } from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, CaretLeft, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
 
-import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
-import type { Payment } from '@/lib/types/lease';
+import { PayRentModal } from '@/components/tenant/PayRentModal';
+import type {
+  BackendTenantPaymentRequest,
+  TenantPaymentRequestStatus,
+} from '@/lib/api/tenant-payment-requests.types';
 
-interface PaymentRow extends Payment {
+interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
-  propertyThumbnail: string;
 }
 
-type PaymentStep = 'confirm' | 'processing' | 'success';
-
 const ITEMS_PER_PAGE = 5;
+
+const MONTH_NAMES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const MONTH_NAMES_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 /**
  * Tenant Payments Page - Landing Style (matching brand aesthetic)
@@ -29,53 +39,51 @@ export default function PagosPage() {
   const { t, locale, formatCurrency: formatCurrencyI18n } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const { getActive, isLoading: leasesLoading, error: leasesError, refetch: refetchLeases } = useLeases();
-  const { payments: rawPayments, isLoading: paymentsLoading, getNextPayment } = useMyPayments();
+  const { getActive, isLoading: leasesLoading } = useLeases();
+  const {
+    requests: rawRequests,
+    isLoading: requestsLoading,
+    refetch: refetchRequests,
+  } = useMyPaymentRequests();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
+  const {
+    info: paymentInfo,
+    refetch: refetchPaymentInfo,
+  } = useLeasePaymentInfo(primaryLease?.id ?? null);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<PaymentStep>('confirm');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Build enriched payment rows from leases + payments
+  // Enriquecer requests con title de la propiedad (request.lease solo trae address+city)
   const leaseMap = new Map(activeLeases.map(l => [l.id, l]));
-  const allPayments: PaymentRow[] = rawPayments
-    .filter(p => leaseMap.has(p.leaseId))
-    .map(p => {
-      const lease = leaseMap.get(p.leaseId)!;
-      return {
-        ...p,
-        propertyTitle: lease.propertyTitle,
-        propertyThumbnail: lease.propertyThumbnail,
-      };
-    })
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
-
-  const nextPayment = primaryLease ? getNextPayment(primaryLease.id) : undefined;
+  const allRequests: RequestRow[] = rawRequests
+    .filter(r => leaseMap.has(r.leaseId))
+    .map(r => ({
+      ...r,
+      propertyTitle: leaseMap.get(r.leaseId)?.propertyTitle ?? `${r.lease.propertyAddress}, ${r.lease.propertyCity}`,
+    }));
 
   // Pagination
-  const totalPages = Math.ceil(allPayments.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(allRequests.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedPayments = allPayments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedRequests = allRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Calculate totals
-  const totalPaid = allPayments
-    .filter(p => p.status === 'paid')
-    .reduce((sum, p) => sum + p.amount, 0);
+  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente"
+  const totalPaid = allRequests
+    .filter(r => r.status === 'APPROVED')
+    .reduce((sum, r) => sum + r.amount, 0);
 
-  const pendingAmount = allPayments
-    .filter(p => p.status === 'pending')
-    .reduce((sum, p) => sum + p.amount, 0);
+  const pendingAmount = allRequests
+    .filter(r => r.status === 'PENDING_VALIDATION')
+    .reduce((sum, r) => sum + r.amount, 0);
 
-  const formatDateLocale = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
+  // Próximo pago: si el período actual no tiene nada (NONE) o fue rechazado,
+  // mostramos como "próximo" el monthlyRent del lease para el período actual.
+  const showNextPaymentCta =
+    paymentInfo?.currentPeriodStatus === 'NONE' || paymentInfo?.currentPeriodStatus === 'REJECTED';
+  const nextAmount = showNextPaymentCta ? paymentInfo!.monthlyRent : 0;
 
   const formatShortDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -84,73 +92,77 @@ export default function PagosPage() {
     });
   };
 
+  const formatPeriod = (month: number, year: number) => {
+    const names = locale === 'es' ? MONTH_NAMES_ES : MONTH_NAMES_EN;
+    return `${names[month - 1]} ${year}`;
+  };
+
+  // Día de pago del mes calculado contra el día de pago del lease
   const getDaysUntilPayment = () => {
-    if (!nextPayment) return null;
-    const dueDate = new Date(nextPayment.dueDate);
+    if (!primaryLease || !showNextPaymentCta) return null;
     const today = new Date();
-    return Math.max(0, Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+    let due = new Date(today.getFullYear(), today.getMonth(), primaryLease.paymentDay);
+    if (due < today) due = new Date(today.getFullYear(), today.getMonth() + 1, primaryLease.paymentDay);
+    return Math.max(0, Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   const getPaymentProgress = () => {
-    if (!nextPayment) return 0;
-    const dueDate = new Date(nextPayment.dueDate);
+    if (!primaryLease || !showNextPaymentCta) return 0;
     const today = new Date();
-    const startOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
-    const totalDays = dueDate.getDate();
+    const totalDays = primaryLease.paymentDay;
     const daysElapsed = Math.min(today.getDate(), totalDays);
     return Math.round((daysElapsed / totalDays) * 100);
   };
 
   const daysUntil = getDaysUntilPayment();
 
-  const handlePayNow = () => {
-    setPaymentStep('confirm');
-    setShowPaymentModal(true);
+  const handlePayNow = () => setShowPaymentModal(true);
+  const handleCloseModal = () => setShowPaymentModal(false);
+  const handlePaid = () => {
+    refetchRequests();
+    refetchPaymentInfo();
   };
 
-  const handleConfirmPayment = () => {
-    setPaymentStep('processing');
-    setTimeout(() => {
-      setPaymentStep('success');
-    }, 2000);
-  };
-
-  const handleCloseModal = () => {
-    setShowPaymentModal(false);
-    setPaymentStep('confirm');
-  };
-
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status: TenantPaymentRequestStatus) => {
     switch (status) {
-      case 'paid':
+      case 'APPROVED':
         return {
-          label: t('payments.status.paid'),
+          label: locale === 'es' ? 'Aprobado' : 'Approved',
           color: 'bg-emerald-100 text-emerald-700',
           icon: Check,
           iconBg: 'bg-emerald-100',
           iconColor: 'text-emerald-600',
         };
-      case 'pending':
+      case 'PENDING_VALIDATION':
         return {
-          label: t('payments.status.pending'),
+          label: locale === 'es' ? 'En verificación' : 'In verification',
           color: 'bg-amber-100 text-amber-700',
           icon: Clock,
           iconBg: 'bg-amber-100',
           iconColor: 'text-amber-600',
         };
-      default:
+      case 'REJECTED':
+      case 'DISPUTED':
         return {
-          label: t('payments.status.overdue'),
-          color: 'bg-red-100 text-red-700',
-          icon: WarningCircle,
-          iconBg: 'bg-red-100',
-          iconColor: 'text-red-600',
+          label: locale === 'es' ? 'Rechazado' : 'Rejected',
+          color: 'bg-rose-100 text-rose-700',
+          icon: XCircle,
+          iconBg: 'bg-rose-100',
+          iconColor: 'text-rose-600',
+        };
+      case 'CANCELLED':
+        return {
+          label: locale === 'es' ? 'Cancelado' : 'Cancelled',
+          color: 'bg-neutral-100 text-neutral-600',
+          icon: Prohibit,
+          iconBg: 'bg-neutral-100',
+          iconColor: 'text-neutral-500',
         };
     }
   };
 
   // Loading state
-  if (isOnboardingLoading || leasesLoading || paymentsLoading) {
+  if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -238,7 +250,7 @@ export default function PagosPage() {
             </div>
             <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{t('dashboard.nextPayment')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
-              {formatCurrencyI18n(nextPayment?.amount || 0)}
+              {formatCurrencyI18n(nextAmount)}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
               {daysUntil !== null ? t('dashboard.dueIn', { days: daysUntil }) : t('payments.noPayments')}
@@ -280,26 +292,32 @@ export default function PagosPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('payments.history')}</h2>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">{allPayments.length} {t('nav.payments').toLowerCase()}</span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
             </div>
 
-            {allPayments.length > 0 ? (
+            {allRequests.length > 0 ? (
               <>
                 <div className="space-y-3">
-                  {paginatedPayments.map((payment, index) => {
-                    const statusConfig = getStatusConfig(payment.status);
+                  {paginatedRequests.map((request, index) => {
+                    const statusConfig = getStatusConfig(request.status);
                     const StatusIcon = statusConfig.icon;
+
+                    const dateLabel =
+                      request.status === 'APPROVED' && request.validatedAt
+                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatShortDate(request.validatedAt)}`
+                        : request.status === 'PENDING_VALIDATION'
+                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatShortDate(request.createdAt)}`
+                          : `${locale === 'es' ? 'Vence' : 'Due'} ${formatShortDate(request.dueDate)}`;
 
                     return (
                       <motion.div
-                        key={payment.id}
+                        key={request.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md transition-all duration-300 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
-                          {/* Icon */}
                           <div className={cn(
                             'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
                             statusConfig.iconBg
@@ -307,20 +325,19 @@ export default function PagosPage() {
                             <StatusIcon className={cn('w-6 h-6', statusConfig.iconColor)} />
                           </div>
 
-                          {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <h3 className="font-semibold text-neutral-900 dark:text-white">
-                                  {payment.concept === 'rent' ? t('rental.monthlyRent') : payment.concept === 'deposit' ? t('payments.type.deposit') : t('nav.payments')}
+                                  {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                                 </h3>
                                 <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
-                                  {payment.propertyTitle}
+                                  {request.propertyTitle}
                                 </p>
                               </div>
                               <div className="text-right flex-shrink-0">
                                 <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                                  {formatCurrencyI18n(payment.amount)}
+                                  {formatCurrencyI18n(request.amount)}
                                 </p>
                                 <span className={cn(
                                   'inline-flex px-2 py-0.5 text-xs font-medium rounded-full',
@@ -333,26 +350,25 @@ export default function PagosPage() {
 
                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
                               <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                                {payment.status === 'paid' && payment.paidDate
-                                  ? `${t('payments.details.paidOn')} ${formatShortDate(payment.paidDate)}`
-                                  : `${t('payments.details.dueDate')} ${formatShortDate(payment.dueDate)}`}
+                                {dateLabel}
+                                {request.bankName && <span className="ml-1">· {request.bankName}</span>}
                               </span>
-                              {payment.status === 'paid' && (
-                                <button className="flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors">
-                                  <Download className="w-4 h-4" />
-                                  {t('payments.details.receipt')}
-                                </button>
-                              )}
-                              {payment.status === 'pending' && (
+                              {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
                                 <button
                                   onClick={handlePayNow}
                                   className="flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
                                 >
-                                  {t('dashboard.payNow')}
+                                  {locale === 'es' ? 'Reintentar' : 'Retry'}
                                   <ArrowUpRight className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
+
+                            {request.rejectionReason && (
+                              <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 italic">
+                                {request.rejectionReason}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -427,58 +443,22 @@ export default function PagosPage() {
             transition={{ delay: 0.3 }}
             className="space-y-6"
           >
-            {/* Next Payment Card */}
-            {nextPayment && (
-              <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-                    <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{t('dashboard.nextPayment')}</span>
-                </div>
-
-                <p className="text-4xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
-                  {formatCurrencyI18n(nextPayment.amount)}
-                </p>
-                <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-6 truncate">
-                  {primaryLease.propertyTitle}
-                </p>
-
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}</span>
-                    <span className="text-neutral-900 dark:text-white font-medium">{getPaymentProgress()}%</span>
-                  </div>
-                  <div className="h-2 bg-indigo-200 dark:bg-indigo-900/50 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full transition-all duration-500"
-                      style={{ width: `${getPaymentProgress()}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-indigo-200 dark:border-indigo-800">
-                  <span className="text-neutral-500 dark:text-neutral-400">{t('payments.details.dueDate')}</span>
-                  <span className="text-neutral-900 dark:text-white font-medium">{formatShortDate(nextPayment.dueDate)}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm mb-6">
-                  <span className={cn(
-                    daysUntil !== null && daysUntil <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-500 dark:text-neutral-400'
-                  )}>
-                    {daysUntil === 0 ? t('dashboard.dueToday') : daysUntil !== null ? t('dashboard.dueIn', { days: daysUntil }) : ''}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handlePayNow}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
-                >
-                  {t('dashboard.payNow')}
-                  <ArrowUpRight className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Period Status Card — depende de currentPeriodStatus */}
+            {paymentInfo && (
+              <PeriodStatusCard
+                status={paymentInfo.currentPeriodStatus}
+                rejectionReason={paymentInfo.currentPeriodRejectionReason}
+                amount={paymentInfo.monthlyRent}
+                propertyTitle={primaryLease.propertyTitle}
+                periodLabel={formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
+                paymentDay={paymentInfo.paymentDay}
+                progress={getPaymentProgress()}
+                daysUntil={daysUntil}
+                onPay={handlePayNow}
+                locale={locale}
+                t={t}
+                formatCurrency={formatCurrencyI18n}
+              />
             )}
 
             {/* Quick Links */}
@@ -510,157 +490,170 @@ export default function PagosPage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <AnimatePresence>
-        {showPaymentModal && nextPayment && primaryLease && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          >
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={paymentStep !== 'processing' ? handleCloseModal : undefined}
-            />
+      {primaryLease && (
+        <PayRentModal
+          open={showPaymentModal}
+          leaseId={primaryLease.id}
+          onClose={handleCloseModal}
+          onPaid={handlePaid}
+          prefill={{ fullName: primaryLease.tenantName, email: primaryLease.tenantEmail }}
+        />
+      )}
+    </div>
+  );
+}
 
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white dark:bg-[#1a1a1c] w-full max-w-md rounded-3xl shadow-xl overflow-hidden"
-            >
-              {/* Confirm Step */}
-              {paymentStep === 'confirm' && (
-                <>
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white">{t('payments.confirm.title')}</h3>
-                    <button
-                      onClick={handleCloseModal}
-                      className="p-2 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] rounded-full transition-colors"
-                    >
-                      <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-                    </button>
-                  </div>
+// ─── Subcomponents ──────────────────────────────────────────────────────────
 
-                  <div className="p-6">
-                    {/* Property Info */}
-                    <div className="flex items-center gap-3 p-4 bg-stone-50 dark:bg-[#2a2a2c] rounded-2xl mb-6">
-                      <div className="w-12 h-12 bg-neutral-200 dark:bg-neutral-700 rounded-xl flex items-center justify-center overflow-hidden">
-                        <Buildings className="w-6 h-6 text-neutral-500 dark:text-neutral-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-neutral-900 dark:text-white">{primaryLease.propertyTitle}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('rental.monthlyRent')}</p>
-                      </div>
-                    </div>
+interface PeriodStatusCardProps {
+  status: 'NONE' | 'PENDING_VALIDATION' | 'APPROVED' | 'REJECTED';
+  rejectionReason: string | null;
+  amount: number;
+  propertyTitle: string;
+  periodLabel: string;
+  paymentDay: number;
+  progress: number;
+  daysUntil: number | null;
+  onPay: () => void;
+  locale: 'es' | 'en';
+  t: (key: string, params?: Record<string, string | number>) => string;
+  formatCurrency: (n: number) => string;
+}
 
-                    {/* Amount */}
-                    <div className="text-center mb-6">
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('payments.confirm.amount')}</p>
-                      <p className="text-4xl font-bold text-neutral-900 dark:text-white">
-                        {formatCurrencyI18n(nextPayment.amount)}
-                      </p>
-                      <p className="text-sm text-neutral-400 mt-1">
-                        {t('payments.details.dueDate')} {formatDateLocale(nextPayment.dueDate)}
-                      </p>
-                    </div>
+function PeriodStatusCard({
+  status,
+  rejectionReason,
+  amount,
+  propertyTitle,
+  periodLabel,
+  paymentDay,
+  progress,
+  daysUntil,
+  onPay,
+  locale,
+  t,
+  formatCurrency,
+}: PeriodStatusCardProps) {
+  // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
+  if (status === 'PENDING_VALIDATION') {
+    return (
+      <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/40 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
+            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+            {locale === 'es' ? 'Pago en verificación' : 'Payment in verification'}
+          </span>
+        </div>
+        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+          {formatCurrency(amount)}
+        </p>
+        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+          {locale === 'es'
+            ? 'Tu banco está verificando el pago. Vas a ver la confirmación cuando termine.'
+            : 'Your bank is verifying the payment. You\'ll see the confirmation when it completes.'}
+        </p>
+      </div>
+    );
+  }
 
-                    {/* Security Note */}
-                    <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-                      <Shield className="w-4 h-4" />
-                      <span>{locale === 'es' ? 'Serás redirigido a una pasarela de pago segura' : 'You will be redirected to a secure payment gateway'}</span>
-                    </div>
+  // APPROVED — pago confirmado por el landlord
+  if (status === 'APPROVED') {
+    return (
+      <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-950/40 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
+            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
+          </span>
+        </div>
+        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+          {formatCurrency(amount)}
+        </p>
+        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+          {locale === 'es'
+            ? 'Tu pago de este mes ya está al día.'
+            : 'You\'re up to date for this month.'}
+        </p>
+      </div>
+    );
+  }
 
-                    {/* Actions */}
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleCloseModal}
-                        className="flex-1 py-3 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium rounded-full hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
-                      >
-                        {t('common.cancel')}
-                      </button>
-                      <button
-                        onClick={handleConfirmPayment}
-                        className="flex-1 py-3 bg-indigo-600 dark:bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium rounded-full hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-colors"
-                      >
-                        {t('payments.confirm.title')}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+  // NONE | REJECTED — mostrar CTA "Pagar arriendo"
+  return (
+    <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
+          <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        </div>
+        <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+          {status === 'REJECTED'
+            ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
+            : t('dashboard.nextPayment')}
+        </span>
+      </div>
 
-              {/* Processing Step */}
-              {paymentStep === 'processing' && (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-stone-100 dark:bg-[#2a2a2c] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <SpinnerGap className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-spin" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                    {t('payments.confirm.processing')}
-                  </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {locale === 'es' ? 'Por favor espera mientras procesamos tu pago...' : 'Please wait while we process your payment...'}
-                  </p>
-                </div>
-              )}
+      {status === 'REJECTED' && rejectionReason && (
+        <div className="mb-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-3">
+          <p className="text-xs text-rose-700 dark:text-rose-400">{rejectionReason}</p>
+        </div>
+      )}
 
-              {/* Success Step */}
-              {paymentStep === 'success' && (
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                    {t('payments.confirm.success')}
-                  </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-                    {locale === 'es'
-                      ? `Tu pago de ${formatCurrencyI18n(nextPayment.amount)} ha sido procesado.`
-                      : `Your payment of ${formatCurrencyI18n(nextPayment.amount)} has been processed.`}
-                  </p>
-                  <p className="text-xs text-neutral-400 mb-6">
-                    {locale === 'es' ? 'Recibirás un comprobante en tu correo electrónico.' : 'You will receive a receipt in your email.'}
-                  </p>
+      <p className="text-4xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+        {formatCurrency(amount)}
+      </p>
+      <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-6 truncate">
+        {propertyTitle}
+      </p>
 
-                  {/* Receipt Summary */}
-                  <div className="bg-stone-50 dark:bg-[#2a2a2c] rounded-2xl p-4 mb-6 text-left">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Propiedad' : 'Property'}</span>
-                      <span className="text-neutral-900 dark:text-white font-medium">{primaryLease.propertyTitle}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-neutral-500 dark:text-neutral-400">{t('payments.details.amount')}</span>
-                      <span className="text-neutral-900 dark:text-white font-medium">{formatCurrencyI18n(nextPayment.amount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Fecha' : 'Date'}</span>
-                      <span className="text-neutral-900 dark:text-white font-medium">{formatDateLocale(new Date().toISOString())}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-neutral-500 dark:text-neutral-400">{t('payments.details.reference')}</span>
-                      <span className="text-neutral-900 dark:text-white font-mono text-xs">PAY-{Date.now().toString().slice(-8)}</span>
-                    </div>
-                  </div>
+      <div className="mb-4">
+        <div className="flex items-center justify-between text-sm mb-2">
+          <span className="text-neutral-500 dark:text-neutral-400">
+            {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
+          </span>
+          <span className="text-neutral-900 dark:text-white font-medium">{progress}%</span>
+        </div>
+        <div className="h-2 bg-indigo-200 dark:bg-indigo-900/50 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
 
-                  <button
-                    onClick={handleCloseModal}
-                    className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-medium rounded-full hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-                  >
-                    {t('common.close')}
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-indigo-200 dark:border-indigo-800">
+        <span className="text-neutral-500 dark:text-neutral-400">
+          {locale === 'es' ? 'Día de pago' : 'Payment day'}
+        </span>
+        <span className="text-neutral-900 dark:text-white font-medium">
+          {locale === 'es' ? `Día ${paymentDay}` : `Day ${paymentDay}`}
+        </span>
+      </div>
+
+      {daysUntil !== null && (
+        <div className="flex items-center justify-between text-sm mb-6">
+          <span className={cn(
+            daysUntil <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-500 dark:text-neutral-400'
+          )}>
+            {daysUntil === 0 ? t('dashboard.dueToday') : t('dashboard.dueIn', { days: daysUntil })}
+          </span>
+        </div>
+      )}
+
+      <button
+        onClick={onPay}
+        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
+      >
+        {status === 'REJECTED'
+          ? (locale === 'es' ? 'Reintentar pago' : 'Retry payment')
+          : t('dashboard.payNow')}
+        <ArrowUpRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }

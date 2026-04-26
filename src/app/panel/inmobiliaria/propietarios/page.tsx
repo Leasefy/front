@@ -1,4 +1,5 @@
 'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -161,7 +162,7 @@ function Modal({
  * Propietarios List Page
  * Main CRM view for managing property owners
  */
-export default function PropietariosPage() {
+function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -633,5 +634,13 @@ export default function PropietariosPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function PropietariosPage() {
+  return (
+    <PageGuard module="propietarios">
+      <PropietariosContent />
+    </PageGuard>
   );
 }

@@ -29,16 +29,12 @@ export interface AuthenticityCertificateProps {
 // ============================================================================
 
 /**
- * Generate a mock certificate ID
+ * El certificate ID es el mismo `contract.id` (UUID). Así lo modela el backend,
+ * y el PDF estampado incluye ese mismo ID en la página de certificado para que el
+ * endpoint de verificación (`/verify/:contractId`) matchee exacto.
  */
 function generateCertificateId(contract: Contract): string {
-  if (contract.certificateId) return contract.certificateId;
-
-  const timestamp = contract.tenantSignature?.signedAt
-    ? new Date(contract.tenantSignature.signedAt).getTime()
-    : Date.now();
-
-  return `CERT-${contract.id.toUpperCase()}-${timestamp}`;
+  return contract.id;
 }
 
 /**

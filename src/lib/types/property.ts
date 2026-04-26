@@ -87,6 +87,24 @@ export interface Property {
 }
 
 // ============================================================================
+// Agency property — extends Property with agent assignment data
+// Used in /panel/inmobiliaria/propiedades
+// ============================================================================
+
+export interface PropertyAgent {
+  accessId: string; // PropertyAccess record id (needed for DELETE)
+  agentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
+
+export interface AgencyProperty extends Property {
+  agents: PropertyAgent[]; // empty array when no agent assigned
+}
+
+// ============================================================================
 // Constants
 // ============================================================================
 

@@ -194,7 +194,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<User | null>
-  signUpWithEmail: (email: string, password: string) => Promise<{ requiresConfirmation: boolean }>
+  signUpWithEmail: (email: string, password: string, redirectTo?: string) => Promise<{ requiresConfirmation: boolean }>
   sendPasswordReset: (email: string) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
   /** Re-authenticate with current password to verify identity before sensitive operations */

@@ -12,10 +12,15 @@ import {
   renovacionesApi,
   reportesApi,
   analyticsApi,
+  aiApi,
   documentosApi,
   actasApi,
   inmobiliariaConfigApi,
   inmobiliariaDashboardApi,
+} from '@/lib/api/inmobiliaria.service';
+import type {
+  AiMetricsResponse,
+  AiActivityResponse,
 } from '@/lib/api/inmobiliaria.service';
 import type {
   Propietario,
@@ -51,9 +56,9 @@ import type {
 // Generic fetch hook helper
 // ============================================================================
 
-function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
+function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = false) {
   const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
@@ -71,8 +76,12 @@ function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
   }, deps);
 
   useEffect(() => {
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
     refetch();
-  }, [refetch]);
+  }, [refetch, skip]);
 
   return { data, isLoading, error, refetch, setData };
 }
@@ -101,8 +110,8 @@ export function usePropietario(id: string | undefined) {
 // Agentes
 // ============================================================================
 
-export function useAgentes() {
-  const { data, ...rest } = useApiData(() => agentesApi.getAll(), []);
+export function useAgentes(options?: { skip?: boolean }) {
+  const { data, ...rest } = useApiData(() => agentesApi.getAll(), [], options?.skip);
   return { agentes: data ?? [], ...rest };
 }
 
@@ -154,8 +163,8 @@ export function useConsignacion(id: string | undefined) {
 // Pipeline
 // ============================================================================
 
-export function usePipelineItems() {
-  const { data, ...rest } = useApiData(() => pipelineApi.getAll(), []);
+export function usePipelineItems(options?: { skip?: boolean }) {
+  const { data, ...rest } = useApiData(() => pipelineApi.getAll(), [], options?.skip);
   return { pipelineItems: data ?? [], ...rest };
 }
 
@@ -163,10 +172,11 @@ export function usePipelineItems() {
 // Cobros
 // ============================================================================
 
-export function useCobros(params?: Parameters<typeof cobrosApi.getAll>[0]) {
+export function useCobros(params?: Parameters<typeof cobrosApi.getAll>[0], options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(
     () => cobrosApi.getAll(params),
-    [params?.month, params?.status, params?.propietarioId]
+    [params?.month, params?.status, params?.propietarioId],
+    options?.skip
   );
   return { cobros: data ?? [], ...rest };
 }
@@ -195,10 +205,11 @@ export function useDispersiones(params?: Parameters<typeof dispersionesApi.getAl
 // Mantenimiento
 // ============================================================================
 
-export function useMantenimientos(params?: Parameters<typeof mantenimientoApi.getAll>[0]) {
+export function useMantenimientos(params?: Parameters<typeof mantenimientoApi.getAll>[0], options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(
     () => mantenimientoApi.getAll(params),
-    [params?.status, params?.consignacionId]
+    [params?.status, params?.consignacionId],
+    options?.skip
   );
   return { mantenimientos: data ?? [], ...rest };
 }
@@ -216,10 +227,11 @@ export function useRenovaciones() {
 // Dashboard KPIs
 // ============================================================================
 
-export function useInmobiliariaDashboard() {
+export function useInmobiliariaDashboard(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaDashboardApi.getKPIs(),
-    []
+    [],
+    options?.skip
   );
   return { kpis: data, ...rest };
 }
@@ -304,6 +316,24 @@ export function useTrendAnalysis() {
 export function useForecastData() {
   const { data, ...rest } = useApiData(() => analyticsApi.getForecasts(), []);
   return { forecasts: data ?? [], ...rest };
+}
+
+export function useAiMetrics(options?: { skip?: boolean }) {
+  const { data, ...rest } = useApiData<AiMetricsResponse>(
+    () => aiApi.getMetrics(),
+    [],
+    options?.skip
+  );
+  return { metrics: data, ...rest };
+}
+
+export function useAiActivity(limit?: number, options?: { skip?: boolean }) {
+  const { data, ...rest } = useApiData<AiActivityResponse>(
+    () => aiApi.getActivity(limit),
+    [limit],
+    options?.skip
+  );
+  return { activity: data, ...rest };
 }
 
 // ============================================================================

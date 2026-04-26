@@ -143,13 +143,24 @@ export interface DocumentUpload {
   file: File | null;
   fileName?: string;
   uploadedAt?: string;
+  /**
+   * Backend document id — present when the doc already lives on the server.
+   * Used to enable "delete" against DELETE /applications/:id/documents/:id
+   * without needing a re-upload.
+   */
+  remoteId?: string;
 }
 
 export interface DocumentInfo {
   idDocument: DocumentUpload | null;
-  incomeProof: DocumentUpload | null; // pay stubs, tax returns
+  /** Required — extracto bancario (últimos 3 meses) */
+  bankStatement: DocumentUpload | null;
+  /** One of incomeProof / employmentLetter is required */
+  incomeProof?: DocumentUpload | null;
+  /** One of incomeProof / employmentLetter is required */
   employmentLetter?: DocumentUpload | null;
-  bankStatements?: DocumentUpload | null;
+  /** Optional — colilla de nómina */
+  payStub?: DocumentUpload | null;
   creditReport?: DocumentUpload | null; // optional self-provided
 }
 

@@ -190,13 +190,13 @@ export function PricingTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-center py-4">
-                      <ComparisonCell value={row.free} />
+                      <ComparisonCell value={row.starter} />
                     </TableCell>
                     <TableCell className="text-center py-4 bg-primary/5">
                       <ComparisonCell value={row.pro} highlighted />
                     </TableCell>
                     <TableCell className="text-center py-4">
-                      <ComparisonCell value={row.business} />
+                      <ComparisonCell value={row.flex} />
                     </TableCell>
                   </TableRow>
                 ))}

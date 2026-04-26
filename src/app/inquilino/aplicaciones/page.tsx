@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets } from '@phosphor-icons/react';
+import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { cn } from '@/lib/utils';
@@ -12,8 +12,125 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import type { Contract } from '@/lib/types/contract';
 
 const ITEMS_PER_PAGE = 4;
+
+type DisplayStatusConfig = {
+  label: string;
+  color: string;
+  icon: typeof CheckCircle;
+  progress: number;
+};
+
+/**
+ * Cuando la application está `approved` y existe un contrato, el badge y el próximo paso
+ * reflejan el estado del CONTRATO (no de la application). Así el tenant ve "Firmado — pendiente
+ * activar" en vez del genérico "Aprobada" cuando el proceso ya avanzó.
+ */
+function displayStatusForApproved(contract: Contract | undefined, locale: string): DisplayStatusConfig | null {
+  if (!contract) return null;
+  switch (contract.status) {
+    case 'draft':
+      return {
+        label: locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared',
+        color: 'bg-amber-100 text-amber-700',
+        icon: Clock,
+        progress: 100,
+      };
+    case 'pending_tenant':
+      return {
+        label: locale === 'es' ? 'Firmar contrato' : 'Sign contract',
+        color: 'bg-indigo-100 text-indigo-700',
+        icon: Warning,
+        progress: 100,
+      };
+    case 'pending_landlord':
+      return {
+        label: locale === 'es' ? 'Esperando firma del propietario' : 'Waiting for landlord signature',
+        color: 'bg-amber-100 text-amber-700',
+        icon: Clock,
+        progress: 100,
+      };
+    case 'rejected_pending_modifications':
+      return {
+        label: locale === 'es' ? 'Esperando cambios' : 'Waiting for changes',
+        color: 'bg-amber-100 text-amber-700',
+        icon: Clock,
+        progress: 100,
+      };
+    case 'signed':
+      return {
+        label: locale === 'es' ? 'Firmado — pendiente activar' : 'Signed — pending activation',
+        color: 'bg-blue-100 text-blue-700',
+        icon: CheckCircle,
+        progress: 100,
+      };
+    case 'active':
+      return {
+        label: locale === 'es' ? 'Contrato activo' : 'Contract active',
+        color: 'bg-emerald-100 text-emerald-700',
+        icon: CheckCircle,
+        progress: 100,
+      };
+    case 'expired':
+      return {
+        label: locale === 'es' ? 'Contrato expirado' : 'Contract expired',
+        color: 'bg-neutral-100 text-neutral-600',
+        icon: XCircle,
+        progress: 100,
+      };
+    case 'cancelled':
+      return {
+        label: locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled',
+        color: 'bg-rose-100 text-rose-700',
+        icon: XCircle,
+        progress: 100,
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Próximo paso para una aplicación en estado `approved`. Depende del contrato asociado:
+ * aún no existe, pendiente de firma del propietario, pendiente del tenant, etc.
+ */
+function nextStepForApproved(contract: Contract | undefined, locale: string): string {
+  if (!contract) {
+    return locale === 'es'
+      ? 'Esperando que el propietario cree el contrato'
+      : 'Waiting for the landlord to create the contract';
+  }
+  switch (contract.status) {
+    case 'draft':
+      return locale === 'es'
+        ? 'El propietario está preparando el contrato'
+        : 'The landlord is preparing the contract';
+    case 'pending_tenant':
+      return locale === 'es' ? 'Firmá el contrato (tu turno)' : 'Sign the contract (your turn)';
+    case 'pending_landlord':
+      return locale === 'es'
+        ? 'Ya firmaste — esperando que el propietario firme'
+        : 'You already signed — waiting for the landlord to sign';
+    case 'rejected_pending_modifications':
+      return locale === 'es'
+        ? 'El propietario está corrigiendo los cambios que pediste'
+        : 'The landlord is making the changes you requested';
+    case 'signed':
+      return locale === 'es'
+        ? 'Firmado por ambas partes — esperando que empiece el contrato'
+        : 'Signed by both parties — waiting for the contract to start';
+    case 'active':
+      return locale === 'es' ? 'Contrato activo' : 'Contract active';
+    case 'expired':
+      return locale === 'es' ? 'Contrato expirado' : 'Contract expired';
+    case 'cancelled':
+      return locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled';
+    default:
+      return locale === 'es' ? 'Firmar contrato' : 'Sign contract';
+  }
+}
 
 /**
  * Tenant Applications Page - Landing Style with List/Grid views and Pagination
@@ -21,7 +138,7 @@ const ITEMS_PER_PAGE = 4;
 export default function AplicacionesPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { active: activeApplications, completed: completedApplications, isLoading: isAppsLoading, error } = useTenantApplications();
+  const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
 
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -47,6 +164,12 @@ export default function AplicacionesPage() {
       icon: Clock,
       progress: 50
     },
+    needs_info: {
+      label: locale === 'es' ? 'Info. requerida' : 'Info required',
+      color: 'bg-orange-100 text-orange-700',
+      icon: Warning,
+      progress: 30
+    },
     pre_approved: {
       label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
       color: 'bg-emerald-100 text-emerald-700',
@@ -70,6 +193,12 @@ export default function AplicacionesPage() {
       color: 'bg-neutral-100 text-neutral-600',
       icon: XCircle,
       progress: 100
+    },
+    contract_failed: {
+      label: locale === 'es' ? 'Contrato fallido' : 'Contract failed',
+      color: 'bg-rose-100 text-rose-700',
+      icon: XCircle,
+      progress: 100,
     },
   };
 
@@ -271,7 +400,11 @@ export default function AplicacionesPage() {
               {viewMode === 'list' && (
                 <div className="space-y-4">
                   {paginatedApplications.map((application, index) => {
-                    const status = statusConfig[application.status] || statusConfig.submitted;
+                    const fallbackStatus = statusConfig[application.status] || statusConfig.submitted;
+                    const contractStatus = application.status === 'approved'
+                      ? displayStatusForApproved(contractsByApp[application.id], locale)
+                      : null;
+                    const status = contractStatus ?? fallbackStatus;
                     const StatusIcon = status.icon;
 
                     return (
@@ -360,10 +493,12 @@ export default function AplicacionesPage() {
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
-                                        application.status === 'rejected' || application.status === 'withdrawn'
+                                        application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
+                                          : application.status === 'needs_info'
+                                          ? "bg-orange-400"
                                           : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}
@@ -378,13 +513,20 @@ export default function AplicacionesPage() {
                                     </div>
                                     <div>
                                       <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
-                                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                                      <p className={cn(
+                                        'text-sm font-semibold',
+                                        application.status === 'needs_info'
+                                          ? 'text-orange-600 dark:text-orange-400'
+                                          : 'text-neutral-900 dark:text-white'
+                                      )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
+                                        {application.status === 'needs_info' && (locale === 'es' ? '⚠ Completar información solicitada' : '⚠ Complete requested information')}
                                         {application.status === 'pre_approved' && (locale === 'es' ? 'Agendar visita' : 'Schedule visit')}
-                                        {application.status === 'approved' && (locale === 'es' ? 'Firmar contrato' : 'Sign contract')}
-                                        {application.status === 'rejected' && (locale === 'es' ? 'Aplicación cerrada' : 'Application closed')}
+                                        {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
+                                        {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explorá alternativas' : 'Process closed — explore alternatives')}
                                         {application.status === 'withdrawn' && (locale === 'es' ? 'Aplicación cerrada' : 'Application closed')}
+                                        {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva aplicación' : 'Contract didn\'t succeed — create a new application')}
                                       </p>
                                     </div>
                                   </div>
@@ -407,7 +549,11 @@ export default function AplicacionesPage() {
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                   {paginatedApplications.map((application, index) => {
-                    const status = statusConfig[application.status] || statusConfig.submitted;
+                    const fallbackStatus = statusConfig[application.status] || statusConfig.submitted;
+                    const contractStatus = application.status === 'approved'
+                      ? displayStatusForApproved(contractsByApp[application.id], locale)
+                      : null;
+                    const status = contractStatus ?? fallbackStatus;
                     const StatusIcon = status.icon;
 
                     return (
@@ -471,10 +617,12 @@ export default function AplicacionesPage() {
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
-                                        application.status === 'rejected' || application.status === 'withdrawn'
+                                        application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-red-400"
                                           : application.status === 'approved' || application.status === 'pre_approved'
                                           ? "bg-emerald-500"
+                                          : application.status === 'needs_info'
+                                          ? "bg-orange-400"
                                           : "bg-indigo-600"
                                       )}
                                       style={{ width: `${status.progress}%` }}

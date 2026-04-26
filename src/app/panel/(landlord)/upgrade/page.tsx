@@ -21,7 +21,7 @@ export default function UpgradePage() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { subscription } = useMySubscription();
-  const currentPlanId = subscription?.planId ?? 'free';
+  const currentPlanId = subscription?.planId ?? 'starter';
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,8 +50,8 @@ export default function UpgradePage() {
   const canUpgrade =
     selectedPlan &&
     selectedPlan !== currentPlanId &&
-    (selectedPlan !== 'free' ||
-      currentPlanId === 'business' ||
+    (selectedPlan !== 'starter' ||
+      currentPlanId === 'flex' ||
       currentPlanId === 'pro');
 
   return (

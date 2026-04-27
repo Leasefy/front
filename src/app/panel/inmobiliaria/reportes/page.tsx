@@ -144,15 +144,15 @@ function ReportesContent() {
   const flujoCajaReport = useFlujoCajaReport('semester');
   const rendimientoReport = useRendimientoAgentesReport(currentMonth);
 
-  const occupancyData = useMemo(() => adaptOccupancy(ocupacionReport.data), [ocupacionReport.data]);
-  const collectionsData = useMemo(() => adaptCollections(carteraReport.data), [carteraReport.data]);
+  const occupancyData = useMemo(() => adaptOccupancy(ocupacionReport.report), [ocupacionReport.report]);
+  const collectionsData = useMemo(() => adaptCollections(carteraReport.report), [carteraReport.report]);
   const agentPerformanceData = useMemo(
-    () => adaptAgentPerformance(rendimientoReport.data, comisionesReport.data),
-    [rendimientoReport.data, comisionesReport.data],
+    () => adaptAgentPerformance(rendimientoReport.report, comisionesReport.report),
+    [rendimientoReport.report, comisionesReport.report],
   );
   const executiveData = useMemo(
-    () => adaptExecutive(flujoCajaReport.data, ocupacionReport.data),
-    [flujoCajaReport.data, ocupacionReport.data],
+    () => adaptExecutive(flujoCajaReport.report, ocupacionReport.report),
+    [flujoCajaReport.report, ocupacionReport.report],
   );
 
   // State for reports (local copy with last generated timestamps)

@@ -212,7 +212,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                     {step.reasoning && (
                       <div className="mb-3 p-3 rounded bg-white/[0.03] border border-white/[0.06]">
                         <p className="text-xs text-neutral-400 mb-1 uppercase tracking-wider">{locale === 'es' ? 'Pensamiento' : 'Thinking'}</p>
-                        <p className="text-sm text-neutral-300 leading-relaxed italic">"{step.reasoning}"</p>
+                        <p className="text-sm text-neutral-300 leading-relaxed italic">&ldquo;{step.reasoning}&rdquo;</p>
                       </div>
                     )}
                     {step.output && (
@@ -253,7 +253,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Búsqueda de Candidatos' : 'Candidate Search'}</span>
                     </div>
                     {step.reasoning && (
-                      <p className="text-sm text-neutral-400 mb-3 italic">"{step.reasoning}"</p>
+                      <p className="text-sm text-neutral-400 mb-3 italic">&ldquo;{step.reasoning}&rdquo;</p>
                     )}
                     {step.output && (
                       <div className="p-3 rounded bg-white/[0.05] border border-white/[0.08]">
@@ -295,7 +295,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Tomando Decisión' : 'Making Decision'}</span>
                     </div>
                     {step.reasoning && (
-                      <p className="text-sm text-neutral-300 leading-relaxed italic mb-3">"{step.reasoning}"</p>
+                      <p className="text-sm text-neutral-300 leading-relaxed italic mb-3">&ldquo;{step.reasoning}&rdquo;</p>
                     )}
                     {step.output && (
                       <div className="p-3 rounded bg-amber-900/20 border border-amber-700/30">

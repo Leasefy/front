@@ -30,17 +30,15 @@ export function AgencyRoleGuard({
   const router = useRouter();
   const { isManager, isMember, isLoading, isOutsideAgencyLayout } = useAgencyAccess();
 
-  // Si estamos fuera del layout inmobiliaria el guard se desactiva —
-  // la autenticación de esas rutas es responsabilidad del layout que las envuelve.
-  if (isOutsideAgencyLayout) return <>{children}</>;
-
   const hasAccess = allowed === 'managers' ? isManager : isMember;
 
   useEffect(() => {
-    if (!isLoading && !hasAccess) {
+    if (!isOutsideAgencyLayout && !isLoading && !hasAccess) {
       router.replace(fallbackPath);
     }
-  }, [isLoading, hasAccess, router, fallbackPath]);
+  }, [isOutsideAgencyLayout, isLoading, hasAccess, router, fallbackPath]);
+
+  if (isOutsideAgencyLayout) return <>{children}</>;
 
   if (isLoading || !hasAccess) {
     return (

@@ -30,7 +30,7 @@ const VISIT_STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
   cancelled:   'rejected',
   no_show:     'important',
   rejected:    'rejected',
-  rescheduled: 'archived',
+  rescheduled: 'pending',
 };
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import type { LandlordCandidate, LandlordCandidateStatus } from '@/lib/types/landlord';

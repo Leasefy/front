@@ -29,6 +29,7 @@ import {
   useComisionesReport,
   useVencimientosReport,
   useFlujoCajaReport,
+  useRendimientoAgentesReport,
   reportesApi,
 } from '@/lib/hooks/useInmobiliaria';
 import {
@@ -141,6 +142,18 @@ function ReportesContent() {
   const comisionesReport = useComisionesReport(currentMonth);
   const vencimientosReport = useVencimientosReport();
   const flujoCajaReport = useFlujoCajaReport('semester');
+  const rendimientoReport = useRendimientoAgentesReport(currentMonth);
+
+  const occupancyData = useMemo(() => adaptOccupancy(ocupacionReport.report), [ocupacionReport.report]);
+  const collectionsData = useMemo(() => adaptCollections(carteraReport.report), [carteraReport.report]);
+  const agentPerformanceData = useMemo(
+    () => adaptAgentPerformance(rendimientoReport.report, comisionesReport.report),
+    [rendimientoReport.report, comisionesReport.report],
+  );
+  const executiveData = useMemo(
+    () => adaptExecutive(flujoCajaReport.report, ocupacionReport.report),
+    [flujoCajaReport.report, ocupacionReport.report],
+  );
 
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
@@ -785,18 +798,18 @@ function ReportesContent() {
         <div className="p-4">
           {activeAdvancedTab === 'ejecutivo' ? (
             <FeatureGate feature="executive-reports">
-              <ExecutiveSummary data={mockExecutiveData} />
+              {executiveData && <ExecutiveSummary data={executiveData} />}
             </FeatureGate>
           ) : (
             <FeatureGate feature="advanced-reports">
-              {activeAdvancedTab === 'ocupacion' && (
-                <OccupancyReport data={mockOccupancyData} />
+              {activeAdvancedTab === 'ocupacion' && occupancyData && (
+                <OccupancyReport data={occupancyData} />
               )}
-              {activeAdvancedTab === 'cobros' && (
-                <CollectionsReport data={mockCollectionsData} />
+              {activeAdvancedTab === 'cobros' && collectionsData && (
+                <CollectionsReport data={collectionsData} />
               )}
-              {activeAdvancedTab === 'agentes' && (
-                <AgentPerformanceReport data={mockAgentPerformanceData} />
+              {activeAdvancedTab === 'agentes' && agentPerformanceData && (
+                <AgentPerformanceReport data={agentPerformanceData} />
               )}
             </FeatureGate>
           )}

@@ -188,6 +188,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
     const supabase = getSupabase()
+    if (!supabase) return
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
       if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
@@ -210,6 +211,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Supabase's internal Navigator Locks when both compete for the same lock.
   useEffect(() => {
     const supabase = getSupabase()
+    if (!supabase) return
 
     // Safety net: if no known auth event fires within 5s of mount, release the
     // loader so ProtectedRoute can decide what to do with whatever state we have.
@@ -303,6 +305,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -317,6 +320,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Sign in with email and password. Returns the loaded user so callers can redirect based on role. */
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     // Immediately set token and fetch user so the caller can use role info for redirect
@@ -333,6 +337,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Sign up with email and password. Returns whether email confirmation is required. */
   const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {
     const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -346,6 +351,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Send password reset email */
   const sendPasswordReset = useCallback(async (email: string) => {
     const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?returnUrl=/auth/update-password`,
     })
@@ -355,6 +361,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Update password for authenticated user (works for both email and Google users) */
   const updatePassword = useCallback(async (newPassword: string) => {
     const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) throw error
   }, [])
@@ -362,6 +369,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /** Verify current password by re-authenticating. Returns true if password is correct. */
   const verifyCurrentPassword = useCallback(async (password: string): Promise<boolean> => {
     const supabase = getSupabase()
+    if (!supabase) return false
     const email = user?.email
     if (!email) return false
     const { error } = await supabase.auth.signInWithPassword({ email, password })

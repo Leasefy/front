@@ -116,10 +116,9 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 <span className={cn(
                   'px-2.5 py-1 rounded-full text-xs font-medium',
                   member.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' :
-                  member.role === 'manager' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
                   'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                 )}>
-                  {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'manager' ? t('landlordSettings.team.roles.manager') : member.role === 'accountant' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
+                  {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'contador' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
                 </span>
                 {member.role !== 'admin' && (
                   <div className="flex items-center gap-3">

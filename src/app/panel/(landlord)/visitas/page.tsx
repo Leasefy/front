@@ -22,7 +22,7 @@ const STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
   cancelled:   'rejected',
   no_show:     'important',
   rejected:    'rejected',
-  rescheduled: 'archived',
+  rescheduled: 'pending',
 };
 
 function formatTime(time: string): string {

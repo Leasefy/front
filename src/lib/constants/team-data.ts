@@ -22,7 +22,7 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     userId: 'user-005',
     email: 'maria.contador@example.com',
     name: 'Maria Lopez',
-    role: 'accountant',
+    role: 'contador',
     status: 'accepted',
     invitedAt: '2025-12-15T00:00:00Z',
     acceptedAt: '2025-12-16T00:00:00Z',
@@ -31,7 +31,7 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'member-003',
     email: 'pedro.gerente@example.com',
-    role: 'manager',
+    role: 'viewer',
     status: 'pending',
     invitedAt: '2026-01-20T00:00:00Z',
     invitedBy: 'member-001',

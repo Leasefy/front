@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   X,
   Robot,
@@ -155,6 +157,36 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   // Polling state for re-evaluation
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+
+  // Pause Lenis smooth scroll while the drawer is open so native scrolling
+  // inside the panel works. Without this, wheel events get hijacked by Lenis.
+  const lenis = useLenis();
+  useEffect(() => {
+    if (candidate) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+    return () => {
+      lenis.start();
+    };
+  }, [candidate, lenis]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!candidate) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [candidate, onClose]);
+
+  // Portal target — only available after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -329,7 +361,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
     }
   }, [candidate]);
 
-  if (!candidate) return null;
+  if (!candidate || !mounted) return null;
 
   // During polling, suppress the candidate.riskScore fallback to avoid showing the stale value
   const level = evaluation?.level ?? (isPolling ? undefined : candidate.riskScore?.level);
@@ -343,17 +375,23 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   const canReject = canPreapprove || candidate.status === 'PREAPPROVED';
   const canRequestInfo = canPreapprove;
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop — pointer-events-none so it doesn't swallow wheel events over the drawer */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-none" />
-      {/* Invisible click-to-close area (left side, outside the drawer) */}
-      <div className="flex-1 cursor-default" onClick={onClose} />
+  const content = (
+    <>
+      {/* Backdrop — clickable, closes the drawer */}
+      <div
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Drawer */}
-      <div className="relative h-full w-full max-w-2xl bg-background shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
+      <div
+        className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-background shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Header — flex-none keeps it pinned to the top of the panel */}
+        <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -376,7 +414,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        {/* Scrollable body — data-lenis-prevent so Lenis stays out of native scroll */}
+        <div
+          className="flex-1 overflow-y-auto p-6 space-y-6"
+          data-lenis-prevent
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Estado:</span>
@@ -902,8 +945,10 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           </section>
         </div>
       </div>
-    </div>
+    </>
   );
+
+  return createPortal(content, document.body);
 }
 
 // ============================================================================

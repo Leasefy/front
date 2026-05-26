@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v5.0
+milestone_name: Agency Plan-Gated Features
+status: paused
+stopped_at: context exhaustion at 76% (2026-05-19)
+last_updated: "2026-05-19T21:53:47.628Z"
+last_activity: 2026-03-29 — Completed 33-03-PLAN.md (Property Import — all 3 plans)
+progress:
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 18
+  completed_plans: 18
+  percent: 100
+---
+
 # Project State
 
 ## Project Reference
@@ -7,21 +23,35 @@ See: docs/AI_AGENTS_ARCHITECTURE.md (updated 2026-03-11) - **AI Agent Architectu
 See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architecture Spec v1**
 
 **Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** v5.0 — Agency Plan-Gated Features & AI Agent UX
+**Current focus:** ⏸️ **v5.0 PAUSED 2026-05-12** — engineering focus moved to Collections Agent in `Leasefy/agent` (microservice repo). See "Pause Notice" below.
+
+## ⏸️ Pause Notice (2026-05-12)
+
+v5.0 (Agency Plan-Gated Features & AI Agent UX) is **paused**, not abandoned.
+
+**Reason:** The Collections Agent (Agente de Cobranza) is now priority #1 for the whole company. Full 18+ week spec exists in `~/rent/agent/.planning/AGENT-COBRANZA-SPEC.md`. Engineering focus shifts to the agent microservice.
+
+**What was done in v5.0 before pause:** Phases 1-33 completed. Remaining items in "What Needs to Be Built" below are deferred (items 4 + 5: Automatic Reminders, Contract Expiry Reminders).
+
+**Frontend dependency on Collections Agent:** When the agent service exposes its HTTP API, this repo will need a future milestone for: dashboard cobranza, inbox escalaciones, config policy (per `AGENT-COBRANZA-SPEC.md` section 44).
+
+**To resume v5.0 later:** Update this STATE.md, remove the pause notice, continue from the remaining items in "What Needs to Be Built" below.
 
 ## Current Position
 
-Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
+Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX (⏸️ PAUSED)
 Phase: 33 of 33 (Property Import System)
 Plan: 3 of 3 complete
-Status: Phase complete
-Last activity: 2026-03-29 — Completed 33-03-PLAN.md (Software Migration + Portal Import + Portfolio Integration)
+Status: ⏸️ Paused — see pause notice above
+Last activity: 2026-03-29 — Completed 33-03-PLAN.md (Property Import — all 3 plans)
+Paused: 2026-05-12 — Collections Agent prioritized in Leasefy/agent
 
-Progress: [██████████████████████████████] 100%
+Progress: [██████████████████████████████] 100% (phase-level — milestone scope had 2 deferred items)
 
 ## What's Already Built (this session, pre-GSD)
 
 These were built in the current conversation before GSD was invoked:
+
 - AI Agent types and registry (`src/lib/types/ai-agents.ts`)
 - Agent Card component with "Agente AI" badge (`src/components/inmobiliaria/ai/AIAgentCard.tsx`)
 - Agent Activity Feed with click-to-detail (`src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx`)
@@ -70,12 +100,13 @@ These were built in the current conversation before GSD was invoked:
 
 ## Session Continuity
 
-Last session: 2026-03-29
-Stopped at: Completed 33-03-PLAN.md — Phase 33 fully complete (all 3 plans)
+Last session: 2026-05-19T21:53:47.622Z
+Stopped at: context exhaustion at 76% (2026-05-19)
 Resume file: None
 
 ## Accumulated Context
 
 ### Roadmap Evolution
+
 - Phase 33 added: Property Import System — Excel/CSV import with AI column mapping and gap-filling, software migration guides, and portal import for real estate agencies
 - Phase 33 complete (2026-03-29): All 5 wizard steps built. gapFiller.ts uses 6 heuristic rules for mock AI gap-filling. StepAIReview animates 2s analysis then reveals stagger-in cards. StepConfirmImport simulates import progress with for-loop + setTimeout. Plan 03 adds StepSoftwareMigration + StepPortalImport + method-aware wizard routing + portfolio page import button + empty state CTA + i18n for software/portal namespaces.

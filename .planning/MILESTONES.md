@@ -29,8 +29,10 @@
 **Phases:** 9 (21 plans)
 **Summary:** Conversational AI interface ("Beta" section) — chat UI with streaming, agent activity display, decision system, briefings, preferences/autonomy settings, API client layer, i18n, mobile support.
 
-## v5.0 — Agency Plan-Gated Features & AI Agent UX (ACTIVE)
+## v5.0 — Agency Plan-Gated Features & AI Agent UX (⏸️ PAUSED 2026-05-12)
 
 **Started:** 2026-03-26
+**Paused:** 2026-05-12 — Collections Agent (Agente de Cobranza) in `Leasefy/agent` became priority #1 for the company. See `~/rent/agent/.planning/AGENT-COBRANZA-SPEC.md`. v5.0 will resume once the Collections Agent's frontend integration scope is clear.
 **Goal:** Make the platform feel agentic from day one for agencies. Build plan-gated features (advanced reports, automatic reminders) that differentiate Flex plans. Ship the pricing model where agencies pay $10 USD per successful lease.
 **Key insight:** Flex plans include AI agents as differentiator — agencies should prefer per-lease pricing.
+**Status at pause:** Phases 1–33 complete. Deferred items: Automatic Reminders, Contract Expiry Reminders.

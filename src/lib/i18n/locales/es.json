@@ -4198,7 +4198,12 @@
           "funnel": {
             "title": "Distribución del funnel",
             "ariaDescription": "Gráfico de barras mostrando distribución de deudores por etapa",
-            "tableCaption": "Tabla alternativa de distribución por etapa"
+            "tableCaption": "Tabla alternativa de distribución por etapa",
+            "empty": "Sin datos",
+            "tableHeader": {
+              "stage": "Etapa",
+              "debtors": "Deudores"
+            }
           },
           "transitions": {
             "title": "Últimas transiciones",

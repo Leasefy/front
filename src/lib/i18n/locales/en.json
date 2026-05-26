@@ -4185,7 +4185,12 @@
           "funnel": {
             "title": "Funnel distribution",
             "ariaDescription": "Bar chart showing debtor distribution across stages",
-            "tableCaption": "Alternative stage distribution table"
+            "tableCaption": "Alternative stage distribution table",
+            "empty": "No data",
+            "tableHeader": {
+              "stage": "Stage",
+              "debtors": "Debtors"
+            }
           },
           "transitions": {
             "title": "Recent transitions",

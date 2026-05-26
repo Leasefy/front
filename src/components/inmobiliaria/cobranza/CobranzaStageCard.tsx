@@ -31,10 +31,10 @@ export function CobranzaStageCard({
   const colors = stageColorClasses(stage)
   const displayName = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
 
-  const ariaLabel =
-    locale === 'es'
-      ? `Etapa ${stage}, ${count} deudores, click para ver detalle`
-      : `Stage ${stage}, ${count} debtors, click to drill down`
+  const ariaLabel = t('inmobiliaria.ai.cobranza.overview.stages.ariaLabel', {
+    stage,
+    count,
+  })
 
   return (
     <motion.div

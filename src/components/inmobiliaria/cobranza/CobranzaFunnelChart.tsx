@@ -25,7 +25,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
     return (
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
         <div className="flex items-center justify-center h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-400">
-          Sin datos
+          {t('inmobiliaria.ai.cobranza.overview.funnel.empty')}
         </div>
       </div>
     )
@@ -90,8 +90,8 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
         <caption>{t('inmobiliaria.ai.cobranza.overview.funnel.tableCaption')}</caption>
         <thead>
           <tr>
-            <th>Etapa</th>
-            <th>Deudores</th>
+            <th>{t('inmobiliaria.ai.cobranza.overview.funnel.tableHeader.stage')}</th>
+            <th>{t('inmobiliaria.ai.cobranza.overview.funnel.tableHeader.debtors')}</th>
             <th>%</th>
           </tr>
         </thead>

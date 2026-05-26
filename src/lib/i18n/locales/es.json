@@ -4149,6 +4149,30 @@
         "viewContract": "Ver contrato",
         "warning3160d": "Atención 31-60d"
       }
+    },
+    "ai": {
+      "nav": {
+        "cobranza": "Cobranza",
+        "cotizador": "Cotizador"
+      },
+      "breadcrumb": {
+        "aiAgents": "Agentes AI",
+        "cobranza": "Cobranza",
+        "cotizador": "Cotizador"
+      },
+      "cotizador": {
+        "placeholder": {
+          "title": "Próximamente",
+          "subtitle": "El módulo de Cotización estará disponible en la siguiente actualización.",
+          "phase": "Phase 30",
+          "backLink": "Volver a Agentes AI"
+        }
+      },
+      "access": {
+        "noAccessCobranza": "No tienes acceso a Cobranza",
+        "noAccessCotizador": "No tienes acceso a Cotizador",
+        "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
+      }
     }
   },
   "validation": {

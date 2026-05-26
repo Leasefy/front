@@ -18,6 +18,7 @@ import {
   UserCircle,
   PaperPlaneTilt,
   Robot,
+  ChatCircleText,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -39,10 +40,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { locale, t } = useI18n();
   const { canAccess, isLoading: permissionsLoading } = usePermissionsContext();
 
-  // All nav items with their corresponding permission module (null = always visible)
-  const ALL_NAV_ITEMS = useMemo(() => [
+  // All nav items with their corresponding permission module (null = always visible).
+  // Items with children use a helper type that extends NavItem with an optional module field.
+  type NavItemWithModule = NavItem & { module?: string | null };
+
+  const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
-    { label: t('inmobiliaria.nav.aiAgents'),     href: '/panel/inmobiliaria/ai',           icon: Robot,                      module: null },
+    {
+      label: t('inmobiliaria.nav.aiAgents'),
+      href: '/panel/inmobiliaria/ai',
+      icon: Robot,
+      module: null,
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.cobranza'),
+          href: '/panel/inmobiliaria/ai/cobranza',
+          icon: ChatCircleText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cotizador'),
+          href: '/panel/inmobiliaria/ai/cotizador',
+          icon: FileText,
+          module: 'cotizador',
+        } as NavItemWithModule,
+      ],
+    },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,                 module: 'propietarios' },
     { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,                      module: 'portafolio' },
     { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,                  module: 'portafolio' },
@@ -60,7 +83,19 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // While loading, show all items to avoid flash
     if (permissionsLoading) return ALL_NAV_ITEMS;
-    return ALL_NAV_ITEMS.filter(({ module }) => !module || canAccess(module, 'view'));
+
+    const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
+      if (item.module && !canAccess(item.module, 'view')) return null;
+      if (item.children && item.children.length > 0) {
+        const filteredChildren = (item.children as NavItemWithModule[])
+          .map(filterItem)
+          .filter((c): c is NavItemWithModule => c !== null);
+        return { ...item, children: filteredChildren };
+      }
+      return item;
+    };
+
+    return ALL_NAV_ITEMS.map(filterItem).filter((item): item is NavItem => item !== null);
   }, [ALL_NAV_ITEMS, canAccess, permissionsLoading]);
 
   return (

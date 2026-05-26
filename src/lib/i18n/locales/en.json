@@ -4136,6 +4136,30 @@
         "viewContract": "View contract",
         "warning3160d": "Warning 31-60d"
       }
+    },
+    "ai": {
+      "nav": {
+        "cobranza": "Collections",
+        "cotizador": "Quoter"
+      },
+      "breadcrumb": {
+        "aiAgents": "AI Agents",
+        "cobranza": "Collections",
+        "cotizador": "Quoter"
+      },
+      "cotizador": {
+        "placeholder": {
+          "title": "Coming Soon",
+          "subtitle": "The Quoter module will be available in the next update.",
+          "phase": "Phase 30",
+          "backLink": "Back to AI Agents"
+        }
+      },
+      "access": {
+        "noAccessCobranza": "You don't have access to Collections",
+        "noAccessCotizador": "You don't have access to Quoter",
+        "contactAdmin": "Contact your agency administrator to request access."
+      }
     }
   },
   "validation": {

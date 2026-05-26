@@ -4159,6 +4159,47 @@
         "noAccessCobranza": "You don't have access to Collections",
         "noAccessCotizador": "You don't have access to Quoter",
         "contactAdmin": "Contact your agency administrator to request access."
+      },
+      "cobranza": {
+        "overview": {
+          "title": "Collections",
+          "subtitle": "Current state of your debtor portfolio",
+          "lastUpdated": "Updated",
+          "kpis": {
+            "deudoresActivos": "Active debtors",
+            "pagadoHoy": "Paid today",
+            "llamadasHoy": "Calls today",
+            "escalacionesPendientes": "Pending escalations"
+          },
+          "stages": {
+            "title": "Stage breakdown",
+            "avgDays": "avg days",
+            "ariaLabel": "Stage {{stage}}, {{count}} debtors, click to drill down"
+          },
+          "funnel": {
+            "title": "Funnel distribution",
+            "ariaDescription": "Bar chart showing debtor distribution across stages",
+            "tableCaption": "Alternative stage distribution table"
+          },
+          "transitions": {
+            "title": "Recent transitions",
+            "empty": "No recent transitions",
+            "emptyHelper": "Transitions will appear here when the agent moves debtors between stages",
+            "agentActor": "AI Agent",
+            "humanActor": "Operator",
+            "timeAgo": "ago"
+          },
+          "nextActions": {
+            "title": "Today's actions",
+            "empty": "No actions scheduled today",
+            "configCta": "Configure cadence",
+            "configCtaTooltip": "Available in a future update",
+            "channelVoice": "Call",
+            "channelWhatsapp": "WhatsApp",
+            "channelEmail": "Email"
+          },
+          "errorLoading": "Error loading data"
+        }
       }
     }
   },

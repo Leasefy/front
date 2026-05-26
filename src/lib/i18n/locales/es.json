@@ -4172,6 +4172,47 @@
         "noAccessCobranza": "No tienes acceso a Cobranza",
         "noAccessCotizador": "No tienes acceso a Cotizador",
         "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
+      },
+      "cobranza": {
+        "overview": {
+          "title": "Cobranza",
+          "subtitle": "Estado actual de tu cartera de deudores",
+          "lastUpdated": "Actualizado hace",
+          "kpis": {
+            "deudoresActivos": "Deudores activos",
+            "pagadoHoy": "Pagado hoy",
+            "llamadasHoy": "Llamadas hoy",
+            "escalacionesPendientes": "Escalaciones pendientes"
+          },
+          "stages": {
+            "title": "Estado por etapa",
+            "avgDays": "días promedio",
+            "ariaLabel": "Etapa {{stage}}, {{count}} deudores, click para ver detalle"
+          },
+          "funnel": {
+            "title": "Distribución del funnel",
+            "ariaDescription": "Gráfico de barras mostrando distribución de deudores por etapa",
+            "tableCaption": "Tabla alternativa de distribución por etapa"
+          },
+          "transitions": {
+            "title": "Últimas transiciones",
+            "empty": "Sin transiciones recientes",
+            "emptyHelper": "Las transiciones aparecerán aquí cuando el agente mueva deudores entre etapas",
+            "agentActor": "Agente AI",
+            "humanActor": "Operador",
+            "timeAgo": "hace"
+          },
+          "nextActions": {
+            "title": "Acciones de hoy",
+            "empty": "Sin acciones programadas hoy",
+            "configCta": "Configurar cadence",
+            "configCtaTooltip": "Disponible en una próxima actualización",
+            "channelVoice": "Llamada",
+            "channelWhatsapp": "WhatsApp",
+            "channelEmail": "Email"
+          },
+          "errorLoading": "Error cargando datos"
+        }
       }
     }
   },

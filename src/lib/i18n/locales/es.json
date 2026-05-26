@@ -866,6 +866,12 @@
       "configuracion": "Configuración",
       "aiBeta": "AI Beta"
     },
+    "mobileNav": {
+      "moreButton": "Más",
+      "moreAriaLabel": "Ver más opciones de navegación",
+      "sheetTitle": "Más opciones",
+      "closeButton": "Cerrar"
+    },
     "common": {
       "title": "Inmobiliaria",
       "vsLastMonth": "vs mes anterior",

@@ -853,6 +853,12 @@
       "configuracion": "Settings",
       "aiBeta": "AI Beta"
     },
+    "mobileNav": {
+      "moreButton": "More",
+      "moreAriaLabel": "View more navigation options",
+      "sheetTitle": "More options",
+      "closeButton": "Close"
+    },
     "common": {
       "title": "Real Estate Agency",
       "vsLastMonth": "vs last month",

@@ -27,6 +27,7 @@ import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { PermissionsProvider, usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { MobileNavBar } from '@/components/layout/MobileNavBar';
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -113,13 +114,16 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main content area */}
       <div
         className={cn(
-          'transition-all duration-200',
+          'transition-all duration-200 pb-20 md:pb-0',
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
         <PlanHeader />
         <main>{children}</main>
       </div>
+
+      {/* Mobile bottom navigation — hidden at md+ breakpoints */}
+      <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}
       <Toaster

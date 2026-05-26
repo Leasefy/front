@@ -1,5 +1,22 @@
 # Leasefy Frontend (rent/mvp)
 
+## ⚠️ UI Work — Read FIRST
+
+**Before building, modifying, or reviewing ANY UI in this repo, you MUST read [`docs/DESIGN.md`](./docs/DESIGN.md).**
+
+That file is the source of truth for:
+- Design principles + anti-patterns (no glass morphism, no gradients on bubbles, uppercase primary buttons, etc.)
+- Canonical component patterns (drawers, buttons, inputs, cards, banners) with file:line references
+- Tokens (colors, radius, shadows, motion, typography)
+- Lenis smooth scroll integration (mandatory `data-lenis-prevent` + `useLenis().stop()` for modals)
+- Accessibility rules
+
+When the user asks for UI work — no matter how small — read DESIGN.md first and apply it strictly. Do NOT invent patterns when a canonical one exists. If something seems missing from DESIGN.md, ASK or extend it; don't drift.
+
+For color specifics: [`docs/COLOR_SYSTEM.md`](./docs/COLOR_SYSTEM.md) (referenced from DESIGN.md).
+
+---
+
 ## Architectural Update (2026-04-07)
 
 **Mastra and the AI agents now live in a separate microservice repo: [`Leasefy/agent`](https://github.com/Leasefy/agent).**

@@ -92,7 +92,7 @@ export default function CobranzaOverviewPage() {
       {/* KPI Strip */}
       <CobranzaKpiStrip
         deudoresActivos={data?.kpis.deudoresActivos ?? 0}
-        pagadoHoyCOP={data?.kpis.pagadoHoyCOP ?? 0}
+        pagadoHoyCop={data?.kpis.pagadoHoyCop ?? 0}
         llamadasHoy={data?.kpis.llamadasHoy ?? 0}
         escalacionesPendientes={data?.kpis.escalacionesPendientes ?? 0}
         isLoading={isLoading}

@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n'
 
 interface CobranzaKpiStripProps {
   deudoresActivos: number
-  pagadoHoyCOP: number
+  pagadoHoyCop: number
   llamadasHoy: number
   escalacionesPendientes: number
   isLoading?: boolean
@@ -19,7 +19,7 @@ function formatCOP(value: number): string {
 
 export function CobranzaKpiStrip({
   deudoresActivos,
-  pagadoHoyCOP,
+  pagadoHoyCop,
   llamadasHoy,
   escalacionesPendientes,
   isLoading = false,
@@ -35,7 +35,7 @@ export function CobranzaKpiStrip({
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.pagadoHoy'),
-      value: formatCOP(pagadoHoyCOP),
+      value: formatCOP(pagadoHoyCop),
       Icon: CurrencyDollar,
       iconColor: 'text-green-500',
     },

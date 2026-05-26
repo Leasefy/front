@@ -1,20 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-
-// =============================================================================
-// Types
-// =============================================================================
+import { useAuth } from '@/lib/auth'
 
 export interface CarteraOverviewResponse {
   kpis: {
     deudoresActivos: number
-    pagadoHoyCOP: number
+    pagadoHoyCop: number
     llamadasHoy: number
     escalacionesPendientes: number
   }
   stages: Array<{
     stage: 'S0' | 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'SX'
+    stageDisplayName: string
+    ordinal: number
     count: number
     avgDaysInStage: number
     weeklyDelta: number
@@ -38,11 +37,9 @@ export interface CarteraOverviewResponse {
   generatedAt: string
 }
 
-// =============================================================================
-// Hook: useCarteraOverview
-// =============================================================================
-
 export function useCarteraOverview() {
+  const { agency } = useAuth()
+  const agencyId = agency?.id ?? null
   const [data, setData] = useState<CarteraOverviewResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,10 +51,15 @@ export function useCarteraOverview() {
       setIsLoading(false)
       return
     }
+    if (!agencyId) {
+      setIsLoading(false)
+      return
+    }
     try {
-      const res = await globalThis.fetch(`${agentUrl}/cartera/overview`, {
-        credentials: 'include',
-      })
+      const res = await globalThis.fetch(
+        `${agentUrl}/api/agency/${agencyId}/cartera/overview`,
+        { credentials: 'include' },
+      )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CarteraOverviewResponse = await res.json()
       setData(json)
@@ -67,13 +69,14 @@ export function useCarteraOverview() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [agencyId])
 
   useEffect(() => {
+    if (!agencyId) return
     fetchData()
     const id = setInterval(fetchData, 30_000)
     return () => clearInterval(id)
-  }, [fetchData])
+  }, [fetchData, agencyId])
 
   return { data, isLoading, error, refetch: fetchData }
 }

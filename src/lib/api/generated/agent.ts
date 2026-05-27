@@ -1371,6 +1371,342 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cartera/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza overview aggregate (Phase 29)
+         * @description Returns the four KPI blocks + 7 stage rows + last 25 transitions + next 10 undispatched cadence contacts for the cobranza overview page (29-07). All debtor names are redacted to "FirstName I." (PII guard). Enforces cobranza:view permission from permissions-matrix.ts.
+         *
+         *     XR-01: Client (29-07) must also subscribe to Supabase Realtime channel 'agent:cartera_stage_transitions' filtered by tenant_id for live transition feed.
+         */
+        get: operations["getCarteraOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cotizador overview aggregate (Phase 30)
+         * @description Returns KPIs + last 10 quotes + carrier status for the cotizador overview page (30-04). All data is tenant-scoped via JWT-resolved agencyId. PII-safe: cedulaHash is truncated to first 8 chars only. Enforces cotizador:view permission from permissions-matrix.ts.
+         *
+         *     XR-01: Client (30-04) must also subscribe to Supabase Realtime channel 'agent:cotizador_quote_requests' filtered by tenant_id for live quote feed.
+         */
+        get: operations["getCotizadorOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a new insurance quote for a candidate */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteBody"];
+                };
+            };
+            responses: {
+                /** @description Quote request created; runExtendedQuote running in background */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteResponse"];
+                    };
+                };
+                /** @description Validation error (e.g. malformed cedulaHash) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
+                    };
+                };
+                /** @description Missing or invalid JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
+                    };
+                };
+                /** @description Forbidden — wrong tenant, insufficient role, or missing create-quote permission */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
+                    };
+                };
+                /** @description ARCO blocklist — data subject has objected (D-26-09) */
+                451: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteArcoError"];
+                    };
+                };
+                /** @description Stub-mode (prisma null) — database not available */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get quote metadata (inputs + status) for the operator UI.
+         * @description Returns the persisted quote inputs (canon, ciudad, tipoInmueble) + cédula hash prefix + status timestamps. Used by the mvp streaming page to populate the header and the PDF inputs summary. No PII — cédula is only exposed as an 8-char prefix.
+         */
+        get: operations["getAgencyCotizadorQuoteDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtors list (Phase 31)
+         * @description Returns a filterable, cursor-paginated list of debtors for the cobranza operator UI. Supports multi-select stage and channel filters, days-in-stage range, name LIKE, and cédula-hash-prefix lookup. PII (cédula, phone, email) is masked in responses; reveal is gated by 31-04. Requires cobranza:view from permissions-matrix.ts.
+         */
+        get: operations["getCobranzaDebtorsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor detail — header + sidebar (Phase 31)
+         * @description Returns the header + sidebar payload for the debtor-detail page (COBR-UI-03). All PII fields (cédula, phone, email, fiador cédula) are masked by default — the reveal-PII flow ships in 31-04. Sub-tab endpoints (timeline/calls/memos/compromisos/audit) ship in 31-02b. Cross-tenant debtorId returns 404 (T-15-06 least-disclosure).
+         */
+        get: operations["getCobranzaDebtorDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/calls/{callId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza call detail (metadata + QA + state trace + cost).
+         * @description Returns the read-only payload powering the Phase 31 call detail page (COBR-UI-04): call metadata, QA breakdown across 4 dimensions, compliance flags, the state-machine transitions overlapping the call window, and the cost panel. Audio bytes are NOT returned — they are streamed via the 31-05 audio proxy. recordingUrl is intentionally omitted (T-31-PII, D-31-10). Enforces cobranza:view from permissions-matrix.ts. Cross-tenant calls return 404 (T-15-06).
+         */
+        get: operations["getCobranzaCallDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/calls/{callId}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza call transcript — ordered turns for replay rendering.
+         * @description Returns the ordered list of CallTurn rows for the Phase 31 call detail page (COBR-UI-04). Turns are ordered by startedAt ASC. Speaker tokens are normalized to the API union (operator | agent | customer). Live streaming is out of scope — replay only (D-31-19). Enforces cobranza:view from permissions-matrix.ts. Cross-tenant calls return 404 (T-15-06).
+         */
+        get: operations["getCobranzaCallTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/reveal-pii": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal a single PII field on a cobranza debtor (audit-logged)
+         * @description Server-token-gated PII reveal endpoint (Phase 31, D-31-05/06/07/11). Writes an audit_log row with action="pii_reveal" BEFORE minting the 5-minute HS256 JWT. Requires cobranza:reveal-pii permission (OWNER / ADMIN / OPERATOR — VIEWER returns 403). Cross-tenant debtor lookups return 404 (no existence leak, T-15-06). If the underlying column is null (email / fiador_cedula), returns 404 to keep the reveal contract truthful.
+         */
+        post: operations["revealCobranzaDebtorPii"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause cobranza for a debtor (D-31-01) */
+        post: operations["pauseCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/force-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Force a debtor to a target cartera stage (D-31-02, admin-only) */
+        post: operations["forceStageCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/wa-send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an approved WhatsApp template to a debtor (D-31-03) */
+        post: operations["manualWaSendCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/manual-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger a Vapi manual outbound call to a debtor (D-31-04, admin-only) */
+        post: operations["manualCallCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/wa-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the approved WhatsApp templates available to this tenant */
+        get: operations["listCobranzaWaTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/experiments": {
         parameters: {
             query?: never;
@@ -2588,6 +2924,305 @@ export interface components {
         MemberPermissionsError: {
             error: string;
         };
+        CarteraOverviewKpis: {
+            deudoresActivos: number;
+            pagadoHoyCop: number;
+            llamadasHoy: number;
+            escalacionesPendientes: number;
+        };
+        CarteraOverviewStageRow: {
+            /** @enum {string} */
+            stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            stageDisplayName: string;
+            ordinal: number;
+            count: number;
+            avgDaysInStage: number;
+            weeklyDelta: number;
+        };
+        CarteraOverviewTransitionRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string;
+            debtorNameRedacted: string;
+            /** @enum {string|null} */
+            fromStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX" | null;
+            /** @enum {string} */
+            toStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            reason: string;
+            actor: string;
+            transitionedAt: string;
+        };
+        CarteraOverviewNextActionRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string;
+            debtorNameRedacted: string;
+            plannedFor: string;
+            channel: string;
+            /** @enum {string} */
+            stageAtPlan: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+        };
+        CarteraOverviewResponse: {
+            kpis: components["schemas"]["CarteraOverviewKpis"];
+            stages: components["schemas"]["CarteraOverviewStageRow"][];
+            lastTransitions: components["schemas"]["CarteraOverviewTransitionRow"][];
+            nextActions: components["schemas"]["CarteraOverviewNextActionRow"][];
+            generatedAt: string;
+        };
+        CarteraOverviewError: {
+            error: string;
+        };
+        CotizadorOverviewKpis: {
+            quotesHoy: number;
+            approvalRate: number;
+            primaPromedioMonthlyCop: number;
+            costPerQuoteCop: number;
+        };
+        CotizadorOverviewLastQuoteRow: {
+            /** Format: uuid */
+            id: string;
+            cedulaHashPrefix8: string;
+            canonCop: number;
+            ciudad: string;
+            createdAt: string;
+            /** @enum {string} */
+            status: "pending" | "partial" | "final" | "error";
+            approvedCount: number;
+            totalCarriers: number;
+        };
+        CotizadorOverviewCarrierStatus: {
+            name: string;
+            route: string;
+            mode: string;
+            enabled: boolean;
+            /** @enum {string} */
+            slaState: "healthy" | "degraded" | "breached";
+            lastVerdictAt: string | null;
+        };
+        CotizadorOverviewResponse: {
+            kpis: components["schemas"]["CotizadorOverviewKpis"];
+            lastQuotes: components["schemas"]["CotizadorOverviewLastQuoteRow"][];
+            carriers: components["schemas"]["CotizadorOverviewCarrierStatus"][];
+            generatedAt: string;
+        };
+        CotizadorOverviewError: {
+            error: string;
+        };
+        AgencyCotizadorQuoteResponse: {
+            /** Format: uuid */
+            quoteId: string;
+            cedulaHash: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AgencyCotizadorQuoteError: {
+            error: string;
+        };
+        AgencyCotizadorQuoteArcoError: {
+            reason: string;
+            cedulaHash: string;
+        };
+        AgencyCotizadorQuoteBody: {
+            cedulaHash: string;
+            nombre: string;
+            ciudad: string;
+            canonCop: number;
+            /** @enum {string} */
+            tipoInmueble: "apartamento" | "casa" | "oficina" | "local";
+            codeudoresCount: number;
+        };
+        AgencyCotizadorQuoteDetailResponse: {
+            /** Format: uuid */
+            quoteId: string;
+            cedulaHashPrefix8: string;
+            canonCop: number;
+            ciudad: string;
+            tipoInmueble: string;
+            status: string;
+            createdAt: string;
+            completedAt: string | null;
+        };
+        AgencyCotizadorQuoteDetailError: {
+            error: string;
+        };
+        CobranzaDebtorListItem: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            /** @enum {string} */
+            currentStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            daysInStage: number;
+            lastActivityAt: string;
+            cedulaMasked: string;
+            phoneMasked: string;
+            emailMasked: string | null;
+            channel: string;
+            isPaused: boolean;
+            carteraPausedUntil: string | null;
+        };
+        CobranzaDebtorListResponse: {
+            items: components["schemas"]["CobranzaDebtorListItem"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaDebtorListError: {
+            error: string;
+        };
+        CobranzaDebtorDetailNextAction: {
+            plannedFor: string;
+            channel: string;
+            templateName: string | null;
+        } | null;
+        CobranzaDebtorDetailSidebar: {
+            nextAction: components["schemas"]["CobranzaDebtorDetailNextAction"];
+            contactAttemptsCount: number;
+        };
+        CobranzaDebtorDetailKpis: {
+            totalOwed: number;
+            paymentsCount: number;
+            callsCount: number;
+        };
+        CobranzaDebtorDetailHeaderResponse: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            /** @enum {string} */
+            currentStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            daysInStage: number;
+            lastActivityAt: string;
+            cedulaMasked: string;
+            phoneMasked: string;
+            emailMasked: string | null;
+            fiadorCedulaMasked: string | null;
+            carterapausedUntil: string | null;
+            isPaused: boolean;
+            sidebar: components["schemas"]["CobranzaDebtorDetailSidebar"];
+            kpis: components["schemas"]["CobranzaDebtorDetailKpis"];
+            generatedAt: string;
+        };
+        CobranzaDebtorDetailError: {
+            error: string;
+        };
+        CallQaDimensions: {
+            rapport: number | null;
+            compliance: number | null;
+            resolution: number | null;
+            sentiment: number | null;
+        };
+        CallStateTraceRow: {
+            /** Format: uuid */
+            id: string;
+            fromStage: string | null;
+            toStage: string;
+            reason: string;
+            actorType: string;
+            createdAt: string;
+        };
+        CallCostBreakdown: {
+            llmUsd: number;
+            voiceUsd: number;
+            whatsappUsd: number;
+            totalUsd: number;
+        };
+        CobranzaCallDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string | null;
+            vapiCallId: string | null;
+            direction: string;
+            channel: string;
+            status: string;
+            outcome: string | null;
+            initiatedAt: string;
+            startedAt: string | null;
+            endedAt: string | null;
+            durationSeconds: number | null;
+            qaDimensions: components["schemas"]["CallQaDimensions"];
+            complianceFlags: string[];
+            stateTrace: components["schemas"]["CallStateTraceRow"][];
+            costBreakdown: components["schemas"]["CallCostBreakdown"];
+            generatedAt: string;
+        };
+        CobranzaCallDetailError: {
+            error: string;
+        };
+        /** @enum {string} */
+        TranscriptSpeaker: "operator" | "agent" | "customer";
+        TranscriptTurn: {
+            index: number;
+            speaker: components["schemas"]["TranscriptSpeaker"];
+            startedAt: string;
+            endedAt: string | null;
+            text: string;
+            complianceFlags: string[];
+        };
+        CobranzaCallTranscriptResponse: {
+            turns: components["schemas"]["TranscriptTurn"][];
+            totalTurns: number;
+            generatedAt: string;
+        };
+        CobranzaCallTranscriptError: {
+            error: string;
+        };
+        CobranzaRevealPiiResponse: {
+            token: string;
+            expires_at: string;
+            value: string;
+        };
+        CobranzaRevealPiiError: {
+            error: string;
+        };
+        CobranzaRevealPiiRequest: {
+            /** @enum {string} */
+            field: "cedula" | "phone" | "email" | "fiador_cedula";
+        };
+        CobranzaInterventionOk: {
+            /** @enum {boolean} */
+            ok: true;
+        };
+        CobranzaInterventionError: {
+            error: string;
+        };
+        CobranzaPauseBody: {
+            /** Format: date-time */
+            paused_until: string;
+            reason: string;
+        };
+        CobranzaForceStageBody: {
+            /** @enum {string} */
+            target_stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            reason: string;
+        };
+        CobranzaWaSendOk: {
+            /** @enum {boolean} */
+            ok: true;
+            providerMessageId: string | null;
+        };
+        CobranzaWaSendBody: {
+            template_id: string;
+            variables: {
+                [key: string]: string;
+            };
+        };
+        CobranzaManualCallOk: {
+            /** @enum {boolean} */
+            ok: true;
+            callId: string;
+            stub?: boolean;
+        };
+        CobranzaManualCallBody: {
+            reason: string;
+        };
+        CobranzaWaTemplatesList: {
+            templates: {
+                id: string;
+                label: string;
+                variables: string[];
+            }[];
+        };
         /** @enum {string} */
         TargetMetric: "kept_promise_rate" | "recovered_cop_per_call" | "completion_rate";
         ExperimentVariantResponse: {
@@ -2922,6 +3557,834 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberPermissionsError"];
+                };
+            };
+        };
+    };
+    getCarteraOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cobranza overview aggregate — 4 KPIs + 7 stages + transitions + next actions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cobranza:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
+                };
+            };
+        };
+    };
+    getCotizadorOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cotizador overview aggregate — KPIs + last 10 quotes + carrier status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorOverviewResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorOverviewError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cotizador:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorOverviewError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorOverviewError"];
+                };
+            };
+        };
+    };
+    getAgencyCotizadorQuoteDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quote metadata for the operator UI */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description agencyId mismatch or no cotizador:view */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description Quote not found in this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorsList: {
+        parameters: {
+            query?: {
+                stage?: string;
+                channel?: string;
+                daysMin?: number | null;
+                daysMax?: number | null;
+                search?: string;
+                cedulaPrefix?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Debtors list page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorListResponse"];
+                };
+            };
+            /** @description Malformed cursor (CursorDecodeError) or invalid query params. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorListError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorListError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cobranza:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorListError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorListError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Debtor header + sidebar payload (PII masked by default) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorDetailHeaderResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorDetailError"];
+                };
+            };
+            /** @description cobranza:view permission required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorDetailError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorDetailError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorDetailError"];
+                };
+            };
+        };
+    };
+    getCobranzaCallDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Call detail payload — metadata + QA + state trace + cost. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallDetailResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallDetailError"];
+                };
+            };
+            /** @description cobranza:view permission required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallDetailError"];
+                };
+            };
+            /** @description Call not found (or cross-tenant — T-15-06 enumeration guard). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallDetailError"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallDetailError"];
+                };
+            };
+        };
+    };
+    getCobranzaCallTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ordered transcript turns array + total count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallTranscriptResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallTranscriptError"];
+                };
+            };
+            /** @description cobranza:view permission required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallTranscriptError"];
+                };
+            };
+            /** @description Call not found (or cross-tenant — T-15-06 enumeration guard). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallTranscriptError"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallTranscriptError"];
+                };
+            };
+        };
+    };
+    revealCobranzaDebtorPii: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaRevealPiiRequest"];
+            };
+        };
+        responses: {
+            /** @description Reveal token + raw field value */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiResponse"];
+                };
+            };
+            /** @description Invalid field value (must be cedula | phone | email | fiador_cedula) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+            /** @description Caller lacks cobranza:reveal-pii permission (VIEWER) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+            /** @description Debtor not found, cross-tenant, OR the underlying field value is null */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+            /** @description Audit log write failed — token not minted (fail-safe) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+        };
+    };
+    pauseCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPauseBody"];
+            };
+        };
+        responses: {
+            /** @description Paused */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    forceStageCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaForceStageBody"];
+            };
+        };
+        responses: {
+            /** @description Stage forced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor or state not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first or transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualWaSendCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaWaSendBody"];
+            };
+        };
+        responses: {
+            /** @description Template send dispatched to BSP */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaSendOk"];
+                };
+            };
+            /** @description Validation error or unknown template_id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description BSP send failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualCallCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaManualCallBody"];
+            };
+        };
+        responses: {
+            /** @description Vapi call created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Stub-mode (VAPI_API_KEY unset) — audit written, no upstream call */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Vapi unreachable or non-2xx */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable or Vapi config missing */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    listCobranzaWaTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approved templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaTemplatesList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
                 };
             };
         };

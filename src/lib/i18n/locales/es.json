@@ -4261,6 +4261,41 @@
             "arcoBloqueado": "Esta cédula tiene una oposición activa — contacta al administrador",
             "sinPermiso": "No tienes permiso para crear cotizaciones"
           }
+        },
+        "detail": {
+          "header": {
+            "breadcrumbQuote": "Cotización",
+            "canon": "Canon",
+            "ciudad": "Ciudad",
+            "tipo": "Tipo",
+            "codeudores": "Codeudores",
+            "liveLabel": "En vivo",
+            "disconnectedLabel": "Desconectado",
+            "totalCost": "Costo total"
+          },
+          "carrier": {
+            "pendingLabel": "Procesando",
+            "approvedLabel": "Aprobado",
+            "conditionalLabel": "Condicional",
+            "rejectedLabel": "Rechazado",
+            "errorLabel": "Error",
+            "stubLabel": "Demo",
+            "latencyMs": "ms",
+            "condicionesTitle": "Condiciones",
+            "motivoRechazoTitle": "Motivo de rechazo",
+            "stubModeBadge": "Modo demostración",
+            "timeoutPill": "Tiempo de espera"
+          },
+          "banner": {
+            "allReadyTemplate": "{count} de {total} listos · Total ${cost}",
+            "stubModeWarning": "Modo demostración — sin conexión real a aseguradoras",
+            "reQuoteButton": "Re-cotizar",
+            "reQuoteTooltip": "Disponible en la próxima actualización",
+            "downloadPdfButton": "Descargar PDF",
+            "backButton": "Volver al cotizador"
+          },
+          "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
+          "retry": "Reintentar"
         }
       },
       "access": {

@@ -4248,6 +4248,41 @@
             "arcoBloqueado": "This ID has an active data objection — contact your administrator",
             "sinPermiso": "You do not have permission to create quotes"
           }
+        },
+        "detail": {
+          "header": {
+            "breadcrumbQuote": "Quote",
+            "canon": "Rent",
+            "ciudad": "City",
+            "tipo": "Type",
+            "codeudores": "Co-borrowers",
+            "liveLabel": "Live",
+            "disconnectedLabel": "Disconnected",
+            "totalCost": "Total cost"
+          },
+          "carrier": {
+            "pendingLabel": "Processing",
+            "approvedLabel": "Approved",
+            "conditionalLabel": "Conditional",
+            "rejectedLabel": "Rejected",
+            "errorLabel": "Error",
+            "stubLabel": "Demo",
+            "latencyMs": "ms",
+            "condicionesTitle": "Conditions",
+            "motivoRechazoTitle": "Rejection reason",
+            "stubModeBadge": "Demo mode",
+            "timeoutPill": "Timeout"
+          },
+          "banner": {
+            "allReadyTemplate": "{count} of {total} ready · Total ${cost}",
+            "stubModeWarning": "Demo mode — not connected to real insurers",
+            "reQuoteButton": "Re-quote",
+            "reQuoteTooltip": "Available in the next update",
+            "downloadPdfButton": "Download PDF",
+            "backButton": "Back to cotizador"
+          },
+          "connectionInterrupted": "Connection interrupted. Check your connection and try again.",
+          "retry": "Retry"
         }
       },
       "access": {

@@ -147,8 +147,7 @@ export function useQuoteStream(
 
     const url = buildUrl(cursor)
     // EventSource with withCredentials for session-cookie auth
-    // @ts-expect-error — EventSource constructor options type may not include withCredentials in all lib defs
-    const es = new EventSource(url, { withCredentials: true }) as EventSource
+    const es = new EventSource(url, { withCredentials: true })
     esRef.current = es
 
     es.onopen = () => {
@@ -273,7 +272,7 @@ export function useQuoteStream(
           es.close()
           esRef.current = null
         }
-      } as EventListener)
+      })
     }
   }, [agencyId, buildUrl, closeEs])
 

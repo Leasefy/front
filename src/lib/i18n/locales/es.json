@@ -4586,6 +4586,70 @@
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
           }
+        },
+        "pagos": {
+          "title": "Pagos",
+          "subtitle": "Funnel de pagos y desembolsos",
+          "kpi": {
+            "approved": "Aprobados",
+            "pending": "Pendientes",
+            "declined": "Rechazados",
+            "recaudado": "Total recaudado",
+            "disbursed": "Total desembolsado",
+            "avgFee": "Comisión promedio"
+          },
+          "dateWindow": {
+            "today": "Hoy",
+            "7d": "7 días",
+            "30d": "30 días",
+            "90d": "90 días",
+            "mtd": "Mes actual"
+          },
+          "filter": {
+            "provider": "Proveedor",
+            "status": "Estado",
+            "clear": "Limpiar filtros",
+            "wompi": "Wompi",
+            "bold": "Bold"
+          },
+          "status": {
+            "approved": "Aprobado",
+            "pending": "Pendiente",
+            "declined": "Rechazado",
+            "disbursed": "Desembolsado"
+          },
+          "sort": {
+            "createdAt": "Más recientes",
+            "amountDesc": "Mayor monto",
+            "disbursementPendingDays": "Desembolso pendiente"
+          },
+          "columns": {
+            "nombre": "Nombre",
+            "monto": "Monto",
+            "fee": "Comisión",
+            "provider": "Proveedor",
+            "status": "Estado",
+            "fecha": "Fecha"
+          },
+          "pill": {
+            "disbursementPending": "Desembolso pendiente"
+          },
+          "empty": "Sin pagos en este período",
+          "error": "Error al cargar pagos",
+          "errorRetry": "Reintentar",
+          "loading": "Cargando pagos...",
+          "loadingMore": "Cargando más...",
+          "detail": {
+            "title": "Detalle de pago",
+            "provider": "Proveedor",
+            "status": "Estado",
+            "amount": "Monto",
+            "fee": "Comisión",
+            "createdAt": "Fecha",
+            "debtor": "Deudor",
+            "back": "Volver a pagos",
+            "notFound": "Pago no encontrado"
+          }
         }
       }
     }

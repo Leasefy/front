@@ -1,0 +1,171 @@
+'use client'
+
+/**
+ * LlamadasTab — Phase 31 plan 31-09.
+ *
+ * md+: table of calls; sm: stacked card list. Row click → call detail page.
+ */
+
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
+
+import { useI18n } from '@/lib/i18n'
+import { useDebtorCalls } from '@/lib/hooks/cobranza/use-debtor-calls'
+
+void React
+
+interface LlamadasTabProps {
+  debtorId: string
+}
+
+function formatDuration(sec: number | null): string {
+  if (sec == null) return '—'
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+export function LlamadasTab({ debtorId }: LlamadasTabProps) {
+  const { t, locale } = useI18n()
+  const router = useRouter()
+  const { data, isLoading, error, refetch } = useDebtorCalls({ debtorId })
+
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div
+            key={i}
+            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+          />
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
+        <p className="text-sm text-red-700 dark:text-red-400">
+          {t('inmobiliaria.ai.cobranza.detail.llamadas.error')}: {error}
+        </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+        >
+          {t('inmobiliaria.ai.cobranza.detail.llamadas.errorRetry')}
+        </button>
+      </div>
+    )
+  }
+
+  const calls = data?.calls ?? []
+  if (calls.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          {t('inmobiliaria.ai.cobranza.detail.llamadas.empty')}
+        </p>
+      </div>
+    )
+  }
+
+  const navigate = (callId: string) => {
+    router.push(`/panel/inmobiliaria/ai/cobranza/llamadas/${callId}`)
+  }
+
+  return (
+    <>
+      {/* md+ table */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.startedAt')}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.duration')}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.outcome')}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.qa')}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {calls.map((c) => (
+              <tr
+                key={c.id}
+                role="link"
+                tabIndex={0}
+                onClick={() => navigate(c.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') navigate(c.id)
+                }}
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <td className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
+                  {new Date(c.started_at).toLocaleString(locale)}
+                </td>
+                <td className="px-3 py-2 font-mono text-xs">
+                  {formatDuration(c.duration_seconds)}
+                </td>
+                <td className="px-3 py-2">
+                  <span className="text-xs">{c.status ?? '—'}</span>
+                </td>
+                <td className="px-3 py-2">
+                  <span className="text-xs font-mono">
+                    {c.qa_score != null ? c.qa_score.toFixed(1) : '—'}
+                  </span>
+                </td>
+                <td className="px-3 py-2">
+                  <span
+                    className={
+                      'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ' +
+                      (c.compliance_flags_count > 0
+                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+                        : 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400')
+                    }
+                  >
+                    {c.compliance_flags_count}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* sm cards */}
+      <ul className="md:hidden space-y-2">
+        {calls.map((c) => (
+          <li key={c.id}>
+            <button
+              type="button"
+              onClick={() => navigate(c.id)}
+              className="w-full text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
+            >
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {new Date(c.started_at).toLocaleString(locale)}
+              </p>
+              <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">
+                {c.status ?? '—'} · {formatDuration(c.duration_seconds)}
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                QA {c.qa_score?.toFixed(1) ?? '—'} · {c.compliance_flags_count}{' '}
+                {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
+              </p>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}

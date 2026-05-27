@@ -7,7 +7,9 @@
 import { useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
+import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 
 interface CallDetailClientProps {
   callId: string
@@ -56,6 +58,8 @@ function qaTone(score: number | null | undefined): {
 
 export default function CallDetailClient({ callId }: CallDetailClientProps) {
   const { t, locale } = useI18n()
+  const { agency } = useAuth()
+  const agencyId = agency?.id ?? ''
   const { data, isLoading, error, refetch } = useCallDetail({ callId })
 
   // Audio element ref lives at the orchestrator level so transcript click-to-seek
@@ -200,25 +204,20 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_22rem] gap-6">
         {/* LEFT COLUMN: audio (sticky) + transcript */}
         <div className="space-y-4">
-          {/* Audio player (Task 2) — sticky on both layouts. */}
+          {/* Audio player — sticky on both layouts. */}
           <div className="sticky top-0 z-20 md:top-20 bg-white dark:bg-neutral-950 -mx-6 px-6 md:mx-0 md:px-0 py-2">
             {data.hasRecording ? (
-              <div
-                role="region"
-                aria-label={t('inmobiliaria.ai.cobranza.call.player.play')}
-                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 dark:text-neutral-400"
-                data-testid="call-audio-player-slot"
-              >
-                {/* CallAudioPlayer is wired in Task 2 (consumes audioRef). */}
-                {t('inmobiliaria.ai.cobranza.call.player.play')}
-              </div>
+              <CallAudioPlayer
+                callId={callId}
+                agencyId={agencyId}
+                hasRecording={data.hasRecording}
+                audioRef={audioRef}
+              />
             ) : (
               <div className="rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-500 dark:text-neutral-400 text-center">
                 {t('inmobiliaria.ai.cobranza.call.header.noRecording')}
               </div>
             )}
-            {/* audioRef anchor (Task 2 renders the actual <audio> via CallAudioPlayer). */}
-            <audio ref={audioRef} hidden aria-hidden="true" />
           </div>
 
           {/* Transcript (Task 3) */}

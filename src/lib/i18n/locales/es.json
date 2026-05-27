@@ -4352,6 +4352,46 @@
             "channelEmail": "Email"
           },
           "errorLoading": "Error cargando datos"
+        },
+        "deudores": {
+          "title": "Deudores",
+          "subtitle": "Lista de cartera — todos los deudores activos",
+          "filters": {
+            "title": "Filtros",
+            "stage": "Etapa",
+            "channel": "Canal",
+            "daysInStage": "Días en etapa",
+            "search": {
+              "placeholder": "Nombre o cédula (4+ dígitos)",
+              "label": "Buscar deudor"
+            },
+            "clear": "Limpiar filtros"
+          },
+          "sort": {
+            "daysInStageDesc": "Más estancados primero"
+          },
+          "empty": "Sin deudores con estos filtros",
+          "error": "Error cargando deudores",
+          "errorRetry": "Reintentar",
+          "loadingMore": "Cargando más…",
+          "openFilters": "Mostrar filtros",
+          "closeFilters": "Cerrar filtros",
+          "searchMinChars": "Escribe al menos 4 dígitos para buscar por cédula",
+          "columns": {
+            "name": "Nombre",
+            "stage": "Etapa",
+            "daysInStage": "Días",
+            "channel": "Canal",
+            "cedula": "Cédula",
+            "phone": "Teléfono",
+            "email": "Email",
+            "lastActivity": "Última actividad"
+          },
+          "channels": {
+            "voice": "Llamada",
+            "whatsapp": "WhatsApp",
+            "email": "Email"
+          }
         }
       }
     }

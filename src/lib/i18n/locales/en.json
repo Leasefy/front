@@ -4339,6 +4339,46 @@
             "channelEmail": "Email"
           },
           "errorLoading": "Error loading data"
+        },
+        "deudores": {
+          "title": "Debtors",
+          "subtitle": "Portfolio list — all active debtors",
+          "filters": {
+            "title": "Filters",
+            "stage": "Stage",
+            "channel": "Channel",
+            "daysInStage": "Days in stage",
+            "search": {
+              "placeholder": "Name or ID (4+ digits)",
+              "label": "Search debtor"
+            },
+            "clear": "Clear filters"
+          },
+          "sort": {
+            "daysInStageDesc": "Most stuck first"
+          },
+          "empty": "No debtors match these filters",
+          "error": "Failed to load debtors",
+          "errorRetry": "Retry",
+          "loadingMore": "Loading more…",
+          "openFilters": "Show filters",
+          "closeFilters": "Close filters",
+          "searchMinChars": "Type at least 4 digits to search by ID",
+          "columns": {
+            "name": "Name",
+            "stage": "Stage",
+            "daysInStage": "Days",
+            "channel": "Channel",
+            "cedula": "ID",
+            "phone": "Phone",
+            "email": "Email",
+            "lastActivity": "Last activity"
+          },
+          "channels": {
+            "voice": "Call",
+            "whatsapp": "WhatsApp",
+            "email": "Email"
+          }
         }
       }
     }

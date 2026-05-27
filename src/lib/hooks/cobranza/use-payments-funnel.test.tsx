@@ -243,10 +243,11 @@ describe('usePaymentsFunnel', () => {
     await flushPromises()
 
     expect(ref.current?.rows.length).toBe(2)
-    expect(ref.current?.rows[0].disbursementPendingDays).toBe(2)
-    expect(ref.current?.rows[0].disbursementPendingDays < 3).toBe(true)
-    expect(ref.current?.rows[1].disbursementPendingDays).toBe(3)
-    expect(ref.current?.rows[1].disbursementPendingDays >= 3).toBe(true)
+    const rows = ref.current!.rows
+    expect(rows[0]!.disbursementPendingDays).toBe(2)
+    expect(rows[0]!.disbursementPendingDays < 3).toBe(true)
+    expect(rows[1]!.disbursementPendingDays).toBe(3)
+    expect(rows[1]!.disbursementPendingDays >= 3).toBe(true)
 
     act(() => root.unmount())
     container.remove()

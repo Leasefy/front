@@ -15,7 +15,7 @@ const VIEWPORTS = [
 const MOCK_OVERVIEW_BODY = JSON.stringify({
   kpis: {
     deudoresActivos: 142,
-    pagadoHoyCOP: 5_500_000,
+    pagadoHoyCop: 5_500_000,
     llamadasHoy: 23,
     escalacionesPendientes: 3,
   },
@@ -108,7 +108,7 @@ test('cobranza overview — stage card click updates URL', async ({ page }) => {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        kpis: { deudoresActivos: 10, pagadoHoyCOP: 0, llamadasHoy: 0, escalacionesPendientes: 0 },
+        kpis: { deudoresActivos: 10, pagadoHoyCop: 0, llamadasHoy: 0, escalacionesPendientes: 0 },
         stages: [{ stage: 'S0', count: 10, avgDaysInStage: 5, weeklyDelta: 0 }],
         lastTransitions: [],
         nextActions: [],
@@ -129,7 +129,7 @@ test('cobranza overview — aria-live region present', async ({ page }) => {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        kpis: { deudoresActivos: 0, pagadoHoyCOP: 0, llamadasHoy: 0, escalacionesPendientes: 0 },
+        kpis: { deudoresActivos: 0, pagadoHoyCop: 0, llamadasHoy: 0, escalacionesPendientes: 0 },
         stages: [],
         lastTransitions: [],
         nextActions: [],

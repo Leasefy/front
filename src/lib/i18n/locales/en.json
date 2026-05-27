@@ -4689,6 +4689,98 @@
             "monto": "Amount per installment (COP)",
             "fecha": "First payment date"
           }
+        },
+        "approval": {
+          "rechazarForm": {
+            "title": "Reject",
+            "confirm": "Confirm rejection",
+            "cancel": "Cancel",
+            "reasonLabel": "Reason",
+            "reasonPlaceholder": "Select a reason",
+            "commentLabel": "Comment (optional)",
+            "charsRemaining": "{{remaining}} characters remaining",
+            "reason": {
+              "discount_too_high": "Discount too high",
+              "debtor_history_poor": "Poor debtor history",
+              "wrong_cuota_count": "Wrong installment count",
+              "policy_violation": "Policy violation",
+              "out_of_scope": "Out of scope",
+              "other": "Other"
+            }
+          }
+        },
+        "siniestros": {
+          "title": "Approve insurance claim",
+          "loading": "Loading claim...",
+          "error": "Error loading the claim. Please retry.",
+          "envMissing": "Environment not configured (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Back",
+          "permissionTooltip": "Only ADMIN/OWNER can approve",
+          "pdfPreview": {
+            "title": "Packet preview",
+            "error": "Unable to load PDF preview."
+          },
+          "insurers": {
+            "title": "Insurers to notify",
+            "sura": "Sura",
+            "mapfre": "Mapfre",
+            "solidaria": "Solidaria",
+            "accion": "Acción",
+            "atLeastOne": "Select at least one insurer to approve"
+          },
+          "aprobar": {
+            "label": "Approve",
+            "submitting": "Submitting...",
+            "success": {
+              "title": "Claim filed successfully.",
+              "partial": "Sent with partial results — review each insurer"
+            }
+          },
+          "rechazar": {
+            "label": "Reject",
+            "submitting": "Rejecting...",
+            "success": "Claim rejected successfully."
+          }
+        },
+        "cartas": {
+          "title": "Approve pre-judicial letter",
+          "loading": "Loading letter...",
+          "error": "Error loading the letter. Please retry.",
+          "envMissing": "Environment not configured (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Back",
+          "permissionTooltip": "Only ADMIN/OWNER can approve",
+          "pdfPreview": {
+            "title": "Letter preview",
+            "error": "Unable to load PDF preview."
+          },
+          "physicalSend": {
+            "label": "Physical delivery method",
+            "placeholder": "Select a method",
+            "servicio472": "Servicio 4-72 (certified mail)",
+            "emailOnly": "Email only",
+            "operatorManual": "Manual delivery by operator"
+          },
+          "sentToAddress": {
+            "label": "Destination address or email",
+            "placeholder": "Calle 123 #45-67, Bogotá / address@example.com"
+          },
+          "aprobar": {
+            "label": "Approve",
+            "submitting": "Approving...",
+            "success": {
+              "title": "Letter approved successfully."
+            },
+            "download": {
+              "label": "Download signed PDF",
+              "ttl": "Link expires in {{days}} days"
+            },
+            "legalNotice": "Reminder: delivery must be by certified physical mail for legal validity in Colombia."
+          },
+          "rechazar": {
+            "label": "Reject",
+            "submitting": "Rejecting...",
+            "success": "Letter rejected successfully."
+          }
         }
       }
     }

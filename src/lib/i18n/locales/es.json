@@ -4702,6 +4702,98 @@
             "monto": "Monto por cuota (COP)",
             "fecha": "Fecha primer pago"
           }
+        },
+        "approval": {
+          "rechazarForm": {
+            "title": "Rechazar",
+            "confirm": "Confirmar rechazo",
+            "cancel": "Cancelar",
+            "reasonLabel": "Razón",
+            "reasonPlaceholder": "Selecciona una razón",
+            "commentLabel": "Comentario (opcional)",
+            "charsRemaining": "{{remaining}} caracteres restantes",
+            "reason": {
+              "discount_too_high": "Descuento demasiado alto",
+              "debtor_history_poor": "Historial del deudor deficiente",
+              "wrong_cuota_count": "Número de cuotas incorrecto",
+              "policy_violation": "Violación de política",
+              "out_of_scope": "Fuera del alcance",
+              "other": "Otro"
+            }
+          }
+        },
+        "siniestros": {
+          "title": "Aprobar siniestro",
+          "loading": "Cargando siniestro...",
+          "error": "Error al cargar el siniestro. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Volver",
+          "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
+          "pdfPreview": {
+            "title": "Vista previa del paquete",
+            "error": "No se pudo cargar la vista previa del PDF."
+          },
+          "insurers": {
+            "title": "Aseguradoras a notificar",
+            "sura": "Sura",
+            "mapfre": "Mapfre",
+            "solidaria": "Solidaria",
+            "accion": "Acción",
+            "atLeastOne": "Selecciona al menos una aseguradora para aprobar"
+          },
+          "aprobar": {
+            "label": "Aprobar",
+            "submitting": "Enviando...",
+            "success": {
+              "title": "Siniestro radicado correctamente.",
+              "partial": "Enviado con resultados parciales — revisa cada aseguradora"
+            }
+          },
+          "rechazar": {
+            "label": "Rechazar",
+            "submitting": "Rechazando...",
+            "success": "Siniestro rechazado correctamente."
+          }
+        },
+        "cartas": {
+          "title": "Aprobar carta prejurídica",
+          "loading": "Cargando carta...",
+          "error": "Error al cargar la carta. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Volver",
+          "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
+          "pdfPreview": {
+            "title": "Vista previa de la carta",
+            "error": "No se pudo cargar la vista previa del PDF."
+          },
+          "physicalSend": {
+            "label": "Método de envío físico",
+            "placeholder": "Selecciona un método",
+            "servicio472": "Servicio 4-72 (correo certificado)",
+            "emailOnly": "Solo correo electrónico",
+            "operatorManual": "Entrega manual por operador"
+          },
+          "sentToAddress": {
+            "label": "Dirección o correo destino",
+            "placeholder": "Calle 123 #45-67, Bogotá / correo@dominio.com"
+          },
+          "aprobar": {
+            "label": "Aprobar",
+            "submitting": "Aprobando...",
+            "success": {
+              "title": "Carta aprobada correctamente."
+            },
+            "download": {
+              "label": "Descargar PDF firmado",
+              "ttl": "El enlace expira en {{days}} días"
+            },
+            "legalNotice": "Recuerda: la entrega debe ser por correo certificado físico para validez legal en Colombia."
+          },
+          "rechazar": {
+            "label": "Rechazar",
+            "submitting": "Rechazando...",
+            "success": "Carta rechazada correctamente."
+          }
         }
       }
     }

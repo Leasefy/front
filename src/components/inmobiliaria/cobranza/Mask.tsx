@@ -21,6 +21,12 @@ interface MaskProps {
   /** Optional callback fired on click/Enter when the user wants to reveal.
    *  31-10 wires the PIIRevealModal here. 31-08 leaves it undefined. */
   onReveal?: (field: MaskField) => void
+  /** Revealed raw value (from PIIRevealContext); when present, displayed
+   *  in place of the masked value. 31-09 wires this. */
+  rawValue?: string | null | undefined
+  /** Seconds remaining on the reveal token; shown alongside rawValue.
+   *  Auto re-masking happens upstream when the context entry expires. */
+  countdownSeconds?: number | null
   className?: string
 }
 
@@ -49,7 +55,39 @@ const LockGlyph = () => (
   </svg>
 )
 
-export function Mask({ field, value, onReveal, className }: MaskProps) {
+function formatCountdown(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  const mm = Math.floor(s / 60)
+  const ss = s % 60
+  return `${mm}:${ss.toString().padStart(2, '0')}`
+}
+
+export function Mask({ field, value, onReveal, rawValue, countdownSeconds, className }: MaskProps) {
+  // If a raw value is present (revealed), render it with the countdown chip.
+  if (rawValue != null && rawValue !== '') {
+    return (
+      <span
+        data-pii-field={field}
+        data-pii-revealed="true"
+        className={
+          'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
+          'text-violet-700 dark:text-violet-300 ' +
+          (className ?? '')
+        }
+      >
+        <span>{rawValue}</span>
+        {countdownSeconds != null && countdownSeconds > 0 && (
+          <span
+            aria-label={`tiempo restante ${formatCountdown(countdownSeconds)}`}
+            className="px-1 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+          >
+            {formatCountdown(countdownSeconds)}
+          </span>
+        )}
+      </span>
+    )
+  }
+
   const isEmpty = value === null || value === undefined || value === ''
 
   if (isEmpty) {

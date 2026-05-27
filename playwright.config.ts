@@ -24,10 +24,34 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
+  // Phase 31-12: stable visual diff thresholds across font-hinting differences.
+  // animations:'disabled' + maxDiffPixelRatio:0.02 mirror the Phase 29-07 +
+  // Phase 30 snapshot conventions (per 31-12 plan Task 1).
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+      animations: 'disabled',
+    },
+  },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    // Phase 31-12 multi-viewport projects for XR-03 mobile breakpoint coverage.
+    // These fan out the phase-31-cobranza-detail.spec.ts snapshots across the
+    // 3 viewports the design system targets (sm / md / desktop).
+    {
+      name: 'iPhone 14',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'iPad Mini',
+      use: { ...devices['iPad Mini'] },
+    },
+    {
+      name: 'Desktop Chrome 1440',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
   ],
   // No webServer entry — assume dev server is already running locally

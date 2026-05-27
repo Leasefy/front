@@ -4159,6 +4159,41 @@
           "subtitle": "The Quoter module will be available in the next update.",
           "phase": "Phase 30",
           "backLink": "Back to AI Agents"
+        },
+        "overview": {
+          "title": "Quoter",
+          "subtitle": "Status of quotes and active insurers",
+          "lastUpdated": "Updated",
+          "newQuoteCta": "New quote",
+          "kpis": {
+            "quotesToday": "Quotes today",
+            "approvalRate": "Approval rate",
+            "primaPromedio": "Avg monthly premium",
+            "costPerQuote": "Cost per quote"
+          },
+          "recentQuotes": {
+            "title": "Recent quotes",
+            "empty": "No quotes yet today",
+            "emptyHelper": "Quotes will appear here when new requests are created",
+            "statusPending": "Pending",
+            "statusPartial": "Partial",
+            "statusComplete": "Complete",
+            "statusError": "Error",
+            "ariaRow": "Quote for {{name}}, {{city}}, status {{status}}"
+          },
+          "carriers": {
+            "title": "Insurer status",
+            "routeModeRest": "REST",
+            "routeModeStub": "Stub",
+            "routeModeDisabled": "Disabled",
+            "slaOk": "OK",
+            "slaWarning": "Warning",
+            "slaBreach": "Breach",
+            "lastVerdict": "Last verdict",
+            "neverSeen": "No verdicts yet",
+            "allBreachBanner": "All insurers in SLA breach — results may be slow"
+          },
+          "errorLoading": "Error loading quoter data"
         }
       },
       "access": {

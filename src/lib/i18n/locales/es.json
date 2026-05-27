@@ -4172,6 +4172,41 @@
           "subtitle": "El módulo de Cotización estará disponible en la siguiente actualización.",
           "phase": "Phase 30",
           "backLink": "Volver a Agentes AI"
+        },
+        "overview": {
+          "title": "Cotizador",
+          "subtitle": "Estado de las cotizaciones y aseguradoras activas",
+          "lastUpdated": "Actualizado hace",
+          "newQuoteCta": "Nueva cotización",
+          "kpis": {
+            "quotesToday": "Cotizaciones hoy",
+            "approvalRate": "Tasa de aprobación",
+            "primaPromedio": "Prima promedio/mes",
+            "costPerQuote": "Costo por cotización"
+          },
+          "recentQuotes": {
+            "title": "Últimas cotizaciones",
+            "empty": "Aún no hay cotizaciones hoy",
+            "emptyHelper": "Las cotizaciones aparecerán aquí cuando se creen nuevas solicitudes",
+            "statusPending": "Pendiente",
+            "statusPartial": "Parcial",
+            "statusComplete": "Completo",
+            "statusError": "Error",
+            "ariaRow": "Cotización para {{name}}, {{city}}, estado {{status}}"
+          },
+          "carriers": {
+            "title": "Estado de aseguradoras",
+            "routeModeRest": "REST",
+            "routeModeStub": "Stub",
+            "routeModeDisabled": "Deshabilitada",
+            "slaOk": "OK",
+            "slaWarning": "Alerta",
+            "slaBreach": "Incumplimiento",
+            "lastVerdict": "Último veredicto",
+            "neverSeen": "Sin veredictos",
+            "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
+          },
+          "errorLoading": "Error al cargar datos del cotizador"
         }
       },
       "access": {

@@ -8,12 +8,14 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
+import { useAuth } from '@/lib/auth';
 
-// ============================================================================
-// Context
-// ============================================================================
+interface AgentPermissions {
+  cobranza: string[];
+  cotizador: string[];
+}
 
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
@@ -27,12 +29,23 @@ interface PermissionsContextValue {
 
 const PermissionsContext = createContext<PermissionsContextValue | null>(null);
 
-// ============================================================================
-// Provider
-// ============================================================================
+async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions | null> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
+  if (!agentUrl) return null;
+  const token = getAccessToken();
+  if (!token) return null;
+  const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as AgentPermissions;
+}
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
+  const { agency } = useAuth();
+  const agencyId = agency?.id ?? null;
   const [permissions, setPermissions] = useState<MemberPermissionsResponse | null>(null);
+  const [agentPerms, setAgentPerms] = useState<AgentPermissions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,10 +53,12 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<MemberPermissionsResponse>(
-        '/inmobiliaria/agency/my-permissions'
-      );
-      setPermissions(data);
+      const [legacy, agent] = await Promise.all([
+        apiClient.get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions'),
+        agencyId ? fetchAgentPermissions(agencyId).catch(() => null) : Promise.resolve(null),
+      ]);
+      setPermissions(legacy);
+      setAgentPerms(agent);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error fetching permissions';
       console.error('[PermissionsContext]', message);
@@ -51,7 +66,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [agencyId]);
 
   useEffect(() => {
     fetchPermissions();
@@ -59,7 +74,11 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
-      if (!permissions || isLoading) return false;
+      if (isLoading) return false;
+      if (module === 'cobranza' || module === 'cotizador') {
+        return agentPerms?.[module]?.includes(action) ?? false;
+      }
+      if (!permissions) return false;
       if (permissions.isAdmin) return true;
       const effectivePerms = permissions.effectivePermissions;
       if (!effectivePerms || effectivePerms === 'FULL_ACCESS') return true;
@@ -67,7 +86,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       if (!modulePerms) return false;
       return modulePerms.includes(action);
     },
-    [permissions, isLoading],
+    [permissions, agentPerms, isLoading],
   );
 
   return (

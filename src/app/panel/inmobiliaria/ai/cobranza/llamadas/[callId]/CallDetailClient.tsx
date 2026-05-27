@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
+import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 
 interface CallDetailClientProps {
   callId: string
@@ -220,14 +221,12 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             )}
           </div>
 
-          {/* Transcript (Task 3) */}
-          <div
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 dark:text-neutral-400"
-            data-testid="call-transcript-slot"
-            data-seek-bound={typeof seekTo === 'function' ? 'true' : 'false'}
-          >
-            {t('inmobiliaria.ai.cobranza.call.transcript.title')}
-          </div>
+          {/* Transcript */}
+          <CallTranscript
+            callId={callId}
+            onSeek={seekTo}
+            complianceFlags={data.complianceFlags}
+          />
         </div>
 
         {/* RIGHT COLUMN: QA / state / cost (Task 4) */}

@@ -7,6 +7,7 @@
  */
 
 import * as React from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
@@ -16,6 +17,8 @@ void React
 
 interface LlamadasTabProps {
   debtorId: string
+  /** Bump from parent (Phase 31 plan 31-11 realtime) to force a refetch. */
+  refetchKey?: number
 }
 
 function formatDuration(sec: number | null): string {
@@ -25,10 +28,15 @@ function formatDuration(sec: number | null): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export function LlamadasTab({ debtorId }: LlamadasTabProps) {
+export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   const { t, locale } = useI18n()
   const router = useRouter()
   const { data, isLoading, error, refetch } = useDebtorCalls({ debtorId })
+
+  // Realtime-driven refetch (D-31-18 single refetch per event).
+  useEffect(() => {
+    if (refetchKey > 0) void refetch()
+  }, [refetchKey, refetch])
 
   if (isLoading && !data) {
     return (

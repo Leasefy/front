@@ -11,7 +11,7 @@
  */
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
@@ -22,6 +22,8 @@ void React
 
 interface TimelineTabProps {
   debtorId: string
+  /** Bump from parent (Phase 31 plan 31-11 realtime) to force a refetch. */
+  refetchKey?: number
 }
 
 const EVENT_ICON: Record<string, string> = {
@@ -31,11 +33,16 @@ const EVENT_ICON: Record<string, string> = {
   memo: '📝',
 }
 
-export function TimelineTab({ debtorId }: TimelineTabProps) {
+export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
   const { t, locale } = useI18n()
   const router = useRouter()
   const { data, isLoading, error, refetch } = useDebtorTimeline({ debtorId })
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+
+  // Realtime-driven refetch (D-31-18 single refetch per event).
+  useEffect(() => {
+    if (refetchKey > 0) void refetch()
+  }, [refetchKey, refetch])
 
   if (isLoading && !data) {
     return (

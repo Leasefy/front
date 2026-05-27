@@ -20,6 +20,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { stageColorClasses } from '@/lib/cartera'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
+import { useDebtorStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-debtor-stage-transitions-realtime'
+import { useDebtorCallsRealtime } from '@/lib/hooks/cobranza/use-debtor-calls-realtime'
 import {
   PIIRevealContextProvider,
   type PIIFieldKey,
@@ -83,6 +85,58 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
   const { data, isLoading, error, refetch } = useDebtorDetail({ debtorId })
   const debtorName = data?.fullName ?? ''
+
+  // -----------------------------------------------------------------------
+  // Phase 31 plan 31-11: Supabase Realtime (XR-01, D-31-16, D-31-18)
+  //
+  // Two channels per open debtor (stage_transitions + calls). On each event,
+  // we bump a per-tab refetchKey so the tab's data hook re-fetches (D-31-09
+  // lazy-mount preserved — non-active tab still doesn't poll, just gets a
+  // stale key it ignores until activated). On every SUBSCRIBED status
+  // (initial + reconnect) we trigger a single detail refetch to catch any
+  // events missed during a transient disconnect (lossy OK per D-31-18).
+  //
+  // Callbacks wrapped in useCallback so the realtime useEffect deps stay
+  // referentially stable — otherwise the channel would resubscribe on every
+  // parent render.
+  // -----------------------------------------------------------------------
+  const [timelineRefetchKey, setTimelineRefetchKey] = useState(0)
+  const [callsRefetchKey, setCallsRefetchKey] = useState(0)
+
+  const handleNewTransition = useCallback(() => {
+    // Sidebar (stage badge, days-in-stage, isPaused) reads from useDebtorDetail
+    // — refetch it. Timeline tab also needs to re-load.
+    void refetch()
+    setTimelineRefetchKey((n) => n + 1)
+  }, [refetch])
+
+  const handleStageReconnect = useCallback(() => {
+    void refetch()
+    setTimelineRefetchKey((n) => n + 1)
+  }, [refetch])
+
+  const handleNewCall = useCallback(() => {
+    // Sidebar (contact-attempts counter) reads from useDebtorDetail — refetch.
+    // Llamadas tab refetches via its own refetchKey.
+    void refetch()
+    setCallsRefetchKey((n) => n + 1)
+  }, [refetch])
+
+  const handleCallReconnect = useCallback(() => {
+    void refetch()
+    setCallsRefetchKey((n) => n + 1)
+  }, [refetch])
+
+  useDebtorStageTransitionsRealtime({
+    debtorId,
+    onNewTransition: handleNewTransition,
+    onReconnect: handleStageReconnect,
+  })
+  useDebtorCallsRealtime({
+    debtorId,
+    onNewCall: handleNewCall,
+    onReconnect: handleCallReconnect,
+  })
 
   const onRevealRequest = useCallback((field: PIIFieldKey) => {
     setRevealModal({ field })
@@ -261,8 +315,12 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
           {/* Lazy-mount per active tab (D-31-09): non-active tabs unmount,
               so their data hooks do not poll until activated. */}
-          {activeTab === 'timeline' && <TimelineTab debtorId={debtorId} />}
-          {activeTab === 'llamadas' && <LlamadasTab debtorId={debtorId} />}
+          {activeTab === 'timeline' && (
+            <TimelineTab debtorId={debtorId} refetchKey={timelineRefetchKey} />
+          )}
+          {activeTab === 'llamadas' && (
+            <LlamadasTab debtorId={debtorId} refetchKey={callsRefetchKey} />
+          )}
           {activeTab === 'memos' && <MemosTab debtorId={debtorId} />}
           {activeTab === 'compromisos' && <CompromisosTab debtorId={debtorId} />}
           {activeTab === 'acciones' && (

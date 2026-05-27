@@ -372,9 +372,11 @@ test.describe('phase 31 cobranza visual regression', () => {
   test('debtors list — default sort days_in_stage DESC', async ({ page }) => {
     await page.goto('/panel/inmobiliaria/ai/cobranza/deudores')
 
-    // Wait for page chrome to be present (table OR empty state OR PageGuard fallback).
+    // Wait for actual row content to appear (masked cédulas from MOCK fixture)
+    // so the snapshot captures real masked PII, not loading skeletons.
     await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(200)
+    await page.getByText(/Patricia Salazar|Carlos Mendoza/).first().waitFor({ timeout: 5000 }).catch(() => {})
+    await page.waitForTimeout(300)
 
     await expect(page).toHaveScreenshot('debtors-list.png', {
       fullPage: true,

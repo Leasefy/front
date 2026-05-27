@@ -4637,6 +4637,58 @@
             "back": "Back to payments",
             "notFound": "Payment not found"
           }
+        },
+        "planes": {
+          "title": "Approve payment plan",
+          "loading": "Loading plan...",
+          "loadError": "Error loading plan. Please retry.",
+          "envMissing": "Environment not configured (NEXT_PUBLIC_AGENT_URL).",
+          "verDeudor": "View debtor",
+          "aprobar": "Approve",
+          "rechazar": "Reject",
+          "modificar": "Modify",
+          "maxDiscountBanner": "Exceeds your agency limit ({{max}}%). Update the policy in Settings to approve this plan.",
+          "configLink": "Go to Settings",
+          "aprobarDisabledBanner": "Proposed discount exceeds agency limit.",
+          "aprobarDisabledPerm": "You need cobranza:approve permission.",
+          "wompiLinkTitle": "Plan approved. Payment link:",
+          "wompiLinkLabel": "Open Wompi link",
+          "comparisonHeader": {
+            "campo": "Field",
+            "propuesto": "AI Proposed",
+            "limite": "Agency Limit"
+          },
+          "comparison": {
+            "descuento": "Discount",
+            "cuotas": "Installments",
+            "monto": "Amount/installment",
+            "fecha": "First payment date"
+          },
+          "rechazarForm": {
+            "submit": "Confirm rejection",
+            "cancel": "Cancel",
+            "commentPlaceholder": "Optional comment (max 500 characters)",
+            "success": "Plan rejected successfully.",
+            "reasonLabel": "Reason",
+            "reasonPlaceholder": "Select a reason",
+            "reasons": {
+              "discount_too_high": "Discount too high",
+              "debtor_history_poor": "Poor debtor history",
+              "wrong_cuota_count": "Wrong installment count",
+              "policy_violation": "Policy violation",
+              "out_of_scope": "Out of scope",
+              "other": "Other"
+            }
+          },
+          "modificarForm": {
+            "submit": "Submit counter-offer",
+            "cancel": "Cancel",
+            "success": "Counter-offer submitted successfully.",
+            "descuento": "Discount (%)",
+            "cuotas": "Number of installments",
+            "monto": "Amount per installment (COP)",
+            "fecha": "First payment date"
+          }
         }
       }
     }

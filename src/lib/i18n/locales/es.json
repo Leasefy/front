@@ -4650,6 +4650,58 @@
             "back": "Volver a pagos",
             "notFound": "Pago no encontrado"
           }
+        },
+        "planes": {
+          "title": "Aprobar plan de pago",
+          "loading": "Cargando plan...",
+          "loadError": "Error al cargar el plan. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "verDeudor": "Ver deudor",
+          "aprobar": "Aprobar",
+          "rechazar": "Rechazar",
+          "modificar": "Modificar",
+          "maxDiscountBanner": "Excede el límite de tu agencia ({{max}}%). Cambia la política en Configuración para aprobar este plan.",
+          "configLink": "Ir a Configuración",
+          "aprobarDisabledBanner": "El descuento propuesto supera el límite de la agencia.",
+          "aprobarDisabledPerm": "Necesitas permiso cobranza:aprobar.",
+          "wompiLinkTitle": "Plan aprobado. Enlace de pago:",
+          "wompiLinkLabel": "Abrir enlace Wompi",
+          "comparisonHeader": {
+            "campo": "Campo",
+            "propuesto": "Propuesto por IA",
+            "limite": "Límite agencia"
+          },
+          "comparison": {
+            "descuento": "Descuento",
+            "cuotas": "Cuotas",
+            "monto": "Monto/cuota",
+            "fecha": "Fecha primer pago"
+          },
+          "rechazarForm": {
+            "submit": "Confirmar rechazo",
+            "cancel": "Cancelar",
+            "commentPlaceholder": "Comentario opcional (máx. 500 caracteres)",
+            "success": "Plan rechazado correctamente.",
+            "reasonLabel": "Razón",
+            "reasonPlaceholder": "Selecciona una razón",
+            "reasons": {
+              "discount_too_high": "Descuento demasiado alto",
+              "debtor_history_poor": "Historial del deudor deficiente",
+              "wrong_cuota_count": "Número de cuotas incorrecto",
+              "policy_violation": "Violación de política",
+              "out_of_scope": "Fuera del alcance",
+              "other": "Otro"
+            }
+          },
+          "modificarForm": {
+            "submit": "Enviar contrapropuesta",
+            "cancel": "Cancelar",
+            "success": "Contrapropuesta enviada correctamente.",
+            "descuento": "Descuento (%)",
+            "cuotas": "Número de cuotas",
+            "monto": "Monto por cuota (COP)",
+            "fecha": "Fecha primer pago"
+          }
         }
       }
     }

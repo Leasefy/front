@@ -1,21 +1,28 @@
 'use client'
-// Phase 30 plan 30-06 | COTI-UI-03 | XR-05
+// Phase 30 plan 30-06 | 30-07 | COTI-UI-03 | XR-05
 // Completion banner shown when all carriers have final verdicts.
 // Re-cotizar is aria-disabled (Phase 33 placeholder).
-// Descargar PDF is prop-wired, pending plan 30-07.
+// Descargar PDF wired in plan 30-07 via usePdfDownload hook.
 
 import { CheckCircle, FilePdf, ArrowCounterClockwise, ArrowLeft } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { usePdfDownload } from '@/lib/cotizador/use-pdf-download'
+import type { VerdictPdfProps } from '@/lib/cotizador/pdf-verdict-document'
 
 interface StreamCompleteBannerProps {
   carrierCount: number
   totalCostUsd: number
-  isStubMode: boolean        // true when all carriers are stubs
-  onReQuote: () => void      // Phase 33 placeholder
-  onDownloadPdf: () => void  // Plan 30-07
-  onBack: () => void         // navigate to cotizador overview
+  isStubMode: boolean         // true when all carriers are stubs
+  onReQuote: () => void       // Phase 33 placeholder
+  /** @deprecated — PDF download is now handled internally via usePdfDownload */
+  onDownloadPdf?: () => void
+  onBack: () => void          // navigate to cotizador overview
   locale?: string
+  /** PDF props for the download button — required when isStubMode is false */
+  verdictPdfProps?: VerdictPdfProps
+  /** Prefix for the filename: cotizacion-{cedula_hash_first8}-{YYYY-MM-DD} */
+  pdfFilenamePrefix?: string
 }
 
 export function StreamCompleteBanner({
@@ -23,10 +30,32 @@ export function StreamCompleteBanner({
   totalCostUsd,
   isStubMode,
   onReQuote,
-  onDownloadPdf,
   onBack,
+  verdictPdfProps,
+  pdfFilenamePrefix,
 }: StreamCompleteBannerProps) {
   const { t } = useI18n()
+
+  // Build safe defaults so usePdfDownload is always called (Rules of Hooks)
+  const safePdfProps: VerdictPdfProps = verdictPdfProps ?? {
+    quote: {
+      cedula_hash: '00000000',
+      cedula_display: '000•••000',
+      canon: 0,
+      ciudad: '—',
+      tipo: '—',
+      codeudores: 0,
+      createdAt: new Date().toISOString(),
+    },
+    carriers: [],
+    agency: { name: '—', contact: '—' },
+  }
+  const safeFilenamePrefix = pdfFilenamePrefix ?? 'cotizacion-00000000'
+
+  const { downloadPdf, isGenerating } = usePdfDownload({
+    props: safePdfProps,
+    filenamePrefix: safeFilenamePrefix,
+  })
 
   if (isStubMode) {
     return (
@@ -85,14 +114,18 @@ export function StreamCompleteBanner({
           {t('inmobiliaria.ai.cotizador.detail.banner.reQuoteButton')}
         </Button>
 
-        {/* Descargar PDF — wired in plan 30-07 */}
+        {/* Descargar PDF — wired via usePdfDownload */}
         <Button
           variant="secondary"
           size="sm"
-          onClick={onDownloadPdf}
+          onClick={downloadPdf}
+          disabled={isGenerating || !verdictPdfProps}
+          isLoading={isGenerating}
         >
-          <FilePdf weight="regular" className="w-4 h-4" />
-          {t('inmobiliaria.ai.cotizador.detail.banner.downloadPdfButton')}
+          {!isGenerating && <FilePdf weight="regular" className="w-4 h-4" />}
+          {isGenerating
+            ? t('inmobiliaria.ai.cotizador.pdf.downloading')
+            : t('inmobiliaria.ai.cotizador.pdf.download')}
         </Button>
 
         {/* Volver */}

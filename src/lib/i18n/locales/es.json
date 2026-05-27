@@ -4296,6 +4296,11 @@
           },
           "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
           "retry": "Reintentar"
+        },
+        "pdf": {
+          "download": "Descargar PDF",
+          "downloading": "Generando PDF...",
+          "errorToast": "Error al generar el PDF. Intenta de nuevo."
         }
       },
       "access": {

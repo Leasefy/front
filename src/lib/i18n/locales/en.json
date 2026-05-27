@@ -4283,6 +4283,11 @@
           },
           "connectionInterrupted": "Connection interrupted. Check your connection and try again.",
           "retry": "Retry"
+        },
+        "pdf": {
+          "download": "Download PDF",
+          "downloading": "Generating PDF...",
+          "errorToast": "Error generating PDF. Please try again."
         }
       },
       "access": {

@@ -1,5 +1,5 @@
 'use client'
-// Phase 30 plan 30-06 | COTI-UI-03 | XR-02 | XR-05
+// Phase 30 plan 30-06 | 30-07 | COTI-UI-03 | XR-02 | XR-05
 // Cotizador streaming detail page.
 // T-30-06-E: PageGuard enforces cotizador:view before any component mounts.
 
@@ -13,6 +13,7 @@ import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierSt
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import type { VerdictPdfProps } from '@/lib/cotizador/pdf-verdict-document'
 
 // ---------------------------------------------------------------------------
 // Inner component (rendered inside PageGuard — auth is guaranteed)
@@ -40,10 +41,53 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // and "—" for all inputs until the metadata endpoint is available.
   const timestamp = new Date().toISOString()
 
+  // Build VerdictPdfProps from available data.
+  // cedula_display is a hash-redacted string — first 2 + "•••" + last 3 chars of quoteId
+  // (quoteId is a quote UUID, not raw cédula — T-30-07-01 safe).
+  const cedula_display =
+    quoteId.length >= 8
+      ? `${quoteId.slice(0, 2)}•••${quoteId.slice(-3)}`
+      : quoteId
+
+  const verdictPdfProps: VerdictPdfProps | undefined = allFinal
+    ? {
+        quote: {
+          cedula_hash: quoteId,
+          cedula_display,
+          canon: 0,         // Phase 30-01 TODO: replace with real metadata
+          ciudad: '—',      // Phase 30-01 TODO: replace with real metadata
+          tipo: '—',        // Phase 30-01 TODO: replace with real metadata
+          codeudores: 0,    // Phase 30-01 TODO: replace with real metadata
+          createdAt: timestamp,
+        },
+        carriers: carriers.map(c => {
+          // Map CarrierState status to VerdictPdfProps verdict
+          // 'conditional' and 'pending' are not in VerdictPdfProps — map to nearest
+          type PdfVerdict = VerdictPdfProps['carriers'][0]['verdict']
+          const verdict: PdfVerdict =
+            c.status === 'approved' ? 'approved'
+            : c.status === 'rejected' ? 'rejected'
+            : c.status === 'error' ? 'error'
+            : 'stub' // covers pending, conditional, stub
+          return {
+            name: c.carrier,
+            verdict,
+            prima_mensual: c.primaMensualCop,
+            condiciones: c.condiciones.length > 0 ? c.condiciones.join('. ') : null,
+            motivo_rechazo: c.motivoRechazo,
+          }
+        }),
+        agency: {
+          name: agency?.name ?? 'Inmobiliaria',
+          contact: agency?.email ?? '',
+        },
+      }
+    : undefined
+
+  // Filename: cotizacion-{first 8 hex chars of quoteId}-{YYYY-MM-DD}
+  const pdfFilenamePrefix = `cotizacion-${quoteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
+
   const handleBack = () => router.push('/panel/inmobiliaria/ai/cotizador')
-  const handleDownloadPdf = () => {
-    // Wired in plan 30-07
-  }
   const handleReQuote = () => {
     // Phase 33 placeholder — button is disabled
   }
@@ -93,9 +137,10 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             totalCostUsd={totalCostUsd}
             isStubMode={isStubMode}
             onReQuote={handleReQuote}
-            onDownloadPdf={handleDownloadPdf}
             onBack={handleBack}
             locale={locale}
+            verdictPdfProps={verdictPdfProps}
+            pdfFilenamePrefix={pdfFilenamePrefix}
           />
         )}
 

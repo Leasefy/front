@@ -9,15 +9,27 @@ import { test, expect } from '@playwright/test'
 // = 9 baseline PNGs under tests/e2e/phase-31-cobranza-detail.spec.ts-snapshots/.
 //
 // The spec route-mocks the agent so the BACKEND DOES NOT need to be running.
-// Still requires an authenticated mvp session (PageGuard module="cobranza"
-// action="view"). Per memory `v2.1 visual smoke env workaround`, the test
-// user pruebasarrendador1902@gmail.com is a TENANT role; running this against
-// a real session requires the documented 2-tweak workaround (NEVER commit).
+// Auth: installMocks() seeds `localStorage['arriendo-facil-auth']` with a
+// role='agency' shape — that uses ProtectedRoute's existing localStorage
+// fallback (src/components/auth/ProtectedRoute.tsx) to pass without a real
+// Supabase session.
 //
-// 31-08 + 31-10 SUMMARYs both document the same runtime deferral pattern — this
-// spec is shipped discoverable + syntactically valid; baseline capture is
-// deferred until the v2.1 env workaround is available (then run
-// `pnpm playwright test tests/e2e/phase-31-cobranza-detail.spec.ts --update-snapshots`).
+// PageGuard (module='cobranza'|'cotizador') still requires `agentPerms` to be
+// populated, which in turn needs `NEXT_PUBLIC_AGENT_URL` set. Per memory
+// `v2.1 visual smoke env workaround`, the canAccess() function in
+// src/lib/context/PermissionsContext.tsx must be temporarily patched with the
+// documented localhost bypass to capture baselines locally — REVERT BEFORE COMMIT.
+//
+// To re-capture / update baselines (after applying the documented bypass):
+//   pnpm dev  # start mvp on :3001
+//   PLAYWRIGHT_BASE_URL=http://localhost:3001 \
+//     npx playwright test tests/e2e/phase-31-cobranza-detail.spec.ts --update-snapshots
+//
+// Baselines committed 2026-05-27. Future regressions will only be caught when
+// the spec is re-run against a build that matches the bypass conditions
+// (i.e. the permanent fix lands: NEXT_PUBLIC_AGENT_URL set + seeded agency
+// test user + mocked /my-permissions). Until then, this spec verifies that
+// the page chrome (breadcrumb, filters, tabs, sidebar, audio player) renders.
 
 const DEBTOR_ID = 'test-debtor-1'
 const CALL_ID = 'test-call-1'
@@ -215,6 +227,26 @@ const SILENT_WAV_BASE64 =
 // --- Helpers ----------------------------------------------------------------
 
 async function installMocks(page: import('@playwright/test').Page) {
+  // Auth bypass: ProtectedRoute trusts a localStorage fallback at 'arriendo-facil-auth'
+  // when the Supabase context user is null (see src/components/auth/ProtectedRoute.tsx).
+  // Seeding a role='agency' shape lets PageGuard pass without a real Supabase session.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        'arriendo-facil-auth',
+        JSON.stringify({
+          id: 'test-user-1',
+          role: 'agency',
+          backendRole: 'AGENT',
+          onboardingCompleted: true,
+          email: 'test@example.com',
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  })
+
   // Fix Date.now so any "x time ago" / sidebar countdown is deterministic.
   await page.addInitScript((fixedNow) => {
     const OriginalDate = Date

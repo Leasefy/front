@@ -4393,6 +4393,142 @@
             "email": "Email"
           }
         },
+        "detail": {
+          "title": "Deudor",
+          "loading": "Cargando deudor…",
+          "error": "Error cargando el deudor",
+          "errorRetry": "Reintentar",
+          "empty": "Sin datos para este deudor",
+          "header": {
+            "stage": "Etapa",
+            "daysInStage": "Días en etapa",
+            "paused": "En pausa"
+          },
+          "tabs": {
+            "timeline": "Timeline",
+            "llamadas": "Llamadas",
+            "memos": "Memos",
+            "compromisos": "Compromisos",
+            "acciones": "Acciones",
+            "switcher": "Cambiar pestaña",
+            "closeSwitcher": "Cerrar"
+          },
+          "sidebar": {
+            "title": "Próximos pasos",
+            "nextAction": "Próxima acción",
+            "noNextAction": "Sin acción programada",
+            "contactAttempts": "Intentos restantes",
+            "paused": "En pausa hasta {{date}}",
+            "openSidebar": "Ver detalles",
+            "closeSidebar": "Cerrar"
+          },
+          "timeline": {
+            "loading": "Cargando timeline…",
+            "error": "Error cargando timeline",
+            "errorRetry": "Reintentar",
+            "empty": "Sin eventos registrados",
+            "eventStageTransition": "Cambio de etapa",
+            "eventCall": "Llamada",
+            "eventPayment": "Pago",
+            "eventMemo": "Memo"
+          },
+          "llamadas": {
+            "loading": "Cargando llamadas…",
+            "error": "Error cargando llamadas",
+            "errorRetry": "Reintentar",
+            "empty": "Sin llamadas para este deudor",
+            "columns": {
+              "startedAt": "Inicio",
+              "duration": "Duración",
+              "outcome": "Resultado",
+              "qa": "QA",
+              "compliance": "Marcas"
+            }
+          },
+          "memos": {
+            "loading": "Cargando memos…",
+            "error": "Error cargando memos",
+            "errorRetry": "Reintentar",
+            "empty": "Sin memos para este deudor"
+          },
+          "compromisos": {
+            "loading": "Cargando compromisos…",
+            "error": "Error cargando compromisos",
+            "errorRetry": "Reintentar",
+            "empty": "Sin compromisos registrados",
+            "paymentPlans": "Planes de pago",
+            "insuranceClaims": "Siniestros",
+            "legalArtifacts": "Documentos legales"
+          },
+          "acciones": {
+            "title": "Acciones",
+            "auditTitle": "Historial reciente",
+            "auditEmpty": "Sin actividad reciente",
+            "adminOnlyTooltip": "Requiere rol administrador",
+            "pause": {
+              "cta": "Pausar cobranza",
+              "modalTitle": "Pausar cobranza",
+              "modalDescription": "La cobranza queda pausada hasta la fecha seleccionada. Se registra en el log de auditoría.",
+              "untilLabel": "Pausar hasta",
+              "reasonLabel": "Motivo",
+              "reasonPlaceholder": "Motivo de la pausa…",
+              "confirm": "Confirmar pausa",
+              "confirming": "Pausando…",
+              "successToast": "Cobranza pausada"
+            },
+            "forceStage": {
+              "cta": "Forzar etapa",
+              "modalTitle": "Forzar etapa",
+              "modalDescription": "Acción de administrador. Sobrescribe la máquina de estados y queda registrada en el log de auditoría.",
+              "targetLabel": "Etapa destino",
+              "reasonLabel": "Motivo (requerido)",
+              "reasonPlaceholder": "Razón del override (mínimo 10 caracteres)…",
+              "confirm": "Confirmar — registrar override",
+              "confirming": "Forzando…",
+              "successToast": "Etapa forzada",
+              "adminOnly": "Solo administradores",
+              "accessDenied": "Acceso denegado"
+            },
+            "manualWA": {
+              "cta": "Enviar WhatsApp manual",
+              "modalTitle": "Enviar WhatsApp manual",
+              "modalDescription": "Solo plantillas aprobadas. Sin texto libre en esta versión.",
+              "templateLabel": "Plantilla",
+              "variablesLabel": "Variables",
+              "templatePlaceholder": "Selecciona plantilla…",
+              "noTemplates": "No hay plantillas aprobadas disponibles",
+              "loadingTemplates": "Cargando plantillas…",
+              "confirm": "Enviar",
+              "confirming": "Enviando…",
+              "successToast": "WhatsApp enviado"
+            },
+            "manualCall": {
+              "cta": "Llamar manualmente",
+              "modalTitle": "Llamada manual",
+              "modalDescription": "Esta llamada se inicia inmediatamente y no puede cancelarse durante el marcado. Acción de administrador, queda registrada.",
+              "reasonLabel": "Motivo (requerido)",
+              "reasonPlaceholder": "Por qué llamas manualmente…",
+              "confirm": "Confirmar — iniciar llamada",
+              "confirming": "Iniciando…",
+              "successToast": "Llamada iniciada",
+              "adminOnly": "Solo administradores"
+            },
+            "envMissing": "Configuración no disponible",
+            "genericError": "Acción fallida — intenta de nuevo"
+          },
+          "pii": {
+            "revealCta": "Revelar",
+            "expiredTooltip": "Revelación expirada — clic para revelar de nuevo",
+            "countdownLabel": "Tiempo restante",
+            "modalTitle": "Revelar dato sensible",
+            "modalBody": "Esta acción queda registrada en el log de auditoría por 5 minutos.",
+            "auditNote": "Esta acción queda registrada en el log de auditoría",
+            "modalConfirm": "Confirmar — registrar y revelar",
+            "modalCancel": "Cancelar",
+            "modalMinting": "Revelando…",
+            "errorGeneric": "No se pudo revelar el dato"
+          }
+        },
         "call": {
           "title": "Llamada",
           "back": "Volver al deudor",

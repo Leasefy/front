@@ -4380,6 +4380,142 @@
             "email": "Email"
           }
         },
+        "detail": {
+          "title": "Debtor",
+          "loading": "Loading debtor…",
+          "error": "Failed to load debtor",
+          "errorRetry": "Retry",
+          "empty": "No data for this debtor",
+          "header": {
+            "stage": "Stage",
+            "daysInStage": "Days in stage",
+            "paused": "Paused"
+          },
+          "tabs": {
+            "timeline": "Timeline",
+            "llamadas": "Calls",
+            "memos": "Memos",
+            "compromisos": "Compromises",
+            "acciones": "Actions",
+            "switcher": "Switch tab",
+            "closeSwitcher": "Close"
+          },
+          "sidebar": {
+            "title": "Next steps",
+            "nextAction": "Next action",
+            "noNextAction": "No scheduled action",
+            "contactAttempts": "Contact attempts left",
+            "paused": "Paused until {{date}}",
+            "openSidebar": "View details",
+            "closeSidebar": "Close"
+          },
+          "timeline": {
+            "loading": "Loading timeline…",
+            "error": "Failed to load timeline",
+            "errorRetry": "Retry",
+            "empty": "No events recorded",
+            "eventStageTransition": "Stage transition",
+            "eventCall": "Call",
+            "eventPayment": "Payment",
+            "eventMemo": "Memo"
+          },
+          "llamadas": {
+            "loading": "Loading calls…",
+            "error": "Failed to load calls",
+            "errorRetry": "Retry",
+            "empty": "No calls for this debtor",
+            "columns": {
+              "startedAt": "Started",
+              "duration": "Duration",
+              "outcome": "Outcome",
+              "qa": "QA",
+              "compliance": "Flags"
+            }
+          },
+          "memos": {
+            "loading": "Loading memos…",
+            "error": "Failed to load memos",
+            "errorRetry": "Retry",
+            "empty": "No memos for this debtor"
+          },
+          "compromisos": {
+            "loading": "Loading commitments…",
+            "error": "Failed to load commitments",
+            "errorRetry": "Retry",
+            "empty": "No commitments recorded",
+            "paymentPlans": "Payment plans",
+            "insuranceClaims": "Insurance claims",
+            "legalArtifacts": "Legal artifacts"
+          },
+          "acciones": {
+            "title": "Actions",
+            "auditTitle": "Recent activity",
+            "auditEmpty": "No recent activity",
+            "adminOnlyTooltip": "Admin role required",
+            "pause": {
+              "cta": "Pause collection",
+              "modalTitle": "Pause collection",
+              "modalDescription": "Collection is paused until the selected date. Recorded in the audit log.",
+              "untilLabel": "Pause until",
+              "reasonLabel": "Reason",
+              "reasonPlaceholder": "Reason for pause…",
+              "confirm": "Confirm pause",
+              "confirming": "Pausing…",
+              "successToast": "Collection paused"
+            },
+            "forceStage": {
+              "cta": "Force stage",
+              "modalTitle": "Force stage",
+              "modalDescription": "Admin action. Overrides the state machine and is recorded in the audit log.",
+              "targetLabel": "Target stage",
+              "reasonLabel": "Reason (required)",
+              "reasonPlaceholder": "Reason for override (min 10 characters)…",
+              "confirm": "Confirm — record override",
+              "confirming": "Forcing…",
+              "successToast": "Stage forced",
+              "adminOnly": "Admins only",
+              "accessDenied": "Access denied"
+            },
+            "manualWA": {
+              "cta": "Send manual WhatsApp",
+              "modalTitle": "Send manual WhatsApp",
+              "modalDescription": "Approved templates only. No free-form text in this version.",
+              "templateLabel": "Template",
+              "variablesLabel": "Variables",
+              "templatePlaceholder": "Select template…",
+              "noTemplates": "No approved templates available",
+              "loadingTemplates": "Loading templates…",
+              "confirm": "Send",
+              "confirming": "Sending…",
+              "successToast": "WhatsApp sent"
+            },
+            "manualCall": {
+              "cta": "Call manually",
+              "modalTitle": "Manual call",
+              "modalDescription": "This call starts immediately and cannot be cancelled during dial. Admin action, recorded.",
+              "reasonLabel": "Reason (required)",
+              "reasonPlaceholder": "Why you are calling manually…",
+              "confirm": "Confirm — start call",
+              "confirming": "Starting…",
+              "successToast": "Call started",
+              "adminOnly": "Admins only"
+            },
+            "envMissing": "Configuration unavailable",
+            "genericError": "Action failed — try again"
+          },
+          "pii": {
+            "revealCta": "Reveal",
+            "expiredTooltip": "Reveal expired — click to reveal again",
+            "countdownLabel": "Time remaining",
+            "modalTitle": "Reveal sensitive data",
+            "modalBody": "This action is recorded in the audit log for 5 minutes.",
+            "auditNote": "This action is recorded in the audit log",
+            "modalConfirm": "Confirm — record and reveal",
+            "modalCancel": "Cancel",
+            "modalMinting": "Revealing…",
+            "errorGeneric": "Could not reveal value"
+          }
+        },
         "call": {
           "title": "Call",
           "back": "Back to debtor",

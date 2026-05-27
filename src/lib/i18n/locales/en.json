@@ -4194,6 +4194,60 @@
             "allBreachBanner": "All insurers in SLA breach — results may be slow"
           },
           "errorLoading": "Error loading quoter data"
+        },
+        "nueva": {
+          "title": "New Quote",
+          "subtitle": "Fill in the candidate and property details",
+          "step1": {
+            "heading": "Candidate details",
+            "cedulaLabel": "ID number",
+            "cedulaPlaceholder": "e.g. 1234567890",
+            "nombreLabel": "Full name",
+            "nombrePlaceholder": "e.g. Juan Pérez",
+            "ciudadLabel": "City",
+            "ciudadPlaceholder": "e.g. Bogotá"
+          },
+          "step2": {
+            "heading": "Property details",
+            "canonLabel": "Monthly rent (COP)",
+            "canonPlaceholder": "e.g. 1500000",
+            "tipoLabel": "Property type",
+            "tipoOptions": {
+              "apartamento": "Apartment",
+              "casa": "House",
+              "oficina": "Office",
+              "local": "Commercial space"
+            },
+            "codeudoresLabel": "Number of co-signers",
+            "codeudoresHint": "0 if candidate has no co-signers"
+          },
+          "step3": {
+            "heading": "Review details",
+            "cedulaRow": "ID number",
+            "nombreRow": "Name",
+            "ciudadRow": "City",
+            "canonRow": "Monthly rent",
+            "tipoRow": "Property type",
+            "codeudoresRow": "Co-signers"
+          },
+          "restoreBanner": {
+            "message": "You have a quote in progress. Continue where you left off?"
+          },
+          "actions": {
+            "siguiente": "Next",
+            "atras": "Back",
+            "enviar": "Submit quote",
+            "continuar": "Continue",
+            "empezarDeNuevo": "Start over"
+          },
+          "errors": {
+            "cedulaInvalida": "ID must be between 7 and 10 digits",
+            "requerido": "This field is required",
+            "canonPositivo": "Rent must be greater than zero",
+            "tipoRequerido": "Select a property type",
+            "arcoBloqueado": "This ID has an active data objection — contact your administrator",
+            "sinPermiso": "You do not have permission to create quotes"
+          }
         }
       },
       "access": {

@@ -4207,6 +4207,60 @@
             "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
           },
           "errorLoading": "Error al cargar datos del cotizador"
+        },
+        "nueva": {
+          "title": "Nueva cotización",
+          "subtitle": "Completa los datos del candidato y la propiedad",
+          "step1": {
+            "heading": "Datos del candidato",
+            "cedulaLabel": "Número de cédula",
+            "cedulaPlaceholder": "Ej: 1234567890",
+            "nombreLabel": "Nombre completo",
+            "nombrePlaceholder": "Ej: Juan Pérez",
+            "ciudadLabel": "Ciudad",
+            "ciudadPlaceholder": "Ej: Bogotá"
+          },
+          "step2": {
+            "heading": "Datos de la propiedad",
+            "canonLabel": "Canon mensual (COP)",
+            "canonPlaceholder": "Ej: 1500000",
+            "tipoLabel": "Tipo de inmueble",
+            "tipoOptions": {
+              "apartamento": "Apartamento",
+              "casa": "Casa",
+              "oficina": "Oficina",
+              "local": "Local"
+            },
+            "codeudoresLabel": "Número de codeudores",
+            "codeudoresHint": "0 si el candidato no tiene codeudores"
+          },
+          "step3": {
+            "heading": "Revisa los datos",
+            "cedulaRow": "Cédula",
+            "nombreRow": "Nombre",
+            "ciudadRow": "Ciudad",
+            "canonRow": "Canon mensual",
+            "tipoRow": "Tipo de inmueble",
+            "codeudoresRow": "Codeudores"
+          },
+          "restoreBanner": {
+            "message": "Tienes una cotización en progreso. ¿Continuar donde la dejaste?"
+          },
+          "actions": {
+            "siguiente": "Siguiente",
+            "atras": "Atrás",
+            "enviar": "Enviar cotización",
+            "continuar": "Continuar",
+            "empezarDeNuevo": "Empezar de nuevo"
+          },
+          "errors": {
+            "cedulaInvalida": "La cédula debe tener entre 7 y 10 dígitos",
+            "requerido": "Este campo es requerido",
+            "canonPositivo": "El canon debe ser mayor a cero",
+            "tipoRequerido": "Selecciona un tipo de inmueble",
+            "arcoBloqueado": "Esta cédula tiene una oposición activa — contacta al administrador",
+            "sinPermiso": "No tienes permiso para crear cotizaciones"
+          }
         }
       },
       "access": {

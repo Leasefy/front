@@ -1827,6 +1827,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/pagos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza payments funnel (Phase 32)
+         * @description Paginated payments + atomic KPI strip. disbursement_pending_days is computed server-side (Mon-Fri only). PII masked. cobranza:view required.
+         */
+        get: operations["getCobranzaPaymentsFunnel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/experiments": {
         parameters: {
             query?: never;
@@ -2428,6 +2448,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cartera/payment-plans/{planId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an AI-proposed payment plan (audit-first + Wompi mint)
+         * @description Triple-gated approval: Zod body → Prisma policy/status/tenant guard → Wompi service runtime — all inside one prisma.$transaction. Audit row written BEFORE Wompi call (D-31-07 fail-safe). Cross-tenant planIds return 404 (no existence oracle, T-15-06). cobranza:approve required (OWNER + ADMIN only per 32-02).
+         */
+        post: operations["approvePaymentPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/payment-plans/{planId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject an AI-proposed payment plan with canned reason + comment
+         * @description Persists a canned reject_reason slug + optional free-text reject_comment. Audit-first ordering (D-31-07): audit row written before status flip. cobranza:approve required (OWNER + ADMIN only per 32-02).
+         */
+        post: operations["rejectPaymentPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/insurance-claims": {
         parameters: {
             query?: never;
@@ -2472,10 +2532,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Human approval of a siniestro filing (D-05 / T-323/2024 gate)
-         * @description Owner/Admin-only. Sets approved_by_human_user_id from the JWT sub, then calls fileInsuranceClaim which sends the packet to the insurer. Operators and viewers receive 403.
+         * Operator approve a siniestro filing — fan out PDF packet to selected insurers
+         * @description Triple-gated approval (Zod + Prisma constraint + cobranza:approve). Writes audit_log + automated_decisions(reviewable=true) inside prisma.$transaction BEFORE per-insurer Resend dispatch. Partial Resend failure is tolerated (sent=false in insurerResults).
          */
-        post: operations["approveCarteraInsuranceClaim"];
+        post: operations["approveSiniestroInsuranceClaim"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2543,10 +2603,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Human approval of a legal artifact (D-05 / T-323/2024 gate). OWNER/ADMIN only.
-         * @description Records approved_by_human_user_id from the JWT sub + approved_at=now + status=approved + physical_send_method + sent_to_address. Does NOT physically send — the operator downloads the PDF via /pdf and dispatches manually (Servicio 472 / email / etc). Sending integration is deferred (REQ-611).
+         * Operator approve a pre-judicial letter — uploads PDF + 7-day signed URL
+         * @description Triple-gated. audit_log + putAndSign live inside prisma.$transaction so S3 failure rolls back the audit row (T-32-04-06). NO email or WhatsApp dispatch — legal blocker. Returns presigned 7-day GET URL.
          */
-        post: operations["approveCarteraLegalArtifact"];
+        post: operations["approvePreJudicialArtifact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2564,6 +2624,40 @@ export interface paths {
         get: operations["getCarteraLegalArtifactPdf"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Operator reject a siniestro filing — persists canned reason slug */
+        post: operations["rejectSiniestroInsuranceClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/legal-artifacts/{artifactId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Operator reject a pre-judicial letter — persists canned reason slug */
+        post: operations["rejectPreJudicialArtifact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3460,6 +3554,46 @@ export interface components {
                 variables: string[];
             }[];
         };
+        CobranzaPaymentFunnelRow: {
+            /** Format: uuid */
+            id: string;
+            createdAt: string;
+            amount: number;
+            feeCop: number | null;
+            /** @enum {string} */
+            status: "approved" | "pending" | "declined" | "disbursed";
+            /** @enum {string} */
+            provider: "wompi" | "bold";
+            /** @enum {string} */
+            disbursementState: "pending" | "settled";
+            disbursementPendingDays: number;
+            paymentPlanId: string | null;
+            debtor: {
+                /** Format: uuid */
+                id: string;
+                fullName: string;
+                cedulaMasked: string;
+                phoneMasked: string;
+                emailMasked: string | null;
+            };
+        };
+        CobranzaPaymentFunnelKpis: {
+            approvedCount: number;
+            pendingCount: number;
+            declinedCount: number;
+            totalRecaudadoCop: number;
+            totalDisbursedCop: number;
+            avgFeeCop: number;
+        };
+        CobranzaPaymentFunnelResponse: {
+            items: components["schemas"]["CobranzaPaymentFunnelRow"][];
+            nextCursor: string | null;
+            kpis: components["schemas"]["CobranzaPaymentFunnelKpis"];
+            generatedAt: string;
+        };
+        CobranzaPaymentFunnelError: {
+            error: string;
+        };
         /** @enum {string} */
         TargetMetric: "kept_promise_rate" | "recovered_cop_per_call" | "completion_rate";
         ExperimentVariantResponse: {
@@ -3639,6 +3773,42 @@ export interface components {
             status: string;
             acceptedAt: string;
         };
+        PaymentPlanApproveResponse: {
+            /** Format: uuid */
+            planId: string;
+            /** Format: uri */
+            wompiUrl: string;
+            /** Format: date-time */
+            approvedAt: string;
+            operatorApprovedBy: string;
+        };
+        PaymentPlanApprovalError: {
+            error: string;
+            detail?: string;
+        };
+        PaymentPlanApproveRequest: {
+            /** @enum {string} */
+            decision: "approve";
+            /** Format: date-time */
+            planUpdatedAt: string;
+        };
+        PaymentPlanRejectResponse: {
+            /** Format: uuid */
+            planId: string;
+            /** @enum {string} */
+            status: "rejected";
+            /** Format: date-time */
+            rejectedAt: string;
+        };
+        PaymentPlanRejectRequest: {
+            /** @enum {string} */
+            decision: "reject";
+            /** @enum {string} */
+            reject_reason: "discount_too_high" | "debtor_history_poor" | "wrong_cuota_count" | "policy_violation" | "out_of_scope" | "other";
+            reject_comment?: string;
+            /** Format: date-time */
+            planUpdatedAt: string;
+        };
         CarteraInsuranceClaimSummary: {
             /** Format: uuid */
             id: string;
@@ -3703,6 +3873,48 @@ export interface components {
             /** @enum {string} */
             physicalSendMethod: "servicio_472" | "email_only" | "operator_manual";
             sentToAddress: string;
+        };
+        CarteraSiniestroInsurerResult: {
+            insurer: string;
+            sent: boolean;
+            error?: string;
+        };
+        CarteraSiniestroApproveResponse: {
+            /** Format: uuid */
+            claimId: string;
+            approved: boolean;
+            insurerResults: components["schemas"]["CarteraSiniestroInsurerResult"][];
+        };
+        CarteraApprovalsOperatorError: {
+            error: string;
+        };
+        CarteraSiniestroApproveRequest: {
+            selectedInsurers: ("sura" | "mapfre" | "solidaria" | "accion")[];
+        };
+        CarteraSiniestroRejectResponse: {
+            /** Format: uuid */
+            claimId: string;
+            rejected: boolean;
+        };
+        CarteraApprovalRejectRequest: {
+            /** @enum {string} */
+            rejectReason: "discount_too_high" | "debtor_history_poor" | "wrong_cuota_count" | "policy_violation" | "out_of_scope" | "other";
+            rejectComment?: string;
+        };
+        CarteraPreJudicialApproveResponse: {
+            /** Format: uuid */
+            artifactId: string;
+            approved: boolean;
+            signedUrl: string;
+        };
+        CarteraPreJudicialApproveRequest: {
+            /** @enum {string} */
+            confirmation: "yes";
+        };
+        CarteraPreJudicialRejectResponse: {
+            /** Format: uuid */
+            artifactId: string;
+            rejected: boolean;
         };
         CarteraDailyReportSummary: {
             pkr_7d_pct: number | null;
@@ -5046,6 +5258,235 @@ export interface operations {
             };
         };
     };
+    getCobranzaPaymentsFunnel: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                provider?: string;
+                status?: string;
+                disbursement_state?: string;
+                sort?: "created_at" | "amount" | "disbursement_pending_days";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Funnel page + KPIs (atomic snapshot). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentFunnelResponse"];
+                };
+            };
+            /** @description Malformed cursor or invalid query params. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentFunnelError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentFunnelError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentFunnelError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentFunnelError"];
+                };
+            };
+        };
+    };
+    approvePaymentPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentPlanApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan approved + Wompi link minted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApproveResponse"];
+                };
+            };
+            /** @description Malformed body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Caller lacks cobranza:approve permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Plan not found (or cross-tenant — no existence oracle) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Plan status is not "offered" OR stale optimistic-concurrency token */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Proposed discount exceeds agency.max_discount */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Wompi service runtime error — tx rolled back, plan not approved */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+        };
+    };
+    rejectPaymentPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentPlanRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan rejected + reject_reason/comment persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanRejectResponse"];
+                };
+            };
+            /** @description Malformed body / unknown reject_reason */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Caller lacks cobranza:approve permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Plan not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Plan status is not "offered" OR stale optimistic-concurrency token */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPlanApprovalError"];
+                };
+            };
+        };
+    };
     listCarteraInsuranceClaims: {
         parameters: {
             query?: {
@@ -5156,7 +5597,7 @@ export interface operations {
             };
         };
     };
-    approveCarteraInsuranceClaim: {
+    approveSiniestroInsuranceClaim: {
         parameters: {
             query?: never;
             header?: never;
@@ -5168,62 +5609,62 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CarteraInsuranceClaimApproveRequest"];
+                "application/json": components["schemas"]["CarteraSiniestroApproveRequest"];
             };
         };
         responses: {
-            /** @description Filed */
+            /** @description Approved — audit committed, Resend fan-out attempted */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimApproveResponse"];
+                    "application/json": components["schemas"]["CarteraSiniestroApproveResponse"];
                 };
             };
-            /** @description Missing JWT */
-            401: {
+            /** @description Invalid body (Zod gate) */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Cross-tenant or insufficient role */
+            /** @description cobranza:approve required (OPERATOR / VIEWER blocked) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Claim not found */
+            /** @description Claim not found OR cross-tenant */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Approval prerequisite missing OR already filed */
-            422: {
+            /** @description Audit / PDF assembly failed — transaction rolled back */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description DB unavailable */
+            /** @description Database unavailable (stub mode) */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraInsuranceClaimError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
         };
@@ -5398,7 +5839,7 @@ export interface operations {
             };
         };
     };
-    approveCarteraLegalArtifact: {
+    approvePreJudicialArtifact: {
         parameters: {
             query?: never;
             header?: never;
@@ -5410,62 +5851,62 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CarteraLegalArtifactApproveRequest"];
+                "application/json": components["schemas"]["CarteraPreJudicialApproveRequest"];
             };
         };
         responses: {
-            /** @description Approved */
+            /** @description Approved + signed URL */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactApproveResponse"];
+                    "application/json": components["schemas"]["CarteraPreJudicialApproveResponse"];
                 };
             };
-            /** @description Missing JWT */
-            401: {
+            /** @description Invalid body */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Cross-tenant or insufficient role */
+            /** @description cobranza:approve required */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Artifact not found */
+            /** @description Artifact not found OR cross-tenant */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description Artifact already approved or invalid state */
-            422: {
+            /** @description S3 / audit / PDF failed — rolled back */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
-            /** @description DB unavailable */
+            /** @description Database unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
         };
@@ -5525,6 +5966,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CarteraLegalArtifactError"];
+                };
+            };
+        };
+    };
+    rejectSiniestroInsuranceClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraApprovalRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraSiniestroRejectResponse"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Claim not found OR cross-tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Audit failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+        };
+    };
+    rejectPreJudicialArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraApprovalRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraPreJudicialRejectResponse"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Artifact not found OR cross-tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Audit failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
                 };
             };
         };

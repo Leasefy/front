@@ -4392,6 +4392,64 @@
             "whatsapp": "WhatsApp",
             "email": "Email"
           }
+        },
+        "call": {
+          "title": "Llamada",
+          "back": "Volver al deudor",
+          "loading": "Cargando llamada…",
+          "error": "Error cargando la llamada",
+          "errorRetry": "Reintentar",
+          "empty": "Sin datos para esta llamada",
+          "header": {
+            "startedAt": "Inicio",
+            "duration": "Duración",
+            "outcome": "Resultado",
+            "qaOverall": "QA general",
+            "complianceCount": "marcas",
+            "noRecording": "Esta llamada no tiene grabación disponible."
+          },
+          "player": {
+            "play": "Reproducir",
+            "pause": "Pausar",
+            "speed": "Velocidad",
+            "speedLabel": "Velocidad {{speed}}x"
+          },
+          "transcript": {
+            "title": "Transcripción",
+            "empty": "Esta llamada no tiene transcripción disponible.",
+            "loading": "Cargando transcripción…",
+            "error": "Error cargando la transcripción",
+            "errorRetry": "Reintentar",
+            "speakerOperador": "Operador",
+            "speakerDeudor": "Deudor",
+            "speakerBot": "Bot",
+            "seekAria": "Saltar a {{time}}"
+          },
+          "qa": {
+            "title": "Calidad de la llamada",
+            "overall": "General",
+            "tone": "Tono",
+            "compliance": "Cumplimiento",
+            "recovery": "Recuperación",
+            "clarity": "Claridad",
+            "empty": "QA pendiente."
+          },
+          "stateTrace": {
+            "title": "Trazabilidad de estado",
+            "empty": "Sin transiciones de estado.",
+            "transition": "{{from}} → {{to}}"
+          },
+          "cost": {
+            "title": "Costos",
+            "llm": "LLM",
+            "voice": "Voz",
+            "whatsapp": "WhatsApp",
+            "total": "Total",
+            "empty": "Sin costo registrado."
+          },
+          "compliance": {
+            "pillAria": "Marca de cumplimiento: {{label}}"
+          }
         }
       }
     }

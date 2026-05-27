@@ -4379,6 +4379,64 @@
             "whatsapp": "WhatsApp",
             "email": "Email"
           }
+        },
+        "call": {
+          "title": "Call",
+          "back": "Back to debtor",
+          "loading": "Loading call…",
+          "error": "Failed to load call",
+          "errorRetry": "Retry",
+          "empty": "No data for this call",
+          "header": {
+            "startedAt": "Started",
+            "duration": "Duration",
+            "outcome": "Outcome",
+            "qaOverall": "QA overall",
+            "complianceCount": "flags",
+            "noRecording": "This call has no recording available."
+          },
+          "player": {
+            "play": "Play",
+            "pause": "Pause",
+            "speed": "Speed",
+            "speedLabel": "Speed {{speed}}x"
+          },
+          "transcript": {
+            "title": "Transcript",
+            "empty": "This call has no transcript available.",
+            "loading": "Loading transcript…",
+            "error": "Failed to load transcript",
+            "errorRetry": "Retry",
+            "speakerOperador": "Operator",
+            "speakerDeudor": "Debtor",
+            "speakerBot": "Bot",
+            "seekAria": "Jump to {{time}}"
+          },
+          "qa": {
+            "title": "Call quality",
+            "overall": "Overall",
+            "tone": "Tone",
+            "compliance": "Compliance",
+            "recovery": "Recovery",
+            "clarity": "Clarity",
+            "empty": "QA pending."
+          },
+          "stateTrace": {
+            "title": "State trace",
+            "empty": "No state transitions.",
+            "transition": "{{from}} → {{to}}"
+          },
+          "cost": {
+            "title": "Costs",
+            "llm": "LLM",
+            "voice": "Voice",
+            "whatsapp": "WhatsApp",
+            "total": "Total",
+            "empty": "No cost recorded."
+          },
+          "compliance": {
+            "pillAria": "Compliance flag: {{label}}"
+          }
         }
       }
     }

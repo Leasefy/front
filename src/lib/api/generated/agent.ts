@@ -1542,6 +1542,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/calls/{callId}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Vapi call recording (Phase 31, range-byte proxy)
+         * @description Agency-JWT-gated range-byte proxy that fetches a fresh Vapi signed URL per request and streams the underlying audio bytes to the client. The Vapi signed URL never reaches the client. Supports RFC 7233 Range requests (200 full body / 206 partial content). cache-control: no-store (T-31-PII).
+         */
+        get: operations["getCobranzaCallAudio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/debtors/{debtorId}": {
         parameters: {
             query?: never;
@@ -1554,6 +1574,106 @@ export interface paths {
          * @description Returns the header + sidebar payload for the debtor-detail page (COBR-UI-03). All PII fields (cédula, phone, email, fiador cédula) are masked by default — the reveal-PII flow ships in 31-04. Sub-tab endpoints (timeline/calls/memos/compromisos/audit) ship in 31-02b. Cross-tenant debtorId returns 404 (T-15-06 least-disclosure).
          */
         get: operations["getCobranzaDebtorDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor timeline (Phase 31)
+         * @description Merged chronological-DESC timeline of stage transitions, calls, approved payments, and memos for a debtor. Cursor-paginated by (occurred_at, source). Requires cobranza:view.
+         */
+        get: operations["getCobranzaDebtorTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor calls list (Phase 31)
+         * @description Cursor-paginated call list for a debtor. Per-call payload omits transcript (use /calls/{callId}/transcript). Requires cobranza:view.
+         */
+        get: operations["getCobranzaDebtorCalls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/memos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor memos (Phase 31)
+         * @description Cursor-paginated debtor memos (post-call summaries). Requires cobranza:view.
+         */
+        get: operations["getCobranzaDebtorMemos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/compromisos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor compromisos snapshot (Phase 31)
+         * @description Returns paymentPlans + insuranceClaims + legalArtifacts for a debtor. No pagination; each sub-query capped at 100. Requires cobranza:view.
+         */
+        get: operations["getCobranzaDebtorCompromisos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor audit log (Phase 31)
+         * @description Cursor-paginated audit_log entries scoped to (entity_type=debtor, entity_id=:debtorId, tenant_id=:agencyId). Requires cobranza:view.
+         */
+        get: operations["getCobranzaDebtorAudit"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3070,6 +3190,9 @@ export interface components {
         CobranzaDebtorListError: {
             error: string;
         };
+        CobranzaCallAudioError: {
+            error: string;
+        };
         CobranzaDebtorDetailNextAction: {
             plannedFor: string;
             channel: string;
@@ -3103,6 +3226,120 @@ export interface components {
             generatedAt: string;
         };
         CobranzaDebtorDetailError: {
+            error: string;
+        };
+        CobranzaDebtorTimelineEvent: {
+            /** @enum {string} */
+            event_type: "stage_transition" | "call" | "payment" | "memo";
+            occurred_at: string;
+            payload: {
+                [key: string]: unknown;
+            };
+        };
+        CobranzaDebtorTimelineResponse: {
+            events: components["schemas"]["CobranzaDebtorTimelineEvent"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaDebtorTimelineError: {
+            error: string;
+        };
+        CobranzaDebtorCallsListItem: {
+            id: string;
+            started_at: string;
+            ended_at: string | null;
+            duration_seconds: number | null;
+            channel: string | null;
+            direction: string | null;
+            status: string | null;
+            qa_score: number | null;
+            compliance_flags_count: number;
+            vapi_call_id: string;
+        };
+        CobranzaDebtorCallsListResponse: {
+            calls: components["schemas"]["CobranzaDebtorCallsListItem"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaDebtorCallsError: {
+            error: string;
+        };
+        CobranzaDebtorMemoItem: {
+            id: string;
+            body: string | null;
+            last_outcome: string | null;
+            last_emotional_state: string | null;
+            last_objection_literal: string | null;
+            open_ptp_amount_cop: number | null;
+            open_ptp_date: string | null;
+            call_id: string | null;
+            created_at: string;
+        };
+        CobranzaDebtorMemosResponse: {
+            memos: components["schemas"]["CobranzaDebtorMemoItem"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaDebtorMemosError: {
+            error: string;
+        };
+        CobranzaDebtorCompromisoPaymentPlan: {
+            id: string;
+            status: string;
+            total_due_cop: string;
+            initial_amount_cop: string;
+            discount_applied_pct: string;
+            discount_kind: string;
+            stage_at_offer: string | null;
+            payment_provider: string | null;
+            offered_at: string;
+            accepted_at: string | null;
+            defaulted_at: string | null;
+        };
+        CobranzaDebtorCompromisoInsuranceClaim: {
+            id: string;
+            aseguradora: string | null;
+            policy_number: string | null;
+            claim_reference: string | null;
+            status: string;
+            filed_at: string | null;
+            denial_reason: string | null;
+            created_at: string;
+        };
+        CobranzaDebtorCompromisoLegalArtifact: {
+            id: string;
+            kind: string;
+            status: string;
+            generated_at: string;
+            approved_at: string | null;
+            sent_at: string | null;
+            physical_send_method: string | null;
+        };
+        CobranzaDebtorCompromisosResponse: {
+            paymentPlans: components["schemas"]["CobranzaDebtorCompromisoPaymentPlan"][];
+            insuranceClaims: components["schemas"]["CobranzaDebtorCompromisoInsuranceClaim"][];
+            legalArtifacts: components["schemas"]["CobranzaDebtorCompromisoLegalArtifact"][];
+            generatedAt: string;
+        };
+        CobranzaDebtorCompromisosError: {
+            error: string;
+        };
+        CobranzaDebtorAuditEntry: {
+            id: string;
+            action: string;
+            actor_type: string;
+            actor_id: string | null;
+            ip: string | null;
+            user_agent: string | null;
+            occurred_at: string;
+            metadata?: unknown;
+        };
+        CobranzaDebtorAuditResponse: {
+            entries: components["schemas"]["CobranzaDebtorAuditEntry"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaDebtorAuditError: {
             error: string;
         };
         CallQaDimensions: {
@@ -3785,6 +4022,83 @@ export interface operations {
             };
         };
     };
+    getCobranzaCallAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Full audio body (no Range header sent). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/*": string;
+                };
+            };
+            /** @description Partial content (RFC 7233 Range satisfied). */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/*": string;
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Call not found, cross-tenant, or recording purged */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Upstream Vapi metadata/byte fetch failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+        };
+    };
     getCobranzaDebtorDetail: {
         parameters: {
             query?: never;
@@ -3840,6 +4154,349 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaDebtorDetailError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorTimeline: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Timeline page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineResponse"];
+                };
+            };
+            /** @description Invalid cursor. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorTimelineError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorCalls: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calls list page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsListResponse"];
+                };
+            };
+            /** @description Invalid cursor. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCallsError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorMemos: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Memos page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosResponse"];
+                };
+            };
+            /** @description Invalid cursor. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorCompromisos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compromisos snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCompromisosResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCompromisosError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCompromisosError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCompromisosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCompromisosError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorAudit: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditResponse"];
+                };
+            };
+            /** @description Invalid cursor. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorAuditError"];
                 };
             };
         };

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useQuoteStream } from '@/lib/hooks/cotizador/use-quote-stream'
+import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
 import { QuoteHeader } from '@/components/inmobiliaria/cotizador/QuoteHeader'
 import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierStreamGrid'
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
@@ -32,32 +33,36 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
     agency?.id ?? null,
   )
 
+  // F-02 fix: fetch persisted quote metadata in parallel with the SSE stream.
+  // Surfaces canon/ciudad/tipo + cedulaHashPrefix8 + createdAt into the page
+  // header + PDF inputs summary. codeudoresCount is not persisted in the DB
+  // (wizard input only — used at quote-time, dropped after), so it stays 0.
+  const { data: metadata } = useQuoteMetadata(quoteId)
+
   const allFinal =
     carriers.length > 0 && carriers.every(c => c.status !== 'pending')
   const isStubMode = carriers.length > 0 && carriers.every(c => c.isStub)
 
-  // TODO (plan 30-01): wire quote metadata (cedula, canon, ciudad, tipo, codeudores)
-  // from the quote metadata endpoint. For now we display quoteId[:8] as reference
-  // and "—" for all inputs until the metadata endpoint is available.
-  const timestamp = new Date().toISOString()
+  // Prefer the persisted createdAt from metadata over Date.now() so refreshes
+  // show the original quote timestamp instead of a moving target.
+  const timestamp = metadata?.createdAt ?? new Date().toISOString()
 
-  // Build VerdictPdfProps from available data.
-  // cedula_display is a hash-redacted string — first 2 + "•••" + last 3 chars of quoteId
-  // (quoteId is a quote UUID, not raw cédula — T-30-07-01 safe).
-  const cedula_display =
-    quoteId.length >= 8
-      ? `${quoteId.slice(0, 2)}•••${quoteId.slice(-3)}`
-      : quoteId
+  // cedula_display uses the DB cedulaHashPrefix8 (8-char sha256 prefix) — not
+  // quoteId. quoteId is a UUID, cedulaHashPrefix8 is hash-derived from the raw
+  // cédula at submit time. Fall back to a UUID slice while metadata is loading.
+  const cedula_display = metadata
+    ? `${metadata.cedulaHashPrefix8.slice(0, 2)}•••${metadata.cedulaHashPrefix8.slice(-3)}`
+    : `${quoteId.slice(0, 2)}•••${quoteId.slice(-3)}`
 
   const verdictPdfProps: VerdictPdfProps | undefined = allFinal
     ? {
         quote: {
-          cedula_hash: quoteId,
+          cedula_hash: metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8),
           cedula_display,
-          canon: 0,         // Phase 30-01 TODO: replace with real metadata
-          ciudad: '—',      // Phase 30-01 TODO: replace with real metadata
-          tipo: '—',        // Phase 30-01 TODO: replace with real metadata
-          codeudores: 0,    // Phase 30-01 TODO: replace with real metadata
+          canon: metadata?.canonCop ?? 0,
+          ciudad: metadata?.ciudad ?? '—',
+          tipo: metadata?.tipoInmueble ?? '—',
+          codeudores: 0, // Not persisted in DB — wizard-time input only
           createdAt: timestamp,
         },
         carriers: carriers.map(c => {
@@ -84,8 +89,8 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
       }
     : undefined
 
-  // Filename: cotizacion-{first 8 hex chars of quoteId}-{YYYY-MM-DD}
-  const pdfFilenamePrefix = `cotizacion-${quoteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
+  // Filename: cotizacion-{cedulaHashPrefix8}-{YYYY-MM-DD} (PII-safe — NEVER raw cédula)
+  const pdfFilenamePrefix = `cotizacion-${metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
 
   const handleBack = () => router.push('/panel/inmobiliaria/ai/cotizador')
   const handleReQuote = () => {
@@ -102,11 +107,11 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
       {/* Sticky header */}
       <QuoteHeader
         quoteId={quoteId}
-        cedula={quoteId.slice(0, 8)}
+        cedula={metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8)}
         timestamp={timestamp}
-        canonCop={null}
-        ciudad={null}
-        tipo={null}
+        canonCop={metadata?.canonCop ?? null}
+        ciudad={metadata?.ciudad ?? null}
+        tipo={metadata?.tipoInmueble ?? null}
         codeudores={null}
         totalCostUsd={totalCostUsd}
         isConnected={isConnected}

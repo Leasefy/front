@@ -11,6 +11,9 @@ import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
+import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
+import CallStateTracePanel from '@/components/inmobiliaria/cobranza/call/CallStateTracePanel'
+import CallCostPanel from '@/components/inmobiliaria/cobranza/call/CallCostPanel'
 
 interface CallDetailClientProps {
   callId: string
@@ -229,26 +232,11 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           />
         </div>
 
-        {/* RIGHT COLUMN: QA / state / cost (Task 4) */}
+        {/* RIGHT COLUMN: QA / state / cost */}
         <aside className="space-y-4">
-          <div
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 dark:text-neutral-400"
-            data-testid="call-qa-slot"
-          >
-            {t('inmobiliaria.ai.cobranza.call.qa.title')}
-          </div>
-          <div
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 dark:text-neutral-400"
-            data-testid="call-state-trace-slot"
-          >
-            {t('inmobiliaria.ai.cobranza.call.stateTrace.title')}
-          </div>
-          <div
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 dark:text-neutral-400"
-            data-testid="call-cost-slot"
-          >
-            {t('inmobiliaria.ai.cobranza.call.cost.title')}
-          </div>
+          <CallQAPanel qa={data.qa} />
+          <CallStateTracePanel stateTrace={data.stateTrace} />
+          <CallCostPanel cost={data.cost} />
         </aside>
       </div>
     </main>

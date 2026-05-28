@@ -1,0 +1,104 @@
+'use client'
+
+/**
+ * Threshold Editor Page — Phase 34 plan 34-08.
+ *
+ * Admin-only route gated by `cobranza:edit-thresholds`. PageGuard's
+ * `module + action` props route to the same `canAccess(module, action)`
+ * check; non-admins redirect to `/panel/inmobiliaria` per existing pattern.
+ *
+ * Layout:
+ *   1. Editor form (active row)
+ *   2. Versions history table (with confirmation modal for rollback)
+ *
+ * Refs:
+ *   34-05 SUMMARY (PUT + POST /rollback endpoints)
+ *   34-CONTEXT.md (D-34-RES versioned thresholds rationale)
+ *   mvp:docs/DESIGN.md §4 (card surfaces)
+ */
+
+import Link from 'next/link'
+import { CaretLeft } from '@phosphor-icons/react'
+
+import { PageGuard } from '@/components/auth/PageGuard'
+import { useI18n } from '@/lib/i18n'
+import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
+import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
+import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
+
+function ThresholdsContent() {
+  const { t, locale } = useI18n()
+  const {
+    active,
+    versions,
+    versionsListSupported,
+    isLoading,
+    error,
+    updateThresholds,
+    rollbackTo,
+  } = useThresholds()
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div>
+        <Link
+          href="/panel/inmobiliaria/ai/cobranza/reporte"
+          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+        >
+          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
+          {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
+        </Link>
+        <h1 className="text-h2 font-heading text-foreground mt-2">
+          {t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
+        </h1>
+        {active?.version != null && (
+          <p className="mt-1 text-xs font-mono tabular-nums text-muted-foreground">
+            {locale.startsWith('es') ? 'Versión vigente' : 'Active version'}: v
+            {active.version}
+          </p>
+        )}
+      </div>
+
+      {isLoading && !active && (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+          Error: {error}
+        </div>
+      )}
+
+      {active && (
+        <>
+          <ThresholdEditor
+            active={active}
+            onSubmit={async (body) => {
+              const row = await updateThresholds(body)
+              return { version: row.version }
+            }}
+          />
+
+          <ThresholdVersionsTable
+            versions={versions}
+            supported={versionsListSupported}
+            onRollback={async (version) => {
+              const row = await rollbackTo(version)
+              return { version: row.version }
+            }}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+export default function ThresholdsPage() {
+  return (
+    <PageGuard module="cobranza" action="edit-thresholds">
+      <ThresholdsContent />
+    </PageGuard>
+  )
+}

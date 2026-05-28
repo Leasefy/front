@@ -1,8 +1,12 @@
 'use client'
 // Phase 30 plan 30-06 | 30-07 | COTI-UI-03 | XR-02 | XR-05
+// Phase 33 plan 33-05 | COTI-UI-04 | COTI-UI-05 | XR-05
 // Cotizador streaming detail page.
 // T-30-06-E: PageGuard enforces cotizador:view before any component mounts.
+// D-33-10 / D-33-11: Phase 33 wires the two header actions ("Pedir explicación"
+// + "Re-cotizar con cambios") and the ReQuoteOfBadge subtitle.
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -12,8 +16,11 @@ import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
 import { QuoteHeader } from '@/components/inmobiliaria/cotizador/QuoteHeader'
 import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierStreamGrid'
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
+import { CounterfactualModal } from '@/components/cotizador/CounterfactualModal'
+import { ReQuoteOfBadge } from '@/components/cotizador/ReQuoteOfBadge'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import type { VerdictPdfProps } from '@/lib/cotizador/pdf-verdict-document'
 
 // ---------------------------------------------------------------------------
@@ -39,9 +46,17 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // (wizard input only — used at quote-time, dropped after), so it stays 0.
   const { data: metadata } = useQuoteMetadata(quoteId)
 
+  // Phase 33: counterfactual modal open flag (D-33-01..D-33-13).
+  const [modalOpen, setModalOpen] = useState(false)
+
   const allFinal =
     carriers.length > 0 && carriers.every(c => c.status !== 'pending')
   const isStubMode = carriers.length > 0 && carriers.every(c => c.isStub)
+
+  // D-33-10: header buttons visible whenever ≥1 carrier has a final verdict —
+  // does NOT require allFinal so operators can re-quote / ask-why even when a
+  // single carrier is still streaming.
+  const hasAnyVerdict = carriers.some(c => c.status !== 'pending')
 
   // Prefer the persisted createdAt from metadata over Date.now() so refreshes
   // show the original quote timestamp instead of a moving target.
@@ -93,8 +108,21 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   const pdfFilenamePrefix = `cotizacion-${metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
 
   const handleBack = () => router.push('/panel/inmobiliaria/ai/cotizador')
+
+  // D-33-10: navigate to the re-quote wizard with the current quoteId as the
+  // ?from= seed (Plan 33-06 wizard pre-fills from this).
   const handleReQuote = () => {
-    // Phase 33 placeholder — button is disabled
+    router.push(`/panel/inmobiliaria/ai/cotizador/nueva?from=${quoteId}`)
+  }
+
+  // D-33-11: open the counterfactual modal.
+  const handlePedirExplicacion = () => setModalOpen(true)
+
+  // D-33-13: when the wrapper returns 404 (quote stale / wrong tenant), close
+  // the modal and surface a toast — the user can navigate back to the index.
+  const handleQuote404 = () => {
+    setModalOpen(false)
+    toast.error(t('inmobiliaria.ai.cotizador.askWhy.error404'))
   }
 
   if (!canView) {
@@ -119,6 +147,35 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Re-quote lineage subtitle (D-33-11) — visible only when this quote
+            originated as a re-quote of a previous one. */}
+        {metadata?.reQuoteOf && (
+          <ReQuoteOfBadge parentId={metadata.reQuoteOf} />
+        )}
+
+        {/* Phase 33 header action row (D-33-10): visible when operator has
+            cotizador:view AND at least one carrier has a final verdict. */}
+        {canView && hasAnyVerdict && (
+          <div className="flex gap-2 justify-end" data-testid="phase33-action-row">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePedirExplicacion}
+              aria-label={t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+            >
+              {t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReQuote}
+              aria-label={t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+            >
+              {t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+            </Button>
+          </div>
+        )}
 
         {/* Reconnection error banner */}
         {error && !isConnected && (
@@ -152,6 +209,23 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         {/* Carrier cards grid (always rendered — shows pending skeletons while streaming) */}
         <CarrierStreamGrid carriers={carriers} locale={locale} />
       </main>
+
+      {/* Phase 33 counterfactual modal — mounted at root so portal stacking
+          is unaffected by the sticky header z-index. codeudores: 0 is the
+          documented limitation (wizard-only input, not persisted per D-08). */}
+      <CounterfactualModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        quoteId={quoteId}
+        originalCarriers={carriers}
+        originalInputs={{
+          canonCop: metadata?.canonCop ?? 0,
+          ciudad: metadata?.ciudad ?? '',
+          tipo: metadata?.tipoInmueble ?? '',
+          codeudores: 0,
+        }}
+        onQuote404={handleQuote404}
+      />
     </div>
   )
 }

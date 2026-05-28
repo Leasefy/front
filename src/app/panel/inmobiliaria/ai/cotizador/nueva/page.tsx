@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth'
 import { getAccessToken } from '@/lib/api/client'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useWizardDraft } from '@/lib/hooks/cotizador/use-wizard-draft'
+import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
 import { hashCedula, CedulaValidationError } from '@/lib/cotizador/hash-cedula'
 import { WizardStepIndicator } from '@/components/inmobiliaria/cotizador/WizardStepIndicator'
 import { WizardStep1Candidato } from '@/components/inmobiliaria/cotizador/WizardStep1Candidato'
@@ -20,6 +21,10 @@ import { PageGuard } from '@/components/auth/PageGuard'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
+
+// Phase 33 D-33-10: re-quote mode detection & isolated draft key prefix
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const RE_QUOTE_DRAFT_KEY_PREFIX = 'cotizador.draft.wizard:'
 
 export default function NuevaCotizacionPage() {
   const { t } = useI18n()
@@ -46,6 +51,24 @@ export default function NuevaCotizacionPage() {
   const [arcoError, setArcoError] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  // Phase 33 D-33-10 re-quote state
+  const [prefillCedulaHash, setPrefillCedulaHash] = useState<string | null>(null)
+  const [prefillFailed, setPrefillFailed] = useState(false)
+  const [prefillDismissed, setPrefillDismissed] = useState(false)
+  const [sessionCapError, setSessionCapError] = useState(false)
+
+  // Phase 33 D-33-10: detect re-quote mode from ?from= query param
+  const fromParam = searchParams?.get('from') ?? null
+  const isValidUUID = fromParam !== null && UUID_REGEX.test(fromParam)
+  const isReQuoteMode = isValidUUID
+  const parentQuoteId = isValidUUID ? fromParam : null
+  if (fromParam !== null && !isValidUUID && typeof window !== 'undefined') {
+    console.warn('[cotizador/nueva] Invalid re-quote param value:', fromParam)
+  }
+
+  // Phase 33 D-33-10: fire metadata fetch unconditionally; hook short-circuits on empty quoteId
+  const parentMetadata = useQuoteMetadata(parentQuoteId ?? '')
+
   // Optional pre-fill from ?cedula= query param (COTI-UI-02 optional)
   useEffect(() => {
     const prefilledCedula = searchParams?.get('cedula')
@@ -54,6 +77,38 @@ export default function NuevaCotizacionPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Phase 33 D-33-10: hydrate wizard state from parent quote metadata in re-quote mode
+  useEffect(() => {
+    if (!isReQuoteMode) return
+    if (parentMetadata.isLoading) return
+    if (parentMetadata.error !== null) {
+      // Pre-fill fetch failed (parent 404 or network) — D-33-14 error path 1
+      setPrefillFailed(true)
+      return
+    }
+    if (!parentMetadata.data) return
+
+    const data = parentMetadata.data
+
+    // D-08 INVARIANT: only cedulaHash (opaque hex) enters wizard state.
+    // Raw cédula digits are never fetched or stored in re-quote mode.
+    if (data.cedulaHash) {
+      setPrefillCedulaHash(data.cedulaHash)
+    }
+    // else: backend didn't return cedulaHash (pre-33-03 response) — operator must
+    // manually enter a new cédula via normal step 1 input.
+
+    setPropiedad({
+      canonCop: data.canonCop,
+      // codeudoresCount not in GET response — defaults to 0 per Phase 33 D-33-10
+      codeudoresCount: 0,
+      tipoInmueble: data.tipoInmueble,
+    })
+    // ciudad lives in candidato for the wizard's step-1 ciudad field
+    setCandidato(prev => ({ ...prev, ciudad: data.ciudad }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parentMetadata.isLoading, parentMetadata.error, parentMetadata.data, isReQuoteMode])
 
   // ---- Restore handlers ----
 
@@ -67,12 +122,25 @@ export default function NuevaCotizacionPage() {
   }, [draft])
 
   const handleStartFresh = useCallback(() => {
+    // Phase 33 D-33-10: in re-quote mode, discard re-quote draft and navigate away from ?from=
+    if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
+      localStorage.removeItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`)
+      router.replace('/panel/inmobiliaria/ai/cotizador/nueva')
+      return
+    }
     clear()
     setShowRestoreBanner(false)
     setCandidato(EMPTY_CANDIDATO)
     setPropiedad(EMPTY_PROPIEDAD)
     setStep(1)
-  }, [clear])
+  }, [clear, isReQuoteMode, parentQuoteId, router])
+
+  // Phase 33 D-33-10: operator clicks "Cambiar candidato" — clears pre-filled hash,
+  // re-opens normal cédula input. Nombre and ciudad pre-fill remain.
+  const handleClearPrefill = useCallback(() => {
+    setPrefillCedulaHash(null)
+    setCandidato(prev => ({ ...prev, cedula: '' }))
+  }, [])
 
   // ---- Step 1 handlers ----
 
@@ -96,9 +164,13 @@ export default function NuevaCotizacionPage() {
 
   const validateStep1 = useCallback((): boolean => {
     const errors: { cedula?: string; nombre?: string; ciudad?: string } = {}
-    const stripped = candidato.cedula.replace(/[\s.\-]/g, '')
-    if (!/^\d{7,10}$/.test(stripped)) {
-      errors.cedula = t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida')
+    // Phase 33 D-33-10: in re-quote mode with pre-fill active, cédula is pre-filled
+    // via hash — there is no raw input to validate. Skip the cédula regex check.
+    if (!prefillCedulaHash) {
+      const stripped = candidato.cedula.replace(/[\s.\-]/g, '')
+      if (!/^\d{7,10}$/.test(stripped)) {
+        errors.cedula = t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida')
+      }
     }
     if (!candidato.nombre.trim()) {
       errors.nombre = t('inmobiliaria.ai.cotizador.nueva.errors.requerido')
@@ -108,13 +180,24 @@ export default function NuevaCotizacionPage() {
     }
     setStep1Errors(errors)
     return Object.keys(errors).length === 0
-  }, [candidato, t])
+  }, [candidato, t, prefillCedulaHash])
 
   const handleStep1Next = useCallback(() => {
     if (!validateStep1()) return
     save({ step: 2, candidato, propiedad: { ...propiedad, canonCop: Number(propiedad.canonCop) || 0 } })
+    // Phase 33 D-33-10: also persist re-quote draft with isolated key
+    if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
+      const rqDraft = {
+        step: 2,
+        candidato,
+        propiedad: { ...propiedad, canonCop: Number(propiedad.canonCop) || 0 },
+        prefillCedulaHash,
+        updatedAt: Date.now(),
+      }
+      localStorage.setItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`, JSON.stringify(rqDraft))
+    }
     setStep(2)
-  }, [validateStep1, save, candidato, propiedad])
+  }, [validateStep1, save, candidato, propiedad, isReQuoteMode, parentQuoteId, prefillCedulaHash])
 
   // ---- Step 2 handlers ----
 
@@ -141,8 +224,19 @@ export default function NuevaCotizacionPage() {
   const handleStep2Next = useCallback(() => {
     if (!validateStep2()) return
     save({ step: 3, candidato, propiedad: { ...propiedad, canonCop: Number(propiedad.canonCop) } })
+    // Phase 33 D-33-10: also persist re-quote draft with isolated key
+    if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
+      const rqDraft = {
+        step: 3,
+        candidato,
+        propiedad: { ...propiedad, canonCop: Number(propiedad.canonCop) || 0 },
+        prefillCedulaHash,
+        updatedAt: Date.now(),
+      }
+      localStorage.setItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`, JSON.stringify(rqDraft))
+    }
     setStep(3)
-  }, [validateStep2, save, candidato, propiedad])
+  }, [validateStep2, save, candidato, propiedad, isReQuoteMode, parentQuoteId, prefillCedulaHash])
 
   // ---- Step 3 submit ----
 
@@ -150,8 +244,31 @@ export default function NuevaCotizacionPage() {
     setIsSubmitting(true)
     setArcoError(false)
     setSubmitError(null)
+    setSessionCapError(false)
     try {
-      const cedulaHash = await hashCedula(candidato.cedula)
+      // Phase 33 D-33-10 / D-08: build submit body. Re-quote mode with active pre-fill
+      // uses the backend-provided cedulaHash directly (never call hashCedula()).
+      const submitBody: Record<string, unknown> = {
+        nombre: candidato.nombre,
+        ciudad: candidato.ciudad,
+        canonCop: Number(propiedad.canonCop),
+        tipoInmueble: propiedad.tipoInmueble,
+        codeudoresCount: propiedad.codeudoresCount,
+      }
+      // D-08 INVARIANT: POST body NEVER contains a 'cedula' field — only 'cedulaHash'.
+      if (prefillCedulaHash) {
+        // Pre-fill active: hash already a 64-char SHA-256 hex from backend.
+        submitBody.cedulaHash = prefillCedulaHash
+      } else {
+        // Normal path (new cédula entered by operator): hash the raw input.
+        submitBody.cedulaHash = await hashCedula(candidato.cedula)
+      }
+      // Phase 33 D-33-10: link counterfactual to its parent when in re-quote mode
+      // (unless operator dismissed the pre-fill failure banner — fresh quote then).
+      if (isReQuoteMode && parentQuoteId && !prefillDismissed) {
+        submitBody.re_quote_of = parentQuoteId
+      }
+
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       const agencyId = agency?.id
       if (!agentUrl || !agencyId) throw new Error('Configuration error')
@@ -164,18 +281,16 @@ export default function NuevaCotizacionPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${getAccessToken()}`,
           },
-          body: JSON.stringify({
-            cedulaHash,
-            nombre: candidato.nombre,
-            ciudad: candidato.ciudad,
-            canonCop: Number(propiedad.canonCop),
-            tipoInmueble: propiedad.tipoInmueble,
-            codeudoresCount: propiedad.codeudoresCount,
-          }),
+          body: JSON.stringify(submitBody),
         }
       )
       if (res.status === 451) {
         setArcoError(true)
+        return
+      }
+      // Phase 33 D-33-14 error path 2: per-session re-quote cap (G9)
+      if (res.status === 429) {
+        setSessionCapError(true)
         return
       }
       if (!res.ok) {
@@ -184,6 +299,10 @@ export default function NuevaCotizacionPage() {
       }
       const { quoteId } = (await res.json()) as { quoteId: string }
       clear()
+      // Phase 33 D-33-10: also clear the per-parent re-quote draft on success
+      if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
+        localStorage.removeItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`)
+      }
       router.push(`/panel/inmobiliaria/ai/cotizador/${quoteId}`)
     } catch (err) {
       if (err instanceof CedulaValidationError) {
@@ -195,7 +314,7 @@ export default function NuevaCotizacionPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [candidato, propiedad, agency, clear, router, t])
+  }, [candidato, propiedad, agency, clear, router, t, prefillCedulaHash, isReQuoteMode, parentQuoteId, prefillDismissed])
 
   return (
     <PageGuard module="cotizador" action="view">
@@ -215,6 +334,38 @@ export default function NuevaCotizacionPage() {
 
         {/* Main content */}
         <div className="mx-auto max-w-lg px-4 pb-8 sm:px-6">
+          {/* Phase 33 D-33-14: pre-fill GET failure banner — 404/network on parent quote */}
+          {isReQuoteMode && prefillFailed && !prefillDismissed && (
+            <div
+              role="alert"
+              className="mb-6 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4"
+            >
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.banner')}
+              </p>
+              <div className="mt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const hist = typeof window !== 'undefined' ? window.history.length : 0
+                    if (hist > 1) router.back()
+                    else router.push('/panel/inmobiliaria/ai/cotizador')
+                  }}
+                  className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.volver')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrefillDismissed(true)}
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.continuar')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {hasDraft && showRestoreBanner && (
             <WizardRestoreBanner
               onContinue={handleContinue}
@@ -222,12 +373,32 @@ export default function NuevaCotizacionPage() {
             />
           )}
 
+          {/* Phase 33 D-33-10: re-using cédula notice (replaces cédula input semantically) */}
+          {step === 1 && prefillCedulaHash && (
+            <div
+              role="region"
+              aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
+              className="mb-4 flex items-center justify-between rounded-xl border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-3"
+            >
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
+              </p>
+              <button
+                type="button"
+                onClick={handleClearPrefill}
+                className="ml-3 shrink-0 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.changeButton')}
+              </button>
+            </div>
+          )}
+
           {step === 1 && (
             <WizardStep1Candidato
               value={candidato}
               onChange={handleCandidatoChange}
               onNext={handleStep1Next}
-              errors={step1Errors}
+              errors={prefillCedulaHash ? { ...step1Errors, cedula: undefined } : step1Errors}
               onCedulaBlur={handleCedulaBlur}
             />
           )}
@@ -252,6 +423,16 @@ export default function NuevaCotizacionPage() {
               arcoError={arcoError}
               canCreate={canCreate}
             />
+          )}
+
+          {/* Phase 33 D-33-14 error path 2: per-session re-quote cap (HTTP 429) */}
+          {sessionCapError && (
+            <div
+              role="alert"
+              className="mt-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-700 dark:text-rose-300"
+            >
+              {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
+            </div>
           )}
 
           {submitError && (

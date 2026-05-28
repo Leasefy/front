@@ -18,6 +18,10 @@ export interface QuoteMetadata {
   status: string
   createdAt: string
   completedAt: string | null
+  // Phase 33 D-33-10 / D-08: full 64-char SHA-256 hex of the candidate cédula.
+  // Optional because pre-33-03 backend responses did not include it. Used by the
+  // re-quote pre-fill flow in cotizador/nueva/page.tsx (?from= mode).
+  cedulaHash?: string
 }
 
 export function useQuoteMetadata(quoteId: string): {

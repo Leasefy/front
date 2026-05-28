@@ -4336,7 +4336,10 @@
             "backButton": "Volver al cotizador"
           },
           "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
-          "retry": "Reintentar"
+          "retry": "Reintentar",
+          "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
+          "pedirExplicacionButton": "Pedir explicación",
+          "reQuoteButton": "Re-cotizar con cambios"
         },
         "pdf": {
           "download": "Descargar PDF",

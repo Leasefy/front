@@ -22,6 +22,10 @@ export interface QuoteMetadata {
   // Optional because pre-33-03 backend responses did not include it. Used by the
   // re-quote pre-fill flow in cotizador/nueva/page.tsx (?from= mode).
   cedulaHash?: string
+  // Phase 33 D-33-11 (Plan 33-05): immediate-parent UUID for re-quote lineage.
+  // Backend (Plan 33-03) returns null for first-time quotes. Surfaces the
+  // ReQuoteOfBadge subtitle on the detail page.
+  reQuoteOf: string | null
 }
 
 export function useQuoteMetadata(quoteId: string): {

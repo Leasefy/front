@@ -4323,7 +4323,10 @@
             "backButton": "Back to cotizador"
           },
           "connectionInterrupted": "Connection interrupted. Check your connection and try again.",
-          "retry": "Retry"
+          "retry": "Retry",
+          "reQuoteOfBadge": "Re-quote of #{{shortId}}",
+          "pedirExplicacionButton": "Ask for explanation",
+          "reQuoteButton": "Re-quote with changes"
         },
         "pdf": {
           "download": "Download PDF",

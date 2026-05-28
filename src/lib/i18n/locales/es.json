@@ -4275,6 +4275,34 @@
           },
           "sessionCapHit": "Has alcanzado el límite de re-cotizaciones de esta sesión. Se reinicia con una nueva cotización original."
         },
+        "askWhy": {
+          "title": "¿Qué pasaría si…?",
+          "costEstimate": "Costo estimado: $0.001 USD",
+          "costActual": "Costo: ${{cost}} USD",
+          "remaining": "Te quedan {{n}} de {{m}} hoy",
+          "calculating": "Calculando…",
+          "tardando": "Tardando más de lo esperado…",
+          "submitButton": "Pedir explicación",
+          "capExhausted": {
+            "title": "Límite alcanzado",
+            "body": "Has usado tus {{cap}} explicaciones de hoy. Se reinicia mañana a las {{time}} (Bogotá).",
+            "tooltip": "Límite diario alcanzado"
+          },
+          "originalColumn": "Original",
+          "hypotheticalColumn": "Hipotético",
+          "noResultPlaceholder": "Selecciona una variable y envía para ver el hipotético",
+          "flipBadge": "{{from}} → {{to}}",
+          "retryButton": "Reintentar",
+          "errorGeneric": "Error al obtener la explicación. Intenta de nuevo.",
+          "error404": "Esta cotización ya no está disponible",
+          "error400Prefix": "Error de validación: ",
+          "variableLabels": {
+            "canon": "Canon mensual",
+            "ciudad": "Ciudad",
+            "tipo": "Tipo de inmueble",
+            "codeudores": "Codeudores"
+          }
+        },
         "detail": {
           "header": {
             "breadcrumbQuote": "Cotización",

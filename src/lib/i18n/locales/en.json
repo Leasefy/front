@@ -4262,6 +4262,34 @@
           },
           "sessionCapHit": "You have reached the re-quote limit for this session. Start a new original quote."
         },
+        "askWhy": {
+          "title": "What would happen if…?",
+          "costEstimate": "Estimated cost: $0.001 USD",
+          "costActual": "Cost: ${{cost}} USD",
+          "remaining": "{{n}} of {{m}} left today",
+          "calculating": "Calculating…",
+          "tardando": "Taking longer than expected…",
+          "submitButton": "Ask for explanation",
+          "capExhausted": {
+            "title": "Limit reached",
+            "body": "You've used all {{cap}} explanations for today. Resets tomorrow at {{time}} (Bogotá).",
+            "tooltip": "Daily limit reached"
+          },
+          "originalColumn": "Original",
+          "hypotheticalColumn": "Hypothetical",
+          "noResultPlaceholder": "Select a variable and submit to see the hypothetical",
+          "flipBadge": "{{from}} → {{to}}",
+          "retryButton": "Retry",
+          "errorGeneric": "Error fetching the explanation. Please retry.",
+          "error404": "This quote is no longer available",
+          "error400Prefix": "Validation error: ",
+          "variableLabels": {
+            "canon": "Monthly rent",
+            "ciudad": "City",
+            "tipo": "Property type",
+            "codeudores": "Co-debtors"
+          }
+        },
         "detail": {
           "header": {
             "breadcrumbQuote": "Quote",

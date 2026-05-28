@@ -3,7 +3,10 @@
 // 3-step new quote wizard. Raw cédula is NEVER sent in the POST body;
 // hashCedula() is called at submit time only.
 
+import * as React from 'react'
 import { useState, useCallback, useEffect } from 'react'
+
+void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'

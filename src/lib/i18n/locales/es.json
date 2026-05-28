@@ -4838,6 +4838,132 @@
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
           }
+        },
+        "escalaciones": {
+          "pageTitle": "Escalaciones",
+          "kanbanColumns": {
+            "open": "Abiertas",
+            "assigned": "Asignadas",
+            "resolved": "Resueltas (últimos 7 días)"
+          },
+          "urgency": {
+            "live": "En vivo",
+            "high": "Alta",
+            "medium": "Media",
+            "low": "Baja"
+          },
+          "actions": {
+            "claim": "Tomar",
+            "assign": "Asignar",
+            "resolve": "Resolver",
+            "cancel": "Cancelar"
+          },
+          "assignDialog": {
+            "title": "Asignar escalación a un agente",
+            "placeholder": "Selecciona un agente"
+          },
+          "resolveModal": {
+            "title": "Resolver escalación",
+            "categoryLabel": "Categoría",
+            "textLabel": "Detalle de la resolución",
+            "submit": "Cerrar escalación",
+            "escalatedToLegalWarning": "Al cerrar como ‘Pasa a jurídico’ el deudor avanza a etapa prejurídica automáticamente."
+          },
+          "resolveTemplates": {
+            "compromise": "Acordamos plan de pago con el deudor",
+            "customerRejected": "El cliente rechazó las ofertas",
+            "escalatedToLegal": "Pasa a jurídico",
+            "falsePositive": "Falsa alarma del agente",
+            "other": "Otro"
+          },
+          "errors": {
+            "tooShort": "Mínimo 80 caracteres",
+            "tooLong": "Máximo 2.000 caracteres",
+            "forbidden": "No tienes permiso para esta acción",
+            "notFound": "La escalación ya no existe o fue resuelta"
+          },
+          "detail": {
+            "linkedCall": "Llamada asociada",
+            "reason": "Motivo del agente",
+            "stateTrace": "Estado del agente al escalar",
+            "assignee": "Asignada a",
+            "timing": "Tiempos"
+          }
+        },
+        "compliance": {
+          "pageTitle": "Cumplimiento",
+          "overview": {
+            "ley2300Heading": "Ley 2300 — intentos fuera de horario",
+            "habeasDataHeading": "Habeas Data — SLA de 15 días",
+            "retentionHeading": "Retención de datos",
+            "sparklineHeading": "Tasa de banderas (últimos 30 días)"
+          },
+          "habeasData": {
+            "remaining": {
+              "days": "Quedan {{days}}d {{hours}}h",
+              "hours": "Quedan {{hours}}h"
+            },
+            "overdue": "VENCIDO HACE {{days}}d",
+            "banner": "Hay solicitudes Habeas Data próximas a vencer el plazo legal de 15 días."
+          },
+          "trafficLight": {
+            "green": "Más de 7 días restantes",
+            "yellow": "Entre 3 y 7 días restantes",
+            "red": "Menos de 3 días restantes",
+            "redPulse": "Vence en menos de 24 horas"
+          },
+          "subPages": {
+            "ley2300Title": "Ley 2300 — intentos fuera de horario",
+            "optOutTitle": "Registro de opt-out",
+            "auditTitle": "Auditoría"
+          },
+          "filters": {
+            "actor": "Actor",
+            "action": "Acción",
+            "dateRange": "Rango de fechas",
+            "search": "Cédula (hash) o ID de cotización"
+          },
+          "actions": {
+            "acknowledge": "Reconocer",
+            "export": "Exportar"
+          }
+        },
+        "reporte": {
+          "pageTitle": "Reporte diario",
+          "kpis": {
+            "pkr": "PKR (% recuperado)",
+            "morosidad": "Índice de morosidad",
+            "outsideHours": "Llamadas fuera de horario"
+          },
+          "topDebtors": {
+            "heading": "Top deudores",
+            "empty": "No hay deudores destacados hoy"
+          },
+          "history": {
+            "heading": "Histórico (últimos 30 días)",
+            "exportCsv": "Exportar CSV"
+          },
+          "thresholds": {
+            "pageTitle": "Umbrales del reporte",
+            "fields": {
+              "topN": "Top-N deudores a mostrar",
+              "moraBoundaries": "Cortes de días de mora",
+              "pkrAlertBelow": "Alerta si PKR cae por debajo de (%)",
+              "morosidadAlertAbove": "Alerta si morosidad supera (%)",
+              "violationsAtLeast": "Mínimo de violaciones para alertar",
+              "callsOutsideAtLeast": "Mínimo de llamadas fuera de horario para alertar"
+            },
+            "submit": "Guardar umbrales",
+            "versionsHeading": "Versiones anteriores",
+            "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
+            "rolledBackToast": "Umbrales reversados a la versión {{version}}"
+          },
+          "subscription": {
+            "pageTitle": "Mi suscripción al reporte diario",
+            "emailToggle": "Recibir por correo",
+            "whatsappToggle": "Recibir por WhatsApp",
+            "aggregateStat": "{{subscribed}} de {{total}} miembros suscritos"
+          }
         }
       }
     }

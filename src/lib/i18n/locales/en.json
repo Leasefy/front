@@ -4825,6 +4825,132 @@
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
           }
+        },
+        "escalaciones": {
+          "pageTitle": "Escalations",
+          "kanbanColumns": {
+            "open": "Open",
+            "assigned": "Assigned",
+            "resolved": "Resolved (last 7 days)"
+          },
+          "urgency": {
+            "live": "Live",
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low"
+          },
+          "actions": {
+            "claim": "Claim",
+            "assign": "Assign",
+            "resolve": "Resolve",
+            "cancel": "Cancel"
+          },
+          "assignDialog": {
+            "title": "Assign escalation to an agent",
+            "placeholder": "Select an agent"
+          },
+          "resolveModal": {
+            "title": "Resolve escalation",
+            "categoryLabel": "Category",
+            "textLabel": "Resolution detail",
+            "submit": "Close escalation",
+            "escalatedToLegalWarning": "Closing as ‘Escalated to legal’ will move the debtor to the pre-judicial stage automatically."
+          },
+          "resolveTemplates": {
+            "compromise": "We agreed on a payment plan with the debtor",
+            "customerRejected": "The customer rejected the offers",
+            "escalatedToLegal": "Escalated to legal",
+            "falsePositive": "Agent false positive",
+            "other": "Other"
+          },
+          "errors": {
+            "tooShort": "Minimum 80 characters",
+            "tooLong": "Maximum 2,000 characters",
+            "forbidden": "You don't have permission for this action",
+            "notFound": "The escalation no longer exists or was resolved"
+          },
+          "detail": {
+            "linkedCall": "Linked call",
+            "reason": "Agent reason",
+            "stateTrace": "Agent state at escalation",
+            "assignee": "Assigned to",
+            "timing": "Timing"
+          }
+        },
+        "compliance": {
+          "pageTitle": "Compliance",
+          "overview": {
+            "ley2300Heading": "Ley 2300 — outside-hours attempts",
+            "habeasDataHeading": "Habeas Data — 15-day SLA",
+            "retentionHeading": "Data retention",
+            "sparklineHeading": "Flag rate (last 30 days)"
+          },
+          "habeasData": {
+            "remaining": {
+              "days": "{{days}}d {{hours}}h remaining",
+              "hours": "{{hours}}h remaining"
+            },
+            "overdue": "OVERDUE {{days}}d AGO",
+            "banner": "There are Habeas Data requests approaching the 15-day statutory deadline."
+          },
+          "trafficLight": {
+            "green": "More than 7 days remaining",
+            "yellow": "Between 3 and 7 days remaining",
+            "red": "Less than 3 days remaining",
+            "redPulse": "Expires in less than 24 hours"
+          },
+          "subPages": {
+            "ley2300Title": "Ley 2300 — outside-hours attempts",
+            "optOutTitle": "Opt-out registry",
+            "auditTitle": "Audit log"
+          },
+          "filters": {
+            "actor": "Actor",
+            "action": "Action",
+            "dateRange": "Date range",
+            "search": "Cédula (hash) or quote ID"
+          },
+          "actions": {
+            "acknowledge": "Acknowledge",
+            "export": "Export"
+          }
+        },
+        "reporte": {
+          "pageTitle": "Daily report",
+          "kpis": {
+            "pkr": "PKR (% recovered)",
+            "morosidad": "Delinquency index",
+            "outsideHours": "Outside-hours calls"
+          },
+          "topDebtors": {
+            "heading": "Top debtors",
+            "empty": "No notable debtors today"
+          },
+          "history": {
+            "heading": "History (last 30 days)",
+            "exportCsv": "Export CSV"
+          },
+          "thresholds": {
+            "pageTitle": "Report thresholds",
+            "fields": {
+              "topN": "Top-N debtors to show",
+              "moraBoundaries": "Days-past-due bucket boundaries",
+              "pkrAlertBelow": "Alert if PKR falls below (%)",
+              "morosidadAlertAbove": "Alert if delinquency exceeds (%)",
+              "violationsAtLeast": "Minimum violations to alert",
+              "callsOutsideAtLeast": "Minimum outside-hours calls to alert"
+            },
+            "submit": "Save thresholds",
+            "versionsHeading": "Previous versions",
+            "rollbackConfirm": "Confirm rollback to version {{version}}?",
+            "rolledBackToast": "Thresholds rolled back to version {{version}}"
+          },
+          "subscription": {
+            "pageTitle": "My daily report subscription",
+            "emailToggle": "Receive by email",
+            "whatsappToggle": "Receive by WhatsApp",
+            "aggregateStat": "{{subscribed}} of {{total}} members subscribed"
+          }
         }
       }
     }

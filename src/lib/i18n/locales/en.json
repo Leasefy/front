@@ -4249,6 +4249,19 @@
             "sinPermiso": "You do not have permission to create quotes"
           }
         },
+        "reQuote": {
+          "cedulaNotice": {
+            "ariaLabel": "Candidate ID status",
+            "message": "Re-using ID from previous quote",
+            "changeButton": "Change candidate"
+          },
+          "prefillFailed": {
+            "banner": "We could not load the original quote. Start a new one or go back.",
+            "volver": "Go back",
+            "continuar": "Continue"
+          },
+          "sessionCapHit": "You have reached the re-quote limit for this session. Start a new original quote."
+        },
         "detail": {
           "header": {
             "breadcrumbQuote": "Quote",

@@ -4262,6 +4262,19 @@
             "sinPermiso": "No tienes permiso para crear cotizaciones"
           }
         },
+        "reQuote": {
+          "cedulaNotice": {
+            "ariaLabel": "Estado de cédula del candidato",
+            "message": "Re-usando cédula de cotización anterior",
+            "changeButton": "Cambiar candidato"
+          },
+          "prefillFailed": {
+            "banner": "No pudimos cargar la cotización original. Empieza una nueva o vuelve atrás.",
+            "volver": "Volver",
+            "continuar": "Continuar"
+          },
+          "sessionCapHit": "Has alcanzado el límite de re-cotizaciones de esta sesión. Se reinicia con una nueva cotización original."
+        },
         "detail": {
           "header": {
             "breadcrumbQuote": "Cotización",

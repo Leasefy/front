@@ -4358,7 +4358,10 @@
             "actionEdit": "Edit",
             "actionReset": "Reset to global",
             "emptyRegistry": "No carriers configured",
-            "emptyRegistryHelper": "Contact the Leasefy team to activate carriers on your account."
+            "emptyRegistryHelper": "Contact the Leasefy team to activate carriers on your account.",
+            "actionsAriaLabel": "Actions for {{carrier}}",
+            "conflictWarning": "This carrier is globally disabled. Your local setting will have no effect until Leasefy re-enables it.",
+            "inherits": "Inherits — {{value}}"
           },
           "popover": {
             "title": "Edit configuration",
@@ -4376,7 +4379,13 @@
             "resetConfirmTitle": "Reset to global?",
             "resetConfirmBody": "Your override for {{carrier}} will be removed and it will inherit Leasefy's global settings. This cannot be undone.",
             "resetConfirm": "Reset",
-            "resetCancel": "Cancel"
+            "resetCancel": "Cancel",
+            "enabledLabel": "Enabled",
+            "priorityLabel": "Priority (1–10)",
+            "modeLabel": "Mode",
+            "maxCanonLabel": "Max canon (COP)",
+            "saveBtn": "Save changes",
+            "cancelBtn": "Cancel"
           },
           "overrideConflictWarning": "This carrier is globally disabled. Your local setting will have no effect until Leasefy re-enables it.",
           "sla": {
@@ -4444,7 +4453,17 @@
             }
           },
           "loadError": "Could not load carriers list. Try again.",
-          "retry": "Retry"
+          "retry": "Retry",
+          "title": "Carriers",
+          "subtitle": "Carrier configuration and performance",
+          "refresh": "Refresh",
+          "errorLoading": "Could not load carriers list. Try again.",
+          "emptyRegistry": "No carriers configured",
+          "resetDialog": {
+            "title": "Reset to global?",
+            "body": "Your override for {{carrier}} will be removed and it will inherit Leasefy's global settings. This cannot be undone.",
+            "confirm": "Reset"
+          }
         },
         "insights": {
           "pageTitle": "Cotizador insights",
@@ -4479,7 +4498,42 @@
             }
           },
           "loadError": "Could not load insights data. Try again.",
-          "retry": "Retry"
+          "retry": "Retry",
+          "title": "Cotizador insights",
+          "subtitle": "Aggregate performance and cost analysis",
+          "errorLoading": "Could not load insights data. Try again.",
+          "sections": {
+            "approvalRate": "Approval rate by carrier",
+            "primaDistribution": "Premium distribution by canon range",
+            "assumptions": "Assumption registry",
+            "costTrend": "Monthly cost trend",
+            "cohortQuality": "Cohort match quality",
+            "driftReport": "Drift report"
+          },
+          "assumptions": {
+            "columns": {
+              "name": "Assumption",
+              "description": "Description",
+              "state": "Status",
+              "updatedAt": "Updated"
+            },
+            "states": {
+              "active": "Active",
+              "deprecated": "Deprecated",
+              "under_review": "Under review"
+            },
+            "empty": "No assumption data"
+          },
+          "cohortQuality": {
+            "reason": "Requires Phase 28 (outcome ingestion)"
+          },
+          "driftReport": {
+            "reason": "Requires Phase 28 (drift producer)"
+          },
+          "costPreview": {
+            "viewAll": "View cost details",
+            "empty": "No monthly cost data yet"
+          }
         },
         "costos": {
           "pageTitle": "Cost dashboard",

@@ -4371,7 +4371,10 @@
             "actionEdit": "Editar",
             "actionReset": "Restablecer al global",
             "emptyRegistry": "Sin aseguradoras configuradas",
-            "emptyRegistryHelper": "Contacta al equipo de Leasefy para activar aseguradoras en tu cuenta."
+            "emptyRegistryHelper": "Contacta al equipo de Leasefy para activar aseguradoras en tu cuenta.",
+            "actionsAriaLabel": "Acciones para {{carrier}}",
+            "conflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
+            "inherits": "Hereda — {{value}}"
           },
           "popover": {
             "title": "Editar configuración",
@@ -4389,7 +4392,13 @@
             "resetConfirmTitle": "¿Restablecer al global?",
             "resetConfirmBody": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
             "resetConfirm": "Restablecer",
-            "resetCancel": "Cancelar"
+            "resetCancel": "Cancelar",
+            "enabledLabel": "Habilitada",
+            "priorityLabel": "Prioridad (1–10)",
+            "modeLabel": "Modo",
+            "maxCanonLabel": "Canon máximo (COP)",
+            "saveBtn": "Guardar cambios",
+            "cancelBtn": "Cancelar"
           },
           "overrideConflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
           "sla": {
@@ -4457,7 +4466,17 @@
             }
           },
           "loadError": "No se pudo cargar el listado de aseguradoras. Intenta de nuevo.",
-          "retry": "Reintentar"
+          "retry": "Reintentar",
+          "title": "Aseguradoras",
+          "subtitle": "Configuración y rendimiento de las aseguradoras",
+          "refresh": "Actualizar",
+          "errorLoading": "No se pudo cargar el listado de aseguradoras. Intenta de nuevo.",
+          "emptyRegistry": "Sin aseguradoras configuradas",
+          "resetDialog": {
+            "title": "¿Restablecer al global?",
+            "body": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
+            "confirm": "Restablecer"
+          }
         },
         "insights": {
           "pageTitle": "Insights de cotizador",
@@ -4492,7 +4511,42 @@
             }
           },
           "loadError": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
-          "retry": "Reintentar"
+          "retry": "Reintentar",
+          "title": "Insights de cotizador",
+          "subtitle": "Análisis agregado de rendimiento y costos",
+          "errorLoading": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
+          "sections": {
+            "approvalRate": "Tasa de aprobación por aseguradora",
+            "primaDistribution": "Distribución de prima por rango de canon",
+            "assumptions": "Registro de supuestos",
+            "costTrend": "Tendencia de costos mensual",
+            "cohortQuality": "Calidad de match de cohorte",
+            "driftReport": "Reporte de drift"
+          },
+          "assumptions": {
+            "columns": {
+              "name": "Supuesto",
+              "description": "Descripción",
+              "state": "Estado",
+              "updatedAt": "Actualizado"
+            },
+            "states": {
+              "active": "Activo",
+              "deprecated": "Obsoleto",
+              "under_review": "En revisión"
+            },
+            "empty": "Sin datos de supuestos"
+          },
+          "cohortQuality": {
+            "reason": "Requiere Phase 28 (ingesta de resultados)"
+          },
+          "driftReport": {
+            "reason": "Requiere Phase 28 (productor de drift)"
+          },
+          "costPreview": {
+            "viewAll": "Ver detalle de costos",
+            "empty": "Sin datos de costos mensuales aún"
+          }
         },
         "costos": {
           "pageTitle": "Dashboard de costos",

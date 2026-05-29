@@ -3,14 +3,18 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 
+export interface PolicyImpactResponse {
+  flipped_count: number
+  by_stage: Record<string, number>
+  by_outcome: Record<string, number>
+  data_source_note?: string
+}
+
+/** @deprecated kept for backward-compat with the original 36-07 hook shape; will be removed once consumers migrate */
 export interface SimulatorOutcomeRow {
   outcome: string
   currentCount: number
   proposedCount: number
-}
-
-export interface PolicyImpactResponse {
-  results: SimulatorOutcomeRow[]
 }
 
 export interface UsePolicyImpactResult {
@@ -40,7 +44,7 @@ export function usePolicyImpact(): UsePolicyImpactResult {
       setError(null)
       try {
         const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/policy/simulate`,
+          `${agentUrl}/api/agency/${agencyId}/policies/impact`,
           {
             method: 'POST',
             credentials: 'include',

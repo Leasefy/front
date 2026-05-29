@@ -350,7 +350,7 @@ function TemplateEditorContent({
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
       const res = await fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}`,
+        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/draft`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

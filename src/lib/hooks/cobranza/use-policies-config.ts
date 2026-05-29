@@ -41,7 +41,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
     }
     try {
       const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/policy`,
+        `${agentUrl}/api/agency/${agencyId}/policies`,
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`${res.status}`)
@@ -79,7 +79,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
       if (!agencyId) throw new Error('Agency not available')
 
       const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/policy`,
+        `${agentUrl}/api/agency/${agencyId}/policies`,
         {
           method: 'PUT',
           credentials: 'include',

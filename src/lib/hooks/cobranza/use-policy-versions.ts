@@ -46,7 +46,7 @@ export function usePolicyVersions(): UsePolicyVersionsResult {
     }
     try {
       const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/policy-versions`,
+        `${agentUrl}/api/agency/${agencyId}/policies/versions`,
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`${res.status}`)

@@ -51,7 +51,7 @@ export function useArcoDetail(requestId: string | null): UseArcoDetailResult {
     }
     try {
       const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/arco-requests/${requestId}`,
+        `${agentUrl}/api/agency/${agencyId}/arco/requests/${requestId}`,
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`${res.status}`)

@@ -297,7 +297,7 @@ export default function CobranzaConfiguracionPage() {
       const agencyId = (configData as unknown as { agencyId?: string })?.agencyId
       if (agentUrl && agencyId) {
         await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/policy-versions/${rollbackTarget.versionNumber}/rollback`,
+          `${agentUrl}/api/agency/${agencyId}/policies/rollback/${rollbackTarget.versionNumber}`,
           { method: 'POST', credentials: 'include' },
         )
       }
@@ -718,16 +718,34 @@ export default function CobranzaConfiguracionPage() {
               </button>
             </div>
 
-            {simulatorData && simulatorData.results.length === 0 && (
+            {simulatorData && simulatorData.flipped_count === 0 && (
               <NoDataYetBadge
-                reason={t('inmobiliaria.ai.policies.simulator.empty.body')}
+                reason={
+                  simulatorData.data_source_note ??
+                  t('inmobiliaria.ai.policies.simulator.empty.body')
+                }
                 phase={36}
               />
             )}
 
-            {simulatorData && simulatorData.results.length > 0 && (
+            {simulatorData && simulatorData.flipped_count > 0 && (
               <>
-                {/* Results table */}
+                {/* Headline flipped count */}
+                <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 p-4">
+                  <div className="text-3xl font-semibold text-indigo-700 dark:text-indigo-300">
+                    {simulatorData.flipped_count}
+                  </div>
+                  <div className="text-sm text-neutral-700 dark:text-neutral-300">
+                    {t('inmobiliaria.ai.policies.simulator.flippedLabel')}
+                  </div>
+                  {simulatorData.data_source_note && (
+                    <div className="mt-2 text-xs text-neutral-600 dark:text-neutral-400 italic">
+                      {simulatorData.data_source_note}
+                    </div>
+                  )}
+                </div>
+
+                {/* By-stage breakdown table */}
                 <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
                   <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700 text-sm">
                     <thead className="bg-neutral-50 dark:bg-neutral-800/50">
@@ -744,50 +762,41 @@ export default function CobranzaConfiguracionPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-[#1a1a1c] divide-y divide-neutral-100 dark:divide-neutral-800">
-                      {simulatorData.results.map((row) => {
-                        const diff = row.proposedCount - row.currentCount
-                        const diffClass =
-                          diff > 0
-                            ? 'text-rose-600'
-                            : diff < 0
-                              ? 'text-emerald-600'
-                              : 'text-neutral-900 dark:text-neutral-100'
-                        return (
-                          <tr key={row.outcome}>
-                            <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 capitalize">
-                              {row.outcome}
-                            </td>
-                            <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
-                              {row.currentCount}
-                            </td>
-                            <td className={`px-4 py-2 text-right font-mono tabular-nums ${diffClass}`}>
-                              {row.proposedCount}
-                            </td>
-                          </tr>
-                        )
-                      })}
+                      {Object.entries(simulatorData.by_stage).map(([stage, count]) => (
+                        <tr key={stage}>
+                          <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 capitalize">
+                            {stage}
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
+                            —
+                          </td>
+                          <td className="px-4 py-2 text-right font-mono tabular-nums text-rose-600">
+                            {count}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
 
-                {/* Recharts BarChart (only when >= 2 rows) */}
-                {simulatorData.results.length >= 2 && (
+                {/* Recharts BarChart (only when >= 2 stages) */}
+                {Object.keys(simulatorData.by_stage).length >= 2 && (
                   <div style={{ height: 200 }}>
                     <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={simulatorData.results}>
-                        <XAxis dataKey="outcome" tick={{ fontSize: 10 }} />
+                      <BarChart
+                        data={Object.entries(simulatorData.by_stage).map(([stage, count]) => ({
+                          stage,
+                          flippedCount: count,
+                        }))}
+                      >
+                        <XAxis dataKey="stage" tick={{ fontSize: 10 }} />
                         <YAxis tick={{ fontSize: 10 }} />
                         <RechartsTooltip />
                         <Legend />
                         <Bar
-                          dataKey="currentCount"
-                          fill="#a3a3a3"
-                          name={t('inmobiliaria.ai.policies.simulator.colCurrent')}
-                        />
-                        <Bar
-                          dataKey="proposedCount"
+                          dataKey="flippedCount"
                           fill="#5B5FEF"
-                          name={t('inmobiliaria.ai.policies.simulator.colProposed')}
+                          name={t('inmobiliaria.ai.policies.simulator.flippedLabel')}
                         />
                       </BarChart>
                     </ResponsiveContainer>

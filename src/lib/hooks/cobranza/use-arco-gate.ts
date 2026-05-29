@@ -34,7 +34,7 @@ export function useArcoGate(): UseArcoGateResult {
     }
     try {
       const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/arco-gate`,
+        `${agentUrl}/api/agency/${agencyId}/arco/gate-status`,
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`${res.status}`)

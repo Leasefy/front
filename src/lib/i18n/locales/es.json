@@ -5431,6 +5431,7 @@
           "colDecision": "Decisión",
           "colCurrent": "Sin cambios",
           "colProposed": "Con cambios propuestos",
+          "flippedLabel": "decisiones cambiarían en los últimos 30 días",
           "dismiss": "Descartar simulación",
           "empty": {
             "title": "Sin datos para simular",

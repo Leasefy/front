@@ -19,6 +19,7 @@ import {
   PaperPlaneTilt,
   Robot,
   ChatCircleText,
+  ShieldCheck,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -64,6 +65,26 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria/ai/cotizador',
           icon: FileText,
           module: 'cotizador',
+          children: [
+            {
+              label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
+              href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
+              icon: ShieldCheck,
+              module: 'cotizador',
+            } as NavItemWithModule,
+            {
+              label: t('inmobiliaria.ai.cotizador.nav.insights'),
+              href: '/panel/inmobiliaria/ai/cotizador/insights',
+              icon: ChartLineUp,
+              module: 'cotizador',
+            } as NavItemWithModule,
+            {
+              label: t('inmobiliaria.ai.cotizador.nav.costos'),
+              href: '/panel/inmobiliaria/ai/cotizador/costos',
+              icon: CurrencyDollar,
+              module: 'cotizador',
+            } as NavItemWithModule,
+          ],
         } as NavItemWithModule,
       ],
     },

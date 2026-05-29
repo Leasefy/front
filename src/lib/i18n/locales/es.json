@@ -4345,6 +4345,192 @@
           "download": "Descargar PDF",
           "downloading": "Generando PDF...",
           "errorToast": "Error al generar el PDF. Intenta de nuevo."
+        },
+        "noDataYet": {
+          "heading": "Sin datos aún"
+        },
+        "nav": {
+          "aseguradoras": "Aseguradoras",
+          "insights": "Insights",
+          "costos": "Costos"
+        },
+        "aseguradoras": {
+          "pageTitle": "Aseguradoras",
+          "pageSubtitle": "Configuración y rendimiento de las aseguradoras",
+          "table": {
+            "colName": "Aseguradora",
+            "colMode": "Modo",
+            "colGlobalEnabled": "Global habilitada",
+            "colTenantEnabled": "Tu configuración",
+            "colGlobalPriority": "Prioridad global",
+            "colTenantPriority": "Tu prioridad",
+            "colBreachStatus": "Estado SLA",
+            "colActions": "Acciones",
+            "inheritsMuted": "Hereda — {{value}}",
+            "overridePill": "Personalizado",
+            "actionEdit": "Editar",
+            "actionReset": "Restablecer al global",
+            "emptyRegistry": "Sin aseguradoras configuradas",
+            "emptyRegistryHelper": "Contacta al equipo de Leasefy para activar aseguradoras en tu cuenta."
+          },
+          "popover": {
+            "title": "Editar configuración",
+            "fieldEnabled": "Habilitada",
+            "fieldPriority": "Prioridad (1–10)",
+            "fieldMode": "Modo",
+            "fieldMaxCanon": "Canon máximo (COP)",
+            "priorityRangeError": "La prioridad debe ser entre 1 y 10",
+            "save": "Guardar cambios",
+            "cancel": "Cancelar",
+            "reset": "Restablecer al global",
+            "saving": "Guardando…",
+            "saveSuccess": "Configuración guardada",
+            "saveError": "No se pudo guardar el cambio. Verifica tu conexión e intenta de nuevo.",
+            "resetConfirmTitle": "¿Restablecer al global?",
+            "resetConfirmBody": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
+            "resetConfirm": "Restablecer",
+            "resetCancel": "Cancelar"
+          },
+          "overrideConflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
+          "sla": {
+            "pageTitle": "SLA — {{carrier}}",
+            "stateHealthy": "Operando normalmente",
+            "stateDegraded": "Degradado",
+            "stateBreached": "Incumplimiento SLA",
+            "stateUnknown": "Estado desconocido",
+            "since": "Desde hace {{duration}}",
+            "sinceUnknown": "Estado actual",
+            "breachHistoryTitle": "Historial de incumplimientos (últimos 90 días)",
+            "breachColDate": "Fecha",
+            "breachColSeverity": "Severidad",
+            "breachColDuration": "Duración",
+            "breachColResolution": "Resolución",
+            "noBreaches": "Sin incumplimientos en los últimos 90 días"
+          },
+          "detail": {
+            "pageTitle": "{{carrier}} — Detalle",
+            "kpiLatencyP95": "Latencia p95",
+            "kpiErrorRate": "Tasa de error (24h)",
+            "kpiApprovalRate": "Aprobación (30d)",
+            "kpiCostPerQuote": "Costo por cotización (30d)",
+            "latencySparklineTitle": "Latencia p95 — últimos 30 días",
+            "errorRateTitle": "Tasa de error — últimos 30 días",
+            "approvalByCanonTitle": "Aprobación por rango de canon",
+            "canonRange0to1M": "[0–1M]",
+            "canonRange1to3M": "[1M–3M]",
+            "canonRange3to5M": "[3M–5M]",
+            "canonRange5MPlus": "[5M+]",
+            "recentQuotesTitle": "Últimas 50 cotizaciones",
+            "recentQuotesEmpty": "Sin cotizaciones recientes",
+            "recentQuotesEmptyHelper": "Las últimas 50 cotizaciones de esta aseguradora aparecerán aquí.",
+            "quotesColDate": "Fecha/hora",
+            "quotesColCedula": "Cédula",
+            "quotesColCanon": "Canon",
+            "quotesColVerdict": "Veredicto",
+            "quotesColPrima": "Prima mensual",
+            "quotesColLatency": "Latencia",
+            "quotesColLink": "Ver",
+            "verdictApproved": "Aprobado",
+            "verdictRejected": "Rechazado",
+            "noSlaMetricData": "Sin datos de latencia",
+            "noSlaMetricDataHelper": "Esta aseguradora opera en modo simulado. Los datos de latencia se generarán cuando se active en modo real.",
+            "viewSlaLink": "Ver SLA",
+            "loadError": "No se pudo cargar el detalle de esta aseguradora. Intenta de nuevo.",
+            "retry": "Reintentar"
+          },
+          "charts": {
+            "latencySparkline": {
+              "xAxisLabel": "Fecha",
+              "yAxisLabel": "Latencia (ms)",
+              "tooltip": "{{value}} ms"
+            },
+            "errorRate": {
+              "xAxisLabel": "Día",
+              "yAxisLabel": "Tasa de error",
+              "tooltip": "{{value}}%",
+              "referenceLine": "Umbral 5%"
+            },
+            "approvalByCanon": {
+              "xAxisLabel": "Aprobación (%)",
+              "yAxisLabel": "Rango de canon",
+              "tooltip": "{{value}}%"
+            }
+          },
+          "loadError": "No se pudo cargar el listado de aseguradoras. Intenta de nuevo.",
+          "retry": "Reintentar"
+        },
+        "insights": {
+          "pageTitle": "Insights de cotizador",
+          "pageSubtitle": "Análisis agregado de rendimiento y costos",
+          "approvalRateMonthlyTitle": "Tasa de aprobación por aseguradora",
+          "primaDistributionTitle": "Distribución de prima por rango de canon",
+          "assumptionsTitle": "Registro de supuestos",
+          "assumptionColName": "Supuesto",
+          "assumptionColState": "Estado",
+          "assumptionColUpdated": "Actualizado",
+          "monthlyCostTrendTitle": "Tendencia de costos mensual",
+          "cohortMatchQualityTitle": "Calidad de match de cohorte",
+          "cohortMatchReason": "Requiere Phase 28 (ingesta de resultados)",
+          "driftReportTitle": "Reporte de drift",
+          "driftReportReason": "Requiere Phase 28 (productor de drift)",
+          "charts": {
+            "approvalRateMonthly": {
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Tasa de aprobación (%)",
+              "tooltip": "{{carrier}}: {{value}}%"
+            },
+            "primaDistribution": {
+              "xAxisLabel": "Rango de canon",
+              "yAxisLabel": "Prima mensual (COP)",
+              "tooltip": "p25: {{p25}} · p50: {{p50}} · p75: {{p75}}"
+            },
+            "monthlyCostTrend": {
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Costo (USD)",
+              "tooltip": "${{value}}",
+              "todayLabel": "Hoy"
+            }
+          },
+          "loadError": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
+          "retry": "Reintentar"
+        },
+        "costos": {
+          "pageTitle": "Dashboard de costos",
+          "pageSubtitle": "Resumen de costos de cotización por fuente",
+          "kpiCostPerQuote": "Costo por cotización",
+          "kpiMonthlyBurn": "Gasto mensual",
+          "kpiForecast30d": "Proyección 30 días",
+          "forecastCaption": "Proyección basada en el promedio diario de los últimos 7 días",
+          "forecastTooltip": "promedio_diario × 30",
+          "sourceBreakdownTitle": "Desglose por fuente",
+          "sourceAnthropicLabel": "Anthropic (IA)",
+          "sourceCarrierApiLabel": "API aseguradoras",
+          "sourceSekureLabel": "Comisión Sekure",
+          "sourceDatacreditoLabel": "Datacredito",
+          "noCostSources": "Sin gastos registrados",
+          "noCostSourcesHelper": "Los gastos aparecerán aquí cuando se procesen cotizaciones reales.",
+          "charts": {
+            "costSourcePie": {
+              "tooltip": "{{source}}: ${{amount}} · {{status}}"
+            },
+            "monthlyCostTrend": {
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Costo (USD)",
+              "tooltip": "${{value}}",
+              "historicalSeries": "Histórico",
+              "forecastSeries": "Proyección",
+              "todayLabel": "Hoy"
+            }
+          },
+          "sourceBreakdown": {
+            "colSource": "Fuente",
+            "colTotal": "Total (USD)",
+            "colStatus": "Estado",
+            "statusPopulated": "Con datos",
+            "statusEmpty": "Sin datos aún"
+          },
+          "loadError": "No se pudo cargar el resumen de costos. Intenta de nuevo.",
+          "retry": "Reintentar"
         }
       },
       "access": {

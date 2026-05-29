@@ -4332,6 +4332,192 @@
           "download": "Download PDF",
           "downloading": "Generating PDF...",
           "errorToast": "Error generating PDF. Please try again."
+        },
+        "noDataYet": {
+          "heading": "No data yet"
+        },
+        "nav": {
+          "aseguradoras": "Carriers",
+          "insights": "Insights",
+          "costos": "Costs"
+        },
+        "aseguradoras": {
+          "pageTitle": "Carriers",
+          "pageSubtitle": "Carrier configuration and performance",
+          "table": {
+            "colName": "Carrier",
+            "colMode": "Mode",
+            "colGlobalEnabled": "Global enabled",
+            "colTenantEnabled": "Your setting",
+            "colGlobalPriority": "Global priority",
+            "colTenantPriority": "Your priority",
+            "colBreachStatus": "SLA status",
+            "colActions": "Actions",
+            "inheritsMuted": "Inherits — {{value}}",
+            "overridePill": "Custom",
+            "actionEdit": "Edit",
+            "actionReset": "Reset to global",
+            "emptyRegistry": "No carriers configured",
+            "emptyRegistryHelper": "Contact the Leasefy team to activate carriers on your account."
+          },
+          "popover": {
+            "title": "Edit configuration",
+            "fieldEnabled": "Enabled",
+            "fieldPriority": "Priority (1–10)",
+            "fieldMode": "Mode",
+            "fieldMaxCanon": "Max canon (COP)",
+            "priorityRangeError": "Priority must be between 1 and 10",
+            "save": "Save changes",
+            "cancel": "Cancel",
+            "reset": "Reset to global",
+            "saving": "Saving…",
+            "saveSuccess": "Configuration saved",
+            "saveError": "Could not save the change. Check your connection and try again.",
+            "resetConfirmTitle": "Reset to global?",
+            "resetConfirmBody": "Your override for {{carrier}} will be removed and it will inherit Leasefy's global settings. This cannot be undone.",
+            "resetConfirm": "Reset",
+            "resetCancel": "Cancel"
+          },
+          "overrideConflictWarning": "This carrier is globally disabled. Your local setting will have no effect until Leasefy re-enables it.",
+          "sla": {
+            "pageTitle": "SLA — {{carrier}}",
+            "stateHealthy": "Operating normally",
+            "stateDegraded": "Degraded",
+            "stateBreached": "SLA Breach",
+            "stateUnknown": "Unknown state",
+            "since": "Since {{duration}}",
+            "sinceUnknown": "Current state",
+            "breachHistoryTitle": "Breach history (last 90 days)",
+            "breachColDate": "Date",
+            "breachColSeverity": "Severity",
+            "breachColDuration": "Duration",
+            "breachColResolution": "Resolution",
+            "noBreaches": "No breaches in the last 90 days"
+          },
+          "detail": {
+            "pageTitle": "{{carrier}} — Detail",
+            "kpiLatencyP95": "Latency p95",
+            "kpiErrorRate": "Error rate (24h)",
+            "kpiApprovalRate": "Approval rate (30d)",
+            "kpiCostPerQuote": "Cost per quote (30d)",
+            "latencySparklineTitle": "p95 Latency — last 30 days",
+            "errorRateTitle": "Error rate — last 30 days",
+            "approvalByCanonTitle": "Approval rate by canon range",
+            "canonRange0to1M": "[0–1M]",
+            "canonRange1to3M": "[1M–3M]",
+            "canonRange3to5M": "[3M–5M]",
+            "canonRange5MPlus": "[5M+]",
+            "recentQuotesTitle": "Last 50 quotes",
+            "recentQuotesEmpty": "No recent quotes",
+            "recentQuotesEmptyHelper": "The last 50 quotes for this carrier will appear here.",
+            "quotesColDate": "Date/time",
+            "quotesColCedula": "ID",
+            "quotesColCanon": "Canon",
+            "quotesColVerdict": "Verdict",
+            "quotesColPrima": "Monthly premium",
+            "quotesColLatency": "Latency",
+            "quotesColLink": "View",
+            "verdictApproved": "Approved",
+            "verdictRejected": "Rejected",
+            "noSlaMetricData": "No latency data",
+            "noSlaMetricDataHelper": "This carrier operates in simulation mode. Latency data will be generated when it is activated in real mode.",
+            "viewSlaLink": "View SLA",
+            "loadError": "Could not load carrier detail. Try again.",
+            "retry": "Retry"
+          },
+          "charts": {
+            "latencySparkline": {
+              "xAxisLabel": "Date",
+              "yAxisLabel": "Latency (ms)",
+              "tooltip": "{{value}} ms"
+            },
+            "errorRate": {
+              "xAxisLabel": "Day",
+              "yAxisLabel": "Error rate",
+              "tooltip": "{{value}}%",
+              "referenceLine": "5% threshold"
+            },
+            "approvalByCanon": {
+              "xAxisLabel": "Approval (%)",
+              "yAxisLabel": "Canon range",
+              "tooltip": "{{value}}%"
+            }
+          },
+          "loadError": "Could not load carriers list. Try again.",
+          "retry": "Retry"
+        },
+        "insights": {
+          "pageTitle": "Cotizador insights",
+          "pageSubtitle": "Aggregate performance and cost analysis",
+          "approvalRateMonthlyTitle": "Approval rate by carrier",
+          "primaDistributionTitle": "Premium distribution by canon range",
+          "assumptionsTitle": "Assumption registry",
+          "assumptionColName": "Assumption",
+          "assumptionColState": "Status",
+          "assumptionColUpdated": "Updated",
+          "monthlyCostTrendTitle": "Monthly cost trend",
+          "cohortMatchQualityTitle": "Cohort match quality",
+          "cohortMatchReason": "Requires Phase 28 (outcome ingestion)",
+          "driftReportTitle": "Drift report",
+          "driftReportReason": "Requires Phase 28 (drift producer)",
+          "charts": {
+            "approvalRateMonthly": {
+              "xAxisLabel": "Month",
+              "yAxisLabel": "Approval rate (%)",
+              "tooltip": "{{carrier}}: {{value}}%"
+            },
+            "primaDistribution": {
+              "xAxisLabel": "Canon range",
+              "yAxisLabel": "Monthly premium (COP)",
+              "tooltip": "p25: {{p25}} · p50: {{p50}} · p75: {{p75}}"
+            },
+            "monthlyCostTrend": {
+              "xAxisLabel": "Month",
+              "yAxisLabel": "Cost (USD)",
+              "tooltip": "${{value}}",
+              "todayLabel": "Today"
+            }
+          },
+          "loadError": "Could not load insights data. Try again.",
+          "retry": "Retry"
+        },
+        "costos": {
+          "pageTitle": "Cost dashboard",
+          "pageSubtitle": "Quotation cost summary by source",
+          "kpiCostPerQuote": "Cost per quote",
+          "kpiMonthlyBurn": "Monthly burn",
+          "kpiForecast30d": "30-day forecast",
+          "forecastCaption": "Projection based on the daily average of the last 7 days",
+          "forecastTooltip": "daily_average × 30",
+          "sourceBreakdownTitle": "Breakdown by source",
+          "sourceAnthropicLabel": "Anthropic (AI)",
+          "sourceCarrierApiLabel": "Carrier API",
+          "sourceSekureLabel": "Sekure commission",
+          "sourceDatacreditoLabel": "Datacredito",
+          "noCostSources": "No costs recorded",
+          "noCostSourcesHelper": "Costs will appear here when real quotes are processed.",
+          "charts": {
+            "costSourcePie": {
+              "tooltip": "{{source}}: ${{amount}} · {{status}}"
+            },
+            "monthlyCostTrend": {
+              "xAxisLabel": "Month",
+              "yAxisLabel": "Cost (USD)",
+              "tooltip": "${{value}}",
+              "historicalSeries": "Historical",
+              "forecastSeries": "Forecast",
+              "todayLabel": "Today"
+            }
+          },
+          "sourceBreakdown": {
+            "colSource": "Source",
+            "colTotal": "Total (USD)",
+            "colStatus": "Status",
+            "statusPopulated": "With data",
+            "statusEmpty": "No data yet"
+          },
+          "loadError": "Could not load cost summary. Try again.",
+          "retry": "Retry"
         }
       },
       "access": {

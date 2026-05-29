@@ -35,10 +35,12 @@ const TEMPLATES_LIST_MOCK = {
     {
       id: 'tpl-001',
       name: 'Llamada inicial — Etapa 1',
-      category: 'cobranza_stage',
+      category: 'stage',
       status: 'published',
       waSubmissionStatus: null,
       tokenCount: 420,
+      bodyDraft:
+        'Buenas tardes {{deudor_nombre}}, le contactamos de parte de...',
       bodyPublished:
         'Buenas tardes {{deudor_nombre}}, le contactamos de parte de...',
       updatedAt: '2026-05-25T10:00:00Z',
@@ -50,16 +52,18 @@ const TEMPLATES_LIST_MOCK = {
       status: 'draft',
       waSubmissionStatus: 'pending',
       tokenCount: 95,
+      bodyDraft: 'Hola {{deudor_nombre}}, le recordamos su cuota pendiente.',
       bodyPublished: null,
       updatedAt: '2026-05-28T08:00:00Z',
     },
     {
       id: 'tpl-003',
       name: 'Manejo de objeción — No tengo dinero',
-      category: 'objection_handler',
+      category: 'objection',
       status: 'published',
       waSubmissionStatus: null,
       tokenCount: 310,
+      bodyDraft: 'Entiendo su situación...',
       bodyPublished: 'Entiendo su situación...',
       updatedAt: '2026-05-20T14:00:00Z',
     },

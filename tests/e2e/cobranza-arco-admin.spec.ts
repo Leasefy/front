@@ -81,7 +81,7 @@ const ARCO_LIST_MOCK = {
       slaRemainingDays: 12,
     },
   ],
-  kpis: { pending: 2, onTime: 2, overdue: 0, resolved30d: 1 },
+  kpis: { pending: 2, onTime: 2, overdue: 0, resolvedLast30d: 1 },
 }
 
 const ARCO_DETAIL_MOCK = {
@@ -205,7 +205,8 @@ async function seedAuth(page: Page): Promise<void> {
 // ─── Mock helpers ─────────────────────────────────────────────────────────────
 
 async function mockArcoListEndpoints(page: Page): Promise<void> {
-  await page.route('**/api/agency/*/cobranza/arco', async (route) => {
+  // Note: arco/requests response includes kpis inline — no separate kpis route exists
+  await page.route('**/api/agency/*/arco/requests', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill({
       status: 200,
@@ -213,18 +214,11 @@ async function mockArcoListEndpoints(page: Page): Promise<void> {
       body: JSON.stringify(ARCO_LIST_MOCK),
     })
   })
-  await page.route('**/api/agency/*/cobranza/arco/kpis', async (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(ARCO_LIST_MOCK.kpis),
-    })
-  })
 }
 
 async function mockArcoDetailEndpoints(page: Page): Promise<void> {
-  await page.route(`**/api/agency/*/cobranza/arco/${ARCO_FIXTURE_ID}`, async (route) => {
+  // Register detail BEFORE gate-status so the more specific path wins.
+  await page.route(`**/api/agency/*/arco/requests/${ARCO_FIXTURE_ID}`, async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill({
       status: 200,
@@ -232,7 +226,7 @@ async function mockArcoDetailEndpoints(page: Page): Promise<void> {
       body: JSON.stringify(ARCO_DETAIL_MOCK),
     })
   })
-  await page.route('**/api/agency/*/cobranza/arco/gate', async (route) => {
+  await page.route('**/api/agency/*/arco/gate-status', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill({
       status: 200,

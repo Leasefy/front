@@ -108,11 +108,17 @@ const POLICY_VERSIONS_MOCK = {
 }
 
 const POLICY_SIMULATE_MOCK = {
-  results: [
-    { outcome: 'escalated', currentCount: 12, proposedCount: 8 },
-    { outcome: 'completed', currentCount: 45, proposedCount: 47 },
-    { outcome: 'no_answer', currentCount: 18, proposedCount: 18 },
-  ],
+  flipped_count: 12,
+  by_stage: {
+    contacto_inicial: 4,
+    promesa_pago: 5,
+    pre_legal: 3,
+  },
+  by_outcome: {
+    no_answer: 6,
+    promesa: 4,
+    escalado: 2,
+  },
 }
 
 // ─── Console error filter ─────────────────────────────────────────────────────
@@ -218,9 +224,28 @@ async function seedAuth(page: Page): Promise<void> {
 // ─── Mock helpers ─────────────────────────────────────────────────────────────
 
 async function mockPoliciesEndpoints(page: Page): Promise<void> {
-  // GET /cobranza/policy → current config
-  // PUT /cobranza/policy → save new version
-  await page.route('**/api/agency/*/cobranza/policy', async (route) => {
+  // GET /policies/versions → full history DESC (register BEFORE /policies
+  // so the more-specific path wins the glob match)
+  await page.route('**/api/agency/*/policies/versions', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(POLICY_VERSIONS_MOCK),
+    })
+  })
+  // POST /policies/impact → deterministic backtest results
+  await page.route('**/api/agency/*/policies/impact', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(POLICY_SIMULATE_MOCK),
+    })
+  })
+  // GET  /policies → current config
+  // PUT  /policies → save new version
+  await page.route('**/api/agency/*/policies', async (route) => {
     const method = route.request().method()
     if (method === 'GET') {
       await route.fulfill({
@@ -237,24 +262,6 @@ async function mockPoliciesEndpoints(page: Page): Promise<void> {
     } else {
       await route.fallback()
     }
-  })
-  // GET /cobranza/policy-versions → full history DESC
-  await page.route('**/api/agency/*/cobranza/policy-versions', async (route) => {
-    if (route.request().method() !== 'GET') return route.fallback()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(POLICY_VERSIONS_MOCK),
-    })
-  })
-  // POST /cobranza/policy/simulate → deterministic backtest results
-  await page.route('**/api/agency/*/cobranza/policy/simulate', async (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(POLICY_SIMULATE_MOCK),
-    })
   })
 }
 

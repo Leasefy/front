@@ -89,7 +89,7 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`${res.status}`)
-      const json = (await res.json()) as RegistryResponse
+      const json = await res.json() as RegistryResponse
       setData(json)
       setError(null)
     } catch (err) {

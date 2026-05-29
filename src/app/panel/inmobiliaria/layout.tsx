@@ -20,6 +20,7 @@ import {
   Robot,
   ChatCircleText,
   ShieldCheck,
+  SlidersHorizontal,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -59,6 +60,26 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria/ai/cobranza',
           icon: ChatCircleText,
           module: 'cobranza',
+          children: [
+            {
+              label: t('inmobiliaria.ai.nav.arco'),
+              href: '/panel/inmobiliaria/ai/cobranza/arco',
+              icon: ShieldCheck,
+              module: 'cobranza',
+            } as NavItemWithModule,
+            {
+              label: t('inmobiliaria.ai.nav.plantillas'),
+              href: '/panel/inmobiliaria/ai/cobranza/plantillas',
+              icon: FileText,
+              module: 'cobranza',
+            } as NavItemWithModule,
+            {
+              label: t('inmobiliaria.ai.nav.configuracion'),
+              href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+              icon: SlidersHorizontal,
+              module: 'cobranza',
+            } as NavItemWithModule,
+          ],
         } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.cotizador'),

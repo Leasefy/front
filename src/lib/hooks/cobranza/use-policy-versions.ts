@@ -61,7 +61,10 @@ export function usePolicyVersions(): UsePolicyVersionsResult {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) {
+      setIsLoading(false)
+      return
+    }
     void fetchOnce()
     const id = setInterval(() => {
       void fetchOnce()

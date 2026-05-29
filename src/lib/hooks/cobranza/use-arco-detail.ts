@@ -66,7 +66,10 @@ export function useArcoDetail(requestId: string | null): UseArcoDetailResult {
   }, [agencyId, requestId])
 
   useEffect(() => {
-    if (!agencyId || !requestId) return
+    if (!agencyId || !requestId) {
+      setIsLoading(false)
+      return
+    }
     void fetchOnce()
     const id = setInterval(() => {
       void fetchOnce()

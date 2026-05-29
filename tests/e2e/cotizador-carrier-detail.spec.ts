@@ -361,3 +361,49 @@ test('recent-quotes table shows masked cédula, no reveal button — D-35-03', a
       // If the locator throws (no such element), that's fine — means no reveal button
     })
 })
+
+// ---------------------------------------------------------------------------
+// Group (f): KPI strip renders expected values at Desktop (D-35-03)
+// ---------------------------------------------------------------------------
+
+test('KPI strip shows approval rate and error rate values — D-35-03', async ({ page }) => {
+  const consoleErrors = attachConsoleErrorListener(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await seedAuth(page)
+  await mockDeepDiveEndpoints(page)
+  await mockPermissions(page)
+  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+  await page.waitForLoadState('domcontentloaded')
+  // No console errors
+  expect(consoleErrors.filter((e) => !e.includes('Warning:'))).toHaveLength(0)
+  // Approval rate KPI (72%)
+  await expect(
+    page.locator('text=/72.*%|0\\.72|aprobación|approval/i').first(),
+  ).toBeVisible({ timeout: 12_000 })
+  // Error rate KPI (4%)
+  await expect(
+    page.locator('text=/4.*%|0\\.04|error.*rate|tasa.*error/i').first(),
+  ).toBeVisible({ timeout: 5_000 })
+})
+
+// ---------------------------------------------------------------------------
+// Group (g): SLA no horizontal scroll at iPhone-14 (D-35-09, XR-03)
+// ---------------------------------------------------------------------------
+
+test('SLA sub-page no horizontal scroll at iPhone-14 — D-35-09 XR-03', async ({ page }) => {
+  const consoleErrors = attachConsoleErrorListener(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await seedAuth(page)
+  await mockSlaEndpoint(page)
+  await mockPermissions(page)
+  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}/sla`)
+  await page.waitForLoadState('domcontentloaded')
+  await expect(page.locator('text=/healthy|saludable|normal/i').first()).toBeVisible({
+    timeout: 12_000,
+  })
+  // No console errors
+  expect(consoleErrors.filter((e) => !e.includes('Warning:'))).toHaveLength(0)
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2)
+})

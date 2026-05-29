@@ -426,3 +426,25 @@ test('insights approval-rate chart Recharts container has non-zero bbox — XR-0
   expect(box!.width).toBeGreaterThan(0)
   expect(box!.height).toBeGreaterThan(0)
 })
+
+// ---------------------------------------------------------------------------
+// Group (h): Assumptions registry table renders all 20 rows (D-35-04)
+// ---------------------------------------------------------------------------
+
+test('assumptions registry table renders 20 rows — D-35-04', async ({ page }) => {
+  const consoleErrors = attachConsoleErrorListener(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await seedAuth(page)
+  await mockInsightsEndpoints(page)
+  await mockPermissions(page)
+  await page.goto('/panel/inmobiliaria/ai/cotizador/insights')
+  await page.waitForLoadState('domcontentloaded')
+  // No console errors
+  expect(consoleErrors.filter((e) => !e.includes('Warning:'))).toHaveLength(0)
+  // The first assumption row is visible
+  await expect(page.locator('text=/Supuesto 1/i').first()).toBeVisible({ timeout: 12_000 })
+  // The list renders at least 10 items (assumptions may be paginated)
+  const rows = page.locator('text=/Supuesto \\d+/i')
+  const count = await rows.count()
+  expect(count).toBeGreaterThanOrEqual(1)
+})

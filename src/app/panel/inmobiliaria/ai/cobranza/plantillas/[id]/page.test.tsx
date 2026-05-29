@@ -175,16 +175,9 @@ describe('TemplatePage (detail editor)', () => {
     const publishCalls = fetchCalls.filter((c) => c.url.includes('/publish'))
     expect(publishCalls.length).toBe(0)
 
-    // Confirm button should be in the dialog
-    const confirmBtn = Array.from(container.querySelectorAll('button')).find(
-      (btn) =>
-        btn.getAttribute('role') !== 'tab' &&
-        (btn.textContent?.includes('dialog.publish') ||
-          btn.textContent?.includes('dialog.publishWa')),
-    )
-    // If confirm button is present, dialog opened successfully
-    // (AlertDialog may or may not render confirm in same DOM — check for dialog role)
-    const dialog = container.querySelector('[role="alertdialog"]')
+    // AlertDialog renders via a Portal to document.body (outside container)
+    // Check the body for the dialog element
+    const dialog = document.querySelector('[role="alertdialog"]')
     expect(dialog).toBeTruthy()
   })
 

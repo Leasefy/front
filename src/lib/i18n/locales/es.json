@@ -4565,9 +4565,11 @@
           "noCostSourcesHelper": "Los gastos aparecerán aquí cuando se procesen cotizaciones reales.",
           "charts": {
             "costSourcePie": {
+              "title": "Gasto por fuente",
               "tooltip": "{{source}}: ${{amount}} · {{status}}"
             },
             "monthlyCostTrend": {
+              "title": "Tendencia mensual de costos",
               "xAxisLabel": "Mes",
               "yAxisLabel": "Costo (USD)",
               "tooltip": "${{value}}",

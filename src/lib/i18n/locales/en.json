@@ -4552,9 +4552,11 @@
           "noCostSourcesHelper": "Costs will appear here when real quotes are processed.",
           "charts": {
             "costSourcePie": {
+              "title": "Spend by source",
               "tooltip": "{{source}}: ${{amount}} · {{status}}"
             },
             "monthlyCostTrend": {
+              "title": "Monthly cost trend",
               "xAxisLabel": "Month",
               "yAxisLabel": "Cost (USD)",
               "tooltip": "${{value}}",

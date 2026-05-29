@@ -5294,7 +5294,7 @@
           "submit": "Submit request",
           "submitting": "Sending…",
           "successTitle": "Check your email",
-          "successBody": "We sent a confirmation link to {email}. Follow the link to complete your request.",
+          "successBody": "We sent a confirmation link to {{email}}. Follow the link to complete your request.",
           "successNote": "The link expires in 24 hours. If you don't receive it, check your spam folder.",
           "legalFooter": "By submitting this request, you agree that your data will be processed to handle your request in accordance with our",
           "privacyLink": "privacy policy",
@@ -5302,6 +5302,10 @@
           "rateLimitBody": "You have sent too many requests. Try again in 1 hour.",
           "submitError": "Could not submit the request. Please try again.",
           "submitAnother": "Submit another request"
+        },
+        "verify": {
+          "confirmed": "Request confirmed — an administrator will review it shortly",
+          "sla": "The compliance team will review your request within the timeframe established by Law 1581 of 2012 (10–15 business days)."
         }
       },
       "templates": {

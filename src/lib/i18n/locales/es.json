@@ -5307,7 +5307,7 @@
           "submit": "Enviar solicitud",
           "submitting": "Enviando…",
           "successTitle": "Revisa tu correo electrónico",
-          "successBody": "Enviamos un enlace de confirmación a {email}. Sigue el enlace para completar tu solicitud.",
+          "successBody": "Enviamos un enlace de confirmación a {{email}}. Sigue el enlace para completar tu solicitud.",
           "successNote": "El enlace expira en 24 horas. Si no lo recibes, revisa tu carpeta de spam.",
           "legalFooter": "Al enviar esta solicitud, aceptas que tus datos sean procesados para atender tu solicitud conforme a nuestra",
           "privacyLink": "política de privacidad",
@@ -5315,6 +5315,10 @@
           "rateLimitBody": "Has enviado demasiadas solicitudes. Intenta de nuevo en 1 hora.",
           "submitError": "No se pudo enviar la solicitud. Intenta de nuevo.",
           "submitAnother": "Enviar otra solicitud"
+        },
+        "verify": {
+          "confirmed": "Solicitud confirmada — un administrador la revisará pronto",
+          "sla": "El equipo de cumplimiento revisará tu solicitud en el plazo establecido por la Ley 1581 de 2012 (10–15 días hábiles)."
         }
       },
       "templates": {

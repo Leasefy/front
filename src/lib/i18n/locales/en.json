@@ -4146,7 +4146,10 @@
     "ai": {
       "nav": {
         "cobranza": "Collections",
-        "cotizador": "Quoter"
+        "cotizador": "Quoter",
+        "arco": "ARCO",
+        "plantillas": "Templates",
+        "configuracion": "Configuration"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -5193,6 +5196,263 @@
             "whatsappToggle": "Receive by WhatsApp",
             "aggregateStat": "{{subscribed}} of {{total}} members subscribed"
           }
+        }
+      },
+      "arco": {
+        "title": "ARCO Requests",
+        "breadcrumb": "ARCO",
+        "kpis": {
+          "pending": "Pending",
+          "onTime": "On time",
+          "overdue": "Overdue",
+          "resolved": "Resolved (last 30d)"
+        },
+        "tabs": {
+          "all": "All",
+          "acceso": "Access",
+          "rectificacion": "Rectification",
+          "cancelacion": "Cancellation",
+          "oposicion": "Opposition"
+        },
+        "table": {
+          "tipo": "Type",
+          "nombre": "Name / ID",
+          "email": "Email",
+          "estado": "Status",
+          "plazo": "Deadline",
+          "recibida": "Received",
+          "actions": "Actions",
+          "ariaViewRow": "View {type} request from {name}"
+        },
+        "status": {
+          "pending_email_verification": "Email verification pending",
+          "pending_admin_triage": "In triage",
+          "in_progress": "In progress",
+          "pending_counsel_review": "Pending counsel review",
+          "resolved": "Resolved",
+          "rejected": "Rejected"
+        },
+        "sla": {
+          "overdue": "OVERDUE",
+          "days": "{count} business days"
+        },
+        "detail": {
+          "requester": {
+            "nombre": "Name",
+            "cedula": "ID number",
+            "email": "Email",
+            "tipo": "Request type",
+            "descripcion": "Description",
+            "enviada": "Submitted",
+            "verificada": "Verified",
+            "pendiente": "Pending"
+          },
+          "resolve": {
+            "urlLabel": "Data URL",
+            "rowsLabel": "Affected rows",
+            "tablesLabel": "Deleted tables",
+            "notesLabel": "Resolution notes",
+            "privateNotesLabel": "Additional notes (not shared with requester)"
+          }
+        },
+        "resolve": "Resolve request",
+        "reject": "Reject request",
+        "viewAudit": "View in audit log",
+        "counselGate": {
+          "title": "Requires counsel review",
+          "description": "This feature requires activation by the Leasefy team and confirmation from legal counsel. Contact compliance@leasefy.co to enable ARCO request resolution."
+        },
+        "dialog": {
+          "reject": {
+            "title": "Reject this request?",
+            "body": "The request will be marked as rejected and the requester will be notified. This action cannot be undone.",
+            "confirm": "Reject",
+            "cancel": "Cancel"
+          }
+        },
+        "empty": {
+          "title": "No ARCO requests",
+          "body": "When data subjects submit access, rectification, cancellation, or opposition requests, they will appear here.",
+          "filteredTitle": "No requests of this type",
+          "filteredBody": "No {type} requests pending."
+        },
+        "error": {
+          "load": "Could not load ARCO requests. Please try again.",
+          "resolve": "Could not save the resolution. Check your connection and try again.",
+          "retry": "Retry"
+        },
+        "public": {
+          "title": "ARCO Rights Request",
+          "subtitle": "Exercise your rights of Access, Rectification, Cancellation, or Opposition over your personal data as per Law 1581 of 2012.",
+          "nombreLabel": "Full name",
+          "cedulaLabel": "ID number",
+          "cedulaHint": "Numbers only, no dots or commas",
+          "emailLabel": "Email address",
+          "tipoLabel": "Request type",
+          "descripcionLabel": "Description",
+          "descripcionPlaceholder": "Specifically describe what data you want us to process...",
+          "submit": "Submit request",
+          "submitting": "Sending…",
+          "successTitle": "Check your email",
+          "successBody": "We sent a confirmation link to {email}. Follow the link to complete your request.",
+          "successNote": "The link expires in 24 hours. If you don't receive it, check your spam folder.",
+          "legalFooter": "By submitting this request, you agree that your data will be processed to handle your request in accordance with our",
+          "privacyLink": "privacy policy",
+          "rateLimitTitle": "Limit reached",
+          "rateLimitBody": "You have sent too many requests. Try again in 1 hour.",
+          "submitError": "Could not submit the request. Please try again.",
+          "submitAnother": "Submit another request"
+        }
+      },
+      "templates": {
+        "title": "Collection templates",
+        "breadcrumb": "Templates",
+        "tabs": {
+          "stages": "Collection stages (14)",
+          "whatsapp": "WhatsApp (8)",
+          "objections": "Objection handlers (5)"
+        },
+        "status": {
+          "draft": "Draft",
+          "published": "Published"
+        },
+        "waStatus": {
+          "pending": "Meta pending",
+          "approved": "Meta approved",
+          "rejected": "Meta rejected"
+        },
+        "tokens": {
+          "badge": "{count} tokens"
+        },
+        "card": {
+          "lastEdited": "Last edited",
+          "edit": "Edit",
+          "ariaEdit": "Edit template {name}"
+        },
+        "editor": {
+          "variables": "Available variables",
+          "ariaInsertVar": "Insert variable {name}",
+          "bodyLabel": "Template body",
+          "previewTitle": "Preview",
+          "waStatusTitle": "Meta Business API status",
+          "waLastChecked": "Last checked"
+        },
+        "saveDraft": "Save draft",
+        "publish": "Publish",
+        "updateWaStatus": "Refresh status",
+        "dialog": {
+          "publishWa": {
+            "title": "Publish and send to Meta?",
+            "body": "The template will be sent to Meta Business API for approval. Changes take effect when Meta approves it (1\u20133 business days).",
+            "confirm": "Publish",
+            "cancel": "Cancel"
+          },
+          "publish": {
+            "title": "Publish this template?",
+            "body": "The template will replace the current published version and will be used in active calls immediately.",
+            "confirm": "Publish",
+            "cancel": "Cancel"
+          }
+        },
+        "empty": {
+          "title": "No templates configured",
+          "body": "Configure collection templates for the agent to use in calls and messages."
+        },
+        "error": {
+          "load": "Could not load templates. Please try again.",
+          "saveDraft": "Could not save draft. Please try again.",
+          "publish": "Could not publish template. Please try again.",
+          "waStatus": "Could not get Meta status. Please try again.",
+          "retry": "Retry"
+        }
+      },
+      "policies": {
+        "title": "Policies configuration",
+        "breadcrumb": "Configuration",
+        "cadencia": {
+          "title": "Contact cadence",
+          "description": "Define the maximum contact frequency with debtors by channel."
+        },
+        "negociacion": {
+          "title": "Negotiation",
+          "description": "Configure the discount limits and payment plans the agent can offer."
+        },
+        "escalacion": {
+          "title": "Escalation",
+          "description": "Define when and how the agent escalates a case."
+        },
+        "compliance": {
+          "title": "Compliance",
+          "description": "Regulatory settings required by Colombian regulation. Some cannot be disabled."
+        },
+        "fields": {
+          "maxCallsPerWeek": "Max calls per week",
+          "maxWaPerWeek": "Max WhatsApp per week",
+          "contactStartTime": "Contact start time",
+          "contactEndTime": "Contact end time",
+          "blockDays": "Block days",
+          "maxDiscountTier": "Maximum discount (tier)",
+          "maxPaymentMonths": "Maximum payment plan (months)",
+          "minPromiseAmount": "Minimum promise amount (COP)",
+          "maxDaysBeforeEscalation": "Max days before escalation",
+          "brokenPromiseThreshold": "Broken promise threshold",
+          "autoEscalateToLegal": "Auto-escalate to legal",
+          "verifyRne": "Verify RNE before call",
+          "aiDisclosure": "AI disclosure",
+          "recordCalls": "Call recording",
+          "lockedTooltip": "Required by Colombian regulation. Cannot be disabled.",
+          "lockedAriaLabel": "Required by regulation. Cannot be disabled."
+        },
+        "unsavedChanges": "Unsaved changes",
+        "save": "Save changes",
+        "cancel": "Cancel",
+        "simulator": {
+          "trigger": "Simulate impact",
+          "simulating": "Simulating…",
+          "title": "Impact simulation",
+          "disclaimer": "Estimate based on deterministic rule changes; the LLM agent may adjust its tone or strategy in ways not reflected here.",
+          "colDecision": "Decision",
+          "colCurrent": "Without changes",
+          "colProposed": "With proposed changes",
+          "dismiss": "Dismiss simulation",
+          "empty": {
+            "title": "No data to simulate",
+            "body": "No calls in the last 30 days. The simulator requires call history to calculate impact."
+          },
+          "error": "Could not run the simulation. Please try again.",
+          "retry": "Retry"
+        },
+        "dialog": {
+          "save": {
+            "title": "Save policy changes?",
+            "body": "Changes will apply to the collection agent immediately. Review the impact simulation before confirming.",
+            "confirm": "Save changes",
+            "cancel": "Cancel"
+          },
+          "restore": {
+            "title": "Restore version {version}?",
+            "body": "A new active version will be created with the configuration from version {version}. Previous versions are not deleted.",
+            "confirm": "Restore",
+            "cancel": "Cancel"
+          }
+        },
+        "history": {
+          "title": "Version history",
+          "version": "Version",
+          "savedBy": "Saved by",
+          "date": "Date",
+          "note": "Note",
+          "actions": "Actions",
+          "active": "Active",
+          "restore": "Restore",
+          "ariaRestore": "Restore policy version {version}",
+          "empty": "No version history yet"
+        },
+        "error": {
+          "load": "Could not load policy configuration. Please try again.",
+          "save": "Could not save policy. Check your connection and try again.",
+          "rollback": "Could not restore the version. Please try again.",
+          "retry": "Retry"
         }
       }
     }

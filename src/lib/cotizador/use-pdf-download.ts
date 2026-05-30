@@ -27,7 +27,6 @@ export function usePdfDownload(options: UsePdfDownloadOptions): {
         import('./pdf-verdict-document'),
       ])
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blob = await pdf((VerdictPdfDocument as any)(options.props) as any).toBlob()
 
       const objectUrl = URL.createObjectURL(blob)

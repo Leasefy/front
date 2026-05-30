@@ -189,14 +189,12 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
           ))}
         </Pie>
         <Tooltip
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           formatter={(value: any) => [`$${Number(value).toFixed(4)}`, '']}
         />
         <Legend
           layout="vertical"
           align="right"
           verticalAlign="middle"
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           content={renderLegend as any}
         />
       </PieChart>

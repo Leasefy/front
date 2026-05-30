@@ -5,13 +5,13 @@ milestone_name: Backoffice Unificado ERP·CRM·Autopilot
 status: in_progress
 stopped_at: null
 last_updated: "2026-05-30"
-last_activity: 2026-05-30 — Phase v6-06 (PQRS / Solicitudes + Agenda interna) DONE + verified
+last_activity: 2026-05-30 — Phase v6-07 (Creación de terceros por IA) DONE + verified (cross-repo: mvp + agent)
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 0
   completed_plans: 0
-  percent: 75
+  percent: 88
 ---
 
 # Project State
@@ -37,12 +37,12 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 ## Current Position
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
-Phase: **v6-01..v6-06 DONE** ✅ — **v6-07 (Terceros por IA) es la siguiente**
+Phase: **v6-01..v6-07 DONE** ✅ — **v6-08 (Captura propiedad foto+audio, stretch) es la última**
 Plan: —
-Status: In progress — v6-01..v6-06 implementados + verificados (tsc limpio, rutas 200, review 3/3 PASS)
-Last activity: 2026-05-30 — v6-06 PQRS / Solicitudes + Agenda interna (2 secciones + contratos pqrs/agenda.types + i18n es/en) done
+Status: In progress — v6-01..v6-07 implementados + verificados (tsc limpio ambos repos, rutas 200, agent tests 5/5)
+Last activity: 2026-05-30 — v6-07 Terceros por IA (cross-repo: endpoint Mastra POST /terceros/extract en agent + captura/prefill en mvp) done
 
-Progress: [██████████████████████▓░░░░░░] 75% — 6 de 8 fases (v6-01..v6-06 ✅)
+Progress: [██████████████████████████▓░░] 88% — 7 de 8 fases (v6-01..v6-07 ✅)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
@@ -51,10 +51,10 @@ Progress: [██████████████████████▓
 - [x] **v6-04** Egresos / Tesorería (EGR) — ✅ done (vista ERP fórmula neto completa, aditiva sobre `dispersiones`; ledger → M1)
 - [x] **v6-05** Informes & Insights (INFO) — ✅ done (motor `lib/insights` + `InsightsPanel` en /hoy; INFO-01/02/03 cubierto por `reportes` existente; data real → hooks/M1-M2)
 - [x] **v6-06** PQRS + Agenda (PQRS/AGEN) — ✅ done (secciones `/pqrs` + `/agenda` + contratos `pqrs.types.ts`/`agenda.types.ts` + i18n es/en; PQRS-01..03 y AGEN-01..02 cubiertos; triage IA + agregación → M1. Nav-flip + i18n quedaron bundled en commits `37-07` por sesión paralela en el mismo working tree — contenido correcto, mensaje mislabeled)
-- [ ] **v6-07** Terceros por IA (TERC) — agente/tool **Mastra** en `rent/agent` (reusa `extract-document.ts`)
+- [x] **v6-07** Terceros por IA (TERC) — ✅ done CROSS-REPO. **agent** (`0cd2dff` + `0d53f61`): `POST /terceros/extract` (tool `extract-tercero.ts` Claude Vision base64/URL + ruta Hono JWT+role + 5 tests; `0d53f61` = hardening del review: bodyLimit 12MB + rate-limit 20/min por usuario). Review v6-07 adversarial: wiring/contract PASS, design PASS, security 2 MEDIUM (fixed). **mvp** (`ddcc218`): botón aditivo "Crear con IA" en propietarios → captura foto cédula/RUT → fetch al agente con JWT → prellena `PropietarioForm` → guarda con el handler manual existente (flujo manual intacto). Contratos `terceros-extract.{types,service}.ts` + i18n. TERC-01..04 cubiertos. E2E real requiere agente corriendo + JWT válido.
 - [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
 
-**Next:** v6-07 (Creación de terceros por IA): UI de captura foto cédula/RUT / audio → revisar → guardar; el lado IA = agente/tool **Mastra** en `rent/agent`. Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano.
+**Next:** v6-08 (Captura de propiedad foto+audio, STRETCH): UI móvil fotos+audio → transcribe → ficha + descripción comercial. Requiere capacidad audio→ficha NUEVA en `rent/agent` (Mastra). Si no está lista, se difiere a M4. Nota: `gsd-sdk` NO está instalado.
 
 ## ⏸️ v5.0 — Pausado (histórico)
 

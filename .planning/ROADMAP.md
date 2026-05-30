@@ -183,5 +183,5 @@ Plans:
 - [x] **v6-04: Egresos a propietarios / Tesorería** — Vista Tesorería (fórmula neto completa + egresos) aditiva, cruzada con `dispersiones`; ledger autoritativo → M1. ✅ (EGR-01..04)
 - [x] **v6-05: Informes & Insights** — Motor `lib/insights` + `InsightsPanel` en /hoy (INFO-04/05, el wedge); catálogo cubierto por `reportes` existente. ✅ (INFO-01..05)
 - [x] **v6-06: PQRS / Solicitudes + Agenda interna** — Ciclo registro→asignación→seguimiento→cierre + agenda de eventos. ✅ (PQRS-01..03, AGEN-01..02; secciones `/pqrs` + `/agenda` + contratos + i18n; triage IA + agregación → M1)
-- [ ] **v6-07: Creación de terceros por IA** — Foto cédula/RUT / audio → IA extrae → prellena → revisar → guardar. (TERC-01..04)
+- [x] **v6-07: Creación de terceros por IA** — Foto cédula/RUT → IA extrae → prellena → revisar → guardar. ✅ CROSS-REPO (agent `POST /terceros/extract` + mvp captura/prefill aditivo en propietarios; TERC-01..04). (TERC-01..04)
 - [ ] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. (CAPT-01..04)

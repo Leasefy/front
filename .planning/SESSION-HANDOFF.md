@@ -1,7 +1,7 @@
 # SESSION HANDOFF — v6.0 Backoffice Unificado ERP·CRM·Autopilot
 
 **Fecha:** 2026-05-30 · **Para:** retomar tras `/clear` (sesión nueva sin historial).
-**Estado:** v6.0 al **75% (6/8 fases)**. Rama `feat/v6.0-01-ia-unificada-command-center`, **SIN pushear**.
+**Estado:** v6.0 al **88% (7/8 fases)**. Rama `feat/v6.0-01-ia-unificada-command-center`, **SIN pushear**. v6-07 es CROSS-REPO (también commit en `rent/agent`: `0cd2dff`, branch `restructure/per-agent-organization`, sin pushear).
 
 > ⚠️ **Concurrencia (2026-05-30):** una sesión paralela del stream `agent` corrió **Phase 37-07** (cobranza analítica) en ESTE mismo working tree y, al hacer `git add`, **arrastró las ediciones de v6-06 en `layout.tsx` + `es.json`/`en.json` (nav-flip + namespaces i18n pqrs/agenda) dentro de sus commits `c774703`/`d546798`** — contenido correcto, pero el mensaje dice `37-07`. Las páginas/contratos de v6-06 + el flip de `/hoy` se commitearon aparte como `feat(v6-06)`. Evitar editar el mismo working tree desde dos sesiones a la vez.
 
@@ -34,7 +34,7 @@ Evolucionar el panel de la inmobiliaria (`rent/mvp` → `/panel/inmobiliaria`) e
 | **v6-04** | `/tesoreria` — fórmula neto completa (canon−comisión−IVA−descuentos) + `tesoreria.types.ts`, aditiva sobre `dispersiones` | ✅ done |
 | **v6-05** | Insights & Alertas — `src/lib/insights/{types,engine}.ts` + `InsightsPanel` en `/hoy` | ✅ done |
 | **v6-06** | PQRS / Solicitudes (`/pqrs`) + Agenda interna (`/agenda`) + contratos `pqrs/agenda.types.ts` + i18n (PQRS-01..03, AGEN-01..02) | ✅ done |
-| **v6-07** | Creación de terceros por IA — foto/audio → IA → prellena (TERC-01..04) | ⬜ siguiente — agente/tool **Mastra** en `rent/agent` |
+| **v6-07** | Creación de terceros por IA — foto cédula/RUT → IA → prellena (TERC-01..04) — CROSS-REPO (agent `POST /terceros/extract` + mvp captura aditiva en propietarios) | ✅ done |
 | **v6-08** | Captura de propiedad foto+audio (CAPT-01..04, stretch) | ⬜ — **Mastra** |
 
 ## 4. ⚠️ Numeración `v6-NN` (NO enteros) — CRÍTICO
@@ -87,7 +87,7 @@ El repo `agent` corre un milestone paralelo **`v2.1-frontend`** (Phases 29→37+
 
 **Frontend v6.0 (mismo patrón §5, en `rent/mvp`):**
 - [x] **v6-06 PQRS + Agenda** — ✅ nav activado, secciones `/pqrs` + `/agenda` + contratos `pqrs/agenda.types.ts` + i18n es/en. PQRS = resumen por estado + tabla + reparación→cotización (link a operaciones); Agenda = resumen por tipo + tabla eventos/tareas. Estado vacío honesto, banner M1. tsc limpio, rutas 200, review 3/3 PASS.
-- [ ] **v6-07 Terceros por IA** — UI de captura (foto cédula/RUT / audio) → revisar → guardar; el lado IA = agente/tool **Mastra** en `rent/agent` (reusa `extract-document.ts`).
+- [x] **v6-07 Terceros por IA** — ✅ CROSS-REPO. agent (`0cd2dff` + `0d53f61` hardening): `POST /terceros/extract` (`extract-tercero.ts` Claude Vision base64/URL + ruta Hono JWT+role + 5 tests; review encontró+arregló 2 MEDIUM de seguridad: bodyLimit 12MB + rate-limit 20/min/usuario). mvp (`ddcc218`): botón "Crear con IA" en propietarios → foto cédula/RUT → fetch al agente con JWT del usuario → prellena `PropietarioForm` → guarda con el handler manual (intacto). Contratos `terceros-extract.{types,service}.ts` + i18n. E2E real requiere agente corriendo + JWT válido (no testeable en dev por gotcha auth/prod).
 - [ ] **v6-08 Captura propiedad foto+audio** (stretch) — UI móvil + capacidad audio→ficha **Mastra** nueva en `rent/agent`.
 
 **Cableado backend diferido (cuando exista el motor — M1/M2, no es v6.0):**

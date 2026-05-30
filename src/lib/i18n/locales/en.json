@@ -5603,6 +5603,24 @@
       "colComprobante": "Receipt",
       "emptyTitle": "No payouts yet",
       "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
+    },
+    "insights": {
+      "label": "Insights & Alerts",
+      "subtitle": "What's happening today and what to do — not static reports, but actions.",
+      "previewBadge": "Preview",
+      "previewNote": "Illustrative examples — they connect to your data once the engine is active.",
+      "emptyTitle": "All caught up",
+      "emptyDesc": "No alerts need your attention right now.",
+      "title_contratos_por_vencer": "{{total}} contracts expiring · {{sinGestion}} unmanaged",
+      "title_mora_prioritaria": "{{total}} tenants overdue · {{prioritarios}} priority",
+      "title_por_dispersar": "{{monto}} to disburse · {{cobertura}}% covered",
+      "title_propiedad_estancada": "{{total}} stalled properties (7+ days, no candidates)",
+      "title_firma_pendiente": "{{total}} contracts awaiting signature",
+      "action_contratos": "View contracts",
+      "action_cobranza": "Go to collections",
+      "action_tesoreria": "View treasury",
+      "action_propiedades": "View properties",
+      "action_firma": "View signatures"
     }
   },
   "validation": {

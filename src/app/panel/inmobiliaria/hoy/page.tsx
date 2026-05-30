@@ -1,24 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  Sparkle,
-  Users,
-  CurrencyDollar,
-  Robot,
-  Wrench,
-  ArrowRight,
-  CaretRight,
-  TrendUp,
-  Receipt,
-  Bank,
-  Lifebuoy,
-  CalendarBlank,
-} from '@phosphor-icons/react';
+import { Users, CurrencyDollar, Robot, Wrench, ArrowRight, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { getActiveAgents } from '@/lib/types/ai-agents';
+import { InsightsPanel } from '@/components/inmobiliaria/InsightsPanel';
+import { deriveInsights } from '@/lib/insights/engine';
 
 /** A link/row inside a system block. `soon` renders muted + "Pronto" pill. */
 interface BlockItem {
@@ -105,16 +94,20 @@ const BLOCKS: SystemBlock[] = [
   },
 ];
 
-/** Illustrative insight phrasings — real engine arrives with the Informes & Insights phase. */
-const INSIGHT_EXAMPLES = [
-  'inmobiliaria.hoy.insightsExample1',
-  'inmobiliaria.hoy.insightsExample2',
-  'inmobiliaria.hoy.insightsExample3',
-];
-
 export default function HoyPage() {
   const { t, locale } = useI18n();
   const agents = getActiveAgents();
+  // Vista previa de insights (en prod: deriveInsights() sobre los datos reales de la operación).
+  const previewInsights = deriveInsights({
+    contratosPorVencer30d: 18,
+    contratosSinGestion: 6,
+    inquilinosEnMora: 42,
+    moraPrioritaria: 11,
+    montoPorDispersar: 84_000_000,
+    coberturaDispersarPct: 62,
+    propiedadesEstancadas7d: 0,
+    firmasPendientes: 0,
+  });
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -125,37 +118,8 @@ export default function HoyPage() {
         <p className="text-body text-muted-foreground max-w-2xl">{t('inmobiliaria.hoy.subtitle')}</p>
       </header>
 
-      {/* Insights & Alertas — reserved zone (engine ships in the Informes & Insights phase) */}
-      <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-              <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
-            </div>
-            <div>
-              <h2 className="text-h4 text-foreground">{t('inmobiliaria.hoy.insightsTitle')}</h2>
-              <p className="text-body-sm text-muted-foreground mt-0.5">{t('inmobiliaria.hoy.insightsDesc')}</p>
-            </div>
-          </div>
-          <span className="flex-shrink-0 text-[10px] font-mono uppercase tracking-wide px-2 py-1 rounded-full bg-muted text-muted-foreground">
-            {t('inmobiliaria.nav.pronto')}
-          </span>
-        </div>
-
-        {/* Illustrative previews of what the insights layer will surface */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {INSIGHT_EXAMPLES.map((key) => (
-            <div
-              key={key}
-              className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 flex items-center gap-2.5"
-            >
-              <TrendUp className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
-              <p className="text-body-sm text-muted-foreground">{t(key)}</p>
-            </div>
-          ))}
-        </div>
-        <p className="text-caption text-muted-foreground/70">{t('inmobiliaria.hoy.insightsPronto')}</p>
-      </section>
+      {/* Insights & Alertas — real engine (v6-05); preview data until backend hooks wire in */}
+      <InsightsPanel insights={previewInsights} preview />
 
       {/* Autopilot activo */}
       {agents.length > 0 && (

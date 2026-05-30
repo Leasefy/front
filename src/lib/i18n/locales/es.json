@@ -5616,6 +5616,24 @@
       "colComprobante": "Comprobante",
       "emptyTitle": "Sin egresos aún",
       "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
+    },
+    "insights": {
+      "label": "Insights & Alertas",
+      "subtitle": "Qué pasa hoy y qué hacer — no informes estáticos, sino acciones.",
+      "previewBadge": "Vista previa",
+      "previewNote": "Ejemplos ilustrativos — se conectan con tus datos cuando el motor esté activo.",
+      "emptyTitle": "Todo al día",
+      "emptyDesc": "No hay alertas que requieran tu atención ahora.",
+      "title_contratos_por_vencer": "{{total}} contratos por vencer · {{sinGestion}} sin gestión",
+      "title_mora_prioritaria": "{{total}} inquilinos en mora · {{prioritarios}} prioritarios",
+      "title_por_dispersar": "{{monto}} por dispersar · cubres {{cobertura}}%",
+      "title_propiedad_estancada": "{{total}} propiedades estancadas (7+ días sin candidatos)",
+      "title_firma_pendiente": "{{total}} contratos esperando firma",
+      "action_contratos": "Ver contratos",
+      "action_cobranza": "Ir a cobranza",
+      "action_tesoreria": "Ver tesorería",
+      "action_propiedades": "Ver propiedades",
+      "action_firma": "Ver firmas"
     }
   },
   "validation": {

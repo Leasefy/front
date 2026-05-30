@@ -4174,7 +4174,8 @@
         "cotizador": "Cotizador",
         "arco": "ARCO",
         "plantillas": "Plantillas",
-        "configuracion": "Configuración"
+        "configuracion": "Configuración",
+        "analitica": "Analítica"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -5482,6 +5483,85 @@
           "load": "No se pudo cargar la configuración de políticas. Intenta de nuevo.",
           "save": "No se pudo guardar la política. Verifica tu conexión e intenta de nuevo.",
           "rollback": "No se pudo restaurar la versión. Intenta de nuevo.",
+          "retry": "Reintentar"
+        }
+      },
+      "analitica": {
+        "title": "Analítica de Cobranza",
+        "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
+        "sampleDataWatermark": "Datos de muestra",
+        "agencyGate": {
+          "title": "Sin datos suficientes",
+          "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
+          "ctaLabel": "Ir al agente de cobranza"
+        },
+        "widgets": {
+          "recoveryRate": {
+            "title": "Tasa de recuperación por etapa",
+            "legend": {
+              "transitions": "Deudores recuperados",
+              "cop": "COP recuperado"
+            },
+            "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
+          },
+          "topScripts": {
+            "title": "Scripts con mayor conversión",
+            "empty": "Sin datos de scripts disponibles.",
+            "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
+            "column": {
+              "script": "Script",
+              "stage": "Etapa",
+              "nCalls": "Llamadas",
+              "conversionRate": "Tasa conv.",
+              "lift": "Lift vs base",
+              "sparkline": "Tendencia 30d"
+            }
+          },
+          "topObjections": {
+            "title": "Principales objeciones (últimos 30 días)",
+            "empty": "Sin objeciones registradas en los últimos 30 días.",
+            "column": {
+              "literal": "Objeción",
+              "count": "Frecuencia",
+              "pct": "% de llamadas"
+            }
+          },
+          "cadence": {
+            "title": "Efectividad de cadencia",
+            "channelMix": {
+              "title": "Canal × resultado",
+              "outcome": {
+                "paid": "Pagado",
+                "brokenPromise": "Promesa rota",
+                "escalated": "Escalado",
+                "noAnswer": "Sin respuesta",
+                "completed": "Completado"
+              }
+            },
+            "heatmap": {
+              "title": "Mejor hora para llamar",
+              "legend": "Intensidad = volumen + tasa positiva",
+              "dayLabels": {
+                "sun": "Dom",
+                "mon": "Lun",
+                "tue": "Mar",
+                "wed": "Mié",
+                "thu": "Jue",
+                "fri": "Vie",
+                "sat": "Sáb"
+              }
+            },
+            "empty": "Sin llamadas suficientes para calcular cadencia."
+          },
+          "costPerPeso": {
+            "title": "Costo por peso recuperado",
+            "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
+            "sparklineLabel": "Tendencia 90 días",
+            "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
+          }
+        },
+        "errors": {
+          "loading": "Error al cargar analítica de cobranza.",
           "retry": "Reintentar"
         }
       }

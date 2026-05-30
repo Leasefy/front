@@ -4161,7 +4161,8 @@
         "cotizador": "Quoter",
         "arco": "ARCO",
         "plantillas": "Templates",
-        "configuracion": "Configuration"
+        "configuracion": "Configuration",
+        "analitica": "Analytics"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -5469,6 +5470,85 @@
           "load": "Could not load policy configuration. Please try again.",
           "save": "Could not save policy. Check your connection and try again.",
           "rollback": "Could not restore the version. Please try again.",
+          "retry": "Retry"
+        }
+      },
+      "analitica": {
+        "title": "Collections Analytics",
+        "subtitle": "Aggregate recovery, objections, and agent cadence metrics.",
+        "sampleDataWatermark": "Sample data",
+        "agencyGate": {
+          "title": "Not enough data yet",
+          "reason": "You need at least 5 calls in the last 30 days to see analytics.",
+          "ctaLabel": "Go to collections agent"
+        },
+        "widgets": {
+          "recoveryRate": {
+            "title": "Recovery rate by stage",
+            "legend": {
+              "transitions": "Debtors recovered",
+              "cop": "COP recovered"
+            },
+            "empty": "Not enough stage transitions in the last 30 days."
+          },
+          "topScripts": {
+            "title": "Top converting scripts",
+            "empty": "No script data available.",
+            "pendingPhase38": "Script tracking will be available in a future update.",
+            "column": {
+              "script": "Script",
+              "stage": "Stage",
+              "nCalls": "Calls",
+              "conversionRate": "Conv. rate",
+              "lift": "Lift vs base",
+              "sparkline": "30d trend"
+            }
+          },
+          "topObjections": {
+            "title": "Top objections (last 30 days)",
+            "empty": "No objections recorded in the last 30 days.",
+            "column": {
+              "literal": "Objection",
+              "count": "Frequency",
+              "pct": "% of calls"
+            }
+          },
+          "cadence": {
+            "title": "Cadence effectiveness",
+            "channelMix": {
+              "title": "Channel × outcome",
+              "outcome": {
+                "paid": "Paid",
+                "brokenPromise": "Broken promise",
+                "escalated": "Escalated",
+                "noAnswer": "No answer",
+                "completed": "Completed"
+              }
+            },
+            "heatmap": {
+              "title": "Best time to call",
+              "legend": "Intensity = volume + positive rate",
+              "dayLabels": {
+                "sun": "Sun",
+                "mon": "Mon",
+                "tue": "Tue",
+                "wed": "Wed",
+                "thu": "Thu",
+                "fri": "Fri",
+                "sat": "Sat"
+              }
+            },
+            "empty": "Not enough calls to calculate cadence."
+          },
+          "costPerPeso": {
+            "title": "Cost per recovered peso",
+            "subtitle": "Voice cost per COP recovered (last 30 days)",
+            "sparklineLabel": "90-day trend",
+            "empty": "No payments or calls recorded in the last 30 days."
+          }
+        },
+        "errors": {
+          "loading": "Failed to load collections analytics.",
           "retry": "Retry"
         }
       }

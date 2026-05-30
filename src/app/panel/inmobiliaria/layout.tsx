@@ -90,6 +90,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
               icon: SlidersHorizontal,
               module: 'cobranza',
             } as NavItemWithModule,
+            {
+              label: t('inmobiliaria.ai.nav.analitica'),
+              href: '/panel/inmobiliaria/ai/cobranza/analitica',
+              icon: ChartLineUp,
+              module: 'cobranza',
+            } as NavItemWithModule,
           ],
         } as NavItemWithModule,
         {
@@ -140,9 +146,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── OPERACIÓN · DOCS ──
     { kind: 'section', label: t('inmobiliaria.nav.secOperacion'), href: '#sec-operacion', icon: Wrench, module: null },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,                     module: 'operaciones' },
-    { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      disabled: true, tag: t('inmobiliaria.nav.pronto'), module: null },
+    { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null },
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,                   module: 'documentos' },
-    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, disabled: true, tag: t('inmobiliaria.nav.pronto'), module: null },
+    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {

@@ -875,7 +875,8 @@
       "secAutopilot": "Autopilot",
       "secCrm": "CRM · Comercial",
       "secFinanciero": "Financiero · ERP",
-      "secOperacion": "Operación · Docs"
+      "secOperacion": "Operación · Docs",
+      "tesoreria": "Tesorería"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -5587,6 +5588,34 @@
       "colAccion": "Acción",
       "emptyTitle": "Sin movimientos aún",
       "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2."
+    },
+    "tesoreria": {
+      "label": "Tesorería",
+      "title": "Egresos a propietarios",
+      "subtitle": "El neto a pagar a cada propietario, con su desglose completo y comprobante. El procesamiento del pago vive en Dispersiones.",
+      "processCta": "Procesar en Dispersiones",
+      "m2BannerTitle": "Estructura lista — el ledger autoritativo llega en M1",
+      "m2BannerDesc": "Esta vista muestra la fórmula completa del neto. El cómputo autoritativo, los descuentos y el posteo contable se conectan en la fase de backend (M1).",
+      "formulaLabel": "Fórmula del neto",
+      "ejemplo": "Ejemplo",
+      "fCanon": "Canon recibido",
+      "fComision": "Comisión admin",
+      "fIva": "IVA sobre comisión",
+      "fDescuentos": "Descuentos",
+      "fNeto": "Neto al propietario",
+      "egresosTitle": "Egresos",
+      "egresosDesc": "Neto por propietario del periodo, con cuenta destino y comprobante.",
+      "colPropietario": "Propietario",
+      "colCanon": "Canon",
+      "colComision": "Comisión",
+      "colIva": "IVA com.",
+      "colDescuentos": "Descuentos",
+      "colNeto": "Neto",
+      "colCuenta": "Cuenta destino",
+      "colEstado": "Estado",
+      "colComprobante": "Comprobante",
+      "emptyTitle": "Sin egresos aún",
+      "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
     }
   },
   "validation": {

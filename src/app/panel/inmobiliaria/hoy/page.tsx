@@ -68,6 +68,7 @@ const BLOCKS: SystemBlock[] = [
     items: [
       { labelKey: 'inmobiliaria.nav.cobros', href: '/panel/inmobiliaria/cobros' },
       { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/dispersiones' },
+      { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/tesoreria' },
       { labelKey: 'inmobiliaria.nav.facturacion', href: '/panel/inmobiliaria/facturacion' },
       { labelKey: 'inmobiliaria.nav.conciliacion', href: '/panel/inmobiliaria/conciliacion' },
       { labelKey: 'inmobiliaria.nav.reportes', href: '/panel/inmobiliaria/reportes' },

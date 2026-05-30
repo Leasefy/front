@@ -862,7 +862,8 @@
       "secAutopilot": "Autopilot",
       "secCrm": "CRM · Sales",
       "secFinanciero": "Financial · ERP",
-      "secOperacion": "Operations · Docs"
+      "secOperacion": "Operations · Docs",
+      "tesoreria": "Treasury"
     },
     "mobileNav": {
       "moreButton": "More",
@@ -5574,6 +5575,34 @@
       "colAccion": "Action",
       "emptyTitle": "No movements yet",
       "emptyDesc": "Upload a bank source to view and reconcile movements. The reconciliation engine arrives in M2."
+    },
+    "tesoreria": {
+      "label": "Treasury",
+      "title": "Owner payouts",
+      "subtitle": "The net amount payable to each owner, with full breakdown and receipt. Payment processing lives in Disbursements.",
+      "processCta": "Process in Disbursements",
+      "m2BannerTitle": "Structure ready — the authoritative ledger arrives in M1",
+      "m2BannerDesc": "This view shows the full net formula. The authoritative computation, discounts and accounting posting connect in the backend phase (M1).",
+      "formulaLabel": "Net formula",
+      "ejemplo": "Example",
+      "fCanon": "Rent collected",
+      "fComision": "Admin commission",
+      "fIva": "VAT on commission",
+      "fDescuentos": "Discounts",
+      "fNeto": "Net to owner",
+      "egresosTitle": "Payouts",
+      "egresosDesc": "Net per owner for the period, with destination account and receipt.",
+      "colPropietario": "Owner",
+      "colCanon": "Rent",
+      "colComision": "Commission",
+      "colIva": "VAT comm.",
+      "colDescuentos": "Discounts",
+      "colNeto": "Net",
+      "colCuenta": "Destination account",
+      "colEstado": "Status",
+      "colComprobante": "Receipt",
+      "emptyTitle": "No payouts yet",
+      "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
     }
   },
   "validation": {

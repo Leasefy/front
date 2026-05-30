@@ -12,6 +12,7 @@ import {
   ArrowsClockwise,
   Users,
   Plus,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -294,6 +295,13 @@ function PropiedadesContent() {
           >
             <ArrowsClockwise className="w-4 h-4" />
             Actualizar
+          </button>
+          <button
+            onClick={() => router.push('/panel/inmobiliaria/propiedades/captura')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors text-sm font-medium"
+          >
+            <Sparkle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            Capturar con IA
           </button>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}

@@ -12,7 +12,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v3.1 Landing & SEO** - (shipped 2026-02-10)
 - ✅ **v4.0 AI Agent Beta** - Phases 17-25 (shipped 2026-02-10)
 - ⏸️ **v5.0 Agency Plan-Gated Features** - Phases 26-33 (paused 2026-05-12; foco se movió a Collections Agent en Leasefy/agent)
-- 🚧 **v6.0 Backoffice Unificado ERP·CRM·Autopilot** - Phases v6-01..v6-08 (frontend-first; v6-01..v6-04 ✅) → detalle en `milestones/v6.0-ROADMAP.md`, backbone en `ERP-CRM-AUTOPILOT-PROGRAM.md`. **Namespace `v6-NN`** para no colisionar con el stream `agent` v2.1-frontend (29→37+) que también commitea en mvp.
+- 🚧 **v6.0 Backoffice Unificado ERP·CRM·Autopilot** - Phases v6-01..v6-08 (frontend-first; v6-01..v6-05 ✅) → detalle en `milestones/v6.0-ROADMAP.md`, backbone en `ERP-CRM-AUTOPILOT-PROGRAM.md`. **Namespace `v6-NN`** para no colisionar con el stream `agent` v2.1-frontend (29→37+) que también commitea en mvp.
 
 ## Phases
 
@@ -181,7 +181,7 @@ Plans:
 - [x] **v6-02: Facturación** ⭐ — Sección frontend (ventas/compras/electrónica/notas) + contrato de tipos; motor DIAN → M2. ✅ (FACT-01..06)
 - [x] **v6-03: Conciliación bancaria** — Sección frontend (cargar fuente, resumen por caso, movimientos + cola) + contrato; motor → M2. ✅ (CONC-01..05)
 - [x] **v6-04: Egresos a propietarios / Tesorería** — Vista Tesorería (fórmula neto completa + egresos) aditiva, cruzada con `dispersiones`; ledger autoritativo → M1. ✅ (EGR-01..04)
-- [ ] **v6-05: Informes & Insights** — Catálogo de informes (admin/contable/financiero) + capa "de informes a insights". (INFO-01..05)
+- [x] **v6-05: Informes & Insights** — Motor `lib/insights` + `InsightsPanel` en /hoy (INFO-04/05, el wedge); catálogo cubierto por `reportes` existente. ✅ (INFO-01..05)
 - [ ] **v6-06: PQRS / Solicitudes + Agenda interna** — Ciclo registro→asignación→seguimiento→cierre + agenda de eventos. (PQRS-01..03, AGEN-01..02)
 - [ ] **v6-07: Creación de terceros por IA** — Foto cédula/RUT / audio → IA extrae → prellena → revisar → guardar. (TERC-01..04)
 - [ ] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. (CAPT-01..04)

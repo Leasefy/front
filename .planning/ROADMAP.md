@@ -11,7 +11,8 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v3.0 Inmobiliaria Module** - 10 phases (shipped 2026-02-08)
 - ✅ **v3.1 Landing & SEO** - (shipped 2026-02-10)
 - ✅ **v4.0 AI Agent Beta** - Phases 17-25 (shipped 2026-02-10)
-- 🚧 **v5.0 Agency Plan-Gated Features** - Phases 26-32 (in progress)
+- ⏸️ **v5.0 Agency Plan-Gated Features** - Phases 26-33 (paused 2026-05-12; foco se movió a Collections Agent en Leasefy/agent)
+- 🚧 **v6.0 Backoffice Unificado ERP·CRM·Autopilot** - Phases v6-01..v6-08 (frontend-first; v6-01 ✅) → detalle en `milestones/v6.0-ROADMAP.md`, backbone en `ERP-CRM-AUTOPILOT-PROGRAM.md`. **Namespace `v6-NN`** para no colisionar con el stream `agent` v2.1-frontend (29→37+) que también commitea en mvp.
 
 ## Phases
 
@@ -167,3 +168,20 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 33 to break down)
+
+---
+
+## v6.0 — Backoffice Unificado ERP·CRM·Autopilot (Frontend-First)
+
+**Goal del milestone:** que TODAS las secciones de un ERP inmobiliario existan en el panel (frontend-first, aditivo, sin romper el CRM existente), y entregar los momentos "el sistema opera por ti" (insights proactivos + captura por IA). El motor (backend / DIAN / conciliación real) se llena por detrás en M1–M3. Detalle completo + success criteria: `milestones/v6.0-ROADMAP.md`. Programa multi-repo: `ERP-CRM-AUTOPILOT-PROGRAM.md`.
+
+> **Numeración `v6-NN` (no entero):** el repo `agent` corre `v2.1-frontend` (Phases 29→37+) que aterriza commits de frontend en `mvp` (`ai/cobranza`, `ai/cotizador`; mvp ya tiene commits `32-xx`…`36-xx`). v6.0 usa su propio namespace `v6-NN` para no colisionar. Commits: `feat(v6-01): …`.
+
+- [x] **v6-01: IA Unificada & Command Center** — Nav en bloques + landing "Hoy"; registra secciones ERP nuevas. ✅ (UNIF-01..04)
+- [ ] **v6-02: Facturación** ⭐ — Facturas de venta/compra, FE-DIAN (estado), notas débito/crédito, facturación recurrente. (FACT-01..06)
+- [ ] **v6-03: Conciliación bancaria** — Cargar fuente, matches sugeridos, parciales/dup/no-identificados, cola de revisión. (CONC-01..05)
+- [ ] **v6-04: Egresos a propietarios / Tesorería** — Neto (canon − comisión − IVA − descuentos) + comprobante, sobre `dispersiones`. (EGR-01..04)
+- [ ] **v6-05: Informes & Insights** — Catálogo de informes (admin/contable/financiero) + capa "de informes a insights". (INFO-01..05)
+- [ ] **v6-06: PQRS / Solicitudes + Agenda interna** — Ciclo registro→asignación→seguimiento→cierre + agenda de eventos. (PQRS-01..03, AGEN-01..02)
+- [ ] **v6-07: Creación de terceros por IA** — Foto cédula/RUT / audio → IA extrae → prellena → revisar → guardar. (TERC-01..04)
+- [ ] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. (CAPT-01..04)

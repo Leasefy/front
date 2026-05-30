@@ -1,78 +1,64 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Agency Plan-Gated Features
-status: paused
-stopped_at: context exhaustion at 76% (2026-05-19)
-last_updated: "2026-05-19T21:53:47.628Z"
-last_activity: 2026-03-29 — Completed 33-03-PLAN.md (Property Import — all 3 plans)
+milestone: v6.0
+milestone_name: Backoffice Unificado ERP·CRM·Autopilot
+status: in_progress
+stopped_at: null
+last_updated: "2026-05-29"
+last_activity: 2026-05-29 — Phase v6-01 (IA Unificada & Command Center) DONE + verified
 progress:
   total_phases: 8
-  completed_phases: 8
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  completed_phases: 1
+  total_plans: 0
+  completed_plans: 0
+  percent: 12
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
-See: docs/AI_AGENTS_ARCHITECTURE.md (updated 2026-03-11) - **AI Agent Architecture Spec v2**
-See: docs/AI-AGENT-ARCHITECTURE.md (created 2026-02-10) - **AI Agent Architecture Spec v1**
+See: .planning/PROJECT.md (updated 2026-05-29)
+See: .planning/ERP-CRM-AUTOPILOT-PROGRAM.md — **program backbone (6 milestones, multi-repo)**
+See: .planning/research/ERP-VISION/GAP-ANALYSIS.md — **gap analysis (16 dominios) + maps por repo**
+See: .planning/milestones/v6.0-{REQUIREMENTS,ROADMAP}.md — **detalle del milestone activo**
 
-**Core value:** El usuario habla, los agentes ejecutan. La plataforma opera como un equipo autonomo de administracion de arriendos.
-**Current focus:** ⏸️ **v5.0 PAUSED 2026-05-12** — engineering focus moved to Collections Agent in `Leasefy/agent` (microservice repo). See "Pause Notice" below.
+**Core value:** El usuario habla, los agentes ejecutan; el sistema opera la inmobiliaria (no es un Excel con UI).
+**Current focus:** 🚧 **v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)**. Construir TODAS las secciones del ERP en el panel de forma aditiva (sin romper el CRM existente) + momentos autopilot que no dependen de motor backend.
 
-## ⏸️ Pause Notice (2026-05-12)
+## ⚠️ Numeración de fases — `v6-NN` (CRÍTICO)
 
-v5.0 (Agency Plan-Gated Features & AI Agent UX) is **paused**, not abandoned.
+v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el repo **`agent`** corre un milestone **`v2.1-frontend`** cuyas fases (29→37→…) aterrizan commits de FRONTEND en ESTE repo (`ai/cobranza`, `ai/cotizador`). mvp ya tiene commits `32-xx`…`36-xx`, y `agent` Phase 37 (cobranza-aggregate-analytics) es la siguiente — seguirá 38, 39… Si v6.0 usara enteros (37-44) colisionaría con ese stream paralelo en el historial de mvp. Commits de v6.0: **`feat(v6-01): …`**.
 
-**Reason:** The Collections Agent (Agente de Cobranza) is now priority #1 for the whole company. Full 18+ week spec exists in `~/rent/agent/.planning/AGENT-COBRANZA-SPEC.md`. Engineering focus shifts to the agent microservice.
+## ⛔ Restricción dura del milestone (2026-05-29)
 
-**What was done in v5.0 before pause:** Phases 1-33 completed. Remaining items in "What Needs to Be Built" below are deferred (items 4 + 5: Automatic Reminders, Contract Expiry Reminders).
-
-**Frontend dependency on Collections Agent:** When the agent service exposes its HTTP API, this repo will need a future milestone for: dashboard cobranza, inbox escalaciones, config policy (per `AGENT-COBRANZA-SPEC.md` section 44).
-
-**To resume v5.0 later:** Update this STATE.md, remove the pause notice, continue from the remaining items in "What Needs to Be Built" below.
+**ADITIVO — no romper el CRM existente.** El usuario fue enfático ("ya hay mucho del CRM"). Todo trabajo entra como rutas/módulos nuevos vía `canAccess(module,'view')`; la "unificación" es una capa de nav/IA encima, no un rewrite. Leer `docs/DESIGN.md` antes de cualquier UI.
 
 ## Current Position
 
-Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX (⏸️ PAUSED)
-Phase: 33 of 33 (Property Import System)
-Plan: 3 of 3 complete
-Status: ⏸️ Paused — see pause notice above
-Last activity: 2026-03-29 — Completed 33-03-PLAN.md (Property Import — all 3 plans)
-Paused: 2026-05-12 — Collections Agent prioritized in Leasefy/agent
+Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
+Phase: **v6-01 DONE** ✅ — **v6-02 (Facturación) es la siguiente** (Research: Sí)
+Plan: —
+Status: In progress — v6-01 implementado + verificado (compila/typecheck/lint); falta plan de v6-02
+Last activity: 2026-05-29 — v6-01 IA Unificada & Command Center done
 
-Progress: [██████████████████████████████] 100% (phase-level — milestone scope had 2 deferred items)
+Progress: [███▓░░░░░░░░░░░░░░░░░░░░░░░░░░░] 12% — 1 de 8 fases (v6-01 ✅)
 
-## What's Already Built (this session, pre-GSD)
+**Phases (v6-NN):**
+- [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
+- [ ] **v6-02** Facturación ⭐ (FACT) — siguiente
+- [ ] **v6-03** Conciliación bancaria (CONC)
+- [ ] **v6-04** Egresos / Tesorería (EGR)
+- [ ] **v6-05** Informes & Insights (INFO)
+- [ ] **v6-06** PQRS + Agenda (PQRS/AGEN)
+- [ ] **v6-07** Terceros por IA (TERC)
+- [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
 
-These were built in the current conversation before GSD was invoked:
+**Next:** planear v6-02 (Facturación). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
 
-- AI Agent types and registry (`src/lib/types/ai-agents.ts`)
-- Agent Card component with "Agente AI" badge (`src/components/inmobiliaria/ai/AIAgentCard.tsx`)
-- Agent Activity Feed with click-to-detail (`src/components/inmobiliaria/ai/AIAgentActivityFeed.tsx`)
-- Agent Execution Panel — full-screen Manus-style split view (`src/components/inmobiliaria/ai/AIAgentExecutionPanel.tsx`)
-- Agent Detail Sidebar — step-by-step explanation (`src/components/inmobiliaria/ai/AIAgentDetailSidebar.tsx`)
-- Agent Hub page at `/panel/inmobiliaria/ai`
-- Dashboard agent section (cards + activity feed at top of dashboard)
-- Sidebar nav item "Agentes AI" with badge
-- Agency Pricing Modal with Flex vs Subscription toggle (`src/components/inmobiliaria/AgencyPricingModal.tsx`)
-- Mock auth bypass for dev (agency user auto-login when Supabase not configured)
-- i18n keys for all agent-related UI
+## ⏸️ v5.0 — Pausado (histórico)
 
-## What Needs to Be Built
-
-1. ~~**Plan Gating System**~~ — Done (Phase 26)
-2. ~~**Advanced Reports**~~ — Done (Phase 29)
-3. ~~**Executive Reports**~~ — Done (Phase 30)
-4. **Automatic Reminders** — Pre-vencimiento, post-vencimiento, escalation system
-5. **Contract Expiry Reminders** — 90/60/30 day alerts
-6. ~~**Gating UI**~~ — Done (Phase 26)
-7. ~~**Agency Pricing Modal**~~ — Done (Phase 28)
+v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. Phases 1–33 completas. Items diferidos: Automatic Reminders, Contract Expiry Reminders (overlap con INFO/notificaciones de v6.0 — reconsiderar al planear v6-05). Después, la UI de cobranza/cotizador (carpetas `ai/cobranza`, `ai/cotizador`) entró bajo el milestone `v2.1-frontend` del repo `agent` (numeración `29`→`37+`, commits `3x-xx` en mvp) — por eso el roadmap formal de mvp llegó a 33 pero hay commits `34-xx`/`35-xx`/`36-xx`.
 
 ## Previous Milestones
 
@@ -80,33 +66,36 @@ These were built in the current conversation before GSD was invoked:
 - v2.0 Design System & QA (2026-02-02): 4 phases
 - v3.0 Inmobiliaria Module (2026-02-08): 10 phases, 33 plans
 - v3.1 Landing & SEO (2026-02-10): i18n, pricing, SEO
-- v4.0 AI Agent Platform Beta (2026-02-10): 9 phases, 21 plans — Chat UI, agents, decisions, briefings
+- v4.0 AI Agent Platform Beta (2026-02-10): 9 phases, 21 plans
+- v5.0 Agency Plan-Gated Features (2026-03-26 → paused 2026-05-12): Phases 26–33
+- (paralelo, repo `agent`) v2.1-frontend: Phases 29–36 done en mvp; Phase 37 next
 
 ## Decisions
 
 | ID | Decision | Rationale | Phase |
 |----|----------|-----------|-------|
-| flex-default | Default plan type is 'flex' when no localStorage value | Demo shows most features | 26-01 |
-| neutral-agent-ui | All agent UI uses neutral color scheme; only emerald for active dot | Sobrio/professional appearance | 27-01 |
-| no-changes-needed-28 | Agency pricing modal already production-ready, no code changes | Pre-GSD implementation was complete | 28-01 |
-| css-only-charts | Pure CSS/Tailwind for report chart visualizations | No charting library needed for simple bars/trends | 29-01 |
-| data-via-props | Report components accept data as props, not importing mock data | Flexibility for future API integration | 29-01 |
-| reusable-chart-api | TrendChart/BarChart have flexible props for reuse across reports | Same components used in occupancy, collections, executive reports | 29-02 |
-| health-svg-circle | SVG circle with strokeDasharray for health score visualization | Pure CSS/SVG consistent with css-only-charts decision | 30-01 |
-| contract-expiry-fixed-label | Contract expiry shows fixed "90/60/30 dias" label instead of editable input | Multi-step alerts don't map to a single input | 31-01 |
-| status-dot-badge | Status badges use colored dot + text inside pill | Quick visual scanability | 31-02 |
-| gating-verified | All gating confirmed correct — no code changes needed | QA verification found all 7 features mapped, all 3 pages correctly gated | 32-01 |
-| null-guard-supabase | Add null checks for all getSupabase() calls | getSupabase() returns SupabaseClient or null — all call sites must handle null | 32-02 |
+| v6-numbering | v6.0 usa namespace `v6-NN`, no enteros | Evitar colisión con el stream `agent` v2.1-frontend (29→37+) que commitea frontend en mvp | v6.0 |
+| v6-frontend-first | v6.0 arranca frontend-first (secciones ERP completas en UI) antes del motor backend | El motor ERP (M1) está bloqueado en decisión de arquitectura de equipo; el frontend entrega valor sin ese bloqueo | v6.0 |
+| v6-additive-only | Todo el trabajo v6.0 es aditivo; no se reescribe el CRM existente | Usuario enfático: "no romper lo que ya hay" | v6.0 |
+| v6-home-mvp | UI del ERP+CRM+Autopilot vive en `rent/mvp`; motor en `back-main`; IA (Mastra) en `agent`; `admin` interno | Ver GAP-ANALYSIS §3 | v6.0 |
+| v6-erp-sections-now | Las secciones ERP existen en el frontend ya, con contrato api-client + estado vacío honesto | Visión "todo en uno"; backend rellena por detrás | v6.0 |
+| v6-agents-mastra | Toda capacidad de IA nueva (terceros, audio→ficha, PQRS triage) = agente/tool de **Mastra** en `agent` | Framework decidido del proyecto | v6.0 |
 
 ## Session Continuity
 
-Last session: 2026-05-19T21:53:47.622Z
-Stopped at: context exhaustion at 76% (2026-05-19)
+Last session: 2026-05-29 — v6-01 done + verified; renumbered v6.0 to `v6-NN` after user flagged collision with agent v2.1-frontend.
 Resume file: None
 
 ## Accumulated Context
 
 ### Roadmap Evolution
+- 2026-05-29: Gap analysis de la visión ERP+CRM+Autopilot (workflow, 4 repos) → programa de 6 milestones en `ERP-CRM-AUTOPILOT-PROGRAM.md`.
+- 2026-05-29: v6.0 definido (frontend-first, v6-01..v6-08) tras feedback: incluir TODAS las secciones ERP, especialmente facturación, aditivo.
+- 2026-05-29: v6-01 implementado + verificado (sidebar agrupado, landing `/hoy`, secciones "Pronto"); fix de build pre-existente (4 directivas eslint huérfanas en cotizador).
+- 2026-05-29: renumbered 37-44 → v6-01..v6-08 para no colisionar con el stream `agent`.
 
-- Phase 33 added: Property Import System — Excel/CSV import with AI column mapping and gap-filling, software migration guides, and portal import for real estate agencies
-- Phase 33 complete (2026-03-29): All 5 wizard steps built. gapFiller.ts uses 6 heuristic rules for mock AI gap-filling. StepAIReview animates 2s analysis then reveals stagger-in cards. StepConfirmImport simulates import progress with for-loop + setTimeout. Plan 03 adds StepSoftwareMigration + StepPortalImport + method-aware wizard routing + portfolio page import button + empty state CTA + i18n for software/portal namespaces.
+### External blockers (programa)
+- Decisión de equipo: ¿qué monolito es el motor ERP? (`back-main` es scaffold; mvp consume otro backend vía `NEXT_PUBLIC_BACKEND_URL`). Bloquea M1.
+- DIAN: requiere proveedor tecnológico autorizado (D2/M2).
+- Credenciales: Vapi, 360dialog/Kapso, Wompi/Bold, DataCrédito, carriers Bolívar/Sekure (Phase 27 cotizador pausada).
+- Dev local: `.env`/`.env.local` apunta `NEXT_PUBLIC_BACKEND_URL` a producción (api.leasefy.co) → CORS bloquea localhost; las páginas permission-gated no cargan data en dev sin backend local.

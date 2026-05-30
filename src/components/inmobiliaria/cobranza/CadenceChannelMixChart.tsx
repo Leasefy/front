@@ -68,14 +68,14 @@ const CHANNEL_LABELS: Record<string, string> = {
 // Converts long-format rows → wide format for Recharts stacked BarChart:
 //   { channel: 'voice', paid: 12, no_answer: 18, ... }
 
-type PivotedRow = { channel: string } & Record<string, number>;
+type PivotedRow = Record<string, string | number>;
 
 function pivotRows(rows: ChannelMixRow[]): PivotedRow[] {
   return (['voice', 'whatsapp'] as const).map((ch) => {
     const chRows = rows.filter((r) => r.channel === ch);
     return chRows.reduce<PivotedRow>(
       (acc, r) => ({ ...acc, [r.outcome]: r.count }),
-      { channel: ch }
+      { channel: ch as string }
     );
   });
 }

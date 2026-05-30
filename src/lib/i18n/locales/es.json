@@ -5222,6 +5222,85 @@
             "whatsappToggle": "Recibir por WhatsApp",
             "aggregateStat": "{{subscribed}} de {{total}} miembros suscritos"
           }
+        },
+        "analitica": {
+          "title": "Analítica de Cobranza",
+          "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
+          "sampleDataWatermark": "Datos de muestra",
+          "agencyGate": {
+            "title": "Sin datos suficientes",
+            "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
+            "ctaLabel": "Ir al agente de cobranza"
+          },
+          "widgets": {
+            "recoveryRate": {
+              "title": "Tasa de recuperación por etapa",
+              "legend": {
+                "transitions": "Deudores recuperados",
+                "cop": "COP recuperado"
+              },
+              "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
+            },
+            "topScripts": {
+              "title": "Scripts con mayor conversión",
+              "empty": "Sin datos de scripts disponibles.",
+              "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
+              "column": {
+                "script": "Script",
+                "stage": "Etapa",
+                "nCalls": "Llamadas",
+                "conversionRate": "Tasa conv.",
+                "lift": "Lift vs base",
+                "sparkline": "Tendencia 30d"
+              }
+            },
+            "topObjections": {
+              "title": "Principales objeciones (últimos 30 días)",
+              "empty": "Sin objeciones registradas en los últimos 30 días.",
+              "column": {
+                "literal": "Objeción",
+                "count": "Frecuencia",
+                "pct": "% de llamadas"
+              }
+            },
+            "cadence": {
+              "title": "Efectividad de cadencia",
+              "channelMix": {
+                "title": "Canal × resultado",
+                "outcome": {
+                  "paid": "Pagado",
+                  "brokenPromise": "Promesa rota",
+                  "escalated": "Escalado",
+                  "noAnswer": "Sin respuesta",
+                  "completed": "Completado"
+                }
+              },
+              "heatmap": {
+                "title": "Mejor hora para llamar",
+                "legend": "Intensidad = volumen + tasa positiva",
+                "dayLabels": {
+                  "sun": "Dom",
+                  "mon": "Lun",
+                  "tue": "Mar",
+                  "wed": "Mié",
+                  "thu": "Jue",
+                  "fri": "Vie",
+                  "sat": "Sáb"
+                }
+              },
+              "empty": "Sin llamadas suficientes para calcular cadencia."
+            },
+            "costPerPeso": {
+              "title": "Costo por peso recuperado",
+              "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
+              "sparklineLabel": "Tendencia 90 días",
+              "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
+            }
+          },
+          "errors": {
+            "loading": "Error al cargar analítica de cobranza.",
+            "retry": "Reintentar"
+          }
         }
       },
       "arco": {
@@ -5485,85 +5564,6 @@
           "rollback": "No se pudo restaurar la versión. Intenta de nuevo.",
           "retry": "Reintentar"
         }
-      },
-      "analitica": {
-        "title": "Analítica de Cobranza",
-        "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
-        "sampleDataWatermark": "Datos de muestra",
-        "agencyGate": {
-          "title": "Sin datos suficientes",
-          "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
-          "ctaLabel": "Ir al agente de cobranza"
-        },
-        "widgets": {
-          "recoveryRate": {
-            "title": "Tasa de recuperación por etapa",
-            "legend": {
-              "transitions": "Deudores recuperados",
-              "cop": "COP recuperado"
-            },
-            "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
-          },
-          "topScripts": {
-            "title": "Scripts con mayor conversión",
-            "empty": "Sin datos de scripts disponibles.",
-            "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
-            "column": {
-              "script": "Script",
-              "stage": "Etapa",
-              "nCalls": "Llamadas",
-              "conversionRate": "Tasa conv.",
-              "lift": "Lift vs base",
-              "sparkline": "Tendencia 30d"
-            }
-          },
-          "topObjections": {
-            "title": "Principales objeciones (últimos 30 días)",
-            "empty": "Sin objeciones registradas en los últimos 30 días.",
-            "column": {
-              "literal": "Objeción",
-              "count": "Frecuencia",
-              "pct": "% de llamadas"
-            }
-          },
-          "cadence": {
-            "title": "Efectividad de cadencia",
-            "channelMix": {
-              "title": "Canal × resultado",
-              "outcome": {
-                "paid": "Pagado",
-                "brokenPromise": "Promesa rota",
-                "escalated": "Escalado",
-                "noAnswer": "Sin respuesta",
-                "completed": "Completado"
-              }
-            },
-            "heatmap": {
-              "title": "Mejor hora para llamar",
-              "legend": "Intensidad = volumen + tasa positiva",
-              "dayLabels": {
-                "sun": "Dom",
-                "mon": "Lun",
-                "tue": "Mar",
-                "wed": "Mié",
-                "thu": "Jue",
-                "fri": "Vie",
-                "sat": "Sáb"
-              }
-            },
-            "empty": "Sin llamadas suficientes para calcular cadencia."
-          },
-          "costPerPeso": {
-            "title": "Costo por peso recuperado",
-            "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
-            "sparklineLabel": "Tendencia 90 días",
-            "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
-          }
-        },
-        "errors": {
-          "loading": "Error al cargar analítica de cobranza.",
-          "retry": "Reintentar"
-        }
       }
     },
     "hoy": {
@@ -5696,6 +5696,63 @@
       "colComprobante": "Comprobante",
       "emptyTitle": "Sin egresos aún",
       "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
+    },
+    "pqrs": {
+      "label": "PQRS",
+      "title": "PQRS y solicitudes",
+      "subtitle": "Registra, asigna, haz seguimiento y cierra cualquier petición, queja, reclamo o solicitud de inquilinos, propietarios y terceros — en un solo lugar.",
+      "new": "Nueva solicitud",
+      "newSoon": "El registro y la asignación se habilitan con el motor de triage (IA) — M1.",
+      "m1BannerTitle": "Estructura lista — el triage con IA llega en M1",
+      "m1BannerDesc": "Esta sección ya tiene el ciclo completo. La clasificación automática, la asignación, el SLA y las notificaciones se conectan con el agente (Mastra) en la fase de backend (M1).",
+      "resumenLabel": "Por estado",
+      "estado_recibidas": "Recibidas",
+      "estado_asignadas": "Asignadas",
+      "estado_enProceso": "En proceso",
+      "estado_enCotizacion": "En cotización",
+      "estado_resueltas": "Resueltas",
+      "estado_cerradas": "Cerradas",
+      "repairFlowTitle": "Reparaciones → cotización con proveedor",
+      "repairFlowDesc": "Una solicitud de reparación pasa al flujo de cotización y aprobación en Operaciones.",
+      "listTitle": "Solicitudes",
+      "listDesc": "Cada solicitud queda radicada con su solicitante, tipo, inmueble, responsable y estado.",
+      "colRadicado": "Radicado",
+      "colSolicitante": "Solicitante",
+      "colTipo": "Tipo",
+      "colInmueble": "Inmueble / contrato",
+      "colAsignado": "Asignado a",
+      "colEstado": "Estado",
+      "colSla": "SLA",
+      "colAccion": "Acción",
+      "emptyTitle": "Sin solicitudes aún",
+      "emptyDesc": "Las PQRS y solicitudes aparecerán aquí. El registro y el triage con IA llegan en M1."
+    },
+    "agenda": {
+      "label": "Agenda",
+      "title": "Agenda interna",
+      "subtitle": "Los eventos que el sistema ya conoce —visitas, firmas pendientes, vencimientos, seguimientos e inspecciones— junto con tus tareas, ligadas a contratos, propiedades y terceros.",
+      "new": "Nueva tarea",
+      "newSoon": "La creación de tareas y la agregación de eventos se habilitan con el motor (M1).",
+      "m1BannerTitle": "Estructura lista — la agenda se llena con el motor en M1",
+      "m1BannerDesc": "Esta vista agrega eventos del sistema y tus tareas. La agregación autoritativa (visitas, firmas, vencimientos, inspecciones) y los recordatorios se conectan en la fase de backend (M1).",
+      "resumenLabel": "Próximos",
+      "tipo_visitas": "Visitas",
+      "tipo_firmas": "Firmas pendientes",
+      "tipo_vencimientos": "Vencimientos",
+      "tipo_seguimientos": "Seguimientos",
+      "tipo_inspecciones": "Inspecciones",
+      "tipo_tareas": "Tareas",
+      "listTitle": "Eventos y tareas",
+      "listDesc": "Cada evento muestra su fecha, tipo, origen (sistema o tuyo) y su vínculo con un contrato, propiedad o tercero.",
+      "colFecha": "Fecha",
+      "colEvento": "Evento",
+      "colTipo": "Tipo",
+      "colOrigen": "Origen",
+      "colVinculo": "Vínculo",
+      "colResponsable": "Responsable",
+      "colEstado": "Estado",
+      "emptyTitle": "Sin eventos aún",
+      "emptyDesc": "Tus visitas, firmas, vencimientos y tareas aparecerán aquí. La agenda se conecta con el motor en M1."
     },
     "insights": {
       "label": "Insights & Alertas",

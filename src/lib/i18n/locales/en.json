@@ -5209,6 +5209,85 @@
             "whatsappToggle": "Receive by WhatsApp",
             "aggregateStat": "{{subscribed}} of {{total}} members subscribed"
           }
+        },
+        "analitica": {
+          "title": "Collections Analytics",
+          "subtitle": "Aggregate recovery, objections, and agent cadence metrics.",
+          "sampleDataWatermark": "Sample data",
+          "agencyGate": {
+            "title": "Not enough data yet",
+            "reason": "You need at least 5 calls in the last 30 days to see analytics.",
+            "ctaLabel": "Go to collections agent"
+          },
+          "widgets": {
+            "recoveryRate": {
+              "title": "Recovery rate by stage",
+              "legend": {
+                "transitions": "Debtors recovered",
+                "cop": "COP recovered"
+              },
+              "empty": "Not enough stage transitions in the last 30 days."
+            },
+            "topScripts": {
+              "title": "Top converting scripts",
+              "empty": "No script data available.",
+              "pendingPhase38": "Script tracking will be available in a future update.",
+              "column": {
+                "script": "Script",
+                "stage": "Stage",
+                "nCalls": "Calls",
+                "conversionRate": "Conv. rate",
+                "lift": "Lift vs base",
+                "sparkline": "30d trend"
+              }
+            },
+            "topObjections": {
+              "title": "Top objections (last 30 days)",
+              "empty": "No objections recorded in the last 30 days.",
+              "column": {
+                "literal": "Objection",
+                "count": "Frequency",
+                "pct": "% of calls"
+              }
+            },
+            "cadence": {
+              "title": "Cadence effectiveness",
+              "channelMix": {
+                "title": "Channel × outcome",
+                "outcome": {
+                  "paid": "Paid",
+                  "brokenPromise": "Broken promise",
+                  "escalated": "Escalated",
+                  "noAnswer": "No answer",
+                  "completed": "Completed"
+                }
+              },
+              "heatmap": {
+                "title": "Best time to call",
+                "legend": "Intensity = volume + positive rate",
+                "dayLabels": {
+                  "sun": "Sun",
+                  "mon": "Mon",
+                  "tue": "Tue",
+                  "wed": "Wed",
+                  "thu": "Thu",
+                  "fri": "Fri",
+                  "sat": "Sat"
+                }
+              },
+              "empty": "Not enough calls to calculate cadence."
+            },
+            "costPerPeso": {
+              "title": "Cost per recovered peso",
+              "subtitle": "Voice cost per COP recovered (last 30 days)",
+              "sparklineLabel": "90-day trend",
+              "empty": "No payments or calls recorded in the last 30 days."
+            }
+          },
+          "errors": {
+            "loading": "Failed to load collections analytics.",
+            "retry": "Retry"
+          }
         }
       },
       "arco": {
@@ -5472,85 +5551,6 @@
           "rollback": "Could not restore the version. Please try again.",
           "retry": "Retry"
         }
-      },
-      "analitica": {
-        "title": "Collections Analytics",
-        "subtitle": "Aggregate recovery, objections, and agent cadence metrics.",
-        "sampleDataWatermark": "Sample data",
-        "agencyGate": {
-          "title": "Not enough data yet",
-          "reason": "You need at least 5 calls in the last 30 days to see analytics.",
-          "ctaLabel": "Go to collections agent"
-        },
-        "widgets": {
-          "recoveryRate": {
-            "title": "Recovery rate by stage",
-            "legend": {
-              "transitions": "Debtors recovered",
-              "cop": "COP recovered"
-            },
-            "empty": "Not enough stage transitions in the last 30 days."
-          },
-          "topScripts": {
-            "title": "Top converting scripts",
-            "empty": "No script data available.",
-            "pendingPhase38": "Script tracking will be available in a future update.",
-            "column": {
-              "script": "Script",
-              "stage": "Stage",
-              "nCalls": "Calls",
-              "conversionRate": "Conv. rate",
-              "lift": "Lift vs base",
-              "sparkline": "30d trend"
-            }
-          },
-          "topObjections": {
-            "title": "Top objections (last 30 days)",
-            "empty": "No objections recorded in the last 30 days.",
-            "column": {
-              "literal": "Objection",
-              "count": "Frequency",
-              "pct": "% of calls"
-            }
-          },
-          "cadence": {
-            "title": "Cadence effectiveness",
-            "channelMix": {
-              "title": "Channel × outcome",
-              "outcome": {
-                "paid": "Paid",
-                "brokenPromise": "Broken promise",
-                "escalated": "Escalated",
-                "noAnswer": "No answer",
-                "completed": "Completed"
-              }
-            },
-            "heatmap": {
-              "title": "Best time to call",
-              "legend": "Intensity = volume + positive rate",
-              "dayLabels": {
-                "sun": "Sun",
-                "mon": "Mon",
-                "tue": "Tue",
-                "wed": "Wed",
-                "thu": "Thu",
-                "fri": "Fri",
-                "sat": "Sat"
-              }
-            },
-            "empty": "Not enough calls to calculate cadence."
-          },
-          "costPerPeso": {
-            "title": "Cost per recovered peso",
-            "subtitle": "Voice cost per COP recovered (last 30 days)",
-            "sparklineLabel": "90-day trend",
-            "empty": "No payments or calls recorded in the last 30 days."
-          }
-        },
-        "errors": {
-          "loading": "Failed to load collections analytics.",
-          "retry": "Retry"
-        }
       }
     },
     "hoy": {
@@ -5683,6 +5683,63 @@
       "colComprobante": "Receipt",
       "emptyTitle": "No payouts yet",
       "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
+    },
+    "pqrs": {
+      "label": "Requests",
+      "title": "Requests & PQRS",
+      "subtitle": "Register, assign, follow up and close any request, complaint or claim from tenants, owners and third parties — all in one place.",
+      "new": "New request",
+      "newSoon": "Registration and assignment are enabled with the (AI) triage engine — M1.",
+      "m1BannerTitle": "Structure ready — AI triage arrives in M1",
+      "m1BannerDesc": "This section already has the full lifecycle. Automatic classification, assignment, SLA and notifications connect to the agent (Mastra) in the backend phase (M1).",
+      "resumenLabel": "By status",
+      "estado_recibidas": "Received",
+      "estado_asignadas": "Assigned",
+      "estado_enProceso": "In progress",
+      "estado_enCotizacion": "In quoting",
+      "estado_resueltas": "Resolved",
+      "estado_cerradas": "Closed",
+      "repairFlowTitle": "Repairs → vendor quoting",
+      "repairFlowDesc": "A repair request moves to the quoting and approval flow in Operations.",
+      "listTitle": "Requests",
+      "listDesc": "Each request is filed with its requester, type, property, assignee and status.",
+      "colRadicado": "Ticket",
+      "colSolicitante": "Requester",
+      "colTipo": "Type",
+      "colInmueble": "Property / contract",
+      "colAsignado": "Assigned to",
+      "colEstado": "Status",
+      "colSla": "SLA",
+      "colAccion": "Action",
+      "emptyTitle": "No requests yet",
+      "emptyDesc": "PQRS and requests will appear here. Registration and AI triage arrive in M1."
+    },
+    "agenda": {
+      "label": "Calendar",
+      "title": "Internal calendar",
+      "subtitle": "The events the system already knows —visits, pending signatures, expiries, follow-ups and inspections— together with your tasks, linked to contracts, properties and parties.",
+      "new": "New task",
+      "newSoon": "Task creation and event aggregation are enabled with the engine (M1).",
+      "m1BannerTitle": "Structure ready — the calendar fills up with the engine in M1",
+      "m1BannerDesc": "This view aggregates system events and your tasks. Authoritative aggregation (visits, signatures, expiries, inspections) and reminders connect in the backend phase (M1).",
+      "resumenLabel": "Upcoming",
+      "tipo_visitas": "Visits",
+      "tipo_firmas": "Pending signatures",
+      "tipo_vencimientos": "Expiries",
+      "tipo_seguimientos": "Follow-ups",
+      "tipo_inspecciones": "Inspections",
+      "tipo_tareas": "Tasks",
+      "listTitle": "Events & tasks",
+      "listDesc": "Each event shows its date, type, source (system or yours) and its link to a contract, property or party.",
+      "colFecha": "Date",
+      "colEvento": "Event",
+      "colTipo": "Type",
+      "colOrigen": "Source",
+      "colVinculo": "Link",
+      "colResponsable": "Owner",
+      "colEstado": "Status",
+      "emptyTitle": "No events yet",
+      "emptyDesc": "Your visits, signatures, expiries and tasks will appear here. The calendar connects to the engine in M1."
     },
     "insights": {
       "label": "Insights & Alerts",

@@ -24,6 +24,10 @@ export interface NavItem {
   disabled?: boolean;
   badge?: number;
   children?: NavItem[];
+  /** When 'section', renders a non-interactive group label (desktop sidebar only). Additive — flat navs ignore it. */
+  kind?: 'section';
+  /** Small pill shown after the label (e.g. "Pronto" for not-yet-built sections). Additive. */
+  tag?: string;
 }
 
 export interface ProfileCompletionStep {
@@ -80,18 +84,35 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
 
   const isChildActive = hasChildren && checkChildActive(item.children!);
 
+  // Group label (desktop sidebar only). Collapsed → thin divider.
+  if (item.kind === 'section') {
+    if (isCollapsed) {
+      return <div className="mx-2 my-2 border-t border-plan-border/60" aria-hidden="true" />;
+    }
+    return (
+      <p className="px-4 pt-4 pb-1.5 text-[11px] font-mono font-medium uppercase tracking-wider text-plan-muted select-none">
+        {item.label}
+      </p>
+    );
+  }
+
   if (item.disabled) {
     return (
       <div
         className={cn(
           'flex items-center gap-3 px-4 py-2 text-[13px]',
-          'text-muted-foreground cursor-not-allowed',
+          'text-muted-foreground/70 cursor-not-allowed',
           isCollapsed && 'justify-center px-2'
         )}
-        title={isCollapsed ? item.label : undefined}
+        title={isCollapsed ? `${item.label}${item.tag ? ` — ${item.tag}` : ''}` : undefined}
       >
         <Icon className="w-[18px] h-[18px] stroke-[1.5px]" />
-        {!isCollapsed && <span>{item.label}</span>}
+        {!isCollapsed && <span className="flex-1">{item.label}</span>}
+        {!isCollapsed && item.tag && (
+          <span className="ml-auto text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-plan-border/60 text-plan-muted">
+            {item.tag}
+          </span>
+        )}
       </div>
     );
   }

@@ -864,7 +864,18 @@
       "analitica": "Analítica",
       "mensajes": "Mensajes",
       "configuracion": "Configuración",
-      "aiBeta": "AI Beta"
+      "aiBeta": "AI Beta",
+      "hoy": "Hoy",
+      "facturacion": "Facturación",
+      "conciliacion": "Conciliación",
+      "pqrs": "PQRS",
+      "agenda": "Agenda",
+      "pronto": "Pronto",
+      "secInicio": "Inicio",
+      "secAutopilot": "Autopilot",
+      "secCrm": "CRM · Comercial",
+      "secFinanciero": "Financiero · ERP",
+      "secOperacion": "Operación · Docs"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -5473,6 +5484,28 @@
           "retry": "Reintentar"
         }
       }
+    },
+    "hoy": {
+      "title": "Hoy",
+      "heading": "Tu inmobiliaria, en piloto",
+      "subtitle": "ERP · CRM · Autopilot, todo en uno. El sistema opera; tú tomas las decisiones.",
+      "insightsTitle": "Insights & Alertas",
+      "insightsDesc": "Pronto: qué pasa hoy y qué hacer — contratos por vencer, cartera en mora y egresos por dispersar, convertidos en acciones.",
+      "insightsExample1": "18 contratos por vencer · 6 sin gestión",
+      "insightsExample2": "42 inquilinos en mora · 11 prioritarios",
+      "insightsExample3": "$84M por dispersar · cubres 62%",
+      "insightsPronto": "Llega con la fase de Informes & Insights.",
+      "systemLabel": "Tu sistema",
+      "crmTitle": "CRM · Comercial",
+      "crmDesc": "Capta, gestiona y cierra.",
+      "erpTitle": "Financiero · ERP",
+      "erpDesc": "Recauda, factura, concilia y dispersa.",
+      "autopilotTitle": "Autopilot",
+      "autopilotDesc": "Agentes que ejecutan por ti.",
+      "opsTitle": "Operación · Docs",
+      "opsDesc": "Solicitudes, agenda y documentos.",
+      "autopilotActiveLabel": "Autopilot activo",
+      "autopilotRunning": "{{count}} agentes ejecutando"
     }
   },
   "validation": {

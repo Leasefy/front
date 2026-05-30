@@ -37,7 +37,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
         </SheetHeader>
 
         <div className="flex flex-col">
-          {items.map((item) => {
+          {items.filter((item) => item.kind !== 'section').map((item) => {
             const active = isActive(item);
             const IconComponent = item.icon as React.ComponentType<{
               className?: string;

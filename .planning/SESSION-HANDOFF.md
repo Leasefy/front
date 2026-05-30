@@ -1,7 +1,7 @@
 # SESSION HANDOFF — v6.0 Backoffice Unificado ERP·CRM·Autopilot
 
 **Fecha:** 2026-05-30 · **Para:** retomar tras `/clear` (sesión nueva sin historial).
-**Estado:** v6.0 **COMPLETO (8/8 fases)** ✅. Rama `feat/v6.0-01-ia-unificada-command-center`, **SIN pushear**. v6-07 y v6-08 son CROSS-REPO (también commits en `rent/agent`, branch `restructure/per-agent-organization`, sin pushear): v6-07 `0cd2dff`+`0d53f61`, v6-08 `e5f01f1`. Próximo paso = programa M1+ (motor backend) + push/PR de ambas ramas cuando el usuario confirme.
+**Estado:** v6.0 **COMPLETO (8/8 fases)** ✅. **mvp PUSHEADO → PR #14** (`feat/v6.0-01-...` → `Stg`, mega-PR mixto v6.0 + 37-xx): https://github.com/Leasefy/front/pull/14. **agent BLOQUEADO** (sin write access a `Leasefy/agent` para `nicolasgardila`): los 3 commits cross-repo (`0cd2dff`+`0d53f61` terceros, `e5f01f1` property-capture) están seguros LOCALES en `restructure/per-agent-organization` pero SIN pushear — requiere write access o push desde cuenta autorizada (Víctor). Próximo paso del programa = M1+ (motor backend).
 
 > ⚠️ **Concurrencia (2026-05-30):** una sesión paralela del stream `agent` corrió **Phase 37-07** (cobranza analítica) en ESTE mismo working tree y, al hacer `git add`, **arrastró las ediciones de v6-06 en `layout.tsx` + `es.json`/`en.json` (nav-flip + namespaces i18n pqrs/agenda) dentro de sus commits `c774703`/`d546798`** — contenido correcto, pero el mensaje dice `37-07`. Las páginas/contratos de v6-06 + el flip de `/hoy` se commitearon aparte como `feat(v6-06)`. Evitar editar el mismo working tree desde dos sesiones a la vez.
 

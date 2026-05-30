@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Backoffice Unificado ERP·CRM·Autopilot
-status: in_progress
+status: complete
 stopped_at: null
 last_updated: "2026-05-30"
-last_activity: 2026-05-30 — Phase v6-07 (Creación de terceros por IA) DONE + verified (cross-repo: mvp + agent)
+last_activity: 2026-05-30 — Phase v6-08 (Captura de propiedad foto+audio) DONE — v6.0 COMPLETE (8/8)
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 0
   completed_plans: 0
-  percent: 88
+  percent: 100
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/research/ERP-VISION/GAP-ANALYSIS.md — **gap analysis (16 domini
 See: .planning/milestones/v6.0-{REQUIREMENTS,ROADMAP}.md — **detalle del milestone activo**
 
 **Core value:** El usuario habla, los agentes ejecutan; el sistema opera la inmobiliaria (no es un Excel con UI).
-**Current focus:** 🚧 **v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)**. Construir TODAS las secciones del ERP en el panel de forma aditiva (sin romper el CRM existente) + momentos autopilot que no dependen de motor backend.
+**Current focus:** ✅ **v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) COMPLETO (8/8)**. Todas las secciones del ERP existen en el panel de forma aditiva + los momentos autopilot por IA (terceros, captura de propiedad). El motor backend (M1–M3) y los go-lives externos siguen en el programa. Próximo paso del programa: decidir/arrancar M1 (motor ERP) — ver `ERP-CRM-AUTOPILOT-PROGRAM.md`.
 
 ## ⚠️ Numeración de fases — `v6-NN` (CRÍTICO)
 
@@ -36,13 +36,13 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 
 ## Current Position
 
-Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
-Phase: **v6-01..v6-07 DONE** ✅ — **v6-08 (Captura propiedad foto+audio, stretch) es la última**
+Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) — ✅ COMPLETO
+Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
 Plan: —
-Status: In progress — v6-01..v6-07 implementados + verificados (tsc limpio ambos repos, rutas 200, agent tests 5/5)
-Last activity: 2026-05-30 — v6-07 Terceros por IA (cross-repo: endpoint Mastra POST /terceros/extract en agent + captura/prefill en mvp) done
+Status: ✅ Complete — v6-01..v6-08 implementados + verificados (tsc limpio ambos repos, rutas 200, agent tests 11/11, reviews adversariales PASS)
+Last activity: 2026-05-30 — v6-08 Captura de propiedad foto+audio (cross-repo: Whisper+Claude en agent + captura móvil en mvp) done
 
-Progress: [██████████████████████████▓░░] 88% — 7 de 8 fases (v6-01..v6-07 ✅)
+Progress: [█████████████████████████████] 100% — 8 de 8 fases (v6-01..v6-08 ✅)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
@@ -52,9 +52,9 @@ Progress: [███████████████████████
 - [x] **v6-05** Informes & Insights (INFO) — ✅ done (motor `lib/insights` + `InsightsPanel` en /hoy; INFO-01/02/03 cubierto por `reportes` existente; data real → hooks/M1-M2)
 - [x] **v6-06** PQRS + Agenda (PQRS/AGEN) — ✅ done (secciones `/pqrs` + `/agenda` + contratos `pqrs.types.ts`/`agenda.types.ts` + i18n es/en; PQRS-01..03 y AGEN-01..02 cubiertos; triage IA + agregación → M1. Nav-flip + i18n quedaron bundled en commits `37-07` por sesión paralela en el mismo working tree — contenido correcto, mensaje mislabeled)
 - [x] **v6-07** Terceros por IA (TERC) — ✅ done CROSS-REPO. **agent** (`0cd2dff` + `0d53f61`): `POST /terceros/extract` (tool `extract-tercero.ts` Claude Vision base64/URL + ruta Hono JWT+role + 5 tests; `0d53f61` = hardening del review: bodyLimit 12MB + rate-limit 20/min por usuario). Review v6-07 adversarial: wiring/contract PASS, design PASS, security 2 MEDIUM (fixed). **mvp** (`ddcc218`): botón aditivo "Crear con IA" en propietarios → captura foto cédula/RUT → fetch al agente con JWT → prellena `PropietarioForm` → guarda con el handler manual existente (flujo manual intacto). Contratos `terceros-extract.{types,service}.ts` + i18n. TERC-01..04 cubiertos. E2E real requiere agente corriendo + JWT válido.
-- [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
+- [x] **v6-08** Captura propiedad foto+audio — stretch (CAPT) — ✅ done CROSS-REPO. **agent** (`e5f01f1`): `POST /property-capture/extract` (tool `extract-property.ts` = OpenAI Whisper transcribe + Claude ficha + descripción comercial, fotos opcionales vía Vision; ruta Hono JWT+role+bodyLimit 24MB+rate-limit 10/min; 6 tests). **mvp** (`ee30376`): botón aditivo "Capturar con IA" en propiedades → ruta `/propiedades/captura` con `PropertyIACapture` (grabar audio MediaRecorder + fotos → extrae → form de revisión editable → `propertiesApi.create`). Manual `/nueva` intacto. CAPT-01..04 cubiertos. E2E real requiere agente corriendo + OPENAI/ANTHROPIC keys + JWT.
 
-**Next:** v6-08 (Captura de propiedad foto+audio, STRETCH): UI móvil fotos+audio → transcribe → ficha + descripción comercial. Requiere capacidad audio→ficha NUEVA en `rent/agent` (Mastra). Si no está lista, se difiere a M4. Nota: `gsd-sdk` NO está instalado.
+**Next (programa, no v6.0):** v6.0 frontend-first está COMPLETO. Lo que sigue es el motor backend y go-lives externos (otra milestone del programa): **M1** decidir/arrancar el motor ERP (conciliación, ledger/tesorería autoritativo, posteo contable); **M2** facturación electrónica DIAN (proveedor autorizado); luego cablear data real en las secciones v6 (reemplazar empty-states/contratos por hooks). Push + PR de ambas ramas (mvp + agent) cuando el usuario lo confirme. Nota: `gsd-sdk` NO está instalado.
 
 ## ⏸️ v5.0 — Pausado (histórico)
 

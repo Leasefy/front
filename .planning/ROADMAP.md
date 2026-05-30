@@ -12,7 +12,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v3.1 Landing & SEO** - (shipped 2026-02-10)
 - ✅ **v4.0 AI Agent Beta** - Phases 17-25 (shipped 2026-02-10)
 - ⏸️ **v5.0 Agency Plan-Gated Features** - Phases 26-33 (paused 2026-05-12; foco se movió a Collections Agent en Leasefy/agent)
-- 🚧 **v6.0 Backoffice Unificado ERP·CRM·Autopilot** - Phases v6-01..v6-08 (frontend-first; v6-01..v6-05 ✅) → detalle en `milestones/v6.0-ROADMAP.md`, backbone en `ERP-CRM-AUTOPILOT-PROGRAM.md`. **Namespace `v6-NN`** para no colisionar con el stream `agent` v2.1-frontend (29→37+) que también commitea en mvp.
+- ✅ **v6.0 Backoffice Unificado ERP·CRM·Autopilot** - Phases v6-01..v6-08 (frontend-first; **8/8 COMPLETO** 2026-05-30) → detalle en `milestones/v6.0-ROADMAP.md`, backbone en `ERP-CRM-AUTOPILOT-PROGRAM.md`. **Namespace `v6-NN`** para no colisionar con el stream `agent` v2.1-frontend (29→37+) que también commitea en mvp.
 
 ## Phases
 
@@ -184,4 +184,4 @@ Plans:
 - [x] **v6-05: Informes & Insights** — Motor `lib/insights` + `InsightsPanel` en /hoy (INFO-04/05, el wedge); catálogo cubierto por `reportes` existente. ✅ (INFO-01..05)
 - [x] **v6-06: PQRS / Solicitudes + Agenda interna** — Ciclo registro→asignación→seguimiento→cierre + agenda de eventos. ✅ (PQRS-01..03, AGEN-01..02; secciones `/pqrs` + `/agenda` + contratos + i18n; triage IA + agregación → M1)
 - [x] **v6-07: Creación de terceros por IA** — Foto cédula/RUT → IA extrae → prellena → revisar → guardar. ✅ CROSS-REPO (agent `POST /terceros/extract` + mvp captura/prefill aditivo en propietarios; TERC-01..04). (TERC-01..04)
-- [ ] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. (CAPT-01..04)
+- [x] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. ✅ CROSS-REPO (agent `POST /property-capture/extract` Whisper+Claude + mvp captura móvil aditiva en propiedades; CAPT-01..04). **v6.0 COMPLETO 8/8.**

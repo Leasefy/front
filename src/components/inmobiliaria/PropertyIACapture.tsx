@@ -482,7 +482,7 @@ export function PropertyIACapture() {
           </button>
         ) : (
           <div className="space-y-3">
-            {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+            {audioUrl && <audio controls src={audioUrl} className="w-full" aria-label={t(k('recordTitle'))} />}
             <button
               type="button"
               onClick={reRecord}

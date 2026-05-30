@@ -5,13 +5,13 @@ milestone_name: Backoffice Unificado ERP·CRM·Autopilot
 status: in_progress
 stopped_at: null
 last_updated: "2026-05-29"
-last_activity: 2026-05-29 — Phase v6-01 (IA Unificada & Command Center) DONE + verified
+last_activity: 2026-05-29 — Phase v6-02 (Facturación, frontend section) DONE + verified
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 0
   completed_plans: 0
-  percent: 12
+  percent: 25
 ---
 
 # Project State
@@ -37,16 +37,16 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 ## Current Position
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
-Phase: **v6-01 DONE** ✅ — **v6-02 (Facturación) es la siguiente** (Research: Sí)
+Phase: **v6-01, v6-02 DONE** ✅ — **v6-03 (Conciliación bancaria) es la siguiente** (Research: Sí)
 Plan: —
-Status: In progress — v6-01 implementado + verificado (compila/typecheck/lint); falta plan de v6-02
-Last activity: 2026-05-29 — v6-01 IA Unificada & Command Center done
+Status: In progress — v6-01 + v6-02 implementados + verificados (compila/typecheck/lint, verificado visual)
+Last activity: 2026-05-29 — v6-02 Facturación (sección frontend: ventas/compras/electrónica/notas + contrato de tipos) done
 
-Progress: [███▓░░░░░░░░░░░░░░░░░░░░░░░░░░░] 12% — 1 de 8 fases (v6-01 ✅)
+Progress: [███████▓░░░░░░░░░░░░░░░░░░░░░░] 25% — 2 de 8 fases (v6-01, v6-02 ✅)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
-- [ ] **v6-02** Facturación ⭐ (FACT) — siguiente
+- [x] **v6-02** Facturación ⭐ (FACT) — ✅ done (sección frontend + contrato `facturacion.types.ts`; motor DIAN → M2)
 - [ ] **v6-03** Conciliación bancaria (CONC)
 - [ ] **v6-04** Egresos / Tesorería (EGR)
 - [ ] **v6-05** Informes & Insights (INFO)
@@ -54,7 +54,7 @@ Progress: [███▓░░░░░░░░░░░░░░░░░░░
 - [ ] **v6-07** Terceros por IA (TERC)
 - [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
 
-**Next:** planear v6-02 (Facturación). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
+**Next:** planear v6-03 (Conciliación bancaria). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
 
 ## ⏸️ v5.0 — Pausado (histórico)
 

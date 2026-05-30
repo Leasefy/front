@@ -5,13 +5,13 @@ milestone_name: Backoffice Unificado ERP·CRM·Autopilot
 status: in_progress
 stopped_at: null
 last_updated: "2026-05-29"
-last_activity: 2026-05-29 — Phase v6-03 (Conciliación bancaria, frontend section) DONE + verified
+last_activity: 2026-05-29 — Phase v6-04 (Egresos/Tesorería, frontend view) DONE + verified
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 0
   completed_plans: 0
-  percent: 37
+  percent: 50
 ---
 
 # Project State
@@ -37,24 +37,25 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 ## Current Position
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
-Phase: **v6-01..v6-03 DONE** ✅ — **v6-04 (Egresos / Tesorería) es la siguiente**
+Phase: **v6-01..v6-04 DONE** ✅ — **v6-05 (Informes & Insights) es la siguiente**
 Plan: —
-Status: In progress — v6-01..v6-03 implementados + verificados (compila/typecheck/lint; v6-01/v6-02 verificados visual)
-Last activity: 2026-05-29 — v6-03 Conciliación bancaria (sección frontend + contrato de tipos) done
+Status: In progress — v6-01..v6-04 implementados + verificados (compila/typecheck; visual ok)
+Last activity: 2026-05-29 — v6-04 Egresos/Tesorería (vista ERP fórmula neto, aditiva sobre dispersiones) done
 
-Progress: [██████████▓░░░░░░░░░░░░░░░░░░░] 37% — 3 de 8 fases (v6-01, v6-02, v6-03 ✅)
+Progress: [██████████████▓░░░░░░░░░░░░░░░] 50% — 4 de 8 fases (v6-01..v6-04 ✅)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
 - [x] **v6-02** Facturación ⭐ (FACT) — ✅ done (sección frontend + contrato `facturacion.types.ts`; motor DIAN → M2)
 - [x] **v6-03** Conciliación bancaria (CONC) — ✅ done (sección frontend + contrato `conciliacion.types.ts`; motor → M2)
+- [x] **v6-04** Egresos / Tesorería (EGR) — ✅ done (vista ERP fórmula neto completa, aditiva sobre `dispersiones`; ledger → M1)
 - [ ] **v6-04** Egresos / Tesorería (EGR)
 - [ ] **v6-05** Informes & Insights (INFO)
 - [ ] **v6-06** PQRS + Agenda (PQRS/AGEN)
 - [ ] **v6-07** Terceros por IA (TERC)
 - [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
 
-**Next:** planear v6-04 (Egresos a propietarios / Tesorería). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
+**Next:** planear v6-05 (Informes & Insights). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
 
 ## ⏸️ v5.0 — Pausado (histórico)
 

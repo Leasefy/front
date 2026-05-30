@@ -23,11 +23,11 @@ type RecoveryRateResponse = {
 type TopObjectionsResponse = {
   populated: boolean;
   reason?: 'agency-gate' | 'insufficient-objections';
-  rows: Array<{
+  objections: Array<{
     rank: number;
     literal: string;
-    n: number;
-    pct: number; // 0..100
+    count: number;
+    pct: number; // 0..1 share of calls in window
   }>;
 };
 
@@ -51,13 +51,13 @@ type CadenceResponse = {
 
 type CostPerPesoResponse = {
   populated: boolean;
-  costCop30d: number | null;
-  recoveredCop30d: number | null;
-  costPerRecoveredPeso: number | null;
-  sparkline: Array<{
-    month: string;    // 'YYYY-MM'
-    costCop: number;
-    recoveredCop: number;
+  reason?: 'agency-gate' | 'insufficient-data';
+  cost_per_peso?: number | null;
+  numerator_usd_voice?: number | null;
+  denominator_cop_paid?: number | null;
+  sparkline_90d?: Array<{
+    day: string;                // ISO date 'YYYY-MM-DD'
+    cost_per_peso: number | null;
   }>;
 };
 
@@ -114,17 +114,17 @@ export const STUB_RECOVERY_RATE: RecoveryRateResponse = {
 
 export const STUB_TOP_OBJECTIONS: TopObjectionsResponse = {
   populated: false,
-  rows: [
-    { rank: 1,  literal: 'No tengo plata ahorita',                     n: 12, pct: 18.5 },
-    { rank: 2,  literal: 'Llámeme la próxima semana',                  n: 11, pct: 16.9 },
-    { rank: 3,  literal: 'Ya hablé con mi jefe de eso',                n: 9,  pct: 13.8 },
-    { rank: 4,  literal: 'No reconozco esa deuda',                     n: 8,  pct: 12.3 },
-    { rank: 5,  literal: 'Estoy esperando mi quincena',                n: 7,  pct: 10.8 },
-    { rank: 6,  literal: 'Me van a pagar mañana',                      n: 6,  pct:  9.2 },
-    { rank: 7,  literal: 'No tengo cómo pagar en este momento',        n: 5,  pct:  7.7 },
-    { rank: 8,  literal: 'Necesito hablar con alguien primero',        n: 4,  pct:  6.2 },
-    { rank: 9,  literal: 'Ya estoy arreglando eso con la inmobiliaria', n: 3, pct:  4.6 },
-    { rank: 10, literal: 'No vivo ahí hace meses',                     n: 3,  pct:  4.6 },
+  objections: [
+    { rank: 1,  literal: 'No tengo plata ahorita',                      count: 12, pct: 0.185 },
+    { rank: 2,  literal: 'Llámeme la próxima semana',                   count: 11, pct: 0.169 },
+    { rank: 3,  literal: 'Ya hablé con mi jefe de eso',                 count:  9, pct: 0.138 },
+    { rank: 4,  literal: 'No reconozco esa deuda',                      count:  8, pct: 0.123 },
+    { rank: 5,  literal: 'Estoy esperando mi quincena',                 count:  7, pct: 0.108 },
+    { rank: 6,  literal: 'Me van a pagar mañana',                       count:  6, pct: 0.092 },
+    { rank: 7,  literal: 'No tengo cómo pagar en este momento',         count:  5, pct: 0.077 },
+    { rank: 8,  literal: 'Necesito hablar con alguien primero',         count:  4, pct: 0.062 },
+    { rank: 9,  literal: 'Ya estoy arreglando eso con la inmobiliaria', count:  3, pct: 0.046 },
+    { rank: 10, literal: 'No vivo ahí hace meses',                      count:  3, pct: 0.046 },
   ],
 };
 
@@ -192,24 +192,33 @@ export const STUB_CADENCE: CadenceResponse = {
 };
 
 // ─── STUB_COST_PER_PESO ────────────────────────────────────────────────────────
-// 3-month sparkline (Feb–May 2026) trending from ~0.055 down to ~0.034
+// 90-day daily sparkline (Mar–May 2026) trending down ~0.055 → ~0.034 USD/COP
+// Matches BACKEND response shape: cost_per_peso, numerator_usd_voice,
+// denominator_cop_paid, sparkline_90d:[{day, cost_per_peso}] — NOT the §6
+// "costCop30d/recoveredCop30d/sparkline:[{month}]" naming which was speculative.
 
-function generateCostSparkline(): CostPerPesoResponse['sparkline'] {
-  const months: CostPerPesoResponse['sparkline'] = [
-    { month: '2026-02', costCop: 1_050_000, recoveredCop: 19_090_909 },
-    { month: '2026-03', costCop:   980_000, recoveredCop: 20_833_333 },
-    { month: '2026-04', costCop:   910_000, recoveredCop: 23_076_923 },
-    { month: '2026-05', costCop:   854_000, recoveredCop: 25_117_647 },
-  ];
-  return months;
+function generateCostSparkline(): NonNullable<CostPerPesoResponse['sparkline_90d']> {
+  const start = new Date('2026-03-01T00:00:00Z');
+  const cells: NonNullable<CostPerPesoResponse['sparkline_90d']> = [];
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(start.getTime() + i * 86_400_000);
+    const day = d.toISOString().slice(0, 10);
+    // declining trend with daily wobble: ~0.055 down to ~0.034
+    const base = 0.055 - (i / 90) * 0.021;
+    const wobble = ((i * 7) % 11) / 1000;
+    const cost = Math.round((base + wobble) * 10000) / 10000;
+    cells.push({ day, cost_per_peso: cost });
+  }
+  return cells;
 }
 
 export const STUB_COST_PER_PESO: CostPerPesoResponse = {
   populated: false,
-  costCop30d: null,
-  recoveredCop30d: null,
-  costPerRecoveredPeso: null,
-  sparkline: generateCostSparkline(),
+  reason: 'insufficient-data',
+  cost_per_peso: 0.041,
+  numerator_usd_voice: 950,
+  denominator_cop_paid: 23_170_731_707,  // ~$0.041 USD per peso recovered
+  sparkline_90d: generateCostSparkline(),
 };
 
 // ─── STUB_TOP_SCRIPTS ─────────────────────────────────────────────────────────

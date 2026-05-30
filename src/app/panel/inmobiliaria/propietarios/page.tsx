@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   UserPlus,
+  Sparkle,
   Buildings,
   CurrencyDollar,
   Warning,
@@ -29,6 +30,7 @@ import {
   PropietarioTable,
   PropietarioForm,
 } from '@/components/inmobiliaria';
+import { TerceroIACapture } from '@/components/inmobiliaria/TerceroIACapture';
 import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -175,6 +177,7 @@ function PropietariosContent() {
   }, [apiPropietarios]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showIACapture, setShowIACapture] = useState(false);
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
 
@@ -325,13 +328,22 @@ function PropietariosContent() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
-        >
-          <UserPlus className="w-5 h-5" />
-          {t('inmobiliaria.propietarios.addOwner')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowIACapture(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground uppercase tracking-wide font-mono font-medium transition-colors"
+          >
+            <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            {t('inmobiliaria.propietarios.addOwnerIA')}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+          >
+            <UserPlus className="w-5 h-5" />
+            {t('inmobiliaria.propietarios.addOwner')}
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -574,6 +586,19 @@ function PropietariosContent() {
           onSubmit={handleCreateSubmit}
           onCancel={() => setShowAddModal(false)}
           mode="create"
+        />
+      </Modal>
+
+      {/* AI Capture Modal (v6-07 — additive; reuses the create handler) */}
+      <Modal
+        open={showIACapture}
+        onClose={() => setShowIACapture(false)}
+        title={t('inmobiliaria.propietarios.addOwnerIA')}
+        size="lg"
+      >
+        <TerceroIACapture
+          onCreated={handleCreateSubmit}
+          onClose={() => setShowIACapture(false)}
         />
       </Modal>
 

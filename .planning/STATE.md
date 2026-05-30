@@ -4,14 +4,14 @@ milestone: v6.0
 milestone_name: Backoffice Unificado ERP·CRM·Autopilot
 status: in_progress
 stopped_at: null
-last_updated: "2026-05-29"
-last_activity: 2026-05-29 — Phase v6-05 (Informes & Insights — engine + panel) DONE + verified
+last_updated: "2026-05-30"
+last_activity: 2026-05-30 — Phase v6-06 (PQRS / Solicitudes + Agenda interna) DONE + verified
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 0
   completed_plans: 0
-  percent: 62
+  percent: 75
 ---
 
 # Project State
@@ -37,12 +37,12 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 ## Current Position
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first)
-Phase: **v6-01..v6-05 DONE** ✅ — **v6-06 (PQRS + Agenda) es la siguiente**
+Phase: **v6-01..v6-06 DONE** ✅ — **v6-07 (Terceros por IA) es la siguiente**
 Plan: —
-Status: In progress — v6-01..v6-05 implementados + verificados (compila/typecheck)
-Last activity: 2026-05-29 — v6-05 Informes & Insights (motor lib/insights + InsightsPanel en /hoy) done
+Status: In progress — v6-01..v6-06 implementados + verificados (tsc limpio, rutas 200, review 3/3 PASS)
+Last activity: 2026-05-30 — v6-06 PQRS / Solicitudes + Agenda interna (2 secciones + contratos pqrs/agenda.types + i18n es/en) done
 
-Progress: [██████████████████▓░░░░░░░░░░] 62% — 5 de 8 fases (v6-01..v6-05 ✅)
+Progress: [██████████████████████▓░░░░░░] 75% — 6 de 8 fases (v6-01..v6-06 ✅)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
@@ -50,13 +50,11 @@ Progress: [██████████████████▓░░░░
 - [x] **v6-03** Conciliación bancaria (CONC) — ✅ done (sección frontend + contrato `conciliacion.types.ts`; motor → M2)
 - [x] **v6-04** Egresos / Tesorería (EGR) — ✅ done (vista ERP fórmula neto completa, aditiva sobre `dispersiones`; ledger → M1)
 - [x] **v6-05** Informes & Insights (INFO) — ✅ done (motor `lib/insights` + `InsightsPanel` en /hoy; INFO-01/02/03 cubierto por `reportes` existente; data real → hooks/M1-M2)
-- [ ] **v6-04** Egresos / Tesorería (EGR)
-- [ ] **v6-05** Informes & Insights (INFO)
-- [ ] **v6-06** PQRS + Agenda (PQRS/AGEN)
-- [ ] **v6-07** Terceros por IA (TERC)
+- [x] **v6-06** PQRS + Agenda (PQRS/AGEN) — ✅ done (secciones `/pqrs` + `/agenda` + contratos `pqrs.types.ts`/`agenda.types.ts` + i18n es/en; PQRS-01..03 y AGEN-01..02 cubiertos; triage IA + agregación → M1. Nav-flip + i18n quedaron bundled en commits `37-07` por sesión paralela en el mismo working tree — contenido correcto, mensaje mislabeled)
+- [ ] **v6-07** Terceros por IA (TERC) — agente/tool **Mastra** en `rent/agent` (reusa `extract-document.ts`)
 - [ ] **v6-08** Captura propiedad foto+audio — stretch (CAPT)
 
-**Next:** planear v6-06 (PQRS / Solicitudes + Agenda interna). Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano. Plan en `.planning/phases/v6-02-facturacion/PLAN.md`.
+**Next:** v6-07 (Creación de terceros por IA): UI de captura foto cédula/RUT / audio → revisar → guardar; el lado IA = agente/tool **Mastra** en `rent/agent`. Nota: `gsd-sdk` NO está instalado — los comandos GSD que dependan de él se corren a mano.
 
 ## ⏸️ v5.0 — Pausado (histórico)
 

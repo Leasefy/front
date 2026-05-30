@@ -1,7 +1,9 @@
 # SESSION HANDOFF — v6.0 Backoffice Unificado ERP·CRM·Autopilot
 
-**Fecha:** 2026-05-29 · **Para:** retomar tras `/clear` (sesión nueva sin historial).
-**Estado:** v6.0 al **62% (5/8 fases)**. Rama `feat/v6.0-01-ia-unificada-command-center`, **12 commits, SIN pushear**.
+**Fecha:** 2026-05-30 · **Para:** retomar tras `/clear` (sesión nueva sin historial).
+**Estado:** v6.0 al **75% (6/8 fases)**. Rama `feat/v6.0-01-ia-unificada-command-center`, **SIN pushear**.
+
+> ⚠️ **Concurrencia (2026-05-30):** una sesión paralela del stream `agent` corrió **Phase 37-07** (cobranza analítica) en ESTE mismo working tree y, al hacer `git add`, **arrastró las ediciones de v6-06 en `layout.tsx` + `es.json`/`en.json` (nav-flip + namespaces i18n pqrs/agenda) dentro de sus commits `c774703`/`d546798`** — contenido correcto, pero el mensaje dice `37-07`. Las páginas/contratos de v6-06 + el flip de `/hoy` se commitearon aparte como `feat(v6-06)`. Evitar editar el mismo working tree desde dos sesiones a la vez.
 
 > Este doc es el "léeme primero" para continuar. El estado estructurado está en `STATE.md`.
 
@@ -31,8 +33,8 @@ Evolucionar el panel de la inmobiliaria (`rent/mvp` → `/panel/inmobiliaria`) e
 | **v6-03** | `/conciliacion` — carga fuente + resumen 6-casos + movimientos + `conciliacion.types.ts` | ✅ done |
 | **v6-04** | `/tesoreria` — fórmula neto completa (canon−comisión−IVA−descuentos) + `tesoreria.types.ts`, aditiva sobre `dispersiones` | ✅ done |
 | **v6-05** | Insights & Alertas — `src/lib/insights/{types,engine}.ts` + `InsightsPanel` en `/hoy` | ✅ done |
-| **v6-06** | PQRS / Solicitudes + Agenda interna (PQRS-01..03, AGEN-01..02) | ⬜ siguiente |
-| **v6-07** | Creación de terceros por IA — foto/audio → IA → prellena (TERC-01..04) | ⬜ — agente/tool **Mastra** en `rent/agent` |
+| **v6-06** | PQRS / Solicitudes (`/pqrs`) + Agenda interna (`/agenda`) + contratos `pqrs/agenda.types.ts` + i18n (PQRS-01..03, AGEN-01..02) | ✅ done |
+| **v6-07** | Creación de terceros por IA — foto/audio → IA → prellena (TERC-01..04) | ⬜ siguiente — agente/tool **Mastra** en `rent/agent` |
 | **v6-08** | Captura de propiedad foto+audio (CAPT-01..04, stretch) | ⬜ — **Mastra** |
 
 ## 4. ⚠️ Numeración `v6-NN` (NO enteros) — CRÍTICO
@@ -84,7 +86,7 @@ El repo `agent` corre un milestone paralelo **`v2.1-frontend`** (Phases 29→37+
 ## 10. TODO restante (checklist) — qué hacer después del `/clear`
 
 **Frontend v6.0 (mismo patrón §5, en `rent/mvp`):**
-- [ ] **v6-06 PQRS + Agenda** — activar nav (hoy "Pronto"), 2 secciones nuevas + contratos de tipos + i18n. PQRS puede generalizar el patrón ARCO del `agent`; Agenda es net-new.
+- [x] **v6-06 PQRS + Agenda** — ✅ nav activado, secciones `/pqrs` + `/agenda` + contratos `pqrs/agenda.types.ts` + i18n es/en. PQRS = resumen por estado + tabla + reparación→cotización (link a operaciones); Agenda = resumen por tipo + tabla eventos/tareas. Estado vacío honesto, banner M1. tsc limpio, rutas 200, review 3/3 PASS.
 - [ ] **v6-07 Terceros por IA** — UI de captura (foto cédula/RUT / audio) → revisar → guardar; el lado IA = agente/tool **Mastra** en `rent/agent` (reusa `extract-document.ts`).
 - [ ] **v6-08 Captura propiedad foto+audio** (stretch) — UI móvil + capacidad audio→ficha **Mastra** nueva en `rent/agent`.
 

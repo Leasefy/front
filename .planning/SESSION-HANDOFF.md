@@ -77,4 +77,27 @@ El repo `agent` corre un milestone paralelo **`v2.1-frontend`** (Phases 29→37+
 
 - Seguir con **v6-06** (PQRS + Agenda) — aplicar el patrón §5.
 - Completar v6-07 (Terceros IA) + v6-08 (Captura audio) — requieren trabajo Mastra en `rent/agent`.
-- **Push + abrir PR para Víctor** (12 commits) — acción hacia afuera, requiere confirmación del usuario.
+- **Push + abrir PR para Víctor** (13 commits) — acción hacia afuera, requiere confirmación del usuario.
+
+---
+
+## 10. TODO restante (checklist) — qué hacer después del `/clear`
+
+**Frontend v6.0 (mismo patrón §5, en `rent/mvp`):**
+- [ ] **v6-06 PQRS + Agenda** — activar nav (hoy "Pronto"), 2 secciones nuevas + contratos de tipos + i18n. PQRS puede generalizar el patrón ARCO del `agent`; Agenda es net-new.
+- [ ] **v6-07 Terceros por IA** — UI de captura (foto cédula/RUT / audio) → revisar → guardar; el lado IA = agente/tool **Mastra** en `rent/agent` (reusa `extract-document.ts`).
+- [ ] **v6-08 Captura propiedad foto+audio** (stretch) — UI móvil + capacidad audio→ficha **Mastra** nueva en `rent/agent`.
+
+**Cableado backend diferido (cuando exista el motor — M1/M2, no es v6.0):**
+- [ ] Conectar data real en `/facturacion` (DIAN/M2), `/conciliacion` (M1), `/tesoreria` (neto autoritativo/M1) — reemplazar empty states/contratos por hooks reales.
+- [ ] Cablear el motor de insights a datos reales en `/hoy` — en `hoy/page.tsx` cambiar `deriveInsights({preview…})` por `deriveInsights(datosReales)` desde los hooks.
+- [ ] Categorías de informes nuevas (FE, compras, Helisa, cert. tributario) cuando exista su data.
+
+**Programa / equipo (no bloquea el frontend, sí los milestones M1–M6):**
+- [ ] Decidir qué monolito es el motor ERP (`back-main` vs el backend actual de `NEXT_PUBLIC_BACKEND_URL`).
+- [ ] Contratar proveedor DIAN autorizado (M2).
+- [ ] Conseguir credenciales (Vapi, 360dialog/Kapso, Wompi/Bold, DataCrédito, carriers).
+
+**Git / entrega:**
+- [ ] Push de la rama + abrir PR para Víctor (cuando el usuario lo confirme; **nunca pushear sin OK**).
+- [ ] (opcional) Verificar `next build` verde end-to-end antes del PR.

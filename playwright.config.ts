@@ -53,6 +53,14 @@ export default defineConfig({
       name: 'Desktop Chrome 1440',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
+    // Phase 38 D-38-12 — dedicated a11y runner. Isolated from the 4 structural
+    // projects above so axe-core specs run independently. testDir override
+    // points at the new tests/e2e/panel-a11y/ directory created in Wave 1.
+    {
+      name: 'panel-a11y',
+      use: { ...devices['Desktop Chrome'] },
+      testDir: './tests/e2e/panel-a11y',
+    },
   ],
   // No webServer entry — assume dev server is already running locally
   // (cold-starting Next.js dev for every test run is too slow for smoke tests).

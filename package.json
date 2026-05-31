@@ -90,6 +90,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.3",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/mapbox-gl": "^3.4.1",

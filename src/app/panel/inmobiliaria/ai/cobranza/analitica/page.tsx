@@ -181,12 +181,12 @@ export default function CobranzaAnaliticaPage() {
           </div>
         </section>
 
-        {/* Widget 5 — Top Scripts (single col, schema pending until Phase 38) */}
+        {/* Widget 5 — Top Scripts (Phase 38-04a: branches on data.topScripts.populated) */}
         <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
           </h2>
-          <TopScriptsTable />
+          <TopScriptsTable data={data?.topScripts} />
         </section>
 
       </div>

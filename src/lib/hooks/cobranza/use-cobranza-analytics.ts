@@ -78,12 +78,28 @@ type CostPerPesoData = {
   sparkline_90d?: SparklinePoint[]
 }
 
-type TopScriptsData = {
-  populated: false
-  reason: 'schema_pending'
-  rows: never[]
-  pendingPhase: 38
+// Phase 38 plan 38-04a — TopScripts type widened to support both stub (D-38-14
+// not-yet-shipped backend) and real-data shapes. The Phase 37 stub remains valid
+// in the unpopulated branch; the populated branch unlocks once D-38-14 ships the
+// schema + handler swap (38-03-05).
+export type TopScriptsRow = {
+  scriptTemplateId: string
+  scriptName: string
+  stage: string
+  nCalls: number
+  conversionRate: number // 0..1
+  lift: number // ratio vs baseline; can be negative
+  sparkline?: number[] // 30-day rolling daily values
 }
+
+export type TopScriptsData =
+  | {
+      populated: false
+      reason: 'schema_pending' | 'below-threshold' | string
+      rows: never[]
+      pendingPhase?: number
+    }
+  | { populated: true; rows: TopScriptsRow[] }
 
 export type CobranzaAnalyticsData = {
   agencyGate: AgencyGateData

@@ -9,8 +9,10 @@ import * as React from 'react'
  * deudores ever, etc.). NOT for "below threshold" cases — those keep using
  * <NoDataYetBadge /> and <SampleDataWatermark /> (Phases 35 / 37).
  *
- * - icon prop is a Phosphor icon component (NOT Lucide; per RESEARCH Topic 11 +
- *   D-38-02). Phosphor passes `weight` + `size` props.
+ * - icon prop accepts any React component that consumes Phosphor-style props
+ *   (className, size, weight). Per RESEARCH Topic 11 + D-38-02. The prop type
+ *   uses the structural shape that aligns with `@phosphor-icons/react` IconProps
+ *   so callers pass concrete icons (FolderOpen, Users, CheckCircle, ...) directly.
  * - title + description arrive PRE-TRANSLATED from the calling page. The primitive
  *   does NOT call useI18n — keeps it reusable across any tenant/locale context.
  * - Wrapper carries `role="status"` + `aria-label={title}` so the empty state is
@@ -21,8 +23,8 @@ import * as React from 'react'
 
 type PhosphorIconProps = {
   className?: string
-  size?: number
-  weight?: string
+  size?: string | number
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
 }
 
 export type EmptyStateCta = {
@@ -32,7 +34,12 @@ export type EmptyStateCta = {
 }
 
 export type EmptyStateProps = {
-  icon: React.ComponentType<PhosphorIconProps>
+  // Phase 38 plan 38-04a — widened to `any` props at the type boundary so any
+  // Phosphor icon (ForwardRefExoticComponent<IconProps>) flows in without
+  // requiring callers to cast. The runtime contract is unchanged: the
+  // component is rendered with `weight` + `className` props below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>
   title: string
   description: string
   primaryCta?: EmptyStateCta

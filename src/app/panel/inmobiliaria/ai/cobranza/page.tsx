@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { FolderOpen } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
@@ -11,6 +12,8 @@ import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaSt
 import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
 import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel'
+import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import { CARTERA_STAGES, relativeTime } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
@@ -62,6 +65,25 @@ export default function CobranzaOverviewPage() {
     },
     [router, searchParams]
   )
+
+  // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
+  if (isLoading && !data) return <CobranzaOverviewSkeleton />
+
+  if (!data && !isLoading && !error) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={FolderOpen}
+          title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cobranza.overview.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+          }}
+        />
+      </main>
+    )
+  }
 
   return (
     <main className="p-6 lg:p-8 space-y-6">

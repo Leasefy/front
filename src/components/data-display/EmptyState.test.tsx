@@ -10,8 +10,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
 // Phosphor icon stub — we only need a no-op component for the icon prop.
-const FakeIcon: React.FC<{ className?: string; size?: number; weight?: string }> = (props) =>
-  React.createElement('span', { 'data-testid': 'fake-icon', ...props })
+const FakeIcon: React.FC<{ className?: string; size?: string | number; weight?: string }> = (
+  props,
+) => React.createElement('span', { 'data-testid': 'fake-icon', ...props })
 
 import { EmptyState } from './EmptyState'
 

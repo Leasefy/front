@@ -300,6 +300,13 @@ export default function ArcoInboxPage() {
                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
                     : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
                 }`}
+                // a11y (XR-06): color encodes overdue state — surface it via
+                // aria-label so screen-reader users get the same signal.
+                aria-label={
+                  hasOverdue[tab]
+                    ? `${tabCounts[tab]} ${t('inmobiliaria.ai.arco.kpis.overdue')}`
+                    : String(tabCounts[tab])
+                }
               >
                 {tabCounts[tab]}
               </span>

@@ -117,10 +117,14 @@ function ComplianceOverviewContent() {
         </div>
       )}
 
-      {/* Error state */}
+      {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
       {error && !data && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
-          Error: {error}
+        <div
+          role="alert"
+          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2"
+        >
+          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
+          <span>Error: {error}</span>
         </div>
       )}
 

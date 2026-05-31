@@ -23,11 +23,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CaretLeft } from '@phosphor-icons/react'
+import { CaretLeft, ClipboardText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   useAuditLog,
   type AuditLogFilters,
@@ -111,6 +113,15 @@ function AuditContent() {
   }, [])
 
   const onResetActor = useCallback(() => setActor(undefined), [])
+
+  // Phase 38-05a: skeleton only as early-return on first load (no custom
+  // filters set). EmptyState stays inline below so users keep access to
+  // filter controls + can adjust criteria.
+  const hasCustomFilters =
+    filters.actor !== undefined || filters.action !== undefined || filters.q !== undefined
+  if (isLoading && items.length === 0 && !hasCustomFilters) {
+    return <PageSkeleton variant="list" />
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -275,8 +286,8 @@ function AuditContent() {
         </div>
       </div>
 
-      {/* Loading state */}
-      {isLoading && items.length === 0 && (
+      {/* Loading state (only for filter-triggered refetch — first load handled by early return) */}
+      {isLoading && items.length === 0 && hasCustomFilters && (
         <div className="flex items-center justify-center py-12">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
@@ -289,13 +300,13 @@ function AuditContent() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — Phase 38-05a: EmptyState primitive */}
       {!isLoading && items.length === 0 && !error && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          {locale.startsWith('es')
-            ? 'Sin registros que coincidan con los filtros.'
-            : 'No records match the filters.'}
-        </p>
+        <EmptyState
+          icon={ClipboardText}
+          title={t('inmobiliaria.ai.cobranza.compliance.audit.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.compliance.audit.empty.description')}
+        />
       )}
 
       {/* Table */}

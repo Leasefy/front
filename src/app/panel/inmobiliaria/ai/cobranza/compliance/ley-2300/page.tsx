@@ -13,12 +13,14 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CaretLeft } from '@phosphor-icons/react'
+import { CaretLeft, Gavel } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 interface Attempt {
   event_id: string
@@ -84,6 +86,20 @@ function Ley2300Content() {
     await fetchPage(nextCursor, true)
   }, [nextCursor, isLoadingMore, fetchPage])
 
+  // Phase 38-05a: page-level skeleton during first load
+  if (isLoading && items.length === 0) return <PageSkeleton variant="list" />
+
+  // Phase 38-05a: page-level EmptyState for "no infractions" celebratory case
+  if (!isLoading && items.length === 0 && !error) {
+    return (
+      <EmptyState
+        icon={Gavel}
+        title={t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.title')}
+        description={t('inmobiliaria.ai.cobranza.compliance.ley2300.empty.description')}
+      />
+    )
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
@@ -99,24 +115,10 @@ function Ley2300Content() {
         </h1>
       </div>
 
-      {isLoading && items.length === 0 && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
       {error && (
         <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
           Error: {error}
         </div>
-      )}
-
-      {!isLoading && items.length === 0 && !error && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          {locale.startsWith('es')
-            ? 'Sin intentos fuera de horario en el período.'
-            : 'No outside-hours attempts in the period.'}
-        </p>
       )}
 
       {items.length > 0 && (

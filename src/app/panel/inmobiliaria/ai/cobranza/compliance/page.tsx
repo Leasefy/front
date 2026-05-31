@@ -26,6 +26,8 @@ import { useI18n } from '@/lib/i18n'
 import { useComplianceOverview } from '@/lib/hooks/cobranza/use-compliance-overview'
 import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasDataSlaCard'
 import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
@@ -48,6 +50,25 @@ function ComplianceOverviewContent() {
     const min = Math.round(sec / 60)
     return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
   }, [data?.generated_at, locale])
+
+  // Phase 38-05a: page-level skeleton during first load
+  if (isLoading && !data) return <PageSkeleton variant="dashboard" />
+
+  // Phase 38-05a: page-level EmptyState when no compliance issues at all
+  // ("truly empty" = no open Habeas Data + no outside-hours violations)
+  const hasAnyIssues =
+    !!data &&
+    (data.habeas_data.open_requests.length > 0 ||
+      data.ley_2300.weekly_outside_hours_count > 0)
+  if (!isLoading && data && !error && !hasAnyIssues) {
+    return (
+      <EmptyState
+        icon={ShieldCheck}
+        title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
+        description={t('inmobiliaria.ai.cobranza.compliance.empty.description')}
+      />
+    )
+  }
 
   const subPages = [
     {
@@ -108,13 +129,6 @@ function ComplianceOverviewContent() {
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
         </motion.div>
-      )}
-
-      {/* Loading state */}
-      {isLoading && !data && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
       )}
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}

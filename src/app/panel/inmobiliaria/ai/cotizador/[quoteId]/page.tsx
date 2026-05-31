@@ -18,6 +18,7 @@ import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierSt
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
 import { CounterfactualModal } from '@/components/cotizador/CounterfactualModal'
 import { ReQuoteOfBadge } from '@/components/cotizador/ReQuoteOfBadge'
+import { CotizadorQuoteDetailSkeleton } from '@/components/skeleton/panel/CotizadorQuoteDetailSkeleton'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -128,6 +129,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   if (!canView) {
     // Layout already handles 403, but belt-and-suspenders guard
     return null
+  }
+
+  // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04 detail rule) ───────────
+  // First real loading state for this page (RESEARCH Topic 9: previous count=1
+  // was superficial). Fires while SSE is still connecting and no carriers have
+  // arrived yet. NO EmptyState — dynamic route only loads when quote exists;
+  // 404 path handles not-found.
+  if (carriers.length === 0 && !isConnected && !error) {
+    return <CotizadorQuoteDetailSkeleton />
   }
 
   return (

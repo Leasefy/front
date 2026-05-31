@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import * as React from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FolderOpen } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
@@ -66,6 +67,49 @@ export default function CobranzaOverviewPage() {
     [router, searchParams]
   )
 
+  // ── Roving-tabindex composite-widget pattern (Phase 38 plan 38-04c / D-38-13) ─
+  // The 7 stage cards act as a tablist; Tab enters once, ArrowLeft/Right moves
+  // focus within. Enter/Space activates the same handler as a mouse click.
+  const [focusedStage, setFocusedStage] = useState<CarteraStage>('S0')
+
+  // One ref per stage — stable across renders (createRef runs once on mount).
+  const stageRefs = useRef<Record<CarteraStage, React.RefObject<HTMLButtonElement>>>(
+    Object.fromEntries(
+      CARTERA_STAGES.map((s) => [s, React.createRef<HTMLButtonElement>()]),
+    ) as Record<CarteraStage, React.RefObject<HTMLButtonElement>>,
+  )
+
+  const handleStageKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, stage: CarteraStage) => {
+      const idx = CARTERA_STAGES.indexOf(stage)
+      if (e.key === 'ArrowRight' && idx < CARTERA_STAGES.length - 1) {
+        e.preventDefault()
+        const next = CARTERA_STAGES[idx + 1]
+        setFocusedStage(next)
+        stageRefs.current[next].current?.focus()
+      } else if (e.key === 'ArrowLeft' && idx > 0) {
+        e.preventDefault()
+        const prev = CARTERA_STAGES[idx - 1]
+        setFocusedStage(prev)
+        stageRefs.current[prev].current?.focus()
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        const first = CARTERA_STAGES[0]
+        setFocusedStage(first)
+        stageRefs.current[first].current?.focus()
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        const last = CARTERA_STAGES[CARTERA_STAGES.length - 1]
+        setFocusedStage(last)
+        stageRefs.current[last].current?.focus()
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handleStageClick(stage)
+      }
+    },
+    [handleStageClick],
+  )
+
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   if (isLoading && !data) return <CobranzaOverviewSkeleton />
 
@@ -120,8 +164,12 @@ export default function CobranzaOverviewPage() {
         isLoading={isLoading}
       />
 
-      {/* Stage cards */}
-      <section aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}>
+      {/* Stage cards — roving-tabindex tablist composite widget (D-38-13) */}
+      <section
+        role="tablist"
+        aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}
+        aria-orientation="horizontal"
+      >
         <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
           {t('inmobiliaria.ai.cobranza.overview.stages.title')}
         </h2>
@@ -131,62 +179,77 @@ export default function CobranzaOverviewPage() {
             return (
               <CobranzaStageCard
                 key={stage}
+                ref={stageRefs.current[stage]}
                 stage={stage}
                 count={stageData?.count ?? 0}
                 avgDaysInStage={stageData?.avgDaysInStage ?? 0}
                 weeklyDelta={stageData?.weeklyDelta ?? 0}
                 onStageClick={handleStageClick}
                 isLoading={isLoading}
+                role="tab"
+                aria-selected={focusedStage === stage}
+                tabIndex={focusedStage === stage ? 0 : -1}
+                id={`stage-tab-${stage}`}
+                aria-controls="stage-panel"
+                onKeyDown={(e) => handleStageKeyDown(e, stage)}
               />
             )
           })}
         </div>
       </section>
 
-      {/* Funnel chart */}
-      <section aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.title')}>
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
-          {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
-        </h2>
-        <CobranzaFunnelChart
-          stages={data?.stages.map((s) => ({ stage: s.stage, count: s.count })) ?? []}
-          isLoading={isLoading}
-        />
+      {/* Tabpanel — required by ARIA spec when role=tab + aria-controls present */}
+      <section
+        role="tabpanel"
+        id="stage-panel"
+        aria-labelledby={`stage-tab-${focusedStage}`}
+        className="space-y-6"
+      >
+        {/* Funnel chart */}
+        <section aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.title')}>
+          <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+            {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
+          </h2>
+          <CobranzaFunnelChart
+            stages={data?.stages.map((s) => ({ stage: s.stage, count: s.count })) ?? []}
+            isLoading={isLoading}
+          />
+        </section>
+
+        {/* Two-column section: transitions (60%) + next actions (40%) */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          {/* On sm: next actions accordion renders above feed */}
+          <div className="md:hidden">
+            <CobranzaNextActionsPanel
+              actions={data?.nextActions ?? []}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Transitions feed — 3/5 = 60% */}
+          <div className="md:col-span-3">
+            <CobranzaTransitionsFeed
+              transitions={transitions}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Next actions panel — 2/5 = 40% (hidden on sm, accordion shows above) */}
+          <div className="hidden md:block md:col-span-2">
+            <CobranzaNextActionsPanel
+              actions={data?.nextActions ?? []}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+
+        {/* Error state */}
+        {error && !isLoading && (
+          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
+            {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
+          </div>
+        )}
       </section>
-
-      {/* Two-column section: transitions (60%) + next actions (40%) */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        {/* On sm: next actions accordion renders above feed */}
-        <div className="md:hidden">
-          <CobranzaNextActionsPanel
-            actions={data?.nextActions ?? []}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {/* Transitions feed — 3/5 = 60% */}
-        <div className="md:col-span-3">
-          <CobranzaTransitionsFeed
-            transitions={transitions}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {/* Next actions panel — 2/5 = 40% (hidden on sm, accordion shows above) */}
-        <div className="hidden md:block md:col-span-2">
-          <CobranzaNextActionsPanel
-            actions={data?.nextActions ?? []}
-            isLoading={isLoading}
-          />
-        </div>
-      </div>
-
-      {/* Error state */}
-      {error && !isLoading && (
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
-          {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
-        </div>
-      )}
     </main>
   )
 }

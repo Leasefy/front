@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { ArrowUp, ArrowDown, Minus } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { useI18n } from '@/lib/i18n'
@@ -17,16 +18,36 @@ interface CobranzaStageCardProps {
   weeklyDelta: number
   onStageClick: (stage: CarteraStage) => void
   isLoading?: boolean
+  // Roving-tabindex props (Phase 38 plan 38-04c / D-38-13).
+  // All four optional so existing call-sites without them continue to work.
+  role?: React.AriaRole
+  'aria-selected'?: boolean
+  tabIndex?: number
+  onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>
+  id?: string
+  'aria-controls'?: string
 }
 
-export function CobranzaStageCard({
-  stage,
-  count,
-  avgDaysInStage,
-  weeklyDelta,
-  onStageClick,
-  isLoading = false,
-}: CobranzaStageCardProps) {
+export const CobranzaStageCard = React.forwardRef<
+  HTMLButtonElement,
+  CobranzaStageCardProps
+>(function CobranzaStageCard(
+  {
+    stage,
+    count,
+    avgDaysInStage,
+    weeklyDelta,
+    onStageClick,
+    isLoading = false,
+    role,
+    'aria-selected': ariaSelected,
+    tabIndex,
+    onKeyDown,
+    id,
+    'aria-controls': ariaControls,
+  },
+  ref,
+) {
   const { t, locale } = useI18n()
   const colors = stageColorClasses(stage)
   const displayName = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
@@ -42,9 +63,16 @@ export function CobranzaStageCard({
       transition={{ duration: 0.15 }}
     >
       <button
+        ref={ref}
         type="button"
         onClick={() => onStageClick(stage)}
         aria-label={ariaLabel}
+        role={role}
+        aria-selected={ariaSelected}
+        tabIndex={tabIndex}
+        onKeyDown={onKeyDown}
+        id={id}
+        aria-controls={ariaControls}
         className={[
           'w-full text-left rounded-xl border p-4 transition-shadow',
           colors.bg,
@@ -99,4 +127,4 @@ export function CobranzaStageCard({
       </button>
     </motion.div>
   )
-}
+})

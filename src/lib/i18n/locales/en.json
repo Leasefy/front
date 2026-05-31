@@ -4210,7 +4210,14 @@
             "neverSeen": "No verdicts yet",
             "allBreachBanner": "All insurers in SLA breach — results may be slow"
           },
-          "errorLoading": "Error loading quoter data"
+          "errorLoading": "Error loading quoter data",
+          "empty": {
+            "title": "No quotes yet",
+            "description": "Generate the first one to start seeing metrics and verdicts.",
+            "cta": {
+              "label": "New quote"
+            }
+          }
         },
         "nueva": {
           "title": "New Quote",
@@ -4418,7 +4425,11 @@
             "breachColSeverity": "Severity",
             "breachColDuration": "Duration",
             "breachColResolution": "Resolution",
-            "noBreaches": "No breaches in the last 90 days"
+            "noBreaches": "No breaches in the last 90 days",
+            "empty": {
+              "title": "No SLA data for this insurer yet",
+              "description": "SLAs are calculated from historical activity."
+            }
           },
           "detail": {
             "pageTitle": "{{carrier}} — Detail",
@@ -4480,6 +4491,13 @@
             "title": "Reset to global?",
             "body": "Your override for {{carrier}} will be removed and it will inherit Leasefy's global settings. This cannot be undone.",
             "confirm": "Reset"
+          },
+          "empty": {
+            "title": "No active insurers",
+            "description": "Contact support to activate Sura, Mapfre or Bolívar.",
+            "cta": {
+              "label": "Contact support"
+            }
           }
         },
         "insights": {
@@ -4550,6 +4568,10 @@
           "costPreview": {
             "viewAll": "View cost details",
             "empty": "No monthly cost data yet"
+          },
+          "empty": {
+            "title": "Not enough data yet",
+            "description": "Data appears as activity accumulates."
           }
         },
         "costos": {
@@ -4590,7 +4612,14 @@
             "statusEmpty": "No data yet"
           },
           "loadError": "Could not load cost summary. Try again.",
-          "retry": "Retry"
+          "retry": "Retry",
+          "empty": {
+            "title": "Not enough data yet",
+            "description": "Data appears as activity accumulates."
+          }
+        },
+        "quote": {
+          "exportPdf": "Download PDF"
         }
       },
       "access": {
@@ -4641,7 +4670,14 @@
             "channelWhatsapp": "WhatsApp",
             "channelEmail": "Email"
           },
-          "errorLoading": "Error loading data"
+          "errorLoading": "Error loading data",
+          "empty": {
+            "title": "You don't have a collections portfolio yet",
+            "description": "Import your first portfolio to get started.",
+            "cta": {
+              "label": "Import portfolio"
+            }
+          }
         },
         "deudores": {
           "title": "Debtors",
@@ -4660,7 +4696,6 @@
           "sort": {
             "daysInStageDesc": "Most stuck first"
           },
-          "empty": "No debtors match these filters",
           "error": "Failed to load debtors",
           "errorRetry": "Retry",
           "loadingMore": "Loading more…",
@@ -4681,6 +4716,14 @@
             "voice": "Call",
             "whatsapp": "WhatsApp",
             "email": "Email"
+          },
+          "emptyFiltered": "No debtors match these filters",
+          "empty": {
+            "title": "No debtors yet",
+            "description": "Import a CSV portfolio or add manually.",
+            "cta": {
+              "label": "Import portfolio"
+            }
           }
         },
         "detail": {
@@ -4875,7 +4918,8 @@
           },
           "compliance": {
             "pillAria": "Compliance flag: {{label}}"
-          }
+          },
+          "exportTranscriptPdf": "Export transcript PDF"
         },
         "pagos": {
           "title": "Payments",
@@ -4924,7 +4968,6 @@
           "pill": {
             "disbursementPending": "Disbursement pending"
           },
-          "empty": "No payments in this period",
           "error": "Error loading payments",
           "errorRetry": "Retry",
           "loading": "Loading payments...",
@@ -4939,6 +4982,14 @@
             "debtor": "Debtor",
             "back": "Back to payments",
             "notFound": "Payment not found"
+          },
+          "emptyFiltered": "No payments in this period",
+          "empty": {
+            "title": "No payments processed yet",
+            "description": "Payments will appear here when a debtor settles.",
+            "cta": {
+              "label": "View debtors"
+            }
           }
         },
         "planes": {
@@ -5134,6 +5185,10 @@
             "stateTrace": "Agent state at escalation",
             "assignee": "Assigned to",
             "timing": "Timing"
+          },
+          "empty": {
+            "title": "Great work!",
+            "description": "No pending escalations right now."
           }
         },
         "compliance": {
@@ -5172,6 +5227,29 @@
           "actions": {
             "acknowledge": "Acknowledge",
             "export": "Export"
+          },
+          "empty": {
+            "title": "No compliance alerts",
+            "description": "All calls comply with T-323/2024 and Law 2300."
+          },
+          "audit": {
+            "empty": {
+              "title": "No audit events",
+              "description": "The log fills when an operator reveals PII or approves actions."
+            },
+            "exportCsv": "Export CSV"
+          },
+          "ley2300": {
+            "empty": {
+              "title": "No Law 2300 violations detected",
+              "description": "Calls are monitored in real time."
+            }
+          },
+          "optOut": {
+            "empty": {
+              "title": "No debtors on opt-out",
+              "description": "Opt-outs will appear here when a debtor requests no contact."
+            }
           }
         },
         "reporte": {
@@ -5202,13 +5280,36 @@
             "submit": "Save thresholds",
             "versionsHeading": "Previous versions",
             "rollbackConfirm": "Confirm rollback to version {{version}}?",
-            "rolledBackToast": "Thresholds rolled back to version {{version}}"
+            "rolledBackToast": "Thresholds rolled back to version {{version}}",
+            "empty": {
+              "title": "Using default thresholds",
+              "description": "Adjust the thresholds to match your agency's policies.",
+              "cta": {
+                "label": "Edit thresholds"
+              }
+            }
           },
           "subscription": {
             "pageTitle": "My daily report subscription",
             "emailToggle": "Receive by email",
             "whatsappToggle": "Receive by WhatsApp",
             "aggregateStat": "{{subscribed}} of {{total}} members subscribed"
+          },
+          "empty": {
+            "title": "No data for the daily report yet",
+            "description": "The report is generated nightly from the day's activity.",
+            "cta": {
+              "label": "Set up subscription"
+            }
+          },
+          "suscripcion": {
+            "empty": {
+              "title": "No report subscribers yet",
+              "description": "Add emails to receive the daily report automatically.",
+              "cta": {
+                "label": "Add subscriber"
+              }
+            }
           }
         },
         "analitica": {
@@ -5288,6 +5389,28 @@
           "errors": {
             "loading": "Failed to load collections analytics.",
             "retry": "Retry"
+          },
+          "empty": {
+            "title": "Make your first call to start seeing analytics",
+            "description": "Widgets activate with 5 or more calls.",
+            "cta": {
+              "label": "Go to debtors"
+            }
+          }
+        },
+        "plantillas": {
+          "empty": {
+            "title": "You're using the default templates",
+            "description": "Customize scripts and messages for your agency.",
+            "cta": {
+              "label": "Create template"
+            }
+          }
+        },
+        "arco": {
+          "empty": {
+            "title": "No pending ARCO requests",
+            "description": "Law 1581 requests will appear here."
           }
         }
       },
@@ -5571,6 +5694,12 @@
         "finish": "Got it",
         "relaunch": "Panel tour",
         "stepOf": "Step {current} of {total}"
+      },
+      "hub": {
+        "empty": {
+          "title": "No recent activity yet",
+          "description": "Metrics appear when agents process requests."
+        }
       }
     },
     "hoy": {

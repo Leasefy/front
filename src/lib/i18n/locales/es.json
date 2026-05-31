@@ -4223,7 +4223,14 @@
             "neverSeen": "Sin veredictos",
             "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
           },
-          "errorLoading": "Error al cargar datos del cotizador"
+          "errorLoading": "Error al cargar datos del cotizador",
+          "empty": {
+            "title": "Aún no hay cotizaciones",
+            "description": "Generá la primera para empezar a ver métricas y verdictos.",
+            "cta": {
+              "label": "Nueva cotización"
+            }
+          }
         },
         "nueva": {
           "title": "Nueva cotización",
@@ -4431,7 +4438,11 @@
             "breachColSeverity": "Severidad",
             "breachColDuration": "Duración",
             "breachColResolution": "Resolución",
-            "noBreaches": "Sin incumplimientos en los últimos 90 días"
+            "noBreaches": "Sin incumplimientos en los últimos 90 días",
+            "empty": {
+              "title": "Aún no hay datos de SLA para esta aseguradora",
+              "description": "Los SLA se calculan a partir de la actividad histórica."
+            }
           },
           "detail": {
             "pageTitle": "{{carrier}} — Detalle",
@@ -4493,6 +4504,13 @@
             "title": "¿Restablecer al global?",
             "body": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
             "confirm": "Restablecer"
+          },
+          "empty": {
+            "title": "Aún no hay aseguradoras activas",
+            "description": "Contactá soporte para activar Sura, Mapfre o Bolívar.",
+            "cta": {
+              "label": "Contactar soporte"
+            }
           }
         },
         "insights": {
@@ -4563,6 +4581,10 @@
           "costPreview": {
             "viewAll": "Ver detalle de costos",
             "empty": "Sin datos de costos mensuales aún"
+          },
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
           }
         },
         "costos": {
@@ -4603,7 +4625,14 @@
             "statusEmpty": "Sin datos aún"
           },
           "loadError": "No se pudo cargar el resumen de costos. Intenta de nuevo.",
-          "retry": "Reintentar"
+          "retry": "Reintentar",
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
+          }
+        },
+        "quote": {
+          "exportPdf": "Descargar PDF"
         }
       },
       "access": {
@@ -4654,7 +4683,14 @@
             "channelWhatsapp": "WhatsApp",
             "channelEmail": "Email"
           },
-          "errorLoading": "Error cargando datos"
+          "errorLoading": "Error cargando datos",
+          "empty": {
+            "title": "Aún no tenés cartera de cobranza",
+            "description": "Importá tu primera cartera para empezar.",
+            "cta": {
+              "label": "Importar cartera"
+            }
+          }
         },
         "deudores": {
           "title": "Deudores",
@@ -4673,7 +4709,6 @@
           "sort": {
             "daysInStageDesc": "Más estancados primero"
           },
-          "empty": "Sin deudores con estos filtros",
           "error": "Error cargando deudores",
           "errorRetry": "Reintentar",
           "loadingMore": "Cargando más…",
@@ -4694,6 +4729,14 @@
             "voice": "Llamada",
             "whatsapp": "WhatsApp",
             "email": "Email"
+          },
+          "emptyFiltered": "Sin deudores con estos filtros",
+          "empty": {
+            "title": "Aún no hay deudores",
+            "description": "Importá una cartera CSV o agregá manualmente.",
+            "cta": {
+              "label": "Importar cartera"
+            }
           }
         },
         "detail": {
@@ -4888,7 +4931,8 @@
           },
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
-          }
+          },
+          "exportTranscriptPdf": "Exportar transcript PDF"
         },
         "pagos": {
           "title": "Pagos",
@@ -4937,7 +4981,6 @@
           "pill": {
             "disbursementPending": "Desembolso pendiente"
           },
-          "empty": "Sin pagos en este período",
           "error": "Error al cargar pagos",
           "errorRetry": "Reintentar",
           "loading": "Cargando pagos...",
@@ -4952,6 +4995,14 @@
             "debtor": "Deudor",
             "back": "Volver a pagos",
             "notFound": "Pago no encontrado"
+          },
+          "emptyFiltered": "Sin pagos en este período",
+          "empty": {
+            "title": "Aún no hay pagos procesados",
+            "description": "Los pagos aparecerán acá cuando un deudor liquide.",
+            "cta": {
+              "label": "Ver deudores"
+            }
           }
         },
         "planes": {
@@ -5147,6 +5198,10 @@
             "stateTrace": "Estado del agente al escalar",
             "assignee": "Asignada a",
             "timing": "Tiempos"
+          },
+          "empty": {
+            "title": "¡Buen trabajo!",
+            "description": "No hay escalaciones pendientes en este momento."
           }
         },
         "compliance": {
@@ -5185,6 +5240,29 @@
           "actions": {
             "acknowledge": "Reconocer",
             "export": "Exportar"
+          },
+          "empty": {
+            "title": "Sin alertas de compliance",
+            "description": "Todas las llamadas cumplen con T-323/2024 y Ley 2300."
+          },
+          "audit": {
+            "empty": {
+              "title": "Sin eventos de auditoría",
+              "description": "El log se llena cuando un operador revela PII o aprueba acciones."
+            },
+            "exportCsv": "Exportar CSV"
+          },
+          "ley2300": {
+            "empty": {
+              "title": "Sin infracciones a Ley 2300 detectadas",
+              "description": "Las llamadas se monitorean en tiempo real."
+            }
+          },
+          "optOut": {
+            "empty": {
+              "title": "Sin deudores en opt-out",
+              "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            }
           }
         },
         "reporte": {
@@ -5215,13 +5293,36 @@
             "submit": "Guardar umbrales",
             "versionsHeading": "Versiones anteriores",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
-            "rolledBackToast": "Umbrales reversados a la versión {{version}}"
+            "rolledBackToast": "Umbrales reversados a la versión {{version}}",
+            "empty": {
+              "title": "Usando thresholds por defecto",
+              "description": "Ajustá los umbrales según las políticas de tu inmobiliaria.",
+              "cta": {
+                "label": "Editar thresholds"
+              }
+            }
           },
           "subscription": {
             "pageTitle": "Mi suscripción al reporte diario",
             "emailToggle": "Recibir por correo",
             "whatsappToggle": "Recibir por WhatsApp",
             "aggregateStat": "{{subscribed}} de {{total}} miembros suscritos"
+          },
+          "empty": {
+            "title": "Aún no hay datos para el reporte diario",
+            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "cta": {
+              "label": "Configurar suscripción"
+            }
+          },
+          "suscripcion": {
+            "empty": {
+              "title": "Aún no hay suscriptores al reporte",
+              "description": "Agregá emails para recibir el reporte diario automáticamente.",
+              "cta": {
+                "label": "Agregar suscriptor"
+              }
+            }
           }
         },
         "analitica": {
@@ -5301,6 +5402,28 @@
           "errors": {
             "loading": "Error al cargar analítica de cobranza.",
             "retry": "Reintentar"
+          },
+          "empty": {
+            "title": "Hacé tu primera llamada para empezar a ver analítica",
+            "description": "Los widgets se activan con 5 o más llamadas.",
+            "cta": {
+              "label": "Ir a deudores"
+            }
+          }
+        },
+        "plantillas": {
+          "empty": {
+            "title": "Estás usando las plantillas por defecto",
+            "description": "Personalizá scripts y mensajes para tu inmobiliaria.",
+            "cta": {
+              "label": "Crear plantilla"
+            }
+          }
+        },
+        "arco": {
+          "empty": {
+            "title": "Sin solicitudes ARCO pendientes",
+            "description": "Las solicitudes Ley 1581 aparecerán acá."
           }
         }
       },
@@ -5584,6 +5707,12 @@
         "finish": "Entendido",
         "relaunch": "Tour del panel",
         "stepOf": "Paso {current} de {total}"
+      },
+      "hub": {
+        "empty": {
+          "title": "Aún no hay actividad reciente",
+          "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
+        }
       }
     },
     "hoy": {

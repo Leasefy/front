@@ -410,7 +410,7 @@ export default function DeudoresListClient() {
                   <tr>
                     <td colSpan={7} className="px-3 py-12 text-center">
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                        {t('inmobiliaria.ai.cobranza.deudores.empty')}
+                        {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
                       <button
                         type="button"

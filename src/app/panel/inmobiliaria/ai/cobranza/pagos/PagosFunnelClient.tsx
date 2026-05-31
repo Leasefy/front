@@ -391,7 +391,7 @@ export default function PagosFunnelClient() {
               <tr>
                 <td colSpan={6} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {t('inmobiliaria.ai.cobranza.pagos.empty')}
+                    {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
                 </td>
               </tr>

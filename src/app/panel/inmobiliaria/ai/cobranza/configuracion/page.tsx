@@ -42,6 +42,7 @@ import { usePoliciesConfig } from '@/lib/hooks/cobranza/use-policies-config'
 import { usePolicyVersions, type PolicyVersionRow } from '@/lib/hooks/cobranza/use-policy-versions'
 import { usePolicyImpact } from '@/lib/hooks/cobranza/use-policy-impact'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -141,24 +142,6 @@ const DEFAULT_POLICY: PolicyConfig = {
     aiDisclosure: true,
     callRecording: true,
   },
-}
-
-// ─── Skeleton card ────────────────────────────────────────────────────────────
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4 animate-pulse">
-      <div className="h-5 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3" />
-      <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded w-2/3" />
-      <div className="border-t border-neutral-100 dark:border-neutral-800" />
-      <div className="grid grid-cols-2 gap-4">
-        <div className="h-11 bg-neutral-100 dark:bg-neutral-800 rounded" />
-        <div className="h-11 bg-neutral-100 dark:bg-neutral-800 rounded" />
-        <div className="h-11 bg-neutral-100 dark:bg-neutral-800 rounded" />
-        <div className="h-11 bg-neutral-100 dark:bg-neutral-800 rounded" />
-      </div>
-    </div>
-  )
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -317,17 +300,9 @@ export default function CobranzaConfiguracionPage() {
   // Render — loading state
   // ─────────────────────────────────────────────────────────────────────────────
 
-  if (isLoading && !configData) {
-    return (
-      <main className="p-4 md:p-6 space-y-6">
-        <div className="h-8 bg-neutral-200 dark:bg-neutral-700 rounded w-64 animate-pulse" />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-      </main>
-    )
-  }
+  // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04 config rule) ───────────
+  // NO EmptyState — config pages always render DEFAULT_POLICY defaults.
+  if (isLoading && !configData) return <CobranzaConfiguracionSkeleton />
 
   if (configError && !configData) {
     return (

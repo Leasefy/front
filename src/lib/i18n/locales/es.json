@@ -4894,7 +4894,8 @@
             "play": "Reproducir",
             "pause": "Pausar",
             "speed": "Velocidad",
-            "speedLabel": "Velocidad {{speed}}x"
+            "speedLabel": "Velocidad {{speed}}x",
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio."
           },
           "transcript": {
             "title": "Transcripción",

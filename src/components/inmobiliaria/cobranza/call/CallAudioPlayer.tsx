@@ -54,10 +54,40 @@ export default function CallAudioPlayer({
     ? `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/audio`
     : ''
 
+  // Keyboard map (Phase 38 plan 38-04c / XR-06 / WCAG 2.1 AA 1.3.1 + 2.1.1):
+  // - Space → togglePlay (pre-existing behavior, unchanged)
+  // - ArrowLeft / ArrowRight → seek ±5s
+  // - Digit 0-9 → jump to N/10 of duration (no-op if duration not finite)
   const onContainerKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault()
       togglePlay()
+      return
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      seekTo(Math.max(0, currentTime - 5))
+      return
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      seekTo(Math.min(duration, currentTime + 5))
+      return
+    }
+    // Digit 0-9 → jump to N/10 of duration. e.key is a single character; parseInt
+    // returns NaN for non-digits, so the bounds check guarantees only 0-9 fire.
+    if (e.key.length === 1) {
+      const digit = parseInt(e.key, 10)
+      if (
+        !Number.isNaN(digit) &&
+        digit >= 0 &&
+        digit <= 9 &&
+        Number.isFinite(duration) &&
+        duration > 0
+      ) {
+        e.preventDefault()
+        seekTo((digit / 10) * duration)
+      }
     }
   }
 
@@ -65,10 +95,15 @@ export default function CallAudioPlayer({
     <div
       role="region"
       aria-label={t('inmobiliaria.ai.cobranza.call.player.play')}
+      aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
       className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
     >
+      {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
+      <span id="audio-seek-help" className="sr-only">
+        {t('inmobiliaria.ai.cobranza.call.player.seekHelp')}
+      </span>
       <audio
         ref={audioRef}
         src={src}
@@ -130,6 +165,10 @@ export default function CallAudioPlayer({
             aria-label={t('inmobiliaria.ai.cobranza.call.transcript.seekAria', {
               time: formatSec(currentTime),
             })}
+            aria-valuemin={0}
+            aria-valuemax={Number.isFinite(duration) && duration > 0 ? duration : 0}
+            aria-valuenow={Math.floor(currentTime)}
+            aria-valuetext={formatSec(currentTime)}
             className="flex-1 h-11 accent-violet-600 cursor-pointer"
             // h-11 gives a 44px tap row; the visual thumb sits centered inside.
           />

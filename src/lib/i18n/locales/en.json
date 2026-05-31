@@ -4881,7 +4881,8 @@
             "play": "Play",
             "pause": "Pause",
             "speed": "Speed",
-            "speedLabel": "Speed {{speed}}x"
+            "speedLabel": "Speed {{speed}}x",
+            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio."
           },
           "transcript": {
             "title": "Transcript",

@@ -5565,6 +5565,25 @@
           "rollback": "No se pudo restaurar la versión. Intenta de nuevo.",
           "retry": "Reintentar"
         }
+      },
+      "tour": {
+        "step1": {
+          "title": "Agente de Cobranza",
+          "description": "Automatizá el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
+        },
+        "step2": {
+          "title": "Agente Cotizador",
+          "description": "Evaluá a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
+        },
+        "step3": {
+          "title": "Configuraciones y Políticas",
+          "description": "Personalizá cadencias, plantillas, políticas de escalación y compliance desde un solo panel."
+        },
+        "dismiss": "No mostrar de nuevo",
+        "next": "Siguiente",
+        "finish": "Entendido",
+        "relaunch": "Tour del panel",
+        "stepOf": "Paso {current} de {total}"
       }
     },
     "hoy": {

@@ -5552,6 +5552,25 @@
           "rollback": "Could not restore the version. Please try again.",
           "retry": "Retry"
         }
+      },
+      "tour": {
+        "step1": {
+          "title": "Collections Agent",
+          "description": "Automate rent collection with calls, WhatsApp, and intelligent follow-up. No human intervention needed for standard portfolios."
+        },
+        "step2": {
+          "title": "Quote Agent",
+          "description": "Evaluate applicants in seconds: scoring, co-signers, and insurer verdicts in a single flow."
+        },
+        "step3": {
+          "title": "Settings & Policies",
+          "description": "Customize call cadences, templates, escalation policies, and compliance from a single panel."
+        },
+        "dismiss": "Don't show again",
+        "next": "Next",
+        "finish": "Got it",
+        "relaunch": "Panel tour",
+        "stepOf": "Step {current} of {total}"
       }
     },
     "hoy": {

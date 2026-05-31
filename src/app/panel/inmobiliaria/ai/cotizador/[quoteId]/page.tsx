@@ -6,7 +6,7 @@
 // D-33-10 / D-33-11: Phase 33 wires the two header actions ("Pedir explicación"
 // + "Re-cotizar con cambios") and the ReQuoteOfBadge subtitle.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -49,6 +49,42 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   // Phase 33: counterfactual modal open flag (D-33-01..D-33-13).
   const [modalOpen, setModalOpen] = useState(false)
+
+  // ARIA live region — announce each carrier verdict transition (pending →
+  // final) to screen readers (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3).
+  // Strings are i18n-translated; raw SSE event payloads (debtor PII, condiciones)
+  // never reach the live region.
+  const [lastVerdictAnnouncement, setLastVerdictAnnouncement] = useState('')
+  const prevCarrierStatusRef = useRef<Record<string, string>>({})
+
+  useEffect(() => {
+    for (const c of carriers) {
+      const prevStatus = prevCarrierStatusRef.current[c.carrier]
+      if (
+        prevStatus === 'pending' &&
+        c.status !== 'pending'
+      ) {
+        // i18n verdict label — falls back to raw status string only as a guard
+        const verdictKey =
+          c.status === 'approved' ? 'approvedLabel'
+          : c.status === 'rejected' ? 'rejectedLabel'
+          : c.status === 'conditional' ? 'conditionalLabel'
+          : c.status === 'error' ? 'errorLabel'
+          : c.status === 'stub' ? 'stubLabel'
+          : null
+        const resultLabel = verdictKey
+          ? t(`inmobiliaria.ai.cotizador.detail.carrier.${verdictKey}`)
+          : c.status
+        setLastVerdictAnnouncement(
+          t('inmobiliaria.ai.cotizador.detail.liveRegion.carrierVerdict', {
+            carrier: c.carrier,
+            result: resultLabel,
+          }),
+        )
+      }
+      prevCarrierStatusRef.current[c.carrier] = c.status
+    }
+  }, [carriers, t])
 
   const allFinal =
     carriers.length > 0 && carriers.every(c => c.status !== 'pending')
@@ -157,6 +193,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* ARIA live region — announces carrier verdict transitions to SR */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {lastVerdictAnnouncement}
+        </div>
 
         {/* Re-quote lineage subtitle (D-33-11) — visible only when this quote
             originated as a re-quote of a previous one. */}

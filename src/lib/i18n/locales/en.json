@@ -4350,7 +4350,10 @@
           "retry": "Retry",
           "reQuoteOfBadge": "Re-quote of #{{shortId}}",
           "pedirExplicacionButton": "Ask for explanation",
-          "reQuoteButton": "Re-quote with changes"
+          "reQuoteButton": "Re-quote with changes",
+          "liveRegion": {
+            "carrierVerdict": "{{carrier}}: {{result}}"
+          }
         },
         "pdf": {
           "download": "Download PDF",
@@ -4677,6 +4680,9 @@
             "cta": {
               "label": "Import portfolio"
             }
+          },
+          "liveRegion": {
+            "newTransition": "{{count}} new stage transition(s)"
           }
         },
         "deudores": {
@@ -5190,6 +5196,9 @@
           "empty": {
             "title": "Great work!",
             "description": "No pending escalations right now."
+          },
+          "liveRegion": {
+            "newEscalacion": "{{count}} new escalation(s) received"
           }
         },
         "compliance": {

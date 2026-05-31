@@ -129,8 +129,28 @@ export default function CobranzaOverviewPage() {
     )
   }
 
+  // Live-region announcement string for new realtime stage transitions
+  // (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3). String is i18n-translated;
+  // raw event payloads (debtor PII) never reach this region.
+  const transitionAnnouncement =
+    realtimeTransitions.length > 0
+      ? t('inmobiliaria.ai.cobranza.overview.liveRegion.newTransition', {
+          count: realtimeTransitions.length,
+        })
+      : ''
+
   return (
     <main className="p-6 lg:p-8 space-y-6">
+      {/* ARIA live region — announces new stage transitions to screen readers */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {transitionAnnouncement}
+      </div>
+
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>

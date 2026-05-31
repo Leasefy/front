@@ -15,7 +15,7 @@
  * §11 (loading state), §16 (numeric tabular-nums).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowClockwise, CheckCircle } from '@phosphor-icons/react'
@@ -110,6 +110,31 @@ function EscalacionesContent() {
     return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
   }, [data?.generatedAt, locale])
 
+  // ARIA live region — announces newly-arrived open escalations to screen
+  // readers (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3). We compare the
+  // current data.open.length against the previously-seen count; when it
+  // grows we set the announcement string. No realtime hook exists in this
+  // page yet, but SWR revalidation will trigger this every time data is
+  // re-fetched (mutate button, focus revalidation, etc).
+  const prevOpenCountRef = useRef(0)
+  const [newEscalacionCount, setNewEscalacionCount] = useState(0)
+
+  useEffect(() => {
+    const current = data?.open.length ?? 0
+    const prev = prevOpenCountRef.current
+    if (current > prev && prev > 0) {
+      setNewEscalacionCount(current - prev)
+    }
+    prevOpenCountRef.current = current
+  }, [data?.open.length])
+
+  const escalacionAnnouncement =
+    newEscalacionCount > 0
+      ? t('inmobiliaria.ai.cobranza.escalaciones.liveRegion.newEscalacion', {
+          count: newEscalacionCount,
+        })
+      : ''
+
   const columns: Array<{
     key: 'open' | 'assigned' | 'resolved'
     label: string
@@ -157,6 +182,16 @@ function EscalacionesContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* ARIA live region — announces new open escalations to screen readers */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {escalacionAnnouncement}
+      </div>
+
       {/* Header — DESIGN.md §3 typography */}
       <div className="flex items-start justify-between gap-4">
         <div>

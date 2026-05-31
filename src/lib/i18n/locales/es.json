@@ -4363,7 +4363,10 @@
           "retry": "Reintentar",
           "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
           "pedirExplicacionButton": "Pedir explicación",
-          "reQuoteButton": "Re-cotizar con cambios"
+          "reQuoteButton": "Re-cotizar con cambios",
+          "liveRegion": {
+            "carrierVerdict": "{{carrier}}: {{result}}"
+          }
         },
         "pdf": {
           "download": "Descargar PDF",
@@ -4690,6 +4693,9 @@
             "cta": {
               "label": "Importar cartera"
             }
+          },
+          "liveRegion": {
+            "newTransition": "{{count}} nueva(s) transición(es) de etapa"
           }
         },
         "deudores": {
@@ -5203,6 +5209,9 @@
           "empty": {
             "title": "¡Buen trabajo!",
             "description": "No hay escalaciones pendientes en este momento."
+          },
+          "liveRegion": {
+            "newEscalacion": "{{count}} nueva(s) escalación(es) recibida(s)"
           }
         },
         "compliance": {

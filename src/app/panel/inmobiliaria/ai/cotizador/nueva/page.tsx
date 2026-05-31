@@ -21,6 +21,7 @@ import { WizardStep2Propiedad } from '@/components/inmobiliaria/cotizador/Wizard
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
@@ -318,6 +319,17 @@ export default function NuevaCotizacionPage() {
       setIsSubmitting(false)
     }
   }, [candidato, propiedad, agency, clear, router, t, prefillCedulaHash, isReQuoteMode, parentQuoteId, prefillDismissed])
+
+  // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04 wizard rule) ───────────
+  // Re-quote hydration only — normal new-quote path always has immediate form
+  // state, so no skeleton there. No EmptyState (wizard always has form state).
+  if (isReQuoteMode && parentMetadata.isLoading) {
+    return (
+      <PageGuard module="cotizador" action="view">
+        <CotizadorWizardSkeleton />
+      </PageGuard>
+    )
+  }
 
   return (
     <PageGuard module="cotizador" action="view">

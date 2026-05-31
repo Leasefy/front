@@ -737,12 +737,17 @@ export function getDispersionStatusLabel(status: DispersionStatus): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  // Colombian pesos (COP). es-CO grouping (dot thousands) with a literal "$"
+  // prefix — `{ style:'currency', currency:'COP' }` would insert a space after
+  // the "$", so the prefix keeps the exact existing visual ("$2.500.000",
+  // negatives "$-2.500") while fixing the es-CL/CLP (Chile) misnomer.
+  return (
+    '$' +
+    new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  );
 }
 
 export function getDaysLate(dueDate: string): number {

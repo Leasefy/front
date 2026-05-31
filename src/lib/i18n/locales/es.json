@@ -5904,6 +5904,8 @@
       "emptyDesc": "Tus visitas, firmas, vencimientos y tareas aparecerán aquí. La agenda se conecta con el motor en M1."
     },
     "terceroIA": {
+      "errorTooLarge": "La imagen supera el tamaño máximo (8 MB). Usa una foto más liviana.",
+      "docKindLabel": "Tipo de documento",
       "intro": "Sube una foto de la cédula o el RUT y la IA prellenará el formulario del tercero. Revisa y corrige antes de guardar.",
       "kindCedula": "Cédula",
       "kindRut": "RUT",
@@ -5924,6 +5926,14 @@
       "fillManual": "Llenar manual"
     },
     "propertyIA": {
+      "errorAudioTooLarge": "El audio es demasiado largo. Graba una descripción más corta.",
+      "autoStopped": "Grabación detenida automáticamente (máximo 4 minutos).",
+      "confirmReextract": "Volver a procesar reemplazará los datos que editaste. ¿Continuar?",
+      "errorMicDenied": "Permiso de micrófono denegado. Habilítalo en el navegador para grabar.",
+      "errorMicNotFound": "No se encontró un micrófono.",
+      "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
+      "assignWarning": "La propiedad se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
+      "photoFormatUnsupported": "Algunas fotos tienen un formato no compatible (p. ej. HEIC) y se omitieron. Usa JPG o PNG.",
       "pageTitle": "Capturar propiedad con IA",
       "pageSubtitle": "Graba una descripción y agrega fotos; la IA arma la ficha para que la revises.",
       "back": "Volver a propiedades",

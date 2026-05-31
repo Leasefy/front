@@ -122,6 +122,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
       <div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
           className={cn(
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
@@ -169,6 +170,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     <Link
       href={item.href}
       onClick={onClick}
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 text-[14px] rounded-full',
         'transition-colors',
@@ -271,10 +273,16 @@ function SidebarContent({
       </div>
 
       {/* Compass */}
-      <nav className={cn(
-        'flex-1 overflow-y-auto py-2',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
+      <nav
+        aria-label="Navegación principal"
+        // data-lenis-prevent + overscroll-contain: the grouped nav can overflow,
+        // and Lenis otherwise hijacks the wheel so the sidebar never scrolls.
+        data-lenis-prevent
+        className={cn(
+          'flex-1 overflow-y-auto py-2 [overscroll-behavior:contain]',
+          isCollapsed ? 'px-2' : 'px-3'
+        )}
+      >
         <div className="space-y-0.5">
           {navItems.map((item) => (
             <NavItemComponent

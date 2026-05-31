@@ -120,12 +120,15 @@ export default function FacturacionPage() {
       </div>
 
       {/* Tabs (segmented) */}
-      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto max-w-full">
+      <div role="tablist" aria-label={t(k('label'))} className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto max-w-full">
         {TABS.map((x) => {
           const isActive = x.key === active;
           return (
             <button
               key={x.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => setActive(x.key)}
               className={cn(
                 'whitespace-nowrap px-3.5 py-2 rounded-lg text-sm font-medium transition-colors',

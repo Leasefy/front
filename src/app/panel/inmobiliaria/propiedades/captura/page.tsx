@@ -27,7 +27,7 @@ function CapturaContent() {
             <Sparkle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" weight="fill" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{t(k('pageTitle'))}</h1>
+            <h1 className="text-h2 text-foreground">{t(k('pageTitle'))}</h1>
             <p className="text-muted-foreground text-sm">{t(k('pageSubtitle'))}</p>
           </div>
         </div>

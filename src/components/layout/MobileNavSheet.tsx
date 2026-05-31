@@ -44,9 +44,10 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
               weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
             }>;
 
-            // Render children as sub-rows if present
+            // Render the parent's own link first, then its children as sub-rows
+            // (otherwise a parent with children loses its own destination here).
             const rows: NavItem[] = item.children && item.children.length > 0
-              ? item.children
+              ? [item, ...item.children]
               : [item];
 
             return rows.map((row) => {

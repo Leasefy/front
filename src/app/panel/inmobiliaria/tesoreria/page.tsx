@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wallet, Info, ArrowRight, PaperPlaneTilt } from '@phosphor-icons/react';
+import { Wallet, Info, PaperPlaneTilt } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -14,7 +14,7 @@ const COLUMNS = [
 ];
 
 // Ejemplo ilustrativo de la fórmula del neto (etiquetado como ejemplo — no es data real).
-const EJEMPLO = { canonRecibido: 2_500_000, comisionAdmin: 250_000, comisionPorcentaje: 10, ivaComision: 47_500, descuentos: 0 };
+const EJEMPLO = { canonRecibido: 2_500_000, comisionAdmin: 250_000, comisionPorcentaje: 10, ivaPorcentaje: 19, ivaComision: 47_500, descuentos: 0 };
 const EJEMPLO_NETO = calcularNeto(EJEMPLO);
 
 export default function TesoreriaPage() {
@@ -24,7 +24,7 @@ export default function TesoreriaPage() {
   const formulaRows = [
     { labelKey: 'fCanon', value: EJEMPLO.canonRecibido, sign: '', tone: 'text-foreground' },
     { labelKey: 'fComision', value: EJEMPLO.comisionAdmin, sign: '−', tone: 'text-rose-600 dark:text-rose-400', note: `${EJEMPLO.comisionPorcentaje}%` },
-    { labelKey: 'fIva', value: EJEMPLO.ivaComision, sign: '−', tone: 'text-rose-600 dark:text-rose-400', note: '19%' },
+    { labelKey: 'fIva', value: EJEMPLO.ivaComision, sign: '−', tone: 'text-rose-600 dark:text-rose-400', note: `${EJEMPLO.ivaPorcentaje}%` },
     { labelKey: 'fDescuentos', value: EJEMPLO.descuentos, sign: '−', tone: 'text-rose-600 dark:text-rose-400' },
   ];
 

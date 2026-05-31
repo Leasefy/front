@@ -37,11 +37,13 @@ export function deriveInsights(input: InsightInputs): Insight[] {
   }
 
   if (input.montoPorDispersar > 0) {
+    // Defensive clamp: upstream may feed a stray >100 or negative coverage.
+    const cobertura = Math.max(0, Math.min(100, input.coberturaDispersarPct));
     out.push({
       id: 'por_dispersar',
       kind: 'por_dispersar',
-      severity: input.coberturaDispersarPct < 100 ? 'warning' : 'info',
-      params: { monto: input.montoPorDispersar, cobertura: Math.round(input.coberturaDispersarPct) },
+      severity: cobertura < 100 ? 'warning' : 'info',
+      params: { monto: input.montoPorDispersar, cobertura: Math.round(cobertura) },
     });
   }
 

@@ -1153,6 +1153,14 @@
     }
   }
 
+  /* Print stylesheet — hide all PII-bearing elements from print/PDF output (XR-07) */
+  @media print {
+    [data-pii-field],
+    [data-pii-revealed="true"] {
+      visibility: hidden !important;
+    }
+  }
+
   /* ==========================================================
    * PLan CRM Design System Utilities
    * ========================================================== */

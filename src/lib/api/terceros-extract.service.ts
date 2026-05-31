@@ -66,9 +66,10 @@ export async function extractTerceroFromImage(
 
   const { base64, mediaType } = await fileToBase64(file);
 
+  // Bearer-only auth (no cookies) — credentials:'include' would force the agent
+  // CORS allowlist to drop the wildcard for no reason.
   const res = await globalThis.fetch(`${agentUrl}/terceros/extract`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getAccessToken() ?? ''}`,
@@ -77,6 +78,7 @@ export async function extractTerceroFromImage(
   });
 
   if (!res.ok) {
+    if (res.status === 401) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body?.error ?? `Error ${res.status}`);
   }

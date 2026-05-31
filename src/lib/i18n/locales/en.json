@@ -5891,6 +5891,8 @@
       "emptyDesc": "Your visits, signatures, expiries and tasks will appear here. The calendar connects to the engine in M1."
     },
     "terceroIA": {
+      "errorTooLarge": "The image exceeds the maximum size (8 MB). Use a smaller photo.",
+      "docKindLabel": "Document type",
       "intro": "Upload a photo of the ID or RUT and AI will prefill the third-party form. Review and correct before saving.",
       "kindCedula": "ID card",
       "kindRut": "RUT",
@@ -5911,6 +5913,14 @@
       "fillManual": "Fill manually"
     },
     "propertyIA": {
+      "errorAudioTooLarge": "The audio is too long. Record a shorter description.",
+      "autoStopped": "Recording stopped automatically (4 minute maximum).",
+      "confirmReextract": "Re-processing will replace the data you edited. Continue?",
+      "errorMicDenied": "Microphone permission denied. Enable it in your browser to record.",
+      "errorMicNotFound": "No microphone found.",
+      "errorMicUnsupported": "Your browser can't record audio here (requires HTTPS).",
+      "assignWarning": "The property was created, but the agent couldn't be assigned. Assign it from the list.",
+      "photoFormatUnsupported": "Some photos have an unsupported format (e.g. HEIC) and were skipped. Use JPG or PNG.",
       "pageTitle": "Capture property with AI",
       "pageSubtitle": "Record a description and add photos; AI builds the listing for you to review.",
       "back": "Back to properties",

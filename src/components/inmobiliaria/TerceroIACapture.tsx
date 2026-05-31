@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Sparkle,
   UploadSimple,
@@ -35,6 +35,11 @@ const DOC_KINDS: { value: TerceroDocKind; labelKey: string }[] = [
   { value: 'rut', labelKey: 'kindRut' },
 ];
 
+// Guard the upload before sending; the agent caps the base64 body at 12MB and a
+// raw photo inflates ~1.33× as base64, so reject > ~8MB up front (clear error
+// instead of a 413 after a full upload).
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
 /**
  * Captura de tercero por IA (v6-07): subir foto de cédula/RUT → el agente
  * extrae los datos → se prellena PropietarioForm → el usuario revisa y guarda
@@ -53,6 +58,14 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   const [confidence, setConfidence] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  // Revoke the last preview object URL on unmount (the Modal unmounts on close).
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   const onPickFile = (f: File | undefined) => {
     if (!f) return;
@@ -60,10 +73,16 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       toast.error(t(k('errorImageOnly')));
       return;
     }
+    if (f.size > MAX_IMAGE_BYTES) {
+      toast.error(t(k('errorTooLarge')));
+      return;
+    }
     setFile(f);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(f);
+      const url = URL.createObjectURL(f);
+      previewUrlRef.current = url;
+      return url;
     });
   };
 
@@ -187,10 +206,13 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       </div>
 
       {/* Tipo de documento */}
-      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted">
+      <div role="tablist" aria-label={t(k('docKindLabel'))} className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted">
         {DOC_KINDS.map((dk) => (
           <button
             key={dk.value}
+            type="button"
+            role="tab"
+            aria-selected={docKind === dk.value}
             onClick={() => setDocKind(dk.value)}
             className={cn(
               'h-9 px-4 rounded-lg text-sm font-medium transition-colors',

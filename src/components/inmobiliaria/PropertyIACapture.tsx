@@ -40,6 +40,12 @@ const inputClass =
   'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all';
 
 const MAX_PHOTOS = 4;
+// ~4 min cap so a forgotten recorder can't produce an oversized upload, and a
+// raw-size guard before sending (server caps the body at 28MB; webm voice is far
+// smaller, but enforce a clear ceiling instead of a post-upload 413).
+const MAX_RECORDING_SECONDS = 240;
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 interface ReviewForm {
   title: string;
@@ -114,6 +120,8 @@ export function PropertyIACapture() {
   // ── Review form ──
   const [form, setForm] = useState<ReviewForm | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  // Tracks manual edits so re-extracting (which overwrites the form) can confirm first.
+  const formEditedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -134,6 +142,10 @@ export function PropertyIACapture() {
   };
 
   const startRecording = async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      toast.error(t(k('errorMicUnsupported')));
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = pickMime();
@@ -156,8 +168,11 @@ export function PropertyIACapture() {
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } catch {
-      toast.error(t(k('errorMic')));
+    } catch (err) {
+      const name = (err as { name?: string } | null)?.name;
+      if (name === 'NotAllowedError' || name === 'SecurityError') toast.error(t(k('errorMicDenied')));
+      else if (name === 'NotFoundError') toast.error(t(k('errorMicNotFound')));
+      else toast.error(t(k('errorMic')));
     }
   };
 
@@ -166,6 +181,15 @@ export function PropertyIACapture() {
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
   };
+
+  // Auto-stop at the cap (a forgotten recorder shouldn't produce an oversized upload).
+  useEffect(() => {
+    if (isRecording && seconds >= MAX_RECORDING_SECONDS) {
+      stopRecording();
+      toast.info(t(k('autoStopped')));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds, isRecording]);
 
   const reRecord = () => {
     setAudioBlob(null);
@@ -178,7 +202,11 @@ export function PropertyIACapture() {
 
   const addPhotos = (files: FileList | null) => {
     if (!files) return;
-    const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    const all = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    // Only send formats Claude Vision accepts. HEIC (iPhone default) would be
+    // mislabeled as jpeg and silently ignored — tell the user instead.
+    const imgs = all.filter((f) => ALLOWED_PHOTO_TYPES.includes(f.type));
+    if (imgs.length < all.length) toast.error(t(k('photoFormatUnsupported')));
     setPhotos((prev) => [...prev, ...imgs].slice(0, MAX_PHOTOS));
     setPhotoUrls((prev) => [...prev, ...imgs.map((f) => URL.createObjectURL(f))].slice(0, MAX_PHOTOS));
   };
@@ -197,11 +225,20 @@ export function PropertyIACapture() {
       toast.error(t(k('errorNoAudio')));
       return;
     }
+    if (audioBlob.size > MAX_AUDIO_BYTES) {
+      toast.error(t(k('errorAudioTooLarge')));
+      return;
+    }
+    // Re-extracting overwrites the review form; confirm if the user edited it.
+    if (form && formEditedRef.current && !window.confirm(t(k('confirmReextract')))) {
+      return;
+    }
     setStep('extracting');
     setErrorMsg(null);
     try {
       const res = await extractPropertyFromCapture(audioBlob, photos);
       setForm(fichaToForm(res.ficha));
+      formEditedRef.current = false;
       setConfidence(res.confidence);
       setStep('review');
     } catch (err) {
@@ -211,8 +248,10 @@ export function PropertyIACapture() {
     }
   };
 
-  const updateForm = (field: keyof ReviewForm, value: string) =>
+  const updateForm = (field: keyof ReviewForm, value: string) => {
+    formEditedRef.current = true;
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
 
   const isValid =
     !!form &&
@@ -253,7 +292,14 @@ export function PropertyIACapture() {
         // mirror /nueva: agents auto-assign themselves; admins assign later from the list
       }
       if (!isAdmin && user?.email) {
-        await propertiesApi.assignAgent(property.id, user.email);
+        try {
+          await propertiesApi.assignAgent(property.id, user.email);
+        } catch {
+          // The property WAS created; only the auto-assign failed. Surfacing this
+          // as a create error would tempt a retry that duplicates the property —
+          // warn and continue to the list instead.
+          toast.warning(t(k('assignWarning')));
+        }
       }
 
       toast.success(t(k('created')));

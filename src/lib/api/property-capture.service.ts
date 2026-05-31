@@ -75,14 +75,17 @@ export async function extractPropertyFromCapture(
 
   const photoPayload: PropertyCapturePhoto[] = [];
   for (const file of photos.slice(0, 4)) {
-    const base = (file.type as PropertyImageMediaType) || 'image/jpeg';
-    const mediaType = ALLOWED_IMAGE.includes(base) ? base : 'image/jpeg';
-    photoPayload.push({ data: await blobToBase64(file), mediaType });
+    const base = file.type as PropertyImageMediaType;
+    // Skip unsupported formats (e.g. HEIC) rather than mislabel the bytes as
+    // jpeg — Claude Vision would silently ignore a mislabeled image.
+    if (!ALLOWED_IMAGE.includes(base)) continue;
+    photoPayload.push({ data: await blobToBase64(file), mediaType: base });
   }
 
+  // Bearer-only auth (no cookies) — credentials:'include' would force the agent
+  // CORS allowlist to drop the wildcard for no reason.
   const res = await globalThis.fetch(`${agentUrl}/property-capture/extract`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getAccessToken() ?? ''}`,
@@ -95,6 +98,7 @@ export async function extractPropertyFromCapture(
   });
 
   if (!res.ok) {
+    if (res.status === 401) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body?.error ?? `Error ${res.status}`);
   }

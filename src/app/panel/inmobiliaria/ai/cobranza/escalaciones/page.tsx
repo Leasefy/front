@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise, CheckCircle } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -33,6 +33,8 @@ import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/Escal
 import { EscalationAssignDropdown } from '@/components/inmobiliaria/cobranza/EscalationAssignDropdown'
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
+import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -132,6 +134,26 @@ function EscalacionesContent() {
     ],
     [t, data],
   )
+
+  // ── Skeleton + celebratory EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─
+  if (isLoading && !data) return <CobranzaEscalacionesSkeleton />
+
+  const allEmpty =
+    data !== null &&
+    data.open.length === 0 &&
+    data.assigned.length === 0 &&
+    data.resolved.length === 0
+  if (!isLoading && allEmpty && !error) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={CheckCircle}
+          title={t('inmobiliaria.ai.cobranza.escalaciones.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.escalaciones.empty.description')}
+        />
+      </main>
+    )
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">

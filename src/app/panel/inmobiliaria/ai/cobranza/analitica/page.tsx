@@ -3,8 +3,11 @@
 // Permissions gate: cobranza:view enforced by layout.tsx via NavItemWithModule module='cobranza'.
 // Page does not re-check.
 
+import { PhoneCall } from '@phosphor-icons/react'
+
 import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { EmptyState } from '@/components/data-display/EmptyState'
 // SampleDataWatermark is used inside widget components (37-08, 37-09, 37-10).
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart }      from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
@@ -78,6 +81,26 @@ export default function CobranzaAnaliticaPage() {
   const isAgencyGateClosed =
     !isLoading &&
     (!agencyGate?.populated || (agencyGate?.calls_30d ?? 0) < 5)
+
+  // Phase 38-05a (D-38-04): when the agency IS populated but has zero calls in 30d,
+  // surface the "truly empty" EmptyState (vs NoDataYetBadge "below threshold" branch).
+  if (!isLoading && agencyGate?.populated && agencyGate?.calls_30d === 0) {
+    return (
+      <main className="p-6 lg:p-8 space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+            {t('inmobiliaria.ai.cobranza.analitica.title')}
+          </h1>
+        </header>
+        <EmptyState
+          icon={PhoneCall}
+          title={t('inmobiliaria.ai.cobranza.analitica.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.analitica.empty.description')}
+          primaryCta={{ label: t('inmobiliaria.ai.cobranza.analitica.empty.cta.label'), href: '/panel/inmobiliaria/ai/cobranza/deudores' }}
+        />
+      </main>
+    )
+  }
 
   if (isAgencyGateClosed) {
     return (

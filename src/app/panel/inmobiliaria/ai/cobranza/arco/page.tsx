@@ -24,7 +24,8 @@ import { useArcoRequests } from '@/lib/hooks/cobranza/use-arco-requests'
 import { ArcoStatusBadge } from '@/components/inmobiliaria/cobranza/ArcoStatusBadge'
 import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdownBadge'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -92,9 +93,10 @@ function RequestsTable({ requests }: RequestsTableProps) {
 
   if (requests.length === 0) {
     return (
-      <NoDataYetBadge
-        reason={t('inmobiliaria.ai.arco.empty')}
-        phase={36}
+      <EmptyState
+        icon={CheckCircle}
+        title={t('inmobiliaria.ai.cobranza.arco.empty.title')}
+        description={t('inmobiliaria.ai.cobranza.arco.empty.description')}
       />
     )
   }
@@ -219,6 +221,9 @@ export default function ArcoInboxPage() {
     } as Record<TabValue, boolean>
   }, [requests])
 
+  // Phase 38-05a: page-level skeleton during first load
+  if (isLoading && !data) return <PageSkeleton variant="list" />
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
@@ -316,21 +321,7 @@ export default function ArcoInboxPage() {
 
         {(['all', 'acceso', 'rectificacion', 'cancelacion', 'oposicion'] as TabValue[]).map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4">
-            {isLoading && !data ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-3"
-                  >
-                    <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-                    <div className="h-3 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <RequestsTable requests={tab === activeTab ? filteredRequests : []} />
-            )}
+            <RequestsTable requests={tab === activeTab ? filteredRequests : []} />
           </TabsContent>
         ))}
       </Tabs>

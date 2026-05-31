@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import {
   useCartaApproval,
   type CartaPhysicalSendMethod,
@@ -58,7 +59,7 @@ function computeDaysRemaining(approvedAt: Date | null, now: Date): number {
 export default function CartaApprovalClient({ artifactId }: Props) {
   const { t } = useI18n()
   const router = useRouter()
-  const { agency } = useAuth()
+  const { agency, isLoading: authLoading } = useAuth()
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
@@ -103,6 +104,9 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       return () => clearTimeout(timer)
     }
   }, [rejectResult, router])
+
+  // Phase 38-05a: skeleton during initial auth hydration (first loading state on this page)
+  if (authLoading && !agency) return <PageSkeleton variant="detail" />
 
   if (envMissing) {
     return (

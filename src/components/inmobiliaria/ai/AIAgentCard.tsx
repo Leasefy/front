@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -18,15 +18,14 @@ import {
   CheckCircle,
   X,
   Warning,
+  Play,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AIAgentDefinition } from '@/lib/types/ai-agents';
-import { AIAgentDetailSidebar } from './AIAgentDetailSidebar';
 import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 import { useAgentExecution } from '@/lib/hooks/use-agent';
-import { useAuth } from '@/lib/auth/use-auth';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -48,15 +47,13 @@ interface AIAgentCardProps {
 
 export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgentCardProps) {
   const { locale } = useI18n();
-  const { user } = useAuth();
-  const [showDetail, setShowDetail] = useState(false);
   const [showRunPopover, setShowRunPopover] = useState(false);
   const [showExecution, setShowExecution] = useState(false);
   const [applicationIdInput, setApplicationIdInput] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { isRunning, error, result, trace, runScoring, runMatching, clearResult } = useAgentExecution();
+  const { isRunning, error, result, trace, runScoring, clearResult } = useAgentExecution();
 
   const AgentIcon = ICON_MAP[agent.icon] || ShieldCheck;
   const isActive = agent.status === 'active';
@@ -95,13 +92,19 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
     if (!appId) return;
 
     setShowRunPopover(false);
-    const agencyId = user?.id ?? '';
 
+    // Scoring is the only agent runnable from the card. Smart-matching is
+    // server-triggered (out of scope for the card — see use-agent.ts).
     if (isScoring) {
-      await runScoring(appId, agencyId);
-    } else {
-      await runMatching(appId, agencyId, 'new_application');
+      await runScoring(appId);
     }
+  }
+
+  function handleOpenRunPopover(e: ReactMouseEvent) {
+    // Card is wrapped in a <Link>; prevent the click from navigating.
+    e.preventDefault();
+    e.stopPropagation();
+    setShowRunPopover(true);
   }
 
   function handleClearAndReset() {
@@ -146,7 +149,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
   }
 
   return (
-    <>
+    <div className="relative">
       <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
@@ -206,8 +209,9 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
                 <Warning weight="fill" className="h-4 w-4" />
                 <span className="truncate flex-1">{error}</span>
                 <button
-                  onClick={handleClearAndReset}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearAndReset(); }}
                   className="p-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label={locale === 'es' ? 'Descartar error' : 'Dismiss error'}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -220,14 +224,15 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
                   {resultLabel}
                 </span>
                 <button
-                  onClick={() => { if (trace) setShowExecution(true); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (trace) setShowExecution(true); }}
                   className="text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors whitespace-nowrap"
                 >
                   {locale === 'es' ? 'Ver trace' : 'View trace'}
                 </button>
                 <button
-                  onClick={handleClearAndReset}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearAndReset(); }}
                   className="p-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label={locale === 'es' ? 'Limpiar resultado' : 'Clear result'}
                 >
                   <X className="h-3 w-3 text-neutral-400" />
                 </button>
@@ -262,6 +267,74 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
           <ArrowRight className="h-3 w-3" />
         </div>
       </Link>
-    </>
+
+      {/* Run control — scoring only. Sibling of <Link> so navigation stays intact. */}
+      {isScoring && (
+        <div className="absolute top-4 right-4 z-10" ref={popoverRef}>
+          <button
+            type="button"
+            onClick={handleOpenRunPopover}
+            disabled={isRunning}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors',
+              'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+            aria-label={locale === 'es' ? 'Ejecutar agente' : 'Run agent'}
+          >
+            {isRunning ? (
+              <CircleNotch weight="bold" className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play weight="fill" className="h-3.5 w-3.5" />
+            )}
+            {locale === 'es' ? 'Ejecutar' : 'Run'}
+          </button>
+
+          {showRunPopover && (
+            <div
+              className="absolute right-0 mt-2 w-72 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg shadow-neutral-200/60 dark:shadow-black/40 p-3"
+              role="dialog"
+              aria-label={locale === 'es' ? 'Ejecutar evaluación' : 'Run evaluation'}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <label
+                htmlFor={`run-app-${agent.id}`}
+                className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1.5"
+              >
+                {locale === 'es' ? 'ID de aplicación' : 'Application ID'}
+              </label>
+              <input
+                id={`run-app-${agent.id}`}
+                ref={inputRef}
+                type="text"
+                value={applicationIdInput}
+                onChange={(e) => setApplicationIdInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleRun(); } }}
+                placeholder={locale === 'es' ? 'p. ej. app_abc123' : 'e.g. app_abc123'}
+                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#0c0c0e] px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-neutral-400 dark:focus:border-neutral-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => { void handleRun(); }}
+                disabled={!applicationIdInput.trim() || isRunning}
+                className={cn(
+                  'mt-2.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
+                  'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                <Play weight="fill" className="h-3.5 w-3.5" />
+                {locale === 'es' ? 'Ejecutar' : 'Run'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Execution panel — full-screen overlay, sibling of <Link>. */}
+      {showExecution && trace && (
+        <AIAgentExecutionPanel trace={trace} onClose={() => setShowExecution(false)} />
+      )}
+    </div>
   );
 }

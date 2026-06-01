@@ -1,14 +1,13 @@
 'use client'
 // Phase 30 plan 30-06 | 30-07 | COTI-UI-03 | XR-05
-// Completion banner shown when all carriers have final verdicts.
-// Re-cotizar is aria-disabled (Phase 33 placeholder).
-// Descargar PDF wired in plan 30-07 via usePdfDownload hook.
+// Phase 38 plan 38-07 (D-38-09) — PDF download migrated to backend endpoint.
+// The hook now takes { agencyId, quoteId, filenamePrefix } instead of the
+// rich VerdictPdfProps object — backend renders the PDF.
 
 import { CheckCircle, FilePdf, ArrowCounterClockwise, ArrowLeft } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { usePdfDownload } from '@/lib/cotizador/use-pdf-download'
-import type { VerdictPdfProps } from '@/lib/cotizador/pdf-verdict-document'
 
 interface StreamCompleteBannerProps {
   carrierCount: number
@@ -19,8 +18,10 @@ interface StreamCompleteBannerProps {
   onDownloadPdf?: () => void
   onBack: () => void          // navigate to cotizador overview
   locale?: string
-  /** PDF props for the download button — required when isStubMode is false */
-  verdictPdfProps?: VerdictPdfProps
+  /** Agency id for the backend PDF URL (required for non-stub mode) */
+  agencyId?: string
+  /** Quote id for the backend PDF URL (required for non-stub mode) */
+  quoteId?: string
   /** Prefix for the filename: cotizacion-{cedula_hash_first8}-{YYYY-MM-DD} */
   pdfFilenamePrefix?: string
 }
@@ -31,29 +32,22 @@ export function StreamCompleteBanner({
   isStubMode,
   onReQuote,
   onBack,
-  verdictPdfProps,
+  agencyId,
+  quoteId,
   pdfFilenamePrefix,
 }: StreamCompleteBannerProps) {
   const { t } = useI18n()
 
-  // Build safe defaults so usePdfDownload is always called (Rules of Hooks)
-  const safePdfProps: VerdictPdfProps = verdictPdfProps ?? {
-    quote: {
-      cedula_hash: '00000000',
-      cedula_display: '000•••000',
-      canon: 0,
-      ciudad: '—',
-      tipo: '—',
-      codeudores: 0,
-      createdAt: new Date().toISOString(),
-    },
-    carriers: [],
-    agency: { name: '—', contact: '—' },
-  }
+  // Build safe defaults so usePdfDownload is always called (Rules of Hooks).
+  // The button is disabled when agencyId or quoteId are missing — the safe
+  // strings are placeholders only.
+  const safeAgencyId = agencyId ?? ''
+  const safeQuoteId = quoteId ?? ''
   const safeFilenamePrefix = pdfFilenamePrefix ?? 'cotizacion-00000000'
 
   const { downloadPdf, isGenerating } = usePdfDownload({
-    props: safePdfProps,
+    agencyId: safeAgencyId,
+    quoteId: safeQuoteId,
     filenamePrefix: safeFilenamePrefix,
   })
 
@@ -79,6 +73,9 @@ export function StreamCompleteBanner({
       </div>
     )
   }
+
+  // PDF button is functional only when we have both ids
+  const pdfReady = Boolean(agencyId) && Boolean(quoteId)
 
   return (
     <div
@@ -114,12 +111,12 @@ export function StreamCompleteBanner({
           {t('inmobiliaria.ai.cotizador.detail.banner.reQuoteButton')}
         </Button>
 
-        {/* Descargar PDF — wired via usePdfDownload */}
+        {/* Descargar PDF — wired via usePdfDownload (backend endpoint) */}
         <Button
           variant="secondary"
           size="sm"
           onClick={downloadPdf}
-          disabled={isGenerating || !verdictPdfProps}
+          disabled={isGenerating || !pdfReady}
           isLoading={isGenerating}
         >
           {!isGenerating && <FilePdf weight="regular" className="w-4 h-4" />}

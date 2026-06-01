@@ -18,8 +18,12 @@ import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { CurrencyCircleDollar } from '@phosphor-icons/react'
+
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -145,6 +149,44 @@ export default function PagosFunnelClient() {
     obs.observe(el)
     return () => obs.disconnect()
   }, [hasMore, loadMore, rows.length])
+
+  // Phase 38-05a: hasActiveFilters discriminates between "no payments yet"
+  // (page-level EmptyState with CTA) and "no payments match these filters"
+  // (existing inline emptyFiltered branch — preserves filter controls).
+  const hasActiveFilters =
+    providers.length > 0 || statuses.length > 0 || dateWindow !== '30d' || sort !== 'created_at'
+
+  // Phase 38-05a: dashboard skeleton during initial fetch (before any KPI lands).
+  if (isLoading && rows.length === 0 && !kpis) {
+    return <PageSkeleton variant="dashboard" />
+  }
+
+  // Phase 38-05a: page-level EmptyState only when zero results AND no filters
+  // are active. With filters, the inline emptyFiltered branch (line ~394)
+  // keeps the chip controls reachable so the operator can clear filters.
+  if (!isLoading && !error && rows.length === 0 && !hasActiveFilters) {
+    return (
+      <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+        <header className="mb-5">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+            {t('inmobiliaria.ai.cobranza.pagos.title')}
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
+          </p>
+        </header>
+        <EmptyState
+          icon={CurrencyCircleDollar}
+          title={t('inmobiliaria.ai.cobranza.pagos.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.pagos.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cobranza.pagos.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cobranza/deudores',
+          }}
+        />
+      </main>
+    )
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const toggleProvider = (p: Provider) => {

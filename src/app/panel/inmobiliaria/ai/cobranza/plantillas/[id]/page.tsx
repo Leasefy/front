@@ -38,6 +38,7 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
@@ -257,20 +258,6 @@ function VariablePill({
     >
       {`{{${varName}}}`}
     </span>
-  )
-}
-
-// =============================================================================
-// Loading skeleton
-// =============================================================================
-
-function LoadingSkeleton() {
-  return (
-    <div className="animate-pulse space-y-4 p-4">
-      <div className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded" />
-      <div className="h-48 bg-neutral-100 dark:bg-neutral-800 rounded" />
-      <div className="h-48 bg-neutral-100 dark:bg-neutral-800 rounded" />
-    </div>
   )
 }
 
@@ -677,8 +664,9 @@ export default function TemplatePage({
     [data?.templates, params.id],
   )
 
+  // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
   if (isLoading && !data) {
-    return <LoadingSkeleton />
+    return <PageSkeleton variant="detail" />
   }
 
   if (!template) {

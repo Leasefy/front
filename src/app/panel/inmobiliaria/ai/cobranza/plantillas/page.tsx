@@ -26,11 +26,14 @@ import {
   CheckCircle,
   WarningCircle,
   PencilSimple,
+  FileText,
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   Tabs,
   TabsList,
@@ -117,33 +120,6 @@ function WaPill({
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
     </span>
-  )
-}
-
-// =============================================================================
-// Skeleton grid (loading state)
-// =============================================================================
-
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-3 animate-pulse"
-        >
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-            <div className="h-4 w-16 rounded-full bg-neutral-200 dark:bg-neutral-700" />
-          </div>
-          <div className="h-12 rounded bg-neutral-100 dark:bg-neutral-800" />
-          <div className="flex items-center justify-between">
-            <div className="h-3 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
-            <div className="h-8 w-16 rounded bg-neutral-200 dark:bg-neutral-700" />
-          </div>
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -270,6 +246,36 @@ export default function PlantillasPage() {
     })
   }, [refetch, showErrorToast, t])
 
+  // Phase 38-05a: list skeleton during initial fetch — replaces local SkeletonGrid.
+  if (isLoading && !data) {
+    return <PageSkeleton variant="list" />
+  }
+
+  // Phase 38-05a: page-level EmptyState when the catalog is empty (backend
+  // returned zero rows or only the user truly has no customizations and the
+  // defaults endpoint surfaced nothing). Per-tab "no items in this category"
+  // continues to use NoDataYetBadge inside TemplateGrid below.
+  if (data && data.templates.length === 0 && !error) {
+    return (
+      <main className="p-6 lg:p-8 space-y-6">
+        <header>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+            {t('inmobiliaria.ai.templates.title')}
+          </h1>
+        </header>
+        <EmptyState
+          icon={FileText}
+          title={t('inmobiliaria.ai.cobranza.plantillas.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.plantillas.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cobranza.plantillas.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cobranza/plantillas?tab=drafts',
+          }}
+        />
+      </main>
+    )
+  }
+
   return (
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -286,9 +292,6 @@ export default function PlantillasPage() {
           {t('inmobiliaria.ai.templates.error.retry')}
         </button>
       </header>
-
-      {/* Loading skeleton */}
-      {isLoading && !data && <SkeletonGrid />}
 
       {/* Error banner */}
       {error && !data && (

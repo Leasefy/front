@@ -9,9 +9,11 @@
 //   `payment = null` line with a server-side fetch using cookies() and the
 //   typed paths['/api/agency/{agencyId}/cobranza/pagos/{paymentId}']['get'].
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 
 export const metadata: Metadata = {
@@ -171,7 +173,9 @@ export default async function PaymentDetailPage({
   const { paymentId } = await params
   return (
     <PageGuard module="cobranza" action="view">
-      <PaymentDetailContent paymentId={paymentId} />
+      <Suspense fallback={<PageSkeleton variant="detail" />}>
+        <PaymentDetailContent paymentId={paymentId} />
+      </Suspense>
     </PageGuard>
   )
 }

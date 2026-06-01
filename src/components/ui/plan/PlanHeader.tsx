@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -14,6 +14,7 @@ import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
 import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
@@ -104,6 +105,12 @@ export function PlanHeader({
   // Outside inmobiliaria (landlord/tenant), always show these actions.
   const permsCtx = usePermissionsContextSafe();
   const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
+
+  // Phase 38 plan 38-06 (D-38-07) — PanelPrefsContext is only mounted under
+  // /panel/inmobiliaria/*, so this header (rendered across multiple layouts)
+  // must use the safe variant and gate the "Tour del panel" link on its
+  // presence. relaunchTour is session-only (no localStorage / DB write).
+  const panelPrefs = usePanelPrefsSafe();
 
   // Route destinations depend on context
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
@@ -896,6 +903,22 @@ export function PlanHeader({
                     {locale === 'es' ? 'Mi Plan' : 'My Plan'}
                   </Link>
                 </DropdownListItem>
+              )}
+              {/* Phase 38 plan 38-06 (XR-08) — "Tour del panel" relaunch link.
+                  Only rendered for agency users on routes where PanelPrefsContext
+                  is mounted (the inmobiliaria layout). Session-only flip; no
+                  localStorage or DB write. */}
+              {user?.role === 'agency' && panelPrefs && (
+                <>
+                  <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
+                  <DropdownListItem
+                    onClick={() => panelPrefs.relaunchTour()}
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
+                  >
+                    <Compass className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" aria-hidden="true" />
+                    {t('inmobiliaria.ai.tour.relaunch')}
+                  </DropdownListItem>
+                </>
               )}
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem asChild>

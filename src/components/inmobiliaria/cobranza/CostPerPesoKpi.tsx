@@ -102,8 +102,8 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
           strokeWidth={2}
         />
         <Tooltip
-          formatter={(val: number) => [
-            tooltipFmt.format(val),
+          formatter={(val: unknown) => [
+            tooltipFmt.format(Number(val)),
             t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.sparklineLabel'),
           ]}
         />

@@ -25,6 +25,7 @@ import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { useAgentMetrics } from '@/lib/hooks/use-agent-metrics';
 import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
 import { useAiHubLanding } from '@/lib/hooks/use-ai-hub-landing';
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton';
 
 // ── Relative time helper (XR-05 i18n for es-CO) ───────────────────────────
 // Avoids date-fns dependency; covers Intl.RelativeTimeFormat semantics.
@@ -172,13 +173,17 @@ export default function AIAgentsPage() {
   const comingSoonAgents = getComingSoonAgents();
   const { activities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
   const { metrics, isLoading } = useAgentMetrics(60_000);
-  const { data: landing } = useAiHubLanding();
+  const { data: landing, isLoading: hubLoading } = useAiHubLanding();
 
   // If an agent is selected, show detail view
   const selectedAgent = selectedAgentId ? activeAgents.find(a => a.id === selectedAgentId) : null;
   if (selectedAgent && selectedAgentId) {
     return <AgentDetailView agent={selectedAgent} agentId={selectedAgentId} />;
   }
+
+  // Phase 38-05b: PageSkeleton during initial useAiHubLanding load (D-38-04: skeleton
+  // only; per-card NoDataYetBadge from Phase 37 below is PRESERVED for empty data).
+  if (hubLoading && !landing) return <PageSkeleton variant="dashboard" />;
 
   // Build metrics arrays from real data
   const scoringMetrics = [

@@ -1041,7 +1041,15 @@
         "language": "Idioma",
         "languageDesc": "Idioma de la plataforma",
         "langChangedEs": "Idioma cambiado a Español",
-        "langChangedEn": "Language changed to English"
+        "langChangedEn": "Language changed to English",
+        "panelTour": "Tour del panel IA",
+        "panelTourDesc": "Recorrido guiado de 3 pasos al ingresar al panel",
+        "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
+        "panelTourDismissed": "Tour silenciado en este dispositivo",
+        "panelTourSyncing": "Sincronizando preferencia…",
+        "relaunchTour": "Iniciar tour ahora",
+        "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
+        "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
       "security": {
         "title": "Seguridad",

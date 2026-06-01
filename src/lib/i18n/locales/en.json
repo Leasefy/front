@@ -1028,7 +1028,15 @@
         "language": "Language",
         "languageDesc": "Platform language",
         "langChangedEs": "Idioma cambiado a Español",
-        "langChangedEn": "Language changed to English"
+        "langChangedEn": "Language changed to English",
+        "panelTour": "AI panel tour",
+        "panelTourDesc": "Guided 3-step walkthrough when entering the panel",
+        "panelTourEnabled": "Tour enabled — it will show on your next visit",
+        "panelTourDismissed": "Tour silenced on this device",
+        "panelTourSyncing": "Syncing preference…",
+        "relaunchTour": "Start tour now",
+        "relaunchTourDesc": "See the walkthrough again without changing your preference",
+        "relaunchTourStarted": "Tour started — follow the hints on screen"
       },
       "security": {
         "title": "Security",

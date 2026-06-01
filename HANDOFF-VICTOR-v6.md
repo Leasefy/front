@@ -119,12 +119,14 @@ Leyenda: ✅ funcional · 🟡 parcial · ⚪ stub/empty-state · ⛔ bloqueado 
 
 > El corazón de este handoff. Cada item: **archivo:línea — riesgo — fix correcto — prioridad**. Todas las refs verificadas contra el código actual (branch `restructure/per-agent-organization`). Organizado por área de riesgo.
 
+> **✅ Actualización 2026-06-01 — fixes de backend aplicados (4 commits LOCALES en `agent`, sin pushear).** Esta sesión resolvió en código 5 hallazgos de §6 (marcados abajo), todos con tests verdes (72 en los suites tocados). Commits: `24d5949` (A1 secrets-gate JWKS), `be8b6b2` (A2 compare constante), `6d16c3f` (D2 dialer concurrency/retries), `b607940` (B1 guard de arranque + F1 migración append-only). **Quedan ABIERTOS (no son fix de código):** el rol de DB sin BYPASSRLS de B1 (ops), **B2/B4** mover dinero real (Wompi SPT + credenciales), y correr `prisma migrate deploy` de F1. El push del repo `agent` sigue bloqueado en Víctor (sin write access esta cuenta).
+
 ### A. Auth, secretos y CORS (lo que rompe el deploy/operación)
 
-**A1. 🔴 P0 deploy-blocker — `src/server/lib/assert-production-secrets.ts:39-40`.**
+**A1. ✅ RESUELTO en código (agent `24d5949`) · era 🔴 P0 deploy-blocker — `src/server/lib/assert-production-secrets.ts:39-40`.**
 El gate solo reconoce `SUPABASE_JWT_PUBLIC_KEY` y `AGENT_JWT_SECRET` (`hasSupabaseKey = isNonEmpty(env.SUPABASE_JWT_PUBLIC_KEY)`, línea 39), pero post-`3d8e398` la fuente real de firma en prod es **`SUPABASE_JWKS_URL`** (el commit lo dice: "nobody set the inline-JWK var in deploy"). **Riesgo:** un deploy con solo `SUPABASE_JWKS_URL` (lo correcto hoy) hace `process.exit(1)` → restart-loop, el server nunca arranca; *o* el operador setea `SUPABASE_JWT_PUBLIC_KEY` vacío para saltarlo y reabre el back-door de stub-decode. **Fix:** añadir `isNonEmpty(env.SUPABASE_JWKS_URL)` como tercera fuente válida en `hasSupabaseKey`, y exigir `SUPABASE_URL`/`SUPABASE_JWT_ISSUER` cuando se use JWKS (igual que la rama del public-key, líneas 57-67). **Sin esto, push+deploy falla el arranque.** Verificado: el código actual NO menciona `SUPABASE_JWKS_URL` en este archivo.
 
-**A2. 🟡 P1 — `src/server/index.ts:410`, `:517`, `:528` — `AGENT_API_KEY` con compare no-constante.**
+**A2. ✅ RESUELTO (agent `be8b6b2`, helper `safe-compare.ts` en los 6 compares) · era 🟡 P1 — `src/server/index.ts:410`, `:517`, `:528` — `AGENT_API_KEY` con compare no-constante.**
 `token !== process.env.AGENT_API_KEY` (metrics, :410) y `token === process.env.AGENT_API_KEY` (bypass server-to-server de smart-matching, :517/:528). **Riesgo:** side-channel de timing sobre el secreto compartido; además el bypass de smart-matching auto-asigna `userRole:'ADMIN'` — si el secreto se filtra por timing, es ADMIN sobre cualquier tenant. **Fix:** `crypto.timingSafeEqual(Buffer.from(token), Buffer.from(key))` con guard de longitud (el patrón ya se usa para webhooks en el mismo archivo, ~:364). Homogenizar.
 
 **A3. 🟡 P0 (config) — `.env.example` NO documenta `CORS_ALLOWED_ORIGINS`.**
@@ -141,7 +143,7 @@ Los hooks del agent (`use-ai-hub-landing.ts:59`, cobranza/cotizador) hacen `thro
 
 ### B. Dinero, integridad contable y aislamiento (lo bloqueante para operar real)
 
-**B1. 🔴 BLOQUEANTE — RLS es no-op si el rol de conexión tiene `BYPASSRLS`.** `src/lib/tenant-scope.ts:64-72`.
+**B1. 🟡 GUARD DE ARRANQUE añadido (agent `b607940`, `assert-rls-enforced.ts` — avisa al boot, `RLS_ROLE_ENFORCE=true` falla cerrado); el fix real (rol sin BYPASSRLS) sigue siendo OPS · era 🔴 BLOQUEANTE — RLS es no-op si el rol de conexión tiene `BYPASSRLS`.** `src/lib/tenant-scope.ts:64-72`.
 `withTenantScope` setea `SET LOCAL app.current_tenant_id` y confía en políticas `tenant_isolation`. STATE.md confirma: *"el rol `postgres` tiene `rolbypassrls=true`, todas las políticas `tenant_isolation` son no-ops en runtime"*. **Riesgo crítico:** TODA la defensa cross-tenant del servicio (pagos, payouts, escalaciones, PII) es decorativa — una query mal filtrada lee/escribe otros tenants. **Fix antes de PII/dinero real multi-tenant:** correr la app con un rol de DB SIN bypassrls; verificar con `SELECT rolbypassrls FROM pg_roles WHERE rolname=current_user;` + un test de fuga cross-tenant real. *(La validación UUID en `:58-62` SÍ cierra el vector de inyección SQL del `SET LOCAL` — eso está bien.)*
 
 **B2. 🔴 BLOQUEANTE — la dispersión NO mueve dinero.** `src/inngest/functions/daily-dispersion.ts:286-299`.
@@ -173,7 +175,7 @@ Sin Upstash, dos instancias no comparten el dedup → una entrega duplicada por 
 **D1. 🟡 P1 — `src/lib/vapi/place-outbound-call.ts:99-106` — `fetch` sin timeout.**
 `09ff301` añadió timeouts a Anthropic(30s)/OpenAI(60s) pero este helper nuevo (`30fb573`) no tiene `AbortSignal.timeout`. **Riesgo:** una conexión colgada a `api.vapi.ai` bloquea el `step.run('place-call')` hasta el step-timeout de Inngest, consumiendo concurrencia del dialer. **Fix:** `fetch(url, { signal: AbortSignal.timeout(15_000) })`, mapear abort a `reason:'vapi_unreachable'`.
 
-**D2. 🟡 P1 — `autonomous-dialer-workflow.ts:237-247` — sin `retries`/`concurrency`/`rateLimit` explícitos.**
+**D2. ✅ RESUELTO (agent `6d16c3f` — `concurrency` per-tenant + `retries:2`) · era 🟡 P1 — `autonomous-dialer-workflow.ts:237-247` — sin `retries`/`concurrency`/`rateLimit` explícitos.**
 El config solo declara `id`+`idempotency`+`triggers` → hereda default Inngest (`retries:4`). **Riesgo:** (a) el `step.run('place-call')` que THROW en fallo transitorio reintenta 4× → hasta 4 llamadas reales si la idempotencia del paso no cubre el caso; (b) sin `concurrency`/`throttle` por tenant, un backlog de `cobranza/call.scheduled` puede ráfaga-dialear y violar la cadencia Ley 2300 a nivel de volumen. **Fix:** `concurrency: { key: 'event.data.tenantId', limit: N }` + `rateLimit`/`throttle` por tenant; mover el `Call.create` real al mismo step que el place (o key de idempotencia a nivel de paso) para que el throw post-place no re-disque.
 
 **D3. 🟡 P1 — `tenant-scoring-pipeline.ts:136` y `smart-matching-pipeline.ts:17` — `retries: 0`.**
@@ -197,7 +199,7 @@ Solo devuelve `{status:'ok', uptime}`. No verifica DB, Redis, ni JWKS. **Riesgo:
 
 ### F. Cumplimiento Colombia y trazabilidad inmutable
 
-**F1. 🟡 BLOQUEANTE para evidencia legal — inmutabilidad de auditoría.** `audit_log` y `automated_decisions` se escriben con `.create()` pero **no hay garantía append-only a nivel DB** (no se ven triggers/permisos que bloqueen UPDATE/DELETE). **Riesgo:** un registro T-323 (decisión automatizada revisable, Ley 1581) mutable no es defendible ante la SIC. **Fix antes de que sea evidencia legal:** revocar UPDATE/DELETE sobre esas tablas al rol de la app, o trigger que rechace mutaciones.
+**F1. 🟡 MIGRACIÓN escrita (agent `b607940`, `prisma/migrations/20260601000000_v6_append_only_*`) — falta que Víctor corra `prisma migrate deploy` · era 🔴 BLOQUEANTE para evidencia legal — inmutabilidad de auditoría.** Trigger column-aware verificado contra `automated-decisions-review.ts` (NO rompe el flujo de revisión T-323). `audit_log` y `automated_decisions` se escriben con `.create()` pero antes **no había garantía append-only a nivel DB** (no se ven triggers/permisos que bloqueen UPDATE/DELETE). **Riesgo:** un registro T-323 (decisión automatizada revisable, Ley 1581) mutable no es defendible ante la SIC. **Fix antes de que sea evidencia legal:** revocar UPDATE/DELETE sobre esas tablas al rol de la app, o trigger que rechace mutaciones.
 
 **F2. 🟡 SAGRILAFT/SARLAFT es scaffold, NO screening real.** `src/mastra/tools/screen-candidate.ts:189-214`.
 Por defecto devuelve `screening_not_required`; el handler real está detrás de un two-key gate inactivo y, ante error, hace swallow → default seguro. **Riesgo:** si se promociona como "hacemos screening" sin proveedor activo, es incumplimiento. *(El `actorType=SAAS_ORCHESTRATOR` C12 está bien aplicado en audit/billing, pero etiquetar actor ≠ hacer screening.)* **Fix:** activar proveedor real (lista Clinton/ONU/PEP) antes de operar con dinero, o declarar explícitamente que el screening está fuera de alcance.

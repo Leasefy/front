@@ -10,7 +10,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
+import { propertiesApi } from '@/lib/api/properties.service';
 import type { ImportStepProps } from '../ImportWizard';
+import type { ImportProperty } from '../lib/importTypes';
 
 export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const router = useRouter();
@@ -31,6 +33,22 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const remainingErrorsCount = properties.filter((p) => p.selected && p.hasErrors).length;
   const importCount = selectedProperties.length;
 
+  // Map a parsed/AI-reviewed ImportProperty to the propertiesApi.create payload.
+  // Accepted AI suggestions are already applied onto the property fields in StepAIReview.
+  const toCreatePayload = (p: ImportProperty) => ({
+    title: p.propertyTitle || p.propertyAddress || p.propertyCity || 'Propiedad importada',
+    description: p.notes ?? '',
+    type: p.propertyType ?? 'apartment',
+    city: p.propertyCity ?? '',
+    neighborhood: p.propertyZone ?? '',
+    address: p.propertyAddress ?? '',
+    monthlyRent: p.monthlyRent ?? 0,
+    bedrooms: p.bedrooms ?? 0,
+    bathrooms: p.bathrooms ?? 0,
+    area: p.propertyArea ?? 0,
+    ...(p.adminFee != null ? { adminFee: p.adminFee } : {}),
+  });
+
   const handleImport = async () => {
     if (importCount === 0) return;
     setIsImporting(true);
@@ -38,24 +56,48 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     setCurrentItem(0);
 
     const total = importCount;
-    const intervalMs = Math.max(50, 2000 / total);
 
-    for (let i = 0; i <= total; i++) {
-      await new Promise<void>((r) => setTimeout(r, intervalMs));
-      setCurrentItem(i);
-      setProgress(Math.round((i / total) * 100));
+    // No bulk-import endpoint exists — create each property via the real API,
+    // tracking progress and partial failures honestly.
+    let done = 0;
+    const results = await Promise.allSettled(
+      selectedProperties.map((p) =>
+        propertiesApi.create(toCreatePayload(p)).finally(() => {
+          done += 1;
+          setCurrentItem(done);
+          setProgress(Math.round((done / total) * 100));
+        })
+      )
+    );
+
+    const created = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = total - created;
+
+    setIsImporting(false);
+
+    if (created === 0) {
+      // Nothing persisted — surface the error and do NOT navigate to success.
+      toast.error({
+        title: 'Error en la importación',
+        description: `No se pudo importar ninguna propiedad (${failed} con error). Intenta de nuevo.`,
+      });
+      return;
     }
 
-    console.log('Imported properties:', selectedProperties);
-
-    updateState({ importedCount: total, importProgress: 100 });
-    setIsImporting(false);
+    updateState({ importedCount: created, importProgress: 100 });
     setIsComplete(true);
 
-    toast.success({
-      title: 'Importación exitosa',
-      description: `${total} propiedades importadas correctamente`,
-    });
+    if (failed > 0) {
+      toast.error({
+        title: 'Importación parcial',
+        description: `${created} propiedades importadas, ${failed} con error.`,
+      });
+    } else {
+      toast.success({
+        title: 'Importación exitosa',
+        description: `${created} propiedades importadas correctamente`,
+      });
+    }
   };
 
   // Success state

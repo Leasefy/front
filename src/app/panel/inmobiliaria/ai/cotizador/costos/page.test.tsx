@@ -13,13 +13,16 @@ import { act } from 'react'
 
 void React // jsx-preserve
 
-// Mock useCostos — returns all-null state (loading + no data)
+// Mock useCostos — returns all-null state (no data, settled — not loading).
+// Phase 38-05b added a PageSkeleton early-return when (isLoadingSummary && !summaryData),
+// so to keep this null-guard smoke test exercising the real page body we set
+// isLoadingSummary=false (the "settled-but-empty" state).
 vi.mock('@/lib/hooks/cotizador/use-costos', () => ({
   useCostos: () => ({
     summaryData: null,
     seriesData: null,
-    isLoadingSummary: true,
-    isLoadingSeries: true,
+    isLoadingSummary: false,
+    isLoadingSeries: false,
     summaryError: null,
     seriesError: null,
     refetchSummary: vi.fn(),

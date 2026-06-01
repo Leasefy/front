@@ -11,11 +11,13 @@
 
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowClockwise, ChartLine } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarrierSla } from '@/lib/hooks/cotizador/use-carrier-sla'
 import { CarrierSlaStateCard } from '@/components/inmobiliaria/cotizador/CarrierSlaStateCard'
 import { CarrierSlaBreachWindows } from '@/components/inmobiliaria/cotizador/CarrierSlaBreachWindows'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 // =============================================================================
 // Component
@@ -27,6 +29,24 @@ export default function CarrierSlaPage() {
   const carrier = params.carrier as string
 
   const { data: sla, isLoading, error, refetch } = useCarrierSla(carrier)
+
+  // Phase 38-05b: skeleton + EmptyState early returns (D-38-04: SLA sub-page gets both, no CTA).
+  // i18n note: using existing `aseguradoras.sla.empty.*` keys scaffolded by 38-02 (verbatim D-38-04 copy);
+  // the plan's literal `aseguradoras.carrier.sla.empty.*` path was a parallel namespace not wired in i18n
+  // — reusing already-scaffolded keys avoids adding orphan strings under an unwired `carrier` namespace.
+  if (isLoading && !sla) return <PageSkeleton variant="list" />
+  if (
+    !isLoading &&
+    (!sla || (!sla.state && (!sla.breachWindows || sla.breachWindows.length === 0)))
+  ) {
+    return (
+      <EmptyState
+        icon={ChartLine}
+        title={t('inmobiliaria.ai.cotizador.aseguradoras.sla.empty.title')}
+        description={t('inmobiliaria.ai.cotizador.aseguradoras.sla.empty.description')}
+      />
+    )
+  }
 
   return (
     <main className="p-6 lg:p-8 space-y-6">

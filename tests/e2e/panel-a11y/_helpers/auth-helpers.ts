@@ -61,6 +61,12 @@ export const TEST_USER = {
   role: 'agency' as const,
   backendRole: 'AGENT' as const,
   onboardingCompleted: true,
+  // PermissionsContext.readAgencyIdFromStorage() reads `agencyId` (or
+  // `agency.id`) from the localStorage entry so the agent /my-permissions
+  // fetch fires even when the Supabase session has not hydrated. Both keys
+  // are populated for forward-compatibility with either lookup path.
+  agencyId: 'test-agency-id',
+  agency: { id: 'test-agency-id', name: 'Test Agency' },
 } as const
 
 /**

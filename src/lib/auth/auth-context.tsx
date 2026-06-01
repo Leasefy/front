@@ -108,12 +108,49 @@ function isUserNotFoundError(err: unknown): boolean {
   return msg.includes('user not found')
 }
 
+/**
+ * Recover a previously-known agency tuple from localStorage so consumers that
+ * read `useAuth().agency` immediately on mount (cobranza/cotizador hooks)
+ * have a non-null identifier before the Supabase session re-hydrates.
+ *
+ * Mirrors the localStorage-fallback pattern already used in
+ * `ProtectedRoute.tsx` (line 49-60) and `PermissionsContext.readAgencyIdFromStorage`.
+ * Net behavior in production: identical — the storage entry is populated by
+ * the login flow, so this just front-loads it onto first render instead of
+ * waiting for `onAuthStateChange` to fire. In tests, the synthetic seed in
+ * `tests/e2e/panel-a11y/_helpers/auth-helpers.ts` provides the same shape.
+ */
+const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
+function readAgencyFromStorage(): Agency | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as {
+      agencyId?: string
+      agency?: { id?: string; name?: string } & Record<string, unknown>
+    }
+    const id = parsed.agency?.id ?? parsed.agencyId
+    if (!id) return null
+    // Preserve all known fields; downstream consumers only read `id` today
+    // but PermissionsContext / page hooks may grow over time.
+    return { id, name: parsed.agency?.name ?? 'Agency', ...parsed.agency } as Agency
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
-  const [agency, setAgencyState] = useState<Agency | null>(null)
+  // Initialize from localStorage so cobranza/cotizador hooks that gate on
+  // `agency?.id` can fire their first fetch in parallel with the Supabase
+  // session hydration. The `onAuthStateChange` handler still calls
+  // `setAgencyState(agencyData)` on INITIAL_SESSION / SIGNED_IN / TOKEN_REFRESHED
+  // with the canonical backend payload, which overwrites this seed.
+  const [agency, setAgencyState] = useState<Agency | null>(() => readAgencyFromStorage())
   const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
   /**

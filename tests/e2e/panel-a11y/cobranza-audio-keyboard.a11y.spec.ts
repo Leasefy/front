@@ -75,7 +75,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
     page,
   }) => {
     await setupMocks(page)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const rangeInput = page.locator('input[type="range"]').first()
 
@@ -95,7 +95,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
     page,
   }) => {
     await setupMocks(page)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     // The 38-04c handler attaches to the audio-player container (tabIndex=0).
     // Probe both the dedicated test-id and common ARIA group fallbacks.
@@ -127,7 +127,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
 
   test('digit key 5 changes aria-valuenow (jump-to-50%)', async ({ page }) => {
     await setupMocks(page)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const rangeInput = page.locator('input[type="range"]').first()
 

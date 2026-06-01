@@ -110,7 +110,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
     page,
   }) => {
     await mockHub(page)
-    await page.goto(HUB_ROUTE)
+    await page.goto(HUB_ROUTE, { waitUntil: 'domcontentloaded' })
     await clearTourStorage(page)
     // Reload so the PanelPrefsProvider + ai/layout.tsx auto-trigger re-runs
     // against the cleared localStorage state.
@@ -126,7 +126,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
 
   test('Escape key dismisses the tour', async ({ page }) => {
     await mockHub(page)
-    await page.goto(HUB_ROUTE)
+    await page.goto(HUB_ROUTE, { waitUntil: 'domcontentloaded' })
     await clearTourStorage(page)
     await page.reload()
 
@@ -140,7 +140,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
 
   test('tour does NOT fire when localStorage key is true', async ({ page }) => {
     await mockHub(page)
-    await page.goto(HUB_ROUTE)
+    await page.goto(HUB_ROUTE, { waitUntil: 'domcontentloaded' })
     // Mark dismissed BEFORE the reload so the provider hydrates with true.
     await page
       .evaluate(
@@ -185,7 +185,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
       }
     })
 
-    await page.goto(HUB_ROUTE)
+    await page.goto(HUB_ROUTE, { waitUntil: 'domcontentloaded' })
     await clearTourStorage(page)
     await page.reload()
 
@@ -239,7 +239,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockHub(page)
-    await page.goto(HUB_ROUTE)
+    await page.goto(HUB_ROUTE, { waitUntil: 'domcontentloaded' })
     await clearTourStorage(page)
     await page.reload()
 

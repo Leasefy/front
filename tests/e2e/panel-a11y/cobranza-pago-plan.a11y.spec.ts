@@ -41,7 +41,7 @@ test.describe('Cobranza pago plan — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(POPULATED_PLAN),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator(
       '[data-testid="plan-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
@@ -57,7 +57,7 @@ test.describe('Cobranza pago plan — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(POPULATED_PLAN),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
     await runAndAssertAxe(page)
   })

@@ -86,13 +86,57 @@ const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
 const TENANT_ONBOARDING_KEY = 'plan_onboarding_tenant'
 
 /**
- * Seed Playwright's localStorage so the next `page.goto(...)` lands inside
- * the protected `/panel/inmobiliaria/ai/*` surface instead of redirecting
- * to `/auth?returnUrl=...`.
+ * Wide-open permissions object that grants the synthetic test user every
+ * action on every module the panel checks. Mirror of the two backend
+ * endpoints `PermissionsContext` consumes:
+ *
+ *   1. `apiClient.get('/inmobiliaria/agency/my-permissions')`
+ *      → returns `MemberPermissionsResponse`. We grant `isAdmin: true` and
+ *        `effectivePermissions: 'FULL_ACCESS'` which makes `canAccess`
+ *        short-circuit to true for every non-(cobranza|cotizador) module.
+ *
+ *   2. `fetch(${NEXT_PUBLIC_AGENT_URL}/api/agency/${agencyId}/my-permissions)`
+ *      → returns `{ cobranza: string[], cotizador: string[] }`. We grant
+ *        every action the panel calls (view/edit/export/manage/…) so the
+ *        layout's `canAccess('cobranza', 'view')` gate (and equivalents
+ *        on cotizador) all return true.
+ *
+ * Both endpoints are mocked by `seedAuthState`. Specs do not need to
+ * mock them again — but route order is preserved (a per-spec
+ * `page.route(...)` registered AFTER `seedAuthState` still takes
+ * precedence, so individual specs can override with edge-case responses
+ * like 403 / empty lists).
+ */
+const FULL_AGENCY_PERMISSIONS = {
+  isAdmin: true,
+  effectivePermissions: 'FULL_ACCESS',
+  role: 'ADMIN',
+}
+
+const FULL_AGENT_PERMISSIONS = {
+  cobranza: ['view', 'edit', 'export', 'manage', 'reveal_pii', 'admin'],
+  cotizador: ['view', 'edit', 'export', 'manage', 'admin'],
+}
+
+/**
+ * Seed Playwright's localStorage AND register route handlers for the two
+ * permissions endpoints, so the next `page.goto(...)` lands inside the
+ * protected `/panel/inmobiliaria/ai/*` surface AND the per-module
+ * `PermissionsContext.canAccess(...)` gate returns true.
+ *
+ * Without the permissions mocks, the `cobranza/layout.tsx` (and the
+ * equivalent cotizador layout) renders a "No tienes acceso" placeholder
+ * instead of the page content — so the spec's skeleton/EmptyState/axe
+ * locators all return `count === 0`.
  *
  * MUST be awaited BEFORE `page.goto(...)`. `addInitScript` runs on every
- * navigation in the same browser context, so a single call covers reloads
- * and same-spec sub-navigations.
+ * navigation in the same browser context, and `page.route` is also
+ * permanent for the page — so a single call covers reloads and same-spec
+ * sub-navigations.
+ *
+ * Specs that need to override the default permissions response can
+ * register `page.route(...)` AFTER `seedAuthState(page)`; Playwright's
+ * last-registered-handler-wins semantics apply.
  *
  * Typical usage (per-spec):
  *
@@ -105,11 +149,6 @@ const TENANT_ONBOARDING_KEY = 'plan_onboarding_tenant'
  *     await page.goto('/panel/inmobiliaria/ai/cobranza')
  *     await expect(page.locator('main')).toBeVisible()
  *   })
- *
- * Inline usage (single test):
- *
- *   await seedAuthState(page)
- *   await page.goto('/panel/inmobiliaria/ai/cobranza')
  */
 export async function seedAuthState(page: Page): Promise<void> {
   const payload = JSON.stringify(TEST_USER)
@@ -131,23 +170,102 @@ export async function seedAuthState(page: Page): Promise<void> {
       tenantPayloadJson: tenantPayload,
     },
   )
+
+  // Mock the legacy backend permissions endpoint (NestJS `apiClient.get`).
+  // Globs cover both relative (`/api/inmobiliaria/...`) and absolute
+  // (`https://backend.example.com/inmobiliaria/...`) shapes.
+  await page.route('**/inmobiliaria/agency/my-permissions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(FULL_AGENCY_PERMISSIONS),
+    })
+  })
+
+  // Mock the agent-side permissions endpoint that the cobranza/cotizador
+  // layouts gate on. The wildcard `agency/*/my-permissions` shape matches
+  // both the legacy URL (which we already routed above — Playwright picks
+  // the most-specific handler) and the agent_url path.
+  await page.route(
+    '**/api/agency/*/my-permissions',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(FULL_AGENT_PERMISSIONS),
+      })
+    },
+  )
+
+  // Mock the canonical /users/me endpoint so the AuthProvider's INITIAL_SESSION
+  // path resolves with a real user even if there's no Supabase session. This
+  // gives the auth-context `user` non-null which together with the
+  // localStorage fallback makes `effectiveIsAuthenticated` solidly true
+  // and lets PermissionsContext hydrate before the layout's isLoading gate
+  // resolves. We also include the agency reference so any caller relying
+  // on `useAuth().agency.id` works.
+  await page.route('**/users/me', async (route) => {
+    // Only mock GET. Allow PATCH/PUT/etc. to be re-routed by individual specs.
+    if (route.request().method() !== 'GET') {
+      await route.fallback()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: TEST_USER.id,
+        email: TEST_USER.email,
+        firstName: TEST_USER.firstName,
+        lastName: TEST_USER.lastName,
+        role: TEST_USER.backendRole, // backend uses uppercase
+        agency: { id: AGENCY_ID, name: 'Test Agency' },
+        preferences: { panel_tour_dismissed_v1: true },
+      }),
+    })
+  })
+
+  // Mock the agency-fetch endpoint hit by AuthProvider's `fetchAgency` for
+  // agency/agent roles. Without this the agency context is null → some
+  // permissions paths still resolve false.
+  await page.route('**/inmobiliaria/agency', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: AGENCY_ID,
+        name: 'Test Agency',
+        memberRole: 'ADMIN',
+        memberStatus: 'ACTIVE',
+      }),
+    })
+  })
 }
 
 /**
  * Convenience wrapper that seeds + navigates in one call.
  *
- * Equivalent to:
+ * `waitUntil: 'domcontentloaded'` (not the Playwright default `'load'`)
+ * is critical for the panel-a11y suite: every panel page kicks off
+ * several agent-backend fetches on mount (cartera, analytics, calls,
+ * preferences). When `NEXT_PUBLIC_AGENT_URL` resolves to a host that
+ * isn't running or isn't mocked, those requests hang indefinitely and
+ * the `'load'` event never fires — so `page.goto(...)` times out at 30s
+ * even though the DOM has fully rendered.
  *
- *   await seedAuthState(page)
- *   await page.goto(url)
- *
- * Returns the same value as `page.goto(...)` for type compatibility with
- * existing call sites that chain `.then(...)`.
+ * `'domcontentloaded'` returns as soon as the parser is done, which is
+ * after React has hydrated enough for `<EmptyState>` / `<PageSkeleton>`
+ * to be visible. Per-spec mocks registered via `page.route(...)` still
+ * take effect because they are installed BEFORE this navigation.
  */
 export async function gotoAuthenticated(
   page: Page,
   url: string,
 ): Promise<ReturnType<Page['goto']>> {
   await seedAuthState(page)
-  return page.goto(url)
+  return page.goto(url, { waitUntil: 'domcontentloaded' })
 }

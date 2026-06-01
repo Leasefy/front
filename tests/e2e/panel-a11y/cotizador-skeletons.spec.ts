@@ -63,7 +63,7 @@ test.describe('Cotizador overview — Phase 38-04b skeleton + EmptyState', () =>
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cotizador')
+    await page.goto('/panel/inmobiliaria/ai/cotizador', { waitUntil: 'domcontentloaded' })
     const skeleton = page.getByTestId('cotizador-overview-skeleton')
 
 
@@ -90,7 +90,7 @@ test.describe('Cotizador overview — Phase 38-04b skeleton + EmptyState', () =>
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cotizador')
+    await page.goto('/panel/inmobiliaria/ai/cotizador', { waitUntil: 'domcontentloaded' })
     // EmptyState wrapper carries `role=status` PLUS the dashed-border container
     // classes. Filtering by .border-dashed scopes the selector to the new primitive
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
@@ -116,6 +116,7 @@ test.describe('Nueva cotización wizard — Phase 38-04b re-quote skeleton', () 
     // ?from=<UUID> triggers re-quote mode (UUID_REGEX validates the param)
     await page.goto(
       '/panel/inmobiliaria/ai/cotizador/nueva?from=00000000-0000-0000-0000-000000000001',
+      { waitUntil: 'domcontentloaded' },
     )
     const skeleton = page.getByTestId('cotizador-wizard-skeleton')
 
@@ -151,6 +152,7 @@ test.describe('Cotizador quote detail — Phase 38-04b SSE-connecting skeleton',
 
     await page.goto(
       '/panel/inmobiliaria/ai/cotizador/00000000-0000-0000-0000-000000000001',
+      { waitUntil: 'domcontentloaded' },
     )
     const skeleton = page.getByTestId('cotizador-quote-detail-skeleton')
 
@@ -172,7 +174,7 @@ test.describe('Cobranza configuración — Phase 38-04b skeleton', () => {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+    await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion', { waitUntil: 'domcontentloaded' })
     const skeleton = page.getByTestId('cobranza-configuracion-skeleton')
 
 

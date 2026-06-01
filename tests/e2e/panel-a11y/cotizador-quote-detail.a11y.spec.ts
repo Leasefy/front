@@ -47,7 +47,7 @@ test.describe('Cotizador quote detail — Phase 38-08 axe a11y', () => {
       await new Promise((r) => setTimeout(r, 30_000))
       await route.abort()
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator(
       '[data-testid="cotizador-quote-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
@@ -72,7 +72,7 @@ test.describe('Cotizador quote detail — Phase 38-08 axe a11y', () => {
         body: 'event: ready\ndata: {}\n\n',
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
     await runAndAssertAxe(page)
   })

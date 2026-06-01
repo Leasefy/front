@@ -43,7 +43,7 @@ test.describe('Cobranza ARCO detail — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
@@ -61,7 +61,7 @@ test.describe('Cobranza ARCO detail — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
 
     await runAndAssertAxe(page)

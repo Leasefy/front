@@ -80,7 +80,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       })
     })
 
-    await page.goto(AUDIT_ROUTE)
+    await page.goto(AUDIT_ROUTE, { waitUntil: 'domcontentloaded' })
 
     // 38-07 D-38-10: button only renders when items.length > 0 AND agencyId.
     const btn = page
@@ -150,7 +150,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       })
     })
 
-    await page.goto(QUOTE_ROUTE)
+    await page.goto(QUOTE_ROUTE, { waitUntil: 'domcontentloaded' })
 
     // 38-07 button locator: "Descargar PDF" (es) / "Download PDF" (en).
     const btn = page
@@ -248,7 +248,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       })
     })
 
-    await page.goto(CALL_ROUTE)
+    await page.goto(CALL_ROUTE, { waitUntil: 'domcontentloaded' })
 
     // 38-07 button locator: "Exportar transcript PDF" (es) /
     // "Export transcript PDF" (en).

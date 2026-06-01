@@ -40,7 +40,7 @@ test.describe('Print CSS — data-pii attribute hiding', () => {
       })
     )
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit')
+    await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit', { waitUntil: 'domcontentloaded' })
 
     // Switch to print media so @media print rules apply to getComputedStyle
     await page.emulateMedia({ media: 'print' })

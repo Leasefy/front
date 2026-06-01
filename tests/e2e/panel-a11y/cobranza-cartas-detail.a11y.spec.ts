@@ -55,7 +55,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('Cobranza cartas detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible during carta detail load (when implemented)', async ({ page }) => {
     await mockCarta(page, SKELETON_DELAY_MS)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
@@ -63,7 +63,7 @@ test.describe('Cobranza cartas detail — Phase 38-08 axe a11y', () => {
 
   test('zero axe violations on loaded carta detail', async ({ page }) => {
     await mockCarta(page, 0)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
     await runAndAssertAxe(page)
   })

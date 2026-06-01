@@ -56,7 +56,7 @@ test.describe('Cobranza overview — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     // Either the bespoke skeleton (Phase 38-04a) or aria-busy / data-slot=skeleton.
     const candidates = page.locator(
@@ -77,7 +77,7 @@ test.describe('Cobranza overview — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const empty = page.locator('[role="status"].border-dashed').first()
 
 
@@ -94,7 +94,7 @@ test.describe('Cobranza overview — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
 
     await runAndAssertAxe(page)

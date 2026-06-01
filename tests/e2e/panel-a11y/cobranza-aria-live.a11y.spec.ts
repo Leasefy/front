@@ -66,7 +66,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
   })
 
   test('role=status aria-live=polite region exists in DOM', async ({ page }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     // The 38-04c live region is rendered inside <main> as the first
     // visually-hidden child of the cobranza overview wrapper. There may
@@ -83,7 +83,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
   })
 
   test('live region accepts text content mutations', async ({ page }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const liveRegion = page
       .locator('[role="status"][aria-live="polite"]')
@@ -112,7 +112,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
   test('aria-atomic=true on the live region (full string announced)', async ({
     page,
   }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const liveRegion = page
       .locator('[role="status"][aria-live="polite"]')

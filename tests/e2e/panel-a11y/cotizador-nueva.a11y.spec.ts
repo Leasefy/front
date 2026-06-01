@@ -53,7 +53,7 @@ test.describe('Cotizador nueva wizard — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(CARRIERS_LIST),
       })
     })
-    await page.goto(RE_QUOTE_ROUTE)
+    await page.goto(RE_QUOTE_ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator(
       '[data-testid="cotizador-wizard-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
@@ -69,7 +69,7 @@ test.describe('Cotizador nueva wizard — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(CARRIERS_LIST),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
     await runAndAssertAxe(page)
   })

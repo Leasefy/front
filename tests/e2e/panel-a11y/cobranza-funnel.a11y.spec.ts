@@ -65,7 +65,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
   })
 
   test('tablist + 7 tabs + tabpanel structure present', async ({ page }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const tablist = page.locator('[role="tablist"]')
 
@@ -87,7 +87,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
   test('initially-focused stage has tabIndex=0 and aria-selected=true', async ({
     page,
   }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const tablist = page.locator('[role="tablist"]')
 
 
@@ -114,7 +114,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
   test('ArrowRight moves focus to next tab; ArrowLeft moves back', async ({
     page,
   }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const tablist = page.locator('[role="tablist"]')
 
 
@@ -141,7 +141,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
   test('Enter on focused tab activates stage (URL contains stage=)', async ({
     page,
   }) => {
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const tablist = page.locator('[role="tablist"]')
 
 

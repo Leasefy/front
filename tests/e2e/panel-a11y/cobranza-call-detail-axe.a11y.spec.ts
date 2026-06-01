@@ -66,7 +66,7 @@ test.describe('Cobranza call detail — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const candidates = page.locator(
       '[data-testid="cobranza-call-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
@@ -93,7 +93,7 @@ test.describe('Cobranza call detail — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
 
     await runAndAssertAxe(page)

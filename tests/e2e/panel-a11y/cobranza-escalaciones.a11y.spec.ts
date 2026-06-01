@@ -64,7 +64,7 @@ test.describe('Cobranza escalaciones — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const candidates = page.locator(
       '[data-testid="cobranza-escalaciones-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
@@ -84,7 +84,7 @@ test.describe('Cobranza escalaciones — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const empty = page.locator('[role="status"].border-dashed').first()
 
 
@@ -101,7 +101,7 @@ test.describe('Cobranza escalaciones — Phase 38-08 axe a11y', () => {
       })
     })
 
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
 
     await runAndAssertAxe(page)

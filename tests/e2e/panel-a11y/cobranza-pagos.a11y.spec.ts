@@ -47,7 +47,7 @@ test.describe('Cobranza pagos — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(POPULATED_PAGOS),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
@@ -61,7 +61,7 @@ test.describe('Cobranza pagos — Phase 38-08 axe a11y', () => {
         body: JSON.stringify({ items: [], nextCursor: null, generatedAt: new Date().toISOString() }),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const empty = page.locator('[role="status"].border-dashed').first()
 
     await expect(empty).toBeVisible({ timeout: 5_000 })
@@ -75,7 +75,7 @@ test.describe('Cobranza pagos — Phase 38-08 axe a11y', () => {
         body: JSON.stringify(POPULATED_PAGOS),
       })
     })
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
     await runAndAssertAxe(page)
   })

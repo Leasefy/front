@@ -57,7 +57,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
   test('skeleton or aria-busy visible during initial load', async ({ page }) => {
     await mockAllAnalyticsEndpoints(page, GATE_POPULATED, SKELETON_DELAY_MS)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
@@ -68,7 +68,7 @@ test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
 
   test('EmptyState renders on gate-empty (calls_30d < 5)', async ({ page }) => {
     await mockAllAnalyticsEndpoints(page, GATE_EMPTY, 0)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
 
     const empty = page.locator('[role="status"].border-dashed').first()
 
@@ -79,7 +79,7 @@ test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
 
   test('zero axe violations (critical/serious) on populated analitica', async ({ page }) => {
     await mockAllAnalyticsEndpoints(page, GATE_POPULATED, 0)
-    await page.goto(ROUTE)
+    await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     await waitForPageReady(page)
 
     await runAndAssertAxe(page)

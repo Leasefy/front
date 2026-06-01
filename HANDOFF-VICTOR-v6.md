@@ -24,9 +24,9 @@ Pásale a tu Claude este archivo **+** los 2 reportes en `mvp/claudedocs/`. Orde
 ## 2. TL;DR — lo que debes internalizar primero
 
 1. **Esto fue vibe-coded.** Hay mucho software y muchos tests, pero **no ha tenido revisión de backend**. La §6 te da un checklist concreto de qué escrutar, el riesgo, y el fix correcto, con file:line real. Es lo que te pidió Nico.
-2. **El frontend (`mvp`) está pusheado al PR #14.** El backend de IA (`agent`) tiene **4 commits LOCALES sin pushear** (`09ff301`, `3d8e398`, `30fb573`, `5616e76`) — la cuenta de esta sesión **no tiene write access** a `Leasefy/agent`. **TÚ debes pushearlos + desplegar.** (Verificado: el branch `restructure/per-agent-organization` no tiene tracking remoto con esos commits.)
+2. **El frontend (`mvp`) está pusheado al PR #14.** El backend de IA (`agent`) tiene **9 commits LOCALES sin pushear** (los 4 originales `09ff301`/`3d8e398`/`30fb573`/`5616e76` + 5 de hardening de esta sesión `24d5949`/`be8b6b2`/`6d16c3f`/`b607940`/`b401ea9`) — la cuenta de esta sesión **no tiene write access** a `Leasefy/agent`. **TÚ debes pushearlos + desplegar.** (Verificado: el branch `restructure/per-agent-organization` no tiene tracking remoto con esos commits.)
 3. **Hoy nada de cara al cliente corre end-to-end** — por dos razones: (a) faltaban CORS/JWT en el agent (YA arreglados en código por los 4 commits, falta deploy + env) y (b) faltan credenciales externas (Vapi, 360dialog, Wompi, DataCrédito, carriers) y el motor ERP M1/M2 que **no existe**.
-4. **Hay un deploy-blocker introducido por el propio fix de JWT:** el gate de secretos (`assert-production-secrets.ts:39-40`) **no reconoce `SUPABASE_JWKS_URL`** como fuente válida de firma, pero esa es justo la var que el commit `3d8e398` empezó a usar en prod. Con un deploy "correcto" (solo `SUPABASE_JWKS_URL`), el server hace `process.exit(1)` y **no arranca**. Verificado en código. Arréglalo ANTES de pushear (§6-A1).
+4. **Hay un deploy-blocker introducido por el propio fix de JWT:** el gate de secretos (`assert-production-secrets.ts:39-40`) **no reconoce `SUPABASE_JWKS_URL`** como fuente válida de firma, pero esa es justo la var que el commit `3d8e398` empezó a usar en prod. Con un deploy "correcto" (solo `SUPABASE_JWKS_URL`), el server hacía `process.exit(1)` y no arrancaba. ✅ **RESUELTO esta sesión (`24d5949`)** — el gate ya acepta `SUPABASE_JWKS_URL` (+ issuer-pin via `SUPABASE_JWT_ISSUER`\|\|`SUPABASE_URL`); solo resta setear esas env vars (§6-A1).
 5. **El "cerebro" está; las "extremidades" no.** La orquestación (Mastra, state machines), el scoring determinístico, el OCR Vision y los guardrails de compliance están construidos y razonablemente probados. Lo que falta son: integraciones que **ni existen** (buró real, despachador de cadencia, envío/reasignación en matching, pasos 7-8 del validador, los 4 carriers reales) e integraciones **env-gated listas pero nunca verificadas en vivo** (360dialog, Vapi, Wompi/Bold).
 6. **Riesgo de seguridad de máxima prioridad: el aislamiento multi-tenant es decorativo.** El rol de conexión de Postgres tiene `rolbypassrls=true` → todas las políticas RLS `tenant_isolation` son no-ops en runtime. `withTenantScope` setea un GUC que nada hace cumplir. **Bloqueante antes de PII/dinero real multi-tenant** (§6-B).
 7. **El dinero no se mueve.** La dispersión (`daily-dispersion.ts`) solo escribe un ledger con cuenta bancaria stub; no hay integración SPT real. Los links de pago inbound son URLs stub no pagables. **Bloqueante antes de operar con dinero real** (§6-B).
@@ -389,9 +389,15 @@ Cada uno desbloquea lo indicado. Todo el código degrada a **stub** cuando falta
 
 ## 11. Acciones requeridas de Víctor, en orden de prioridad
 
+> **⚠️ Lo que AÚN requiere de ti tras los fixes de esta sesión (2026-06-01).** Esta sesión resolvió en código A1/A2/D2, dejó B1 (guard de arranque) y F1 (migración) listos, y limpió los 2 errores tsc + 2 tests G5 pre-existentes (**tsc exit 0 repo-wide, `cotizador.test.ts` 51/51**). Lo que **NO** se puede cerrar en código y depende de vos:
+> 1. **Pushear los 9 commits locales del `agent`** — esta cuenta no tiene write access a `Leasefy/agent`. Branch `restructure/per-agent-organization`.
+> 2. **B1 — cambiar el rol de Postgres a uno SIN `BYPASSRLS`** (ops/DB). Mi guard solo lo detecta/avisa al boot; el aislamiento multi-tenant real necesita el rol corregido. Verificá: `SELECT rolbypassrls FROM pg_roles WHERE rolname=current_user;` (§6-B1).
+> 3. **F1 — correr `prisma migrate deploy`** de la migración append-only (`b607940`). **Revisala antes**: fue escrita sin una DB viva para testear → probá en staging primero (§6-F1).
+> 4. **B2/B4 — mover dinero real:** integrar la API SPT real de Wompi + credenciales. **No es fix de código** (inventar un stub "que funciona" sería peligroso con dinero); queda como desarrollo bloqueado en credenciales (§6-B2/B4).
+
 ### P0 — Desbloquear + arrancar (sin esto, nada de cara al cliente corre en el navegador)
-1. **Arreglar el gate de secretos para JWKS** (§6-A1, `assert-production-secrets.ts:39-40`) — **ANTES de pushear**, o el server no arranca.
-2. **Pushear + desplegar `agent`** con los 4 commits locales (`09ff301`, `3d8e398`, `30fb573`, `5616e76`). Branch `restructure/per-agent-organization`.
+1. ✅ **Hecho esta sesión (`24d5949`)** — el gate de secretos ya acepta `SUPABASE_JWKS_URL` (§6-A1). Solo confirmá las env vars del paso 4.
+2. **Pushear + desplegar `agent`** con los **9 commits locales** (4 originales + 5 de hardening: `24d5949`, `be8b6b2`, `6d16c3f`, `b607940`, `b401ea9`). Branch `restructure/per-agent-organization`. tsc exit 0 repo-wide; suites tocadas verdes.
 3. **Setear `CORS_ALLOWED_ORIGINS`** = origen(es) reales del front (ej. `https://app.leasefy.co`) + documentarla en `.env.example` (§6-A3).
 4. **Confirmar `SUPABASE_JWKS_URL` + `SUPABASE_URL` + `SUPABASE_JWT_ISSUER`** en el env del agent en prod.
 5. **Setear `OPENAI_API_KEY`** (desbloquea captura de propiedad por audio).
@@ -407,10 +413,10 @@ Cada uno desbloquea lo indicado. Todo el código degrada a **stub** cuando falta
 ### P2 — Antes de mover dinero real o PII real (BLOQUEANTES regulatorios)
 12. **Aislamiento multi-tenant:** correr con rol de DB sin `BYPASSRLS` + test de fuga cross-tenant (§6-B1).
 13. **Dinero:** integración SPT real para dispersión (§6-B2); `generate-fresh-payment-link` real (§6-B4); idempotencia de payout/billing-events (§6-B3/B6).
-14. **Compliance:** inmutabilidad append-only de `audit_log`/`automated_decisions` (§6-F1); screening AML real o declararlo fuera de alcance (§6-F2).
+14. **Compliance:** correr `prisma migrate deploy` de la migración append-only ya escrita (`b607940`, §6-F1 — revisala antes, fue escrita sin DB de test); screening AML real o declararlo fuera de alcance (§6-F2).
 
 ### Build / tests
-15. **Tests:** cobertura de extracción real (§6-G1); suites financieras (§6-G2). `tsc --noEmit` ya limpio (exit 0).
+15. **Tests:** cobertura de extracción real (§6-G1); suites financieras (§6-G2). `tsc --noEmit` ya limpio **exit 0 repo-wide** (esta sesión cerró 2 errores pre-existentes en `agency-policy-versions.ts` + 2 tests G5 stale en `cotizador.test.ts`, ahora 51/51 — commit `b401ea9`).
 
 ### Falta por CONSTRUIR (desarrollo nuevo, no solo credenciales)
 - Motor ERP M1/M2 (Tesorería/Conciliación/Facturación-DIAN/PQRS/Agenda) — §8.

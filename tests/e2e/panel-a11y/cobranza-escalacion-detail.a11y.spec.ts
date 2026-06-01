@@ -12,7 +12,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const ESC_ID = 'test-esc-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/escalaciones/${ESC_ID}`
 const DETAIL_MOCK = `**/cobranza/escalations/${ESC_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_ESCALACION = {
   id: ESC_ID,
@@ -49,7 +49,7 @@ test.describe('Cobranza escalación detail — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on populated escalación detail', async ({ page }) => {

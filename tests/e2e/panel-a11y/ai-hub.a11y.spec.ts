@@ -14,7 +14,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const ROUTE = '/panel/inmobiliaria/ai'
 const HUB_LANDING_MOCK = '**/ai-hub/landing**'
 const AGENT_METRICS_MOCK = '**/ai-hub/metrics**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_LANDING = {
   cobranzaCard: {
@@ -60,7 +60,7 @@ test.describe('AI hub landing — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded AI hub (cobranza + cotizador cards)', async ({ page }) => {

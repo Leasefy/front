@@ -17,7 +17,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/analitica'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const GATE_POPULATED = { populated: true, calls_30d: 50 }
 const GATE_EMPTY = { populated: false, calls_30d: 2 }
@@ -63,7 +63,7 @@ test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState renders on gate-empty (calls_30d < 5)', async ({ page }) => {

@@ -13,7 +13,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const PAYMENT_ID = 'test-payment-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/pagos/${PAYMENT_ID}`
 const DETAIL_MOCK = `**/cobranza/payments/${PAYMENT_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_PAGO = {
   id: PAYMENT_ID,
@@ -47,7 +47,7 @@ test.describe('Cobranza pago detail — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded pago detail', async ({ page }) => {

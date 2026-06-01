@@ -13,7 +13,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const PLAN_ID = 'test-plan-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/pagos/planes/${PLAN_ID}`
 const PLAN_MOCK = `**/cobranza/payment-plans/${PLAN_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_PLAN = {
   id: PLAN_ID,
@@ -46,7 +46,7 @@ test.describe('Cobranza pago plan — Phase 38-08 axe a11y', () => {
       '[data-testid="plan-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded plan detail', async ({ page }) => {

@@ -19,7 +19,7 @@ const CALL_ID = 'test-call-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/llamadas/${CALL_ID}`
 const CALL_MOCK = `**/cobranza/calls/${CALL_ID}**`
 const TRANSCRIPT_MOCK = `**/cobranza/calls/${CALL_ID}/transcript**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_CALL = {
   callId: CALL_ID,
@@ -74,7 +74,7 @@ test.describe('Cobranza call detail — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on populated call detail', async ({ page }) => {

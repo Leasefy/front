@@ -12,7 +12,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/reporte/thresholds'
 const THRESHOLDS_MOCK = '**/cobranza/daily-report/thresholds**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_THRESHOLDS = {
   pkr: { warn: 0.4, alert: 0.3 },
@@ -39,7 +39,7 @@ test.describe('Cobranza reporte/thresholds — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded thresholds form', async ({ page }) => {

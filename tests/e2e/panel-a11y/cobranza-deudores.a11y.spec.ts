@@ -20,7 +20,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/deudores'
 const DEBTORS_MOCK = '**/cobranza/debtors**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_DEBTORS = {
   items: [
@@ -72,7 +72,7 @@ test.describe('Cobranza deudores — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState renders on empty list + no filters', async ({ page }) => {

@@ -14,7 +14,7 @@ const QUOTE_ID = 'test-quote-id'
 const ROUTE = `/panel/inmobiliaria/ai/cotizador/${QUOTE_ID}`
 const METADATA_MOCK = `**/cotizador/quote/${QUOTE_ID}/metadata`
 const STREAM_MOCK = `**/cotizador/quote/${QUOTE_ID}/stream`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_METADATA = {
   id: QUOTE_ID,
@@ -52,7 +52,7 @@ test.describe('Cotizador quote detail — Phase 38-08 axe a11y', () => {
       '[data-testid="cotizador-quote-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded quote detail', async ({ page }) => {

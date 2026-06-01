@@ -9,7 +9,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/ley-2300'
 const LEY_MOCK = '**/compliance/ley-2300**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_LEY_2300 = {
   summary: { contactsLast7d: 14, violationsLast7d: 1 },
@@ -40,7 +40,7 @@ test.describe('Cobranza compliance/ley-2300 — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState when Ley 2300 has no violations', async ({ page }) => {

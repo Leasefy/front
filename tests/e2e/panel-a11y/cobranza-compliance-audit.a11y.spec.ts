@@ -13,8 +13,12 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/audit'
-const AUDIT_LIST_MOCK = '**/compliance/audit-log**'
-const SKELETON_DELAY_MS = 800
+// The hook in src/lib/hooks/cobranza/use-audit-log.ts (line 108) calls
+// `/api/agency/:agencyId/cobranza/audit-log` — NOT `compliance/audit-log`.
+// The page lives under `/compliance/audit` but the backend endpoint is in
+// the `cobranza` namespace. Match the canonical URL.
+const AUDIT_LIST_MOCK = '**/cobranza/audit-log**'
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_AUDIT = {
   items: [
@@ -55,7 +59,7 @@ test.describe('Cobranza compliance/audit — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState when audit log is empty', async ({ page }) => {

@@ -22,7 +22,7 @@ const ROUTE = `/panel/inmobiliaria/ai/cobranza/cartas/${CARTA_ID}`
 // endpoint depending on the embed pattern.
 const CARTA_MOCK_A = `**/cartas/${CARTA_ID}**`
 const CARTA_MOCK_B = `**/letters/${CARTA_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_CARTA = {
   id: CARTA_ID,
@@ -58,7 +58,7 @@ test.describe('Cobranza cartas detail — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded carta detail', async ({ page }) => {

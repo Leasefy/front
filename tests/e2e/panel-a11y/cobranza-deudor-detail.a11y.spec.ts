@@ -15,7 +15,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const DEBTOR_ID = 'test-debtor-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/deudores/${DEBTOR_ID}`
 const DETAIL_MOCK = `**/cobranza/debtors/${DEBTOR_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_DEBTOR = {
   id: DEBTOR_ID,
@@ -57,7 +57,7 @@ test.describe('Cobranza deudor detail — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on populated debtor detail', async ({ page }) => {

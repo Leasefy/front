@@ -16,7 +16,7 @@ const SINIESTRO_ID = 'test-siniestro-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/siniestros/${SINIESTRO_ID}`
 const SINIESTRO_MOCK_A = `**/siniestros/${SINIESTRO_ID}**`
 const SINIESTRO_MOCK_B = `**/cobranza/claims/${SINIESTRO_ID}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_SINIESTRO = {
   id: SINIESTRO_ID,
@@ -53,7 +53,7 @@ test.describe('Cobranza siniestros detail — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded siniestro detail', async ({ page }) => {

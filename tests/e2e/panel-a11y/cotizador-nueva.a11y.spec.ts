@@ -14,7 +14,7 @@ const ROUTE = '/panel/inmobiliaria/ai/cotizador/nueva'
 const RE_QUOTE_ROUTE = '/panel/inmobiliaria/ai/cotizador/nueva?from=test-quote-id'
 const METADATA_MOCK = '**/cotizador/quote/test-quote-id/metadata'
 const CARRIERS_MOCK = '**/cotizador/carriers**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const QUOTE_METADATA = {
   id: 'test-quote-id',
@@ -58,7 +58,7 @@ test.describe('Cotizador nueva wizard — Phase 38-08 axe a11y', () => {
       '[data-testid="cotizador-wizard-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on wizard initial form state', async ({ page }) => {

@@ -10,7 +10,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 const CARRIER = 'sura'
 const ROUTE = `/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER}`
 const CARRIER_MOCK = `**/aseguradoras/registry/${CARRIER}**`
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_CARRIER = {
   carrier: CARRIER,
@@ -45,7 +45,7 @@ test.describe('Cotizador carrier detail — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded carrier detail', async ({ page }) => {

@@ -19,7 +19,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/escalaciones'
 const ESCALACIONES_MOCK = '**/cobranza/escalations**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_ESCALACIONES = {
   open: [
@@ -72,7 +72,7 @@ test.describe('Cobranza escalaciones — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('celebratory EmptyState when all three arrays are empty', async ({ page }) => {

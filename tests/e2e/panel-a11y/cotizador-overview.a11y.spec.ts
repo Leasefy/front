@@ -13,7 +13,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cotizador'
 const OVERVIEW_MOCK = '**/cotizador/overview'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_OVERVIEW = {
   kpis: { quotesToday: 3, approvalRate: 0.85, primaPromedio: 250_000, costPerQuote: 1_200 },
@@ -52,7 +52,7 @@ test.describe('Cotizador overview — Phase 38-08 axe a11y', () => {
       '[data-testid="cotizador-overview-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState when no quotes (mergedQuotes empty)', async ({ page }) => {

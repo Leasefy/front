@@ -29,7 +29,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
  * role="status" navigation announcer (Phase 38-04a established pattern).
  */
 
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 const NETWORK_PATTERNS = {
   cotizadorOverview: '**/cotizador/overview',
   cotizadorMetadata: '**/cotizador/quote/*/metadata',

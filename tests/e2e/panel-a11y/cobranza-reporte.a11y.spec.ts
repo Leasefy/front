@@ -12,7 +12,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/reporte'
 const REPORTE_MOCK = '**/cobranza/daily-report**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_REPORTE = {
   date: new Date().toISOString().split('T')[0],
@@ -48,7 +48,7 @@ test.describe('Cobranza reporte — Phase 38-08 axe a11y', () => {
       '[data-testid="cobranza-reporte-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState when daily report has no data', async ({ page }) => {

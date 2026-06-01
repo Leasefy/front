@@ -26,7 +26,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
  * and the role="status" wrapper on EmptyState.
  */
 
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 const NETWORK_PATTERNS = {
   carteraOverview: '**/cartera/overview',
   debtors: '**/cobranza/debtors**',

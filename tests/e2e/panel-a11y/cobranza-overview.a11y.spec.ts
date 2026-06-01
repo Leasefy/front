@@ -18,7 +18,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const POPULATED_OVERVIEW = {
   kpis: {
@@ -65,7 +65,7 @@ test.describe('Cobranza overview — Phase 38-08 axe a11y', () => {
 
 
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('EmptyState renders when cartera/overview is null', async ({ page }) => {

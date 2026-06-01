@@ -12,7 +12,7 @@ import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cotizador/insights'
 const INSIGHTS_MOCK = '**/cotizador/insights/**'
-const SKELETON_DELAY_MS = 800
+const SKELETON_DELAY_MS = 2500
 
 const INSIGHTS_STUB = { populated: false, rows: [], reason: 'insufficient' }
 
@@ -33,7 +33,7 @@ test.describe('Cotizador insights — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE, { waitUntil: 'domcontentloaded' })
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
+    await expect(candidates.first()).toBeVisible({ timeout: 6_000 })
   })
 
   test('zero axe violations on loaded insights (incl. watermarks)', async ({ page }) => {

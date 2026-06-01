@@ -71,6 +71,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria/ai/cobranza',
           icon: ChatCircleText,
           module: 'cobranza',
+          dataTourTarget: 'sidebar-cobranza',
           children: [
             {
               label: t('inmobiliaria.ai.nav.arco'),
@@ -89,6 +90,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
               href: '/panel/inmobiliaria/ai/cobranza/configuracion',
               icon: SlidersHorizontal,
               module: 'cobranza',
+              dataTourTarget: 'sidebar-configuraciones',
             } as NavItemWithModule,
             {
               label: t('inmobiliaria.ai.nav.analitica'),
@@ -103,6 +105,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria/ai/cotizador',
           icon: FileText,
           module: 'cotizador',
+          dataTourTarget: 'sidebar-cotizador',
           children: [
             {
               label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),

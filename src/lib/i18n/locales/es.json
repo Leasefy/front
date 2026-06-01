@@ -1457,7 +1457,10 @@
         "deleted": "{{name}} eliminado correctamente",
         "created": "{{name}} agregado correctamente",
         "updated": "Propietario actualizado correctamente",
-        "exporting": "Exportando propietarios a Excel..."
+        "exporting": "Exportando propietarios a Excel...",
+        "createError": "No se pudo crear el propietario. Intenta de nuevo.",
+        "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
+        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
       },
       "detail": {
         "title": "Detalle del Propietario",
@@ -3259,7 +3262,9 @@
         "inventory": "Inventario",
         "incrementLetter": "Carta de Incremento",
         "actaCreated": "Acta creada",
-        "actaSaved": "El acta de {{type}} ha sido guardada"
+        "actaSaved": "El acta de {{type}} ha sido guardada",
+        "actaError": "Error al crear acta",
+        "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo."
       }
     },
     "mensajes": {
@@ -5716,7 +5721,7 @@
         "next": "Siguiente",
         "finish": "Entendido",
         "relaunch": "Tour del panel",
-        "stepOf": "Paso {current} de {total}"
+        "stepOf": "Paso {{current}} de {{total}}"
       },
       "hub": {
         "empty": {

@@ -344,6 +344,7 @@ export default function AIAgentsPage() {
               className="relative cursor-pointer"
               onClick={() => router.push('/panel/inmobiliaria/ai/cobranza/analitica')}
               data-testid="cobranza-agent-card"
+              data-tour-target="cobranza-card"
             >
               <AIAgentCard
                 agent={cobranzaAgent}
@@ -369,6 +370,7 @@ export default function AIAgentsPage() {
               className="relative cursor-pointer"
               onClick={() => router.push('/panel/inmobiliaria/ai/cotizador')}
               data-testid="cotizador-agent-card"
+              data-tour-target="cotizador-card"
             >
               <AIAgentCard
                 agent={cotizadorAgent}

@@ -28,6 +28,8 @@ export interface NavItem {
   kind?: 'section';
   /** Small pill shown after the label (e.g. "Pronto" for not-yet-built sections). Additive. */
   tag?: string;
+  /** data-tour-target attribute for Phase 38 PanelTour primitive. Additive — items without it render unchanged. */
+  dataTourTarget?: string;
 }
 
 export interface ProfileCompletionStep {
@@ -123,6 +125,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
+          data-tour-target={item.dataTourTarget}
           className={cn(
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
@@ -171,6 +174,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
       href={item.href}
       onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
+      data-tour-target={item.dataTourTarget}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 text-[14px] rounded-full',
         'transition-colors',

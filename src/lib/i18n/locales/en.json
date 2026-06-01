@@ -1444,7 +1444,10 @@
         "deleted": "{{name}} deleted successfully",
         "created": "{{name}} added successfully",
         "updated": "Owner updated successfully",
-        "exporting": "Exporting owners to Excel..."
+        "exporting": "Exporting owners to Excel...",
+        "createError": "Could not create the owner. Please try again.",
+        "updateError": "Could not update the owner. Please try again.",
+        "deleteError": "Could not delete the owner. Please try again."
       },
       "detail": {
         "title": "Owner Details",
@@ -3246,7 +3249,9 @@
         "inventory": "Inventory",
         "incrementLetter": "Increment Letter",
         "actaCreated": "Record created",
-        "actaSaved": "The {{type}} record has been saved"
+        "actaSaved": "The {{type}} record has been saved",
+        "actaError": "Error creating record",
+        "actaErrorDesc": "There was an error creating the record. Please try again."
       }
     },
     "mensajes": {
@@ -5703,7 +5708,7 @@
         "next": "Next",
         "finish": "Got it",
         "relaunch": "Panel tour",
-        "stepOf": "Step {current} of {total}"
+        "stepOf": "Step {{current}} of {{total}}"
       },
       "hub": {
         "empty": {

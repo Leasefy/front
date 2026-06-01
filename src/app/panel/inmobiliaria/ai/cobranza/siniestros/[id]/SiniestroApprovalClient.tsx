@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -43,7 +44,7 @@ interface Props {
 export default function SiniestroApprovalClient({ claimId }: Props) {
   const { t } = useI18n()
   const router = useRouter()
-  const { agency } = useAuth()
+  const { agency, isLoading: authLoading } = useAuth()
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
@@ -83,6 +84,10 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
       return () => clearTimeout(timer)
     }
   }, [rejectResult, router])
+
+  // Phase 38-05a: skeleton during initial auth hydration (first loading state on
+  // this page — useSiniestroApproval has no initial fetch, only mutation state).
+  if (authLoading && !agency) return <PageSkeleton variant="detail" />
 
   if (envMissing) {
     return (

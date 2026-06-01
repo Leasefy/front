@@ -27,6 +27,7 @@ import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useSubscription } from '@/lib/hooks/cobranza/use-subscription'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 interface SubscriptionStats {
   email_subscribed: number
@@ -95,11 +96,11 @@ function SuscripcionContent() {
         </h1>
       </div>
 
-      {isLoading && !data && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+      {/* Phase 38-05a: PageSkeleton primitive (list variant) replaces inline spinner.
+         No page-level EmptyState — this is a per-user toggle form (Habeas Data
+         D-34-06), not a list. Even "both toggles off" is a valid state, not an
+         empty one. See SUMMARY deviations. */}
+      {isLoading && !data && <PageSkeleton variant="list" />}
 
       {data && (
         <>

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -91,26 +92,9 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     }
   }, [data?.startedAt, locale])
 
-  // -------- Loading skeleton --------
-  if (isLoading && !data) {
-    return (
-      <main className="p-6 lg:p-8 space-y-6">
-        <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_22rem] gap-6">
-          <div className="space-y-4">
-            <div className="h-24 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-96 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-          </div>
-          <div className="space-y-4">
-            <div className="h-40 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-40 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-32 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-          </div>
-        </div>
-        <p className="sr-only">{t('inmobiliaria.ai.cobranza.call.loading')}</p>
-      </main>
-    )
-  }
+  // -------- Loading skeleton (Phase 38-05a: PageSkeleton primitive, detail variant) --------
+  if (isLoading && !data) return <PageSkeleton variant="detail" />
+
 
   // -------- Error --------
   if (error && !data) {

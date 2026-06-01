@@ -23,6 +23,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useEscalationDetail } from '@/lib/hooks/cobranza/use-escalation-detail'
 import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/EscalationResolveModal'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -54,12 +55,9 @@ function EscalationDetailContent() {
     [resolve, refetch],
   )
 
+  // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
   if (isLoading && !data) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+    return <PageSkeleton variant="detail" />
   }
 
   if (error || !data) {

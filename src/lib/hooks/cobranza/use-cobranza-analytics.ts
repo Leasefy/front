@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // ── Polling interval (D-37-07: 60s for aggregate analytics widgets) ──────────
 const POLL_INTERVAL_MS = 60_000
@@ -140,7 +141,7 @@ export function useCobranzaAnalytics(): UseCobranzaAnalyticsResult {
     }
 
     const base = `${agentUrl}/api/agency/${agencyId}/cobranza/analytics`
-    const opts: RequestInit = { credentials: 'include' }
+    const opts: RequestInit = { headers: agentAuthHeaders() }
 
     try {
       // Parallel fetch all 6 endpoints (D-37-07: Promise.all)

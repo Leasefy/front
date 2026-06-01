@@ -118,7 +118,7 @@ describe('useCarrierDetail', () => {
     expect(result.current?.isLoading).toBe(false)
   })
 
-  it('Test 3 — calls correct URL for specified carrier with credentials:include', async () => {
+  it('Test 3 — calls correct URL for specified carrier with Authorization header', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(MOCK_PAYLOAD), { status: 200 }),
     )
@@ -131,8 +131,10 @@ describe('useCarrierDetail', () => {
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/cotizador/aseguradoras/mapfre'),
-      expect.objectContaining({ credentials: 'include' }),
+      expect.objectContaining({ headers: expect.any(Headers) }),
     )
+    const calledHeaders = fetchSpy.mock.calls[0][1]?.headers as Headers
+    expect(calledHeaders.get('Authorization')).toMatch(/^Bearer /)
   })
 
   it('Test 4 — refetch triggers a new fetch call', async () => {

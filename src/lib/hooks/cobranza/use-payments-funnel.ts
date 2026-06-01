@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
 import type { paths } from '@/lib/api/generated/agent'
 
@@ -147,7 +148,7 @@ export function usePaymentsFunnel(
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/pagos${suffix}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse
@@ -211,7 +212,7 @@ export function usePaymentsFunnel(
       const qs = buildQs(filters, nextCursor)
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/pagos?${qs}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse

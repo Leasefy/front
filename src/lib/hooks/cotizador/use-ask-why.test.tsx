@@ -78,11 +78,13 @@ describe('useAskWhy', () => {
       'http://agent.test/api/agency/agency-test/cotizador/ask-why',
       expect.objectContaining({
         method: 'POST',
-        credentials: 'include',
-        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+        headers: expect.any(Headers),
         body: JSON.stringify({ quote_id: 'q1', variable: 'canon', new_value: 1500000 }),
       }),
     )
+    const calledHeaders = fetchSpy.mock.calls[0][1]?.headers as Headers
+    expect(calledHeaders.get('Content-Type')).toBe('application/json')
+    expect(calledHeaders.get('Authorization')).toMatch(/^Bearer /)
   })
 
   it('Test 2 — on 429 error code=429 with cap/used/resets_at populated', async () => {

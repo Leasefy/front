@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type { ArcoRequestRow } from './use-arco-requests'
 
 const POLL_INTERVAL_MS = 60_000
@@ -52,7 +53,7 @@ export function useArcoDetail(requestId: string | null): UseArcoDetailResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/arco/requests/${requestId}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as ArcoDetailResponse

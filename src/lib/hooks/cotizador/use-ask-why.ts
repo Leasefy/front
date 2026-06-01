@@ -11,6 +11,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 
 export type AskWhyVariable = 'canon' | 'ciudad' | 'tipo' | 'codeudores'
@@ -81,8 +82,7 @@ export function useAskWhy(agencyId: string | null): {
           `${agentUrl}/api/agency/${agencyId}/cotizador/ask-why`,
           {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload),
             signal: controller.signal,
           },

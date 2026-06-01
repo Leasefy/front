@@ -157,7 +157,7 @@ describe('useCarrierRegistry', () => {
     expect(result.current?.isLoading).toBe(false)
   })
 
-  it('Test 4 — saveOverride calls PUT with correct URL, body, and credentials; on success returns void', async () => {
+  it('Test 4 — saveOverride calls PUT with correct URL, body, and Authorization header; on success returns void', async () => {
     // First call: registry fetch (success)
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(MOCK_REGISTRY), { status: 200 }))
@@ -187,7 +187,7 @@ describe('useCarrierRegistry', () => {
     expect(putCall[0]).toBe('http://agent.test/api/agency/agency-test-123/cotizador/aseguradoras/sura/override')
     const putOptions = putCall[1] as RequestInit
     expect(putOptions.method).toBe('PUT')
-    expect(putOptions.credentials).toBe('include')
+    expect((putOptions.headers as Headers).get('Authorization')).toMatch(/^Bearer /)
     const body = JSON.parse(putOptions.body as string)
     expect(body.route).toBe('sura_seguros')
     expect(body.enabled).toBe(false)
@@ -247,7 +247,7 @@ describe('useCarrierRegistry', () => {
     expect(url).toContain(encodeURIComponent('sura_seguros'))
     const deleteOptions = deleteCall[1] as RequestInit
     expect(deleteOptions.method).toBe('DELETE')
-    expect(deleteOptions.credentials).toBe('include')
+    expect((deleteOptions.headers as Headers).get('Authorization')).toMatch(/^Bearer /)
   })
 
   it('Test 7 — refetch() re-triggers fetchOnce() without restarting the polling interval', async () => {

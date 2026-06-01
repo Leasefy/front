@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { AgentExecutionTrace, ExecutionStep } from '@/lib/types/ai-agents';
+import { agentAuthHeaders } from '@/lib/api/agent-auth';
 
 // =============================================================================
 // Types
@@ -77,7 +78,7 @@ export function useAgentExecution() {
         const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
         const res = await fetch(`${agentUrl}/tenant-scoring`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ applicationId, agencyId }),
         });
 
@@ -158,7 +159,7 @@ export function useAgentExecution() {
         const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
         const res = await fetch(`${agentUrl}/smart-matching`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ applicationId, agencyId, trigger }),
         });
 

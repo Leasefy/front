@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
 import type { Escalation } from './use-escalations'
 
@@ -64,7 +65,7 @@ export function useEscalationDetail(
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${escalationId}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as EscalationDetail

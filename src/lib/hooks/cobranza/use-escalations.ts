@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type {
   EscalationCategory,
   UrgencyLevel,
@@ -99,7 +100,7 @@ export function useEscalations(): UseEscalationsResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as EscalationsListResponse
@@ -145,8 +146,7 @@ export function useEscalations(): UseEscalationsResult {
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${id}/${path}`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: body ? JSON.stringify(body) : undefined,
         },
       )

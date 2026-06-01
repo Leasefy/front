@@ -24,6 +24,7 @@ import { CaretLeft } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useSubscription } from '@/lib/hooks/cobranza/use-subscription'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
@@ -59,7 +60,7 @@ function SuscripcionContent() {
       try {
         const res = await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/subscription-stats`,
-          { credentials: 'include' },
+          { headers: agentAuthHeaders() },
         )
         if (cancelled) return
         if (res.status === 404) {

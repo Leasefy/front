@@ -37,6 +37,7 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
@@ -340,8 +341,7 @@ function TemplateEditorContent({
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/draft`,
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ bodyDraft: localDraft }),
         },
       )
@@ -368,8 +368,7 @@ function TemplateEditorContent({
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/publish`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
         },
       )
       if (!res.ok) {
@@ -406,7 +405,7 @@ function TemplateEditorContent({
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
       const res = await fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as {

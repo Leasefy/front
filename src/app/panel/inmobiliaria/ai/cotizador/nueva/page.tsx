@@ -10,7 +10,7 @@ void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { getAccessToken } from '@/lib/api/client'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useWizardDraft } from '@/lib/hooks/cotizador/use-wizard-draft'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
@@ -280,11 +280,9 @@ export default function NuevaCotizacionPage() {
         `${agentUrl}/api/agency/${agencyId}/cotizador/quote`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: {
+          headers: agentAuthHeaders({
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${getAccessToken()}`,
-          },
+          }),
           body: JSON.stringify(submitBody),
         }
       )

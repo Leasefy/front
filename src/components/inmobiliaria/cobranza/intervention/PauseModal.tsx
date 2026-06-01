@@ -10,6 +10,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 
@@ -68,8 +69,7 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/pause`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: JSON.stringify({
             paused_until: new Date(pausedUntil + 'T00:00:00').toISOString(),
             reason: reason.trim(),

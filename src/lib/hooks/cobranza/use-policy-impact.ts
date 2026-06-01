@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export interface PolicyImpactResponse {
   flipped_count: number
@@ -47,8 +48,7 @@ export function usePolicyImpact(): UsePolicyImpactResult {
           `${agentUrl}/api/agency/${agencyId}/policies/impact`,
           {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(proposedPolicy),
           },
         )

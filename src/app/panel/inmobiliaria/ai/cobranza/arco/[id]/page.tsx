@@ -18,6 +18,7 @@ import { ArrowSquareOut } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useArcoDetail } from '@/lib/hooks/cobranza/use-arco-detail'
 import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -230,8 +231,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         `${agentUrl}/api/agency/${agencyId}/cobranza/arco-requests/${requestId}/resolve`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(resolveData),
         },
       )
@@ -250,7 +250,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         `${agentUrl}/api/agency/${agencyId}/cobranza/arco-requests/${requestId}/reject`,
         {
           method: 'POST',
-          credentials: 'include',
+          headers: agentAuthHeaders(),
         },
       )
       await detailRefetch()

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type { components } from '@/lib/api/generated/agent'
 
 export type DebtorCallsResponse =
@@ -45,7 +46,7 @@ export function useDebtorCalls(args: { debtorId: string }): UseDebtorCallsResult
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/calls`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: DebtorCallsResponse = await res.json()

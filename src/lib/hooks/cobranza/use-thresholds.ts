@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export interface ThresholdRow {
   version: number | null
@@ -85,7 +86,7 @@ export function useThresholds(): UseThresholdsResult {
       return
     }
     try {
-      const activeRes = await globalThis.fetch(activeUrl, { credentials: 'include' })
+      const activeRes = await globalThis.fetch(activeUrl, { headers: agentAuthHeaders() })
       if (!activeRes.ok) throw new Error(`${activeRes.status}`)
       const activeJson = (await activeRes.json()) as ThresholdRow
       setActive(activeJson)
@@ -94,7 +95,7 @@ export function useThresholds(): UseThresholdsResult {
       const historyUrl = base('/history?limit=20')
       if (historyUrl) {
         try {
-          const histRes = await globalThis.fetch(historyUrl, { credentials: 'include' })
+          const histRes = await globalThis.fetch(historyUrl, { headers: agentAuthHeaders() })
           if (histRes.status === 404) {
             setVersionsListSupported(false)
             setVersions(activeJson.version != null ? [activeJson] : [])
@@ -131,8 +132,7 @@ export function useThresholds(): UseThresholdsResult {
       if (!url) throw new Error('not_ready')
       const res = await globalThis.fetch(url, {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
+        headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify(body),
       })
       if (!res.ok) {
@@ -152,8 +152,7 @@ export function useThresholds(): UseThresholdsResult {
       if (!url) throw new Error('not_ready')
       const res = await globalThis.fetch(url, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
+        headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify({ to_version: version }),
       })
       if (!res.ok) {

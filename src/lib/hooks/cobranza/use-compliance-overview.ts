@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
 
 export type HabeasDataColor = 'green' | 'yellow' | 'red' | 'red-pulse'
@@ -78,7 +79,7 @@ export function useComplianceOverview(): UseComplianceOverviewResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/overview`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as ComplianceOverviewResponse

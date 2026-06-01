@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // =============================================================================
 // Types
@@ -86,7 +87,7 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/registry`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = await res.json() as RegistryResponse
@@ -130,8 +131,7 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override`,
       {
         method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ route, ...fields }),
       },
     )
@@ -155,7 +155,7 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override?route=${encodeURIComponent(route)}`,
       {
         method: 'DELETE',
-        credentials: 'include',
+        headers: agentAuthHeaders(),
       },
     )
     if (!res.ok) throw new Error(`${res.status}`)

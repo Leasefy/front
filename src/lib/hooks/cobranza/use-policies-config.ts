@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 const POLL_INTERVAL_MS = 60_000
 
@@ -42,7 +43,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/policies`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PoliciesConfigResponse
@@ -85,8 +86,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
         `${agentUrl}/api/agency/${agencyId}/policies`,
         {
           method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(policy),
         },
       )

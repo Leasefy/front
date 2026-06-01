@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export type TranscriptSpeaker = 'operador' | 'deudor' | 'bot' | string
 
@@ -54,7 +55,7 @@ export function useCallTranscript({
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CallTranscriptResponse = await res.json()

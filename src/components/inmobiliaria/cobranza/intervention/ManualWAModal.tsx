@@ -12,6 +12,7 @@
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 
@@ -58,7 +59,7 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
       try {
         const res = await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/wa-templates`,
-          { credentials: 'include' },
+          { headers: agentAuthHeaders() },
         )
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as { templates: WATemplate[] }
@@ -113,8 +114,7 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/wa-send`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: JSON.stringify({ template_id: selectedId, variables }),
         },
       )

@@ -20,6 +20,7 @@ import { CaretLeft, Check, BellSlash } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
@@ -64,7 +65,7 @@ function OptOutContent() {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
         const res = await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`,
-          { credentials: 'include' },
+          { headers: agentAuthHeaders() },
         )
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as OptOutResponse
@@ -103,8 +104,7 @@ function OptOutContent() {
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out/${eventId}/acknowledge`,
           {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'content-type': 'application/json' },
+            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           },
         )
         if (res.ok) {

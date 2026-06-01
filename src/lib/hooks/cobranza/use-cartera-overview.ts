@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export interface CarteraOverviewResponse {
   kpis: {
@@ -58,7 +59,7 @@ export function useCarteraOverview() {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cartera/overview`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CarteraOverviewResponse = await res.json()

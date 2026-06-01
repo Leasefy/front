@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type { paths } from '@/lib/api/generated/agent'
 
 // ── Derived types ───────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
@@ -186,7 +187,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
       const qs = buildQs(filters, nextCursor)
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse

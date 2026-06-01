@@ -38,6 +38,7 @@ import {
 } from 'recharts'
 
 import { useI18n } from '@/lib/i18n'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePoliciesConfig } from '@/lib/hooks/cobranza/use-policies-config'
 import { usePolicyVersions, type PolicyVersionRow } from '@/lib/hooks/cobranza/use-policy-versions'
 import { usePolicyImpact } from '@/lib/hooks/cobranza/use-policy-impact'
@@ -281,7 +282,7 @@ export default function CobranzaConfiguracionPage() {
       if (agentUrl && agencyId) {
         await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/policies/rollback/${rollbackTarget.versionNumber}`,
-          { method: 'POST', credentials: 'include' },
+          { method: 'POST', headers: agentAuthHeaders() },
         )
       }
       await Promise.all([refetchConfig(), refetchVersions()])

@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export interface QuoteMetadata {
   quoteId: string
@@ -56,7 +57,7 @@ export function useQuoteMetadata(quoteId: string): {
       try {
         const res = await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/cotizador/quote/${quoteId}`,
-          { credentials: 'include' },
+          { headers: agentAuthHeaders() },
         )
         if (cancelled) return
         if (!res.ok) {

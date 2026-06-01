@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { getSupabase } from '@/lib/supabase/client'
 
 // =============================================================================
@@ -91,7 +92,7 @@ export function useCotizadorOverview(): {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/overview`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CotizadorOverviewResponse = await res.json()

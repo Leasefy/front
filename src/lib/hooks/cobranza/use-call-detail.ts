@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 export type CallOutcome = 'completed' | 'no_answer' | 'voicemail' | 'failed' | 'busy' | string
 
@@ -84,7 +85,7 @@ export function useCallDetail({ callId }: UseCallDetailArgs): UseCallDetailResul
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CallDetailResponse = await res.json()

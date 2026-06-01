@@ -116,7 +116,7 @@ describe('useAskWhyUsage', () => {
     expect(result.current?.data?.used_today).toBe(1)
   })
 
-  it('Test 4 — calls GET ask-why/usage with credentials:include', async () => {
+  it('Test 4 — calls GET ask-why/usage with Authorization header', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ used_today: 0, daily_cap: 50, resets_at: 'x' }), { status: 200 }),
     )
@@ -129,7 +129,9 @@ describe('useAskWhyUsage', () => {
 
     expect(fetchSpy).toHaveBeenCalledWith(
       'http://agent.test/api/agency/agency-test/cotizador/ask-why/usage',
-      expect.objectContaining({ credentials: 'include' }),
+      expect.objectContaining({ headers: expect.any(Headers) }),
     )
+    const calledHeaders = fetchSpy.mock.calls[0][1]?.headers as Headers
+    expect(calledHeaders.get('Authorization')).toMatch(/^Bearer /)
   })
 })

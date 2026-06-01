@@ -5,19 +5,32 @@
  *           axe-core violations of severity `critical` or `serious` against
  *           WCAG 2.0/2.1 AA tags.
  *
- * D-38-12 — Auth-debt fallback: when `route.fulfill` mocks cannot bypass
- *           the Next.js auth middleware (the page redirects before mounting),
- *           the spec marks itself test.fixme with the auth-debt reason and
- *           returns cleanly. This matches the established Phase 36-13 +
- *           38-04a + 38-04b + 38-05a/b pattern.
+ * 2026-06-01 update — `seedAuthState` from `./auth-helpers.ts` replaces the
+ *           old "auth-debt fallback" workaround. Callers MUST seed the
+ *           synthetic auth state via `seedAuthState(page)` BEFORE the
+ *           `page.goto(...)` that runs through this helper. With the
+ *           localStorage seeded, `ProtectedRoute.tsx` lets the page mount
+ *           and `route.fulfill` mocks work end-to-end.
+ *
+ *           `runAxeOrFixme` still recognises the not-mounted case, but the
+ *           fixme reason now points at a page-mount failure (mock missing,
+ *           runtime error, redirect for some OTHER reason) — NOT the
+ *           generic auth-debt placeholder.
  *
  * Usage:
+ *   import { seedAuthState } from './_helpers/auth-helpers'
  *   import { runAxeOrFixme, assertNoBlockingViolations } from './_helpers/axe-helpers'
  *
- *   await page.goto('/panel/inmobiliaria/ai/cobranza')
- *   const result = await runAxeOrFixme(page)
- *   if (result.skipped) return // test.fixme already called
- *   assertNoBlockingViolations(result.violations)
+ *   test.beforeEach(async ({ page }) => {
+ *     await seedAuthState(page)
+ *   })
+ *
+ *   test(..., async ({ page }) => {
+ *     await page.goto('/panel/inmobiliaria/ai/cobranza')
+ *     const result = await runAxeOrFixme(page)
+ *     if (result.skipped) return // test.fixme already called
+ *     assertNoBlockingViolations(result.violations)
+ *   })
  */
 
 import AxeBuilder from '@axe-core/playwright'
@@ -125,7 +138,7 @@ export async function runAxeOrFixme(page: Page): Promise<RunAxeResult> {
   if (!(await isAiPanelMounted(page))) {
     test.fixme(
       true,
-      'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware (see Phase 36-13 SUMMARY + phase_36_patch_13 memory)',
+      'page-not-mounted: seedAuthState was applied but no AI-panel surface mounted — likely a missing route mock, runtime error, or non-auth redirect. Inspect page.url() / console output before re-marking.',
     )
     return { skipped: true, violations: [] }
   }

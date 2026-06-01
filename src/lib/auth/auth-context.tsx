@@ -130,6 +130,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
+      // Phase 38 plan 38-06 (D-38-06) — server-side seed for PanelPrefsContext.
+      // The custom event flows through window (no auth-context↔panel-prefs
+      // import cycle). If the backend has not yet wired `preferences` onto
+      // /users/me, dismissed defaults to false (tour eligible).
+      if (typeof window !== 'undefined') {
+        const prefs = data.preferences as Record<string, unknown> | undefined
+        const dismissed = prefs?.panel_tour_dismissed_v1 === true
+        window.dispatchEvent(
+          new CustomEvent('leasefy:preferences:loaded', {
+            detail: { panel_tour_dismissed_v1: dismissed },
+          }),
+        )
+      }
       return { user: mapBackendUser(data), needsOnboarding: false }
     } catch (err) {
       // JWT valid but user doesn't exist in public.users yet → needs onboarding

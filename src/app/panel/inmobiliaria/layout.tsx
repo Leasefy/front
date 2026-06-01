@@ -33,6 +33,7 @@ import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { PermissionsProvider, usePermissionsContext } from '@/lib/context/PermissionsContext';
+import { PanelPrefsProvider } from '@/lib/context/PanelPrefsContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MobileNavBar } from '@/components/layout/MobileNavBar';
@@ -230,9 +231,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
     <ProtectedRoute allowedRoles={['agency']}>
       <I18nProvider>
         <PermissionsProvider>
-          <SidebarProvider>
-            <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
-          </SidebarProvider>
+          <PanelPrefsProvider>
+            <SidebarProvider>
+              <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+            </SidebarProvider>
+          </PanelPrefsProvider>
         </PermissionsProvider>
       </I18nProvider>
     </ProtectedRoute>

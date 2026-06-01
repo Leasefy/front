@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 /**
  * Cotizador + cobranza configuración critical-page structural smoke —
@@ -19,7 +20,7 @@ import { test, expect } from '@playwright/test'
  *
  * Auth-gated routes that the dev session cannot reach via raw route.fulfill
  * (auth middleware intercepts before page mounts) are marked test.fixme with
- * the standard auth-debt reason — matches Phase 37 + 38-04a pattern.
+ * seedAuthState in beforeEach unblocks the page mount (2026-06-01).
  *
  * Selectors target the [data-testid] hooks added to each new skeleton component
  * (cotizador-{overview|wizard|quote-detail}-skeleton +
@@ -37,6 +38,10 @@ const NETWORK_PATTERNS = {
 } as const
 
 // Block A: CotizadorOverviewSkeleton + overview EmptyState
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cotizador overview — Phase 38-04b skeleton + EmptyState', () => {
   test('skeleton renders during load (delayed network mock)', async ({ page }) => {
     await page.route(NETWORK_PATTERNS.cotizadorOverview, async (route) => {
@@ -61,13 +66,7 @@ test.describe('Cotizador overview — Phase 38-04b skeleton + EmptyState', () =>
     await page.goto('/panel/inmobiliaria/ai/cotizador')
     const skeleton = page.getByTestId('cotizador-overview-skeleton')
 
-    if ((await skeleton.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT',
-      )
-      return
-    }
+
 
     await expect(skeleton).toBeVisible()
   })
@@ -97,13 +96,7 @@ test.describe('Cotizador overview — Phase 38-04b skeleton + EmptyState', () =>
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
     const status = page.locator('[role="status"].border-dashed').first()
 
-    if ((await status.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT',
-      )
-      return
-    }
+
 
     await expect(status).toBeVisible()
     // CTA: "Nueva cotización" → /panel/inmobiliaria/ai/cotizador/nueva
@@ -126,13 +119,7 @@ test.describe('Nueva cotización wizard — Phase 38-04b re-quote skeleton', () 
     )
     const skeleton = page.getByTestId('cotizador-wizard-skeleton')
 
-    if ((await skeleton.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT',
-      )
-      return
-    }
+
 
     await expect(skeleton).toBeVisible()
   })
@@ -167,13 +154,7 @@ test.describe('Cotizador quote detail — Phase 38-04b SSE-connecting skeleton',
     )
     const skeleton = page.getByTestId('cotizador-quote-detail-skeleton')
 
-    if ((await skeleton.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT',
-      )
-      return
-    }
+
 
     await expect(skeleton).toBeVisible()
   })
@@ -194,13 +175,7 @@ test.describe('Cobranza configuración — Phase 38-04b skeleton', () => {
     await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
     const skeleton = page.getByTestId('cobranza-configuracion-skeleton')
 
-    if ((await skeleton.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT',
-      )
-      return
-    }
+
 
     await expect(skeleton).toBeVisible()
   })

@@ -19,10 +19,11 @@
  *
  * Per the established Batch 1-4 + 38-04a/b/c conventions, the spec
  * test.fixme's out cleanly when route.fulfill cannot bypass the Next.js
- * auth middleware (auth-debt, see Phase 36-13 SUMMARY).
+ * seedAuthState in beforeEach unblocks the page mount (2026-06-01).
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
@@ -48,6 +49,10 @@ const POPULATED_OVERVIEW = {
   generatedAt: new Date().toISOString(),
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route(OVERVIEW_MOCK, async (route) => {
@@ -66,13 +71,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
 
     // Auth-debt guard: if the cobranza page didn't mount (auth middleware
     // redirect or dev server offline), bail with fixme.
-    if ((await tablist.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(tablist.first()).toBeVisible({ timeout: 10_000 })
 
@@ -91,13 +90,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
     await page.goto(ROUTE)
     const tablist = page.locator('[role="tablist"]')
 
-    if ((await tablist.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(tablist.first()).toBeVisible({ timeout: 10_000 })
 
@@ -124,13 +117,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
     await page.goto(ROUTE)
     const tablist = page.locator('[role="tablist"]')
 
-    if ((await tablist.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(tablist.first()).toBeVisible({ timeout: 10_000 })
 
@@ -157,13 +144,7 @@ test.describe('Cobranza stage funnel — roving-tabindex (D-38-13)', () => {
     await page.goto(ROUTE)
     const tablist = page.locator('[role="tablist"]')
 
-    if ((await tablist.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(tablist.first()).toBeVisible({ timeout: 10_000 })
 

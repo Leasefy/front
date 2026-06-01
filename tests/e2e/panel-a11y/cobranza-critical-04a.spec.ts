@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 /**
  * Cobranza critical-page structural smoke — Phase 38 plan 38-04a.
@@ -16,7 +17,9 @@ import { test, expect } from '@playwright/test'
  *
  * Auth-gated routes that the dev session cannot reach via raw route.fulfill (auth
  * middleware intercepts before page mounts) are marked test.fixme with the
- * standard auth-debt reason, matching the Phase 37 + 38-09 pattern.
+ * In 2026-06-01 the auth-debt was closed by seedAuthState in beforeEach
+ * (see _helpers/auth-helpers.ts). Surviving fixme blocks indicate real
+ * page-mount failures (missing mocks, runtime errors) — NOT auth-debt.
  *
  * Selectors target the [data-testid] hooks added to each new skeleton component
  * (cobranza-{overview|deudores-list|deudor-detail|escalaciones|reporte}-skeleton)
@@ -31,6 +34,10 @@ const NETWORK_PATTERNS = {
   dailyReport: '**/cobranza/daily-report**',
   topScripts: '**/cobranza/analytics/top-scripts',
 } as const
+
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
 
 test.describe('Cobranza overview — Phase 38-04a skeleton + EmptyState', () => {
   test('skeleton renders during load (delayed network mock)', async ({ page }) => {
@@ -52,10 +59,7 @@ test.describe('Cobranza overview — Phase 38-04a skeleton + EmptyState', () => 
     await page.goto('/panel/inmobiliaria/ai/cobranza')
     const skeleton = page.getByTestId('cobranza-overview-skeleton')
 
-    if (await skeleton.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(skeleton).toBeVisible()
   })
@@ -71,10 +75,7 @@ test.describe('Cobranza overview — Phase 38-04a skeleton + EmptyState', () => 
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
     const status = page.locator('[role="status"].border-dashed').first()
 
-    if (await status.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(status).toBeVisible()
   })
@@ -96,10 +97,7 @@ test.describe('Deudores list — Phase 38-04a skeleton + EmptyState', () => {
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
     const status = page.locator('[role="status"].border-dashed').first()
 
-    if (await status.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(status).toBeVisible()
   })
@@ -126,10 +124,7 @@ test.describe('Escalaciones — Phase 38-04a celebratory EmptyState', () => {
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
     const status = page.locator('[role="status"].border-dashed').first()
 
-    if (await status.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(status).toBeVisible()
     // Celebratory copy: '¡Buen trabajo!' — no CTA per D-38-04 row 3
@@ -149,10 +144,7 @@ test.describe('Reporte diario — Phase 38-04a skeleton + EmptyState', () => {
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
     const status = page.locator('[role="status"].border-dashed').first()
 
-    if (await status.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(status).toBeVisible()
   })
@@ -177,10 +169,7 @@ test.describe('TopScriptsTable — Phase 38-04a un-stub', () => {
     // SampleDataWatermark renders a role="note" badge with "Datos de muestra" copy
     const watermark = page.locator('[role="note"]').first()
 
-    if (await watermark.count() === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
-    }
+
 
     await expect(watermark).toBeVisible()
   })

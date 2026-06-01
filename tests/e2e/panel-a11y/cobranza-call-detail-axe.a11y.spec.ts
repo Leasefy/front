@@ -12,6 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const CALL_ID = 'test-call-id'
@@ -43,6 +44,10 @@ const TRANSCRIPT_PAYLOAD = {
   redacted: false,
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza call detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible during call detail load', async ({ page }) => {
     await page.route(CALL_MOCK, async (route) => {
@@ -67,10 +72,7 @@ test.describe('Cobranza call detail — Phase 38-08 axe a11y', () => {
       '[data-testid="cobranza-call-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })

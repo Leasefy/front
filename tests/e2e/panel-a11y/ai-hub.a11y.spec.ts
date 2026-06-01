@@ -8,6 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai'
@@ -35,6 +36,10 @@ const POPULATED_METRICS = {
   cotizador: { populated: true, heroKpi: 0.92 },
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('AI hub landing — Phase 38-08 axe a11y', () => {
   test('skeleton visible during hub landing load', async ({ page }) => {
     await page.route(HUB_LANDING_MOCK, async (route) => {
@@ -54,10 +59,7 @@ test.describe('AI hub landing — Phase 38-08 axe a11y', () => {
     })
     await page.goto(ROUTE)
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
 

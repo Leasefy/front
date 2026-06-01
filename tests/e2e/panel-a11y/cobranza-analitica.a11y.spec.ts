@@ -13,6 +13,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/analitica'
@@ -49,6 +50,10 @@ async function mockAllAnalyticsEndpoints(
   )
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
   test('skeleton or aria-busy visible during initial load', async ({ page }) => {
     await mockAllAnalyticsEndpoints(page, GATE_POPULATED, SKELETON_DELAY_MS)
@@ -56,10 +61,7 @@ test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
 
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
@@ -70,10 +72,7 @@ test.describe('Cobranza analitica — Phase 38-08 axe a11y', () => {
 
     const empty = page.locator('[role="status"].border-dashed').first()
 
-    if ((await empty.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(empty).toBeVisible({ timeout: 5_000 })
   })

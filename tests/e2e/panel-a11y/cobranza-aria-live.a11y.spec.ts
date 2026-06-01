@@ -24,6 +24,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
@@ -49,6 +50,10 @@ const POPULATED_OVERVIEW = {
   generatedAt: new Date().toISOString(),
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route(OVERVIEW_MOCK, async (route) => {
@@ -71,13 +76,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
       .locator('[role="status"][aria-live="polite"]')
       .first()
 
-    if ((await liveRegion.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(liveRegion).toBeAttached({ timeout: 10_000 })
     await expect(liveRegion).toHaveAttribute('aria-live', 'polite')
@@ -90,13 +89,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
       .locator('[role="status"][aria-live="polite"]')
       .first()
 
-    if ((await liveRegion.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(liveRegion).toBeAttached({ timeout: 10_000 })
 
@@ -125,13 +118,7 @@ test.describe('Cobranza overview — ARIA live region (D-38-12)', () => {
       .locator('[role="status"][aria-live="polite"]')
       .first()
 
-    if ((await liveRegion.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(liveRegion).toBeAttached({ timeout: 10_000 })
 

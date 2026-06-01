@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const PLAN_ID = 'test-plan-id'
@@ -26,6 +27,10 @@ const POPULATED_PLAN = {
   proposedAt: new Date().toISOString(),
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza pago plan — Phase 38-08 axe a11y', () => {
   test('skeleton visible during plan detail load', async ({ page }) => {
     await page.route(PLAN_MOCK, async (route) => {
@@ -40,10 +45,7 @@ test.describe('Cobranza pago plan — Phase 38-08 axe a11y', () => {
     const candidates = page.locator(
       '[data-testid="plan-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
 

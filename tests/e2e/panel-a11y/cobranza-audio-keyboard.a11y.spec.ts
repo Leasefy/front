@@ -19,6 +19,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 const CALL_ID = 'test-call-id'
 const ROUTE = `/panel/inmobiliaria/ai/cobranza/llamadas/${CALL_ID}`
@@ -65,6 +66,10 @@ async function setupMocks(page: import('@playwright/test').Page): Promise<void> 
   })
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', () => {
   test('range input exposes aria-valuemin / max / now / text', async ({
     page,
@@ -75,13 +80,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
     const rangeInput = page.locator('input[type="range"]').first()
 
     // Auth-debt guard: when the page doesn't mount, no range input exists.
-    if ((await rangeInput.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(rangeInput).toBeAttached({ timeout: 10_000 })
 
@@ -104,13 +103,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
       .locator('[data-testid="audio-player"], [role="group"][aria-label*="udio"], [role="region"][aria-label*="udio"]')
       .first()
 
-    if ((await container.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(container).toBeAttached({ timeout: 10_000 })
 
@@ -138,13 +131,7 @@ test.describe('Cobranza call detail — audio player keyboard map (D-38-12)', ()
 
     const rangeInput = page.locator('input[type="range"]').first()
 
-    if ((await rangeInput.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware',
-      )
-      return
-    }
+
 
     await expect(rangeInput).toBeAttached({ timeout: 10_000 })
 

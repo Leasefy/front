@@ -6,6 +6,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ESC_ID = 'test-esc-id'
@@ -25,6 +26,10 @@ const POPULATED_ESCALACION = {
   history: [],
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza escalación detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible during escalación detail load', async ({ page }) => {
     await page.route(DETAIL_MOCK, async (route) => {
@@ -42,10 +47,7 @@ test.describe('Cobranza escalación detail — Phase 38-08 axe a11y', () => {
       '[aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })

@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ROUTE = '/panel/inmobiliaria/ai/cobranza/arco'
@@ -36,6 +37,10 @@ const POPULATED_ARCO = [
   },
 ]
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza ARCO — Phase 38-08 axe a11y', () => {
   test('skeleton visible during ARCO inbox load', async ({ page }) => {
     await page.route(ARCO_MOCK, async (route) => {
@@ -51,10 +56,7 @@ test.describe('Cobranza ARCO — Phase 38-08 axe a11y', () => {
 
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
 
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
@@ -71,10 +73,7 @@ test.describe('Cobranza ARCO — Phase 38-08 axe a11y', () => {
     await page.goto(ROUTE)
     const empty = page.locator('[role="status"].border-dashed').first()
 
-    if ((await empty.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(empty).toBeVisible({ timeout: 5_000 })
   })

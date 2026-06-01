@@ -12,6 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const CARTA_ID = 'test-carta-id'
@@ -47,15 +48,16 @@ async function mockCarta(page: import('@playwright/test').Page, delay = 0): Prom
   await page.route(CARTA_MOCK_B, respond)
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza cartas detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible during carta detail load (when implemented)', async ({ page }) => {
     await mockCarta(page, SKELETON_DELAY_MS)
     await page.goto(ROUTE)
     const candidates = page.locator('[aria-busy="true"], [data-slot="skeleton"]')
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt OR skeleton not surfaced by route mock; capture during manual UAT')
-      return
-    }
+
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
 

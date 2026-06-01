@@ -24,11 +24,13 @@
  *      - Request URL contains transcript?redacted=true
  *
  * Detail/dynamic-route pages require an authenticated session; tests
- * fixme on auth-debt per Phase 36-13 SUMMARY when the export button is
- * not present in the DOM.
+ * seedAuthState in beforeEach unblocks the page mount (2026-06-01).
+ * If the export button is missing after that, it's a mock-incomplete
+ * issue (not auth-debt) — surface it explicitly.
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 // ---------------- compliance/audit CSV ----------------
 
@@ -51,6 +53,10 @@ const POPULATED_AUDIT_LIST = {
   ],
   hasMore: false,
 }
+
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
 
 test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
   test('compliance/audit "Exportar CSV" triggers fetch with text/csv response', async ({
@@ -82,13 +88,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       .filter({ hasText: /Exportar\s+CSV|Export\s+CSV/i })
       .first()
 
-    if ((await btn.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; export CSV button not rendered (Phase 36-13 SUMMARY)',
-      )
-      return
-    }
+
 
     await expect(btn).toBeVisible({ timeout: 10_000 })
     await btn.click()
@@ -158,13 +158,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       .filter({ hasText: /Descargar\s+PDF|Download\s+PDF/i })
       .first()
 
-    if ((await btn.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; verdict PDF button not rendered (Phase 36-13 SUMMARY)',
-      )
-      return
-    }
+
 
     await expect(btn).toBeVisible({ timeout: 10_000 })
     await btn.click()
@@ -263,13 +257,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
       .filter({ hasText: /Exportar\s+transcript|Export\s+transcript/i })
       .first()
 
-    if ((await btn.count()) === 0) {
-      test.fixme(
-        true,
-        'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; transcript PDF button not rendered (Phase 36-13 SUMMARY)',
-      )
-      return
-    }
+
 
     await expect(btn).toBeVisible({ timeout: 10_000 })
 

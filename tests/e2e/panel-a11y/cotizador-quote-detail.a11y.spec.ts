@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const QUOTE_ID = 'test-quote-id'
@@ -27,6 +28,10 @@ const POPULATED_METADATA = {
   completedAt: new Date().toISOString(),
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cotizador quote detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible while SSE connect is establishing', async ({ page }) => {
     await page.route(METADATA_MOCK, async (route) => {
@@ -46,10 +51,7 @@ test.describe('Cotizador quote detail — Phase 38-08 axe a11y', () => {
     const candidates = page.locator(
       '[data-testid="cotizador-quote-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })
 

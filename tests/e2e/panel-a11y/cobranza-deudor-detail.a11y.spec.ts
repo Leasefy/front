@@ -9,6 +9,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const DEBTOR_ID = 'test-debtor-id'
@@ -33,6 +34,10 @@ const POPULATED_DEBTOR = {
   arcoRequests: [],
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Cobranza deudor detail — Phase 38-08 axe a11y', () => {
   test('skeleton visible during debtor detail load', async ({ page }) => {
     await page.route(DETAIL_MOCK, async (route) => {
@@ -50,10 +55,7 @@ test.describe('Cobranza deudor detail — Phase 38-08 axe a11y', () => {
       '[data-testid="cobranza-deudor-detail-skeleton"], [aria-busy="true"], [data-slot="skeleton"]',
     )
 
-    if ((await candidates.count()) === 0) {
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware')
-      return
-    }
+
 
     await expect(candidates.first()).toBeVisible({ timeout: 3_000 })
   })

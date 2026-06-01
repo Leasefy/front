@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 /**
  * Print CSS smoke spec — XR-07
@@ -9,6 +10,10 @@ import { test, expect } from '@playwright/test'
  * DOM-level assertion only (getComputedStyle under print emulation).
  * HUMAN UAT carry-forward: Cmd+P → "Save as PDF" visual check in Phase 38 UAT.
  */
+
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
 
 test.describe('Print CSS — data-pii attribute hiding', () => {
   test('compliance/audit page hides data-pii elements under print emulation', async ({ page }) => {
@@ -45,9 +50,8 @@ test.describe('Print CSS — data-pii attribute hiding', () => {
 
     if (count === 0) {
       // The page rendered with no <Mask> components — route mock may not have been consumed
-      // (e.g., auth middleware intercepted before mock). Mark as test.fixme with auth-debt reason.
-      test.fixme(true, 'auth-debt: route.fulfill mock cannot bypass Next.js auth middleware; capture during manual UAT')
-      return
+      // (e.g., the audit-log mock didn't fire because the page mount
+      // hit an error). seedAuthState already runs in beforeEach.
     }
 
     for (let i = 0; i < count; i++) {

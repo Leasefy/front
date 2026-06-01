@@ -19,13 +19,14 @@
  *     Tailwind class)
  *
  * Mock-only: any required backend endpoints are intercepted via route.fulfill.
- * Test.fixme on auth-debt per Phase 36-13 SUMMARY when the page doesn't mount.
+ * seedAuthState in beforeEach unblocks the page mount (2026-06-01).
  *
  * STORAGE_KEY locked to leasefy_panel_tour_dismissed_v1 (38-06 export).
  * Tour body i18n: step 1 = "Agente de Cobranza"; dismiss copy = "No mostrar de nuevo".
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { seedAuthState } from './_helpers/auth-helpers'
 
 const HUB_ROUTE = '/panel/inmobiliaria/ai'
 const STORAGE_KEY = 'leasefy_panel_tour_dismissed_v1'
@@ -100,6 +101,10 @@ async function clearTourStorage(page: Page): Promise<void> {
   }
 }
 
+test.beforeEach(async ({ page }) => {
+  await seedAuthState(page)
+})
+
 test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
   test('auto-triggers on first /ai hub visit when localStorage key is absent', async ({
     page,
@@ -114,18 +119,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
     const dialog = page.locator(TOUR_DIALOG).first()
 
     // 38-06 D-38-07: 500ms delay before tour fires. We give it up to 3s.
-    const found = await dialog
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false)
-
-    if (!found) {
-      test.fixme(
-        true,
-        'auth-debt or tour-not-fired: route.fulfill mocks cannot bypass Next.js auth middleware (Phase 36-13 SUMMARY)',
-      )
-      return
-    }
+    await dialog.waitFor({ state: 'visible', timeout: 3_000 })
 
     await expect(dialog).toBeVisible()
   })
@@ -138,15 +132,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
 
     const dialog = page.locator(TOUR_DIALOG).first()
 
-    const found = await dialog
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false)
-
-    if (!found) {
-      test.fixme(true, 'auth-debt or tour-not-fired (Phase 36-13 SUMMARY)')
-      return
-    }
+    await dialog.waitFor({ state: 'visible', timeout: 3_000 })
 
     await page.keyboard.press('Escape')
     await expect(dialog).not.toBeVisible({ timeout: 2_000 })
@@ -177,18 +163,6 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
     await page.waitForTimeout(1_200)
 
     const count = await dialog.count()
-
-    // If the page didn't mount at all (auth redirect), we can't reason
-    // about the tour state — skip with fixme.
-    const mainCount = await page.locator('main').count()
-    if (mainCount === 0) {
-      test.fixme(
-        true,
-        'auth-debt: page did not mount; cannot assert tour suppression',
-      )
-      return
-    }
-
     expect(count).toBe(0)
   })
 
@@ -217,15 +191,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
 
     const dialog = page.locator(TOUR_DIALOG).first()
 
-    const found = await dialog
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false)
-
-    if (!found) {
-      test.fixme(true, 'auth-debt or tour-not-fired (Phase 36-13 SUMMARY)')
-      return
-    }
+    await dialog.waitFor({ state: 'visible', timeout: 3_000 })
 
     // Locate the dismiss button. 38-06 i18n: "No mostrar de nuevo" (es) /
     // "Don't show again" (en). Use a partial match on "mostrar" / "show".
@@ -279,15 +245,7 @@ test.describe('Onboarding tour — XR-08 (D-38-05/06/07/08)', () => {
 
     const dialog = page.locator(TOUR_DIALOG).first()
 
-    const found = await dialog
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false)
-
-    if (!found) {
-      test.fixme(true, 'auth-debt or tour-not-fired (Phase 36-13 SUMMARY)')
-      return
-    }
+    await dialog.waitFor({ state: 'visible', timeout: 3_000 })
 
     const td = await dialog.evaluate((el) => getComputedStyle(el).transitionDuration)
     // motion-reduce:transition-none → "0s"; some browsers serialize as "0s, 0s, ..."

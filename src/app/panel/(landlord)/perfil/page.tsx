@@ -8,6 +8,9 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { useRouter } from 'next/navigation';
+import { settingsApi } from '@/lib/api/settings.service';
+import { getSupabase } from '@/lib/supabase/client';
 
 // Setup steps definition
 interface SetupStep {
@@ -24,6 +27,7 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
+  const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -158,13 +162,23 @@ export default function PropietarioPerfilPage() {
     const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
     if (deleteConfirmText !== requiredText) return;
     setIsDeleting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-    setTimeout(() => {
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+    try {
+      // Real, irreversible deletion (soft-delete + sign-out). Never show the
+      // success step without a persisted backend effect (Ley 1581 / ARCO).
+      await settingsApi.deleteAccount();
+      const supabase = getSupabase();
+      if (supabase) await supabase.auth.signOut();
+      setIsDeleting(false);
+      setDeleteStep(3);
+      setTimeout(() => {
+        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        handleCloseDeleteModal();
+        router.push('/');
+      }, 1500);
+    } catch (err) {
+      setIsDeleting(false);
+      toast.error((err as Error)?.message || (locale === 'es' ? 'Error al eliminar cuenta' : 'Error deleting account'));
+    }
   };
 
   return (

@@ -491,13 +491,21 @@ export function ApplicationProvider({
           if (file) {
             try {
               await applicationsApi.uploadDocument(file, type);
-            } catch {
-              console.error(`Failed to upload document: ${type}`);
+            } catch (uploadErr) {
+              // Do NOT swallow: a failed upload must block the 'submitted' transition.
+              // The outer catch maps this to setSubmissionError so the user can retry.
+              // NOTE: the application row already exists from create() above, so a full
+              // re-submit could 409; retry should re-run uploads only, not create.
+              const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
+              throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
             }
           }
         }
       } else {
-        // 1b. Guest: create via public endpoint — backend sends invite email
+        // 1b. Guest: create via public endpoint — backend sends invite email.
+        // NOTE: guest documents are NOT uploaded here. Upload requires Bearer auth,
+        // which the guest only gains after accepting the invite email and creating
+        // an account. The ConfirmationScreen reflects this (directs guests to email).
         const result = await applicationsApi.createGuest(payload);
         applicationId = result.applicationId;
         setIsGuestSubmission(true);

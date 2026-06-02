@@ -79,7 +79,8 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "notificationActionError": "Could not complete the notification action"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -770,6 +771,18 @@
         "rappipay": "Rappipay"
       },
       "modals": {
+        "addAccount": {
+          "title": "Add collection account",
+          "methodType": "Account type",
+          "methodBank": "Bank account",
+          "methodWallet": "Digital wallet",
+          "assignProperties": "Assign properties (optional)",
+          "assignPropertiesHint": "Select the properties that will deposit into this account",
+          "allPropertiesAssigned": "All properties assigned",
+          "addButton": "Add account",
+          "adding": "Adding...",
+          "perMonth": "/mo"
+        },
         "addBankAccount": {
           "title": "Add bank account",
           "bank": "Bank",
@@ -5274,6 +5287,9 @@
             "empty": {
               "title": "No debtors on opt-out",
               "description": "Opt-outs will appear here when a debtor requests no contact."
+            },
+            "errors": {
+              "ackFailed": "Could not record the opt-out acknowledgement. Please try again."
             }
           }
         },
@@ -7002,6 +7018,34 @@
       "chatPanel": "Chat panel",
       "noSteps": "No steps defined",
       "stepsProgress": "{{completed}} of {{total}} completed"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "ID number"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navigated to {{page}}",
+    "routes": {
+      "search": "Search Properties",
+      "publish": "Publish Property",
+      "pricing": "Pricing",
+      "signIn": "Sign In",
+      "landlordPanel": "Landlord Panel",
+      "tenantPanel": "Tenant Panel",
+      "agencyPanel": "Agency Panel",
+      "agencyAi": "AI Agents",
+      "assistant": "Assistant",
+      "myApplications": "My Applications",
+      "myLease": "My Lease",
+      "apply": "Apply to Property",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "Could not update your saved properties. Please try again."
     }
   }
 }

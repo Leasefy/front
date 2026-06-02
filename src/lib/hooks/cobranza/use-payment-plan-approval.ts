@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
 // =============================================================================
@@ -212,9 +213,9 @@ export function usePaymentPlanApproval(
   useEffect(() => {
     if (!agencyId || !planId) return
     void fetchData()
-    const id = setInterval(() => void fetchData(), 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId, planId])
+
+  useVisibilityPolling(() => void fetchData(), 30_000, Boolean(agencyId && planId))
 
   // ── Mutations ────────────────────────────────────────────────────────────
 

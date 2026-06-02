@@ -79,7 +79,8 @@
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "notificationActionError": "No se pudo completar la acción sobre la notificación"
   },
   "dashboard": {
     "title": "Panel",
@@ -5287,6 +5288,9 @@
             "empty": {
               "title": "Sin deudores en opt-out",
               "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            },
+            "errors": {
+              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
             }
           }
         },
@@ -7015,6 +7019,34 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "Cédula"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navegaste a {{page}}",
+    "routes": {
+      "search": "Buscar Inmuebles",
+      "publish": "Publicar Inmueble",
+      "pricing": "Precios",
+      "signIn": "Iniciar Sesión",
+      "landlordPanel": "Panel de Propietario",
+      "tenantPanel": "Panel de Inquilino",
+      "agencyPanel": "Panel de Inmobiliaria",
+      "agencyAi": "Agentes IA",
+      "assistant": "Asistente",
+      "myApplications": "Mis Aplicaciones",
+      "myLease": "Mi Arriendo",
+      "apply": "Aplicar a Propiedad",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
     }
   }
 }

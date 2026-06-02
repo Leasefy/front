@@ -33,8 +33,30 @@ export function useMyApplications() {
   }, []);
 
   useEffect(() => {
-    fetchMine();
-  }, [fetchMine]);
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    applicationsApi
+      .getMine()
+      .then((result) => {
+        if (!cancelled) {
+          setApplications(result);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error cargando aplicaciones');
+          setApplications([]);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return { applications, isLoading, error, refetch: fetchMine };
 }
@@ -123,6 +145,25 @@ export function useTenantApplication(id: string | null | undefined) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const refetch = useCallback(async () => {
+    if (!id) {
+      setApplication(null);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const app = await applicationsApi.getByIdForDisplay(id);
+      setApplication(app);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando aplicación');
+      setApplication(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     if (!id) {
       setApplication(null);
@@ -155,7 +196,7 @@ export function useTenantApplication(id: string | null | undefined) {
     };
   }, [id]);
 
-  return { application, isLoading, error };
+  return { application, isLoading, error, refetch };
 }
 
 // ============================================================================
@@ -232,8 +273,36 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
   }, [propertyId]);
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    if (!propertyId) {
+      setApplications([]);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    applicationsApi
+      .getByProperty(propertyId)
+      .then((result) => {
+        if (!cancelled) {
+          setApplications(result);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error cargando aplicaciones');
+          setApplications([]);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId]);
 
   return { applications, isLoading, error, refetch: fetch };
 }

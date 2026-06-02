@@ -391,7 +391,10 @@ describe('usePaymentPlanApproval', () => {
     const { fetchMock } = installFetch({ plan: makePlan(), policy: makePolicy() })
     // offer → 201 PLAN-2 (default routing); make the second-step /reject fail
     // (409) so the new plan exists but the original cannot be rejected.
-    const orig = fetchMock.getMockImplementation()!
+    const orig = fetchMock.getMockImplementation()! as (
+      url: RequestInfo | URL,
+      init?: RequestInit,
+    ) => Promise<Response>
     fetchMock.mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
       const u = String(url)
       if (u.includes('/cartera/payment-plans/') && u.endsWith('/reject')) {

@@ -173,6 +173,7 @@ export default function CandidatosPage() {
     numericScore: lc.numericScore,
     appliedAt: lc.appliedAt,
     propertyId: lc.propertyId,
+    propertyTitle: lc.propertyTitle,
     applicationId: '',
     documentType: 'cc' as const,
     documentNumber: '',

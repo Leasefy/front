@@ -850,7 +850,7 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
-      "aiAgents": "Agentes AI",
+      "aiAgents": "Resumen",
       "propietarios": "Propietarios",
       "portafolio": "Portafolio",
       "propiedades": "Propiedades",
@@ -872,7 +872,7 @@
       "agenda": "Agenda",
       "pronto": "Pronto",
       "secInicio": "Inicio",
-      "secAutopilot": "Autopilot",
+      "secAutopilot": "Agentes IA",
       "secCrm": "CRM · Comercial",
       "secFinanciero": "Financiero · ERP",
       "secOperacion": "Operación · Docs",

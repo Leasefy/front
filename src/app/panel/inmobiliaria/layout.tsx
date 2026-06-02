@@ -55,11 +55,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   type NavItemWithModule = NavItem & { module?: string | null };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
-    // ── INICIO ──
-    { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
-    { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
-    // ── AUTOPILOT ──
+    // ── AGENTES IA ── (top-of-sidebar headline — Phase 38-followup
+    //                   product feedback: agents are the value prop;
+    //                   surface them above the daily-driver Inicio
+    //                   section so the hub experience is discovered
+    //                   first.)
     { kind: 'section', label: t('inmobiliaria.nav.secAutopilot'), href: '#sec-autopilot', icon: Robot, module: null },
     {
       label: t('inmobiliaria.nav.aiAgents'),
@@ -130,6 +130,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     },
+    // ── INICIO ──
+    { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
+    { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
     // ── CRM · COMERCIAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secCrm'), href: '#sec-crm', icon: Users, module: null },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,                 module: 'propietarios' },
@@ -199,7 +203,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         )}
       >
         <PlanHeader />
-        <main>{children}</main>
+        <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
       {/* Mobile bottom navigation — hidden at md+ breakpoints */}

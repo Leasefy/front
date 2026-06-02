@@ -4901,7 +4901,8 @@
             "pause": "Pause",
             "speed": "Speed",
             "speedLabel": "Speed {{speed}}x",
-            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio."
+            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio.",
+            "audioError": "Could not load the recording."
           },
           "transcript": {
             "title": "Transcript",
@@ -5061,7 +5062,8 @@
             "descuento": "Discount (%)",
             "cuotas": "Number of installments",
             "monto": "Amount per installment (COP)",
-            "fecha": "First payment date"
+            "fecha": "First payment date",
+            "duplicateRisk": "The counter-offer was created but the original plan could not be rejected. Two plans may be active — review before sending the payment link."
           }
         },
         "approval": {
@@ -6214,6 +6216,8 @@
       "perYear": "/year",
       "upTo": "up to {{limit}}",
       "payNow": "Pay now",
+      "planNotFound": "The selected plan was not found. Go back to the plans list.",
+      "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
       "securePayment": "Secure payment processed by Stripe",
       "cancelAnytime": "Cancel anytime. No commitments.",
@@ -6315,6 +6319,7 @@
       "viewPropertyAction": "View property",
       "approvedToast": "Candidate approved",
       "approvedToastDesc": "Starting contract process with {{name}}",
+      "loadDetailError": "Could not load candidate details.",
       "rejectedToast": "Candidate rejected",
       "rejectedToastDesc": "{{name}} has been rejected and notified.",
       "riskAssessmentTitle": "Risk Assessment",

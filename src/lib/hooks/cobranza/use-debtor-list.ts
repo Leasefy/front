@@ -136,10 +136,13 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
         if (!hasLoadedFirstPage.current) {
           return json.items
         }
-        // Polling refresh: replace the leading page-1 slice and keep any
-        // subsequent pages the operator has scrolled to.
-        const newFirstSize = json.items.length
-        const tail = prev.slice(newFirstSize)
+        // Polling refresh: fresh page-1 is authoritative; re-append only the
+        // already-loaded subsequent-page rows that are NOT in the new page-1,
+        // deduped by stable debtor id (key={d.id} in the table). Robust to
+        // page-1 size drift (debtor paid / added / stage-changed) and reordering
+        // — slicing by the incoming length duplicated or dropped rows.
+        const firstIds = new Set(json.items.map((it) => it.id))
+        const tail = prev.filter((row) => !firstIds.has(row.id))
         return [...json.items, ...tail]
       })
       setNextCursor(json.nextCursor)

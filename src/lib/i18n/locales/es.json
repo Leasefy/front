@@ -4914,7 +4914,8 @@
             "pause": "Pausar",
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
-            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio."
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "audioError": "No se pudo cargar la grabación."
           },
           "transcript": {
             "title": "Transcripción",
@@ -5074,7 +5075,8 @@
             "descuento": "Descuento (%)",
             "cuotas": "Número de cuotas",
             "monto": "Monto por cuota (COP)",
-            "fecha": "Fecha primer pago"
+            "fecha": "Fecha primer pago",
+            "duplicateRisk": "Se creó la contraoferta pero el plan original no pudo rechazarse. Pueden existir dos planes activos — revísalo antes de enviar el link de pago."
           }
         },
         "approval": {
@@ -6227,6 +6229,8 @@
       "perYear": "/ano",
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
+      "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
+      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -6328,6 +6332,7 @@
       "viewPropertyAction": "Ver propiedad",
       "approvedToast": "Candidato aprobado",
       "approvedToastDesc": "Iniciando proceso de contrato con {{name}}",
+      "loadDetailError": "No se pudieron cargar los detalles del candidato.",
       "rejectedToast": "Candidato rechazado",
       "rejectedToastDesc": "{{name}} ha sido rechazado y notificado.",
       "riskAssessmentTitle": "Evaluación de Riesgo",

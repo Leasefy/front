@@ -372,14 +372,59 @@ describe('usePaymentPlanApproval', () => {
     const offerBody = JSON.parse(String((offerCall![1] as RequestInit).body))
     expect(offerBody.discount).toBe(15)
 
-    // Also verifies the second-step /reject(counter_offer) call.
+    // Also verifies the second-step /reject call. The typed enum has no
+    // 'counter_offer' value (server 400s on it), so we send 'other' and carry
+    // the intent in reject_comment.
     const rejectCall = fetchMock.mock.calls.find(
       (c) =>
         String(c[0]).includes('/cartera/payment-plans/PLAN-1/reject'),
     )
     expect(rejectCall).toBeTruthy()
     const rejectBody = JSON.parse(String((rejectCall![1] as RequestInit).body))
-    expect(rejectBody.reject_reason).toBe('counter_offer')
+    expect(rejectBody.reject_reason).toBe('other')
+    expect(rejectBody.reject_comment).toContain('Counter-offer')
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('Test 4b: modifyPlan surfaces DUPLICATE_PLAN_RISK when the counter-offer is created but rejecting the original fails', async () => {
+    const { fetchMock } = installFetch({ plan: makePlan(), policy: makePolicy() })
+    // offer → 201 PLAN-2 (default routing); make the second-step /reject fail
+    // (409) so the new plan exists but the original cannot be rejected.
+    const orig = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url)
+      if (u.includes('/cartera/payment-plans/') && u.endsWith('/reject')) {
+        return new Response(JSON.stringify({ error: 'conflict' }), {
+          status: 409,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      return orig(url, init)
+    })
+
+    const { ref, root, container } = mount({ planId: 'PLAN-1', canApprove: true })
+    await flush()
+
+    let res:
+      | { ok: true; newPlanId?: string }
+      | { error: string; newPlanId?: string }
+      | undefined
+    await act(async () => {
+      res = await ref.current!.modifyPlan({
+        discount: 5,
+        cuotas: 3,
+        montoPorCuota: 500_000,
+        fechaPrimerPago: '2026-06-15',
+      })
+    })
+
+    expect(res).toBeTruthy()
+    expect(res && 'error' in res).toBe(true)
+    if (res && 'error' in res) {
+      expect(res.error).toContain('DUPLICATE_PLAN_RISK')
+      expect(res.newPlanId).toBe('PLAN-2')
+    }
     act(() => root.unmount())
     container.remove()
   })

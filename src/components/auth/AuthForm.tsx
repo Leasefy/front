@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
   Key,
   Briefcase,
@@ -102,7 +102,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // preventing users from logging in as a different account.
   const didAuthenticateInForm = React.useRef(false);
 
-  const returnUrl = returnUrlProp || searchParams.get('returnUrl') || '/';
+  const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
 
   // Redirigir automáticamente SOLO cuando el usuario inició sesión en este formulario
   React.useEffect(() => {

@@ -598,7 +598,7 @@ export default function LeaseDetailPage() {
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                 >
                   <Chat className="w-4 h-4" />
-                  {locale === 'es' ? 'Enviar mensaje' : 'PaperPlaneTilt message'}
+                  {locale === 'es' ? 'Enviar mensaje' : 'Send message'}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>

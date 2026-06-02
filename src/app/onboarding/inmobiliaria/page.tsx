@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
+import { cn, sanitizeReturnUrl } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useI18n } from '@/lib/i18n'
 
@@ -45,7 +45,8 @@ function OnboardingInmobiliariaContent() {
   const searchParams = useSearchParams()
   const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const { t } = useI18n()
-  const returnUrl = searchParams.get('returnUrl')
+  const rawReturnUrl = searchParams.get('returnUrl')
+  const returnUrl = rawReturnUrl ? sanitizeReturnUrl(rawReturnUrl, '/panel/inmobiliaria') : null
 
   const PORTFOLIO_SIZES: { value: PortfolioSize; label: string; description: string }[] = useMemo(() => [
     { value: 'small', label: t('inmobiliaria.onboarding.register.portfolioSizes.smallLabel'), description: t('inmobiliaria.onboarding.register.portfolioSizes.smallDesc') },

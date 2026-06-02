@@ -70,7 +70,7 @@ export default function GuardadosPage() {
               </h1>
               <p className="mt-2 text-neutral-500 dark:text-neutral-400">
                 {displayCount === 0
-                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'FloppyDisk properties you like to view them later')
+                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
                   : displayCount === 1
                   ? (locale === 'es' ? '1 propiedad guardada' : '1 saved property')
                   : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
@@ -81,7 +81,7 @@ export default function GuardadosPage() {
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
-              {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
+              {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
             </Link>
           </div>
         </motion.header>
@@ -122,7 +122,7 @@ export default function GuardadosPage() {
                   <div className="w-8 h-8 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
                     <MagnifyingGlass className="w-4 h-4" />
                   </div>
-                  <span>{locale === 'es' ? 'Busca propiedades' : 'MagnifyingGlass properties'}</span>
+                  <span>{locale === 'es' ? 'Busca propiedades' : 'Search properties'}</span>
                 </div>
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">

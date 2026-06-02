@@ -216,7 +216,7 @@ export function PlanHeader({
               onChange={handleMagnifyingGlass}
               onFocus={() => setMagnifyingGlassFocused(true)}
               placeholder={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "MagnifyingGlass properties, candidates...")
+                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
                 : t('header.search')}
               className={cn(
                 'w-full h-10 pl-10 pr-4',
@@ -311,7 +311,7 @@ export function PlanHeader({
                       <>
                         <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-t border-b border-neutral-100 dark:border-white/10">
                           <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                            {locale === 'es' ? 'Búsquedas recientes' : 'Recent MagnifyingGlasses'}
+                            {locale === 'es' ? 'Búsquedas recientes' : 'Recent searches'}
                           </p>
                         </div>
                         {recentSearches.map((search, index) => (

@@ -2,11 +2,12 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { sanitizeReturnUrl } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const returnUrl = searchParams.get('returnUrl') || '/'
+  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/')
 
   if (code) {
     const cookieStore = cookies()

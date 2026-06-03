@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: avaluos-ui
 milestone_name: Avalúos UI — Public Valuation Flow
-status: in_progress
+status: complete
 stopped_at: null
 last_updated: "2026-06-03"
-last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 04 (Confirmation + status polling page) DONE
+last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 05 (Agency panel pages — list, nuevo wizard, detail) DONE
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -44,19 +44,19 @@ Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
 ## Current Position — Phase 34 (Avalúos UI)
 
 Milestone: avaluos-ui — Avalúos UI — Public Valuation Flow
-Phase: 34-avaluos-ui — In progress (4/5 plans done)
-Plan: 34-04 DONE, 34-05 next
-Status: In progress
-Last activity: 2026-06-03 — 34-04 Status polling + Wompi checkout + estado/verificar pages DONE
+Phase: 34-avaluos-ui — ✅ COMPLETE (5/5 plans done)
+Plan: 34-05 DONE — phase complete
+Status: Complete
+Last activity: 2026-06-03 — 34-05 Agency panel pages (list, nuevo wizard, detail) DONE
 
-Progress: [████████████████████░░░░░░░░░] 80% — 4 de 5 planes (34-01 ✅, 34-02 ✅, 34-03 ✅, 34-04 ✅)
+Progress: [█████████████████████████████] 100% — 5 de 5 planes
 
 **Plans (34-NN):**
 - [x] **34-01** Foundation — types, service client, /avaluo public landing — ✅ done (2026-06-03)
 - [x] **34-02** Wompi session route — server-side SHA-256 integrity hash — ✅ done (2026-06-03)
 - [x] **34-03** Wizard UI — AvaluoContext, AvaluoWizardShell, 4 step components, /avaluo/nuevo — ✅ done (2026-06-03)
 - [x] **34-04** Confirmation + status polling page — ✅ done (2026-06-03)
-- [ ] **34-05** Admin/review panel
+- [x] **34-05** Agency panel pages — list, nuevo wizard (email pre-filled), detail — ✅ done (2026-06-03)
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
@@ -97,9 +97,9 @@ v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. P
 
 ## Session Continuity
 
-Last session: 2026-06-03 — 34-04 done (useAvaluoStatus hook, WompiPayButton, AvaluoEstadoCard, estado/[submissionId], verificar/[slug]).
-Stopped at: Completed 34-04-PLAN.md
-Resume file: .planning/phases/34-avaluos-ui/34-05-PLAN.md
+Last session: 2026-06-03 — 34-05 done (panel list page, nuevo wizard, detail page; phase 34 COMPLETE).
+Stopped at: Completed 34-05-PLAN.md — phase 34-avaluos-ui fully done
+Resume file: None (milestone avaluos-ui complete)
 
 ## Accumulated Context
 

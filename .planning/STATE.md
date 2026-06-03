@@ -5,13 +5,13 @@ milestone_name: Avalúos UI — Public Valuation Flow
 status: in_progress
 stopped_at: null
 last_updated: "2026-06-03"
-last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 01 (Foundation — Types, Service, Public Landing) DONE
+last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 02 (Wompi session route — server-side SHA-256 hash) DONE
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -44,16 +44,16 @@ Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
 ## Current Position — Phase 34 (Avalúos UI)
 
 Milestone: avaluos-ui — Avalúos UI — Public Valuation Flow
-Phase: 34-avaluos-ui — In progress (1/5 plans done)
-Plan: 34-01 DONE, 34-02 next
+Phase: 34-avaluos-ui — In progress (2/5 plans done)
+Plan: 34-02 DONE, 34-03 next
 Status: In progress
-Last activity: 2026-06-03 — 34-01 Foundation (types + service + public landing) DONE
+Last activity: 2026-06-03 — 34-02 Wompi session route (server-side SHA-256 integrity hash) DONE
 
-Progress: [█████░░░░░░░░░░░░░░░░░░░░░░░░] 20% — 1 de 5 planes (34-01 ✅)
+Progress: [██████████░░░░░░░░░░░░░░░░░░░] 40% — 2 de 5 planes (34-01 ✅, 34-02 ✅)
 
 **Plans (34-NN):**
 - [x] **34-01** Foundation — types, service client, /avaluo public landing — ✅ done (2026-06-03)
-- [ ] **34-02** Multi-step intake form (/avaluo/nuevo)
+- [x] **34-02** Wompi session route — server-side SHA-256 integrity hash — ✅ done (2026-06-03)
 - [ ] **34-03** Photo upload step
 - [ ] **34-04** Confirmation + status polling page
 - [ ] **34-05** Admin/review panel
@@ -97,9 +97,9 @@ v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. P
 
 ## Session Continuity
 
-Last session: 2026-06-03 — 34-01 done (types + service + /avaluo landing).
-Stopped at: Completed 34-01-PLAN.md
-Resume file: .planning/phases/34-avaluos-ui/34-02-PLAN.md
+Last session: 2026-06-03 — 34-02 done (Wompi session route, server-side integrity hash).
+Stopped at: Completed 34-02-PLAN.md
+Resume file: .planning/phases/34-avaluos-ui/34-03-PLAN.md
 
 ## Accumulated Context
 

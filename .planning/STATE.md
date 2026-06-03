@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Backoffice Unificado ERP·CRM·Autopilot
-status: complete
+milestone: avaluos-ui
+milestone_name: Avalúos UI — Public Valuation Flow
+status: in_progress
 stopped_at: null
-last_updated: "2026-05-30"
-last_activity: 2026-05-30 — Phase v6-08 (Captura de propiedad foto+audio) DONE — v6.0 COMPLETE (8/8)
+last_updated: "2026-06-03"
+last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 01 (Foundation — Types, Service, Public Landing) DONE
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 0
-  completed_plans: 0
-  percent: 100
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -38,11 +38,25 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) — ✅ COMPLETO
 Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
-Plan: —
-Status: ✅ Complete — v6-01..v6-08 implementados + verificados (tsc limpio ambos repos, rutas 200, agent tests 11/11, reviews adversariales PASS)
-Last activity: 2026-05-30 — v6-08 Captura de propiedad foto+audio (cross-repo: Whisper+Claude en agent + captura móvil en mvp) done
 
-Progress: [█████████████████████████████] 100% — 8 de 8 fases (v6-01..v6-08 ✅)
+---
+
+## Current Position — Phase 34 (Avalúos UI)
+
+Milestone: avaluos-ui — Avalúos UI — Public Valuation Flow
+Phase: 34-avaluos-ui — In progress (1/5 plans done)
+Plan: 34-01 DONE, 34-02 next
+Status: In progress
+Last activity: 2026-06-03 — 34-01 Foundation (types + service + public landing) DONE
+
+Progress: [█████░░░░░░░░░░░░░░░░░░░░░░░░] 20% — 1 de 5 planes (34-01 ✅)
+
+**Plans (34-NN):**
+- [x] **34-01** Foundation — types, service client, /avaluo public landing — ✅ done (2026-06-03)
+- [ ] **34-02** Multi-step intake form (/avaluo/nuevo)
+- [ ] **34-03** Photo upload step
+- [ ] **34-04** Confirmation + status polling page
+- [ ] **34-05** Admin/review panel
 
 **Phases (v6-NN):**
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
@@ -83,8 +97,9 @@ v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. P
 
 ## Session Continuity
 
-Last session: 2026-05-29 — v6-01 done + verified; renumbered v6.0 to `v6-NN` after user flagged collision with agent v2.1-frontend.
-Resume file: None
+Last session: 2026-06-03 — 34-01 done (types + service + /avaluo landing).
+Stopped at: Completed 34-01-PLAN.md
+Resume file: .planning/phases/34-avaluos-ui/34-02-PLAN.md
 
 ## Accumulated Context
 

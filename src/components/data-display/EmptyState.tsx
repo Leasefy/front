@@ -38,7 +38,6 @@ export type EmptyStateProps = {
   // Phosphor icon (ForwardRefExoticComponent<IconProps>) flows in without
   // requiring callers to cast. The runtime contract is unchanged: the
   // component is rendered with `weight` + `className` props below.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: React.ComponentType<any>
   title: string
   description: string

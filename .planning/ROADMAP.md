@@ -23,7 +23,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 30: Executive Reports** - C-level summary dashboard with portfolio health score
 - [x] **Phase 31: Automatic Reminders** - Payment and contract reminders with configuration UI
 - [x] **Phase 32: Integration & QA** - Wire gating to all features, test all plan tiers, polish
-- [ ] **Phase 34: Avalúos UI** - Wizard de solicitud + tracking + certificado público + integración panel agencia
+- [x] **Phase 34: Avalúos UI** - Wizard de solicitud + tracking + certificado público + integración panel agencia
 
 ## Phase Details
 

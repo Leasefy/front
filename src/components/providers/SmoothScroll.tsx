@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, createContext, useContext, useCallback, type ReactNode } from "react";
+import { useEffect, useRef, createContext, useContext, useCallback, useMemo, type ReactNode } from "react";
 import Lenis from "lenis";
 
 interface LenisContextValue {
@@ -45,15 +45,17 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     lenisRef.current = lenis;
 
     // Animation frame loop
+    let frameId = 0;
     function raf(time: number) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      frameId = requestAnimationFrame(raf);
     }
 
-    requestAnimationFrame(raf);
+    frameId = requestAnimationFrame(raf);
 
     // Cleanup
     return () => {
+      cancelAnimationFrame(frameId);
       lenis.destroy();
       lenisRef.current = null;
     };
@@ -67,8 +69,10 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     lenisRef.current?.start();
   }, []);
 
+  const value = useMemo(() => ({ stop, start }), [stop, start]);
+
   return (
-    <LenisContext.Provider value={{ stop, start }}>
+    <LenisContext.Provider value={value}>
       {children}
     </LenisContext.Provider>
   );

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Lock, Check, Buildings } from '@phosphor-icons/react';
+import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { CouponInput, PriceSummary } from '@/components/pricing';
 import { getPlanById } from '@/lib/constants/subscription-plans';
+import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
@@ -30,21 +31,39 @@ function CheckoutContent() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialBilling);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [backendPlanId, setBackendPlanId] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState(true);
+  const [planError, setPlanError] = useState<string | null>(null);
 
   // Get price based on billing cycle
   const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
 
-  const handleSubmit = async () => {
+  // Resolve the backend plan UUID for this landlord tier — the real PSE flow
+  // needs the id, not the marketing slug. (Previously "Pagar" was a fake
+  // setTimeout + alert() that never subscribed.)
+  useEffect(() => {
+    subscriptionsApi
+      .getPlans('LANDLORD')
+      .then((plans) => {
+        const match = plans.find((p) => p.tier?.toLowerCase() === planId.toLowerCase());
+        if (match) setBackendPlanId(match.id);
+        else setPlanError(t('landlord.checkout.planNotFound'));
+      })
+      .catch(() => setPlanError(t('landlord.checkout.planLoadError')))
+      .finally(() => setLoadingPlan(false));
+  }, [planId, t]);
+
+  const handleSubmit = () => {
+    if (!backendPlanId) return;
     setIsProcessing(true);
-
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // In real app, would integrate with payment provider
-    alert(t('landlord.checkout.paymentSuccess', { name: plan.name }));
-
-    setIsProcessing(false);
-    router.push('/panel');
+    const params = new URLSearchParams({
+      planId: backendPlanId,
+      planName: plan.name,
+      amount: String(price),
+      cycle: billingCycle === 'yearly' ? 'ANNUAL' : 'MONTHLY',
+      returnUrl: '/panel',
+    });
+    router.push(`/pse-mock?${params.toString()}`);
   };
 
   // Plan features to display
@@ -176,12 +195,21 @@ function CheckoutContent() {
                 appliedCoupon={appliedCoupon}
               />
 
+              {/* Plan resolution error — surface the real failure instead of
+                  letting the user fake-buy. */}
+              {planError && (
+                <div className="flex items-center gap-2 rounded-sm bg-destructive/10 p-3 text-sm text-destructive">
+                  <WarningCircle className="w-4 h-4 shrink-0" />
+                  <span>{planError}</span>
+                </div>
+              )}
+
               {/* Payment button */}
               <Button
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isProcessing}
+                disabled={isProcessing || loadingPlan || !backendPlanId}
               >
                 {isProcessing ? (
                   <>

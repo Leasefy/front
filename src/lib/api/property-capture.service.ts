@@ -8,7 +8,7 @@
  * de creación existente (CAPT-04 sin cambios).
  */
 
-import { getAccessToken } from './client';
+import { getAccessToken, ApiError } from './client';
 import type {
   PropertyAudioMediaType,
   PropertyCapturePhoto,
@@ -100,7 +100,7 @@ export async function extractPropertyFromCapture(
   if (!res.ok) {
     if (res.status === 401) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body?.error ?? `Error ${res.status}`);
+    throw new ApiError(res.status, body?.error ?? `Error ${res.status}`);
   }
 
   return (await res.json()) as PropertyExtractResponse;

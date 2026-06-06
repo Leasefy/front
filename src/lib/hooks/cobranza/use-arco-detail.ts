@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { ArcoRequestRow } from './use-arco-requests'
 
 const POLL_INTERVAL_MS = 60_000
@@ -72,11 +73,9 @@ export function useArcoDetail(requestId: string | null): UseArcoDetailResult {
       return
     }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId, requestId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId && requestId))
 
   const refetch = useCallback(async () => {
     await fetchOnce()

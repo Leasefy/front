@@ -73,14 +73,10 @@ export default function NuevaCotizacionPage() {
   // Phase 33 D-33-10: fire metadata fetch unconditionally; hook short-circuits on empty quoteId
   const parentMetadata = useQuoteMetadata(parentQuoteId ?? '')
 
-  // Optional pre-fill from ?cedula= query param (COTI-UI-02 optional)
-  useEffect(() => {
-    const prefilledCedula = searchParams?.get('cedula')
-    if (prefilledCedula && candidato.cedula === '' && !hasDraft) {
-      setCandidato(prev => ({ ...prev, cedula: prefilledCedula }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // NOTE: a ?cedula= query-param pre-fill was intentionally removed (Ley 1581 / D-08).
+  // Accepting a raw cédula from the URL leaks PII to browser history, the Referer header,
+  // and server logs. The operator enters the cédula via the step-1 input instead, and it is
+  // hashed at submit time. Do not reintroduce a raw-PII prefill here.
 
   // Phase 33 D-33-10: hydrate wizard state from parent quote metadata in re-quote mode
   useEffect(() => {

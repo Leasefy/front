@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork } from '@phosphor-icons/react';
 import {
   Sheet,
@@ -15,6 +15,7 @@ import { RISK_LEVELS, getRiskBadgeVariant } from '@/lib/types/risk-score';
 import type { RiskScore, RiskLevel } from '@/lib/types/risk-score';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface ScoreDetailSheetProps {
   open: boolean;
@@ -61,7 +62,15 @@ export function ScoreDetailSheet({
   onShare,
 }: ScoreDetailSheetProps) {
   const { locale } = useI18n();
+  const lenis = useLenis();
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Pause Lenis smooth scroll while the sheet is open (DESIGN.md §8).
+  useEffect(() => {
+    if (open) lenis.stop();
+    else lenis.start();
+    return () => lenis.start();
+  }, [open, lenis]);
 
   const handleCopyCode = async () => {
     if (!verificationCode) return;
@@ -101,7 +110,11 @@ export function ScoreDetailSheet({
         </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-6"
+          data-lenis-prevent
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           {!isPaid ? (
             <LockedContent locale={locale} />
           ) : score ? (

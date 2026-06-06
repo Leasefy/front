@@ -133,6 +133,53 @@ export default function LeaseDetailPage() {
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
   const approvedRequests = requests.filter(r => r.status === 'APPROVED');
   const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+
+  // Account-status card: drive label / icon / color from the real period status
+  // (paymentInfo.currentPeriodStatus) instead of always showing "Al día".
+  // Reuses the emerald/amber/rose convention used elsewhere in this view.
+  const accountStatus = (() => {
+    switch (periodStatus) {
+      case 'PENDING_VALIDATION':
+        return {
+          label: locale === 'es' ? 'Pago en validación' : 'Payment under review',
+          icon: Clock,
+          cardClass:
+            'bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border border-amber-100 dark:border-amber-800/60',
+          iconClass: 'text-amber-600 dark:text-amber-400',
+          captionClass: 'text-amber-600 dark:text-amber-400',
+        };
+      case 'REJECTED':
+        return {
+          label: locale === 'es' ? 'Pago rechazado' : 'Payment rejected',
+          icon: XCircle,
+          cardClass:
+            'bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/50 dark:to-rose-900/30 border border-rose-100 dark:border-rose-800/60',
+          iconClass: 'text-rose-600 dark:text-rose-400',
+          captionClass: 'text-rose-600 dark:text-rose-400',
+        };
+      case 'APPROVED':
+        return {
+          label: locale === 'es' ? 'Al día' : 'Up to date',
+          icon: CheckCircle,
+          cardClass:
+            'bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60',
+          iconClass: 'text-emerald-600 dark:text-emerald-400',
+          captionClass: 'text-emerald-600 dark:text-emerald-400',
+        };
+      default:
+        // 'NONE' or unknown → no confirmed/in-flight payment for the period.
+        return {
+          label: locale === 'es' ? 'Pago pendiente' : 'Payment pending',
+          icon: WarningCircle,
+          cardClass:
+            'bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30 border border-amber-100 dark:border-amber-800/60',
+          iconClass: 'text-amber-600 dark:text-amber-400',
+          captionClass: 'text-amber-600 dark:text-amber-400',
+        };
+    }
+  })();
+  const AccountStatusIcon = accountStatus.icon;
+
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
@@ -368,12 +415,12 @@ export default function LeaseDetailPage() {
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">{approvedRequests.length}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 p-5 col-span-2 sm:col-span-1">
+              <div className={cn('rounded-2xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{locale === 'es' ? 'Al día' : 'Up to date'}</p>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{accountStatus.label}</p>
+                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
               </div>
             </motion.div>
 

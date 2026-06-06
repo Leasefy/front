@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 // ── Polling interval (D-37-07: 60s for aggregate analytics widgets) ──────────
 const POLL_INTERVAL_MS = 60_000
@@ -225,11 +226,10 @@ export function useCobranzaAnalytics(): UseCobranzaAnalyticsResult {
       return
     }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS) // D-37-07: 60s for aggregate widgets
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId])
+
+  // D-37-07: 60s for aggregate widgets — gated on tab visibility.
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId))
 
   const refetch = useCallback(async () => {
     await fetchOnce()

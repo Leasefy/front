@@ -1,21 +1,26 @@
 'use client';
 
 /**
- * cotizaciones-source — federated search for recent insurance quotes.
+ * cotizaciones-source — federated search for insurance quotes.
  *
- * Sources from GET /api/agency/:agencyId/cotizador/overview which returns
- * lastQuotes (max 10, most recent). Client-filters by cedulaHashPrefix8 /
- * ciudad / status against the query.
+ * PRIMARY path: GET /api/agency/:agencyId/search?q=<query>&types=quote&limit=8
+ *   Trigram/unaccent fuzzy search via the unified agent search endpoint.
+ *   Falls back automatically when the endpoint is unavailable (migration pending)
+ *   or returns any error — see agent-search-client for cooldown semantics.
  *
- * No search param on the overview endpoint — fetch-and-filter.
+ * FALLBACK path: GET /api/agency/:agencyId/cotizador/overview (client-filter)
+ *   Fetches the overview (lastQuotes max 10) and client-filters by
+ *   cedulaHashPrefix8 / ciudad / status / id prefix. Original implementation
+ *   kept verbatim as the fallback path.
  *
  * Permission: cotizador:view
- * href: /panel/inmobiliaria/ai/cotizador (list; no detail route yet for individual quotes)
+ * href: /panel/inmobiliaria/ai/cotizador/:id
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
+import { agentSearch } from '@/lib/search/agent-search-client';
 import { FileText } from '@phosphor-icons/react';
 
 function norm(s: string): string {
@@ -69,6 +74,49 @@ export const cotizacionesSource: SearchSource = {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
     if (!agentUrl || !ctx.agencyId) return [];
 
+    // ── Primary: unified fuzzy search endpoint ──────────────────────────────
+    const serverResults = await agentSearch(query, 'quote', ctx.agencyId, signal);
+
+    if (serverResults !== null) {
+      // Map endpoint shape → palette SearchResult.
+      // `ref` is the masked cédula hash prefix; href is constructed from `id`.
+      // badges[0] = status label, badges[1] = amount chip, badges[2] = carrier chip.
+      return serverResults.map((item): SearchResult => {
+        const statusLabel = item.badges[0] ?? '';
+        const amountLabel = item.badges[1];
+        const carrierLabel = item.badges[2];
+        const statusColor: 'green' | 'amber' | 'red' | 'neutral' =
+          STATUS_COLORS[statusLabel.toLowerCase()] ?? 'neutral';
+        const badges: NonNullable<SearchResult['badges']> = [];
+        if (statusLabel) badges.push({ label: statusLabel, color: statusColor });
+        if (amountLabel) badges.push({ label: amountLabel, color: 'neutral' });
+        if (carrierLabel) badges.push({ label: carrierLabel, color: 'green' });
+
+        return {
+          id: `cotizaciones:${item.id}`,
+          sourceId: 'cotizaciones',
+          type: 'cotizacion',
+          title: item.title,
+          subtitle: item.ref ? `Cédula: ${item.ref}…` : (item.subtitle ?? undefined),
+          badges,
+          href: `/panel/inmobiliaria/ai/cotizador/${item.id}`,
+          // Preview degrades gracefully — panel already null-guards all fields.
+          preview: {
+            type: 'cotizacion',
+            id: item.id,
+            ciudad: item.title,
+            cedulaHashPrefix8: item.ref ?? '',
+            canonCop: 0,
+            status: statusLabel,
+            approvedCount: 0,
+            totalCarriers: 0,
+            createdAt: null,
+          },
+        };
+      });
+    }
+
+    // ── Fallback: overview endpoint with client-side filter ─────────────────
     const res = await globalThis.fetch(
       `${agentUrl}/api/agency/${ctx.agencyId}/cotizador/overview`,
       { headers: agentAuthHeaders(), signal },

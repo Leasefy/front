@@ -379,10 +379,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
       setUser(userData)
       setNeedsOnboarding(needsOnb)
+      // Resolve the MFA gate before returning so callers (AuthForm) can short-circuit
+      // the panel redirect to /auth/mfa-verify when a second factor is required.
+      await checkMfaLevel()
       return userData
     }
     return null
-  }, [fetchUser])
+  }, [fetchUser, checkMfaLevel])
 
   /** Sign up with email and password. Returns whether email confirmation is required. */
   const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {

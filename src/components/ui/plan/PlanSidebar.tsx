@@ -61,6 +61,8 @@ export interface PlanSidebarProps {
   upgradeHref?: string;
   upgradeLabel?: string;
   profileCompletion?: ProfileCompletionConfig;
+  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
+  aboveNav?: React.ReactNode;
 }
 
 interface NavItemComponentProps {
@@ -215,6 +217,7 @@ interface SidebarContentProps {
   upgradeLabel?: string;
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
+  aboveNav?: React.ReactNode;
 }
 
 function SidebarContent({
@@ -225,6 +228,7 @@ function SidebarContent({
   onItemClick,
   showCollapseButton = true,
   profileCompletion,
+  aboveNav,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -275,6 +279,13 @@ function SidebarContent({
           )}
         </Link>
       </div>
+
+      {/* ⌘K / above-nav slot */}
+      {aboveNav && !isCollapsed && (
+        <div className="px-3 pb-1">
+          {aboveNav}
+        </div>
+      )}
 
       {/* Compass */}
       <nav
@@ -409,6 +420,7 @@ export function PlanSidebar({
   upgradeHref,
   upgradeLabel,
   profileCompletion,
+  aboveNav,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -434,6 +446,7 @@ export function PlanSidebar({
           upgradeHref={upgradeHref}
           upgradeLabel={upgradeLabel}
           profileCompletion={profileCompletion}
+          aboveNav={aboveNav}
         />
       </aside>
 
@@ -465,6 +478,7 @@ export function PlanSidebar({
             upgradeLabel={upgradeLabel}
             showCollapseButton={false}
             profileCompletion={profileCompletion}
+            aboveNav={aboveNav}
           />
         </SheetContent>
       </Sheet>

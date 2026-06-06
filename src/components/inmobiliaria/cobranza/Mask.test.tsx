@@ -88,23 +88,29 @@ describe('<Mask>', () => {
     expect(getByAria('email enmascarado').getAttribute('data-pii-field')).toBe('email')
   })
 
-  it('is focusable (tabIndex=0) and role=button', () => {
+  it('is interactive (tabIndex=0, role=button) ONLY when onReveal is bound', () => {
+    // a11y fix: a non-actionable mask (no onReveal) must NOT be announced as a
+    // button / be keyboard-focusable.
     renderMask({ field: 'cedula', value: '12•••678' })
-    const el = getByAria('cédula enmascarada')
-    expect(el.getAttribute('tabindex')).toBe('0')
-    expect(el.getAttribute('role')).toBe('button')
+    const plain = getByAria('cédula enmascarada')
+    expect(plain.getAttribute('role')).toBeNull()
+    expect(plain.getAttribute('tabindex')).toBeNull()
+
+    // With onReveal bound it becomes a real button.
+    renderMask({ field: 'cedula', value: '12•••678', onReveal: vi.fn() })
+    const btn = getByAria('cédula enmascarada')
+    expect(btn.getAttribute('tabindex')).toBe('0')
+    expect(btn.getAttribute('role')).toBe('button')
   })
 
-  it('invokes onClick with stopPropagation called on the synthetic event', () => {
-    // The React synthetic event has stopPropagation called inside the handler;
-    // we verify by inspecting the event argument passed to onReveal indirectly:
-    // we attach a parent React click handler and assert it does not run when the
-    // child Mask is clicked. (happy-dom forwards React-synthetic stopPropagation
-    // by setting nativeEvent's cancelBubble — verified via second-listener semantics.)
+  it('stops click propagation to the parent only when interactive (onReveal bound)', () => {
+    // The interactive handler calls stopPropagation; we assert a parent React
+    // click handler does NOT run when the child Mask is clicked.
     const parentClick = vi.fn()
+    const onReveal = vi.fn()
     const Parent = () => (
       <div onClick={parentClick} data-testid="parent">
-        <Mask field="cedula" value="12•••678" />
+        <Mask field="cedula" value="12•••678" onReveal={onReveal} />
       </div>
     )
     act(() => {
@@ -114,6 +120,7 @@ describe('<Mask>', () => {
       const el = container.querySelector('[aria-label="cédula enmascarada"]') as HTMLElement
       el.click()
     })
+    expect(onReveal).toHaveBeenCalledWith('cedula')
     expect(parentClick).not.toHaveBeenCalled()
   })
 })

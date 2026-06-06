@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 const POLL_INTERVAL_MS = 60_000
 
@@ -67,11 +68,9 @@ export function usePolicyVersions(): UsePolicyVersionsResult {
       return
     }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId))
 
   const refetch = useCallback(async () => {
     await fetchOnce()

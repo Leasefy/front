@@ -32,6 +32,7 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -338,7 +339,7 @@ function ContratoDetalleContent() {
               ) : preview?.origin === 'GENERATED' ? (
                 <div
                   className="prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: preview.html }}
+                  {...sanitizeContractHtml(preview.html)}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-10">

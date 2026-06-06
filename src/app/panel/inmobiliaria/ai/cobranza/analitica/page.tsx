@@ -174,7 +174,6 @@ export default function CobranzaAnaliticaPage() {
             {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
           </h2>
           <CostPerPesoKpi
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data={(data?.costPerPeso ?? null) as any}
             isLoading={isLoading}
           />

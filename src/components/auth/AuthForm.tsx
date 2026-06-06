@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
   Key,
   Briefcase,
@@ -89,7 +89,7 @@ function GoogleIcon({ className }: { className?: string }) {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
@@ -102,7 +102,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // preventing users from logging in as a different account.
   const didAuthenticateInForm = React.useRef(false);
 
-  const returnUrl = returnUrlProp || searchParams.get('returnUrl') || '/';
+  const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
 
   // Redirigir automáticamente SOLO cuando el usuario inició sesión en este formulario
   React.useEffect(() => {
@@ -119,6 +119,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = '/onboarding/seleccionar-rol';
       return;
     }
+    // MFA gate: if a second factor is still required, send to the verify page
+    // instead of the panel (mirrors ProtectedRoute.tsx:127-130).
+    if (mfaRequired) {
+      window.location.href = '/auth/mfa-verify';
+      return;
+    }
     if (returnUrl && returnUrl !== '/') {
       window.location.href = returnUrl;
       return;
@@ -127,7 +133,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     if (user.role === 'agency') window.location.href = '/panel/inmobiliaria';
     else if (user.role === 'landlord') window.location.href = '/panel';
     else window.location.href = '/inquilino';
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 

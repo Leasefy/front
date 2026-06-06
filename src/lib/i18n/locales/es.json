@@ -79,7 +79,8 @@
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "notificationActionError": "No se pudo completar la acción sobre la notificación"
   },
   "dashboard": {
     "title": "Panel",
@@ -850,18 +851,19 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
-      "aiAgents": "Agentes AI",
+      "aiAgents": "Resumen",
       "propietarios": "Propietarios",
-      "portafolio": "Portafolio",
-      "propiedades": "Propiedades",
-      "pipeline": "Pipeline",
+      "portafolio": "Consignaciones",
+      "propiedades": "Inmuebles",
+      "pipeline": "Prospección (Pipeline)",
       "agentes": "Agentes",
-      "cobros": "Cobros",
+      "cobros": "Cobros manuales",
+      "contratos": "Contratos",
       "dispersiones": "Dispersiones",
-      "operaciones": "Operaciones",
+      "operaciones": "Mantenimientos",
       "documentos": "Documentos",
       "reportes": "Reportes",
-      "analitica": "Analítica",
+      "analitica": "Métricas IA",
       "mensajes": "Mensajes",
       "configuracion": "Configuración",
       "aiBeta": "AI Beta",
@@ -872,11 +874,18 @@
       "agenda": "Agenda",
       "pronto": "Pronto",
       "secInicio": "Inicio",
-      "secAutopilot": "Autopilot",
+      "secAutopilot": "Agentes IA",
       "secCrm": "CRM · Comercial",
       "secFinanciero": "Financiero · ERP",
       "secOperacion": "Operación · Docs",
-      "tesoreria": "Tesorería"
+      "tesoreria": "Tesorería",
+      "secCartera": "Cartera",
+      "secPortafolio": "Portafolio",
+      "secTesoreria": "Tesorería",
+      "secCotizador": "Cotizador",
+      "secInteligencia": "Inteligencia",
+      "secOperaciones": "Operaciones",
+      "cmdPaletteTrigger": "Buscar todo…"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -4189,7 +4198,14 @@
         "arco": "ARCO",
         "plantillas": "Plantillas",
         "configuracion": "Configuración",
-        "analitica": "Analítica"
+        "analitica": "Analítica",
+        "deudores": "Deudores",
+        "pagos": "Pagos",
+        "escalaciones": "Escalaciones",
+        "compliance": "Compliance",
+        "cartas": "Cartas",
+        "llamadas": "Llamadas",
+        "siniestros": "Siniestros"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4914,7 +4930,8 @@
             "pause": "Pausar",
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
-            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio."
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "audioError": "No se pudo cargar la grabación."
           },
           "transcript": {
             "title": "Transcripción",
@@ -5074,7 +5091,8 @@
             "descuento": "Descuento (%)",
             "cuotas": "Número de cuotas",
             "monto": "Monto por cuota (COP)",
-            "fecha": "Fecha primer pago"
+            "fecha": "Fecha primer pago",
+            "duplicateRisk": "Se creó la contraoferta pero el plan original no pudo rechazarse. Pueden existir dos planes activos — revísalo antes de enviar el link de pago."
           }
         },
         "approval": {
@@ -5127,6 +5145,21 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Siniestro rechazado correctamente."
+          },
+          "list": {
+            "pageTitle": "Siniestros",
+            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "empty": {
+              "title": "Sin siniestros registrados",
+              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+            },
+            "columns": {
+              "aseguradora": "Aseguradora",
+              "status": "Estado",
+              "createdAt": "Creado",
+              "filedAt": "Radicado",
+              "approvedBy": "Aprobado por"
+            }
           }
         },
         "cartas": {
@@ -5167,6 +5200,19 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
+          },
+          "pageTitle": "Cartas prejudiciales",
+          "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
+          "empty": {
+            "title": "Sin cartas generadas",
+            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+          },
+          "columns": {
+            "kind": "Tipo",
+            "status": "Estado",
+            "generatedAt": "Generada",
+            "sentAt": "Enviada",
+            "sendMethod": "Método de envío"
           }
         },
         "escalaciones": {
@@ -5285,6 +5331,9 @@
             "empty": {
               "title": "Sin deudores en opt-out",
               "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            },
+            "errors": {
+              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
             }
           }
         },
@@ -5447,6 +5496,15 @@
           "empty": {
             "title": "Sin solicitudes ARCO pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Vista global de llamadas no disponible",
+              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "cta": "Ir a Deudores"
+            }
           }
         }
       },
@@ -5869,6 +5927,33 @@
       "emptyTitle": "Sin egresos aún",
       "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
     },
+    "ap": {
+      "bill": {
+        "title": "Factura AP",
+        "backToList": "Volver a Tesorería",
+        "notFound": "Factura no encontrada",
+        "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
+        "labelInvoiceNumber": "Número de factura",
+        "labelVendor": "Proveedor",
+        "labelCostCenter": "Centro de costos",
+        "labelStatus": "Estado",
+        "labelAmount": "Monto",
+        "labelIssued": "Emitida",
+        "labelDue": "Vencimiento",
+        "labelApprovedBy": "Aprobada por",
+        "labelCreatedBy": "Creada por",
+        "noApprover": "Sin aprobador aún",
+        "statusPaid": "Pagada",
+        "statusApproved": "Aprobada",
+        "statusPendingApproval": "Pdte. aprobación",
+        "statusRejected": "Rechazada",
+        "statusVoid": "Anulada",
+        "m1BannerTitle": "Detalle de la factura AP",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "loadingError": "Error al cargar la factura",
+        "fetching": "Cargando factura…"
+      }
+    },
     "pqrs": {
       "label": "PQRS",
       "title": "PQRS y solicitudes",
@@ -6021,6 +6106,35 @@
       "action_tesoreria": "Ver tesorería",
       "action_propiedades": "Ver propiedades",
       "action_firma": "Ver firmas"
+    },
+    "commandPalette": {
+      "title": "Buscar en Leasefy",
+      "inputLabel": "Buscar o escribir un comando",
+      "placeholder": "Buscar…",
+      "triggerAriaLabel": "Abrir buscador (⌘K)",
+      "resultsLabel": "Resultados de búsqueda",
+      "noResults": "Sin resultados para \"{{query}}\"",
+      "novedades": "Novedades",
+      "sources": {
+        "debtors": "Deudores",
+        "propietarios": "Propietarios",
+        "agentes": "Agentes",
+        "propiedades": "Propiedades",
+        "contratos": "Contratos",
+        "cotizaciones": "Cotizaciones",
+        "apBills": "Facturas AP"
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "cobranza": "Ir a Cobranza",
+        "cotizador": "Ir a Cotizador",
+        "reportes": "Ver reportes",
+        "portafolio": "Ver portafolio",
+        "hoy": "Ver Hoy"
+      },
+      "hintNavigate": "navegar",
+      "hintOpen": "abrir",
+      "hintClose": "cerrar"
     }
   },
   "validation": {
@@ -6227,6 +6341,8 @@
       "perYear": "/ano",
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
+      "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
+      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -6328,6 +6444,7 @@
       "viewPropertyAction": "Ver propiedad",
       "approvedToast": "Candidato aprobado",
       "approvedToastDesc": "Iniciando proceso de contrato con {{name}}",
+      "loadDetailError": "No se pudieron cargar los detalles del candidato.",
       "rejectedToast": "Candidato rechazado",
       "rejectedToastDesc": "{{name}} ha sido rechazado y notificado.",
       "riskAssessmentTitle": "Evaluación de Riesgo",
@@ -7010,6 +7127,34 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "Cédula"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navegaste a {{page}}",
+    "routes": {
+      "search": "Buscar Inmuebles",
+      "publish": "Publicar Inmueble",
+      "pricing": "Precios",
+      "signIn": "Iniciar Sesión",
+      "landlordPanel": "Panel de Propietario",
+      "tenantPanel": "Panel de Inquilino",
+      "agencyPanel": "Panel de Inmobiliaria",
+      "agencyAi": "Agentes IA",
+      "assistant": "Asistente",
+      "myApplications": "Mis Aplicaciones",
+      "myLease": "Mi Arriendo",
+      "apply": "Aplicar a Propiedad",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
     }
   }
 }

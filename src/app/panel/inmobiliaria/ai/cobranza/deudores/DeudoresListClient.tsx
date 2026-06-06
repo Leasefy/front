@@ -135,6 +135,26 @@ export default function DeudoresListClient() {
     daysMax !== DAYS_MAX_DEFAULT ||
     searchPayload.length > 0
 
+  // ── Infinite scroll sentinel — hooks MUST run before any early return (Rules of Hooks) ──
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    if (!hasMore) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            void loadMore()
+          }
+        }
+      },
+      { rootMargin: '300px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loadMore, pages.length])
+
   if (isLoading && pages.length === 0) return <CobranzaDeudoresListSkeleton />
 
   if (
@@ -157,26 +177,6 @@ export default function DeudoresListClient() {
       </main>
     )
   }
-
-  // ── Infinite scroll sentinel ──────────────────────────────────────────────
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (!hasMore) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            void loadMore()
-          }
-        }
-      },
-      { rootMargin: '300px' },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [hasMore, loadMore, pages.length])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const toggleStage = (s: CarteraStage) => {

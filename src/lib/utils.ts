@@ -8,3 +8,4 @@ export function cn(...inputs: ClassValue[]) {
 // Re-export utilities for convenience
 export * from './utils/storage'
 export * from './utils/logger'
+export * from './utils/safe-redirect'

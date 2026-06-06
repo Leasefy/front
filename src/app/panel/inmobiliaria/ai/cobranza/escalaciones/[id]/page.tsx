@@ -80,7 +80,7 @@ function EscalationDetailContent() {
 
   const currentUserEmail = user?.email ?? null
   const isAssignedToMe =
-    currentUserEmail !== null && data.assignee_user_id === currentUserEmail
+    currentUserEmail !== null && data.assignee_email === currentUserEmail
   const canResolveThis =
     data.status !== 'resolved' && hasResolvePerm && (isAssignedToMe || hasAssignPerm)
 

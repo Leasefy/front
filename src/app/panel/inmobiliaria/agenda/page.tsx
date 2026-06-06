@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageGuard } from '@/components/auth/PageGuard';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
@@ -23,7 +24,7 @@ const COLUMNS = [
   'colVinculo', 'colResponsable', 'colEstado',
 ];
 
-export default function AgendaPage() {
+function AgendaContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
   const resumen = RESUMEN_AGENDA_VACIO;
@@ -108,5 +109,13 @@ export default function AgendaPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function AgendaPage() {
+  return (
+    <PageGuard adminOnly>
+      <AgendaContent />
+    </PageGuard>
   );
 }

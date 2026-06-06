@@ -1,17 +1,16 @@
 /**
  * useQuoteStream hook tests — Phase 30 plan 30-06 (TDD RED → GREEN)
  *
- * Tests the hook's logic via direct function calls and MockEventSource.
- * @testing-library/react is not installed; we test the internal helpers
- * and use a lightweight manual React act() approach via happy-dom.
+ * Tests the transport-agnostic correctness surface directly: parseSSEEvent +
+ * the carrier sort logic. @testing-library/react is not installed.
  *
- * Test strategy:
- *   - Tests 1-5 exercise parseSSEEvent + the carrier sort logic directly,
- *     which is the critical correctness surface.
- *   - Hook integration is covered by the Playwright e2e spec.
+ * Transport note: the hook reads the SSE stream with fetch()+ReadableStream and
+ * authenticates with a Bearer JWT (agentAuthHeaders) — it no longer uses
+ * EventSource/cookies. The Bearer auth + live streaming path is covered by the
+ * Playwright e2e spec.
  */
 
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { parseSSEEvent } from '@/lib/cotizador/sse-schemas'
 import type { CarrierState } from './use-quote-stream'
 
@@ -54,81 +53,6 @@ function makeCarrier(overrides: Partial<CarrierState> & { carrier: string }): Ca
     ...overrides,
   }
 }
-
-// ---------------------------------------------------------------------------
-// MockEventSource (for future hook integration tests)
-// ---------------------------------------------------------------------------
-
-type Listener = (event: MessageEvent) => void
-
-class MockEventSource {
-  static CONNECTING = 0
-  static OPEN = 1
-  static CLOSED = 2
-
-  static lastInstance: MockEventSource | null = null
-  static instances: MockEventSource[] = []
-
-  readonly url: string
-  closed = false
-  readyState = MockEventSource.OPEN
-
-  onmessage: Listener | null = null
-  onerror: ((event: Event) => void) | null = null
-  onopen: (() => void) | null = null
-
-  private _listeners: Map<string, Listener[]> = new Map()
-
-  constructor(url: string, options?: { withCredentials?: boolean }) {
-    this.url = url
-    void options
-    MockEventSource.lastInstance = this
-    MockEventSource.instances.push(this)
-  }
-
-  addEventListener(type: string, listener: Listener) {
-    if (!this._listeners.has(type)) this._listeners.set(type, [])
-    this._listeners.get(type)!.push(listener)
-  }
-
-  removeEventListener(type: string, listener: Listener) {
-    const arr = this._listeners.get(type) ?? []
-    this._listeners.set(type, arr.filter(l => l !== listener))
-  }
-
-  dispatchNamedEvent(type: string, data: unknown, id?: string) {
-    const event = new MessageEvent(type, {
-      data: JSON.stringify(data),
-      lastEventId: id ?? '',
-    })
-    const listeners = this._listeners.get(type) ?? []
-    for (const l of listeners) l(event)
-  }
-
-  fireError() {
-    this.onerror?.(new Event('error'))
-  }
-
-  close() {
-    this.closed = true
-    this.readyState = MockEventSource.CLOSED
-  }
-
-  static reset() {
-    MockEventSource.lastInstance = null
-    MockEventSource.instances = []
-  }
-}
-
-beforeEach(() => {
-  MockEventSource.reset()
-  vi.stubGlobal('EventSource', MockEventSource)
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.useRealTimers()
-})
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -205,14 +129,5 @@ describe('useQuoteStream — carrier event parsing', () => {
     expect(final[1].carrier).toBe('Sura')
     expect(final[2].carrier).toBe('Bolívar')
     expect(final[2].status).toBe('rejected')
-  })
-})
-
-describe('MockEventSource construction', () => {
-  it('stores URL and withCredentials', () => {
-    // @ts-expect-error — stubbed global
-    const es = new EventSource('http://test/stream', { withCredentials: true }) as MockEventSource
-    expect(es.url).toBe('http://test/stream')
-    expect(MockEventSource.instances.length).toBe(1)
   })
 })

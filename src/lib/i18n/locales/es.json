@@ -4201,7 +4201,10 @@
         "deudores": "Deudores",
         "pagos": "Pagos",
         "escalaciones": "Escalaciones",
-        "compliance": "Compliance"
+        "compliance": "Compliance",
+        "cartas": "Cartas",
+        "llamadas": "Llamadas",
+        "siniestros": "Siniestros"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -5139,6 +5142,21 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Siniestro rechazado correctamente."
+          },
+          "list": {
+            "pageTitle": "Siniestros",
+            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "empty": {
+              "title": "Sin siniestros registrados",
+              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+            },
+            "columns": {
+              "aseguradora": "Aseguradora",
+              "status": "Estado",
+              "createdAt": "Creado",
+              "filedAt": "Radicado",
+              "approvedBy": "Aprobado por"
+            }
           }
         },
         "cartas": {
@@ -5179,6 +5197,19 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
+          },
+          "pageTitle": "Cartas prejudiciales",
+          "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
+          "empty": {
+            "title": "Sin cartas generadas",
+            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+          },
+          "columns": {
+            "kind": "Tipo",
+            "status": "Estado",
+            "generatedAt": "Generada",
+            "sentAt": "Enviada",
+            "sendMethod": "Método de envío"
           }
         },
         "escalaciones": {
@@ -5459,6 +5490,15 @@
           "empty": {
             "title": "Sin solicitudes ARCO pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Vista global de llamadas no disponible",
+              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "cta": "Ir a Deudores"
+            }
           }
         }
       },

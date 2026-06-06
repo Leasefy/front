@@ -4188,7 +4188,10 @@
         "deudores": "Debtors",
         "pagos": "Payments",
         "escalaciones": "Escalations",
-        "compliance": "Compliance"
+        "compliance": "Compliance",
+        "cartas": "Letters",
+        "llamadas": "Calls",
+        "siniestros": "Claims"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -5126,6 +5129,21 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Claim rejected successfully."
+          },
+          "list": {
+            "pageTitle": "Insurance claims",
+            "pageSubtitle": "AI-identified insurance claims pending filing",
+            "empty": {
+              "title": "No claims on record",
+              "description": "The AI has not identified any pending insurance claims at this time."
+            },
+            "columns": {
+              "aseguradora": "Insurer",
+              "status": "Status",
+              "createdAt": "Created",
+              "filedAt": "Filed",
+              "approvedBy": "Approved by"
+            }
           }
         },
         "cartas": {
@@ -5166,6 +5184,19 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
+          },
+          "pageTitle": "Pre-judicial letters",
+          "pageSubtitle": "AI-generated letters pending review and approval",
+          "empty": {
+            "title": "No letters generated",
+            "description": "The AI has not yet generated pre-judicial letters for this portfolio."
+          },
+          "columns": {
+            "kind": "Type",
+            "status": "Status",
+            "generatedAt": "Generated",
+            "sentAt": "Sent",
+            "sendMethod": "Send method"
           }
         },
         "escalaciones": {
@@ -5446,6 +5477,15 @@
           "empty": {
             "title": "No pending ARCO requests",
             "description": "Law 1581 requests will appear here."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Global calls view unavailable",
+              "description": "Calls are managed per debtor. Go to the Debtors list to access a debtor’s call history.",
+              "cta": "Go to Debtors"
+            }
           }
         }
       },

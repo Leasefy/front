@@ -32,6 +32,9 @@ import {
   CreditCard,
   Warning,
   ClipboardText,
+  Envelope,
+  PhoneCall,
+  Siren,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -149,6 +152,24 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           label: t('inmobiliaria.ai.nav.compliance'),
           href: '/panel/inmobiliaria/ai/cobranza/compliance',
           icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cartas'),
+          href: '/panel/inmobiliaria/ai/cobranza/cartas',
+          icon: Envelope,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.llamadas'),
+          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
+          icon: PhoneCall,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.siniestros'),
+          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
+          icon: Siren,
           module: 'cobranza',
         } as NavItemWithModule,
       ],

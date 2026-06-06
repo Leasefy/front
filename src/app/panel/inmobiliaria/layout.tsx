@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import {
   SquaresFour,
@@ -37,6 +38,35 @@ import { PanelPrefsProvider } from '@/lib/context/PanelPrefsContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MobileNavBar } from '@/components/layout/MobileNavBar';
+import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
+import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
+import { CommandPaletteTrigger } from '@/components/inmobiliaria/CommandPaletteTrigger';
+
+/** Registers the global ⌘K keyboard shortcut for the command palette. */
+function CommandPaletteShortcuts() {
+  const { open, close, isOpen } = useCommandPalette();
+  const pathname = usePathname();
+  const BETA_PREFIX = '/panel/inmobiliaria/beta';
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isOpen) { e.preventDefault(); close(); }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        // Yield to BetaLayout's useBetaKeyboardShortcuts when inside the beta subtree.
+        if (pathname?.startsWith(BETA_PREFIX)) return;
+        e.preventDefault();
+        if (isOpen) { close(); } else { open(); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [pathname, isOpen, open, close]);
+
+  return null;
+}
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -185,6 +215,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-plan-page">
+      {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
+      <CommandPaletteShortcuts />
+      {/* Command palette modal — portal renders above everything */}
+      <CommandPalette />
+
       {/* Inmobiliaria Sidebar */}
       <PlanSidebar
         navItems={INMOBILIARIA_NAV_ITEMS}
@@ -202,7 +237,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
-        <PlanHeader />
+        {/* Pass the search pill as an action to the top bar */}
+        <PlanHeader actions={<CommandPaletteTrigger />} />
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
@@ -237,7 +273,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
         <PermissionsProvider>
           <PanelPrefsProvider>
             <SidebarProvider>
-              <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+              {/* CommandPaletteProvider wraps the inner layout so both the
+                  shortcut hook and the modal can read/write palette state. */}
+              <CommandPaletteProvider>
+                <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+              </CommandPaletteProvider>
             </SidebarProvider>
           </PanelPrefsProvider>
         </PermissionsProvider>

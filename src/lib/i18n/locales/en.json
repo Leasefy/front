@@ -6008,6 +6008,29 @@
       "action_tesoreria": "View treasury",
       "action_propiedades": "View properties",
       "action_firma": "View signatures"
+    },
+    "commandPalette": {
+      "title": "Search Leasefy",
+      "inputLabel": "Search or type a command",
+      "placeholder": "Search…",
+      "triggerAriaLabel": "Open search (⌘K)",
+      "resultsLabel": "Search results",
+      "noResults": "No results for \"{{query}}\"",
+      "novedades": "Recent activity",
+      "sources": {
+        "debtors": "Debtors"
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "cobranza": "Go to Collections",
+        "cotizador": "Go to Quoter",
+        "reportes": "View reports",
+        "portafolio": "View portfolio",
+        "hoy": "View Today"
+      },
+      "hintNavigate": "navigate",
+      "hintOpen": "open",
+      "hintClose": "close"
     }
   },
   "validation": {

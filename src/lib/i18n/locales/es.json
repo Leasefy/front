@@ -6021,6 +6021,29 @@
       "action_tesoreria": "Ver tesorería",
       "action_propiedades": "Ver propiedades",
       "action_firma": "Ver firmas"
+    },
+    "commandPalette": {
+      "title": "Buscar en Leasefy",
+      "inputLabel": "Buscar o escribir un comando",
+      "placeholder": "Buscar…",
+      "triggerAriaLabel": "Abrir buscador (⌘K)",
+      "resultsLabel": "Resultados de búsqueda",
+      "noResults": "Sin resultados para \"{{query}}\"",
+      "novedades": "Novedades",
+      "sources": {
+        "debtors": "Deudores"
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "cobranza": "Ir a Cobranza",
+        "cotizador": "Ir a Cotizador",
+        "reportes": "Ver reportes",
+        "portafolio": "Ver portafolio",
+        "hoy": "Ver Hoy"
+      },
+      "hintNavigate": "navegar",
+      "hintOpen": "abrir",
+      "hintClose": "cerrar"
     }
   },
   "validation": {

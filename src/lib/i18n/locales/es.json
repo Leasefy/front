@@ -853,16 +853,17 @@
       "dashboard": "Dashboard",
       "aiAgents": "Resumen",
       "propietarios": "Propietarios",
-      "portafolio": "Portafolio",
-      "propiedades": "Propiedades",
-      "pipeline": "Pipeline",
+      "portafolio": "Consignaciones",
+      "propiedades": "Inmuebles",
+      "pipeline": "Prospección (Pipeline)",
       "agentes": "Agentes",
-      "cobros": "Cobros",
+      "cobros": "Cobros manuales",
+      "contratos": "Contratos",
       "dispersiones": "Dispersiones",
-      "operaciones": "Operaciones",
+      "operaciones": "Mantenimientos",
       "documentos": "Documentos",
       "reportes": "Reportes",
-      "analitica": "Analítica",
+      "analitica": "Métricas IA",
       "mensajes": "Mensajes",
       "configuracion": "Configuración",
       "aiBeta": "AI Beta",
@@ -877,7 +878,14 @@
       "secCrm": "CRM · Comercial",
       "secFinanciero": "Financiero · ERP",
       "secOperacion": "Operación · Docs",
-      "tesoreria": "Tesorería"
+      "tesoreria": "Tesorería",
+      "secCartera": "Cartera",
+      "secPortafolio": "Portafolio",
+      "secTesoreria": "Tesorería",
+      "secCotizador": "Cotizador",
+      "secInteligencia": "Inteligencia",
+      "secOperaciones": "Operaciones",
+      "cmdPaletteTrigger": "Buscar todo…"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -4190,7 +4198,14 @@
         "arco": "ARCO",
         "plantillas": "Plantillas",
         "configuracion": "Configuración",
-        "analitica": "Analítica"
+        "analitica": "Analítica",
+        "deudores": "Deudores",
+        "pagos": "Pagos",
+        "escalaciones": "Escalaciones",
+        "compliance": "Compliance",
+        "cartas": "Cartas",
+        "llamadas": "Llamadas",
+        "siniestros": "Siniestros"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -5130,6 +5145,21 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Siniestro rechazado correctamente."
+          },
+          "list": {
+            "pageTitle": "Siniestros",
+            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "empty": {
+              "title": "Sin siniestros registrados",
+              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+            },
+            "columns": {
+              "aseguradora": "Aseguradora",
+              "status": "Estado",
+              "createdAt": "Creado",
+              "filedAt": "Radicado",
+              "approvedBy": "Aprobado por"
+            }
           }
         },
         "cartas": {
@@ -5170,6 +5200,19 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
+          },
+          "pageTitle": "Cartas prejudiciales",
+          "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
+          "empty": {
+            "title": "Sin cartas generadas",
+            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+          },
+          "columns": {
+            "kind": "Tipo",
+            "status": "Estado",
+            "generatedAt": "Generada",
+            "sentAt": "Enviada",
+            "sendMethod": "Método de envío"
           }
         },
         "escalaciones": {
@@ -5453,6 +5496,15 @@
           "empty": {
             "title": "Sin solicitudes ARCO pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Vista global de llamadas no disponible",
+              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "cta": "Ir a Deudores"
+            }
           }
         }
       },
@@ -5875,6 +5927,33 @@
       "emptyTitle": "Sin egresos aún",
       "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
     },
+    "ap": {
+      "bill": {
+        "title": "Factura AP",
+        "backToList": "Volver a Tesorería",
+        "notFound": "Factura no encontrada",
+        "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
+        "labelInvoiceNumber": "Número de factura",
+        "labelVendor": "Proveedor",
+        "labelCostCenter": "Centro de costos",
+        "labelStatus": "Estado",
+        "labelAmount": "Monto",
+        "labelIssued": "Emitida",
+        "labelDue": "Vencimiento",
+        "labelApprovedBy": "Aprobada por",
+        "labelCreatedBy": "Creada por",
+        "noApprover": "Sin aprobador aún",
+        "statusPaid": "Pagada",
+        "statusApproved": "Aprobada",
+        "statusPendingApproval": "Pdte. aprobación",
+        "statusRejected": "Rechazada",
+        "statusVoid": "Anulada",
+        "m1BannerTitle": "Detalle de la factura AP",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "loadingError": "Error al cargar la factura",
+        "fetching": "Cargando factura…"
+      }
+    },
     "pqrs": {
       "label": "PQRS",
       "title": "PQRS y solicitudes",
@@ -6027,6 +6106,35 @@
       "action_tesoreria": "Ver tesorería",
       "action_propiedades": "Ver propiedades",
       "action_firma": "Ver firmas"
+    },
+    "commandPalette": {
+      "title": "Buscar en Leasefy",
+      "inputLabel": "Buscar o escribir un comando",
+      "placeholder": "Buscar…",
+      "triggerAriaLabel": "Abrir buscador (⌘K)",
+      "resultsLabel": "Resultados de búsqueda",
+      "noResults": "Sin resultados para \"{{query}}\"",
+      "novedades": "Novedades",
+      "sources": {
+        "debtors": "Deudores",
+        "propietarios": "Propietarios",
+        "agentes": "Agentes",
+        "propiedades": "Propiedades",
+        "contratos": "Contratos",
+        "cotizaciones": "Cotizaciones",
+        "apBills": "Facturas AP"
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "cobranza": "Ir a Cobranza",
+        "cotizador": "Ir a Cotizador",
+        "reportes": "Ver reportes",
+        "portafolio": "Ver portafolio",
+        "hoy": "Ver Hoy"
+      },
+      "hintNavigate": "navegar",
+      "hintOpen": "abrir",
+      "hintClose": "cerrar"
     }
   },
   "validation": {

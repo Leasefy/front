@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import {
   SquaresFour,
@@ -27,8 +28,16 @@ import {
   CalendarBlank,
   Sparkle,
   Wallet,
+  FilePlus,
+  CreditCard,
+  Warning,
+  ClipboardText,
+  Envelope,
+  PhoneCall,
+  Siren,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
@@ -37,6 +46,35 @@ import { PanelPrefsProvider } from '@/lib/context/PanelPrefsContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MobileNavBar } from '@/components/layout/MobileNavBar';
+import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
+import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
+import { CommandPaletteTrigger } from '@/components/inmobiliaria/CommandPaletteTrigger';
+
+/** Registers the global ⌘K keyboard shortcut for the command palette. */
+function CommandPaletteShortcuts() {
+  const { open, close, isOpen } = useCommandPalette();
+  const pathname = usePathname();
+  const BETA_PREFIX = '/panel/inmobiliaria/beta';
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isOpen) { e.preventDefault(); close(); }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        // Yield to BetaLayout's useBetaKeyboardShortcuts when inside the beta subtree.
+        if (pathname?.startsWith(BETA_PREFIX)) return;
+        e.preventDefault();
+        if (isOpen) { close(); } else { open(); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [pathname, isOpen, open, close]);
+
+  return null;
+}
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -48,88 +86,138 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isAdmin, isLoading: permissionsLoading } = usePermissionsContext();
+
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
-  // `adminOnly` gates ERP/treasury items whose module keys the backend does not yet
-  // emit in effectivePermissions (facturacion/conciliacion/tesoreria/pqrs/agenda) —
-  // admins keep access, scoped members do not. See PageGuard adminOnly on each page.
-  type NavItemWithModule = NavItem & { module?: string | null; adminOnly?: boolean };
+  // `roles` is an optional role-based gate (in addition to module-based gating).
+  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[] };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
-    // ── AGENTES IA ── (top-of-sidebar headline — Phase 38-followup
-    //                   product feedback: agents are the value prop;
-    //                   surface them above the daily-driver Inicio
-    //                   section so the hub experience is discovered
-    //                   first.)
-    { kind: 'section', label: t('inmobiliaria.nav.secAutopilot'), href: '#sec-autopilot', icon: Robot, module: null },
+    // ── INICIO ──
+    { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
+    { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
+    // ── CARTERA ──
+    { kind: 'section', label: t('inmobiliaria.nav.secCartera'), href: '#sec-cartera', icon: ChatCircleText, module: null },
     {
-      label: t('inmobiliaria.nav.aiAgents'),
-      href: '/panel/inmobiliaria/ai',
-      icon: Robot,
-      module: null,
+      label: t('inmobiliaria.ai.nav.cobranza'),
+      href: '/panel/inmobiliaria/ai/cobranza',
+      icon: ChatCircleText,
+      module: 'cobranza',
+      dataTourTarget: 'sidebar-cobranza',
       children: [
         {
-          label: t('inmobiliaria.ai.nav.cobranza'),
-          href: '/panel/inmobiliaria/ai/cobranza',
-          icon: ChatCircleText,
+          label: t('inmobiliaria.ai.nav.arco'),
+          href: '/panel/inmobiliaria/ai/cobranza/arco',
+          icon: ShieldCheck,
           module: 'cobranza',
-          dataTourTarget: 'sidebar-cobranza',
-          children: [
-            {
-              label: t('inmobiliaria.ai.nav.arco'),
-              href: '/panel/inmobiliaria/ai/cobranza/arco',
-              icon: ShieldCheck,
-              module: 'cobranza',
-            } as NavItemWithModule,
-            {
-              label: t('inmobiliaria.ai.nav.plantillas'),
-              href: '/panel/inmobiliaria/ai/cobranza/plantillas',
-              icon: FileText,
-              module: 'cobranza',
-            } as NavItemWithModule,
-            {
-              label: t('inmobiliaria.ai.nav.configuracion'),
-              href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-              icon: SlidersHorizontal,
-              module: 'cobranza',
-              dataTourTarget: 'sidebar-configuraciones',
-            } as NavItemWithModule,
-            {
-              label: t('inmobiliaria.ai.nav.analitica'),
-              href: '/panel/inmobiliaria/ai/cobranza/analitica',
-              icon: ChartLineUp,
-              module: 'cobranza',
-            } as NavItemWithModule,
-          ],
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.cotizador'),
-          href: '/panel/inmobiliaria/ai/cotizador',
+          label: t('inmobiliaria.ai.nav.plantillas'),
+          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
           icon: FileText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cobranza',
+          dataTourTarget: 'sidebar-configuraciones',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.analitica'),
+          href: '/panel/inmobiliaria/ai/cobranza/analitica',
+          icon: ChartLineUp,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.deudores'),
+          href: '/panel/inmobiliaria/ai/cobranza/deudores',
+          icon: Users,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagos'),
+          href: '/panel/inmobiliaria/ai/cobranza/pagos',
+          icon: CreditCard,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.escalaciones'),
+          href: '/panel/inmobiliaria/ai/cobranza/escalaciones',
+          icon: Warning,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.compliance'),
+          href: '/panel/inmobiliaria/ai/cobranza/compliance',
+          icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cartas'),
+          href: '/panel/inmobiliaria/ai/cobranza/cartas',
+          icon: Envelope,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.llamadas'),
+          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
+          icon: PhoneCall,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.siniestros'),
+          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
+          icon: Siren,
+          module: 'cobranza',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
+    // ── PORTAFOLIO ──
+    { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
+    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
+    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'portafolio' },
+    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
+    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
+    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
+    { label: t('inmobiliaria.nav.agentes'),      href: '/panel/inmobiliaria/agentes',      icon: Users,         module: 'agentes' },
+    // ── TESORERÍA ──
+    { kind: 'section', label: t('inmobiliaria.nav.secTesoreria'), href: '#sec-tesoreria', icon: Wallet, module: null },
+    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, module: 'dispersiones' },
+    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    // ── COTIZADOR ──
+    { kind: 'section', label: t('inmobiliaria.nav.secCotizador'), href: '#sec-cotizador', icon: FileText, module: null },
+    {
+      label: t('inmobiliaria.ai.nav.cotizador'),
+      href: '/panel/inmobiliaria/ai/cotizador',
+      icon: FileText,
+      module: 'cotizador',
+      dataTourTarget: 'sidebar-cotizador',
+      children: [
+        {
+          label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
+          href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
+          icon: ShieldCheck,
           module: 'cotizador',
-          dataTourTarget: 'sidebar-cotizador',
-          children: [
-            {
-              label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
-              href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
-              icon: ShieldCheck,
-              module: 'cotizador',
-            } as NavItemWithModule,
-            {
-              label: t('inmobiliaria.ai.cotizador.nav.insights'),
-              href: '/panel/inmobiliaria/ai/cotizador/insights',
-              icon: ChartLineUp,
-              module: 'cotizador',
-            } as NavItemWithModule,
-            {
-              label: t('inmobiliaria.ai.cotizador.nav.costos'),
-              href: '/panel/inmobiliaria/ai/cotizador/costos',
-              icon: CurrencyDollar,
-              module: 'cotizador',
-            } as NavItemWithModule,
-          ],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.cotizador.nav.insights'),
+          href: '/panel/inmobiliaria/ai/cotizador/insights',
+          icon: ChartLineUp,
+          module: 'cotizador',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.cotizador.nav.costos'),
+          href: '/panel/inmobiliaria/ai/cotizador/costos',
+          icon: CurrencyDollar,
+          module: 'cotizador',
         } as NavItemWithModule,
       ],
     },
@@ -169,6 +257,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
       if (item.adminOnly && !isAdmin) return null;
       if (item.module && !canAccess(item.module, 'view')) return null;
+      // Role-based gate: if the item declares `roles`, the current user must
+      // be a super-admin (isAdmin) OR have an agencyRole that is in the list.
+      // isAdmin bypasses role gating so Supabase service-role users always pass.
+      if (item.roles && item.roles.length > 0) {
+        const roleAllowed =
+          isAdmin ||
+          (agencyRole !== null && (item.roles as string[]).includes(agencyRole));
+        if (!roleAllowed) return null;
+      }
       if (item.children && item.children.length > 0) {
         const filteredChildren = (item.children as NavItemWithModule[])
           .map(filterItem)
@@ -195,6 +292,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-plan-page">
+      {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
+      <CommandPaletteShortcuts />
+      {/* Command palette modal — portal renders above everything */}
+      <CommandPalette />
+
       {/* Inmobiliaria Sidebar */}
       <PlanSidebar
         navItems={INMOBILIARIA_NAV_ITEMS}
@@ -203,6 +305,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria',
         }}
         showUpgrade={false}
+        aboveNav={<CommandPaletteTrigger className="w-full rounded-xl" />}
       />
 
       {/* Main content area */}
@@ -212,7 +315,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
-        <PlanHeader />
+        {/* Pass the search pill as an action to the top bar */}
+        <PlanHeader actions={<CommandPaletteTrigger />} />
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
@@ -247,7 +351,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
         <PermissionsProvider>
           <PanelPrefsProvider>
             <SidebarProvider>
-              <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+              {/* CommandPaletteProvider wraps the inner layout so both the
+                  shortcut hook and the modal can read/write palette state. */}
+              <CommandPaletteProvider>
+                <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+              </CommandPaletteProvider>
             </SidebarProvider>
           </PanelPrefsProvider>
         </PermissionsProvider>

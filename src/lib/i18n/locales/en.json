@@ -852,16 +852,17 @@
       "dashboard": "Dashboard",
       "aiAgents": "Overview",
       "propietarios": "Owners",
-      "portafolio": "Portfolio",
+      "portafolio": "Consignments",
       "propiedades": "Properties",
-      "pipeline": "Pipeline",
+      "pipeline": "Prospecting (Pipeline)",
       "agentes": "Agents",
-      "cobros": "Collections",
+      "cobros": "Manual Collections",
+      "contratos": "Contracts",
       "dispersiones": "Disbursements",
-      "operaciones": "Operations",
+      "operaciones": "Maintenance",
       "documentos": "Documents",
       "reportes": "Reports",
-      "analitica": "Analytics",
+      "analitica": "AI Metrics",
       "mensajes": "Messages",
       "configuracion": "Settings",
       "aiBeta": "AI Beta",
@@ -876,7 +877,14 @@
       "secCrm": "CRM · Sales",
       "secFinanciero": "Financial · ERP",
       "secOperacion": "Operations · Docs",
-      "tesoreria": "Treasury"
+      "tesoreria": "Treasury",
+      "secCartera": "Portfolio",
+      "secPortafolio": "Properties",
+      "secTesoreria": "Treasury",
+      "secCotizador": "Quoter",
+      "secInteligencia": "Intelligence",
+      "secOperaciones": "Operations",
+      "cmdPaletteTrigger": "Search everything…"
     },
     "mobileNav": {
       "moreButton": "More",
@@ -4189,7 +4197,14 @@
         "arco": "ARCO",
         "plantillas": "Templates",
         "configuracion": "Configuration",
-        "analitica": "Analytics"
+        "analitica": "Analytics",
+        "deudores": "Debtors",
+        "pagos": "Payments",
+        "escalaciones": "Escalations",
+        "compliance": "Compliance",
+        "cartas": "Letters",
+        "llamadas": "Calls",
+        "siniestros": "Claims"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -5129,6 +5144,21 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Claim rejected successfully."
+          },
+          "list": {
+            "pageTitle": "Insurance claims",
+            "pageSubtitle": "AI-identified insurance claims pending filing",
+            "empty": {
+              "title": "No claims on record",
+              "description": "The AI has not identified any pending insurance claims at this time."
+            },
+            "columns": {
+              "aseguradora": "Insurer",
+              "status": "Status",
+              "createdAt": "Created",
+              "filedAt": "Filed",
+              "approvedBy": "Approved by"
+            }
           }
         },
         "cartas": {
@@ -5169,6 +5199,19 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
+          },
+          "pageTitle": "Pre-judicial letters",
+          "pageSubtitle": "AI-generated letters pending review and approval",
+          "empty": {
+            "title": "No letters generated",
+            "description": "The AI has not yet generated pre-judicial letters for this portfolio."
+          },
+          "columns": {
+            "kind": "Type",
+            "status": "Status",
+            "generatedAt": "Generated",
+            "sentAt": "Sent",
+            "sendMethod": "Send method"
           }
         },
         "escalaciones": {
@@ -5452,6 +5495,15 @@
           "empty": {
             "title": "No pending ARCO requests",
             "description": "Law 1581 requests will appear here."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Global calls view unavailable",
+              "description": "Calls are managed per debtor. Go to the Debtors list to access a debtor’s call history.",
+              "cta": "Go to Debtors"
+            }
           }
         }
       },
@@ -5874,6 +5926,33 @@
       "emptyTitle": "No payouts yet",
       "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
     },
+    "ap": {
+      "bill": {
+        "title": "AP Invoice",
+        "backToList": "Back to Treasury",
+        "notFound": "Invoice not found",
+        "notFoundDesc": "The requested invoice does not exist or you do not have access.",
+        "labelInvoiceNumber": "Invoice number",
+        "labelVendor": "Vendor",
+        "labelCostCenter": "Cost center",
+        "labelStatus": "Status",
+        "labelAmount": "Amount",
+        "labelIssued": "Issued",
+        "labelDue": "Due date",
+        "labelApprovedBy": "Approved by",
+        "labelCreatedBy": "Created by",
+        "noApprover": "Not yet approved",
+        "statusPaid": "Paid",
+        "statusApproved": "Approved",
+        "statusPendingApproval": "Pending approval",
+        "statusRejected": "Rejected",
+        "statusVoid": "Void",
+        "m1BannerTitle": "AP Invoice detail",
+        "m1BannerDesc": "Payments and advanced approval flows connect in the backend phase (M1).",
+        "loadingError": "Error loading invoice",
+        "fetching": "Loading invoice…"
+      }
+    },
     "pqrs": {
       "label": "Requests",
       "title": "Requests & PQRS",
@@ -6026,6 +6105,35 @@
       "action_tesoreria": "View treasury",
       "action_propiedades": "View properties",
       "action_firma": "View signatures"
+    },
+    "commandPalette": {
+      "title": "Search Leasefy",
+      "inputLabel": "Search or type a command",
+      "placeholder": "Search…",
+      "triggerAriaLabel": "Open search (⌘K)",
+      "resultsLabel": "Search results",
+      "noResults": "No results for \"{{query}}\"",
+      "novedades": "Recent activity",
+      "sources": {
+        "debtors": "Debtors",
+        "propietarios": "Property Owners",
+        "agentes": "Agents",
+        "propiedades": "Properties",
+        "contratos": "Contracts",
+        "cotizaciones": "Quotes",
+        "apBills": "AP Bills"
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "cobranza": "Go to Collections",
+        "cotizador": "Go to Quoter",
+        "reportes": "View reports",
+        "portafolio": "View portfolio",
+        "hoy": "View Today"
+      },
+      "hintNavigate": "navigate",
+      "hintOpen": "open",
+      "hintClose": "close"
     }
   },
   "validation": {

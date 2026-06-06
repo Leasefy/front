@@ -12,6 +12,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
@@ -77,8 +78,7 @@ export function ForceStageModal({
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/force-stage`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: JSON.stringify({ target_stage: target, reason: reason.trim() }),
         },
       )

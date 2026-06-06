@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // ---------------------------------------------------------------------------
 // Response types (mirrors backend 35-04 shapes)
@@ -117,7 +118,7 @@ export function useInsights(): UseInsightsResult {
     }
 
     const base = `${agentUrl}/api/agency/${agencyId}/cotizador/insights`
-    const opts: RequestInit = { credentials: 'include' }
+    const opts: RequestInit = { headers: agentAuthHeaders() }
 
     try {
       const [approvalRes, primaRes, assumptionsRes, costRes] = await Promise.all([

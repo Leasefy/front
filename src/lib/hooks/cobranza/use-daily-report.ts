@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
 
 // ----- GET /daily-report/today ---------------------------------------------
@@ -84,7 +85,7 @@ export function useDailyReport(): UseDailyReportResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/today`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DailyReportResponse
@@ -155,7 +156,7 @@ export function useDailyReportHistory(days = 30): UseDailyReportHistoryResult {
         if (cursor) sp.set('cursor', cursor)
         const res = await globalThis.fetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history?${sp.toString()}`,
-          { credentials: 'include' },
+          { headers: agentAuthHeaders() },
         )
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as DailyReportHistoryResponse
@@ -215,7 +216,7 @@ export async function downloadHistoryCsv(
   if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
   const res = await globalThis.fetch(
     `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history.csv?days=${days}`,
-    { credentials: 'include' },
+    { headers: agentAuthHeaders() },
   )
   if (!res.ok) throw new Error(`${res.status}`)
   const blob = await res.blob()

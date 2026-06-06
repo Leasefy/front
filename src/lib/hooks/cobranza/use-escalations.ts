@@ -14,6 +14,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type {
   EscalationCategory,
   UrgencyLevel,
@@ -99,7 +101,7 @@ export function useEscalations(): UseEscalationsResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as EscalationsListResponse
@@ -121,11 +123,9 @@ export function useEscalations(): UseEscalationsResult {
   useEffect(() => {
     if (!agencyId) return
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId))
 
   const mutate = useCallback(async () => {
     await fetchOnce()
@@ -145,8 +145,7 @@ export function useEscalations(): UseEscalationsResult {
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${id}/${path}`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: body ? JSON.stringify(body) : undefined,
         },
       )

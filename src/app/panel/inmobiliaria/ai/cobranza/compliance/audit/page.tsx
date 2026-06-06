@@ -23,11 +23,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CaretLeft } from '@phosphor-icons/react'
+import { CaretLeft, ClipboardText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   useAuditLog,
   type AuditLogFilters,
@@ -69,6 +73,8 @@ function daysAgoYmd(n: number): string {
 
 function AuditContent() {
   const { t, locale } = useI18n()
+  const { agency } = useAuth()
+  const agencyId = agency?.id ?? ''
 
   const [actor, setActor] = useState<string | undefined>(undefined)
   const [action, setAction] = useState<string | undefined>(undefined)
@@ -77,6 +83,7 @@ function AuditContent() {
   const [to, setTo] = useState<string>(todayYmd())
   const [qInput, setQInput] = useState<string>('')
   const qValid = qInput.length === 0 || qInput.length >= 8
+  const [isExportingCsv, setIsExportingCsv] = useState(false)
 
   // Stable filter object: only re-fire fetch when ALL inputs stabilize
   const filters = useMemo<AuditLogFilters>(
@@ -112,24 +119,82 @@ function AuditContent() {
 
   const onResetActor = useCallback(() => setActor(undefined), [])
 
+  // Phase 38-07 (D-38-10): export CSV via fetch + blob + anchor download.
+  // Cannot use a plain anchor download because the agent backend requires
+  // Bearer-token auth (see src/lib/api/agent-auth.ts) — a bare <a download>
+  // would not include the Authorization header. UX is identical (browser
+  // save dialog) but the request is authenticated end-to-end.
+  const exportCsv = useCallback(async () => {
+    if (isExportingCsv) return
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    if (!agentUrl || !agencyId) return
+    setIsExportingCsv(true)
+    try {
+      const qs = new URLSearchParams({ from, to })
+      if (action) qs.set('kind', action)
+      const url = `${agentUrl}/api/agency/${agencyId}/compliance/audit-log.csv?${qs.toString()}`
+      const resp = await fetch(url, { headers: agentAuthHeaders() })
+      if (!resp.ok) throw new Error(`[exportCsv] backend returned ${resp.status}`)
+      const blob = await resp.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = `audit-log-${from}-to-${to}.csv`
+      document.body.appendChild(anchor)
+      anchor.click()
+      document.body.removeChild(anchor)
+      URL.revokeObjectURL(objectUrl)
+    } catch (err) {
+      console.error('[exportCsv] failed:', err)
+    } finally {
+      setIsExportingCsv(false)
+    }
+  }, [isExportingCsv, agencyId, from, to, action])
+
+  // Phase 38-05a: skeleton only as early-return on first load (no custom
+  // filters set). EmptyState stays inline below so users keep access to
+  // filter controls + can adjust criteria.
+  const hasCustomFilters =
+    filters.actor !== undefined || filters.action !== undefined || filters.q !== undefined
+  if (isLoading && items.length === 0 && !hasCustomFilters) {
+    return <PageSkeleton variant="list" />
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <Link
-          href="/panel/inmobiliaria/ai/cobranza/compliance"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-        </Link>
-        <h1 className="text-h2 font-heading text-foreground mt-2">
-          {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
-        </h1>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {locale.startsWith('es')
-            ? 'Vista forense de solo lectura — el PII nunca es revelable en esta página.'
-            : 'Forensic read-only view — PII is never revealable on this page.'}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Link
+            href="/panel/inmobiliaria/ai/cobranza/compliance"
+            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+          >
+            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
+            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+          </Link>
+          <h1 className="text-h2 font-heading text-foreground mt-2">
+            {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {locale.startsWith('es')
+              ? 'Vista forense de solo lectura — el PII nunca es revelable en esta página.'
+              : 'Forensic read-only view — PII is never revealable on this page.'}
+          </p>
+        </div>
+        {/* Phase 38-07 (D-38-10): export CSV button. Visible only when data
+            exists per D-38-04 ("export CTA appears when data exists"). */}
+        {items.length > 0 && agencyId && (
+          <button
+            type="button"
+            onClick={() => { void exportCsv() }}
+            disabled={isExportingCsv}
+            className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+            aria-label={t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
+          >
+            {isExportingCsv
+              ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
+              : t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
+          </button>
+        )}
       </div>
 
       {/* Filters grid */}
@@ -275,8 +340,8 @@ function AuditContent() {
         </div>
       </div>
 
-      {/* Loading state */}
-      {isLoading && items.length === 0 && (
+      {/* Loading state (only for filter-triggered refetch — first load handled by early return) */}
+      {isLoading && items.length === 0 && hasCustomFilters && (
         <div className="flex items-center justify-center py-12">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
@@ -289,13 +354,13 @@ function AuditContent() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — Phase 38-05a: EmptyState primitive */}
       {!isLoading && items.length === 0 && !error && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          {locale.startsWith('es')
-            ? 'Sin registros que coincidan con los filtros.'
-            : 'No records match the filters.'}
-        </p>
+        <EmptyState
+          icon={ClipboardText}
+          title={t('inmobiliaria.ai.cobranza.compliance.audit.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.compliance.audit.empty.description')}
+        />
       )}
 
       {/* Table */}

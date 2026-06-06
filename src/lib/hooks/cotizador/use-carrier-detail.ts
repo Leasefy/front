@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // =============================================================================
 // Types
@@ -65,7 +66,7 @@ export function useCarrierDetail(carrier: string): UseCarrierDetailResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrier}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as CarrierDetailPayload

@@ -50,7 +50,7 @@ const SETUP_STEPS: SetupStep[] = [
 const QUICK_ACTIONS = [
   {
     labelEs: 'Buscar propiedades',
-    labelEn: 'MagnifyingGlass properties',
+    labelEn: 'Search properties',
     icon: MagnifyingGlass,
     href: '/inquilino/explorar',
   },

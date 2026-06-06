@@ -250,7 +250,7 @@
 
     /* Muted */
     --muted:               var(--neutral-100);   /* #F5F5F4 */
-    --muted-foreground:    var(--neutral-400);   /* #A8A29E — WCAG AA on white */
+    --muted-foreground:    var(--neutral-500);   /* #7A756F — 4.56:1 on white, WCAG AA for normal text */
 
     /* Accent — alias to Primary for highlight states */
     --accent:              var(--indigo-50);     /* #F2F3FF */
@@ -309,7 +309,8 @@
      * All role-token pairs verified >= 4.5:1 for normal text.
      *   textPrimary  (#1C1917) on bg (#FAFAF9) → 15.7:1 ✓
      *   textSecondary (#44403C) on bg           → 8.2:1  ✓
-     *   textTertiary  (#A8A29E) on bg           → 2.6:1  (decorative only)
+     *   textTertiary  (#A8A29E) on bg           → 2.6:1  (decorative/disabled only — NOT for --muted-foreground)
+     *   muted-foreground (#7A756F) on bg         → 4.56:1 ✓ AA normal (neutral-500)
      *   indigo-500 (#5B5FEF) on white           → 4.6:1  ✓ AA normal
      *   indigo-700 (#3E41C9) on white           → 7.1:1  ✓ AAA
      *   white on indigo-500                     → 4.6:1  ✓ AA (btn text)
@@ -1150,6 +1151,14 @@
   @media (forced-colors: active) {
     .focus-ring:focus-visible {
       outline: 3px solid CanvasText;
+    }
+  }
+
+  /* Print stylesheet — hide all PII-bearing elements from print/PDF output (XR-07) */
+  @media print {
+    [data-pii-field],
+    [data-pii-revealed="true"] {
+      visibility: hidden !important;
     }
   }
 

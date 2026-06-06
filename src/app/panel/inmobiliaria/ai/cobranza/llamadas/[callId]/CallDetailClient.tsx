@@ -4,11 +4,13 @@
 // Renders header + responsive grid: sticky-top audio on sm, side-by-side on md+.
 // Audio player, transcript, and side panels wired in Tasks 2-4.
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -70,6 +72,11 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   // can drive the same <audio> that CallAudioPlayer renders.
   const audioRef = useRef<HTMLAudioElement>(null)
 
+  // Phase 38-07 (D-38-11): export transcript PDF state + callback.
+  // Hybrid: backend (38-03) returns PII-redacted JSON; client renders the
+  // PDF document via @react-pdf/renderer and triggers browser download.
+  const [isExportingTranscript, setIsExportingTranscript] = useState(false)
+
   const seekTo = useCallback((sec: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = sec
@@ -91,26 +98,56 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     }
   }, [data?.startedAt, locale])
 
-  // -------- Loading skeleton --------
-  if (isLoading && !data) {
-    return (
-      <main className="p-6 lg:p-8 space-y-6">
-        <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_22rem] gap-6">
-          <div className="space-y-4">
-            <div className="h-24 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-96 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-          </div>
-          <div className="space-y-4">
-            <div className="h-40 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-40 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-            <div className="h-32 bg-neutral-200 dark:bg-neutral-800 rounded-xl animate-pulse" />
-          </div>
-        </div>
-        <p className="sr-only">{t('inmobiliaria.ai.cobranza.call.loading')}</p>
-      </main>
-    )
-  }
+  const exportTranscript = useCallback(async () => {
+    if (isExportingTranscript || !data) return
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    if (!agentUrl || !agencyId) return
+    setIsExportingTranscript(true)
+    try {
+      const resp = await fetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript?redacted=true`,
+        { headers: agentAuthHeaders() },
+      )
+      if (!resp.ok) throw new Error(`transcript fetch failed: ${resp.status}`)
+      const json = (await resp.json()) as {
+        turns: Array<{ speaker: 'agent' | 'debtor'; text: string; timestamp: string }>
+        debtorNameRedacted: string
+        generatedAt: string
+      }
+      const [{ pdf }, { TranscriptPdf }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/cobranza/transcript-pdf-document'),
+      ])
+      const element = (
+        <TranscriptPdf
+          callId={callId}
+          debtorNameRedacted={json.debtorNameRedacted}
+          generatedAt={json.generatedAt}
+          turns={json.turns}
+        />
+      )
+      const blob = await pdf(element).toBlob()
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      const dateStr = data.startedAt
+        ? new Date(data.startedAt).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10)
+      anchor.href = objectUrl
+      anchor.download = `transcript-${callId.slice(0, 8)}-${dateStr}.pdf`
+      document.body.appendChild(anchor)
+      anchor.click()
+      document.body.removeChild(anchor)
+      URL.revokeObjectURL(objectUrl)
+    } catch (err) {
+      console.error('[exportTranscript] failed:', err)
+    } finally {
+      setIsExportingTranscript(false)
+    }
+  }, [isExportingTranscript, data, agencyId, callId])
+
+  // -------- Loading skeleton (Phase 38-05a: PageSkeleton primitive, detail variant) --------
+  if (isLoading && !data) return <PageSkeleton variant="detail" />
+
 
   // -------- Error --------
   if (error && !data) {
@@ -200,6 +237,20 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
               {data.complianceFlags.length}{' '}
               {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
             </span>
+            {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
+                returns PII-redacted JSON; @react-pdf/renderer builds the PDF
+                client-side and triggers browser download. */}
+            <button
+              type="button"
+              onClick={() => { void exportTranscript() }}
+              disabled={isExportingTranscript}
+              className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+              aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+            >
+              {isExportingTranscript
+                ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
+                : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+            </button>
           </div>
         </div>
       </header>

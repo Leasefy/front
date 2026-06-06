@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 const POLL_INTERVAL_MS = 60_000
 
@@ -49,7 +51,7 @@ export function useTemplates(): UseTemplatesResult {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as TemplatesResponse
@@ -68,11 +70,9 @@ export function useTemplates(): UseTemplatesResult {
       return
     }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId))
 
   const refetch = useCallback(async () => {
     await fetchOnce()

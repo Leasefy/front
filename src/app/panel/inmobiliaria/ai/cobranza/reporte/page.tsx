@@ -26,7 +26,7 @@
 import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Warning, Download, GearSix, BellRinging } from '@phosphor-icons/react'
+import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -34,6 +34,8 @@ import { useAuth } from '@/lib/auth'
 import { useDailyReport, useDailyReportHistory, downloadHistoryCsv } from '@/lib/hooks/cobranza/use-daily-report'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { CobranzaReporteSkeleton } from '@/components/skeleton/panel/CobranzaReporteSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 const COP_FORMATTER = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -105,6 +107,27 @@ function ReporteViewerContent() {
     }
   }
 
+  // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
+  // Skeleton during first-load (covers report data load; thresholds loads with it).
+  // EmptyState when report data is genuinely absent and no error.
+  if (isLoading && !data) return <CobranzaReporteSkeleton />
+
+  if (!isLoading && !data && !error) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={CalendarBlank}
+          title={t('inmobiliaria.ai.cobranza.reporte.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.reporte.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cobranza.reporte.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cobranza/reporte/suscripcion',
+          }}
+        />
+      </main>
+    )
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
@@ -149,13 +172,6 @@ function ReporteViewerContent() {
           </button>
         </div>
       </div>
-
-      {/* Loading */}
-      {isLoading && !data && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
 
       {/* Error */}
       {error && !data && (

@@ -3,7 +3,7 @@
  * Wraps apiClient for application-specific operations
  */
 
-import { apiClient, getAccessToken } from './client';
+import { apiClient, getAccessToken, ApiError } from './client';
 import type {
   BackendApplication,
   BackendDocument,
@@ -175,7 +175,7 @@ export const applicationsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Error al enviar la aplicación: ${res.status}`);
+      throw new ApiError(res.status, err.message || 'Error al enviar la aplicación');
     }
     return res.json();
   },
@@ -266,7 +266,7 @@ export const applicationsApi = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Upload failed: ${res.status}`);
+      throw new ApiError(res.status, err.message || 'Upload failed');
     }
 
     return res.json();

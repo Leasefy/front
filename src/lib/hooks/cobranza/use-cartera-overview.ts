@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 export interface CarteraOverviewResponse {
   kpis: {
@@ -58,7 +60,7 @@ export function useCarteraOverview() {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cartera/overview`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CarteraOverviewResponse = await res.json()
@@ -74,9 +76,9 @@ export function useCarteraOverview() {
   useEffect(() => {
     if (!agencyId) return
     fetchData()
-    const id = setInterval(fetchData, 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId])
+
+  useVisibilityPolling(fetchData, 30_000, Boolean(agencyId))
 
   return { data, isLoading, error, refetch: fetchData }
 }

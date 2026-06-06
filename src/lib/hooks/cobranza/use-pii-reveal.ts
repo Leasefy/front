@@ -15,6 +15,7 @@
 import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import {
   usePIIRevealContext,
   type PIIFieldKey,
@@ -59,8 +60,7 @@ export function usePIIReveal(args: { field: PIIFieldKey }): UsePIIRevealResult {
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/reveal-pii`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
           body: JSON.stringify({ field }),
         },
       )

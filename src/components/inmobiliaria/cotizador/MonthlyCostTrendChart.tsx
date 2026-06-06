@@ -90,7 +90,6 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
           width={40}
         />
         <Tooltip
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           formatter={(value: any) => [`$${Number(value).toFixed(4)}`, '']}
           contentStyle={{
             fontSize: 12,

@@ -79,7 +79,8 @@
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "notificationActionError": "No se pudo completar la acción sobre la notificación"
   },
   "dashboard": {
     "title": "Panel",
@@ -850,21 +851,41 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
-      "aiAgents": "Agentes AI",
+      "aiAgents": "Resumen",
       "propietarios": "Propietarios",
-      "portafolio": "Portafolio",
-      "propiedades": "Propiedades",
-      "pipeline": "Pipeline",
+      "portafolio": "Consignaciones",
+      "propiedades": "Inmuebles",
+      "pipeline": "Prospección (Pipeline)",
       "agentes": "Agentes",
-      "cobros": "Cobros",
+      "cobros": "Cobros manuales",
+      "contratos": "Contratos",
       "dispersiones": "Dispersiones",
-      "operaciones": "Operaciones",
+      "operaciones": "Mantenimientos",
       "documentos": "Documentos",
       "reportes": "Reportes",
-      "analitica": "Analítica",
+      "analitica": "Métricas IA",
       "mensajes": "Mensajes",
       "configuracion": "Configuración",
-      "aiBeta": "AI Beta"
+      "aiBeta": "AI Beta",
+      "hoy": "Hoy",
+      "facturacion": "Facturación",
+      "conciliacion": "Conciliación",
+      "pqrs": "PQRS",
+      "agenda": "Agenda",
+      "pronto": "Pronto",
+      "secInicio": "Inicio",
+      "secAutopilot": "Agentes IA",
+      "secCrm": "CRM · Comercial",
+      "secFinanciero": "Financiero · ERP",
+      "secOperacion": "Operación · Docs",
+      "tesoreria": "Tesorería",
+      "secCartera": "Cartera",
+      "secPortafolio": "Portafolio",
+      "secTesoreria": "Tesorería",
+      "secCotizador": "Cotizador",
+      "secInteligencia": "Inteligencia",
+      "secOperaciones": "Operaciones",
+      "cmdPaletteTrigger": "Buscar todo…"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -1029,7 +1050,15 @@
         "language": "Idioma",
         "languageDesc": "Idioma de la plataforma",
         "langChangedEs": "Idioma cambiado a Español",
-        "langChangedEn": "Language changed to English"
+        "langChangedEn": "Language changed to English",
+        "panelTour": "Tour del panel IA",
+        "panelTourDesc": "Recorrido guiado de 3 pasos al ingresar al panel",
+        "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
+        "panelTourDismissed": "Tour silenciado en este dispositivo",
+        "panelTourSyncing": "Sincronizando preferencia…",
+        "relaunchTour": "Iniciar tour ahora",
+        "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
+        "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
       "security": {
         "title": "Seguridad",
@@ -1399,6 +1428,7 @@
       "crmTitle": "CRM de Propietarios",
       "search": "Buscar propietario...",
       "addOwner": "Nuevo propietario",
+      "addOwnerIA": "Crear con IA",
       "editOwner": "Editar propietario",
       "deleteOwner": "Eliminar propietario",
       "deleteConfirm": "¿Estás seguro de eliminar a {{name}}?",
@@ -1444,7 +1474,10 @@
         "deleted": "{{name}} eliminado correctamente",
         "created": "{{name}} agregado correctamente",
         "updated": "Propietario actualizado correctamente",
-        "exporting": "Exportando propietarios a Excel..."
+        "exporting": "Exportando propietarios a Excel...",
+        "createError": "No se pudo crear el propietario. Intenta de nuevo.",
+        "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
+        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
       },
       "detail": {
         "title": "Detalle del Propietario",
@@ -3246,7 +3279,9 @@
         "inventory": "Inventario",
         "incrementLetter": "Carta de Incremento",
         "actaCreated": "Acta creada",
-        "actaSaved": "El acta de {{type}} ha sido guardada"
+        "actaSaved": "El acta de {{type}} ha sido guardada",
+        "actaError": "Error al crear acta",
+        "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo."
       }
     },
     "mensajes": {
@@ -4162,7 +4197,15 @@
         "cotizador": "Cotizador",
         "arco": "ARCO",
         "plantillas": "Plantillas",
-        "configuracion": "Configuración"
+        "configuracion": "Configuración",
+        "analitica": "Analítica",
+        "deudores": "Deudores",
+        "pagos": "Pagos",
+        "escalaciones": "Escalaciones",
+        "compliance": "Compliance",
+        "cartas": "Cartas",
+        "llamadas": "Llamadas",
+        "siniestros": "Siniestros"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4209,7 +4252,14 @@
             "neverSeen": "Sin veredictos",
             "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
           },
-          "errorLoading": "Error al cargar datos del cotizador"
+          "errorLoading": "Error al cargar datos del cotizador",
+          "empty": {
+            "title": "Aún no hay cotizaciones",
+            "description": "Generá la primera para empezar a ver métricas y verdictos.",
+            "cta": {
+              "label": "Nueva cotización"
+            }
+          }
         },
         "nueva": {
           "title": "Nueva cotización",
@@ -4342,7 +4392,10 @@
           "retry": "Reintentar",
           "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
           "pedirExplicacionButton": "Pedir explicación",
-          "reQuoteButton": "Re-cotizar con cambios"
+          "reQuoteButton": "Re-cotizar con cambios",
+          "liveRegion": {
+            "carrierVerdict": "{{carrier}}: {{result}}"
+          }
         },
         "pdf": {
           "download": "Descargar PDF",
@@ -4417,7 +4470,11 @@
             "breachColSeverity": "Severidad",
             "breachColDuration": "Duración",
             "breachColResolution": "Resolución",
-            "noBreaches": "Sin incumplimientos en los últimos 90 días"
+            "noBreaches": "Sin incumplimientos en los últimos 90 días",
+            "empty": {
+              "title": "Aún no hay datos de SLA para esta aseguradora",
+              "description": "Los SLA se calculan a partir de la actividad histórica."
+            }
           },
           "detail": {
             "pageTitle": "{{carrier}} — Detalle",
@@ -4479,6 +4536,13 @@
             "title": "¿Restablecer al global?",
             "body": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
             "confirm": "Restablecer"
+          },
+          "empty": {
+            "title": "Aún no hay aseguradoras activas",
+            "description": "Contactá soporte para activar Sura, Mapfre o Bolívar.",
+            "cta": {
+              "label": "Contactar soporte"
+            }
           }
         },
         "insights": {
@@ -4549,6 +4613,10 @@
           "costPreview": {
             "viewAll": "Ver detalle de costos",
             "empty": "Sin datos de costos mensuales aún"
+          },
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
           }
         },
         "costos": {
@@ -4589,7 +4657,14 @@
             "statusEmpty": "Sin datos aún"
           },
           "loadError": "No se pudo cargar el resumen de costos. Intenta de nuevo.",
-          "retry": "Reintentar"
+          "retry": "Reintentar",
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
+          }
+        },
+        "quote": {
+          "exportPdf": "Descargar PDF"
         }
       },
       "access": {
@@ -4640,7 +4715,17 @@
             "channelWhatsapp": "WhatsApp",
             "channelEmail": "Email"
           },
-          "errorLoading": "Error cargando datos"
+          "errorLoading": "Error cargando datos",
+          "empty": {
+            "title": "Aún no tenés cartera de cobranza",
+            "description": "Importá tu primera cartera para empezar.",
+            "cta": {
+              "label": "Importar cartera"
+            }
+          },
+          "liveRegion": {
+            "newTransition": "{{count}} nueva(s) transición(es) de etapa"
+          }
         },
         "deudores": {
           "title": "Deudores",
@@ -4659,7 +4744,6 @@
           "sort": {
             "daysInStageDesc": "Más estancados primero"
           },
-          "empty": "Sin deudores con estos filtros",
           "error": "Error cargando deudores",
           "errorRetry": "Reintentar",
           "loadingMore": "Cargando más…",
@@ -4680,6 +4764,14 @@
             "voice": "Llamada",
             "whatsapp": "WhatsApp",
             "email": "Email"
+          },
+          "emptyFiltered": "Sin deudores con estos filtros",
+          "empty": {
+            "title": "Aún no hay deudores",
+            "description": "Importá una cartera CSV o agregá manualmente.",
+            "cta": {
+              "label": "Importar cartera"
+            }
           }
         },
         "detail": {
@@ -4837,7 +4929,9 @@
             "play": "Reproducir",
             "pause": "Pausar",
             "speed": "Velocidad",
-            "speedLabel": "Velocidad {{speed}}x"
+            "speedLabel": "Velocidad {{speed}}x",
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "audioError": "No se pudo cargar la grabación."
           },
           "transcript": {
             "title": "Transcripción",
@@ -4874,7 +4968,8 @@
           },
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
-          }
+          },
+          "exportTranscriptPdf": "Exportar transcript PDF"
         },
         "pagos": {
           "title": "Pagos",
@@ -4923,7 +5018,6 @@
           "pill": {
             "disbursementPending": "Desembolso pendiente"
           },
-          "empty": "Sin pagos en este período",
           "error": "Error al cargar pagos",
           "errorRetry": "Reintentar",
           "loading": "Cargando pagos...",
@@ -4938,6 +5032,14 @@
             "debtor": "Deudor",
             "back": "Volver a pagos",
             "notFound": "Pago no encontrado"
+          },
+          "emptyFiltered": "Sin pagos en este período",
+          "empty": {
+            "title": "Aún no hay pagos procesados",
+            "description": "Los pagos aparecerán acá cuando un deudor liquide.",
+            "cta": {
+              "label": "Ver deudores"
+            }
           }
         },
         "planes": {
@@ -4989,7 +5091,8 @@
             "descuento": "Descuento (%)",
             "cuotas": "Número de cuotas",
             "monto": "Monto por cuota (COP)",
-            "fecha": "Fecha primer pago"
+            "fecha": "Fecha primer pago",
+            "duplicateRisk": "Se creó la contraoferta pero el plan original no pudo rechazarse. Pueden existir dos planes activos — revísalo antes de enviar el link de pago."
           }
         },
         "approval": {
@@ -5042,6 +5145,21 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Siniestro rechazado correctamente."
+          },
+          "list": {
+            "pageTitle": "Siniestros",
+            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "empty": {
+              "title": "Sin siniestros registrados",
+              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+            },
+            "columns": {
+              "aseguradora": "Aseguradora",
+              "status": "Estado",
+              "createdAt": "Creado",
+              "filedAt": "Radicado",
+              "approvedBy": "Aprobado por"
+            }
           }
         },
         "cartas": {
@@ -5082,6 +5200,19 @@
             "label": "Rechazar",
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
+          },
+          "pageTitle": "Cartas prejudiciales",
+          "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
+          "empty": {
+            "title": "Sin cartas generadas",
+            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+          },
+          "columns": {
+            "kind": "Tipo",
+            "status": "Estado",
+            "generatedAt": "Generada",
+            "sentAt": "Enviada",
+            "sendMethod": "Método de envío"
           }
         },
         "escalaciones": {
@@ -5133,6 +5264,13 @@
             "stateTrace": "Estado del agente al escalar",
             "assignee": "Asignada a",
             "timing": "Tiempos"
+          },
+          "empty": {
+            "title": "¡Buen trabajo!",
+            "description": "No hay escalaciones pendientes en este momento."
+          },
+          "liveRegion": {
+            "newEscalacion": "{{count}} nueva(s) escalación(es) recibida(s)"
           }
         },
         "compliance": {
@@ -5171,6 +5309,32 @@
           "actions": {
             "acknowledge": "Reconocer",
             "export": "Exportar"
+          },
+          "empty": {
+            "title": "Sin alertas de compliance",
+            "description": "Todas las llamadas cumplen con T-323/2024 y Ley 2300."
+          },
+          "audit": {
+            "empty": {
+              "title": "Sin eventos de auditoría",
+              "description": "El log se llena cuando un operador revela PII o aprueba acciones."
+            },
+            "exportCsv": "Exportar CSV"
+          },
+          "ley2300": {
+            "empty": {
+              "title": "Sin infracciones a Ley 2300 detectadas",
+              "description": "Las llamadas se monitorean en tiempo real."
+            }
+          },
+          "optOut": {
+            "empty": {
+              "title": "Sin deudores en opt-out",
+              "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            },
+            "errors": {
+              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
+            }
           }
         },
         "reporte": {
@@ -5201,13 +5365,146 @@
             "submit": "Guardar umbrales",
             "versionsHeading": "Versiones anteriores",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
-            "rolledBackToast": "Umbrales reversados a la versión {{version}}"
+            "rolledBackToast": "Umbrales reversados a la versión {{version}}",
+            "empty": {
+              "title": "Usando thresholds por defecto",
+              "description": "Ajustá los umbrales según las políticas de tu inmobiliaria.",
+              "cta": {
+                "label": "Editar thresholds"
+              }
+            }
           },
           "subscription": {
             "pageTitle": "Mi suscripción al reporte diario",
             "emailToggle": "Recibir por correo",
             "whatsappToggle": "Recibir por WhatsApp",
             "aggregateStat": "{{subscribed}} de {{total}} miembros suscritos"
+          },
+          "empty": {
+            "title": "Aún no hay datos para el reporte diario",
+            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "cta": {
+              "label": "Configurar suscripción"
+            }
+          },
+          "suscripcion": {
+            "empty": {
+              "title": "Aún no hay suscriptores al reporte",
+              "description": "Agregá emails para recibir el reporte diario automáticamente.",
+              "cta": {
+                "label": "Agregar suscriptor"
+              }
+            }
+          }
+        },
+        "analitica": {
+          "title": "Analítica de Cobranza",
+          "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
+          "sampleDataWatermark": "Datos de muestra",
+          "agencyGate": {
+            "title": "Sin datos suficientes",
+            "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
+            "ctaLabel": "Ir al agente de cobranza"
+          },
+          "widgets": {
+            "recoveryRate": {
+              "title": "Tasa de recuperación por etapa",
+              "legend": {
+                "transitions": "Deudores recuperados",
+                "cop": "COP recuperado"
+              },
+              "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
+            },
+            "topScripts": {
+              "title": "Scripts con mayor conversión",
+              "empty": "Sin datos de scripts disponibles.",
+              "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
+              "column": {
+                "script": "Script",
+                "stage": "Etapa",
+                "nCalls": "Llamadas",
+                "conversionRate": "Tasa conv.",
+                "lift": "Lift vs base",
+                "sparkline": "Tendencia 30d"
+              }
+            },
+            "topObjections": {
+              "title": "Principales objeciones (últimos 30 días)",
+              "empty": "Sin objeciones registradas en los últimos 30 días.",
+              "column": {
+                "literal": "Objeción",
+                "count": "Frecuencia",
+                "pct": "% de llamadas"
+              }
+            },
+            "cadence": {
+              "title": "Efectividad de cadencia",
+              "channelMix": {
+                "title": "Canal × resultado",
+                "outcome": {
+                  "paid": "Pagado",
+                  "brokenPromise": "Promesa rota",
+                  "escalated": "Escalado",
+                  "noAnswer": "Sin respuesta",
+                  "completed": "Completado"
+                }
+              },
+              "heatmap": {
+                "title": "Mejor hora para llamar",
+                "legend": "Intensidad = volumen + tasa positiva",
+                "dayLabels": {
+                  "sun": "Dom",
+                  "mon": "Lun",
+                  "tue": "Mar",
+                  "wed": "Mié",
+                  "thu": "Jue",
+                  "fri": "Vie",
+                  "sat": "Sáb"
+                }
+              },
+              "empty": "Sin llamadas suficientes para calcular cadencia."
+            },
+            "costPerPeso": {
+              "title": "Costo por peso recuperado",
+              "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
+              "sparklineLabel": "Tendencia 90 días",
+              "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
+            }
+          },
+          "errors": {
+            "loading": "Error al cargar analítica de cobranza.",
+            "retry": "Reintentar"
+          },
+          "empty": {
+            "title": "Hacé tu primera llamada para empezar a ver analítica",
+            "description": "Los widgets se activan con 5 o más llamadas.",
+            "cta": {
+              "label": "Ir a deudores"
+            }
+          }
+        },
+        "plantillas": {
+          "empty": {
+            "title": "Estás usando las plantillas por defecto",
+            "description": "Personalizá scripts y mensajes para tu inmobiliaria.",
+            "cta": {
+              "label": "Crear plantilla"
+            }
+          }
+        },
+        "arco": {
+          "empty": {
+            "title": "Sin solicitudes ARCO pendientes",
+            "description": "Las solicitudes Ley 1581 aparecerán acá."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Vista global de llamadas no disponible",
+              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "cta": "Ir a Deudores"
+            }
           }
         }
       },
@@ -5472,7 +5769,372 @@
           "rollback": "No se pudo restaurar la versión. Intenta de nuevo.",
           "retry": "Reintentar"
         }
+      },
+      "tour": {
+        "step1": {
+          "title": "Agente de Cobranza",
+          "description": "Automatizá el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
+        },
+        "step2": {
+          "title": "Agente Cotizador",
+          "description": "Evaluá a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
+        },
+        "step3": {
+          "title": "Configuraciones y Políticas",
+          "description": "Personalizá cadencias, plantillas, políticas de escalación y compliance desde un solo panel."
+        },
+        "dismiss": "No mostrar de nuevo",
+        "next": "Siguiente",
+        "finish": "Entendido",
+        "relaunch": "Tour del panel",
+        "stepOf": "Paso {{current}} de {{total}}"
+      },
+      "hub": {
+        "empty": {
+          "title": "Aún no hay actividad reciente",
+          "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
+        }
       }
+    },
+    "hoy": {
+      "title": "Hoy",
+      "heading": "Tu inmobiliaria, en piloto",
+      "subtitle": "ERP · CRM · Autopilot, todo en uno. El sistema opera; tú tomas las decisiones.",
+      "insightsTitle": "Insights & Alertas",
+      "insightsDesc": "Pronto: qué pasa hoy y qué hacer — contratos por vencer, cartera en mora y egresos por dispersar, convertidos en acciones.",
+      "insightsExample1": "18 contratos por vencer · 6 sin gestión",
+      "insightsExample2": "42 inquilinos en mora · 11 prioritarios",
+      "insightsExample3": "$84M por dispersar · cubres 62%",
+      "insightsPronto": "Llega con la fase de Informes & Insights.",
+      "systemLabel": "Tu sistema",
+      "crmTitle": "CRM · Comercial",
+      "crmDesc": "Capta, gestiona y cierra.",
+      "erpTitle": "Financiero · ERP",
+      "erpDesc": "Recauda, factura, concilia y dispersa.",
+      "autopilotTitle": "Autopilot",
+      "autopilotDesc": "Agentes que ejecutan por ti.",
+      "opsTitle": "Operación · Docs",
+      "opsDesc": "Solicitudes, agenda y documentos.",
+      "autopilotActiveLabel": "Autopilot activo",
+      "autopilotRunning": "{{count}} agentes ejecutando"
+    },
+    "facturacion": {
+      "label": "Facturación",
+      "title": "Facturación",
+      "subtitle": "Facturas de venta y compra, facturación electrónica DIAN y notas crédito/débito — en un solo lugar.",
+      "new": "Nueva factura",
+      "newSoon": "La emisión de facturas se habilita con el motor DIAN (M2).",
+      "m2BannerTitle": "Estructura lista — el motor DIAN llega en M2",
+      "m2BannerDesc": "Esta sección ya tiene la estructura del ERP. La emisión, el CUFE y la validación DIAN se conectan con el proveedor autorizado en la fase de backend (M2).",
+      "tab_ventas": "Ventas",
+      "tab_compras": "Compras",
+      "tab_electronica": "Electrónica (DIAN)",
+      "tab_notas": "Notas (NC/ND)",
+      "desc_ventas": "Facturas por conceptos distintos al canon: reparaciones, honorarios, cobros extraordinarios, servicios.",
+      "desc_compras": "Costos y gastos de la operación: proveedores, reparaciones, servicios contratados.",
+      "desc_electronica": "Documentos electrónicos con CUFE y su estado frente a la DIAN.",
+      "desc_notas": "Notas crédito y débito asociadas a una factura.",
+      "estadosLabel": "Estados",
+      "estadoAceptada": "Aceptada DIAN",
+      "estadoPendiente": "Pendiente",
+      "estadoVencida": "Vencida",
+      "estadoBorrador": "Borrador",
+      "estadoPagada": "Pagada",
+      "estadoCredito": "A crédito",
+      "estadoEmitida": "Emitida",
+      "estadoRechazada": "Rechazada",
+      "estadoAnulada": "Anulada",
+      "estadoNotaCredito": "Nota crédito",
+      "estadoNotaDebito": "Nota débito",
+      "colNumero": "N°",
+      "colTercero": "Tercero",
+      "colConcepto": "Concepto",
+      "colFecha": "Fecha",
+      "colSubtotal": "Subtotal",
+      "colIva": "IVA",
+      "colTotal": "Total",
+      "colPago": "Pago",
+      "colDian": "DIAN",
+      "colProveedor": "Proveedor",
+      "colVence": "Vence",
+      "colTipo": "Tipo",
+      "colCufe": "CUFE",
+      "colFacturaRef": "Factura ref.",
+      "colMotivo": "Motivo",
+      "colValor": "Valor",
+      "empty_ventas_title": "Sin facturas de venta aún",
+      "empty_compras_title": "Sin facturas de compra aún",
+      "empty_electronica_title": "Sin documentos electrónicos aún",
+      "empty_notas_title": "Sin notas crédito/débito aún",
+      "emptyDesc": "Se conectarán automáticamente cuando el motor de facturación (M2) esté activo."
+    },
+    "conciliacion": {
+      "label": "Conciliación",
+      "title": "Conciliación bancaria",
+      "subtitle": "Carga el archivo del banco y concilia los movimientos contra los recaudos esperados — automático, con cola de revisión.",
+      "new": "Nueva conciliación",
+      "newSoon": "El procesamiento de la conciliación se habilita con el motor (M2).",
+      "m2BannerTitle": "Estructura lista — el motor de conciliación llega en M2",
+      "m2BannerDesc": "Esta sección ya tiene la estructura. La ingesta de archivos (Bancolombia + multi-fuente) y el matching automático se conectan en la fase de backend (M2).",
+      "uploadTitle": "Cargar fuente bancaria",
+      "uploadHint": "Arrastra el archivo de Bancolombia (o multi-fuente), o haz clic para seleccionar.",
+      "uploadSoon": "La ingesta y el matching se conectan con el motor (M2).",
+      "resumenLabel": "Resumen",
+      "caso_conciliados": "Conciliados",
+      "caso_parciales": "Parciales",
+      "caso_duplicados": "Duplicados",
+      "caso_noIdentificados": "No identificados",
+      "caso_diferencias": "Diferencia valor",
+      "caso_fueraFecha": "Fuera de fecha",
+      "movimientosTitle": "Movimientos",
+      "movimientosDesc": "Cada movimiento se cruza contra contratos/terceros; confirma o rechaza las coincidencias sugeridas.",
+      "colFecha": "Fecha",
+      "colReferencia": "Referencia",
+      "colTercero": "Tercero",
+      "colContrato": "Contrato",
+      "colValorBanco": "Valor banco",
+      "colValorEsperado": "Valor esperado",
+      "colCaso": "Caso",
+      "colAccion": "Acción",
+      "emptyTitle": "Sin movimientos aún",
+      "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2."
+    },
+    "tesoreria": {
+      "label": "Tesorería",
+      "title": "Egresos a propietarios",
+      "subtitle": "El neto a pagar a cada propietario, con su desglose completo y comprobante. El procesamiento del pago vive en Dispersiones.",
+      "processCta": "Procesar en Dispersiones",
+      "m2BannerTitle": "Estructura lista — el ledger autoritativo llega en M1",
+      "m2BannerDesc": "Esta vista muestra la fórmula completa del neto. El cómputo autoritativo, los descuentos y el posteo contable se conectan en la fase de backend (M1).",
+      "formulaLabel": "Fórmula del neto",
+      "ejemplo": "Ejemplo",
+      "fCanon": "Canon recibido",
+      "fComision": "Comisión admin",
+      "fIva": "IVA sobre comisión",
+      "fDescuentos": "Descuentos",
+      "fNeto": "Neto al propietario",
+      "egresosTitle": "Egresos",
+      "egresosDesc": "Neto por propietario del periodo, con cuenta destino y comprobante.",
+      "colPropietario": "Propietario",
+      "colCanon": "Canon",
+      "colComision": "Comisión",
+      "colIva": "IVA com.",
+      "colDescuentos": "Descuentos",
+      "colNeto": "Neto",
+      "colCuenta": "Cuenta destino",
+      "colEstado": "Estado",
+      "colComprobante": "Comprobante",
+      "emptyTitle": "Sin egresos aún",
+      "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
+    },
+    "ap": {
+      "bill": {
+        "title": "Factura AP",
+        "backToList": "Volver a Tesorería",
+        "notFound": "Factura no encontrada",
+        "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
+        "labelInvoiceNumber": "Número de factura",
+        "labelVendor": "Proveedor",
+        "labelCostCenter": "Centro de costos",
+        "labelStatus": "Estado",
+        "labelAmount": "Monto",
+        "labelIssued": "Emitida",
+        "labelDue": "Vencimiento",
+        "labelApprovedBy": "Aprobada por",
+        "labelCreatedBy": "Creada por",
+        "noApprover": "Sin aprobador aún",
+        "statusPaid": "Pagada",
+        "statusApproved": "Aprobada",
+        "statusPendingApproval": "Pdte. aprobación",
+        "statusRejected": "Rechazada",
+        "statusVoid": "Anulada",
+        "m1BannerTitle": "Detalle de la factura AP",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "loadingError": "Error al cargar la factura",
+        "fetching": "Cargando factura…"
+      }
+    },
+    "pqrs": {
+      "label": "PQRS",
+      "title": "PQRS y solicitudes",
+      "subtitle": "Registra, asigna, haz seguimiento y cierra cualquier petición, queja, reclamo o solicitud de inquilinos, propietarios y terceros — en un solo lugar.",
+      "new": "Nueva solicitud",
+      "newSoon": "El registro y la asignación se habilitan con el motor de triage (IA) — M1.",
+      "m1BannerTitle": "Estructura lista — el triage con IA llega en M1",
+      "m1BannerDesc": "Esta sección ya tiene el ciclo completo. La clasificación automática, la asignación, el SLA y las notificaciones se conectan con el agente (Mastra) en la fase de backend (M1).",
+      "resumenLabel": "Por estado",
+      "estado_recibidas": "Recibidas",
+      "estado_asignadas": "Asignadas",
+      "estado_enProceso": "En proceso",
+      "estado_enCotizacion": "En cotización",
+      "estado_resueltas": "Resueltas",
+      "estado_cerradas": "Cerradas",
+      "repairFlowTitle": "Reparaciones → cotización con proveedor",
+      "repairFlowDesc": "Una solicitud de reparación pasa al flujo de cotización y aprobación en Operaciones.",
+      "listTitle": "Solicitudes",
+      "listDesc": "Cada solicitud queda radicada con su solicitante, tipo, inmueble, responsable y estado.",
+      "colRadicado": "Radicado",
+      "colSolicitante": "Solicitante",
+      "colTipo": "Tipo",
+      "colInmueble": "Inmueble / contrato",
+      "colAsignado": "Asignado a",
+      "colEstado": "Estado",
+      "colSla": "SLA",
+      "colAccion": "Acción",
+      "emptyTitle": "Sin solicitudes aún",
+      "emptyDesc": "Las PQRS y solicitudes aparecerán aquí. El registro y el triage con IA llegan en M1."
+    },
+    "agenda": {
+      "label": "Agenda",
+      "title": "Agenda interna",
+      "subtitle": "Los eventos que el sistema ya conoce —visitas, firmas pendientes, vencimientos, seguimientos e inspecciones— junto con tus tareas, ligadas a contratos, propiedades y terceros.",
+      "new": "Nueva tarea",
+      "newSoon": "La creación de tareas y la agregación de eventos se habilitan con el motor (M1).",
+      "m1BannerTitle": "Estructura lista — la agenda se llena con el motor en M1",
+      "m1BannerDesc": "Esta vista agrega eventos del sistema y tus tareas. La agregación autoritativa (visitas, firmas, vencimientos, inspecciones) y los recordatorios se conectan en la fase de backend (M1).",
+      "resumenLabel": "Próximos",
+      "tipo_visitas": "Visitas",
+      "tipo_firmas": "Firmas pendientes",
+      "tipo_vencimientos": "Vencimientos",
+      "tipo_seguimientos": "Seguimientos",
+      "tipo_inspecciones": "Inspecciones",
+      "tipo_tareas": "Tareas",
+      "listTitle": "Eventos y tareas",
+      "listDesc": "Cada evento muestra su fecha, tipo, origen (sistema o tuyo) y su vínculo con un contrato, propiedad o tercero.",
+      "colFecha": "Fecha",
+      "colEvento": "Evento",
+      "colTipo": "Tipo",
+      "colOrigen": "Origen",
+      "colVinculo": "Vínculo",
+      "colResponsable": "Responsable",
+      "colEstado": "Estado",
+      "emptyTitle": "Sin eventos aún",
+      "emptyDesc": "Tus visitas, firmas, vencimientos y tareas aparecerán aquí. La agenda se conecta con el motor en M1."
+    },
+    "terceroIA": {
+      "errorTooLarge": "La imagen supera el tamaño máximo (8 MB). Usa una foto más liviana.",
+      "docKindLabel": "Tipo de documento",
+      "intro": "Sube una foto de la cédula o el RUT y la IA prellenará el formulario del tercero. Revisa y corrige antes de guardar.",
+      "kindCedula": "Cédula",
+      "kindRut": "RUT",
+      "uploadTitle": "Subir foto del documento",
+      "uploadHint": "Arrastra o haz clic — cédula (CC/CE) o RUT, en imagen.",
+      "uploadChange": "Cambiar foto",
+      "extract": "Extraer datos",
+      "cancel": "Cancelar",
+      "extracting": "Leyendo el documento…",
+      "reviewBannerTitle": "Revisa y corrige",
+      "reviewBannerDesc": "La IA prellenó los datos (confianza {{confidence}}%). Verifícalos y completa lo que falte antes de guardar.",
+      "manualNote": "Completa los datos del tercero manualmente.",
+      "errorTitle": "No pudimos leer el documento",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes llenar el formulario manualmente.",
+      "errorGeneric": "Ocurrió un error al procesar el documento. Intenta de nuevo o llena el formulario manualmente.",
+      "errorImageOnly": "Sube una imagen (foto del documento).",
+      "retry": "Reintentar",
+      "fillManual": "Llenar manual"
+    },
+    "propertyIA": {
+      "errorAudioTooLarge": "El audio es demasiado largo. Graba una descripción más corta.",
+      "autoStopped": "Grabación detenida automáticamente (máximo 4 minutos).",
+      "confirmReextract": "Volver a procesar reemplazará los datos que editaste. ¿Continuar?",
+      "errorMicDenied": "Permiso de micrófono denegado. Habilítalo en el navegador para grabar.",
+      "errorMicNotFound": "No se encontró un micrófono.",
+      "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
+      "assignWarning": "La propiedad se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
+      "photoFormatUnsupported": "Algunas fotos tienen un formato no compatible (p. ej. HEIC) y se omitieron. Usa JPG o PNG.",
+      "pageTitle": "Capturar propiedad con IA",
+      "pageSubtitle": "Graba una descripción y agrega fotos; la IA arma la ficha para que la revises.",
+      "back": "Volver a propiedades",
+      "intro": "Describe la propiedad por voz (tipo, barrio, habitaciones, baños, canon, administración, restricciones). La IA transcribe y arma la ficha; las fotos la enriquecen.",
+      "recordTitle": "Descripción por voz",
+      "startRecording": "Toca para grabar",
+      "stopRecording": "Grabando… toca para detener",
+      "recordHint": "Describe la propiedad en voz alta.",
+      "reRecord": "Grabar de nuevo",
+      "photosTitle": "Fotos (opcional)",
+      "photosHint": "Hasta 4 fotos para enriquecer la ficha.",
+      "addPhotos": "Agregar",
+      "removePhoto": "Quitar foto",
+      "cancel": "Cancelar",
+      "process": "Procesar con IA",
+      "processing": "Transcribiendo y armando la ficha…",
+      "errorMic": "No pudimos acceder al micrófono. Revisa los permisos.",
+      "errorNoAudio": "Graba una descripción primero.",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes crear la propiedad manualmente.",
+      "errorGeneric": "Ocurrió un error al procesar la captura. Intenta de nuevo o usa el formulario manual.",
+      "errorTitle": "No pudimos procesar la captura",
+      "retry": "Reintentar",
+      "manualFlow": "Crear manual",
+      "reviewBannerTitle": "Revisa y corrige",
+      "reviewBannerDesc": "La IA armó la ficha (confianza {{confidence}}%). Verifícala y ajusta lo que falte antes de crear.",
+      "fTitle": "Título",
+      "fDescription": "Descripción",
+      "fType": "Tipo de inmueble",
+      "fCity": "Ciudad",
+      "fNeighborhood": "Barrio / Zona",
+      "fAddress": "Dirección",
+      "fBedrooms": "Habitaciones",
+      "fBathrooms": "Baños",
+      "fArea": "Área (m²)",
+      "fRent": "Canon mensual (COP)",
+      "fAdminFee": "Administración (COP)",
+      "fStratum": "Estrato",
+      "selectCity": "Selecciona una ciudad",
+      "typeApartment": "Apartamento",
+      "typeHouse": "Casa",
+      "typeStudio": "Estudio",
+      "typeRoom": "Habitación",
+      "create": "Crear propiedad",
+      "creating": "Creando…",
+      "created": "Propiedad creada",
+      "createError": "Error al crear la propiedad"
+    },
+    "insights": {
+      "label": "Insights & Alertas",
+      "subtitle": "Qué pasa hoy y qué hacer — no informes estáticos, sino acciones.",
+      "previewBadge": "Vista previa",
+      "previewNote": "Ejemplos ilustrativos — se conectan con tus datos cuando el motor esté activo.",
+      "emptyTitle": "Todo al día",
+      "emptyDesc": "No hay alertas que requieran tu atención ahora.",
+      "title_contratos_por_vencer": "{{total}} contratos por vencer · {{sinGestion}} sin gestión",
+      "title_mora_prioritaria": "{{total}} inquilinos en mora · {{prioritarios}} prioritarios",
+      "title_por_dispersar": "{{monto}} por dispersar · cubres {{cobertura}}%",
+      "title_propiedad_estancada": "{{total}} propiedades estancadas (7+ días sin candidatos)",
+      "title_firma_pendiente": "{{total}} contratos esperando firma",
+      "action_contratos": "Ver contratos",
+      "action_cobranza": "Ir a cobranza",
+      "action_tesoreria": "Ver tesorería",
+      "action_propiedades": "Ver propiedades",
+      "action_firma": "Ver firmas"
+    },
+    "commandPalette": {
+      "title": "Buscar en Leasefy",
+      "inputLabel": "Buscar o escribir un comando",
+      "placeholder": "Buscar…",
+      "triggerAriaLabel": "Abrir buscador (⌘K)",
+      "resultsLabel": "Resultados de búsqueda",
+      "noResults": "Sin resultados para \"{{query}}\"",
+      "novedades": "Novedades",
+      "sources": {
+        "debtors": "Deudores",
+        "propietarios": "Propietarios",
+        "agentes": "Agentes",
+        "propiedades": "Propiedades",
+        "contratos": "Contratos",
+        "cotizaciones": "Cotizaciones",
+        "apBills": "Facturas AP"
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "cobranza": "Ir a Cobranza",
+        "cotizador": "Ir a Cotizador",
+        "reportes": "Ver reportes",
+        "portafolio": "Ver portafolio",
+        "hoy": "Ver Hoy"
+      },
+      "hintNavigate": "navegar",
+      "hintOpen": "abrir",
+      "hintClose": "cerrar"
     }
   },
   "validation": {
@@ -5679,6 +6341,8 @@
       "perYear": "/ano",
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
+      "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
+      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -5780,6 +6444,7 @@
       "viewPropertyAction": "Ver propiedad",
       "approvedToast": "Candidato aprobado",
       "approvedToastDesc": "Iniciando proceso de contrato con {{name}}",
+      "loadDetailError": "No se pudieron cargar los detalles del candidato.",
       "rejectedToast": "Candidato rechazado",
       "rejectedToastDesc": "{{name}} ha sido rechazado y notificado.",
       "riskAssessmentTitle": "Evaluación de Riesgo",
@@ -6462,6 +7127,34 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "Cédula"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navegaste a {{page}}",
+    "routes": {
+      "search": "Buscar Inmuebles",
+      "publish": "Publicar Inmueble",
+      "pricing": "Precios",
+      "signIn": "Iniciar Sesión",
+      "landlordPanel": "Panel de Propietario",
+      "tenantPanel": "Panel de Inquilino",
+      "agencyPanel": "Panel de Inmobiliaria",
+      "agencyAi": "Agentes IA",
+      "assistant": "Asistente",
+      "myApplications": "Mis Aplicaciones",
+      "myLease": "Mi Arriendo",
+      "apply": "Aplicar a Propiedad",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
     }
   }
 }

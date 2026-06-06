@@ -18,9 +18,11 @@ import { ArrowSquareOut } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useArcoDetail } from '@/lib/hooks/cobranza/use-arco-detail'
 import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -229,8 +231,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         `${agentUrl}/api/agency/${agencyId}/cobranza/arco-requests/${requestId}/resolve`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(resolveData),
         },
       )
@@ -249,7 +250,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         `${agentUrl}/api/agency/${agencyId}/cobranza/arco-requests/${requestId}/reject`,
         {
           method: 'POST',
-          credentials: 'include',
+          headers: agentAuthHeaders(),
         },
       )
       await detailRefetch()
@@ -425,20 +426,9 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
 
   const gateBlocked = gateData?.blocked ?? true // fail-closed: blocked until gate confirms otherwise
 
-  // Loading skeleton
-  if (isLoading && !data) {
-    return (
-      <div className="p-4 md:p-6">
-        <div className="grid md:grid-cols-[1fr_320px] gap-6 animate-pulse">
-          <div className="space-y-4">
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 h-48 bg-neutral-100 dark:bg-neutral-800" />
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 h-64 bg-neutral-100 dark:bg-neutral-800" />
-          </div>
-          <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 h-80 bg-neutral-100 dark:bg-neutral-800" />
-        </div>
-      </div>
-    )
-  }
+  // Loading skeleton (Phase 38-05a: PageSkeleton primitive)
+  if (isLoading && !data) return <PageSkeleton variant="detail" />
+
 
   // Error state
   if (error) {

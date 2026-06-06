@@ -4,6 +4,7 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import PagosFunnelClient from './PagosFunnelClient'
 
 export const metadata: Metadata = {
@@ -14,11 +15,7 @@ export const metadata: Metadata = {
 export default function PagosFunnelPage() {
   return (
     <PageGuard module="cobranza" action="view">
-      <Suspense
-        fallback={
-          <div className="p-4 lg:p-8 text-sm text-neutral-500 dark:text-neutral-400">Cargando…</div>
-        }
-      >
+      <Suspense fallback={<PageSkeleton variant="dashboard" />}>
         <PagosFunnelClient />
       </Suspense>
     </PageGuard>

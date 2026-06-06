@@ -19,6 +19,7 @@ import Link from 'next/link'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import {
   usePaymentPlanApproval,
@@ -111,15 +112,12 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     )
   }
 
+  // Phase 38-05a: PageSkeleton primitive (detail variant). data-testid kept on
+  // wrapper so existing test selectors (e.g. plan-skeleton) still resolve.
   if (isLoading && !plan) {
     return (
-      <div className="p-4 lg:p-8 space-y-3" data-testid="plan-skeleton">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-12 w-full animate-pulse rounded-md bg-neutral-200 dark:bg-neutral-800"
-          />
-        ))}
+      <div data-testid="plan-skeleton">
+        <PageSkeleton variant="detail" />
       </div>
     )
   }
@@ -207,7 +205,15 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         fechaPrimerPago: modFecha,
       })
       if ('error' in res) {
-        setActionError(res.error)
+        // DUPLICATE_PLAN_RISK = the counter-offer was created but the original
+        // could not be rejected, so two plans may be active. Show a clear,
+        // localized warning and pull canonical server state.
+        setActionError(
+          res.error.startsWith('DUPLICATE_PLAN_RISK')
+            ? t('inmobiliaria.ai.cobranza.planes.modificarForm.duplicateRisk')
+            : res.error,
+        )
+        void refetch()
       } else {
         setModificarOpen(false)
         setToast(t('inmobiliaria.ai.cobranza.planes.modificarForm.success'))

@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // =============================================================================
 // Interfaces — declared inline (types not yet in generated OpenAPI types)
@@ -101,7 +102,7 @@ export function useCostos(): {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/costos/summary`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CostosSummaryResponse = await res.json()
@@ -142,7 +143,7 @@ export function useCostos(): {
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/costos/series?group_by=month`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CostSeriesResponse = await res.json()

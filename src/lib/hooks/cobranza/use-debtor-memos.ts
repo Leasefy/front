@@ -9,6 +9,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
 export type DebtorMemosResponse =
@@ -45,7 +47,7 @@ export function useDebtorMemos(args: { debtorId: string }): UseDebtorMemosResult
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/memos`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: DebtorMemosResponse = await res.json()
@@ -61,9 +63,9 @@ export function useDebtorMemos(args: { debtorId: string }): UseDebtorMemosResult
   useEffect(() => {
     if (!agencyId || !debtorId) return
     void fetchData()
-    const id = setInterval(() => void fetchData(), 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId, debtorId])
+
+  useVisibilityPolling(() => void fetchData(), 30_000, Boolean(agencyId && debtorId))
 
   return { data, isLoading, error, refetch: fetchData }
 }

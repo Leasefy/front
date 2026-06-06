@@ -15,10 +15,10 @@
  * §11 (loading state), §16 (numeric tabular-nums).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowClockwise } from '@phosphor-icons/react'
+import { ArrowClockwise, CheckCircle, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -33,6 +33,8 @@ import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/Escal
 import { EscalationAssignDropdown } from '@/components/inmobiliaria/cobranza/EscalationAssignDropdown'
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
+import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -108,6 +110,31 @@ function EscalacionesContent() {
     return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
   }, [data?.generatedAt, locale])
 
+  // ARIA live region — announces newly-arrived open escalations to screen
+  // readers (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3). We compare the
+  // current data.open.length against the previously-seen count; when it
+  // grows we set the announcement string. No realtime hook exists in this
+  // page yet, but SWR revalidation will trigger this every time data is
+  // re-fetched (mutate button, focus revalidation, etc).
+  const prevOpenCountRef = useRef(0)
+  const [newEscalacionCount, setNewEscalacionCount] = useState(0)
+
+  useEffect(() => {
+    const current = data?.open.length ?? 0
+    const prev = prevOpenCountRef.current
+    if (current > prev && prev > 0) {
+      setNewEscalacionCount(current - prev)
+    }
+    prevOpenCountRef.current = current
+  }, [data?.open.length])
+
+  const escalacionAnnouncement =
+    newEscalacionCount > 0
+      ? t('inmobiliaria.ai.cobranza.escalaciones.liveRegion.newEscalacion', {
+          count: newEscalacionCount,
+        })
+      : ''
+
   const columns: Array<{
     key: 'open' | 'assigned' | 'resolved'
     label: string
@@ -133,8 +160,38 @@ function EscalacionesContent() {
     [t, data],
   )
 
+  // ── Skeleton + celebratory EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─
+  if (isLoading && !data) return <CobranzaEscalacionesSkeleton />
+
+  const allEmpty =
+    data !== null &&
+    data.open.length === 0 &&
+    data.assigned.length === 0 &&
+    data.resolved.length === 0
+  if (!isLoading && allEmpty && !error) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={CheckCircle}
+          title={t('inmobiliaria.ai.cobranza.escalaciones.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.escalaciones.empty.description')}
+        />
+      </main>
+    )
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* ARIA live region — announces new open escalations to screen readers */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {escalacionAnnouncement}
+      </div>
+
       {/* Header — DESIGN.md §3 typography */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -165,10 +222,14 @@ function EscalacionesContent() {
         </div>
       )}
 
-      {/* Error state */}
+      {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
       {error && !data && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
-          Error: {error}
+        <div
+          role="alert"
+          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2"
+        >
+          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
+          <span>Error: {error}</span>
         </div>
       )}
 

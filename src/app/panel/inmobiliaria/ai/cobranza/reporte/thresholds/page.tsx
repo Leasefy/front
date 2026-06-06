@@ -25,6 +25,7 @@ import { useI18n } from '@/lib/i18n'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
 import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 function ThresholdsContent() {
   const { t, locale } = useI18n()
@@ -59,11 +60,11 @@ function ThresholdsContent() {
         )}
       </div>
 
-      {isLoading && !active && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+      {/* Phase 38-05a: PageSkeleton primitive (list variant) replaces inline
+         spinner. No page-level EmptyState — the threshold editor always
+         renders a form (defaults are seeded server-side on first access), so
+         a "no thresholds" state never surfaces. See SUMMARY deviations. */}
+      {isLoading && !active && <PageSkeleton variant="list" />}
 
       {error && (
         <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">

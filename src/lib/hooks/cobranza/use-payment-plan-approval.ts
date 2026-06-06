@@ -30,6 +30,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
 // =============================================================================
@@ -106,7 +108,7 @@ export interface UsePaymentPlanApprovalResult {
   }) => Promise<{ ok: true } | { error: string }>
   modifyPlan: (
     input: ModifyPlanInput,
-  ) => Promise<{ ok: true; newPlanId?: string } | { error: string }>
+  ) => Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }>
 }
 
 // =============================================================================
@@ -145,7 +147,7 @@ function buildView(
 }
 
 async function fetchJson(input: string, init?: RequestInit): Promise<Response> {
-  return globalThis.fetch(input, { credentials: 'include', ...init })
+  return globalThis.fetch(input, { ...init, headers: agentAuthHeaders(init?.headers) })
 }
 
 // =============================================================================
@@ -211,9 +213,9 @@ export function usePaymentPlanApproval(
   useEffect(() => {
     if (!agencyId || !planId) return
     void fetchData()
-    const id = setInterval(() => void fetchData(), 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId, planId])
+
+  useVisibilityPolling(() => void fetchData(), 30_000, Boolean(agencyId && planId))
 
   // ── Mutations ────────────────────────────────────────────────────────────
 
@@ -299,7 +301,7 @@ export function usePaymentPlanApproval(
   const modifyPlan = useCallback(
     async (
       input: ModifyPlanInput,
-    ): Promise<{ ok: true; newPlanId?: string } | { error: string }> => {
+    ): Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
         return { error: 'ENV_OR_AGENCY_MISSING' }
@@ -333,7 +335,9 @@ export function usePaymentPlanApproval(
         if (!offerRes.ok) return { error: `offer ${offerRes.status}` }
         const offerJson = (await offerRes.json()) as { planId?: string }
 
-        // Step 2 — POST /reject on CURRENT planId with reject_reason=counter_offer.
+        // Step 2 — POST /reject on the CURRENT planId. The typed enum has no
+        // 'counter_offer' value (the server 400s on it), so use 'other' and
+        // carry the intent in reject_comment.
         const rejectRes = await fetchJson(
           `${agentUrl}/api/agency/${agencyId}/cartera/payment-plans/${planId}/reject`,
           {
@@ -341,14 +345,23 @@ export function usePaymentPlanApproval(
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               decision: 'reject',
-              // Typed enum excludes 'counter_offer'; sent per plan 32-08 spec.
-              reject_reason: 'counter_offer',
+              reject_reason: 'other',
               reject_comment: 'Counter-offer submitted via Modificar',
               planUpdatedAt: current.offeredAt,
             }),
           },
         )
-        if (!rejectRes.ok) return { error: `reject ${rejectRes.status}` }
+        if (!rejectRes.ok) {
+          // Step 1 already persisted a NEW plan (offerJson.planId) with its own
+          // Wompi link. There is no void/delete endpoint, so we cannot roll
+          // back — surface the dual-plan state truthfully instead of a bare
+          // reject error so the operator (and audit) know both plans may be
+          // active. A durable atomic counter-offer needs a new backend endpoint.
+          return {
+            error: `DUPLICATE_PLAN_RISK: counter-offer ${offerJson.planId ?? '(created)'} exists but original ${planId} could not be rejected (reject ${rejectRes.status}). Both plans may be active — resolve manually.`,
+            newPlanId: offerJson.planId,
+          }
+        }
 
         setPlan((prev) => (prev ? { ...prev, status: 'counter_offered' } : prev))
         return { ok: true, newPlanId: offerJson.planId }

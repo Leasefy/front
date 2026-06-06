@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 export type CallOutcome = 'completed' | 'no_answer' | 'voicemail' | 'failed' | 'busy' | string
 
@@ -84,7 +86,7 @@ export function useCallDetail({ callId }: UseCallDetailArgs): UseCallDetailResul
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CallDetailResponse = await res.json()
@@ -98,11 +100,14 @@ export function useCallDetail({ callId }: UseCallDetailArgs): UseCallDetailResul
   }, [agencyId, callId])
 
   useEffect(() => {
-    if (!agencyId || !callId) return
+    if (!agencyId || !callId) {
+      setIsLoading(false)
+      return
+    }
     fetchData()
-    const id = setInterval(fetchData, 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId, callId])
+
+  useVisibilityPolling(fetchData, 30_000, Boolean(agencyId && callId))
 
   return { data, isLoading, error, refetch: fetchData }
 }

@@ -20,7 +20,9 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import {
   useCartaApproval,
   type CartaPhysicalSendMethod,
@@ -58,7 +60,7 @@ function computeDaysRemaining(approvedAt: Date | null, now: Date): number {
 export default function CartaApprovalClient({ artifactId }: Props) {
   const { t } = useI18n()
   const router = useRouter()
-  const { agency } = useAuth()
+  const { agency, isLoading: authLoading } = useAuth()
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
@@ -96,6 +98,37 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     return `${agentUrl}/api/agency/${agencyId}/cartera/legal-artifacts/${artifactId}/pdf`
   }, [agentUrl, agencyId, artifactId, envMissing])
 
+  // The PDF endpoint is Bearer-only; an <iframe src> navigation carries no
+  // Authorization header and 401'd (blank preview). Fetch the bytes with the
+  // bearer header and render an object URL instead. (The post-approve download
+  // link below uses a presigned S3 URL and must stay a plain href — untouched.)
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
+  const [pdfError, setPdfError] = useState(false)
+
+  useEffect(() => {
+    if (!pdfSrc) return
+    let cancelled = false
+    let objectUrl: string | null = null
+    setPdfError(false)
+    setPdfBlobUrl(null)
+    void (async () => {
+      try {
+        const res = await globalThis.fetch(pdfSrc, { headers: agentAuthHeaders() })
+        if (!res.ok) throw new Error(`pdf ${res.status}`)
+        const blob = await res.blob()
+        if (cancelled) return
+        objectUrl = URL.createObjectURL(blob)
+        setPdfBlobUrl(objectUrl)
+      } catch {
+        if (!cancelled) setPdfError(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [pdfSrc])
+
   // Navigate back after rejectResult lands.
   useEffect(() => {
     if (rejectResult?.ok) {
@@ -103,6 +136,9 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       return () => clearTimeout(timer)
     }
   }, [rejectResult, router])
+
+  // Phase 38-05a: skeleton during initial auth hydration (first loading state on this page)
+  if (authLoading && !agency) return <PageSkeleton variant="detail" />
 
   if (envMissing) {
     return (
@@ -167,10 +203,15 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         <iframe
           data-testid="carta-pdf-preview"
           title={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
-          src={pdfSrc}
+          src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
           className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
         />
+        {pdfError && (
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+            {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.error')}
+          </div>
+        )}
       </section>
 
       {/* Pre-approve form */}

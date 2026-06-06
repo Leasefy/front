@@ -108,12 +108,49 @@ function isUserNotFoundError(err: unknown): boolean {
   return msg.includes('user not found')
 }
 
+/**
+ * Recover a previously-known agency tuple from localStorage so consumers that
+ * read `useAuth().agency` immediately on mount (cobranza/cotizador hooks)
+ * have a non-null identifier before the Supabase session re-hydrates.
+ *
+ * Mirrors the localStorage-fallback pattern already used in
+ * `ProtectedRoute.tsx` (line 49-60) and `PermissionsContext.readAgencyIdFromStorage`.
+ * Net behavior in production: identical — the storage entry is populated by
+ * the login flow, so this just front-loads it onto first render instead of
+ * waiting for `onAuthStateChange` to fire. In tests, the synthetic seed in
+ * `tests/e2e/panel-a11y/_helpers/auth-helpers.ts` provides the same shape.
+ */
+const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
+function readAgencyFromStorage(): Agency | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as {
+      agencyId?: string
+      agency?: { id?: string; name?: string } & Record<string, unknown>
+    }
+    const id = parsed.agency?.id ?? parsed.agencyId
+    if (!id) return null
+    // Preserve all known fields; downstream consumers only read `id` today
+    // but PermissionsContext / page hooks may grow over time.
+    return { id, name: parsed.agency?.name ?? 'Agency', ...parsed.agency } as Agency
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
-  const [agency, setAgencyState] = useState<Agency | null>(null)
+  // Initialize from localStorage so cobranza/cotizador hooks that gate on
+  // `agency?.id` can fire their first fetch in parallel with the Supabase
+  // session hydration. The `onAuthStateChange` handler still calls
+  // `setAgencyState(agencyData)` on INITIAL_SESSION / SIGNED_IN / TOKEN_REFRESHED
+  // with the canonical backend payload, which overwrites this seed.
+  const [agency, setAgencyState] = useState<Agency | null>(() => readAgencyFromStorage())
   const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
 
   /**
@@ -130,6 +167,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
+      // Phase 38 plan 38-06 (D-38-06) — server-side seed for PanelPrefsContext.
+      // The custom event flows through window (no auth-context↔panel-prefs
+      // import cycle). If the backend has not yet wired `preferences` onto
+      // /users/me, dismissed defaults to false (tour eligible).
+      if (typeof window !== 'undefined') {
+        const prefs = data.preferences as Record<string, unknown> | undefined
+        const dismissed = prefs?.panel_tour_dismissed_v1 === true
+        window.dispatchEvent(
+          new CustomEvent('leasefy:preferences:loaded', {
+            detail: { panel_tour_dismissed_v1: dismissed },
+          }),
+        )
+      }
       return { user: mapBackendUser(data), needsOnboarding: false }
     } catch (err) {
       // JWT valid but user doesn't exist in public.users yet → needs onboarding
@@ -329,10 +379,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
       setUser(userData)
       setNeedsOnboarding(needsOnb)
+      // Resolve the MFA gate before returning so callers (AuthForm) can short-circuit
+      // the panel redirect to /auth/mfa-verify when a second factor is required.
+      await checkMfaLevel()
       return userData
     }
     return null
-  }, [fetchUser])
+  }, [fetchUser, checkMfaLevel])
 
   /** Sign up with email and password. Returns whether email confirmation is required. */
   const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {

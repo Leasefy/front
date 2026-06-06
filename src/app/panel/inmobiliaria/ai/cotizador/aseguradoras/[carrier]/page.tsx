@@ -21,6 +21,7 @@ import { CarrierLatencySparkline } from '@/components/inmobiliaria/cotizador/Car
 import { CarrierErrorRateChart } from '@/components/inmobiliaria/cotizador/CarrierErrorRateChart'
 import { CarrierApprovalByCanonChart } from '@/components/inmobiliaria/cotizador/CarrierApprovalByCanonChart'
 import { CarrierRecentQuotesTable } from '@/components/inmobiliaria/cotizador/CarrierRecentQuotesTable'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 // =============================================================================
 // Component
@@ -33,6 +34,9 @@ export default function CarrierDeepDivePage() {
 
   const { data: detail, isLoading, error, refetch } = useCarrierDetail(carrier)
   const { data: recentQuotes, isLoading: quotesLoading } = useCarrierRecentQuotes(carrier)
+
+  // Phase 38-05b: skeleton only (D-38-04: dynamic detail route, no EmptyState).
+  if (isLoading && !detail) return <PageSkeleton variant="detail" />
 
   return (
     <main className="p-6 lg:p-8 space-y-6">

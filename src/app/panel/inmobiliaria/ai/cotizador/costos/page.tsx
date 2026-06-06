@@ -22,6 +22,7 @@ import { CostSourcePieChart } from '@/components/inmobiliaria/cotizador/CostSour
 import { MonthlyCostTrendChart } from '@/components/inmobiliaria/cotizador/MonthlyCostTrendChart'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 export default function CostosPage() {
   const { t } = useI18n()
@@ -35,6 +36,11 @@ export default function CostosPage() {
     refetchSummary,
     refetchSeries,
   } = useCostos()
+
+  // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
+  // per-section table skeleton + inline empty prose preserved below; no EmptyState since
+  // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
+  if (isLoadingSummary && !summaryData) return <PageSkeleton variant="dashboard" />
 
   // Derive table rows by joining costSources registry labels with source totals
   const tableRows = (summaryData?.costSources ?? []).map(src => ({

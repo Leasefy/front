@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 export type TranscriptSpeaker = 'operador' | 'deudor' | 'bot' | string
 
@@ -54,7 +56,7 @@ export function useCallTranscript({
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CallTranscriptResponse = await res.json()
@@ -72,9 +74,9 @@ export function useCallTranscript({
   useEffect(() => {
     if (!agencyId || !callId) return
     fetchData()
-    const id = setInterval(fetchData, 30_000)
-    return () => clearInterval(id)
   }, [fetchData, agencyId, callId])
+
+  useVisibilityPolling(fetchData, 30_000, Boolean(agencyId && callId))
 
   return { data, isLoading, error, refetch: fetchData }
 }

@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useContract, useContractActions, useContractPreview, useSignedPdfUrl, useContractRejections } from '@/lib/hooks/useContracts';
 import type { ContractPreview as ContractPreviewResponse } from '@/lib/api/contracts.types';
 import { getTemplateById } from '@/lib/constants/contract-templates';
+import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { CONTRACT_STATUS_LABELS, getContractTypeLabel } from '@/lib/types/contract';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -120,7 +121,7 @@ function ContractDocumentView({
     return (
       <div
         className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white p-6 prose prose-sm max-w-none dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: preview.html }}
+        {...sanitizeContractHtml(preview.html)}
       />
     );
   }

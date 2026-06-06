@@ -14,7 +14,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { Escalation } from './use-escalations'
 
 export interface EscalationLinkedCall {
@@ -64,7 +66,7 @@ export function useEscalationDetail(
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/escalations/${escalationId}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as EscalationDetail
@@ -78,13 +80,14 @@ export function useEscalationDetail(
   }, [agencyId, escalationId])
 
   useEffect(() => {
-    if (!agencyId || !escalationId) return
+    if (!agencyId || !escalationId) {
+      setIsLoading(false)
+      return
+    }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId, escalationId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId && escalationId))
 
   return { data, isLoading, error, refetch: fetchOnce }
 }

@@ -45,8 +45,15 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
   const [storageUser, setStorageUser] = useState<{ role: string } | null>(null)
 
-  // Check localStorage directly as a fallback
+  // Check localStorage directly as a fallback.
+  // NOTE: this localStorage fallback is dev/test-only. In production we must
+  // rely solely on the real Supabase auth context — otherwise anyone could
+  // forge an 'arriendo-facil-auth' entry and bypass authentication.
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      setIsCheckingStorage(false)
+      return
+    }
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY)
       if (stored) {

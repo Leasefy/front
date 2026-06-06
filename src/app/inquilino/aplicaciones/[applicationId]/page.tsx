@@ -6,11 +6,23 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTenantApplication } from '@/lib/hooks/useApplications';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
+import { applicationsApi } from '@/lib/api/applications.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
@@ -129,11 +141,33 @@ export default function ApplicationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [confirmWithdrawOpen, setConfirmWithdrawOpen] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const applicationId = params.applicationId as string;
-  const { application, isLoading, error } = useTenantApplication(applicationId);
+  const { application, isLoading, error, refetch } = useTenantApplication(applicationId);
   const responseSubmitted = false; // will be true after navigating to /completar and coming back
   const { contract: linkedContract } = useContractByApplication(applicationId);
+
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      await applicationsApi.withdraw(applicationId);
+      toast.success(locale === 'es' ? 'Aplicación retirada' : 'Application withdrawn');
+      setConfirmWithdrawOpen(false);
+      await refetch();
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : locale === 'es'
+            ? 'No se pudo retirar'
+            : 'Could not withdraw'
+      );
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -879,7 +913,12 @@ export default function ApplicationDetailPage() {
                 )}
 
                 {!isFinalStatus && (
-                  <button className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all group border border-transparent hover:border-red-200 dark:hover:border-red-800/60">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmWithdrawOpen(true)}
+                    disabled={isWithdrawing}
+                    className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all group border border-transparent hover:border-red-200 dark:hover:border-red-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
                       <XCircle className="w-5 h-5 text-red-500" />
                     </div>
@@ -1017,7 +1056,42 @@ export default function ApplicationDetailPage() {
         </div>
       </div>
 
-
+      {/* Withdraw confirmation */}
+      <AlertDialog open={confirmWithdrawOpen} onOpenChange={setConfirmWithdrawOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'es' ? '¿Retirar tu aplicación?' : 'Withdraw your application?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'es'
+                ? 'Esta acción no se puede deshacer. Tu solicitud quedará retirada y la inmobiliaria dejará de evaluarla.'
+                : 'This action cannot be undone. Your application will be withdrawn and the agency will stop evaluating it.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isWithdrawing}>
+              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleWithdraw();
+              }}
+              disabled={isWithdrawing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/85"
+            >
+              {isWithdrawing
+                ? locale === 'es'
+                  ? 'Retirando...'
+                  : 'Withdrawing...'
+                : locale === 'es'
+                  ? 'Retirar aplicación'
+                  : 'Withdraw application'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

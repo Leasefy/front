@@ -37,7 +37,9 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
@@ -261,20 +263,6 @@ function VariablePill({
 }
 
 // =============================================================================
-// Loading skeleton
-// =============================================================================
-
-function LoadingSkeleton() {
-  return (
-    <div className="animate-pulse space-y-4 p-4">
-      <div className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded" />
-      <div className="h-48 bg-neutral-100 dark:bg-neutral-800 rounded" />
-      <div className="h-48 bg-neutral-100 dark:bg-neutral-800 rounded" />
-    </div>
-  )
-}
-
-// =============================================================================
 // Editor content component (receives template + agencyId)
 // =============================================================================
 
@@ -353,8 +341,7 @@ function TemplateEditorContent({
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/draft`,
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ bodyDraft: localDraft }),
         },
       )
@@ -381,8 +368,7 @@ function TemplateEditorContent({
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/publish`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
         },
       )
       if (!res.ok) {
@@ -419,7 +405,7 @@ function TemplateEditorContent({
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
       const res = await fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as {
@@ -677,8 +663,9 @@ export default function TemplatePage({
     [data?.templates, params.id],
   )
 
+  // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
   if (isLoading && !data) {
-    return <LoadingSkeleton />
+    return <PageSkeleton variant="detail" />
   }
 
   if (!template) {

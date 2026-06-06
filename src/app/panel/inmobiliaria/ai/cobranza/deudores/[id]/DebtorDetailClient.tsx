@@ -34,6 +34,7 @@ import { LlamadasTab } from './tabs/LlamadasTab'
 import { MemosTab } from './tabs/MemosTab'
 import { CompromisosTab } from './tabs/CompromisosTab'
 import { AccionesTab } from './tabs/AccionesTab'
+import { CobranzaDeudorDetailSkeleton } from '@/components/skeleton/panel/CobranzaDeudorDetailSkeleton'
 
 void React
 
@@ -164,6 +165,11 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     () => (data ? stageColorClasses(data.currentStage) : null),
     [data],
   )
+
+  // ── Skeleton guard (Phase 38 plan 38-04a / D-38-04) ───────────────────────
+  // Detail/dynamic routes get a skeleton only — no page-level EmptyState (404
+  // path handles not-found per D-38-04 rule for detail/dynamic routes).
+  if (isLoading && !data) return <CobranzaDeudorDetailSkeleton />
 
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">

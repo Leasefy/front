@@ -18,11 +18,14 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 void React
 
@@ -121,7 +124,18 @@ export default function DeudoresListClient() {
   const { pages, isLoading, isLoadingMore, error, hasMore, loadMore, refetch } =
     useDebtorList(filters)
 
-  // ── Infinite scroll sentinel ──────────────────────────────────────────────
+  // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
+  // hasActiveFilters distinguishes "filtered empty" (Sin deudores con estos filtros)
+  // from zero-portfolio (Aún no hay deudores → CTA to import). The page-level
+  // EmptyState only fires when no filters are active and the list is genuinely empty.
+  const hasActiveFilters =
+    stages.length > 0 ||
+    channels.length > 0 ||
+    daysMin !== DAYS_MIN_DEFAULT ||
+    daysMax !== DAYS_MAX_DEFAULT ||
+    searchPayload.length > 0
+
+  // ── Infinite scroll sentinel — hooks MUST run before any early return (Rules of Hooks) ──
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     const el = sentinelRef.current
@@ -140,6 +154,29 @@ export default function DeudoresListClient() {
     obs.observe(el)
     return () => obs.disconnect()
   }, [hasMore, loadMore, pages.length])
+
+  if (isLoading && pages.length === 0) return <CobranzaDeudoresListSkeleton />
+
+  if (
+    !isLoading &&
+    !hasActiveFilters &&
+    pages.length === 0 &&
+    !error
+  ) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={Users}
+          title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cobranza.deudores.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+          }}
+        />
+      </main>
+    )
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const toggleStage = (s: CarteraStage) => {
@@ -410,7 +447,7 @@ export default function DeudoresListClient() {
                   <tr>
                     <td colSpan={7} className="px-3 py-12 text-center">
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                        {t('inmobiliaria.ai.cobranza.deudores.empty')}
+                        {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
                       <button
                         type="button"

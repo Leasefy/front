@@ -61,8 +61,10 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {
-      // Optimistic update — silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar la notificación');
+      throw err;
     }
   }, []);
 
@@ -71,8 +73,10 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
       await notificationsApi.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch {
-      // Optimistic update — silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudieron actualizar las notificaciones');
+      throw err;
     }
   }, []);
 
@@ -82,8 +86,10 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
       await notificationsApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {
-      // Silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la notificación');
+      throw err;
     }
   }, [notifications]);
 
@@ -150,8 +156,10 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {
-      // Optimistic update — silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar la notificación');
+      throw err;
     }
   }, []);
 
@@ -160,8 +168,10 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
       await notificationsApi.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch {
-      // Optimistic update — silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudieron actualizar las notificaciones');
+      throw err;
     }
   }, []);
 
@@ -171,8 +181,10 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
       await notificationsApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {
-      // Silently fail
+    } catch (err) {
+      // Surface the failure so the caller can toast — don't swallow.
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la notificación');
+      throw err;
     }
   }, [notifications]);
 

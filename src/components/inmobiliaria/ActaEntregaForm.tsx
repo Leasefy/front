@@ -43,7 +43,7 @@ import {
 interface ActaEntregaFormProps {
   initialData?: Partial<ActaEntrega>;
   consignaciones: Consignacion[];
-  onSave?: (acta: ActaEntrega) => void;
+  onSave?: (acta: ActaEntrega) => void | Promise<void>;
   onSaveDraft?: (acta: Partial<ActaEntrega>) => void;
   onCancel?: () => void;
   isLoading?: boolean;
@@ -187,8 +187,10 @@ export function ActaEntregaForm({
     setIsSubmitting(true);
 
     try {
+      // Build the acta payload from the form. The backend assigns the canonical
+      // id/timestamps on persist, so we don't fabricate them on the client.
       const acta: ActaEntrega = {
-        id: `acta-${Date.now()}`,
+        id: '',
         ...formData,
         propertyId: selectedConsignacion.propertyId,
         propertyTitle: selectedConsignacion.propertyTitle,
@@ -208,10 +210,10 @@ export function ActaEntregaForm({
         updatedAt: new Date().toISOString(),
       };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Persist for real. The parent handler performs the API call and throws
+      // on failure, so we await it to keep isSubmitting active and to catch errors.
+      await onSave?.(acta);
 
-      onSave?.(acta);
       toast.success({
         title: t('inmobiliaria.acta.actaCreated'),
         description: t('inmobiliaria.acta.actaCreatedDesc'),

@@ -21,6 +21,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
 
 // ── Derived types ───────────────────────────────────────────────────────────
@@ -120,7 +122,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
@@ -135,10 +137,13 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
         if (!hasLoadedFirstPage.current) {
           return json.items
         }
-        // Polling refresh: replace the leading page-1 slice and keep any
-        // subsequent pages the operator has scrolled to.
-        const newFirstSize = json.items.length
-        const tail = prev.slice(newFirstSize)
+        // Polling refresh: fresh page-1 is authoritative; re-append only the
+        // already-loaded subsequent-page rows that are NOT in the new page-1,
+        // deduped by stable debtor id (key={d.id} in the table). Robust to
+        // page-1 size drift (debtor paid / added / stage-changed) and reordering
+        // — slicing by the incoming length duplicated or dropped rows.
+        const firstIds = new Set(json.items.map((it) => it.id))
+        const tail = prev.filter((row) => !firstIds.has(row.id))
         return [...json.items, ...tail]
       })
       setNextCursor(json.nextCursor)
@@ -164,14 +169,8 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agencyId, filtersKey])
 
-  // ── 30s polling of page 1 only ────────────────────────────────────────────
-  useEffect(() => {
-    if (!agencyId) return
-    const id = setInterval(() => {
-      void fetchFirstPage()
-    }, 30_000)
-    return () => clearInterval(id)
-  }, [agencyId, fetchFirstPage])
+  // ── 30s polling of page 1 only (tab-visibility-gated) ─────────────────────
+  useVisibilityPolling(() => void fetchFirstPage(), 30_000, Boolean(agencyId))
 
   // ── loadMore: append next cursor page ─────────────────────────────────────
   const loadMore = useCallback(async (): Promise<void> => {
@@ -186,7 +185,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
       const qs = buildQs(filters, nextCursor)
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse

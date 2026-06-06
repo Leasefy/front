@@ -19,7 +19,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
 
 // ── Derived types ───────────────────────────────────────────────────────────
@@ -147,7 +149,7 @@ export function usePaymentsFunnel(
     try {
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/pagos${suffix}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse
@@ -187,16 +189,12 @@ export function usePaymentsFunnel(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agencyId, filtersKey])
 
-  // ── 30s polling of page 1 only ────────────────────────────────────────────
-  useEffect(() => {
-    if (!agencyId) return
-    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-    if (!agentUrl) return
-    const id = setInterval(() => {
-      void fetchFirstPage()
-    }, 30_000)
-    return () => clearInterval(id)
-  }, [agencyId, fetchFirstPage])
+  // ── 30s polling of page 1 only (tab-visibility-gated) ─────────────────────
+  useVisibilityPolling(
+    () => void fetchFirstPage(),
+    30_000,
+    Boolean(agencyId && process.env.NEXT_PUBLIC_AGENT_URL),
+  )
 
   // ── loadMore: append next cursor page ─────────────────────────────────────
   const loadMore = useCallback(async (): Promise<void> => {
@@ -211,7 +209,7 @@ export function usePaymentsFunnel(
       const qs = buildQs(filters, nextCursor)
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/pagos?${qs}`,
-        { credentials: 'include' },
+        { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse

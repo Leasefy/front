@@ -24,6 +24,12 @@ export interface NavItem {
   disabled?: boolean;
   badge?: number;
   children?: NavItem[];
+  /** When 'section', renders a non-interactive group label (desktop sidebar only). Additive — flat navs ignore it. */
+  kind?: 'section';
+  /** Small pill shown after the label (e.g. "Pronto" for not-yet-built sections). Additive. */
+  tag?: string;
+  /** data-tour-target attribute for Phase 38 PanelTour primitive. Additive — items without it render unchanged. */
+  dataTourTarget?: string;
 }
 
 export interface ProfileCompletionStep {
@@ -55,6 +61,8 @@ export interface PlanSidebarProps {
   upgradeHref?: string;
   upgradeLabel?: string;
   profileCompletion?: ProfileCompletionConfig;
+  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
+  aboveNav?: React.ReactNode;
 }
 
 interface NavItemComponentProps {
@@ -80,18 +88,35 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
 
   const isChildActive = hasChildren && checkChildActive(item.children!);
 
+  // Group label (desktop sidebar only). Collapsed → thin divider.
+  if (item.kind === 'section') {
+    if (isCollapsed) {
+      return <div className="mx-2 my-2 border-t border-plan-border/60" aria-hidden="true" />;
+    }
+    return (
+      <p className="px-4 pt-4 pb-1.5 text-[11px] font-mono font-medium uppercase tracking-wider text-plan-muted select-none">
+        {item.label}
+      </p>
+    );
+  }
+
   if (item.disabled) {
     return (
       <div
         className={cn(
           'flex items-center gap-3 px-4 py-2 text-[13px]',
-          'text-muted-foreground cursor-not-allowed',
+          'text-muted-foreground/70 cursor-not-allowed',
           isCollapsed && 'justify-center px-2'
         )}
-        title={isCollapsed ? item.label : undefined}
+        title={isCollapsed ? `${item.label}${item.tag ? ` — ${item.tag}` : ''}` : undefined}
       >
         <Icon className="w-[18px] h-[18px] stroke-[1.5px]" />
-        {!isCollapsed && <span>{item.label}</span>}
+        {!isCollapsed && <span className="flex-1">{item.label}</span>}
+        {!isCollapsed && item.tag && (
+          <span className="ml-auto text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-plan-border/60 text-plan-muted">
+            {item.tag}
+          </span>
+        )}
       </div>
     );
   }
@@ -101,6 +126,8 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
       <div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          data-tour-target={item.dataTourTarget}
           className={cn(
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
@@ -148,6 +175,8 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     <Link
       href={item.href}
       onClick={onClick}
+      aria-current={isActive ? 'page' : undefined}
+      data-tour-target={item.dataTourTarget}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 text-[14px] rounded-full',
         'transition-colors',
@@ -188,6 +217,7 @@ interface SidebarContentProps {
   upgradeLabel?: string;
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
+  aboveNav?: React.ReactNode;
 }
 
 function SidebarContent({
@@ -198,6 +228,7 @@ function SidebarContent({
   onItemClick,
   showCollapseButton = true,
   profileCompletion,
+  aboveNav,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -249,11 +280,24 @@ function SidebarContent({
         </Link>
       </div>
 
+      {/* ⌘K / above-nav slot */}
+      {aboveNav && !isCollapsed && (
+        <div className="px-3 pb-1">
+          {aboveNav}
+        </div>
+      )}
+
       {/* Compass */}
-      <nav className={cn(
-        'flex-1 overflow-y-auto py-2',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
+      <nav
+        aria-label="Navegación principal"
+        // data-lenis-prevent + overscroll-contain: the grouped nav can overflow,
+        // and Lenis otherwise hijacks the wheel so the sidebar never scrolls.
+        data-lenis-prevent
+        className={cn(
+          'flex-1 overflow-y-auto py-2 [overscroll-behavior:contain]',
+          isCollapsed ? 'px-2' : 'px-3'
+        )}
+      >
         <div className="space-y-0.5">
           {navItems.map((item) => (
             <NavItemComponent
@@ -376,6 +420,7 @@ export function PlanSidebar({
   upgradeHref,
   upgradeLabel,
   profileCompletion,
+  aboveNav,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -401,6 +446,7 @@ export function PlanSidebar({
           upgradeHref={upgradeHref}
           upgradeLabel={upgradeLabel}
           profileCompletion={profileCompletion}
+          aboveNav={aboveNav}
         />
       </aside>
 
@@ -432,6 +478,7 @@ export function PlanSidebar({
             upgradeLabel={upgradeLabel}
             showCollapseButton={false}
             profileCompletion={profileCompletion}
+            aboveNav={aboveNav}
           />
         </SheetContent>
       </Sheet>

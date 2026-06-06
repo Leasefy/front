@@ -37,16 +37,17 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
         </SheetHeader>
 
         <div className="flex flex-col">
-          {items.map((item) => {
+          {items.filter((item) => item.kind !== 'section').map((item) => {
             const active = isActive(item);
             const IconComponent = item.icon as React.ComponentType<{
               className?: string;
               weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
             }>;
 
-            // Render children as sub-rows if present
+            // Render the parent's own link first, then its children as sub-rows
+            // (otherwise a parent with children loses its own destination here).
             const rows: NavItem[] = item.children && item.children.length > 0
-              ? item.children
+              ? [item, ...item.children]
               : [item];
 
             return rows.map((row) => {

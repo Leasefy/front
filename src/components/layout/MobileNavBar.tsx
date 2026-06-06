@@ -18,9 +18,11 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
   const pathname = usePathname();
   const { t } = useI18n();
 
-  const topItems = navItems.slice(0, 5);
-  const overflowItems = navItems.slice(5);
-  const hasOverflow = navItems.length > 5;
+  // Section markers are desktop-sidebar-only labels; disabled items aren't tappable.
+  const navigable = navItems.filter((item) => item.kind !== 'section' && !item.disabled);
+  const topItems = navigable.slice(0, 5);
+  const overflowItems = navigable.slice(5);
+  const hasOverflow = navigable.length > 5;
 
   function isActive(item: NavItem): boolean {
     if (item.exact) {

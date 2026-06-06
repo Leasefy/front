@@ -10,7 +10,7 @@ void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { getAccessToken } from '@/lib/api/client'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useWizardDraft } from '@/lib/hooks/cotizador/use-wizard-draft'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
@@ -21,6 +21,7 @@ import { WizardStep2Propiedad } from '@/components/inmobiliaria/cotizador/Wizard
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
@@ -72,14 +73,10 @@ export default function NuevaCotizacionPage() {
   // Phase 33 D-33-10: fire metadata fetch unconditionally; hook short-circuits on empty quoteId
   const parentMetadata = useQuoteMetadata(parentQuoteId ?? '')
 
-  // Optional pre-fill from ?cedula= query param (COTI-UI-02 optional)
-  useEffect(() => {
-    const prefilledCedula = searchParams?.get('cedula')
-    if (prefilledCedula && candidato.cedula === '' && !hasDraft) {
-      setCandidato(prev => ({ ...prev, cedula: prefilledCedula }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // NOTE: a ?cedula= query-param pre-fill was intentionally removed (Ley 1581 / D-08).
+  // Accepting a raw cédula from the URL leaks PII to browser history, the Referer header,
+  // and server logs. The operator enters the cédula via the step-1 input instead, and it is
+  // hashed at submit time. Do not reintroduce a raw-PII prefill here.
 
   // Phase 33 D-33-10: hydrate wizard state from parent quote metadata in re-quote mode
   useEffect(() => {
@@ -279,11 +276,9 @@ export default function NuevaCotizacionPage() {
         `${agentUrl}/api/agency/${agencyId}/cotizador/quote`,
         {
           method: 'POST',
-          credentials: 'include',
-          headers: {
+          headers: agentAuthHeaders({
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${getAccessToken()}`,
-          },
+          }),
           body: JSON.stringify(submitBody),
         }
       )
@@ -318,6 +313,17 @@ export default function NuevaCotizacionPage() {
       setIsSubmitting(false)
     }
   }, [candidato, propiedad, agency, clear, router, t, prefillCedulaHash, isReQuoteMode, parentQuoteId, prefillDismissed])
+
+  // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04 wizard rule) ───────────
+  // Re-quote hydration only — normal new-quote path always has immediate form
+  // state, so no skeleton there. No EmptyState (wizard always has form state).
+  if (isReQuoteMode && parentMetadata.isLoading) {
+    return (
+      <PageGuard module="cotizador" action="view">
+        <CotizadorWizardSkeleton />
+      </PageGuard>
+    )
+  }
 
   return (
     <PageGuard module="cotizador" action="view">

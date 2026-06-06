@@ -31,7 +31,7 @@
 import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { getAccessToken } from '@/lib/api/client'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type { components } from '@/lib/api/generated/agent'
 
 import type { RejectReasonSlug } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
@@ -68,13 +68,11 @@ export interface UseCartaApprovalResult {
 }
 
 async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const token = getAccessToken()
-  const headers = new Headers(init.headers)
-  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const headers = agentAuthHeaders(init.headers)
   if (init.body && !headers.has('content-type')) {
     headers.set('content-type', 'application/json')
   }
-  return globalThis.fetch(input, { credentials: 'include', ...init, headers })
+  return globalThis.fetch(input, { ...init, headers })
 }
 
 export function useCartaApproval(): UseCartaApprovalResult {

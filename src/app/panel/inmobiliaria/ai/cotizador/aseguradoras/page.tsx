@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Buildings } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -23,6 +24,8 @@ import {
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { CarrierRegistryTable, type MergedCarrierRow } from '@/components/inmobiliaria/cotizador/CarrierRegistryTable'
 import type { OverrideFields } from '@/components/inmobiliaria/cotizador/CarrierOverridePopover'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 
 // =============================================================================
 // Page
@@ -132,6 +135,22 @@ export default function AseguradorasPage() {
     [localOverrides, resetOverride, showErrorToast, t],
   )
 
+  // Phase 38-05b: skeleton + EmptyState early returns (D-38-04: list page gets both)
+  if (isLoading && !data) return <PageSkeleton variant="list" />
+  if (!isLoading && data && finalMergedRows.length === 0) {
+    return (
+      <EmptyState
+        icon={Buildings}
+        title={t('inmobiliaria.ai.cotizador.aseguradoras.empty.title')}
+        description={t('inmobiliaria.ai.cotizador.aseguradoras.empty.description')}
+        primaryCta={{
+          label: t('inmobiliaria.ai.cotizador.aseguradoras.empty.cta.label'),
+          href: 'mailto:soporte@leasefy.co',
+        }}
+      />
+    )
+  }
+
   return (
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -151,21 +170,6 @@ export default function AseguradorasPage() {
           {t('inmobiliaria.ai.cotizador.aseguradoras.refresh')}
         </button>
       </header>
-
-      {/* Loading skeleton */}
-      {isLoading && !data && (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-3"
-            >
-              <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-              <div className="h-3 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Error banner */}
       {error && !data && (
@@ -188,13 +192,6 @@ export default function AseguradorasPage() {
           onSaveOverride={handleSave}
           onResetOverride={handleReset}
         />
-      )}
-
-      {/* Empty state */}
-      {data && finalMergedRows.length === 0 && (
-        <p className="text-sm text-neutral-500 text-center py-12">
-          {t('inmobiliaria.ai.cotizador.aseguradoras.emptyRegistry')}
-        </p>
       )}
 
       {/* Error toast — mutation failures */}

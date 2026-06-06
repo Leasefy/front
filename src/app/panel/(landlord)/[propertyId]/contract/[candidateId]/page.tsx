@@ -300,15 +300,32 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
     setIsCreating(false);
   };
 
+  // Map the UI tier ('none'|'basic'|'premium') to the contract DTO tier ('NONE'|'BASIC'|'PREMIUM').
+  const INSURANCE_TIER_MAP = { none: 'NONE', basic: 'BASIC', premium: 'PREMIUM' } as const;
+
   // Handle signing via API
   const handleSign = async ({ signatureData, otpVerificationToken }: { otpVerified: boolean; signatureData: string; otpVerificationToken?: string }) => {
     if (!contract) return;
 
     setIsSigning(true);
-    const consent = contract.uploadedPdfPath
+
+    // Persist the selected insurance tier BEFORE collecting the signature.
+    // UpdateContractDto edits invalidate the landlord signature (contracts.types.ts:185),
+    // so the insurance update must happen first to avoid a re-sign loop.
+    const desiredTier = INSURANCE_TIER_MAP[selectedInsurance.tier];
+    let contractToSign = contract;
+    if (desiredTier !== contractToSign.insuranceTier) {
+      const updatedTier = await actions.update(contractToSign.id, { insuranceTier: desiredTier });
+      if (updatedTier) {
+        contractToSign = updatedTier;
+        setContract(updatedTier);
+      }
+    }
+
+    const consent = contractToSign.uploadedPdfPath
       ? 'Confirmo digitalmente que el PDF adjunto contiene mi firma manuscrita/presencial y acepto todos sus términos.'
       : 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.';
-    const updated = await actions.signAsLandlord(contract.id, {
+    const updated = await actions.signAsLandlord(contractToSign.id, {
       acceptedTerms: true,
       consentText: consent,
       signatureData,

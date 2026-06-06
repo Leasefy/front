@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, Clock, CheckCircle, XCircle } from '@phosphor-icons/react';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 import { useCandidates, useCandidate, useCandidateDecision } from '@/lib/hooks/useLandlord';
+import { landlordApi } from '@/lib/api/landlord.service';
 import { DocumentAnalysisSection } from '@/components/landlord/DocumentAnalysisSection';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanTabs, PlanTab } from '@/components/ui/plan/PlanTabs';
@@ -35,6 +36,13 @@ interface CandidateRow extends Candidate {
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+}
+
+// The candidate-detail endpoint does not expose income figures, so they arrive
+// as 0. Render an em-dash for unknown (0) instead of fabricating "$0" as a real
+// number — unknown ≠ zero.
+function formatCurrencyOrDash(value: number): string {
+  return value > 0 ? formatCurrency(value) : '—';
 }
 
 function ScoringGuide() {
@@ -165,6 +173,7 @@ export default function CandidatosPage() {
     numericScore: lc.numericScore,
     appliedAt: lc.appliedAt,
     propertyId: lc.propertyId,
+    propertyTitle: lc.propertyTitle,
     applicationId: '',
     documentType: 'cc' as const,
     documentNumber: '',
@@ -295,7 +304,7 @@ export default function CandidatosPage() {
       sortable: true,
       render: (row) => (
         <span className="text-sm font-medium text-neutral-900 dark:text-white">
-          {formatCurrency(row.totalIncome)}
+          {formatCurrencyOrDash(row.totalIncome)}
         </span>
       ),
     },
@@ -319,10 +328,20 @@ export default function CandidatosPage() {
     },
   ];
 
-  const handleRowClick = (row: CandidateRow) => {
+  const handleRowClick = useCallback(async (row: CandidateRow) => {
+    // Open immediately with the slim row so the sheet appears instantly, then
+    // hydrate with the authoritative candidate detail. The global list endpoint
+    // returns only slim cards (email/phone/finances/risk were hardcoded blanks),
+    // so without this fetch the detail sheet rendered fabricated zeros.
     setSelectedCandidate(row);
     setSheetOpen(true);
-  };
+    try {
+      const full = await landlordApi.getCandidate(row.id);
+      setSelectedCandidate((prev) => (prev && prev.id === row.id ? full : prev));
+    } catch {
+      toast.error(t('landlord.candidates.loadDetailError'));
+    }
+  }, [t]);
 
   const handleApprove = async (candidate: Candidate) => {
     const result = await decide(candidate.id, { decision: 'approved' });
@@ -427,15 +446,15 @@ export default function CandidatosPage() {
         <div className="space-y-2">
           <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
             <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.monthlyIncome')}</span>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.totalIncome)}</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrencyOrDash(candidate.totalIncome)}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-700">
             <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.obligations')}</span>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrency(candidate.monthlyObligations)}</span>
+            <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrencyOrDash(candidate.monthlyObligations)}</span>
           </div>
           <div className="flex justify-between py-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 -mx-3 rounded-lg">
             <span className="text-sm text-emerald-700 dark:text-emerald-400">{t('landlord.candidates.availableForRent')}</span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(candidate.availableForRent)}</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrencyOrDash(candidate.availableForRent)}</span>
           </div>
         </div>
       ),

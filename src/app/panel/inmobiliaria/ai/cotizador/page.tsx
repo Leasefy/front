@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, Tray } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import {
   useCotizadorOverview,
@@ -12,6 +12,8 @@ import {
 import { CotizadorKpiStrip } from '@/components/inmobiliaria/cotizador/CotizadorKpiStrip'
 import { CotizadorRecentQuotesFeed } from '@/components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed'
 import { CotizadorCarriersStatus } from '@/components/inmobiliaria/cotizador/CotizadorCarriersStatus'
+import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/CotizadorOverviewSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
 import { relativeTime } from '@/lib/cartera'
 
 // Permissions gate is enforced by the cotizador layout (Phase 29).
@@ -54,6 +56,25 @@ export default function CotizadorOverviewPage() {
       })
       .slice(0, 10)
   }, [realtimeQuotes, data?.lastQuotes])
+
+  // ── Skeleton + EmptyState guards (Phase 38 plan 38-04b / D-38-04) ─────────
+  if (isLoading && !data) return <CotizadorOverviewSkeleton />
+
+  if (!isLoading && !error && mergedQuotes.length === 0) {
+    return (
+      <main className="p-6 lg:p-8">
+        <EmptyState
+          icon={Tray}
+          title={t('inmobiliaria.ai.cotizador.overview.empty.title')}
+          description={t('inmobiliaria.ai.cotizador.overview.empty.description')}
+          primaryCta={{
+            label: t('inmobiliaria.ai.cotizador.overview.empty.cta.label'),
+            href: '/panel/inmobiliaria/ai/cotizador/nueva',
+          }}
+        />
+      </main>
+    )
+  }
 
   return (
     <main className="p-6 lg:p-8 space-y-6">

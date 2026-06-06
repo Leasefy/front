@@ -10,6 +10,7 @@ import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/Prim
 import { InsightsAssumptionTable } from '@/components/inmobiliaria/cotizador/InsightsAssumptionTable'
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 export default function CotizadorInsightsPage() {
   const { t } = useI18n()
@@ -23,6 +24,11 @@ export default function CotizadorInsightsPage() {
     error,
     refetch,
   } = useInsights()
+
+  // Phase 38-05b: PageSkeleton replaces inline animate-pulse grid (D-38-04: skeleton only;
+  // per-widget SampleDataWatermark inside child components is PRESERVED; NoDataYetBadge
+  // for Widgets 5+6 below is PRESERVED).
+  if (isLoading && approvalRateMonthly.length === 0) return <PageSkeleton variant="dashboard" />
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
@@ -49,19 +55,6 @@ export default function CotizadorInsightsPage() {
           >
             {t('inmobiliaria.ai.cotizador.insights.retry')}
           </button>
-        </div>
-      )}
-
-      {/* Loading skeleton (first load, no data yet) */}
-      {isLoading && approvalRateMonthly.length === 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 ${i === 0 ? 'md:col-span-2' : ''}`}
-              style={{ height: i === 0 ? 340 : 300 }}
-            />
-          ))}
         </div>
       )}
 

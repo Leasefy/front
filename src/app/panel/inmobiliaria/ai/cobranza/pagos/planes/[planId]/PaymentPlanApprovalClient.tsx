@@ -205,7 +205,15 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         fechaPrimerPago: modFecha,
       })
       if ('error' in res) {
-        setActionError(res.error)
+        // DUPLICATE_PLAN_RISK = the counter-offer was created but the original
+        // could not be rejected, so two plans may be active. Show a clear,
+        // localized warning and pull canonical server state.
+        setActionError(
+          res.error.startsWith('DUPLICATE_PLAN_RISK')
+            ? t('inmobiliaria.ai.cobranza.planes.modificarForm.duplicateRisk')
+            : res.error,
+        )
+        void refetch()
       } else {
         setModificarOpen(false)
         setToast(t('inmobiliaria.ai.cobranza.planes.modificarForm.success'))

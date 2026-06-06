@@ -79,7 +79,8 @@
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "notificationActionError": "No se pudo completar la acción sobre la notificación"
   },
   "dashboard": {
     "title": "Panel",
@@ -4914,7 +4915,8 @@
             "pause": "Pausar",
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
-            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio."
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "audioError": "No se pudo cargar la grabación."
           },
           "transcript": {
             "title": "Transcripción",
@@ -5074,7 +5076,8 @@
             "descuento": "Descuento (%)",
             "cuotas": "Número de cuotas",
             "monto": "Monto por cuota (COP)",
-            "fecha": "Fecha primer pago"
+            "fecha": "Fecha primer pago",
+            "duplicateRisk": "Se creó la contraoferta pero el plan original no pudo rechazarse. Pueden existir dos planes activos — revísalo antes de enviar el link de pago."
           }
         },
         "approval": {
@@ -5285,6 +5288,9 @@
             "empty": {
               "title": "Sin deudores en opt-out",
               "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            },
+            "errors": {
+              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
             }
           }
         },
@@ -6227,6 +6233,8 @@
       "perYear": "/ano",
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
+      "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
+      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -6328,6 +6336,7 @@
       "viewPropertyAction": "Ver propiedad",
       "approvedToast": "Candidato aprobado",
       "approvedToastDesc": "Iniciando proceso de contrato con {{name}}",
+      "loadDetailError": "No se pudieron cargar los detalles del candidato.",
       "rejectedToast": "Candidato rechazado",
       "rejectedToastDesc": "{{name}} ha sido rechazado y notificado.",
       "riskAssessmentTitle": "Evaluación de Riesgo",
@@ -7010,6 +7019,34 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "Cédula"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navegaste a {{page}}",
+    "routes": {
+      "search": "Buscar Inmuebles",
+      "publish": "Publicar Inmueble",
+      "pricing": "Precios",
+      "signIn": "Iniciar Sesión",
+      "landlordPanel": "Panel de Propietario",
+      "tenantPanel": "Panel de Inquilino",
+      "agencyPanel": "Panel de Inmobiliaria",
+      "agencyAi": "Agentes IA",
+      "assistant": "Asistente",
+      "myApplications": "Mis Aplicaciones",
+      "myLease": "Mi Arriendo",
+      "apply": "Aplicar a Propiedad",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
     }
   }
 }

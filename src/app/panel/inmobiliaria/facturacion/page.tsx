@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageGuard } from '@/components/auth/PageGuard';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
 type BadgeVariant = 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline';
@@ -84,7 +85,7 @@ const TABS: TabDef[] = [
   },
 ];
 
-export default function FacturacionPage() {
+function FacturacionContent() {
   const { t } = useI18n();
   const [active, setActive] = useState<FacturacionTab>('ventas');
   const tab = TABS.find((x) => x.key === active)!;
@@ -128,7 +129,10 @@ export default function FacturacionPage() {
               key={x.key}
               type="button"
               role="tab"
+              id={`fact-tab-${x.key}`}
               aria-selected={isActive}
+              aria-controls="fact-tabpanel"
+              tabIndex={isActive ? 0 : -1}
               onClick={() => setActive(x.key)}
               className={cn(
                 'whitespace-nowrap px-3.5 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -144,7 +148,13 @@ export default function FacturacionPage() {
       </div>
 
       {/* Active tab panel */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section
+        role="tabpanel"
+        id="fact-tabpanel"
+        aria-labelledby={`fact-tab-${active}`}
+        tabIndex={0}
+        className="rounded-2xl border border-border bg-card overflow-hidden"
+      >
         {/* Panel header: descriptor + estados legend */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-5 border-b border-border">
           <div className="flex items-center gap-3">
@@ -193,5 +203,13 @@ export default function FacturacionPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function FacturacionPage() {
+  return (
+    <PageGuard adminOnly>
+      <FacturacionContent />
+    </PageGuard>
   );
 }

@@ -111,7 +111,11 @@ function OptOutContent() {
           // Refresh first page; cursor reset
           setNextCursor(null)
           await fetchPage(null, false)
+        } else {
+          setError(t('inmobiliaria.ai.cobranza.compliance.optOut.errors.ackFailed'))
         }
+      } catch {
+        setError(t('inmobiliaria.ai.cobranza.compliance.optOut.errors.ackFailed'))
       } finally {
         setAcking((prev) => {
           const n = new Set(prev)
@@ -120,7 +124,7 @@ function OptOutContent() {
         })
       }
     },
-    [agencyId, fetchPage],
+    [agencyId, fetchPage, t],
   )
 
   // Phase 38-05a: page-level skeleton during first load

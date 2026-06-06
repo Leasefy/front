@@ -48,11 +48,14 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading } = usePermissionsContext();
+  const { canAccess, isAdmin, isLoading: permissionsLoading } = usePermissionsContext();
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
-  type NavItemWithModule = NavItem & { module?: string | null };
+  // `adminOnly` gates ERP/treasury items whose module keys the backend does not yet
+  // emit in effectivePermissions (facturacion/conciliacion/tesoreria/pqrs/agenda) —
+  // admins keep access, scoped members do not. See PageGuard adminOnly on each page.
+  type NavItemWithModule = NavItem & { module?: string | null; adminOnly?: boolean };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── AGENTES IA ── (top-of-sidebar headline — Phase 38-followup
@@ -146,17 +149,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { kind: 'section', label: t('inmobiliaria.nav.secFinanciero'), href: '#sec-financiero', icon: CurrencyDollar, module: null },
     { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar,             module: 'cobros' },
     { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt,             module: 'dispersiones' },
-    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,       module: null },
-    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,          module: null },
-    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,        module: null },
+    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,       module: null, adminOnly: true },
+    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,          module: null, adminOnly: true },
+    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,        module: null, adminOnly: true },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,                  module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,                module: 'analytics' },
     // ── OPERACIÓN · DOCS ──
     { kind: 'section', label: t('inmobiliaria.nav.secOperacion'), href: '#sec-operacion', icon: Wrench, module: null },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,                     module: 'operaciones' },
-    { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null },
+    { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null, adminOnly: true },
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,                   module: 'documentos' },
-    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null },
+    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null, adminOnly: true },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
@@ -164,6 +167,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     if (permissionsLoading) return ALL_NAV_ITEMS;
 
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
+      if (item.adminOnly && !isAdmin) return null;
       if (item.module && !canAccess(item.module, 'view')) return null;
       if (item.children && item.children.length > 0) {
         const filteredChildren = (item.children as NavItemWithModule[])
@@ -176,12 +180,18 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
     const filtered = ALL_NAV_ITEMS.map(filterItem).filter((item): item is NavItem => item !== null);
     // Drop a section header left with no real items after permission filtering.
+    // Keep a section only if at least one non-section item exists after it
+    // before the next section header (handles consecutive empty sections and
+    // a trailing dangling header).
     return filtered.filter((item, idx) => {
       if (item.kind !== 'section') return true;
-      const next = filtered[idx + 1];
-      return next != null && next.kind !== 'section';
+      for (let j = idx + 1; j < filtered.length; j++) {
+        if (filtered[j].kind === 'section') return false; // hit next header first → empty section
+        return true; // first thing after is a real item → keep
+      }
+      return false; // trailing header
     });
-  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading]);
+  }, [ALL_NAV_ITEMS, canAccess, isAdmin, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-plan-page">

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageGuard } from '@/components/auth/PageGuard';
 import { RESUMEN_VACIO } from '@/lib/api/conciliacion.types';
 
 /** Casos de conciliación para el resumen — color por caso (estático). */
@@ -23,7 +24,7 @@ const COLUMNS = [
   'colValorBanco', 'colValorEsperado', 'colCaso', 'colAccion',
 ];
 
-export default function ConciliacionPage() {
+function ConciliacionContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
   const resumen = RESUMEN_VACIO;
@@ -120,5 +121,13 @@ export default function ConciliacionPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ConciliacionPage() {
+  return (
+    <PageGuard adminOnly>
+      <ConciliacionContent />
+    </PageGuard>
   );
 }

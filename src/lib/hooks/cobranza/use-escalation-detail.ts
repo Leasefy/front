@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { Escalation } from './use-escalations'
 
 export interface EscalationLinkedCall {
@@ -79,13 +80,14 @@ export function useEscalationDetail(
   }, [agencyId, escalationId])
 
   useEffect(() => {
-    if (!agencyId || !escalationId) return
+    if (!agencyId || !escalationId) {
+      setIsLoading(false)
+      return
+    }
     void fetchOnce()
-    const id = setInterval(() => {
-      void fetchOnce()
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
   }, [fetchOnce, agencyId, escalationId])
+
+  useVisibilityPolling(() => void fetchOnce(), POLL_INTERVAL_MS, Boolean(agencyId && escalationId))
 
   return { data, isLoading, error, refetch: fetchOnce }
 }

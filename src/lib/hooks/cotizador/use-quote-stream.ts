@@ -1,10 +1,13 @@
 'use client'
 /**
- * useQuoteStream — EventSource consumer for the cotizador SSE relay.
+ * useQuoteStream — SSE consumer for the cotizador relay.
  * Phase 30 plan 30-06 | COTI-UI-03 | XR-02 | XR-03
  *
  * Connects to: ${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/cotizador/quote/:quoteId/stream
- * Opens with { withCredentials: true } for session-cookie auth.
+ * Authenticated with the user's Supabase JWT via agentAuthHeaders()
+ * (Authorization: Bearer). The agent service is Bearer-only and reads no
+ * cookies, so a native EventSource(withCredentials) cookie handshake 401'd in
+ * prod — we read the stream with fetch()+ReadableStream and parse SSE frames.
  *
  * Reconnect strategy:
  *   - Auto-reconnect on `visibilitychange` (tab re-focus) and `online` event.
@@ -21,6 +24,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { parseSSEEvent, type ParsedSSEEvent } from '@/lib/cotizador/sse-schemas'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,7 +117,7 @@ export function useQuoteStream(
   const [allFinal, setAllFinal] = useState(false)
 
   // Refs for mutable state that doesn't need re-render
-  const esRef = useRef<EventSource | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
   const retryCountRef = useRef(0)
   const lastSeqIdRef = useRef('0')
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -130,13 +134,114 @@ export function useQuoteStream(
   }, [quoteId, agencyId])
 
   const closeEs = useCallback(() => {
-    if (esRef.current) {
-      esRef.current.close()
-      esRef.current = null
+    if (abortRef.current) {
+      abortRef.current.abort()
+      abortRef.current = null
     }
     if (retryTimerRef.current !== null) {
       clearTimeout(retryTimerRef.current)
       retryTimerRef.current = null
+    }
+  }, [])
+
+  // Handle one fully-parsed SSE frame. Mirrors the old EventSource listener
+  // body verbatim; final_verdict / session_expired abort the fetch stream
+  // instead of calling es.close().
+  const handleParsed = useCallback((eventType: string, data: string, id: string) => {
+    if (!mountedRef.current) return
+    // Only the named carrier events are handled (default `message` / unknown
+    // frames are ignored, as with the old addEventListener registration).
+    if (!(CARRIER_EVENT_TYPES as readonly string[]).includes(eventType)) return
+
+    // Track last sequence id for cursor-based resume.
+    if (id) lastSeqIdRef.current = id
+
+    const parsed = parseSSEEvent(data, eventType)
+    setEvents(prev => [...prev, parsed])
+
+    // Update carrier state
+    if (parsed.type === 'carrier.start' || parsed.type === 'carrier.dispatched') {
+      const { carrier, started_at_ms } = parsed.data
+      const isStub = started_at_ms === 0
+      setCarriersMap(prev => {
+        const next = new Map(prev)
+        next.set(carrier, {
+          carrier,
+          status: isStub ? 'stub' : 'pending',
+          primaMensualCop: null,
+          condiciones: [],
+          motivoRechazo: null,
+          latencyMs: null,
+          isStub,
+          startedAtMs: started_at_ms,
+        })
+        return next
+      })
+    }
+
+    if (parsed.type === 'carrier.verdict' || parsed.type === 'carrier.verdict_received') {
+      const { carrier, verdict, prima_mensual_cop, condiciones } = parsed.data
+      setCarriersMap(prev => {
+        const next = new Map(prev)
+        const existing = next.get(carrier)
+        const latencyMs = existing?.startedAtMs
+          ? Date.now() - existing.startedAtMs
+          : null
+        next.set(carrier, {
+          ...(existing ?? {
+            carrier,
+            isStub: false,
+            startedAtMs: null,
+          }),
+          carrier,
+          status: verdict === 'error' ? 'error' : verdict,
+          primaMensualCop: prima_mensual_cop,
+          condiciones: condiciones ?? [],
+          motivoRechazo: null,
+          latencyMs,
+        } as CarrierState)
+        return next
+      })
+    }
+
+    if (parsed.type === 'carrier.error') {
+      const { carrier, message } = parsed.data
+      setCarriersMap(prev => {
+        const next = new Map(prev)
+        const existing = next.get(carrier)
+        next.set(carrier, {
+          ...(existing ?? {
+            carrier,
+            isStub: false,
+            startedAtMs: null,
+          }),
+          carrier,
+          status: 'error',
+          primaMensualCop: null,
+          condiciones: [],
+          motivoRechazo: message,
+          latencyMs: existing?.startedAtMs ? Date.now() - existing.startedAtMs : null,
+        } as CarrierState)
+        return next
+      })
+    }
+
+    if (parsed.type === 'agent.cost_recorded') {
+      setTotalCostUsd(parsed.data.running_total_usd)
+    }
+
+    if (parsed.type === 'agent.final_verdict') {
+      setAllFinal(true)
+      setIsConnected(false)
+      abortRef.current?.abort()
+      abortRef.current = null
+    }
+
+    if (parsed.type === 'agent.session_expired') {
+      setError(parsed.data.error)
+      setIsConnected(false)
+      abortRef.current?.abort()
+      abortRef.current = null
     }
   }, [])
 
@@ -146,28 +251,19 @@ export function useQuoteStream(
     closeEs()
 
     const url = buildUrl(cursor)
-    // EventSource with withCredentials for session-cookie auth
-    const es = new EventSource(url, { withCredentials: true })
-    esRef.current = es
+    const ac = new AbortController()
+    abortRef.current = ac
 
-    es.onopen = () => {
-      if (!mountedRef.current) return
-      retryCountRef.current = 0
-      setIsConnected(true)
-      setError(null)
-    }
-
-    es.onerror = () => {
+    // Replaces es.onerror: drop → backoff retry (resuming from lastEventId) →
+    // CONNECTION_INTERRUPTED after MAX_RETRIES.
+    const onDrop = () => {
       if (!mountedRef.current) return
       setIsConnected(false)
-
       retryCountRef.current += 1
       if (retryCountRef.current <= MAX_RETRIES) {
         const delay = BACKOFF_DELAYS[retryCountRef.current - 1] ?? 4000
         retryTimerRef.current = setTimeout(() => {
-          if (mountedRef.current) {
-            openEs(lastSeqIdRef.current)
-          }
+          if (mountedRef.current) openEs(lastSeqIdRef.current)
         }, delay)
       } else {
         setError('CONNECTION_INTERRUPTED')
@@ -175,106 +271,65 @@ export function useQuoteStream(
       }
     }
 
-    // Register named event listeners
-    for (const eventType of CARRIER_EVENT_TYPES) {
-      es.addEventListener(eventType, (event: MessageEvent) => {
+    void (async () => {
+      try {
+        const headers = agentAuthHeaders({ Accept: 'text/event-stream' })
+        // Manual reconnect resume: the relay also reads the Last-Event-ID header.
+        if (cursor && cursor !== '0') headers.set('Last-Event-ID', cursor)
+
+        const res = await fetch(url, { headers, signal: ac.signal })
+        if (!res.ok || !res.body) {
+          onDrop()
+          return
+        }
         if (!mountedRef.current) return
+        // == old es.onopen
+        retryCountRef.current = 0
+        setIsConnected(true)
+        setError(null)
 
-        // Track last sequence id for cursor-based resume
-        if (event.lastEventId) {
-          lastSeqIdRef.current = event.lastEventId
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+        let evName = 'message'
+        let dataLines: string[] = []
+        let frameId = ''
+
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += decoder.decode(value, { stream: true })
+          let nl: number
+          while ((nl = buf.indexOf('\n')) >= 0) {
+            const rawLine = buf.slice(0, nl)
+            buf = buf.slice(nl + 1)
+            const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
+            if (line === '') {
+              // Blank line ends a frame.
+              if (dataLines.length > 0) {
+                handleParsed(evName, dataLines.join('\n'), frameId)
+              }
+              evName = 'message'
+              dataLines = []
+              frameId = ''
+              continue
+            }
+            if (line.startsWith(':')) continue // comment / keep-alive
+            if (line.startsWith('event:')) evName = line.slice(6).trim()
+            else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
+            else if (line.startsWith('id:')) frameId = line.slice(3).trim()
+          }
         }
-
-        const parsed = parseSSEEvent(event.data as string, eventType)
-        setEvents(prev => [...prev, parsed])
-
-        // Update carrier state
-        if (parsed.type === 'carrier.start' || parsed.type === 'carrier.dispatched') {
-          const { carrier, started_at_ms } = parsed.data
-          const isStub = started_at_ms === 0
-          setCarriersMap(prev => {
-            const next = new Map(prev)
-            next.set(carrier, {
-              carrier,
-              status: isStub ? 'stub' : 'pending',
-              primaMensualCop: null,
-              condiciones: [],
-              motivoRechazo: null,
-              latencyMs: null,
-              isStub,
-              startedAtMs: started_at_ms,
-            })
-            return next
-          })
-        }
-
-        if (parsed.type === 'carrier.verdict' || parsed.type === 'carrier.verdict_received') {
-          const { carrier, verdict, prima_mensual_cop, condiciones } = parsed.data
-          setCarriersMap(prev => {
-            const next = new Map(prev)
-            const existing = next.get(carrier)
-            const latencyMs = existing?.startedAtMs
-              ? Date.now() - existing.startedAtMs
-              : null
-            next.set(carrier, {
-              ...(existing ?? {
-                carrier,
-                isStub: false,
-                startedAtMs: null,
-              }),
-              carrier,
-              status: verdict === 'error' ? 'error' : verdict,
-              primaMensualCop: prima_mensual_cop,
-              condiciones: condiciones ?? [],
-              motivoRechazo: null,
-              latencyMs,
-            } as CarrierState)
-            return next
-          })
-        }
-
-        if (parsed.type === 'carrier.error') {
-          const { carrier, message } = parsed.data
-          setCarriersMap(prev => {
-            const next = new Map(prev)
-            const existing = next.get(carrier)
-            next.set(carrier, {
-              ...(existing ?? {
-                carrier,
-                isStub: false,
-                startedAtMs: null,
-              }),
-              carrier,
-              status: 'error',
-              primaMensualCop: null,
-              condiciones: [],
-              motivoRechazo: message,
-              latencyMs: existing?.startedAtMs ? Date.now() - existing.startedAtMs : null,
-            } as CarrierState)
-            return next
-          })
-        }
-
-        if (parsed.type === 'agent.cost_recorded') {
-          setTotalCostUsd(parsed.data.running_total_usd)
-        }
-
-        if (parsed.type === 'agent.final_verdict') {
-          setAllFinal(true)
-          setIsConnected(false)
-          es.close()
-          esRef.current = null
-        }
-
-        if (parsed.type === 'agent.session_expired') {
-          setError(parsed.data.error)
-          setIsConnected(false)
-          es.close()
-          esRef.current = null
-        }
-      })
-    }
-  }, [agencyId, buildUrl, closeEs])
+        // Server closed the stream without a terminal event → reconnect/resume.
+        onDrop()
+      } catch (e) {
+        // Intentional close (final_verdict, session_expired, unmount, manual
+        // reconnect) aborts the controller — not a real failure.
+        if ((e as Error)?.name === 'AbortError') return
+        onDrop()
+      }
+    })()
+  }, [agencyId, buildUrl, closeEs, handleParsed])
 
   // Expose manual reconnect
   const reconnect = useCallback(() => {

@@ -22,6 +22,8 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     const [isFocused, setIsFocused] = React.useState(false);
     const isPassword = type === 'password';
     const inputTextT = isPassword && showPassword ? 'text' : type;
+    const reactId = React.useId();
+    const errorId = `${reactId}-error`;
 
     // Determine autoComplete value based on type and context
     const getAutoComplete = () => {
@@ -61,6 +63,8 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             type={inputTextT}
             ref={ref}
             autoComplete={getAutoComplete()}
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={cn(
@@ -113,7 +117,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
 
         {/* Error message */}
         {error && (
-          <p className="text-[12px] text-destructive flex items-center gap-1.5">
+          <p id={errorId} className="text-[12px] text-destructive flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>

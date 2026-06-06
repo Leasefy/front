@@ -79,7 +79,8 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "notificationActionError": "Could not complete the notification action"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -770,6 +771,18 @@
         "rappipay": "Rappipay"
       },
       "modals": {
+        "addAccount": {
+          "title": "Add collection account",
+          "methodType": "Account type",
+          "methodBank": "Bank account",
+          "methodWallet": "Digital wallet",
+          "assignProperties": "Assign properties (optional)",
+          "assignPropertiesHint": "Select the properties that will deposit into this account",
+          "allPropertiesAssigned": "All properties assigned",
+          "addButton": "Add account",
+          "adding": "Adding...",
+          "perMonth": "/mo"
+        },
         "addBankAccount": {
           "title": "Add bank account",
           "bank": "Bank",
@@ -4901,7 +4914,8 @@
             "pause": "Pause",
             "speed": "Speed",
             "speedLabel": "Speed {{speed}}x",
-            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio."
+            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio.",
+            "audioError": "Could not load the recording."
           },
           "transcript": {
             "title": "Transcript",
@@ -5061,7 +5075,8 @@
             "descuento": "Discount (%)",
             "cuotas": "Number of installments",
             "monto": "Amount per installment (COP)",
-            "fecha": "First payment date"
+            "fecha": "First payment date",
+            "duplicateRisk": "The counter-offer was created but the original plan could not be rejected. Two plans may be active — review before sending the payment link."
           }
         },
         "approval": {
@@ -5272,6 +5287,9 @@
             "empty": {
               "title": "No debtors on opt-out",
               "description": "Opt-outs will appear here when a debtor requests no contact."
+            },
+            "errors": {
+              "ackFailed": "Could not record the opt-out acknowledgement. Please try again."
             }
           }
         },
@@ -6214,6 +6232,8 @@
       "perYear": "/year",
       "upTo": "up to {{limit}}",
       "payNow": "Pay now",
+      "planNotFound": "The selected plan was not found. Go back to the plans list.",
+      "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
       "securePayment": "Secure payment processed by Stripe",
       "cancelAnytime": "Cancel anytime. No commitments.",
@@ -6315,6 +6335,7 @@
       "viewPropertyAction": "View property",
       "approvedToast": "Candidate approved",
       "approvedToastDesc": "Starting contract process with {{name}}",
+      "loadDetailError": "Could not load candidate details.",
       "rejectedToast": "Candidate rejected",
       "rejectedToastDesc": "{{name}} has been rejected and notified.",
       "riskAssessmentTitle": "Risk Assessment",
@@ -6997,6 +7018,34 @@
       "chatPanel": "Chat panel",
       "noSteps": "No steps defined",
       "stepsProgress": "{{completed}} of {{total}} completed"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "ID number"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navigated to {{page}}",
+    "routes": {
+      "search": "Search Properties",
+      "publish": "Publish Property",
+      "pricing": "Pricing",
+      "signIn": "Sign In",
+      "landlordPanel": "Landlord Panel",
+      "tenantPanel": "Tenant Panel",
+      "agencyPanel": "Agency Panel",
+      "agencyAi": "AI Agents",
+      "assistant": "Assistant",
+      "myApplications": "My Applications",
+      "myLease": "My Lease",
+      "apply": "Apply to Property",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "Could not update your saved properties. Please try again."
     }
   }
 }

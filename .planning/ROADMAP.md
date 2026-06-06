@@ -23,6 +23,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **Phase 30: Executive Reports** - C-level summary dashboard with portfolio health score
 - [x] **Phase 31: Automatic Reminders** - Payment and contract reminders with configuration UI
 - [x] **Phase 32: Integration & QA** - Wire gating to all features, test all plan tiers, polish
+- [x] **Phase 34: Avalúos UI** - Wizard de solicitud + tracking + certificado público + integración panel agencia
 
 ## Phase Details
 
@@ -185,3 +186,33 @@ Plans:
 - [x] **v6-06: PQRS / Solicitudes + Agenda interna** — Ciclo registro→asignación→seguimiento→cierre + agenda de eventos. ✅ (PQRS-01..03, AGEN-01..02; secciones `/pqrs` + `/agenda` + contratos + i18n; triage IA + agregación → M1)
 - [x] **v6-07: Creación de terceros por IA** — Foto cédula/RUT → IA extrae → prellena → revisar → guardar. ✅ CROSS-REPO (agent `POST /terceros/extract` + mvp captura/prefill aditivo en propietarios; TERC-01..04). (TERC-01..04)
 - [x] **v6-08: Captura de propiedad foto+audio** (stretch) — Fotos + audio → transcribe → ficha + descripción comercial. ✅ CROSS-REPO (agent `POST /property-capture/extract` Whisper+Claude + mvp captura móvil aditiva en propiedades; CAPT-01..04). **v6.0 COMPLETO 8/8.**
+
+---
+
+## Standalone Phases (post-v6.0)
+
+### Phase 34: Avalúos UI
+
+**Goal**: UI completa para el servicio de avalúos comerciales — wizard de solicitud (anónimo y autenticado), tracking del estado, pago Wompi, certificado público verificable, e integración en el panel de la inmobiliaria.
+
+**Requirements**:
+- Wizard de 4 pasos: Inmueble → Contacto+Consentimientos → Fotos → Confirmación
+- Contexto dual: anónimo (/avaluo/nuevo) y autenticado (/panel/inmobiliaria/avaluos/nuevo)
+- El mismo wizard sirve para ambos contextos — email pre-llenado si hay sesión
+- 3 checkboxes de consentimiento SEPARADOS (Ley 1581) — no agrupar
+- Upload de fotos via presigned S3 URLs
+- Estado de seguimiento con polling (mock mientras el backend expone el endpoint)
+- Pago Wompi $50.000 COP en página de estado cuando certificado = firmado
+- Certificado público verificable en /avaluo/verificar/[slug] (siempre sin auth)
+- Integración en panel: lista + detalle de avalúos de la agencia
+- Modelo pay-to-unlock: el pago NO va en el wizard, va en la página de estado
+
+**Depends on:** -
+**Plans:** 5 plans
+
+Plans:
+- [ ] 34-01-PLAN.md — Foundation: types, API service, public ForceLightMode layout, landing page (Wave 1)
+- [ ] 34-02-PLAN.md — Wompi session API route (server-side integrity hash) (Wave 1)
+- [ ] 34-03-PLAN.md — 4-step wizard: AvaluoContext + shell + steps + /avaluo/nuevo (Wave 2)
+- [ ] 34-04-PLAN.md — Status polling + Wompi pay (estado page) + public verificar page (Wave 2)
+- [ ] 34-05-PLAN.md — Panel integration: list + reused wizard (nuevo) + detail/download (Wave 3)

@@ -1,11 +1,10 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Sparkle, CaretLeft, CaretRight, ArrowUpRight, Info, TrendUp } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { useProperties } from '@/lib/hooks/useProperties';
 import { useRecommendations } from '@/lib/hooks/useRecommendations';
 import {
   useTenantProfile,
@@ -14,7 +13,6 @@ import {
   getAccessiblePropertiesPercentage,
   getRiskRecommendation,
 } from '@/lib/context/TenantProfileContext';
-import { getRecommendedProperties } from '@/lib/scoring/propertyMatching';
 import { PropertyMatchCard } from './PropertyMatchCard';
 
 // ============================================================================
@@ -40,20 +38,9 @@ export function RecommendedProperties({
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Try backend recommendations first
-  const { recommendations: apiRecommendations, source } = useRecommendations(limit);
+  const { recommendations, isLoading: recommendationsLoading } = useRecommendations(limit);
 
-  // Fetch properties for client-side fallback
-  const { properties: allProperties } = useProperties({ limit: source === 'client' ? 100 : 0 });
-
-  // Use API recommendations if available, otherwise compute client-side
-  const recommendations = useMemo(() => {
-    if (source === 'api' && apiRecommendations.length > 0) {
-      return apiRecommendations;
-    }
-    if (!profile || allProperties.length === 0) return [];
-    return getRecommendedProperties(allProperties, profile, limit);
-  }, [source, apiRecommendations, profile, allProperties, limit]);
+  const loading = isLoading || recommendationsLoading;
 
   // Scroll handlers
   const scroll = (direction: 'left' | 'right') => {
@@ -79,7 +66,7 @@ export function RecommendedProperties({
   };
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <section className={cn('bg-card border border-plan-border', className)}>
         <div className="p-6">

@@ -107,7 +107,7 @@ export const apBillsSource: SearchSource = {
           },
           { label: formatCOP(item.amountCop), color: 'neutral' as const },
         ],
-        href: `/panel/inmobiliaria/tesoreria`,
+        href: `/panel/inmobiliaria/tesoreria/ap/${item.id}`,
         preview: {
           type: 'ap-bill',
           id: item.id,

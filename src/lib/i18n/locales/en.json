@@ -5856,6 +5856,33 @@
       "emptyTitle": "No payouts yet",
       "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
     },
+    "ap": {
+      "bill": {
+        "title": "AP Invoice",
+        "backToList": "Back to Treasury",
+        "notFound": "Invoice not found",
+        "notFoundDesc": "The requested invoice does not exist or you do not have access.",
+        "labelInvoiceNumber": "Invoice number",
+        "labelVendor": "Vendor",
+        "labelCostCenter": "Cost center",
+        "labelStatus": "Status",
+        "labelAmount": "Amount",
+        "labelIssued": "Issued",
+        "labelDue": "Due date",
+        "labelApprovedBy": "Approved by",
+        "labelCreatedBy": "Created by",
+        "noApprover": "Not yet approved",
+        "statusPaid": "Paid",
+        "statusApproved": "Approved",
+        "statusPendingApproval": "Pending approval",
+        "statusRejected": "Rejected",
+        "statusVoid": "Void",
+        "m1BannerTitle": "AP Invoice detail",
+        "m1BannerDesc": "Payments and advanced approval flows connect in the backend phase (M1).",
+        "loadingError": "Error loading invoice",
+        "fetching": "Loading invoice…"
+      }
+    },
     "pqrs": {
       "label": "Requests",
       "title": "Requests & PQRS",

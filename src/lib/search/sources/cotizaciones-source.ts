@@ -97,7 +97,7 @@ export const cotizacionesSource: SearchSource = {
             ? [{ label: `${item.approvedCount}/${item.totalCarriers} ok`, color: 'green' as const }]
             : []),
         ],
-        href: `/panel/inmobiliaria/ai/cotizador`,
+        href: `/panel/inmobiliaria/ai/cotizador/${item.id}`,
         preview: {
           type: 'cotizacion',
           id: item.id,

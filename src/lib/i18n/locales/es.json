@@ -5869,6 +5869,33 @@
       "emptyTitle": "Sin egresos aún",
       "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
     },
+    "ap": {
+      "bill": {
+        "title": "Factura AP",
+        "backToList": "Volver a Tesorería",
+        "notFound": "Factura no encontrada",
+        "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
+        "labelInvoiceNumber": "Número de factura",
+        "labelVendor": "Proveedor",
+        "labelCostCenter": "Centro de costos",
+        "labelStatus": "Estado",
+        "labelAmount": "Monto",
+        "labelIssued": "Emitida",
+        "labelDue": "Vencimiento",
+        "labelApprovedBy": "Aprobada por",
+        "labelCreatedBy": "Creada por",
+        "noApprover": "Sin aprobador aún",
+        "statusPaid": "Pagada",
+        "statusApproved": "Aprobada",
+        "statusPendingApproval": "Pdte. aprobación",
+        "statusRejected": "Rechazada",
+        "statusVoid": "Anulada",
+        "m1BannerTitle": "Detalle de la factura AP",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "loadingError": "Error al cargar la factura",
+        "fetching": "Cargando factura…"
+      }
+    },
     "pqrs": {
       "label": "PQRS",
       "title": "PQRS y solicitudes",

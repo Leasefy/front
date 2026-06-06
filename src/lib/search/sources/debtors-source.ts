@@ -9,9 +9,8 @@
  * PII: cedulaMasked / phoneMasked / emailMasked are already masked by the
  * backend (Phase 31 D-31-04). We never unmask here.
  *
- * href: /panel/inmobiliaria/ai/cobranza — debtor detail TBD in pass 2
- * when the deep-link route is confirmed. For now we go to the cobranza
- * list with the debtor's cedulaMasked as a search hint.
+ * href: /panel/inmobiliaria/ai/cobranza/deudores/:id — deep-links to
+ * the debtor detail page (Phase 31 plan 31-09 route).
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
@@ -75,7 +74,7 @@ export const debtorsSource: SearchSource = {
               ]
             : []),
         ],
-        href: `/panel/inmobiliaria/ai/cobranza?search=${encodeURIComponent(query)}`,
+        href: `/panel/inmobiliaria/ai/cobranza/deudores/${item.id}`,
         preview: {
           type: 'debtor',
           id: item.id,

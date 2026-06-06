@@ -43,9 +43,8 @@ export interface SearchSource {
   id: string;
   /** i18n key — resolved by the consumer */
   labelKey: string;
-  /** Phosphor icon component (accept any icon, cast internally) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: FC<any>;
+  /** Phosphor icon component (accept any icon shape) */
+  icon: FC<{ className?: string }>;
   /** If set, only included when canAccess(permission.module, permission.action) is true */
   permission?: { module: string; action: string };
   run: (query: string, ctx: SearchSourceContext, signal: AbortSignal) => Promise<SearchResult[]>;

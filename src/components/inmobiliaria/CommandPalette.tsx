@@ -53,6 +53,12 @@ import { useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { useFederatedSearch } from '@/lib/hooks/useFederatedSearch';
 import type { SearchResult, SearchSource, SearchSourceContext } from '@/lib/hooks/useFederatedSearch';
 import { debtorsSource } from '@/lib/search/sources/debtors-source';
+import { propietariosSource } from '@/lib/search/sources/propietarios-source';
+import { agentesSource } from '@/lib/search/sources/agentes-source';
+import { propiedadesSource } from '@/lib/search/sources/propiedades-source';
+import { contratosSource } from '@/lib/search/sources/contratos-source';
+import { cotizacionesSource } from '@/lib/search/sources/cotizaciones-source';
+import { apBillsSource } from '@/lib/search/sources/ap-bills-source';
 import { useAuditLog } from '@/lib/hooks/cobranza/use-audit-log';
 import { STAGE_LABELS_ES } from '@/lib/cartera';
 import { cn } from '@/lib/utils';
@@ -341,6 +347,267 @@ function GenericPreview({ result }: { result: SearchResult }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Preview: propietario
+// ──────────────────────────────────────────────────────────────────────────────
+
+function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
+  const { locale } = useI18n();
+  const name = String(data.name ?? '');
+  const email = String(data.email ?? '');
+  const phone = String(data.phone ?? '');
+  const city = data.city != null ? String(data.city) : null;
+  const propertyCount = typeof data.propertyCount === 'number' ? data.propertyCount : 0;
+  const activeLeases = typeof data.activeLeases === 'number' ? data.activeLeases : 0;
+  const totalMonthlyRent = typeof data.totalMonthlyRent === 'number' ? data.totalMonthlyRent : 0;
+
+  return (
+    <div className="p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-emerald-600" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-semibold text-neutral-900 truncate">{name}</p>
+          {city && <p className="text-[11px] text-neutral-500 truncate">{city}</p>}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-[12px] text-neutral-600">
+          <Envelope className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+          <span className="truncate">{email}</span>
+        </div>
+        {phone && (
+          <div className="flex items-center gap-2 text-[12px] text-neutral-600">
+            <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+            <span className="font-mono">{phone}</span>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="bg-neutral-50 rounded-lg p-2">
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
+            {locale === 'es' ? 'Propiedades' : 'Properties'}
+          </p>
+          <p className="text-[16px] font-semibold text-neutral-800">{propertyCount}</p>
+        </div>
+        <div className="bg-neutral-50 rounded-lg p-2">
+          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
+            {locale === 'es' ? 'Arriendos' : 'Leases'}
+          </p>
+          <p className="text-[16px] font-semibold text-neutral-800">{activeLeases}</p>
+        </div>
+      </div>
+      {totalMonthlyRent > 0 && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5">
+          <p className="text-[10px] text-emerald-600 font-medium">
+            {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
+          </p>
+          <p className="text-[14px] font-semibold text-emerald-800">
+            ${totalMonthlyRent.toLocaleString('es-CO')}
+          </p>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+        <ArrowElbowDownLeft className="w-3 h-3" />
+        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
+        <ArrowSquareOut className="w-3 h-3 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Preview: propiedad
+// ──────────────────────────────────────────────────────────────────────────────
+
+function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
+  const { locale } = useI18n();
+  const title = String(data.title ?? '');
+  const address = String(data.address ?? '');
+  const city = String(data.city ?? '');
+  const monthlyRent = typeof data.monthlyRent === 'number' ? data.monthlyRent : 0;
+  const bedrooms = typeof data.bedrooms === 'number' ? data.bedrooms : null;
+  const bathrooms = typeof data.bathrooms === 'number' ? data.bathrooms : null;
+  const area = typeof data.area === 'number' ? data.area : null;
+  const status = String(data.status ?? '');
+
+  const STATUS_COLORS: Record<string, string> = {
+    available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    published: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rented: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    draft: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  };
+  const STATUS_LABELS_ES: Record<string, string> = {
+    available: 'Disponible',
+    published: 'Publicada',
+    rented: 'Arrendada',
+    pending: 'Pendiente',
+    draft: 'Borrador',
+  };
+
+  return (
+    <div className="p-5 space-y-4">
+      <div>
+        <p className="text-[14px] font-semibold text-neutral-900 leading-snug">{title}</p>
+        <p className="text-[11px] text-neutral-500 truncate mt-0.5">{address}, {city}</p>
+      </div>
+      <span className={cn(
+        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        STATUS_COLORS[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
+      )}>
+        {STATUS_LABELS_ES[status] ?? status}
+      </span>
+      {monthlyRent > 0 && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5">
+          <p className="text-[10px] text-indigo-600 font-medium">
+            {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
+          </p>
+          <p className="text-[14px] font-semibold text-indigo-800">
+            ${monthlyRent.toLocaleString('es-CO')}
+          </p>
+        </div>
+      )}
+      {(bedrooms != null || area != null) && (
+        <div className="grid grid-cols-3 gap-1.5">
+          {bedrooms != null && (
+            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+              <p className="text-[16px] font-semibold text-neutral-800">{bedrooms}</p>
+              <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
+            </div>
+          )}
+          {bathrooms != null && (
+            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+              <p className="text-[16px] font-semibold text-neutral-800">{bathrooms}</p>
+              <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
+            </div>
+          )}
+          {area != null && (
+            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+              <p className="text-[16px] font-semibold text-neutral-800">{area}</p>
+              <p className="text-[9px] text-neutral-400 uppercase">m²</p>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+        <ArrowElbowDownLeft className="w-3 h-3" />
+        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
+        <ArrowSquareOut className="w-3 h-3 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Preview: contrato
+// ──────────────────────────────────────────────────────────────────────────────
+
+function ContratoPreview({ data }: { data: Record<string, unknown> }) {
+  const { locale } = useI18n();
+  const tenantName = data.tenantName != null ? String(data.tenantName) : null;
+  const tenantEmail = data.tenantEmail != null ? String(data.tenantEmail) : null;
+  const propertyAddress = data.propertyAddress != null ? String(data.propertyAddress) : null;
+  const monthlyRent = typeof data.monthlyRent === 'number' ? data.monthlyRent : 0;
+  const status = String(data.status ?? '');
+  const startDate = data.startDate != null ? String(data.startDate) : null;
+  const endDate = data.endDate != null ? String(data.endDate) : null;
+
+  const STATUS_COLORS_PILL: Record<string, string> = {
+    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    SIGNED: 'bg-violet-50 text-violet-700 border-violet-200',
+    PENDING_TENANT: 'bg-amber-50 text-amber-700 border-amber-200',
+    PENDING_TENANT_SIGNATURE: 'bg-amber-50 text-amber-700 border-amber-200',
+    PENDING_LANDLORD: 'bg-amber-50 text-amber-700 border-amber-200',
+    PENDING_LANDLORD_SIGNATURE: 'bg-amber-50 text-amber-700 border-amber-200',
+    DRAFT: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+    EXPIRED: 'bg-red-50 text-red-700 border-red-200',
+    CANCELLED: 'bg-red-50 text-red-700 border-red-200',
+  };
+  const STATUS_LABELS_ES: Record<string, string> = {
+    ACTIVE: 'Activo',
+    SIGNED: 'Firmado',
+    PENDING_TENANT: 'Pdte. inquilino',
+    PENDING_TENANT_SIGNATURE: 'Pdte. inquilino',
+    PENDING_LANDLORD: 'Pdte. propietario',
+    PENDING_LANDLORD_SIGNATURE: 'Pdte. propietario',
+    DRAFT: 'Borrador',
+    EXPIRED: 'Expirado',
+    CANCELLED: 'Cancelado',
+  };
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  return (
+    <div className="p-5 space-y-4">
+      {tenantName && (
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-violet-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-neutral-900 truncate">{tenantName}</p>
+            {tenantEmail && (
+              <p className="text-[11px] text-neutral-500 truncate">{tenantEmail}</p>
+            )}
+          </div>
+        </div>
+      )}
+      {propertyAddress && (
+        <p className="text-[12px] text-neutral-500 truncate">{propertyAddress}</p>
+      )}
+      <span className={cn(
+        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        STATUS_COLORS_PILL[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
+      )}>
+        {STATUS_LABELS_ES[status] ?? status}
+      </span>
+      {monthlyRent > 0 && (
+        <div className="bg-violet-50 border border-violet-100 rounded-lg p-2.5">
+          <p className="text-[10px] text-violet-600 font-medium">
+            {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
+          </p>
+          <p className="text-[14px] font-semibold text-violet-800">
+            ${monthlyRent.toLocaleString('es-CO')}
+          </p>
+        </div>
+      )}
+      {(startDate ?? endDate) && (
+        <div className="space-y-1">
+          {startDate && (
+            <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+              <Clock className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+              <span>{locale === 'es' ? 'Inicio' : 'Start'}: {formatDate(startDate)}</span>
+            </div>
+          )}
+          {endDate && (
+            <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+              <Clock className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+              <span>{locale === 'es' ? 'Fin' : 'End'}: {formatDate(endDate)}</span>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+        <ArrowElbowDownLeft className="w-3 h-3" />
+        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
+        <ArrowSquareOut className="w-3 h-3 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Preview router
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -364,6 +631,18 @@ function ResultPreview({ result }: { result: SearchResult | null }) {
 
   if (result.preview?.type === 'debtor') {
     return <DebtorPreview data={result.preview} />;
+  }
+
+  if (result.preview?.type === 'propietario') {
+    return <PropietarioPreview data={result.preview} />;
+  }
+
+  if (result.preview?.type === 'propiedad') {
+    return <PropiedadPreview data={result.preview} />;
+  }
+
+  if (result.preview?.type === 'contrato') {
+    return <ContratoPreview data={result.preview} />;
   }
 
   return <GenericPreview result={result} />;
@@ -490,7 +769,18 @@ export function CommandPalette() {
 
   // Build sources (filtered by permissions)
   const sources = useMemo((): SearchSource[] => {
-    const all: SearchSource[] = [debtorsSource];
+    const all: SearchSource[] = [
+      // Group: Cobranza
+      debtorsSource,
+      // Group: Inmobiliario
+      propietariosSource,
+      agentesSource,
+      propiedadesSource,
+      contratosSource,
+      // Group: Cotizador + AP
+      cotizacionesSource,
+      apBillsSource,
+    ];
     return all.filter(
       (s) => !s.permission || canAccess(s.permission.module, s.permission.action),
     );

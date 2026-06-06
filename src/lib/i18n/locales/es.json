@@ -6031,7 +6031,13 @@
       "noResults": "Sin resultados para \"{{query}}\"",
       "novedades": "Novedades",
       "sources": {
-        "debtors": "Deudores"
+        "debtors": "Deudores",
+        "propietarios": "Propietarios",
+        "agentes": "Agentes",
+        "propiedades": "Propiedades",
+        "contratos": "Contratos",
+        "cotizaciones": "Cotizaciones",
+        "apBills": "Facturas AP"
       },
       "quickActions": {
         "title": "Acciones rápidas",

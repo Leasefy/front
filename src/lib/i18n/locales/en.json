@@ -6018,7 +6018,13 @@
       "noResults": "No results for \"{{query}}\"",
       "novedades": "Recent activity",
       "sources": {
-        "debtors": "Debtors"
+        "debtors": "Debtors",
+        "propietarios": "Property Owners",
+        "agentes": "Agents",
+        "propiedades": "Properties",
+        "contratos": "Contracts",
+        "cotizaciones": "Quotes",
+        "apBills": "AP Bills"
       },
       "quickActions": {
         "title": "Quick actions",

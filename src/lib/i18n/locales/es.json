@@ -857,6 +857,7 @@
       "pipeline": "Prospección (Pipeline)",
       "agentes": "Agentes",
       "cobros": "Cobros manuales",
+      "contratos": "Contratos",
       "dispersiones": "Dispersiones",
       "operaciones": "Mantenimientos",
       "documentos": "Documentos",
@@ -4196,7 +4197,11 @@
         "arco": "ARCO",
         "plantillas": "Plantillas",
         "configuracion": "Configuración",
-        "analitica": "Analítica"
+        "analitica": "Analítica",
+        "deudores": "Deudores",
+        "pagos": "Pagos",
+        "escalaciones": "Escalaciones",
+        "compliance": "Compliance"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

@@ -28,6 +28,10 @@ import {
   CalendarBlank,
   Sparkle,
   Wallet,
+  FilePlus,
+  CreditCard,
+  Warning,
+  ClipboardText,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -123,12 +127,37 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: ChartLineUp,
           module: 'cobranza',
         } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.deudores'),
+          href: '/panel/inmobiliaria/ai/cobranza/deudores',
+          icon: Users,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagos'),
+          href: '/panel/inmobiliaria/ai/cobranza/pagos',
+          icon: CreditCard,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.escalaciones'),
+          href: '/panel/inmobiliaria/ai/cobranza/escalaciones',
+          icon: Warning,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.compliance'),
+          href: '/panel/inmobiliaria/ai/cobranza/compliance',
+          icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
     { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
+    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'portafolio' },
     { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
     { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
@@ -180,6 +209,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
     // ── BOTTOM ──
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos' },
+    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: null },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {

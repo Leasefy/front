@@ -37,6 +37,7 @@ import {
   Siren,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
@@ -85,11 +86,12 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
-  type NavItemWithModule = NavItem & { module?: string | null };
+  // `roles` is an optional role-based gate (in addition to module-based gating).
+  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[] };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── INICIO ──
@@ -186,9 +188,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── TESORERÍA ──
     { kind: 'section', label: t('inmobiliaria.nav.secTesoreria'), href: '#sec-tesoreria', icon: Wallet, module: null },
     { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, module: 'dispersiones' },
-    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null },
-    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null },
-    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null },
+    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
     // ── COTIZADOR ──
     { kind: 'section', label: t('inmobiliaria.nav.secCotizador'), href: '#sec-cotizador', icon: FileText, module: null },
     {
@@ -238,7 +240,18 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     if (permissionsLoading) return ALL_NAV_ITEMS;
 
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
+      // Module-based gate (unchanged): cobranza/cotizador use agent permissions;
+      // other modules use the legacy effectivePermissions map.
       if (item.module && !canAccess(item.module, 'view')) return null;
+      // Role-based gate: if the item declares `roles`, the current user must
+      // be a super-admin (isAdmin) OR have an agencyRole that is in the list.
+      // isAdmin bypasses role gating so Supabase service-role users always pass.
+      if (item.roles && item.roles.length > 0) {
+        const roleAllowed =
+          isAdmin ||
+          (agencyRole !== null && (item.roles as string[]).includes(agencyRole));
+        if (!roleAllowed) return null;
+      }
       if (item.children && item.children.length > 0) {
         const filteredChildren = (item.children as NavItemWithModule[])
           .map(filterItem)
@@ -255,7 +268,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       const next = filtered[idx + 1];
       return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading]);
+  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading, isAdmin, agencyRole]);
 
   return (
     <div className="min-h-screen bg-plan-page">

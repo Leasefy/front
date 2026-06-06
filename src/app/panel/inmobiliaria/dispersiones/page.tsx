@@ -34,7 +34,7 @@ import {
   DispersionCard,
   type DispersionFiltersState,
 } from '@/components/inmobiliaria';
-import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
+import { apiClient } from '@/lib/api/client';
 import {
   Dialog,
   DialogContent,
@@ -287,24 +287,26 @@ function DispersionesContent() {
 
   // Handle download extracto PDF
   const handleDownloadExtracto = useCallback(async (dispersion: Dispersion) => {
-    if (!config) return;
     try {
-      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
-      const propietario = propietarios.find((p) => p.id === dispersion.propietarioId);
-      if (extracto) {
-        downloadExtractoPDF(extracto, config, propietario);
-        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
-          description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
-        });
-      } else {
-        toast.error(t('inmobiliaria.dispersiones.toasts.error'));
-      }
+      const blob = await apiClient.getBlob(`/inmobiliaria/dispersiones/${dispersion.id}/extracto.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = dispersion.propietarioName.replace(/\s+/g, '-').toLowerCase();
+      a.download = `extracto-${safeName}-${dispersion.month}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+        description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
+      });
     } catch (error) {
       toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
         description: error instanceof Error ? error.message : 'Error al generar extracto',
       });
     }
-  }, [t, config, propietarios]);
+  }, [t]);
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {

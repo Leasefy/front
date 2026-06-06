@@ -96,12 +96,24 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
   return JSON.parse(text)
 }
 
+async function requestBlob(path: string): Promise<Blob> {
+  const url = `${BACKEND_URL}${path}`
+  const headers = getAuthHeaders()
+  const res = await fetch(url, { method: 'GET', headers })
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}))
+    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
+  }
+  return res.blob()
+}
+
 export const apiClient = {
   get: <T>(path: string, token?: string) => request<T>('GET', path, undefined, token),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
   delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),
+  getBlob: (path: string) => requestBlob(path),
 }
 /**
  * Leasefy AI API client.

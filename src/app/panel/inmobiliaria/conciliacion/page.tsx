@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import {
   Bank,
@@ -22,6 +22,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import {
   useConciliacionQueue,
   type ConciliacionQueueItem,
+  type IngestBank,
 } from '@/lib/hooks/conciliacion/use-conciliacion-queue';
 
 // ── Summary card config ─────────────────────────────────────────────────────
@@ -229,13 +230,17 @@ function ConciliacionContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
-  const { items, summary, total, isLoading, error, refetch, confirmMatch, rejectMatch, reverseMatch } =
+  const { items, summary, total, isLoading, error, refetch, confirmMatch, rejectMatch, reverseMatch, ingestStatement } =
     useConciliacionQueue();
 
   // Per-row busy state
   const [busyRow, setBusyRow] = useState<string | null>(null);
   // Reject dialog state
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  // Statement upload state
+  const [bank, setBank] = useState<IngestBank>('bancolombia');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleConfirm(matchId: string) {
     setBusyRow(matchId);
@@ -273,6 +278,33 @@ function ConciliacionContent() {
     }
   }
 
+  async function handleFileSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so re-selecting the same file fires onChange
+    if (!file) return;
+
+    const text = await file.text();
+    if (!text.trim()) {
+      toast.error(t(k('uploadError')), { description: t(k('uploadEmptyFile')) });
+      return;
+    }
+
+    setUploading(true);
+    const result = await ingestStatement(bank, text);
+    setUploading(false);
+
+    if (result.ok) {
+      toast.success(t(k('uploadSuccess')), {
+        description: t(k('uploadSuccessDesc'), {
+          created: result.created ?? 0,
+          skipped: result.skipped ?? 0,
+        }),
+      });
+    } else {
+      toast.error(t(k('uploadError')), { description: result.error });
+    }
+  }
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -301,27 +333,68 @@ function ConciliacionContent() {
       </div>
 
       {/*
-        Cargar fuente bancaria — upload button.
-        TODO(backend): wire to ingest endpoint once available.
-        No upload/ingest endpoint exists in the Phase 41 backend (conciliacion-queue.ts
-        only exposes GET queue + POST confirm/reject/reverse). Button is disabled with tooltip.
+        Cargar fuente bancaria — wired to POST /api/agency/{id}/conciliacion/ingest.
+        Persists the CSV rows synchronously (created/skipped) and enqueues the
+        reconciliation run; matching is async (Inngest), so new suggestions surface
+        on a later refresh of the queue below.
       */}
-      <div
-        title={t(k('uploadDisabledTooltip'))}
-        className="w-full cursor-not-allowed"
-        aria-disabled="true"
-      >
+      <div className="rounded-2xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
+        {/* Bank selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
+          <div
+            className="inline-flex rounded-lg border border-border bg-background p-0.5"
+            role="group"
+            aria-label={t(k('uploadBankLabel'))}
+          >
+            {(['bancolombia', 'davivienda'] as const).map((b) => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setBank(b)}
+                disabled={uploading}
+                aria-pressed={bank === b}
+                className={cn(
+                  'h-7 px-3 rounded-md text-xs font-medium transition-colors disabled:opacity-50',
+                  bank === b
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t(k(b === 'bancolombia' ? 'bankBancolombia' : 'bankDavivienda'))}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Click-to-upload dropzone */}
         <button
-          disabled
-          className="w-full rounded-2xl border-2 border-dashed border-border bg-muted/20 p-8 flex flex-col items-center justify-center gap-2 text-center opacity-50 cursor-not-allowed"
-          aria-label={t(k('uploadDisabledTooltip'))}
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          aria-label={t(k('uploadTitle'))}
+          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 disabled:cursor-wait disabled:opacity-60"
         >
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mb-1">
-            <UploadSimple className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            {uploading ? (
+              <Spinner className="w-6 h-6 text-indigo-600 dark:text-indigo-400 animate-spin" />
+            ) : (
+              <UploadSimple className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            )}
           </div>
-          <p className="text-body-sm font-medium text-foreground">{t(k('uploadTitle'))}</p>
-          <p className="text-caption text-muted-foreground">{t(k('uploadDisabledHint'))}</p>
+          <p className="text-body-sm font-medium text-foreground">
+            {uploading ? t(k('uploadProcessing')) : t(k('uploadTitle'))}
+          </p>
+          <p className="text-caption text-muted-foreground">{t(k('uploadHint'))}</p>
         </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
       </div>
 
       {/* Resumen por caso — derived from live queue data */}

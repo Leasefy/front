@@ -135,6 +135,19 @@ export interface ActionResult {
   error?: string
 }
 
+/** Bank statement CSV formats accepted by POST .../conciliacion/ingest. */
+export type IngestBank = 'bancolombia' | 'davivienda'
+
+/** Result of a statement ingest (POST .../conciliacion/ingest → 202). */
+export interface IngestResult {
+  ok: boolean
+  error?: string
+  created?: number
+  skipped?: number
+  processed?: number
+  runEnqueued?: boolean
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────────
 
 export interface UseConciliacionQueueResult {
@@ -147,6 +160,7 @@ export interface UseConciliacionQueueResult {
   confirmMatch: (matchId: string) => Promise<ActionResult>
   rejectMatch: (matchId: string, reason: string) => Promise<ActionResult>
   reverseMatch: (matchId: string) => Promise<ActionResult>
+  ingestStatement: (bank: IngestBank, csvContent: string) => Promise<IngestResult>
 }
 
 export function useConciliacionQueue(
@@ -279,6 +293,47 @@ export function useConciliacionQueue(
     [agencyId, fetchData],
   )
 
+  const ingestStatement = useCallback(
+    async (bank: IngestBank, csvContent: string): Promise<IngestResult> => {
+      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+      if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
+      try {
+        const res = await globalThis.fetch(
+          `${agentUrl}/api/agency/${agencyId}/conciliacion/ingest`,
+          {
+            method: 'POST',
+            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            body: JSON.stringify({ bank, csvContent }),
+          },
+        )
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string
+          created?: number
+          skipped?: number
+          processed?: number
+          runEnqueued?: boolean
+        }
+        if (!res.ok) {
+          return { ok: false, error: body.error ?? `${res.status}` }
+        }
+        // The reconciliation run is enqueued asynchronously (Inngest), so new
+        // suggestions surface on a later poll. Refetch to reflect already-persisted
+        // rows; the operator can refresh again once matching completes.
+        await fetchData()
+        return {
+          ok: true,
+          created: body.created,
+          skipped: body.skipped,
+          processed: body.processed,
+          runEnqueued: body.runEnqueued,
+        }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : 'ingest_failed' }
+      }
+    },
+    [agencyId, fetchData],
+  )
+
   const summary = deriveQueueSummary(items)
 
   return {
@@ -291,5 +346,6 @@ export function useConciliacionQueue(
     confirmMatch,
     rejectMatch,
     reverseMatch,
+    ingestStatement,
   }
 }

@@ -884,6 +884,10 @@
       "secCotizador": "Quoter",
       "secInteligencia": "Intelligence",
       "secOperaciones": "Operations",
+      "secAgentes": "AI Agents",
+      "secFinanzas": "Finance",
+      "secAnalisis": "Analytics",
+      "equipo": "Team",
       "cmdPaletteTrigger": "Search everything…"
     },
     "mobileNav": {

@@ -885,6 +885,10 @@
       "secCotizador": "Cotizador",
       "secInteligencia": "Inteligencia",
       "secOperaciones": "Operaciones",
+      "secAgentes": "Agentes IA",
+      "secFinanzas": "Finanzas",
+      "secAnalisis": "Análisis",
+      "equipo": "Equipo",
       "cmdPaletteTrigger": "Buscar todo…"
     },
     "mobileNav": {

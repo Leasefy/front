@@ -4210,7 +4210,10 @@
         "llamadas": "Calls",
         "siniestros": "Claims",
         "conciliacionCola": "Human queue",
-        "conciliacionConfiguracion": "Settings"
+        "conciliacionConfiguracion": "Settings",
+        "estudio": "Tenant screening",
+        "estudioCola": "Human queue",
+        "estudioConfiguracion": "Settings"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

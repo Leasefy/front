@@ -4211,7 +4211,10 @@
         "llamadas": "Llamadas",
         "siniestros": "Siniestros",
         "conciliacionCola": "Cola humana",
-        "conciliacionConfiguracion": "Configuración"
+        "conciliacionConfiguracion": "Configuración",
+        "estudio": "Estudio del inquilino",
+        "estudioCola": "Cola humana",
+        "estudioConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

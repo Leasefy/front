@@ -223,6 +223,30 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
+    {
+      // F7: Estudio del inquilino complete workspace. The F2 page shipped
+      // URL-only without module/role gates — that ungated posture is
+      // preserved here (backend scopes by agency membership; decisions are
+      // audit-first per T-323).
+      label: t('inmobiliaria.ai.nav.estudio'),
+      href: '/panel/inmobiliaria/ai/estudio',
+      icon: ShieldCheck,
+      module: null,
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.estudioCola'),
+          href: '/panel/inmobiliaria/ai/estudio/cola',
+          icon: ClipboardText,
+          module: null,
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
+          href: '/panel/inmobiliaria/ai/estudio/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     { label: t('inmobiliaria.ai.nav.pagos'),     href: '/panel/inmobiliaria/ai/pagos',     icon: CurrencyDollar, module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
     { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     // ── PORTAFOLIO ──

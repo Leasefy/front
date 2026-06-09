@@ -7,6 +7,7 @@
  *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/overview   → AgentOverviewResponse
  *   GET /api/agency/{agencyId}/ai-hub/work-items/{agente}/{id}    → WorkItemDetailResponse
  *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia  → AgentAutonomiaResponse
+ *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/analitica  → AgentAnaliticaResponse (F10)
  *
  * A 404 from any of these means "el agente aún no reporta" (endpoint not
  * deployed / nothing to show) and is surfaced as `notAvailable`, NOT an error.
@@ -104,6 +105,31 @@ export interface AgentAutonomiaResponse {
   generatedAt: string
 }
 
+// ── Analítica (superficie 6) ────────────────────────────────────────────────
+
+/** One zero-filled daily point (last 30 Bogotá days). */
+export interface AnaliticaSeriePoint {
+  /** YYYY-MM-DD (Bogotá calendar day). */
+  date: string
+  value: number
+}
+
+export interface AnaliticaSerie {
+  id: string
+  label: string
+  /** percent values are FRACTIONS 0..1 (same convention as OverviewKpi). */
+  format: KpiFormat
+  points: AnaliticaSeriePoint[]
+}
+
+export interface AgentAnaliticaResponse {
+  agente: AgenteId
+  /** KPI strip — same {id,label,value,format} shape as the Sala KPIs. */
+  resumen: OverviewKpi[]
+  series: AnaliticaSerie[]
+  generatedAt: string
+}
+
 // ── Fetchers ────────────────────────────────────────────────────────────────
 
 export interface AgentWorkspaceFetchResult<T> {
@@ -137,6 +163,15 @@ export function fetchWorkItemDetail(
 ): Promise<AgentWorkspaceFetchResult<WorkItemDetailResponse>> {
   return getJson<WorkItemDetailResponse>(
     `/api/agency/${agencyId}/ai-hub/work-items/${agente}/${encodeURIComponent(id)}`,
+  )
+}
+
+export function fetchAgentAnalitica(
+  agencyId: string,
+  agente: AgenteId,
+): Promise<AgentWorkspaceFetchResult<AgentAnaliticaResponse>> {
+  return getJson<AgentAnaliticaResponse>(
+    `/api/agency/${agencyId}/ai-hub/agentes/${agente}/analitica`,
   )
 }
 

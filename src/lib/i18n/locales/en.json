@@ -4211,14 +4211,18 @@
         "siniestros": "Claims",
         "conciliacionCola": "Human queue",
         "conciliacionConfiguracion": "Settings",
+        "conciliacionAnalitica": "Analytics",
         "estudio": "Tenant screening",
         "estudioCola": "Human queue",
         "estudioConfiguracion": "Settings",
+        "estudioAnalitica": "Analytics",
         "matching": "Matching",
         "matchingCola": "Human queue",
         "matchingConfiguracion": "Settings",
+        "matchingAnalitica": "Analytics",
         "pagosCola": "Human queue",
-        "pagosConfiguracion": "Settings"
+        "pagosConfiguracion": "Settings",
+        "pagosAnalitica": "Analytics"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

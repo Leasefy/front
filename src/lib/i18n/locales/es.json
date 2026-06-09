@@ -4212,14 +4212,18 @@
         "siniestros": "Siniestros",
         "conciliacionCola": "Cola humana",
         "conciliacionConfiguracion": "Configuración",
+        "conciliacionAnalitica": "Analítica",
         "estudio": "Estudio del inquilino",
         "estudioCola": "Cola humana",
         "estudioConfiguracion": "Configuración",
+        "estudioAnalitica": "Analítica",
         "matching": "Matching",
         "matchingCola": "Cola humana",
         "matchingConfiguracion": "Configuración",
+        "matchingAnalitica": "Analítica",
         "pagosCola": "Cola humana",
-        "pagosConfiguracion": "Configuración"
+        "pagosConfiguracion": "Configuración",
+        "pagosAnalitica": "Analítica"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

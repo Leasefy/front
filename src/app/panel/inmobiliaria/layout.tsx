@@ -229,6 +229,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: null,
           roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
         } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — same icon as cobranza's child.
+          label: t('inmobiliaria.ai.nav.conciliacionAnalitica'),
+          href: '/panel/inmobiliaria/ai/conciliacion/analitica',
+          icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     {
@@ -253,6 +261,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: SlidersHorizontal,
           module: null,
         } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ungated like the rest of estudio.
+          label: t('inmobiliaria.ai.nav.estudioAnalitica'),
+          href: '/panel/inmobiliaria/ai/estudio/analitica',
+          icon: ChartLineUp,
+          module: null,
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     {
@@ -274,6 +289,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
           href: '/panel/inmobiliaria/ai/matching/configuracion',
           icon: SlidersHorizontal,
+          module: null,
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ungated like the rest of matching.
+          label: t('inmobiliaria.ai.nav.matchingAnalitica'),
+          href: '/panel/inmobiliaria/ai/matching/analitica',
+          icon: ChartLineUp,
           module: null,
         } as NavItemWithModule,
       ],
@@ -300,6 +322,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           label: t('inmobiliaria.ai.nav.pagosConfiguracion'),
           href: '/panel/inmobiliaria/ai/pagos/configuracion',
           icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ADMIN|CONTADOR gate preserved.
+          label: t('inmobiliaria.ai.nav.pagosAnalitica'),
+          href: '/panel/inmobiliaria/ai/pagos/analitica',
+          icon: ChartLineUp,
           module: null,
           roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
         } as NavItemWithModule,

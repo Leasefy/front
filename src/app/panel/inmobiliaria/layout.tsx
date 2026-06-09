@@ -196,6 +196,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: CurrencyDollar,
           module: 'cotizador',
         } as NavItemWithModule,
+        {
+          // F9: autonomy posture (read-only AutonomiaPanel; t323 amber callout).
+          label: t('inmobiliaria.ai.cotizador.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cotizador/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cotizador',
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     {

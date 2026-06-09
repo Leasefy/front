@@ -4422,7 +4422,12 @@
         "nav": {
           "aseguradoras": "Aseguradoras",
           "insights": "Insights",
-          "costos": "Costos"
+          "costos": "Costos",
+          "configuracion": "Configuración"
+        },
+        "configuracion": {
+          "title": "Configuración y autonomía",
+          "subtitle": "Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por ahora — los cambios de modo llegan con la certificación de la valla."
         },
         "aseguradoras": {
           "pageTitle": "Aseguradoras",

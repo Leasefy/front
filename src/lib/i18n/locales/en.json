@@ -4421,7 +4421,12 @@
         "nav": {
           "aseguradoras": "Carriers",
           "insights": "Insights",
-          "costos": "Costs"
+          "costos": "Costs",
+          "configuracion": "Settings"
+        },
+        "configuracion": {
+          "title": "Settings & autonomy",
+          "subtitle": "The agent's operating mode and the guardrail that bounds what it can do. Read-only for now — mode changes arrive with guardrail certification."
         },
         "aseguradoras": {
           "pageTitle": "Carriers",

@@ -37,8 +37,11 @@ import type {
 } from '@/lib/api/work-item'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
+// Exported (F6): the workspace primitives (SalaAgente, AccionSugerida, the
+// detail page) reuse these maps so estado/severidad/flag chips render
+// identically everywhere.
 
-const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
+export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
   critica: {
     bg: 'bg-rose-50 dark:bg-rose-950/30',
     text: 'text-rose-700 dark:text-rose-400',
@@ -61,7 +64,7 @@ const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: strin
   },
 }
 
-const SEVERIDAD_LABEL: Record<Severidad, string> = {
+export const SEVERIDAD_LABEL: Record<Severidad, string> = {
   critica: 'Crítica',
   alta: 'Alta',
   media: 'Media',
@@ -70,7 +73,7 @@ const SEVERIDAD_LABEL: Record<Severidad, string> = {
 
 const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 1, baja: 0 }
 
-const ESTADO_LABEL: Record<WorkItemEstado, string> = {
+export const ESTADO_LABEL: Record<WorkItemEstado, string> = {
   detectado: 'Detectado',
   sugerido: 'Sugerido',
   en_revision: 'En revisión',
@@ -81,7 +84,7 @@ const ESTADO_LABEL: Record<WorkItemEstado, string> = {
   fallo: 'Falló',
 }
 
-const FLAG_META: Record<WorkItemFlag, { label: string; icon: typeof WarningCircle; cls: string }> = {
+export const FLAG_META: Record<WorkItemFlag, { label: string; icon: typeof WarningCircle; cls: string }> = {
   necesita_humano: {
     label: 'Necesita humano',
     icon: WarningCircle,
@@ -99,7 +102,7 @@ const FLAG_META: Record<WorkItemFlag, { label: string; icon: typeof WarningCircl
   },
 }
 
-function relative(iso: string): string {
+export function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
   const deltaSec = Math.max(0, Math.round((Date.now() - then) / 1000))
@@ -111,7 +114,7 @@ function relative(iso: string): string {
   return `hace ${Math.round(deltaHr / 24)}d`
 }
 
-const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
+export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
   primary: 'bg-primary text-primary-foreground hover:opacity-90',
   danger: 'bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90',
   neutral: 'border border-border text-foreground hover:bg-muted',
@@ -207,7 +210,7 @@ function WorkItemCard({
         </div>
         <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
           <Clock className="w-3 h-3" aria-hidden="true" />
-          {relative(item.createdAt)}
+          {relativeTime(item.createdAt)}
         </span>
       </div>
 

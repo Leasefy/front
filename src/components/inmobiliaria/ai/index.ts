@@ -2,3 +2,8 @@ export { AIAgentCard } from './AIAgentCard';
 export { AIAgentActivityFeed } from './AIAgentActivityFeed';
 export { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 export { AIAgentDetailSidebar } from './AIAgentDetailSidebar';
+export { ColaHumana } from './ColaHumana';
+export { SalaAgente } from './SalaAgente';
+export { AccionSugerida } from './AccionSugerida';
+export { TrazaCaso } from './TrazaCaso';
+export { AutonomiaPanel } from './AutonomiaPanel';

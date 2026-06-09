@@ -8,8 +8,9 @@
  * moved to ./cola, the case detail lives at ./[id] and the autonomy posture
  * at ./configuracion (AGENT-WORKSPACE-SPEC §1.4).
  *
- * The legacy domain page at /conciliacion (movimientos + extractos) stays
- * untouched and is linked from the domain slot below.
+ * F10 (SPEC §4): the movimientos + extractos surface now lives INSIDE the
+ * workspace at ./movimientos (the legacy /conciliacion URL redirects here)
+ * and is linked from the domain slot below.
  */
 
 import Link from 'next/link'
@@ -36,9 +37,9 @@ export default function ConciliacionSalaPage() {
       colaHref="/panel/inmobiliaria/ai/conciliacion/cola"
       colaCount={colaCount}
     >
-      {/* Domain slot: the legacy movimientos/extractos surface stays reachable */}
+      {/* Domain slot: the movimientos/extractos surface (now ./movimientos) */}
       <Link
-        href="/panel/inmobiliaria/conciliacion"
+        href="/panel/inmobiliaria/ai/conciliacion/movimientos"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
       >
         <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />

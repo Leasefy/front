@@ -57,7 +57,7 @@ export default function ConciliacionColaPage() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/conciliacion/${encodeURIComponent(item.id)}`)}
-        emptyHint="Sube un extracto en /conciliacion o espera a que el agente proponga cruces."
+        emptyHint="Sube un extracto en Movimientos o espera a que el agente proponga cruces."
       />
     </div>
   )

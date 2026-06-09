@@ -36,6 +36,7 @@ import {
   PhoneCall,
   Siren,
   GitMerge,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -219,6 +220,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           label: t('inmobiliaria.ai.nav.conciliacionCola'),
           href: '/panel/inmobiliaria/ai/conciliacion/cola',
           icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10 (SPEC §4): the legacy movimientos/extractos page moved INTO the
+          // workspace; /conciliacion now redirects to the Sala.
+          label: t('inmobiliaria.ai.nav.conciliacionMovimientos'),
+          href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
+          icon: ArrowsClockwise,
           module: null,
           roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
         } as NavItemWithModule,

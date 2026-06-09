@@ -9,3 +9,4 @@ export { TrazaCaso } from './TrazaCaso';
 export { AutonomiaPanel } from './AutonomiaPanel';
 export { WorkItemDetalle } from './WorkItemDetalle';
 export { AnaliticaAgente } from './AnaliticaAgente';
+export { EquipoAgentes } from './EquipoAgentes';

@@ -8,6 +8,7 @@
  *   GET /api/agency/{agencyId}/ai-hub/work-items/{agente}/{id}    → WorkItemDetailResponse
  *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia  → AgentAutonomiaResponse
  *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/analitica  → AgentAnaliticaResponse (F10)
+ *   GET /api/agency/{agencyId}/ai-hub/resumen                     → AiHubResumenResponse (F10)
  *
  * A 404 from any of these means "el agente aún no reporta" (endpoint not
  * deployed / nothing to show) and is surfaced as `notAvailable`, NOT an error.
@@ -17,7 +18,7 @@
  */
 
 import { agentAuthHeaders } from './agent-auth'
-import type { AgenteId, WorkItem, WorkItemAction, WorkItemEstado } from './work-item'
+import type { AgenteId, OwnerRole, WorkItem, WorkItemAction, WorkItemEstado } from './work-item'
 
 // ── Overview (Sala) ─────────────────────────────────────────────────────────
 
@@ -130,6 +131,31 @@ export interface AgentAnaliticaResponse {
   generatedAt: string
 }
 
+// ── Hub resumen (6 colas por rol — decisión 2026-06-08) ─────────────────────
+
+export interface ResumenAgenteEntry {
+  agente: AgenteId
+  enCola: number
+  /**
+   * false = that agent's count failed server-side (e.g. table pre-migration).
+   * Render the card with "—" + a subtle "sin datos" hint, NOT an error.
+   */
+  disponible: boolean
+}
+
+export interface ResumenCola {
+  rol: OwnerRole
+  label: string
+  total: number
+  agentes: ResumenAgenteEntry[]
+}
+
+export interface AiHubResumenResponse {
+  colas: ResumenCola[]
+  totalEnCola: number
+  generatedAt: string
+}
+
 // ── Fetchers ────────────────────────────────────────────────────────────────
 
 export interface AgentWorkspaceFetchResult<T> {
@@ -182,6 +208,12 @@ export function fetchAgentAutonomia(
   return getJson<AgentAutonomiaResponse>(
     `/api/agency/${agencyId}/ai-hub/agentes/${agente}/autonomia`,
   )
+}
+
+export function fetchAiHubResumen(
+  agencyId: string,
+): Promise<AgentWorkspaceFetchResult<AiHubResumenResponse>> {
+  return getJson<AiHubResumenResponse>(`/api/agency/${agencyId}/ai-hub/resumen`)
 }
 
 /**

@@ -60,6 +60,9 @@ const ICON_COLORS: Record<string, string> = {
 
 const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   cobranza: '12 cobros activos. 9 pagados, 3 pendientes por $4.1M COP.',
+  cotizador: 'Cotización de seguro lista para revisar.',
+  estudio: 'Estudio del inquilino completado.',
+  matching: 'Propiedades sugeridas según el perfil.',
   pipeline: '5 propiedades en portafolio. 1 vacante con 3 candidatos.',
   mantenimiento: '3 solicitudes activas. 1 urgente (fuga Apt 502).',
   documentos: '5 contratos vigentes. 1 vence en 18 dias.',
@@ -69,6 +72,9 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   cobranza: 'No se pudo conectar con el servicio de cobros. Reintente.',
+  cotizador: 'No se pudo cotizar en este momento. Reintente.',
+  estudio: 'No se pudo completar el estudio del inquilino.',
+  matching: 'No se pudo generar el matching de propiedades.',
   pipeline: 'Error al consultar el pipeline de propiedades.',
   mantenimiento: 'Tiempo de espera agotado al consultar mantenimientos.',
   documentos: 'Error al acceder al repositorio de documentos.',

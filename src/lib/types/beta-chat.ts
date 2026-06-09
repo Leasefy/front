@@ -13,9 +13,16 @@ export type MessageRole = 'user' | 'assistant' | 'system';
 
 export type MessageStatus = 'sending' | 'sent' | 'streaming' | 'complete' | 'error';
 
-/** Agent types matching AI-AGENT-ARCHITECTURE.md */
+/**
+ * Agent types. The first four are the REAL dispatchable agent roster (the
+ * backend `dispatches[].agent`); the rest are legacy categories kept for
+ * existing mock/widget consumers. (AI CHAT HOME F4 — aligned with the roster.)
+ */
 export type AgentType =
   | 'cobranza'
+  | 'cotizador'
+  | 'estudio'
+  | 'matching'
   | 'pipeline'
   | 'mantenimiento'
   | 'documentos'
@@ -185,6 +192,9 @@ export interface SerializedConversation {
 /** Display metadata for each agent type: label, Phosphor icon name, Tailwind color */
 export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; color: string }> = {
   cobranza:      { label: 'Cobranza',      icon: 'CurrencyDollar', color: 'emerald' },
+  cotizador:     { label: 'Cotizador',     icon: 'FileText',       color: 'blue' },
+  estudio:       { label: 'Estudio',       icon: 'ChartBar',       color: 'purple' },
+  matching:      { label: 'Matching',      icon: 'FunnelSimple',   color: 'amber' },
   pipeline:      { label: 'Pipeline',      icon: 'FunnelSimple',   color: 'blue' },
   mantenimiento: { label: 'Mantenimiento', icon: 'Wrench',         color: 'amber' },
   documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },

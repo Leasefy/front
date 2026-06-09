@@ -16,11 +16,11 @@ import {
 } from './ai-hub-chat';
 
 describe('backendAgentToFrontType', () => {
-  it('maps the roster (cobranza exact, others best-fit)', () => {
+  it('maps the roster 1:1 (front enum aligned with the real roster in F4)', () => {
     expect(backendAgentToFrontType('cobranza')).toBe('cobranza');
-    expect(backendAgentToFrontType('matching')).toBe('pipeline');
-    expect(backendAgentToFrontType('estudio')).toBe('documentos');
-    expect(backendAgentToFrontType('cotizador')).toBe('reportes');
+    expect(backendAgentToFrontType('matching')).toBe('matching');
+    expect(backendAgentToFrontType('estudio')).toBe('estudio');
+    expect(backendAgentToFrontType('cotizador')).toBe('cotizador');
   });
 });
 
@@ -62,7 +62,7 @@ describe('dispatchToAgentExecution', () => {
       started,
     );
     expect(ex.status).toBe('completed');
-    expect(ex.agentType).toBe('pipeline');
+    expect(ex.agentType).toBe('matching');
     expect(ex.error).toBeUndefined();
     expect(ex.completedAt).toBeInstanceOf(Date);
   });

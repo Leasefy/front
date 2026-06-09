@@ -77,24 +77,11 @@ export interface ChatHistoryEntry {
 // ── Mappers (backend → front beta-chat contract) ──────────────────────────────
 
 /**
- * Backend dispatch agent → the front `AgentType` taxonomy. The front enum
- * predates the real agent roster and lacks cotizador/estudio/matching, so this
- * is a lossy best-fit (TODO: align the front AgentType with the real roster —
- * tracked as an F4 follow-up). cobranza is exact.
+ * Backend dispatch agent → the front `AgentType`. 1:1 since F4 aligned the
+ * front enum with the real roster (cobranza/cotizador/estudio/matching).
  */
 export function backendAgentToFrontType(agent: BackendDispatchAgent): AgentType {
-  switch (agent) {
-    case 'cobranza':
-      return 'cobranza';
-    case 'matching':
-      return 'pipeline'; // property↔candidate matching ≈ sales pipeline
-    case 'estudio':
-      return 'documentos'; // tenant study is document-driven
-    case 'cotizador':
-      return 'reportes'; // no exact front type for insurance quoting
-    default:
-      return 'cobranza';
-  }
+  return agent;
 }
 
 /**

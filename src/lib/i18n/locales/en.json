@@ -4208,7 +4208,9 @@
         "compliance": "Compliance",
         "cartas": "Letters",
         "llamadas": "Calls",
-        "siniestros": "Claims"
+        "siniestros": "Claims",
+        "conciliacionCola": "Human queue",
+        "conciliacionConfiguracion": "Settings"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

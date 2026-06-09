@@ -1,60 +1,49 @@
 'use client'
 
 /**
- * /ai/conciliacion — F1 of the Agent Workspace initiative.
+ * /ai/conciliacion — F6: the Conciliación Sala (first COMPLETE workspace).
  *
- * The Conciliación "Sala del agente" rendered through the TRANSVERSAL pattern:
- * the unified WorkItem endpoint (`/ai-hub/work-items?agente=conciliacion`) feeds
- * the generic <ColaHumana>. This is the first agent to adopt the shared pattern
- * end-to-end (AGENT-WORKSPACE-SPEC §2.3, F0 build order F1).
+ * Restructured from the F1 page (which mixed Sala + Cola): this page is now
+ * the generic <SalaAgente> fed by the per-agent overview endpoint; the queue
+ * moved to ./cola, the case detail lives at ./[id] and the autonomy posture
+ * at ./configuracion (AGENT-WORKSPACE-SPEC §1.4).
  *
- * The legacy domain-specific page at /conciliacion stays untouched; a redirect
- * to this canonical /ai/conciliacion is a follow-up.
+ * The legacy domain page at /conciliacion (movimientos + extractos) stays
+ * untouched and is linked from the domain slot below.
  */
 
-import { Bank } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { ArrowSquareOut, Bank } from '@phosphor-icons/react'
 
-import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
-import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
+import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 
 export default function ConciliacionSalaPage() {
-  const { items, total, isLoading, error, runAction } = useAgentWorkItems('conciliacion')
+  const { data, isLoading, error } = useAgentOverview('conciliacion')
+
+  // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
+  const colaCount = data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
-      {/* Header / Sala */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-            <Bank className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Conciliación
-          </span>
-          <h1 className="text-2xl font-semibold text-foreground">Cola humana</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el
-            movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.
-          </p>
-        </div>
-
-        {/* Pending KPI */}
-        <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-foreground tabular-nums">
-            {isLoading ? '—' : total}
-          </p>
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            En cola
-          </p>
-        </div>
-      </header>
-
-      {/* Cola humana (transversal component) */}
-      <ColaHumana
-        items={items}
-        isLoading={isLoading}
-        error={error}
-        onAction={(item, action, body) => runAction(item, action, body)}
-        emptyHint="Sube un extracto en /conciliacion o espera a que el agente proponga cruces."
-      />
-    </div>
+    <SalaAgente
+      agente="conciliacion"
+      titulo="Conciliación bancaria"
+      descripcion="El agente cruza los movimientos del extracto contra recaudos, dispersiones y comisiones, y deja los casos dudosos en tu cola. Modo Copiloto: nada se aplica sin tu aprobación."
+      icon={Bank}
+      overview={data}
+      isLoading={isLoading}
+      error={error}
+      colaHref="/panel/inmobiliaria/ai/conciliacion/cola"
+      colaCount={colaCount}
+    >
+      {/* Domain slot: the legacy movimientos/extractos surface stays reachable */}
+      <Link
+        href="/panel/inmobiliaria/conciliacion"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
+      >
+        <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
+        Ver movimientos y subir extractos
+      </Link>
+    </SalaAgente>
   )
 }

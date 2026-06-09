@@ -4209,7 +4209,9 @@
         "compliance": "Compliance",
         "cartas": "Cartas",
         "llamadas": "Llamadas",
-        "siniestros": "Siniestros"
+        "siniestros": "Siniestros",
+        "conciliacionCola": "Cola humana",
+        "conciliacionConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

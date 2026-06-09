@@ -197,7 +197,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    {
+      // F6: Conciliación is the first complete agent workspace — the parent
+      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
+      // movimientos page stays reachable from the Sala's domain slot.
+      label: t('inmobiliaria.nav.conciliacion'),
+      href: '/panel/inmobiliaria/ai/conciliacion',
+      icon: Bank,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionCola'),
+          href: '/panel/inmobiliaria/ai/conciliacion/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionConfiguracion'),
+          href: '/panel/inmobiliaria/ai/conciliacion/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     { label: t('inmobiliaria.ai.nav.pagos'),     href: '/panel/inmobiliaria/ai/pagos',     icon: CurrencyDollar, module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
     { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     // ── PORTAFOLIO ──

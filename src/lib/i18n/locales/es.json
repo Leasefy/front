@@ -4217,7 +4217,9 @@
         "estudioConfiguracion": "Configuración",
         "matching": "Matching",
         "matchingCola": "Cola humana",
-        "matchingConfiguracion": "Configuración"
+        "matchingConfiguracion": "Configuración",
+        "pagosCola": "Cola humana",
+        "pagosConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

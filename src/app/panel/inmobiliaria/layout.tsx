@@ -271,7 +271,33 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.ai.nav.pagos'),     href: '/panel/inmobiliaria/ai/pagos',     icon: CurrencyDollar, module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    {
+      // F9: Pagos (AP) complete workspace — the parent now points at the Sala
+      // (/ai/pagos); the deep AP/dispersiones ops stay in Tesorería and are
+      // cross-linked from the Sala's domain slot. The ADMIN|CONTADOR role gate
+      // from F4 is PRESERVED on the parent and both children.
+      label: t('inmobiliaria.ai.nav.pagos'),
+      href: '/panel/inmobiliaria/ai/pagos',
+      icon: CurrencyDollar,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.pagosCola'),
+          href: '/panel/inmobiliaria/ai/pagos/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/pagos/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },

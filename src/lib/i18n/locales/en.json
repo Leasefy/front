@@ -4213,7 +4213,10 @@
         "conciliacionConfiguracion": "Settings",
         "estudio": "Tenant screening",
         "estudioCola": "Human queue",
-        "estudioConfiguracion": "Settings"
+        "estudioConfiguracion": "Settings",
+        "matching": "Matching",
+        "matchingCola": "Human queue",
+        "matchingConfiguracion": "Settings"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

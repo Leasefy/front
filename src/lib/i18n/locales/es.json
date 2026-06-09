@@ -4214,7 +4214,10 @@
         "conciliacionConfiguracion": "Configuración",
         "estudio": "Estudio del inquilino",
         "estudioCola": "Cola humana",
-        "estudioConfiguracion": "Configuración"
+        "estudioConfiguracion": "Configuración",
+        "matching": "Matching",
+        "matchingCola": "Cola humana",
+        "matchingConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

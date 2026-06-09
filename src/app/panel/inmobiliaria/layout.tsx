@@ -35,6 +35,7 @@ import {
   Envelope,
   PhoneCall,
   Siren,
+  GitMerge,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -242,6 +243,29 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         {
           label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
           href: '/panel/inmobiliaria/ai/estudio/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F8: Matching complete workspace. The F3 page shipped URL-only without
+      // module/role gates — that ungated posture is preserved here (backend
+      // scopes by agency membership; outreach only with approval).
+      label: t('inmobiliaria.ai.nav.matching'),
+      href: '/panel/inmobiliaria/ai/matching',
+      icon: GitMerge,
+      module: null,
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.matchingCola'),
+          href: '/panel/inmobiliaria/ai/matching/cola',
+          icon: ClipboardText,
+          module: null,
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
+          href: '/panel/inmobiliaria/ai/matching/configuracion',
           icon: SlidersHorizontal,
           module: null,
         } as NavItemWithModule,

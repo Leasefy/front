@@ -59,7 +59,7 @@ export default function MatchingColaPage() {
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
-        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/matching/${item.id}`)}
+        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/matching/${encodeURIComponent(item.id)}`)}
         emptyHint="No hay sugerencias de matching pendientes para tu equipo."
       />
     </div>

@@ -60,7 +60,7 @@ function PagosCola() {
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
-        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/pagos/${item.id}`)}
+        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/pagos/${encodeURIComponent(item.id)}`)}
         emptyHint="No hay facturas pendientes de aprobación."
       />
     </div>

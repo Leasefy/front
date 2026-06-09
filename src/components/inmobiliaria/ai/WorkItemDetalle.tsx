@@ -29,7 +29,7 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import type { WorkItemAction } from '@/lib/api/work-item'
+import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
 import { AccionSugerida } from './AccionSugerida'
 import { TrazaCaso } from './TrazaCaso'
@@ -40,6 +40,17 @@ import {
   SEVERIDAD_TOKEN,
   relativeTime,
 } from './ColaHumana'
+
+/**
+ * Estados where the human can still act. Everything else
+ * (aprobado | ejecutando | resuelto | rechazado | fallo) shows the status
+ * block and hides the action buttons.
+ */
+const ACTIONABLE_ESTADOS: ReadonlySet<WorkItemEstado> = new Set([
+  'detectado',
+  'sugerido',
+  'en_revision',
+])
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -161,8 +172,9 @@ export function WorkItemDetalle({
   }
 
   const { item, contexto, traza } = data
-  const sev = SEVERIDAD_TOKEN[item.severidad]
-  const isDecided = item.estado === 'resuelto' || item.estado === 'rechazado'
+  // Finite maps crash on unknown keys — ALWAYS fall back (SalaAgente invariant).
+  const sev = SEVERIDAD_TOKEN[item.severidad] ?? SEVERIDAD_TOKEN.media
+  const isActionable = ACTIONABLE_ESTADOS.has(item.estado)
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid={`caso-${item.id}`}>
@@ -180,7 +192,9 @@ export function WorkItemDetalle({
             {ESTADO_LABEL[item.estado]}
           </span>
           {item.flags.map((flag) => {
-            const meta = FLAG_META[flag]
+            // Unknown flags are silently skipped (finite-map fallback).
+            const meta = FLAG_META[flag] ?? null
+            if (!meta) return null
             const FlagIcon = meta.icon
             return (
               <span
@@ -202,8 +216,8 @@ export function WorkItemDetalle({
       {/* 2-col: suggestion + contexto | traza */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-4">
-          {isDecided ? (
-            /* Already decided — actions hidden, show the decision block */
+          {!isActionable ? (
+            /* No longer actionable — actions hidden, show the status block */
             <div
               className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2"
               data-testid="caso-decision"
@@ -212,16 +226,28 @@ export function WorkItemDetalle({
                 Decisión
               </p>
               <div className="flex items-center gap-2">
-                {item.estado === 'resuelto' ? (
-                  <CheckCircle className="w-5 h-5 text-emerald-500" weight="duotone" aria-hidden="true" />
-                ) : (
+                {item.estado === 'rechazado' || item.estado === 'fallo' ? (
                   <XCircle className="w-5 h-5 text-rose-500" weight="duotone" aria-hidden="true" />
+                ) : item.estado === 'ejecutando' ? (
+                  <Clock className="w-5 h-5 text-muted-foreground" weight="duotone" aria-hidden="true" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 text-emerald-500" weight="duotone" aria-hidden="true" />
                 )}
-                <p className="text-sm font-semibold text-foreground">{ESTADO_LABEL[item.estado]}</p>
+                <p
+                  className={`text-sm font-semibold ${
+                    item.estado === 'fallo' ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
+                  }`}
+                >
+                  {ESTADO_LABEL[item.estado] ?? item.estado}
+                </p>
               </div>
               <p className="text-xs text-muted-foreground">
-                {item.decidedBy ? `Por ${item.decidedBy}` : 'Decisión registrada'}
-                {item.decidedAt ? ` · ${relativeTime(item.decidedAt)}` : ''}
+                {[
+                  item.decidedBy ? `Por ${item.decidedBy}` : 'Decisión registrada',
+                  item.decidedAt ? relativeTime(item.decidedAt) : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </div>
           ) : (

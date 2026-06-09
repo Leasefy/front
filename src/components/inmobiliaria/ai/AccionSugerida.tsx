@@ -117,7 +117,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               disabled={
                 disabled ||
                 reasonText.trim().length === 0 ||
-                busyActionId === pendingReasonAction.id
+                busyActionId !== null
               }
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
               className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
@@ -146,7 +146,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
             <button
               key={action.id}
               type="button"
-              disabled={disabled || busyActionId === action.id}
+              disabled={disabled || busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
               className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}

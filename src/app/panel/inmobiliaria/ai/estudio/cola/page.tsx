@@ -60,7 +60,7 @@ export default function EstudioColaPage() {
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
-        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/estudio/${item.id}`)}
+        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/estudio/${encodeURIComponent(item.id)}`)}
         emptyHint="No hay estudios pendientes de revisión. El agente escala aquí los casos riesgosos."
       />
     </div>

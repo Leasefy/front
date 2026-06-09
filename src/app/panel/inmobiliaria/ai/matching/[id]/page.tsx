@@ -24,13 +24,13 @@ export default function MatchingCasoPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
-  const { data, isLoading, error, notAvailable, refetch } = useWorkItemDetail('matching', id)
+  const { data, isLoading, error, notAvailable } = useWorkItemDetail('matching', id)
 
   async function handleAction(action: WorkItemAction, body?: Record<string, unknown>) {
     const res = await runWorkItemAction(action, body)
     if (res.ok) {
-      // Refresh the detail (estado/traza change) and return to the cola.
-      await refetch()
+      // Navigate first — refetching here 404-flashes once the item leaves the
+      // queue; the cola self-fetches fresh on mount.
       router.push(COLA_HREF)
     }
     return res

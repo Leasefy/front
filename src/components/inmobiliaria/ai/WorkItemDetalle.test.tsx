@@ -168,6 +168,42 @@ describe('WorkItemDetalle — states', () => {
     expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
   })
 
+  it('renders without crashing on unknown severidad and unknown flag (map fallbacks)', () => {
+    render({
+      data: {
+        ...DETAIL,
+        item: {
+          ...ITEM,
+          severidad: 'urgentisima' as WorkItem['severidad'],
+          flags: ['flag_desconocido' as WorkItem['flags'][number], 't323'],
+        },
+      },
+    })
+    // No white screen: the page body still mounts
+    expect(container.querySelector('[data-testid="caso-wi-1"]')).not.toBeNull()
+    // Unknown flag silently skipped; the known flag still renders
+    expect(container.textContent).toContain('Revisión T-323')
+    expect(container.textContent).not.toContain('flag_desconocido')
+  })
+
+  it('hides actions and shows the status block for estado=aprobado', () => {
+    render({ data: { ...DETAIL, item: { ...ITEM, estado: 'aprobado' } } })
+    const decision = container.querySelector('[data-testid="caso-decision"]')
+    expect(decision).not.toBeNull()
+    expect(decision!.textContent).toContain('Aprobado')
+    expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
+  })
+
+  it('hides actions and shows the status block with the danger tone for estado=fallo', () => {
+    render({ data: { ...DETAIL, item: { ...ITEM, estado: 'fallo' } } })
+    const decision = container.querySelector('[data-testid="caso-decision"]')
+    expect(decision).not.toBeNull()
+    expect(decision!.textContent).toContain('Falló')
+    // rose/danger tone on the estado label
+    expect(decision!.querySelector('.text-rose-700')).not.toBeNull()
+    expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
+  })
+
   it('renders the cross-workspace link card when crossLink is provided', () => {
     render({
       data: DETAIL,

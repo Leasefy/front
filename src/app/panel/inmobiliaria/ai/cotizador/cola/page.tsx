@@ -54,7 +54,7 @@ export default function CotizadorColaPage() {
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
-        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/cotizador/${item.id}`)}
+        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/cotizador/${encodeURIComponent(item.id)}`)}
         emptyHint="No hay verdicts con condiciones por revisar."
       />
     </div>

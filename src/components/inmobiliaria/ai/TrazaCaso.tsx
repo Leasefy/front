@@ -142,8 +142,9 @@ export function TrazaCaso({ entries, isLoading, error }: TrazaCasoProps) {
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground tabular-nums">
-                {relativeTime(entry.occurredAt)} · {absolute(entry.occurredAt)}
-                {entry.actorId ? ` · ${entry.actorId}` : ''}
+                {[relativeTime(entry.occurredAt), absolute(entry.occurredAt), entry.actorId ?? '']
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
               {hasDetails && (
                 <details className="group">

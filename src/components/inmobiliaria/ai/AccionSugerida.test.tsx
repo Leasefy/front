@@ -149,4 +149,28 @@ describe('AccionSugerida — disabled', () => {
     expect(buttonByText(/aprobar/i).disabled).toBe(true)
     expect(buttonByText(/rechazar/i).disabled).toBe(true)
   })
+
+  it('disables ALL action buttons while one action is in flight (cross-action lock)', async () => {
+    let resolveAction!: (v: { ok: boolean }) => void
+    onAction.mockImplementation(
+      () => new Promise<{ ok: boolean }>((r) => (resolveAction = r)),
+    )
+    render()
+
+    await act(async () => {
+      buttonByText(/aprobar/i).click()
+    })
+
+    // While Aprobar is in flight, the OTHER action is locked too
+    expect(buttonByText(/aprobar/i).disabled).toBe(true)
+    expect(buttonByText(/rechazar/i).disabled).toBe(true)
+
+    await act(async () => {
+      resolveAction({ ok: true })
+    })
+
+    // Lock released once the action settles
+    expect(buttonByText(/aprobar/i).disabled).toBe(false)
+    expect(buttonByText(/rechazar/i).disabled).toBe(false)
+  })
 })

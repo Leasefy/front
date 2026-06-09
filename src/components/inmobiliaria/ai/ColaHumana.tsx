@@ -149,7 +149,8 @@ function WorkItemCard({
   onAction: ColaHumanaProps['onAction']
   onOpen?: (item: WorkItem) => void
 }) {
-  const sev = SEVERIDAD_TOKEN[item.severidad]
+  // Finite maps crash on unknown keys — ALWAYS fall back (SalaAgente invariant).
+  const sev = SEVERIDAD_TOKEN[item.severidad] ?? SEVERIDAD_TOKEN.media
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
@@ -195,7 +196,9 @@ function WorkItemCard({
             {ESTADO_LABEL[item.estado]}
           </span>
           {item.flags.map((flag) => {
-            const meta = FLAG_META[flag]
+            // Unknown flags are silently skipped (finite-map fallback).
+            const meta = FLAG_META[flag] ?? null
+            if (!meta) return null
             const Icon = meta.icon
             return (
               <span
@@ -270,7 +273,7 @@ function WorkItemCard({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled={reasonText.trim().length === 0 || busyActionId === pendingReasonAction.id}
+              disabled={reasonText.trim().length === 0 || busyActionId !== null}
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
               className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -298,7 +301,7 @@ function WorkItemCard({
             <button
               key={action.id}
               type="button"
-              disabled={busyActionId === action.id}
+              disabled={busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
               className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}

@@ -61,6 +61,13 @@ function OnboardingPropietarioContent() {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  // Shown when the user taps a disabled CTA: explains the first missing field
+  const [disabledHint, setDisabledHint] = useState<string | null>(null)
+
+  // Clear the disabled-CTA hint when changing steps
+  useEffect(() => {
+    setDisabledHint(null)
+  }, [step])
 
   const [data, setData] = useState<OnboardingData>({
     displayName: '',
@@ -107,6 +114,12 @@ function OnboardingPropietarioContent() {
 
   const isStep1Valid = data.displayName.trim().length > 0
   const isStep2Valid = data.propertyTextT !== null && data.propertyCity.trim().length > 0
+
+  // First missing-field message per step (for the disabled-CTA tap affordance)
+  const step1HintMessage = 'Ingresa tu nombre completo para continuar'
+  const step2HintMessage = data.propertyTextT === null
+    ? 'Selecciona el tipo de propiedad para continuar'
+    : 'Selecciona la ciudad para continuar'
 
   const handleNext = () => {
     if (step === 1 && isStep1Valid) {
@@ -316,14 +329,23 @@ function OnboardingPropietarioContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleNext()
+                }}
+              >
               <div className="space-y-6">
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="displayName" className="block text-sm font-medium text-neutral-700 mb-2">
                     ¿Cómo te llamas? <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="displayName"
                     type="text"
+                    autoComplete="name"
                     value={data.displayName}
                     onChange={(e) => updateData({ displayName: e.target.value })}
                     placeholder="Tu nombre completo"
@@ -333,12 +355,14 @@ function OnboardingPropietarioContent() {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="ownerPhone" className="block text-sm font-medium text-neutral-700 mb-2">
                     Celular <span className="text-neutral-400 font-normal">(opcional)</span>
                   </label>
                   <input
+                    id="ownerPhone"
                     type="tel"
-                    inputMode="numeric"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={data.phone}
                     onChange={(e) => {
                       // Only allow numbers
@@ -378,15 +402,20 @@ function OnboardingPropietarioContent() {
               </div>
 
               {/* Continue Button */}
+              <span
+                className={cn('block', !isStep1Valid && !isSubmitting && 'cursor-not-allowed')}
+                onClick={() => {
+                  if (!isStep1Valid && !isSubmitting) setDisabledHint(step1HintMessage)
+                }}
+              >
               <button
-                type="button"
-                onClick={handleNext}
+                type="submit"
                 disabled={!isStep1Valid || isSubmitting}
                 className={cn(
                   "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
                   isStep1Valid && !isSubmitting
                     ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
-                    : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                    : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
                 )}
               >
                 {isSubmitting ? (
@@ -406,6 +435,13 @@ function OnboardingPropietarioContent() {
                   </>
                 )}
               </button>
+              </span>
+              {disabledHint && !isStep1Valid && (
+                <p role="status" className="mt-3 text-xs text-amber-600 text-center">
+                  {disabledHint}
+                </p>
+              )}
+              </form>
             </motion.div>
           ) : (
             <motion.div
@@ -429,6 +465,13 @@ function OnboardingPropietarioContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSubmit()
+                }}
+              >
               <div className="space-y-6">
                 {/* Property TextT */}
                 <div>
@@ -462,10 +505,11 @@ function OnboardingPropietarioContent() {
 
                 {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="propertyCity" className="block text-sm font-medium text-neutral-700 mb-2">
                     Ciudad <span className="text-red-500">*</span>
                   </label>
                   <select
+                    id="propertyCity"
                     value={data.propertyCity}
                     onChange={(e) => updateData({ propertyCity: e.target.value })}
                     className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all appearance-none"
@@ -480,13 +524,15 @@ function OnboardingPropietarioContent() {
 
                 {/* Expected Rent */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="expectedRent" className="block text-sm font-medium text-neutral-700 mb-2">
                     Arriendo esperado <span className="text-neutral-400 font-normal">(opcional)</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
                     <input
+                      id="expectedRent"
                       type="text"
+                      inputMode="numeric"
                       value={data.expectedRent}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '')
@@ -526,30 +572,42 @@ function OnboardingPropietarioContent() {
                   <ArrowLeft className="w-4 h-4" />
                   Atrás
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!isStep2Valid || isSubmitting}
-                  className={cn(
-                    "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                    isStep2Valid && !isSubmitting
-                      ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
+                <span
+                  className={cn('flex-1 flex', !isStep2Valid && !isSubmitting && 'cursor-not-allowed')}
+                  onClick={() => {
+                    if (!isStep2Valid && !isSubmitting) setDisabledHint(step2HintMessage)
+                  }}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      Comenzar
-                      <Rocket className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={!isStep2Valid || isSubmitting}
+                    className={cn(
+                      "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
+                      isStep2Valid && !isSubmitting
+                        ? "bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700"
+                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
+                    )}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SpinnerGap className="w-4 h-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        Comenzar
+                        <Rocket className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </span>
               </div>
+              {disabledHint && !isStep2Valid && (
+                <p role="status" className="mt-3 text-xs text-amber-600 text-center">
+                  {disabledHint}
+                </p>
+              )}
+              </form>
             </motion.div>
           )}
         </AnimatePresence>

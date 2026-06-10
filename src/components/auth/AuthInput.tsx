@@ -17,13 +17,14 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
  * Password input has show/hide toggle
  */
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
-  ({ className, type = 'text', label, error, icon, isNewPassword, autoComplete, ...props }, ref) => {
+  ({ className, type = 'text', label, error, icon, isNewPassword, autoComplete, id, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const [isFocused, setIsFocused] = React.useState(false);
     const isPassword = type === 'password';
     const inputTextT = isPassword && showPassword ? 'text' : type;
     const reactId = React.useId();
     const errorId = `${reactId}-error`;
+    const inputId = id ?? `${reactId}-input`;
 
     // Determine autoComplete value based on type and context
     const getAutoComplete = () => {
@@ -43,7 +44,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-[13px] font-medium text-foreground">
+          <label htmlFor={inputId} className="text-[13px] font-medium text-foreground">
             {label}
           </label>
         )}
@@ -62,13 +63,14 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
           <input
             type={inputTextT}
             ref={ref}
+            id={inputId}
             autoComplete={getAutoComplete()}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={cn(
-              'flex h-12 w-full rounded-xl border bg-background px-4 text-[14px]',
+              'flex h-12 w-full rounded-xl border bg-background px-4 text-base md:text-[14px]',
               'transition-all duration-200 placeholder:text-muted-foreground/60',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary',
               'disabled:cursor-not-allowed disabled:opacity-50',

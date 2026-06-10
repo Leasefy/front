@@ -164,10 +164,16 @@ export interface AgentWorkspaceFetchResult<T> {
   notAvailable: boolean
 }
 
-async function getJson<T>(path: string): Promise<AgentWorkspaceFetchResult<T>> {
+async function getJson<T>(
+  path: string,
+  signal?: AbortSignal,
+): Promise<AgentWorkspaceFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
-  const res = await globalThis.fetch(`${agentUrl}${path}`, { headers: agentAuthHeaders() })
+  const res = await globalThis.fetch(`${agentUrl}${path}`, {
+    headers: agentAuthHeaders(),
+    signal,
+  })
   if (res.status === 404) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)
   return { data: (await res.json()) as T, notAvailable: false }
@@ -176,9 +182,11 @@ async function getJson<T>(path: string): Promise<AgentWorkspaceFetchResult<T>> {
 export function fetchAgentOverview(
   agencyId: string,
   agente: AgenteId,
+  signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<AgentOverviewResponse>> {
   return getJson<AgentOverviewResponse>(
     `/api/agency/${agencyId}/ai-hub/agentes/${agente}/overview`,
+    signal,
   )
 }
 
@@ -186,34 +194,41 @@ export function fetchWorkItemDetail(
   agencyId: string,
   agente: AgenteId,
   id: string,
+  signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<WorkItemDetailResponse>> {
   return getJson<WorkItemDetailResponse>(
     `/api/agency/${agencyId}/ai-hub/work-items/${agente}/${encodeURIComponent(id)}`,
+    signal,
   )
 }
 
 export function fetchAgentAnalitica(
   agencyId: string,
   agente: AgenteId,
+  signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<AgentAnaliticaResponse>> {
   return getJson<AgentAnaliticaResponse>(
     `/api/agency/${agencyId}/ai-hub/agentes/${agente}/analitica`,
+    signal,
   )
 }
 
 export function fetchAgentAutonomia(
   agencyId: string,
   agente: AgenteId,
+  signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<AgentAutonomiaResponse>> {
   return getJson<AgentAutonomiaResponse>(
     `/api/agency/${agencyId}/ai-hub/agentes/${agente}/autonomia`,
+    signal,
   )
 }
 
 export function fetchAiHubResumen(
   agencyId: string,
+  signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<AiHubResumenResponse>> {
-  return getJson<AiHubResumenResponse>(`/api/agency/${agencyId}/ai-hub/resumen`)
+  return getJson<AiHubResumenResponse>(`/api/agency/${agencyId}/ai-hub/resumen`, signal)
 }
 
 /**

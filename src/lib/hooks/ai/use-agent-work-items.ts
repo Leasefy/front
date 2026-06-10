@@ -13,7 +13,7 @@
  * mutating actions the backend declared on each WorkItem (F0 is adapter-first).
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
@@ -61,6 +61,9 @@ export function useAgentWorkItems(
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
+  const abortRef = useRef<AbortController | null>(null)
+
   const fetchData = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
     if (!agentUrl) {
@@ -73,6 +76,10 @@ export function useAgentWorkItems(
       return
     }
 
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     const url = new URL(`${agentUrl}/api/agency/${agencyId}/ai-hub/work-items`)
     url.searchParams.set('agente', agente)
     if (filters?.status) url.searchParams.set('status', filters.status)
@@ -81,22 +88,30 @@ export function useAgentWorkItems(
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url.toString(), { headers: agentAuthHeaders() })
+      const res = await globalThis.fetch(url.toString(), {
+        headers: agentAuthHeaders(),
+        signal: controller.signal,
+      })
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as AgentWorkItemsResponse
+      if (controller.signal.aborted) return
       setItems(json.items ?? [])
       setTotal(json.total ?? 0)
       setError(null)
     } catch (err) {
+      if (controller.signal.aborted) return
       setError(err instanceof Error ? err.message : 'Failed to fetch work items')
     } finally {
-      setIsLoading(false)
+      if (!controller.signal.aborted) setIsLoading(false)
     }
   }, [agencyId, agente, filters?.status, filters?.page, filters?.pageSize])
 
   useEffect(() => {
     if (!agencyId) return
     void fetchData()
+    return () => {
+      abortRef.current?.abort()
+    }
   }, [fetchData, agencyId])
 
   const runAction = useCallback(

@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
 
@@ -45,7 +46,7 @@ function PagosConfiguracion() {
 
 export default function PagosConfiguracionPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosConfiguracion />
     </PageGuard>
   )

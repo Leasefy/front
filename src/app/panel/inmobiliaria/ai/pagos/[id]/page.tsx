@@ -18,6 +18,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
@@ -63,7 +64,7 @@ function PagosCaso() {
 
 export default function PagosCasoPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosCaso />
     </PageGuard>
   )

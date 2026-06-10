@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
 
@@ -69,7 +70,7 @@ function PagosCola() {
 
 export default function PagosColaPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosCola />
     </PageGuard>
   )

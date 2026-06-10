@@ -16,10 +16,12 @@
 import Link from 'next/link'
 import { ArrowSquareOut, Bank } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 
-export default function ConciliacionSalaPage() {
+function ConciliacionSala() {
   const { data, isLoading, error } = useAgentOverview('conciliacion')
 
   // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
@@ -46,5 +48,13 @@ export default function ConciliacionSalaPage() {
         Ver movimientos y subir extractos
       </Link>
     </SalaAgente>
+  )
+}
+
+export default function ConciliacionSalaPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionSala />
+    </PageGuard>
   )
 }

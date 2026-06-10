@@ -20,6 +20,7 @@ import { ArrowSquareOut, CurrencyDollar, PaperPlaneTilt, Wallet } from '@phospho
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 
@@ -95,7 +96,7 @@ function PagosSala() {
 
 export default function PagosPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosSala />
     </PageGuard>
   )

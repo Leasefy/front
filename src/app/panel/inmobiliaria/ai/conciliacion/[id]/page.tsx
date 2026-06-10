@@ -12,6 +12,8 @@
 import { useParams, useRouter } from 'next/navigation'
 import { Bank } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
@@ -19,7 +21,7 @@ import { WorkItemDetalle } from '@/components/inmobiliaria/ai/WorkItemDetalle'
 
 const COLA_HREF = '/panel/inmobiliaria/ai/conciliacion/cola'
 
-export default function ConciliacionCasoPage() {
+function ConciliacionCaso() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
@@ -47,5 +49,13 @@ export default function ConciliacionCasoPage() {
       icon={Bank}
       onAction={handleAction}
     />
+  )
+}
+
+export default function ConciliacionCasoPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionCaso />
+    </PageGuard>
   )
 }

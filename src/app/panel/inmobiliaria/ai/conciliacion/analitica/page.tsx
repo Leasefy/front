@@ -10,10 +10,12 @@
 import Link from 'next/link'
 import { Bank, CaretLeft } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
 
-export default function ConciliacionAnaliticaPage() {
+function ConciliacionAnalitica() {
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('conciliacion')
 
   return (
@@ -36,5 +38,13 @@ export default function ConciliacionAnaliticaPage() {
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>
+  )
+}
+
+export default function ConciliacionAnaliticaPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionAnalitica />
+    </PageGuard>
   )
 }

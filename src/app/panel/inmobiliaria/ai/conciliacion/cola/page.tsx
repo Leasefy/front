@@ -12,10 +12,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bank, CaretLeft } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
 
-export default function ConciliacionColaPage() {
+function ConciliacionCola() {
   const router = useRouter()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('conciliacion')
 
@@ -60,5 +62,13 @@ export default function ConciliacionColaPage() {
         emptyHint="Sube un extracto en Movimientos o espera a que el agente proponga cruces."
       />
     </div>
+  )
+}
+
+export default function ConciliacionColaPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionCola />
+    </PageGuard>
   )
 }

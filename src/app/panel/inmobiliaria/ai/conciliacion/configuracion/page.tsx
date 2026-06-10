@@ -10,10 +10,12 @@
 import Link from 'next/link'
 import { Bank, CaretLeft } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
 
-export default function ConciliacionConfiguracionPage() {
+function ConciliacionConfiguracion() {
   const { data, isLoading, error } = useAgentAutonomia('conciliacion')
 
   return (
@@ -37,5 +39,13 @@ export default function ConciliacionConfiguracionPage() {
 
       <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
     </div>
+  )
+}
+
+export default function ConciliacionConfiguracionPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionConfiguracion />
+    </PageGuard>
   )
 }

@@ -23,6 +23,7 @@ import {
   FileText,
   GitMerge,
   Robot,
+  Scales,
   ShieldCheck,
   Tray,
   UsersThree,
@@ -41,7 +42,8 @@ const NS = 'inmobiliaria.ai.workspace.equipo'
 /**
  * Canonical per-agent icons — same mapping the workspace salas + nav use
  * (conciliación=Bank, estudio=ShieldCheck, matching=GitMerge,
- * pagos=CurrencyDollar, cobranza=ChatCircleText, cotizador=FileText).
+ * pagos=CurrencyDollar, cobranza=ChatCircleText, cotizador=FileText,
+ * avalúos=Scales — the same icon the onboarding uses for the avalúos service).
  * Finite icon maps crash when a key is missing — ALWAYS fall back to Robot.
  */
 const AGENT_ICON: Record<AgenteId, Icon> = {
@@ -51,6 +53,7 @@ const AGENT_ICON: Record<AgenteId, Icon> = {
   pagos: CurrencyDollar,
   estudio: ShieldCheck,
   matching: GitMerge,
+  avaluos: Scales,
 }
 
 /** Agent display name (inmobiliaria.ai.workspace.agente.*; raw-id fallback). */

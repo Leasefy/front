@@ -8,8 +8,9 @@
  * - 'cobranza' | 'cotizador' (gated since Phase 29/30): FAIL CLOSED.
  *   Payload missing, agent service down, or action not granted → DENIED.
  *
- * - 'estudio' | 'matching' (front gates added alongside the agent-repo pair
- *   PR that adds these keys to the payload): ABSENT-MODULE = ALLOWED.
+ * - 'estudio' | 'matching' | 'avaluos' (front gates added alongside the
+ *   agent-repo pair PR that adds these keys to the payload):
+ *   ABSENT-MODULE = ALLOWED.
  *   These workspaces shipped ungated (backend scopes by agency membership),
  *   so the front gate must be mergeable IN ANY ORDER with the agent PR:
  *   · key ABSENT from the payload (older agent build, agent fetch failed,
@@ -26,10 +27,11 @@ export interface AgentModulePermissions {
   /** Added by the agent-repo pair PR — optional so either repo merges first. */
   estudio?: string[];
   matching?: string[];
+  avaluos?: string[];
 }
 
 const FAIL_CLOSED_MODULES = ['cobranza', 'cotizador'] as const;
-const ABSENT_ALLOWED_MODULES = ['estudio', 'matching'] as const;
+const ABSENT_ALLOWED_MODULES = ['estudio', 'matching', 'avaluos'] as const;
 
 export type AgentModule =
   | (typeof FAIL_CLOSED_MODULES)[number]

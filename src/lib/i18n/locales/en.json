@@ -5867,7 +5867,8 @@
           "conciliacion": "Reconciliation",
           "pagos": "Payments (AP)",
           "estudio": "Tenant screening",
-          "matching": "Matching"
+          "matching": "Matching",
+          "avaluos": "Appraisals"
         },
         "rol": {
           "cobrador": "Collector",

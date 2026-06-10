@@ -1041,8 +1041,9 @@ export function CommandPalette() {
                   </AnimatePresence>
                 </ScrollArea>
               </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* ── Footer / keyboard hints — desktop-only (no hay teclado en touch) ── */}
         <div className="hidden md:flex items-center gap-4 px-4 h-10 border-t border-border bg-muted/30">

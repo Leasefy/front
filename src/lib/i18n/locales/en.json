@@ -6046,6 +6046,17 @@
             "colaDescPost": "(no clean approval). Open each one to pick a carrier, adjust the conditions or re-quote. Triage of the last 30 days.",
             "porRevisar": "To review",
             "colaEmptyHint": "No verdicts with conditions to review."
+          },
+          "avaluos": {
+            "eyebrow": "Agent · Appraisals",
+            "salaTitulo": "Appraisals",
+            "salaDesc": "The agent estimates each property's value with a market-data engine and manages the certificate signed by an appraiser. Your agency requests the appraisal and tracks its status here — the certificate signature is handled by the appraiser (Portofino/Leasefy).",
+            "colaDesc": "Appraisals requested by your agency with their pipeline status (draft → under review → signed → paid → delivered). Read-only tracking: the certificate signature is handled by the appraiser (Portofino/Leasefy).",
+            "colaEmptyHint": "No appraisals under review.",
+            "casoColaLabel": "Appraisals queue",
+            "solicitarTitle": "Request appraisal",
+            "solicitarDetalle": "Opens the public wizard to request a new appraisal.",
+            "firmaNota": "The certificate signature is handled by the appraiser (Portofino/Leasefy)."
           }
         }
       }

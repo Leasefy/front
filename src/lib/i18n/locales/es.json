@@ -6047,6 +6047,17 @@
             "colaDescPost": "(sin una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o re-cotizar. Triage de los últimos 30 días.",
             "porRevisar": "Por revisar",
             "colaEmptyHint": "No hay verdicts con condiciones por revisar."
+          },
+          "avaluos": {
+            "eyebrow": "Agente · Avalúos",
+            "salaTitulo": "Avalúos",
+            "salaDesc": "El agente estima el valor de cada inmueble con un motor de datos del mercado y gestiona el certificado firmado por un avaluador. Tu inmobiliaria solicita el avalúo y consulta aquí su estado — la firma del certificado la gestiona el avaluador (Portofino/Leasefy).",
+            "colaDesc": "Avalúos solicitados por tu inmobiliaria con su estado en el pipeline (borrador → en revisión → firmado → pagado → entregado). Seguimiento de solo lectura: la firma del certificado la gestiona el avaluador (Portofino/Leasefy).",
+            "colaEmptyHint": "No hay avalúos en revisión.",
+            "casoColaLabel": "Cola de avalúos",
+            "solicitarTitle": "Solicitar avalúo",
+            "solicitarDetalle": "Abre el asistente público para solicitar un nuevo avalúo.",
+            "firmaNota": "La firma del certificado se gestiona por el avaluador (Portofino/Leasefy)."
           }
         }
       }

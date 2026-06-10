@@ -23,24 +23,27 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
+import { useI18n } from '@/lib/i18n'
 
-/** Deep-ops surfaces the agent prepares work for — framed, never duplicated. */
-const OPERACIONES_PROFUNDAS: { label: string; detalle: string; href: string; icon: Icon }[] = [
+/** Deep-ops surfaces the agent prepares work for — framed, never duplicated.
+ *  Label/detalle text lives under inmobiliaria.ai.workspace.pages.pagos.ops*. */
+const OPERACIONES_PROFUNDAS: { labelKey: string; detalleKey: string; href: string; icon: Icon }[] = [
   {
-    label: 'Tesorería · AP',
-    detalle: 'Facturas, aging y matriz de aprobación',
+    labelKey: 'inmobiliaria.ai.workspace.pages.pagos.opsTesoreria',
+    detalleKey: 'inmobiliaria.ai.workspace.pages.pagos.opsTesoreriaDetalle',
     href: '/panel/inmobiliaria/tesoreria',
     icon: Wallet,
   },
   {
-    label: 'Dispersiones',
-    detalle: 'Payment-runs y comprobantes',
+    labelKey: 'inmobiliaria.ai.workspace.pages.pagos.opsDispersiones',
+    detalleKey: 'inmobiliaria.ai.workspace.pages.pagos.opsDispersionesDetalle',
     href: '/panel/inmobiliaria/dispersiones',
     icon: PaperPlaneTilt,
   },
 ]
 
 function PagosSala() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useAgentOverview('pagos')
 
   // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
@@ -49,8 +52,8 @@ function PagosSala() {
   return (
     <SalaAgente
       agente="pagos"
-      titulo="Pagos (AP)"
-      descripcion="El agente prepara la dispersión a proveedores — facturas, aging, matriz de aprobación por monto y payment-runs — y deja en tu cola lo que requiere firma humana. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. El agente prepara, el humano aprueba."
+      titulo={t('inmobiliaria.ai.workspace.pages.pagos.salaTitulo')}
+      descripcion={t('inmobiliaria.ai.workspace.pages.pagos.salaDesc')}
       icon={CurrencyDollar}
       overview={data}
       isLoading={isLoading}
@@ -61,7 +64,7 @@ function PagosSala() {
       {/* Domain slot: operaciones profundas — cross-links, no duplicación */}
       <section className="space-y-2" data-testid="pagos-operaciones-profundas">
         <h2 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-          Operaciones profundas
+          {t('inmobiliaria.ai.workspace.pages.pagos.opsTitle')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
           {OPERACIONES_PROFUNDAS.map((op) => {
@@ -78,8 +81,8 @@ function PagosSala() {
                   aria-hidden="true"
                 />
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium text-foreground">{op.label}</span>
-                  <span className="block text-xs text-muted-foreground truncate">{op.detalle}</span>
+                  <span className="block text-sm font-medium text-foreground">{t(op.labelKey)}</span>
+                  <span className="block text-xs text-muted-foreground truncate">{t(op.detalleKey)}</span>
                 </span>
                 <ArrowSquareOut
                   className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition shrink-0"

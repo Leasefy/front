@@ -5979,6 +5979,74 @@
           "sinDatosTitle": "El agente aún no reporta su conteo",
           "sala": "Sala",
           "cola": "Cola"
+        },
+        "pages": {
+          "comun": {
+            "colaTitle": "Cola humana",
+            "configTitle": "Configuración y autonomía",
+            "configDesc": "Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por ahora — los cambios de modo llegan con la certificación de la valla.",
+            "analiticaTitle": "Analítica",
+            "enCola": "En cola"
+          },
+          "conciliacion": {
+            "eyebrow": "Agente · Conciliación",
+            "salaTitulo": "Conciliación bancaria",
+            "salaDesc": "El agente cruza los movimientos del extracto contra recaudos, dispersiones y comisiones, y deja los casos dudosos en tu cola. Modo Copiloto: nada se aplica sin tu aprobación.",
+            "verMovimientos": "Ver movimientos y subir extractos",
+            "colaDesc": "Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.",
+            "colaEmptyHint": "Sube un extracto en Movimientos o espera a que el agente proponga cruces.",
+            "casoColaLabel": "Cola de conciliación",
+            "analiticaDesc": "Desempeño del agente de conciliación en los últimos 30 días: casos cruzados, tasa de aciertos y monto conciliado por día."
+          },
+          "estudio": {
+            "eyebrow": "Agente · Estudio del inquilino",
+            "salaTitulo": "Estudio del inquilino",
+            "salaDesc": "El agente evalúa cada solicitud de arriendo con un score compuesto y un nivel A/B/C/D, y escala a tu cola los casos borderline o riesgosos. Cada decisión sobre una persona queda auditada (derecho a revisión humana, T-323). Modo Copiloto: nada se decide sin tu aprobación.",
+            "colaDesc": "Estudios de arrendamiento que el agente escaló o marcó como borderline. Revisa el verdict (nivel y puntaje) y su evidencia, luego aprueba o rechaza al inquilino. Cada decisión queda auditada (derecho a revisión humana, T-323). Modo Copiloto: nada se decide sin ti.",
+            "colaEmptyHint": "No hay estudios pendientes de revisión. El agente escala aquí los casos riesgosos.",
+            "casoColaLabel": "Cola de estudio",
+            "crossPregunta": "¿Qué propiedad le calza?",
+            "crossDestino": "Workspace de Matching",
+            "analiticaDesc": "Desempeño del estudio del inquilino en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día."
+          },
+          "matching": {
+            "eyebrow": "Agente · Matching",
+            "salaTitulo": "Matching",
+            "salaDesc": "El agente empareja cada candidato con las propiedades compatibles del portafolio, con score de compatibilidad y factores de calce. El contacto (outreach) solo sale con tu aprobación. Modo Copiloto: nada se hace sin ti.",
+            "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
+            "colaEmptyHint": "No hay sugerencias de matching pendientes para tu equipo.",
+            "casoColaLabel": "Cola de matching",
+            "crossPregunta": "¿Es confiable este candidato?",
+            "crossDestino": "Estudio del inquilino",
+            "analiticaDesc": "Desempeño del agente de matching en los últimos 30 días: matches propuestos, compatibilidad promedio y candidatos redirigidos por día."
+          },
+          "pagos": {
+            "eyebrow": "Agente · Pagos (AP)",
+            "salaTitulo": "Pagos (AP)",
+            "salaDesc": "El agente prepara la dispersión a proveedores — facturas, aging, matriz de aprobación por monto y payment-runs — y deja en tu cola lo que requiere firma humana. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. El agente prepara, el humano aprueba.",
+            "opsTitle": "Operaciones profundas",
+            "opsTesoreria": "Tesorería · AP",
+            "opsTesoreriaDetalle": "Facturas, aging y matriz de aprobación",
+            "opsDispersiones": "Dispersiones",
+            "opsDispersionesDetalle": "Payment-runs y comprobantes",
+            "colaTitle": "Cola de aprobación",
+            "colaDesc": "Facturas de proveedor pendientes de aprobar. Revisa el monto, el proveedor y el vencimiento, luego aprueba o rechaza. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. Modo Copiloto: ninguna dispersión sale sin ti.",
+            "porAprobar": "Por aprobar",
+            "colaEmptyHint": "No hay facturas pendientes de aprobación.",
+            "casoColaLabel": "Cola de pagos",
+            "crossPregunta": "¿Ver la factura en Tesorería?",
+            "crossDestino": "Tesorería · AP",
+            "analiticaDesc": "Desempeño del agente de pagos en los últimos 30 días: facturas procesadas, aprobaciones y monto dispersado por día."
+          },
+          "cotizador": {
+            "eyebrow": "Agente · Cotizador / Asegurabilidad",
+            "colaTitle": "Verdicts por revisar",
+            "colaDescPre": "Cotizaciones cuyo veredicto de asegurabilidad quedó",
+            "colaDescStrong": "con condiciones",
+            "colaDescPost": "(sin una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o re-cotizar. Triage de los últimos 30 días.",
+            "porRevisar": "Por revisar",
+            "colaEmptyHint": "No hay verdicts con condiciones por revisar."
+          }
         }
       }
     },

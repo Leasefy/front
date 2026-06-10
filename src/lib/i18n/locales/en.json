@@ -5978,6 +5978,74 @@
           "sinDatosTitle": "The agent has not reported its count yet",
           "sala": "Room",
           "cola": "Queue"
+        },
+        "pages": {
+          "comun": {
+            "colaTitle": "Human queue",
+            "configTitle": "Settings & autonomy",
+            "configDesc": "The agent's operating mode and the guardrail that bounds what it can do. Read-only for now — mode changes arrive with the guardrail certification.",
+            "analiticaTitle": "Analytics",
+            "enCola": "In queue"
+          },
+          "conciliacion": {
+            "eyebrow": "Agent · Reconciliation",
+            "salaTitulo": "Bank reconciliation",
+            "salaDesc": "The agent matches bank-statement transactions against collections, payouts and fees, and leaves doubtful cases in your queue. Copilot mode: nothing is applied without your approval.",
+            "verMovimientos": "View transactions and upload statements",
+            "colaDesc": "Bank matches the agent suggests that need your review. Approving reconciles the transaction; rejecting returns it to unidentified. Copilot mode: nothing is applied without you.",
+            "colaEmptyHint": "Upload a statement in Transactions or wait for the agent to propose matches.",
+            "casoColaLabel": "Reconciliation queue",
+            "analiticaDesc": "Reconciliation agent performance over the last 30 days: matched cases, hit rate and reconciled amount per day."
+          },
+          "estudio": {
+            "eyebrow": "Agent · Tenant screening",
+            "salaTitulo": "Tenant screening",
+            "salaDesc": "The agent evaluates each rental application with a composite score and an A/B/C/D level, and escalates borderline or risky cases to your queue. Every decision about a person is audited (right to human review, T-323). Copilot mode: nothing is decided without your approval.",
+            "colaDesc": "Rental screenings the agent escalated or marked borderline. Review the verdict (level and score) and its evidence, then approve or reject the tenant. Every decision is audited (right to human review, T-323). Copilot mode: nothing is decided without you.",
+            "colaEmptyHint": "No screenings pending review. The agent escalates risky cases here.",
+            "casoColaLabel": "Screening queue",
+            "crossPregunta": "Which property fits them?",
+            "crossDestino": "Matching workspace",
+            "analiticaDesc": "Tenant-screening performance over the last 30 days: evaluations processed, decisions made and human-review escalation rate per day."
+          },
+          "matching": {
+            "eyebrow": "Agent · Matching",
+            "salaTitulo": "Matching",
+            "salaDesc": "The agent pairs each candidate with the portfolio's compatible properties, with a compatibility score and fit factors. Outreach only goes out with your approval. Copilot mode: nothing happens without you.",
+            "colaDesc": "Candidates the agent paired with compatible properties. Review the best match and its fit factors, then action it (to reach out) or discard it. Copilot mode: nothing happens without you.",
+            "colaEmptyHint": "No matching suggestions pending for your team.",
+            "casoColaLabel": "Matching queue",
+            "crossPregunta": "Is this candidate reliable?",
+            "crossDestino": "Tenant screening",
+            "analiticaDesc": "Matching agent performance over the last 30 days: proposed matches, average compatibility and redirected candidates per day."
+          },
+          "pagos": {
+            "eyebrow": "Agent · Payments (AP)",
+            "salaTitulo": "Payments (AP)",
+            "salaDesc": "The agent prepares vendor payouts — bills, aging, the amount-based approval matrix and payment runs — and leaves whatever needs a human signature in your queue. The amount/cost-center matrix and segregation of duties are enforced server-side. The agent prepares, the human approves.",
+            "opsTitle": "Deep operations",
+            "opsTesoreria": "Treasury · AP",
+            "opsTesoreriaDetalle": "Bills, aging and approval matrix",
+            "opsDispersiones": "Payouts",
+            "opsDispersionesDetalle": "Payment runs and receipts",
+            "colaTitle": "Approval queue",
+            "colaDesc": "Vendor bills pending approval. Review the amount, the vendor and the due date, then approve or reject. The amount/cost-center matrix and segregation of duties are enforced server-side. Copilot mode: no payout goes out without you.",
+            "porAprobar": "To approve",
+            "colaEmptyHint": "No bills pending approval.",
+            "casoColaLabel": "Payments queue",
+            "crossPregunta": "View the bill in Treasury?",
+            "crossDestino": "Treasury · AP",
+            "analiticaDesc": "Payments agent performance over the last 30 days: bills processed, approvals and amount disbursed per day."
+          },
+          "cotizador": {
+            "eyebrow": "Agent · Quoter / Insurability",
+            "colaTitle": "Verdicts to review",
+            "colaDescPre": "Quotes whose insurability verdict came back",
+            "colaDescStrong": "with conditions",
+            "colaDescPost": "(no clean approval). Open each one to pick a carrier, adjust the conditions or re-quote. Triage of the last 30 days.",
+            "porRevisar": "To review",
+            "colaEmptyHint": "No verdicts with conditions to review."
+          }
         }
       }
     },

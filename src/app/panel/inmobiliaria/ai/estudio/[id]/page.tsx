@@ -18,11 +18,13 @@ import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
 import { WorkItemDetalle } from '@/components/inmobiliaria/ai/WorkItemDetalle'
+import { useI18n } from '@/lib/i18n'
 
 const COLA_HREF = '/panel/inmobiliaria/ai/estudio/cola'
 
 function EstudioCaso() {
   const router = useRouter()
+  const { t } = useI18n()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
@@ -45,12 +47,12 @@ function EstudioCaso() {
       error={error}
       notAvailable={notAvailable}
       colaHref={COLA_HREF}
-      colaLabel="Cola de estudio"
+      colaLabel={t('inmobiliaria.ai.workspace.pages.estudio.casoColaLabel')}
       icon={ShieldCheck}
       onAction={handleAction}
       crossLink={{
-        pregunta: '¿Qué propiedad le calza?',
-        destino: 'Workspace de Matching',
+        pregunta: t('inmobiliaria.ai.workspace.pages.estudio.crossPregunta'),
+        destino: t('inmobiliaria.ai.workspace.pages.estudio.crossDestino'),
         href: '/panel/inmobiliaria/ai/matching',
       }}
     />

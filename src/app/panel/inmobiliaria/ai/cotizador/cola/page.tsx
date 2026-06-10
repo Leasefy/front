@@ -15,9 +15,11 @@ import { ShieldCheck } from '@phosphor-icons/react'
 
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useI18n } from '@/lib/i18n'
 
 export default function CotizadorColaPage() {
   const router = useRouter()
+  const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('cotizador')
 
   return (
@@ -27,13 +29,13 @@ export default function CotizadorColaPage() {
         <div className="space-y-2">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
             <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Cotizador / Asegurabilidad
+            {t('inmobiliaria.ai.workspace.pages.cotizador.eyebrow')}
           </span>
-          <h1 className="text-2xl font-semibold text-foreground">Verdicts por revisar</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Cotizaciones cuyo veredicto de asegurabilidad quedó <strong>con condiciones</strong> (sin
-            una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o
-            re-cotizar. Triage de los últimos 30 días.
+            {t('inmobiliaria.ai.workspace.pages.cotizador.colaDescPre')}{' '}
+            <strong>{t('inmobiliaria.ai.workspace.pages.cotizador.colaDescStrong')}</strong>{' '}
+            {t('inmobiliaria.ai.workspace.pages.cotizador.colaDescPost')}
           </p>
         </div>
 
@@ -43,7 +45,7 @@ export default function CotizadorColaPage() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            Por revisar
+            {t('inmobiliaria.ai.workspace.pages.cotizador.porRevisar')}
           </p>
         </div>
       </header>
@@ -55,7 +57,7 @@ export default function CotizadorColaPage() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/cotizador/${encodeURIComponent(item.id)}`)}
-        emptyHint="No hay verdicts con condiciones por revisar."
+        emptyHint={t('inmobiliaria.ai.workspace.pages.cotizador.colaEmptyHint')}
       />
     </div>
   )

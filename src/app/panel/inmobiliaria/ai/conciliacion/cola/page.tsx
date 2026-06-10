@@ -16,9 +16,11 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useI18n } from '@/lib/i18n'
 
 function ConciliacionCola() {
   const router = useRouter()
+  const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('conciliacion')
 
   return (
@@ -32,12 +34,11 @@ function ConciliacionCola() {
           >
             <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <Bank className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Conciliación
+            {t('inmobiliaria.ai.workspace.pages.conciliacion.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Cola humana</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el
-            movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.
+            {t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
           </p>
         </div>
 
@@ -47,7 +48,7 @@ function ConciliacionCola() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            En cola
+            {t('inmobiliaria.ai.workspace.pages.comun.enCola')}
           </p>
         </div>
       </header>
@@ -59,7 +60,7 @@ function ConciliacionCola() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/conciliacion/${encodeURIComponent(item.id)}`)}
-        emptyHint="Sube un extracto en Movimientos o espera a que el agente proponga cruces."
+        emptyHint={t('inmobiliaria.ai.workspace.pages.conciliacion.colaEmptyHint')}
       />
     </div>
   )

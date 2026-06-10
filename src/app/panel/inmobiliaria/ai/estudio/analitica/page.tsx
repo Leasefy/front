@@ -13,8 +13,10 @@ import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
+import { useI18n } from '@/lib/i18n'
 
 function EstudioAnalitica() {
+  const { t } = useI18n()
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('estudio')
 
   return (
@@ -26,12 +28,11 @@ function EstudioAnalitica() {
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-          Agente · Estudio del inquilino
+          {t('inmobiliaria.ai.workspace.pages.estudio.eyebrow')}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Analítica</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Desempeño del estudio del inquilino en los últimos 30 días: evaluaciones procesadas,
-          decisiones tomadas y tasa de escalamiento a revisión humana por día.
+          {t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}
         </p>
       </header>
 

@@ -13,8 +13,10 @@ import { CaretLeft, GitMerge } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
+import { useI18n } from '@/lib/i18n'
 
 function MatchingAnalitica() {
+  const { t } = useI18n()
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('matching')
 
   return (
@@ -26,12 +28,11 @@ function MatchingAnalitica() {
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <GitMerge className="w-3.5 h-3.5" aria-hidden="true" />
-          Agente · Matching
+          {t('inmobiliaria.ai.workspace.pages.matching.eyebrow')}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Analítica</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Desempeño del agente de matching en los últimos 30 días: matches propuestos,
-          compatibilidad promedio y candidatos redirigidos por día.
+          {t('inmobiliaria.ai.workspace.pages.matching.analiticaDesc')}
         </p>
       </header>
 

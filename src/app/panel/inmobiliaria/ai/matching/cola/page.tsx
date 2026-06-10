@@ -17,9 +17,11 @@ import { CaretLeft, GitMerge } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useI18n } from '@/lib/i18n'
 
 function MatchingCola() {
   const router = useRouter()
+  const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('matching')
 
   return (
@@ -33,13 +35,11 @@ function MatchingCola() {
           >
             <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <GitMerge className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Matching
+            {t('inmobiliaria.ai.workspace.pages.matching.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Cola humana</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia
-            y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada
-            se hace sin ti.
+            {t('inmobiliaria.ai.workspace.pages.matching.colaDesc')}
           </p>
         </div>
 
@@ -49,7 +49,7 @@ function MatchingCola() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            En cola
+            {t('inmobiliaria.ai.workspace.pages.comun.enCola')}
           </p>
         </div>
       </header>
@@ -61,7 +61,7 @@ function MatchingCola() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/matching/${encodeURIComponent(item.id)}`)}
-        emptyHint="No hay sugerencias de matching pendientes para tu equipo."
+        emptyHint={t('inmobiliaria.ai.workspace.pages.matching.colaEmptyHint')}
       />
     </div>
   )

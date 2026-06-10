@@ -13,6 +13,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { ShieldCheck } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
@@ -20,7 +21,7 @@ import { WorkItemDetalle } from '@/components/inmobiliaria/ai/WorkItemDetalle'
 
 const COLA_HREF = '/panel/inmobiliaria/ai/estudio/cola'
 
-export default function EstudioCasoPage() {
+function EstudioCaso() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
@@ -53,5 +54,13 @@ export default function EstudioCasoPage() {
         href: '/panel/inmobiliaria/ai/matching',
       }}
     />
+  )
+}
+
+export default function EstudioCasoPage() {
+  return (
+    <PageGuard module="estudio">
+      <EstudioCaso />
+    </PageGuard>
   )
 }

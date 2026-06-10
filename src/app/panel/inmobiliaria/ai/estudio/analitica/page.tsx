@@ -10,10 +10,11 @@
 import Link from 'next/link'
 import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
 
-export default function EstudioAnaliticaPage() {
+function EstudioAnalitica() {
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('estudio')
 
   return (
@@ -36,5 +37,13 @@ export default function EstudioAnaliticaPage() {
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>
+  )
+}
+
+export default function EstudioAnaliticaPage() {
+  return (
+    <PageGuard module="estudio">
+      <EstudioAnalitica />
+    </PageGuard>
   )
 }

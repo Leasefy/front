@@ -11,10 +11,11 @@
 
 import { ShieldCheck } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 
-export default function EstudioSalaPage() {
+function EstudioSala() {
   const { data, isLoading, error } = useAgentOverview('estudio')
 
   // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
@@ -32,5 +33,15 @@ export default function EstudioSalaPage() {
       colaHref="/panel/inmobiliaria/ai/estudio/cola"
       colaCount={colaCount}
     />
+  )
+}
+
+export default function EstudioSalaPage() {
+  return (
+    // Agent module gate — ABSENT key in my-permissions = allowed
+    // (see agent-module-access.ts); present without 'view' = denied.
+    <PageGuard module="estudio">
+      <EstudioSala />
+    </PageGuard>
   )
 }

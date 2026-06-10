@@ -15,10 +15,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
 
-export default function EstudioColaPage() {
+function EstudioCola() {
   const router = useRouter()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('estudio')
 
@@ -64,5 +65,13 @@ export default function EstudioColaPage() {
         emptyHint="No hay estudios pendientes de revisión. El agente escala aquí los casos riesgosos."
       />
     </div>
+  )
+}
+
+export default function EstudioColaPage() {
+  return (
+    <PageGuard module="estudio">
+      <EstudioCola />
+    </PageGuard>
   )
 }

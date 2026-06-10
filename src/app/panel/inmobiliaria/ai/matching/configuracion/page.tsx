@@ -11,10 +11,11 @@
 import Link from 'next/link'
 import { CaretLeft, GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
 
-export default function MatchingConfiguracionPage() {
+function MatchingConfiguracion() {
   const { data, isLoading, error } = useAgentAutonomia('matching')
 
   return (
@@ -38,5 +39,13 @@ export default function MatchingConfiguracionPage() {
 
       <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
     </div>
+  )
+}
+
+export default function MatchingConfiguracionPage() {
+  return (
+    <PageGuard module="matching">
+      <MatchingConfiguracion />
+    </PageGuard>
   )
 }

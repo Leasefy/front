@@ -14,10 +14,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CaretLeft, GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
 
-export default function MatchingColaPage() {
+function MatchingCola() {
   const router = useRouter()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('matching')
 
@@ -63,5 +64,13 @@ export default function MatchingColaPage() {
         emptyHint="No hay sugerencias de matching pendientes para tu equipo."
       />
     </div>
+  )
+}
+
+export default function MatchingColaPage() {
+  return (
+    <PageGuard module="matching">
+      <MatchingCola />
+    </PageGuard>
   )
 }

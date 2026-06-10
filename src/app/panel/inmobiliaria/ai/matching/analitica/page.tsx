@@ -10,10 +10,11 @@
 import Link from 'next/link'
 import { CaretLeft, GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
 
-export default function MatchingAnaliticaPage() {
+function MatchingAnalitica() {
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('matching')
 
   return (
@@ -36,5 +37,13 @@ export default function MatchingAnaliticaPage() {
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>
+  )
+}
+
+export default function MatchingAnaliticaPage() {
+  return (
+    <PageGuard module="matching">
+      <MatchingAnalitica />
+    </PageGuard>
   )
 }

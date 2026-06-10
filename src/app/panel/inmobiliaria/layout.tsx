@@ -250,63 +250,65 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       ],
     } as NavItemWithModule,
     {
-      // F7: Estudio del inquilino complete workspace. The F2 page shipped
-      // URL-only without module/role gates — that ungated posture is
-      // preserved here (backend scopes by agency membership; decisions are
-      // audit-first per T-323).
+      // F7: Estudio del inquilino complete workspace. Gated by the agent
+      // module 'estudio' (my-permissions payload, agent-repo pair PR) with
+      // an ABSENT-module = ALLOWED fallback (see agent-module-access.ts) so
+      // either repo can merge first; backend still scopes by membership and
+      // decisions are audit-first per T-323.
       label: t('inmobiliaria.ai.nav.estudio'),
       href: '/panel/inmobiliaria/ai/estudio',
       icon: ShieldCheck,
-      module: null,
+      module: 'estudio',
       children: [
         {
           label: t('inmobiliaria.ai.nav.estudioCola'),
           href: '/panel/inmobiliaria/ai/estudio/cola',
           icon: ClipboardText,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
           href: '/panel/inmobiliaria/ai/estudio/configuracion',
           icon: SlidersHorizontal,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
         {
-          // F10: per-agent analítica (superficie 6) — ungated like the rest of estudio.
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of estudio.
           label: t('inmobiliaria.ai.nav.estudioAnalitica'),
           href: '/panel/inmobiliaria/ai/estudio/analitica',
           icon: ChartLineUp,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     {
-      // F8: Matching complete workspace. The F3 page shipped URL-only without
-      // module/role gates — that ungated posture is preserved here (backend
-      // scopes by agency membership; outreach only with approval).
+      // F8: Matching complete workspace. Gated by the agent module 'matching'
+      // with the same ABSENT-module = ALLOWED fallback as estudio (see
+      // agent-module-access.ts); backend scopes by agency membership and
+      // outreach happens only with approval.
       label: t('inmobiliaria.ai.nav.matching'),
       href: '/panel/inmobiliaria/ai/matching',
       icon: GitMerge,
-      module: null,
+      module: 'matching',
       children: [
         {
           label: t('inmobiliaria.ai.nav.matchingCola'),
           href: '/panel/inmobiliaria/ai/matching/cola',
           icon: ClipboardText,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
           href: '/panel/inmobiliaria/ai/matching/configuracion',
           icon: SlidersHorizontal,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
         {
-          // F10: per-agent analítica (superficie 6) — ungated like the rest of matching.
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of matching.
           label: t('inmobiliaria.ai.nav.matchingAnalitica'),
           href: '/panel/inmobiliaria/ai/matching/analitica',
           icon: ChartLineUp,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,

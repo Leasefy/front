@@ -12,6 +12,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
@@ -19,7 +20,7 @@ import { WorkItemDetalle } from '@/components/inmobiliaria/ai/WorkItemDetalle'
 
 const COLA_HREF = '/panel/inmobiliaria/ai/matching/cola'
 
-export default function MatchingCasoPage() {
+function MatchingCaso() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
@@ -52,5 +53,13 @@ export default function MatchingCasoPage() {
         href: '/panel/inmobiliaria/ai/estudio',
       }}
     />
+  )
+}
+
+export default function MatchingCasoPage() {
+  return (
+    <PageGuard module="matching">
+      <MatchingCaso />
+    </PageGuard>
   )
 }

@@ -7,21 +7,10 @@ import { X } from '@phosphor-icons/react'
 
 import { cn } from "@/lib/utils"
 
-// Custom Sheet Root that blocks body scroll when open
-const Sheet = ({ children, ...props }: SheetPrimitive.DialogProps) => {
-  React.useEffect(() => {
-    if (props.open) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [props.open]);
-
-  return <SheetPrimitive.Root {...props}>{children}</SheetPrimitive.Root>;
-}
+// Scroll locking is handled by Radix (modal by default via react-remove-scroll).
+// The previous manual body-overflow effect only worked for controlled usage
+// (keyed off props.open) and caused scrollbar layout shift — removed.
+const Sheet = SheetPrimitive.Root
 
 const SheetTrigger = SheetPrimitive.Trigger
 
@@ -82,7 +71,7 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {!hideCloseButton && (
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Cerrar</span>
         </SheetPrimitive.Close>

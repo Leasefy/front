@@ -30,10 +30,12 @@ const buttonVariants = cva(
           "text-foreground underline-offset-4 hover:underline !rounded-none !px-0 hover:text-primary",
       },
       size: {
-        default: "h-10 px-5 py-2",
-        sm: "h-9 px-4 text-[14px]",
+        // [@media(pointer:coarse)] enlarges touch targets to >=44px on touch
+        // devices only — desktop (fine pointer) appearance is unchanged.
+        default: "h-10 px-5 py-2 [@media(pointer:coarse)]:min-h-11",
+        sm: "h-9 px-4 text-[14px] [@media(pointer:coarse)]:min-h-11",
         lg: "h-12 px-8 text-base",
-        icon: "h-10 w-10",
+        icon: "h-10 w-10 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11",
       },
     },
     defaultVariants: {

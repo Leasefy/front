@@ -2,18 +2,30 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-))
+export interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /**
+   * Opt-in sticky header for vertically scrolling containers.
+   * Default off — desktop rendering is unchanged unless explicitly enabled.
+   */
+  stickyHeader?: boolean
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, stickyHeader = false, ...props }, ref) => (
+    <div className="relative w-full overflow-auto overscroll-contain">
+      <table
+        ref={ref}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          stickyHeader &&
+            "[&_th]:sticky [&_th]:top-0 [&_th]:bg-background [&_th]:z-10",
+          className
+        )}
+        {...props}
+      />
+    </div>
+  )
+)
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<

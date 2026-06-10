@@ -1,20 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretLeft, CaretRight, CaretDown, SignOut, List, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useSidebar } from '@/lib/context/SidebarContext';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mobile sidebar opener — module-level pub-sub.
+//
+// The mobile menu trigger lives in PlanHeader (so it sits inline in the top
+// bar instead of floating over it), but the Sheet + nav data live here.
+// Every layout renders PlanSidebar + PlanHeader as siblings, so a tiny
+// pub-sub avoids threading open-state through each layout. No-op when no
+// PlanSidebar is mounted.
+// ─────────────────────────────────────────────────────────────────────────────
+type MobileSidebarListener = () => void;
+const mobileSidebarListeners = new Set<MobileSidebarListener>();
+
+/** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
+export function openPlanMobileSidebar() {
+  mobileSidebarListeners.forEach((listener) => listener());
+}
 
 export interface NavItem {
   label: string;
@@ -287,13 +303,18 @@ function SidebarContent({
       {showCollapseButton && (
         <button
           onClick={onCollapse}
+          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+          aria-expanded={!isCollapsed}
           className={cn(
             'absolute top-6 -right-3 z-50',
             'w-6 h-6 rounded-full bg-white dark:bg-card',
             'border border-neutral-200 dark:border-border',
             'flex items-center justify-center',
             'text-neutral-400 hover:text-neutral-600',
-            'shadow-sm transition-colors'
+            'shadow-sm transition-colors',
+            // ≥44px hit target without changing the 24px visual (24 + 2×10 = 44)
+            "before:absolute before:-inset-2.5 before:rounded-full before:content-['']",
+            'outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-1'
           )}
         >
           {isCollapsed ? (
@@ -473,6 +494,16 @@ export function PlanSidebar({
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Register with the module-level opener so PlanHeader's menu button
+  // (rendered in a sibling tree) can open this Sheet.
+  useEffect(() => {
+    const listener = () => setMobileOpen(true);
+    mobileSidebarListeners.add(listener);
+    return () => {
+      mobileSidebarListeners.delete(listener);
+    };
+  }, []);
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -499,18 +530,9 @@ export function PlanSidebar({
         />
       </aside>
 
-      {/* Mobile List Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden fixed top-3 left-3 z-40 bg-white/90 backdrop-blur-sm dark:bg-card shadow-md border border-stone-100 rounded-xl hover:bg-white hover:shadow-lg transition-all"
-        onClick={() => setMobileOpen(true)}
-      >
-        <List className="w-5 h-5 text-stone-600" />
-        <span className="sr-only">Abrir menu</span>
-      </Button>
-
-      {/* Mobile Sheet */}
+      {/* Mobile Sheet — opened from PlanHeader's inline menu button via
+          openPlanMobileSidebar() (the old floating hamburger overlapped the
+          header search input and was removed). */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[280px] p-0 bg-white dark:bg-card border-r-0">
           <SheetHeader className="sr-only">

@@ -54,8 +54,10 @@ const paginationItemVariants = cva(
         ),
       },
       size: {
-        sm: 'h-7 min-w-7 rounded-[1px] text-xs',
-        default: 'h-9 min-w-9 rounded-[1px] text-sm',
+        // Touch-only (pointer: coarse) enlargement to >=44px targets;
+        // desktop (fine pointer) appearance is unchanged.
+        sm: 'h-7 min-w-7 rounded-[1px] text-xs [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
+        default: 'h-9 min-w-9 rounded-[1px] text-sm [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
         lg: 'h-11 min-w-11 rounded-[2px] text-base',
       },
     },

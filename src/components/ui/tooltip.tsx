@@ -5,6 +5,13 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * NOTE (touch devices): Radix Tooltip is hover/focus-only and does NOT open
+ * on tap — content placed here is unreachable on touch screens. Use tooltips
+ * for redundant/supplementary hints only. If the information is essential,
+ * prefer `Popover` (tap-to-open) or the `InfoHoverCard` composite in
+ * `hover-card.tsx`, which falls back to a Popover on mobile automatically.
+ */
 const TooltipProvider = TooltipPrimitive.Provider
 
 const Tooltip = TooltipPrimitive.Root

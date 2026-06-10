@@ -13,6 +13,9 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useQuoteStream } from '@/lib/hooks/cotizador/use-quote-stream'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
+import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
+import { runWorkItemAction } from '@/lib/api/agent-workspace'
+import { AccionSugerida } from '@/components/inmobiliaria/ai/AccionSugerida'
 import { QuoteHeader } from '@/components/inmobiliaria/cotizador/QuoteHeader'
 import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierStreamGrid'
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
@@ -48,6 +51,11 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   // Phase 33: counterfactual modal open flag (D-33-01..D-33-13).
   const [modalOpen, setModalOpen] = useState(false)
+
+  // F10: the cotizador work-item (read-only triage — actions usually []) for
+  // this quote. 404 / notAvailable / error → the panel silently renders
+  // nothing; the streaming page is untouched.
+  const verdictItem = useWorkItemDetail('cotizador', quoteId)
 
   // ARIA live region — announce each carrier verdict transition (pending →
   // final) to screen readers (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3).
@@ -219,6 +227,22 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             agencyId={agency?.id}
             quoteId={quoteId}
             pdfFilenamePrefix={pdfFilenamePrefix}
+          />
+        )}
+
+        {/* F10 — verdict del agente como AccionSugerida (compact panel).
+            Renders ONLY when the work-item detail resolves; cotizador items
+            are read-only triage so `actions` is usually [] and the card shows
+            the verdict narrative (label + confianza + razón + evidencia). */}
+        {verdictItem.data && (
+          <AccionSugerida
+            accion={verdictItem.data.item.accionSugerida}
+            actions={verdictItem.data.item.actions}
+            onAction={async (action, body) => {
+              const res = await runWorkItemAction(action, body)
+              if (res.ok) void verdictItem.refetch()
+              return res
+            }}
           />
         )}
 

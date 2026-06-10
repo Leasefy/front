@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { IconTooltip } from '@/components/ui/icon-tooltip';
 import type { AgencyProperty } from '@/lib/types/property';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -483,29 +484,35 @@ function PropiedadesContent() {
                       {/* Actions */}
                       <td className="p-4">
                         <div className="flex items-center gap-1 justify-end">
-                          <button
-                            onClick={() => router.push(`/propiedades/${property.id}`)}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                            title="Ver propiedad"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <IconTooltip label="Ver propiedad">
+                            <button
+                              onClick={() => router.push(`/propiedades/${property.id}`)}
+                              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              aria-label="Ver propiedad"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </IconTooltip>
                           {isAdmin && (
                             <>
-                              <button
-                                onClick={() => router.push(`/panel/inmobiliaria/propiedades/${property.id}/candidatos`)}
-                                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                title="Ver candidatos"
-                              >
-                                <Users className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setChangingAgent(property)}
-                                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                title="Cambiar agente"
-                              >
-                                <ArrowsClockwise className="w-4 h-4" />
-                              </button>
+                              <IconTooltip label="Ver candidatos">
+                                <button
+                                  onClick={() => router.push(`/panel/inmobiliaria/propiedades/${property.id}/candidatos`)}
+                                  className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                  aria-label="Ver candidatos"
+                                >
+                                  <Users className="w-4 h-4" />
+                                </button>
+                              </IconTooltip>
+                              <IconTooltip label="Cambiar agente">
+                                <button
+                                  onClick={() => setChangingAgent(property)}
+                                  className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                  aria-label="Cambiar agente"
+                                >
+                                  <ArrowsClockwise className="w-4 h-4" />
+                                </button>
+                              </IconTooltip>
                             </>
                           )}
                         </div>

@@ -885,6 +885,10 @@
       "secCotizador": "Cotizador",
       "secInteligencia": "Inteligencia",
       "secOperaciones": "Operaciones",
+      "secAgentes": "Agentes IA",
+      "secFinanzas": "Finanzas",
+      "secAnalisis": "Análisis",
+      "equipo": "Equipo",
       "cmdPaletteTrigger": "Buscar todo…"
     },
     "mobileNav": {
@@ -4205,7 +4209,25 @@
         "compliance": "Compliance",
         "cartas": "Cartas",
         "llamadas": "Llamadas",
-        "siniestros": "Siniestros"
+        "siniestros": "Siniestros",
+        "conciliacionCola": "Cola humana",
+        "conciliacionConfiguracion": "Configuración",
+        "conciliacionAnalitica": "Analítica",
+        "conciliacionMovimientos": "Movimientos",
+        "estudio": "Estudio del inquilino",
+        "estudioCola": "Cola humana",
+        "estudioConfiguracion": "Configuración",
+        "estudioAnalitica": "Analítica",
+        "matching": "Matching",
+        "matchingCola": "Cola humana",
+        "matchingConfiguracion": "Configuración",
+        "matchingAnalitica": "Analítica",
+        "pagosCola": "Cola humana",
+        "pagosConfiguracion": "Configuración",
+        "pagosAnalitica": "Analítica",
+        "avaluos": "Avalúos",
+        "avaluosCola": "Cola humana",
+        "avaluosConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4408,7 +4430,12 @@
         "nav": {
           "aseguradoras": "Aseguradoras",
           "insights": "Insights",
-          "costos": "Costos"
+          "costos": "Costos",
+          "configuracion": "Configuración"
+        },
+        "configuracion": {
+          "title": "Configuración y autonomía",
+          "subtitle": "Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por ahora — los cambios de modo llegan con la certificación de la valla."
         },
         "aseguradoras": {
           "pageTitle": "Aseguradoras",
@@ -5500,10 +5527,26 @@
         },
         "llamadas": {
           "list": {
+            "pageTitle": "Llamadas",
+            "pageSubtitle": "Registro global de llamadas y contactos por canal",
             "empty": {
-              "title": "Vista global de llamadas no disponible",
-              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "title": "Sin llamadas registradas",
+              "description": "Todavía no hay llamadas para este portafolio. El listado aparecerá aquí en cuanto el agente realice contactos.",
               "cta": "Ir a Deudores"
+            },
+            "filters": {
+              "outcome": "Resultado",
+              "channel": "Canal",
+              "direction": "Dirección"
+            },
+            "columns": {
+              "debtor": "Deudor",
+              "channel": "Canal",
+              "outcome": "Resultado",
+              "duration": "Duración",
+              "initiatedAt": "Inicio",
+              "qaScore": "QA",
+              "flags": "Alertas"
             }
           }
         }
@@ -5794,6 +5837,232 @@
           "title": "Aún no hay actividad reciente",
           "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
         }
+      },
+      "workspace": {
+        "severidad": {
+          "critica": "Crítica",
+          "alta": "Alta",
+          "media": "Media",
+          "baja": "Baja"
+        },
+        "estado": {
+          "detectado": "Detectado",
+          "sugerido": "Sugerido",
+          "en_revision": "En revisión",
+          "aprobado": "Aprobado",
+          "ejecutando": "Ejecutando",
+          "resuelto": "Resuelto",
+          "rechazado": "Rechazado",
+          "fallo": "Falló"
+        },
+        "flag": {
+          "necesita_humano": "Necesita humano",
+          "t323": "Revisión T-323",
+          "en_espera": "En espera"
+        },
+        "actor": {
+          "user": "Humano",
+          "agent": "Agente",
+          "system": "Sistema"
+        },
+        "agente": {
+          "cobranza": "Cobranza",
+          "cotizador": "Cotizador",
+          "conciliacion": "Conciliación",
+          "pagos": "Pagos (AP)",
+          "estudio": "Estudio del inquilino",
+          "matching": "Matching",
+          "avaluos": "Avalúos"
+        },
+        "rol": {
+          "cobrador": "Cobrador",
+          "analista_riesgo": "Analista de riesgo",
+          "contador": "Contador",
+          "comercial": "Comercial"
+        },
+        "tiempo": {
+          "s": "hace {{n}}s",
+          "m": "hace {{n}}m",
+          "h": "hace {{n}}h",
+          "d": "hace {{n}}d"
+        },
+        "acciones": {
+          "toastOk": "{{label}} · listo",
+          "toastFail": "No se pudo: {{error}}",
+          "motivoPara": "Motivo para {{accion}}",
+          "motivoPlaceholder": "Escribe el motivo…",
+          "confirmar": "Confirmar",
+          "cancelar": "Cancelar",
+          "confianza": "{{pct}}% conf.",
+          "abrir": "Abrir {{titulo}}"
+        },
+        "cola": {
+          "error": "No se pudo cargar la cola: {{error}}",
+          "vacia": "Cola vacía",
+          "vaciaHint": "No hay casos pendientes de revisión."
+        },
+        "sala": {
+          "eyebrow": "Agente · {{titulo}}",
+          "irACola": "Ir a la cola",
+          "error": "No se pudo cargar la sala: {{error}}",
+          "emptyTitle": "El agente aún no reporta métricas",
+          "emptyBody": "Este panel se activa cuando el agente publique su resumen de actividad.",
+          "pipelineTitle": "Pipeline por estado",
+          "pipelineEmpty": "Sin casos en el pipeline.",
+          "pipelineAria": "Pipeline: {{total}} casos",
+          "feedTitle": "Actividad reciente",
+          "feedEmpty": "Sin actividad reciente."
+        },
+        "traza": {
+          "error": "No se pudo cargar la traza: {{error}}",
+          "emptyTitle": "Sin actividad registrada",
+          "emptyBody": "Las acciones del agente y del equipo aparecerán aquí.",
+          "detalles": "Detalles",
+          "accion": {
+            "detectado": "Detectado por el agente",
+            "sugerido": "Sugerencia del agente",
+            "en_revision": "Enviado a revisión humana",
+            "aprobado": "Aprobado",
+            "rechazado": "Rechazado",
+            "ejecutando": "Ejecución iniciada",
+            "resuelto": "Resuelto",
+            "fallo": "Falló",
+            "creado": "Creado",
+            "match_sugerido": "Cruce sugerido",
+            "match_confirmado": "Cruce confirmado",
+            "match_rechazado": "Cruce rechazado"
+          }
+        },
+        "accionSugerida": {
+          "eyebrow": "El agente propone"
+        },
+        "autonomia": {
+          "error": "No se pudo cargar la configuración de autonomía: {{error}}",
+          "emptyTitle": "La configuración de autonomía aún no está disponible",
+          "emptyBody": "Este panel se activa cuando el backend publique la valla del agente.",
+          "grupoAria": "Modo de autonomía",
+          "noDisponible": "No disponible para este agente",
+          "t323": "Decisión sobre personas — revisión humana garantizada (T-323/2024)",
+          "vallaTitle": "Valla del agente",
+          "vallaEmpty": "Sin reglas de valla publicadas.",
+          "modo": {
+            "sombra": "Sombra",
+            "sombraHint": "Solo observa y sugiere en silencio",
+            "copiloto": "Copiloto",
+            "copilotoHint": "Sugiere; nada se aplica sin un humano",
+            "autonomo": "Autónomo",
+            "autonomoHint": "Ejecuta dentro de la valla certificada"
+          }
+        },
+        "analitica": {
+          "error": "No se pudo cargar la analítica: {{error}}",
+          "emptyTitle": "El agente aún no reporta analítica",
+          "emptyBody": "Este panel se activa cuando el agente publique sus métricas históricas.",
+          "serieEmpty": "Sin actividad en 30 días.",
+          "serieAria": "{{label}}: {{dias}} días, máximo {{max}}",
+          "sinSeries": "Sin series para mostrar."
+        },
+        "detalle": {
+          "error": "No se pudo cargar el caso: {{error}}",
+          "notFoundTitle": "Caso no encontrado",
+          "notFoundBody": "Puede que ya se haya resuelto o que el enlace no sea válido.",
+          "volverACola": "Volver a la cola",
+          "decision": "Decisión",
+          "decididoPor": "Por {{nombre}}",
+          "decisionRegistrada": "Decisión registrada",
+          "trazaTitle": "Traza del caso"
+        },
+        "equipo": {
+          "error": "No se pudo cargar el equipo de agentes: {{error}}",
+          "emptyTitle": "El equipo aún no reporta sus colas",
+          "emptyBody": "Este panel se activa cuando el backend del hub publique el resumen por rol.",
+          "enColaAhora": "En cola ahora: {{n}}",
+          "actualizado": "Actualizado {{tiempo}}",
+          "enColaCount": "· {{n}} en cola",
+          "sinDatos": "sin datos",
+          "sinDatosTitle": "El agente aún no reporta su conteo",
+          "sala": "Sala",
+          "cola": "Cola"
+        },
+        "pages": {
+          "comun": {
+            "colaTitle": "Cola humana",
+            "configTitle": "Configuración y autonomía",
+            "configDesc": "Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por ahora — los cambios de modo llegan con la certificación de la valla.",
+            "analiticaTitle": "Analítica",
+            "enCola": "En cola"
+          },
+          "conciliacion": {
+            "eyebrow": "Agente · Conciliación",
+            "salaTitulo": "Conciliación bancaria",
+            "salaDesc": "El agente cruza los movimientos del extracto contra recaudos, dispersiones y comisiones, y deja los casos dudosos en tu cola. Modo Copiloto: nada se aplica sin tu aprobación.",
+            "verMovimientos": "Ver movimientos y subir extractos",
+            "colaDesc": "Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.",
+            "colaEmptyHint": "Sube un extracto en Movimientos o espera a que el agente proponga cruces.",
+            "casoColaLabel": "Cola de conciliación",
+            "analiticaDesc": "Desempeño del agente de conciliación en los últimos 30 días: casos cruzados, tasa de aciertos y monto conciliado por día."
+          },
+          "estudio": {
+            "eyebrow": "Agente · Estudio del inquilino",
+            "salaTitulo": "Estudio del inquilino",
+            "salaDesc": "El agente evalúa cada solicitud de arriendo con un score compuesto y un nivel A/B/C/D, y escala a tu cola los casos borderline o riesgosos. Cada decisión sobre una persona queda auditada (derecho a revisión humana, T-323). Modo Copiloto: nada se decide sin tu aprobación.",
+            "colaDesc": "Estudios de arrendamiento que el agente escaló o marcó como borderline. Revisa el verdict (nivel y puntaje) y su evidencia, luego aprueba o rechaza al inquilino. Cada decisión queda auditada (derecho a revisión humana, T-323). Modo Copiloto: nada se decide sin ti.",
+            "colaEmptyHint": "No hay estudios pendientes de revisión. El agente escala aquí los casos riesgosos.",
+            "casoColaLabel": "Cola de estudio",
+            "crossPregunta": "¿Qué propiedad le calza?",
+            "crossDestino": "Workspace de Matching",
+            "analiticaDesc": "Desempeño del estudio del inquilino en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día."
+          },
+          "matching": {
+            "eyebrow": "Agente · Matching",
+            "salaTitulo": "Matching",
+            "salaDesc": "El agente empareja cada candidato con las propiedades compatibles del portafolio, con score de compatibilidad y factores de calce. El contacto (outreach) solo sale con tu aprobación. Modo Copiloto: nada se hace sin ti.",
+            "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
+            "colaEmptyHint": "No hay sugerencias de matching pendientes para tu equipo.",
+            "casoColaLabel": "Cola de matching",
+            "crossPregunta": "¿Es confiable este candidato?",
+            "crossDestino": "Estudio del inquilino",
+            "analiticaDesc": "Desempeño del agente de matching en los últimos 30 días: matches propuestos, compatibilidad promedio y candidatos redirigidos por día."
+          },
+          "pagos": {
+            "eyebrow": "Agente · Pagos (AP)",
+            "salaTitulo": "Pagos (AP)",
+            "salaDesc": "El agente prepara la dispersión a proveedores — facturas, aging, matriz de aprobación por monto y payment-runs — y deja en tu cola lo que requiere firma humana. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. El agente prepara, el humano aprueba.",
+            "opsTitle": "Operaciones profundas",
+            "opsTesoreria": "Tesorería · AP",
+            "opsTesoreriaDetalle": "Facturas, aging y matriz de aprobación",
+            "opsDispersiones": "Dispersiones",
+            "opsDispersionesDetalle": "Payment-runs y comprobantes",
+            "colaTitle": "Cola de aprobación",
+            "colaDesc": "Facturas de proveedor pendientes de aprobar. Revisa el monto, el proveedor y el vencimiento, luego aprueba o rechaza. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. Modo Copiloto: ninguna dispersión sale sin ti.",
+            "porAprobar": "Por aprobar",
+            "colaEmptyHint": "No hay facturas pendientes de aprobación.",
+            "casoColaLabel": "Cola de pagos",
+            "crossPregunta": "¿Ver la factura en Tesorería?",
+            "crossDestino": "Tesorería · AP",
+            "analiticaDesc": "Desempeño del agente de pagos en los últimos 30 días: facturas procesadas, aprobaciones y monto dispersado por día."
+          },
+          "cotizador": {
+            "eyebrow": "Agente · Cotizador / Asegurabilidad",
+            "colaTitle": "Verdicts por revisar",
+            "colaDescPre": "Cotizaciones cuyo veredicto de asegurabilidad quedó",
+            "colaDescStrong": "con condiciones",
+            "colaDescPost": "(sin una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o re-cotizar. Triage de los últimos 30 días.",
+            "porRevisar": "Por revisar",
+            "colaEmptyHint": "No hay verdicts con condiciones por revisar."
+          },
+          "avaluos": {
+            "eyebrow": "Agente · Avalúos",
+            "salaTitulo": "Avalúos",
+            "salaDesc": "El agente estima el valor de cada inmueble con un motor de datos del mercado y gestiona el certificado firmado por un avaluador. Tu inmobiliaria solicita el avalúo y consulta aquí su estado — la firma del certificado la gestiona el avaluador (Portofino/Leasefy).",
+            "colaDesc": "Avalúos solicitados por tu inmobiliaria con su estado en el pipeline (borrador → en revisión → firmado → pagado → entregado). Seguimiento de solo lectura: la firma del certificado la gestiona el avaluador (Portofino/Leasefy).",
+            "colaEmptyHint": "No hay avalúos en revisión.",
+            "casoColaLabel": "Cola de avalúos",
+            "solicitarTitle": "Solicitar avalúo",
+            "solicitarDetalle": "Abre el asistente público para solicitar un nuevo avalúo.",
+            "firmaNota": "La firma del certificado se gestiona por el avaluador (Portofino/Leasefy)."
+          }
+        }
       }
     },
     "hoy": {
@@ -5874,11 +6143,19 @@
       "subtitle": "Carga el archivo del banco y concilia los movimientos contra los recaudos esperados — automático, con cola de revisión.",
       "new": "Nueva conciliación",
       "newSoon": "El procesamiento de la conciliación se habilita con el motor (M2).",
-      "m2BannerTitle": "Estructura lista — el motor de conciliación llega en M2",
-      "m2BannerDesc": "Esta sección ya tiene la estructura. La ingesta de archivos (Bancolombia + multi-fuente) y el matching automático se conectan en la fase de backend (M2).",
+      "m2BannerTitle": "Conciliación activa — revisión humana e ingesta de extractos conectadas",
+      "m2BannerDesc": "Sube el extracto del banco y el agente sugiere coincidencias contra recaudos, dispersiones y comisiones. El matching corre en segundo plano en modo sombra: solo sugiere, nada se confirma automáticamente.",
       "uploadTitle": "Cargar fuente bancaria",
-      "uploadHint": "Arrastra el archivo de Bancolombia (o multi-fuente), o haz clic para seleccionar.",
+      "uploadHint": "Elige el banco y sube el CSV del extracto. La conciliación corre en segundo plano.",
       "uploadSoon": "La ingesta y el matching se conectan con el motor (M2).",
+      "uploadBankLabel": "Banco",
+      "bankBancolombia": "Bancolombia",
+      "bankDavivienda": "Davivienda",
+      "uploadProcessing": "Procesando extracto…",
+      "uploadSuccess": "Extracto cargado",
+      "uploadSuccessDesc": "{{created}} movimientos nuevos · {{skipped}} ya existían. La conciliación corre en segundo plano; actualiza en unos segundos.",
+      "uploadError": "No se pudo cargar el extracto",
+      "uploadEmptyFile": "El archivo seleccionado está vacío.",
       "resumenLabel": "Resumen",
       "caso_conciliados": "Conciliados",
       "caso_parciales": "Parciales",
@@ -5897,7 +6174,35 @@
       "colCaso": "Caso",
       "colAccion": "Acción",
       "emptyTitle": "Sin movimientos aún",
-      "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2."
+      "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2.",
+      "uploadDisabledTooltip": "La ingesta de archivos bancarios se habilita en M2 (endpoint pendiente en backend).",
+      "uploadDisabledHint": "Disponible en M2 — el endpoint de ingesta está pendiente en backend.",
+      "totalMovimientos": "movimientos en cola",
+      "errorTitle": "Error cargando la cola de conciliación",
+      "retry": "Reintentar",
+      "refresh": "Actualizar",
+      "emptyQueueTitle": "Cola de revisión vacía",
+      "emptyQueueDesc": "El agente de conciliación no tiene sugerencias pendientes. Sube un extracto bancario para conciliar nuevos movimientos.",
+      "actionConfirm": "Aprobar",
+      "actionReject": "Rechazar",
+      "actionReverse": "Revertir",
+      "toastConfirmed": "Movimiento confirmado correctamente.",
+      "toastRejected": "Movimiento rechazado.",
+      "toastReversed": "Conciliación revertida.",
+      "toastActionError": "No se pudo completar la acción.",
+      "rejectDialogTitle": "Rechazar sugerencia",
+      "rejectDialogDesc": "Ingresa el motivo del rechazo. Este campo es obligatorio y queda registrado en la auditoría.",
+      "rejectReasonPlaceholder": "Motivo del rechazo…",
+      "rejectConfirm": "Rechazar",
+      "cancel": "Cancelar",
+      "caso_badge_conciliado": "Conciliado",
+      "caso_badge_parcial": "Parcial",
+      "caso_badge_duplicado": "Duplicado",
+      "caso_badge_no_identificado": "No identificado",
+      "caso_badge_diferencia_valor": "Dif. valor",
+      "caso_badge_fuera_de_fecha": "Fuera fecha",
+      "caso_badge_confirmado": "Confirmado",
+      "caso_badge_rechazado": "Rechazado"
     },
     "tesoreria": {
       "label": "Tesorería",

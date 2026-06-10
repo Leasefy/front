@@ -5833,6 +5833,152 @@
           "title": "No recent activity yet",
           "description": "Metrics appear when agents process requests."
         }
+      },
+      "workspace": {
+        "severidad": {
+          "critica": "Critical",
+          "alta": "High",
+          "media": "Medium",
+          "baja": "Low"
+        },
+        "estado": {
+          "detectado": "Detected",
+          "sugerido": "Suggested",
+          "en_revision": "In review",
+          "aprobado": "Approved",
+          "ejecutando": "Executing",
+          "resuelto": "Resolved",
+          "rechazado": "Rejected",
+          "fallo": "Failed"
+        },
+        "flag": {
+          "necesita_humano": "Needs a human",
+          "t323": "T-323 review",
+          "en_espera": "On hold"
+        },
+        "actor": {
+          "user": "Human",
+          "agent": "Agent",
+          "system": "System"
+        },
+        "agente": {
+          "cobranza": "Collections",
+          "cotizador": "Quoter",
+          "conciliacion": "Reconciliation",
+          "pagos": "Payments (AP)",
+          "estudio": "Tenant screening",
+          "matching": "Matching"
+        },
+        "rol": {
+          "cobrador": "Collector",
+          "analista_riesgo": "Risk analyst",
+          "contador": "Accountant",
+          "comercial": "Sales"
+        },
+        "tiempo": {
+          "s": "{{n}}s ago",
+          "m": "{{n}}m ago",
+          "h": "{{n}}h ago",
+          "d": "{{n}}d ago"
+        },
+        "acciones": {
+          "toastOk": "{{label}} · done",
+          "toastFail": "Failed: {{error}}",
+          "motivoPara": "Reason for {{accion}}",
+          "motivoPlaceholder": "Write the reason…",
+          "confirmar": "Confirm",
+          "cancelar": "Cancel",
+          "confianza": "{{pct}}% conf.",
+          "abrir": "Open {{titulo}}"
+        },
+        "cola": {
+          "error": "Could not load the queue: {{error}}",
+          "vacia": "Queue is empty",
+          "vaciaHint": "No cases pending review."
+        },
+        "sala": {
+          "eyebrow": "Agent · {{titulo}}",
+          "irACola": "Go to the queue",
+          "error": "Could not load the room: {{error}}",
+          "emptyTitle": "The agent has no metrics yet",
+          "emptyBody": "This panel activates when the agent publishes its activity summary.",
+          "pipelineTitle": "Pipeline by status",
+          "pipelineEmpty": "No cases in the pipeline.",
+          "pipelineAria": "Pipeline: {{total}} cases",
+          "feedTitle": "Recent activity",
+          "feedEmpty": "No recent activity."
+        },
+        "traza": {
+          "error": "Could not load the trace: {{error}}",
+          "emptyTitle": "No recorded activity",
+          "emptyBody": "Agent and team actions will appear here.",
+          "detalles": "Details",
+          "accion": {
+            "detectado": "Detected by the agent",
+            "sugerido": "Agent suggestion",
+            "en_revision": "Sent to human review",
+            "aprobado": "Approved",
+            "rechazado": "Rejected",
+            "ejecutando": "Execution started",
+            "resuelto": "Resolved",
+            "fallo": "Failed",
+            "creado": "Created",
+            "match_sugerido": "Match suggested",
+            "match_confirmado": "Match confirmed",
+            "match_rechazado": "Match rejected"
+          }
+        },
+        "accionSugerida": {
+          "eyebrow": "The agent proposes"
+        },
+        "autonomia": {
+          "error": "Could not load the autonomy settings: {{error}}",
+          "emptyTitle": "Autonomy settings are not available yet",
+          "emptyBody": "This panel activates when the backend publishes the agent's guardrail.",
+          "grupoAria": "Autonomy mode",
+          "noDisponible": "Not available for this agent",
+          "t323": "Decision about persons — human review guaranteed (T-323/2024)",
+          "vallaTitle": "Agent guardrail",
+          "vallaEmpty": "No guardrail rules published.",
+          "modo": {
+            "sombra": "Shadow",
+            "sombraHint": "Only observes and suggests silently",
+            "copiloto": "Copilot",
+            "copilotoHint": "Suggests; nothing is applied without a human",
+            "autonomo": "Autonomous",
+            "autonomoHint": "Executes within the certified guardrail"
+          }
+        },
+        "analitica": {
+          "error": "Could not load analytics: {{error}}",
+          "emptyTitle": "The agent has no analytics yet",
+          "emptyBody": "This panel activates when the agent publishes its historical metrics.",
+          "serieEmpty": "No activity in 30 days.",
+          "serieAria": "{{label}}: {{dias}} days, max {{max}}",
+          "sinSeries": "No series to show."
+        },
+        "detalle": {
+          "error": "Could not load the case: {{error}}",
+          "notFoundTitle": "Case not found",
+          "notFoundBody": "It may already be resolved, or the link is invalid.",
+          "volverACola": "Back to the queue",
+          "decision": "Decision",
+          "decididoPor": "By {{nombre}}",
+          "decisionRegistrada": "Decision recorded",
+          "trazaTitle": "Case trace"
+        },
+        "equipo": {
+          "error": "Could not load the agent team: {{error}}",
+          "emptyTitle": "The team has not reported its queues yet",
+          "emptyBody": "This panel activates when the hub backend publishes the per-role summary.",
+          "enColaAhora": "In queue now: {{n}}",
+          "actualizado": "Updated {{tiempo}}",
+          "enColaCount": "· {{n}} in queue",
+          "sinDatos": "no data",
+          "sinDatosTitle": "The agent has not reported its count yet",
+          "sala": "Room",
+          "cola": "Queue"
+        }
       }
     },
     "hoy": {

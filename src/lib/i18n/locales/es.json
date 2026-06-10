@@ -5834,6 +5834,152 @@
           "title": "Aún no hay actividad reciente",
           "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
         }
+      },
+      "workspace": {
+        "severidad": {
+          "critica": "Crítica",
+          "alta": "Alta",
+          "media": "Media",
+          "baja": "Baja"
+        },
+        "estado": {
+          "detectado": "Detectado",
+          "sugerido": "Sugerido",
+          "en_revision": "En revisión",
+          "aprobado": "Aprobado",
+          "ejecutando": "Ejecutando",
+          "resuelto": "Resuelto",
+          "rechazado": "Rechazado",
+          "fallo": "Falló"
+        },
+        "flag": {
+          "necesita_humano": "Necesita humano",
+          "t323": "Revisión T-323",
+          "en_espera": "En espera"
+        },
+        "actor": {
+          "user": "Humano",
+          "agent": "Agente",
+          "system": "Sistema"
+        },
+        "agente": {
+          "cobranza": "Cobranza",
+          "cotizador": "Cotizador",
+          "conciliacion": "Conciliación",
+          "pagos": "Pagos (AP)",
+          "estudio": "Estudio del inquilino",
+          "matching": "Matching"
+        },
+        "rol": {
+          "cobrador": "Cobrador",
+          "analista_riesgo": "Analista de riesgo",
+          "contador": "Contador",
+          "comercial": "Comercial"
+        },
+        "tiempo": {
+          "s": "hace {{n}}s",
+          "m": "hace {{n}}m",
+          "h": "hace {{n}}h",
+          "d": "hace {{n}}d"
+        },
+        "acciones": {
+          "toastOk": "{{label}} · listo",
+          "toastFail": "No se pudo: {{error}}",
+          "motivoPara": "Motivo para {{accion}}",
+          "motivoPlaceholder": "Escribe el motivo…",
+          "confirmar": "Confirmar",
+          "cancelar": "Cancelar",
+          "confianza": "{{pct}}% conf.",
+          "abrir": "Abrir {{titulo}}"
+        },
+        "cola": {
+          "error": "No se pudo cargar la cola: {{error}}",
+          "vacia": "Cola vacía",
+          "vaciaHint": "No hay casos pendientes de revisión."
+        },
+        "sala": {
+          "eyebrow": "Agente · {{titulo}}",
+          "irACola": "Ir a la cola",
+          "error": "No se pudo cargar la sala: {{error}}",
+          "emptyTitle": "El agente aún no reporta métricas",
+          "emptyBody": "Este panel se activa cuando el agente publique su resumen de actividad.",
+          "pipelineTitle": "Pipeline por estado",
+          "pipelineEmpty": "Sin casos en el pipeline.",
+          "pipelineAria": "Pipeline: {{total}} casos",
+          "feedTitle": "Actividad reciente",
+          "feedEmpty": "Sin actividad reciente."
+        },
+        "traza": {
+          "error": "No se pudo cargar la traza: {{error}}",
+          "emptyTitle": "Sin actividad registrada",
+          "emptyBody": "Las acciones del agente y del equipo aparecerán aquí.",
+          "detalles": "Detalles",
+          "accion": {
+            "detectado": "Detectado por el agente",
+            "sugerido": "Sugerencia del agente",
+            "en_revision": "Enviado a revisión humana",
+            "aprobado": "Aprobado",
+            "rechazado": "Rechazado",
+            "ejecutando": "Ejecución iniciada",
+            "resuelto": "Resuelto",
+            "fallo": "Falló",
+            "creado": "Creado",
+            "match_sugerido": "Cruce sugerido",
+            "match_confirmado": "Cruce confirmado",
+            "match_rechazado": "Cruce rechazado"
+          }
+        },
+        "accionSugerida": {
+          "eyebrow": "El agente propone"
+        },
+        "autonomia": {
+          "error": "No se pudo cargar la configuración de autonomía: {{error}}",
+          "emptyTitle": "La configuración de autonomía aún no está disponible",
+          "emptyBody": "Este panel se activa cuando el backend publique la valla del agente.",
+          "grupoAria": "Modo de autonomía",
+          "noDisponible": "No disponible para este agente",
+          "t323": "Decisión sobre personas — revisión humana garantizada (T-323/2024)",
+          "vallaTitle": "Valla del agente",
+          "vallaEmpty": "Sin reglas de valla publicadas.",
+          "modo": {
+            "sombra": "Sombra",
+            "sombraHint": "Solo observa y sugiere en silencio",
+            "copiloto": "Copiloto",
+            "copilotoHint": "Sugiere; nada se aplica sin un humano",
+            "autonomo": "Autónomo",
+            "autonomoHint": "Ejecuta dentro de la valla certificada"
+          }
+        },
+        "analitica": {
+          "error": "No se pudo cargar la analítica: {{error}}",
+          "emptyTitle": "El agente aún no reporta analítica",
+          "emptyBody": "Este panel se activa cuando el agente publique sus métricas históricas.",
+          "serieEmpty": "Sin actividad en 30 días.",
+          "serieAria": "{{label}}: {{dias}} días, máximo {{max}}",
+          "sinSeries": "Sin series para mostrar."
+        },
+        "detalle": {
+          "error": "No se pudo cargar el caso: {{error}}",
+          "notFoundTitle": "Caso no encontrado",
+          "notFoundBody": "Puede que ya se haya resuelto o que el enlace no sea válido.",
+          "volverACola": "Volver a la cola",
+          "decision": "Decisión",
+          "decididoPor": "Por {{nombre}}",
+          "decisionRegistrada": "Decisión registrada",
+          "trazaTitle": "Traza del caso"
+        },
+        "equipo": {
+          "error": "No se pudo cargar el equipo de agentes: {{error}}",
+          "emptyTitle": "El equipo aún no reporta sus colas",
+          "emptyBody": "Este panel se activa cuando el backend del hub publique el resumen por rol.",
+          "enColaAhora": "En cola ahora: {{n}}",
+          "actualizado": "Actualizado {{tiempo}}",
+          "enColaCount": "· {{n}} en cola",
+          "sinDatos": "sin datos",
+          "sinDatosTitle": "El agente aún no reporta su conteo",
+          "sala": "Sala",
+          "cola": "Cola"
+        }
       }
     },
     "hoy": {

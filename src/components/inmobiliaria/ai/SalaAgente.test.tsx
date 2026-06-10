@@ -12,6 +12,11 @@ import { act } from 'react'
 
 void React // jsx-preserve
 
+// Resolve chrome via the REAL es.json so literal assertions keep verifying
+// the byte-identical es output (stub avoids the provider's localStorage effect).
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+
 // next/link renders fine without a Next router when reduced to an anchor.
 vi.mock('next/link', () => ({
   default: ({
@@ -23,6 +28,7 @@ vi.mock('next/link', () => ({
 }))
 
 import { SalaAgente, formatKpiValue } from './SalaAgente'
+import { I18nProvider } from '@/lib/i18n'
 import type { AgentOverviewResponse } from '@/lib/api/agent-workspace'
 
 const OVERVIEW: AgentOverviewResponse = {
@@ -68,14 +74,19 @@ afterEach(() => {
 function render(props: Partial<React.ComponentProps<typeof SalaAgente>> = {}) {
   act(() => {
     root.render(
-      React.createElement(SalaAgente, {
-        agente: 'conciliacion',
-        titulo: 'Conciliación bancaria',
-        descripcion: 'El agente cruza los movimientos.',
-        overview: null,
-        colaHref: '/panel/inmobiliaria/ai/conciliacion/cola',
-        ...props,
-      }),
+      // Real I18nProvider (default 'es') — assertions check byte-identical es chrome.
+      React.createElement(
+        I18nProvider,
+        null,
+        React.createElement(SalaAgente, {
+          agente: 'conciliacion',
+          titulo: 'Conciliación bancaria',
+          descripcion: 'El agente cruza los movimientos.',
+          overview: null,
+          colaHref: '/panel/inmobiliaria/ai/conciliacion/cola',
+          ...props,
+        }),
+      ),
     )
   })
 }

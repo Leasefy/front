@@ -12,13 +12,17 @@
 import { Scales } from '@phosphor-icons/react'
 
 import type { AgentAutonomiaResponse, AutonomiaModo } from '@/lib/api/agent-workspace'
+import { useI18n } from '@/lib/i18n'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
-const MODO_META: Record<AutonomiaModo, { label: string; emoji: string; hint: string }> = {
-  sombra: { label: 'Sombra', emoji: '🌑', hint: 'Solo observa y sugiere en silencio' },
-  copiloto: { label: 'Copiloto', emoji: '🤝', hint: 'Sugiere; nada se aplica sin un humano' },
-  autonomo: { label: 'Autónomo', emoji: '🚀', hint: 'Ejecuta dentro de la valla certificada' },
+const NS = 'inmobiliaria.ai.workspace.autonomia'
+
+/** Emoji per mode; label + hint text live under `${NS}.modo.*`. */
+const MODO_EMOJI: Record<AutonomiaModo, string> = {
+  sombra: '🌑',
+  copiloto: '🤝',
+  autonomo: '🚀',
 }
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
@@ -32,6 +36,7 @@ export interface AutonomiaPanelProps {
 }
 
 export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) {
+  const { t } = useI18n()
   if (isLoading) {
     return (
       <div className="space-y-3" data-testid="autonomia-panel-loading">
@@ -47,7 +52,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="autonomia-panel-error"
       >
-        No se pudo cargar la configuración de autonomía: {error}
+        {t(`${NS}.error`, { error })}
       </div>
     )
   }
@@ -60,12 +65,8 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
         data-testid="autonomia-panel-empty"
       >
         <Scales className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">
-          La configuración de autonomía aún no está disponible
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Este panel se activa cuando el backend publique la valla del agente.
-        </p>
+        <p className="text-sm font-medium text-foreground">{t(`${NS}.emptyTitle`)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
       </div>
     )
   }
@@ -73,9 +74,8 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
   return (
     <div className="space-y-4" data-testid="autonomia-panel">
       {/* Mode pills (read-only) */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Modo de autonomía">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t(`${NS}.grupoAria`)}>
         {MODOS.map((modo) => {
-          const meta = MODO_META[modo]
           const isActive = data.modo === modo
           const isAvailable = data.modosDisponibles.includes(modo)
           return (
@@ -83,15 +83,15 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
               key={modo}
               data-testid={`autonomia-modo-${modo}`}
               aria-current={isActive ? 'true' : undefined}
-              title={isAvailable ? meta.hint : 'No disponible para este agente'}
+              title={isAvailable ? t(`${NS}.modo.${modo}Hint`) : t(`${NS}.noDisponible`)}
               className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ring-1 transition ${
                 isActive
                   ? 'bg-primary/10 text-foreground ring-primary font-semibold'
                   : 'bg-muted text-muted-foreground ring-border'
               } ${!isAvailable ? 'opacity-40' : ''}`}
             >
-              <span aria-hidden="true">{meta.emoji}</span>
-              {meta.label}
+              <span aria-hidden="true">{MODO_EMOJI[modo]}</span>
+              {t(`${NS}.modo.${modo}`)}
             </span>
           )
         })}
@@ -110,15 +110,15 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
           className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-400"
           data-testid="autonomia-t323"
         >
-          Decisión sobre personas — revisión humana garantizada (T-323/2024)
+          {t(`${NS}.t323`)}
         </div>
       )}
 
       {/* Valla (guardrails) */}
       <section className="rounded-xl border border-border bg-card p-4 space-y-2" data-testid="autonomia-valla">
-        <h2 className="text-sm font-semibold text-foreground">Valla del agente</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.vallaTitle`)}</h2>
         {data.valla.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Sin reglas de valla publicadas.</p>
+          <p className="text-xs text-muted-foreground">{t(`${NS}.vallaEmpty`)}</p>
         ) : (
           <dl className="divide-y divide-border">
             {data.valla.map((regla) => (

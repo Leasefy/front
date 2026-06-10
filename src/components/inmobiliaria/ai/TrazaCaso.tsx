@@ -15,24 +15,23 @@
 import { ClockCounterClockwise } from '@phosphor-icons/react'
 
 import type { ActorType, TrazaEntry } from '@/lib/api/agent-workspace'
-import { relativeTime } from './ColaHumana'
+import { useI18n } from '@/lib/i18n'
+import { relativeTime, type TranslateFn } from './ColaHumana'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
-/** Shared actor chip metadata — also reused by SalaAgente's feed. */
-export const ACTOR_META: Record<ActorType, { label: string; cls: string; dot: string }> = {
+/** Shared actor chip styling — also reused by SalaAgente's feed. Label text
+ *  resolves via actorLabel(t, actorType) (inmobiliaria.ai.workspace.actor.*). */
+export const ACTOR_META: Record<ActorType, { cls: string; dot: string }> = {
   user: {
-    label: 'Humano',
     cls: 'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 ring-sky-200 dark:ring-sky-900',
     dot: 'bg-sky-500',
   },
   agent: {
-    label: 'Agente',
     cls: 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 ring-violet-200 dark:ring-violet-900',
     dot: 'bg-violet-500',
   },
   system: {
-    label: 'Sistema',
     cls: 'bg-muted text-muted-foreground ring-border',
     dot: 'bg-neutral-400',
   },
@@ -43,24 +42,18 @@ export function actorMeta(actorType: string) {
   return ACTOR_META[actorType as ActorType] ?? ACTOR_META.system
 }
 
-/** es-CO labels for known action slugs; unknown slugs are humanized raw. */
-const ACTION_LABEL: Record<string, string> = {
-  detectado: 'Detectado por el agente',
-  sugerido: 'Sugerencia del agente',
-  en_revision: 'Enviado a revisión humana',
-  aprobado: 'Aprobado',
-  rechazado: 'Rechazado',
-  ejecutando: 'Ejecución iniciada',
-  resuelto: 'Resuelto',
-  fallo: 'Falló',
-  creado: 'Creado',
-  match_sugerido: 'Cruce sugerido',
-  match_confirmado: 'Cruce confirmado',
-  match_rechazado: 'Cruce rechazado',
+/** Actor chip label; unknown actorType degrades to the system label. */
+export function actorLabel(t: TranslateFn, actorType: string): string {
+  const known = actorType in ACTOR_META ? actorType : 'system'
+  return t(`inmobiliaria.ai.workspace.actor.${known}`)
 }
 
-function actionLabel(action: string): string {
-  return ACTION_LABEL[action] ?? action.replace(/_/g, ' ')
+/** Labels for known action slugs (inmobiliaria.ai.workspace.traza.accion.*);
+ *  unknown slugs are humanized raw — t() echoes the key path on a miss. */
+function actionLabel(t: TranslateFn, action: string): string {
+  const full = `inmobiliaria.ai.workspace.traza.accion.${action}`
+  const label = t(full)
+  return label === full ? action.replace(/_/g, ' ') : label
 }
 
 function absolute(iso: string): string {
@@ -78,6 +71,7 @@ export interface TrazaCasoProps {
 }
 
 export function TrazaCaso({ entries, isLoading, error }: TrazaCasoProps) {
+  const { t } = useI18n()
   if (isLoading) {
     return (
       <div className="space-y-2" data-testid="traza-caso-loading">
@@ -94,7 +88,7 @@ export function TrazaCaso({ entries, isLoading, error }: TrazaCasoProps) {
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="traza-caso-error"
       >
-        No se pudo cargar la traza: {error}
+        {t('inmobiliaria.ai.workspace.traza.error', { error })}
       </div>
     )
   }
@@ -110,9 +104,11 @@ export function TrazaCaso({ entries, isLoading, error }: TrazaCasoProps) {
           weight="duotone"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-foreground">Sin actividad registrada</p>
+        <p className="text-sm font-medium text-foreground">
+          {t('inmobiliaria.ai.workspace.traza.emptyTitle')}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Las acciones del agente y del equipo aparecerán aquí.
+          {t('inmobiliaria.ai.workspace.traza.emptyBody')}
         </p>
       </div>
     )
@@ -134,22 +130,22 @@ export function TrazaCaso({ entries, isLoading, error }: TrazaCasoProps) {
 
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-medium text-foreground">{actionLabel(entry.action)}</p>
+                <p className="text-sm font-medium text-foreground">{actionLabel(t, entry.action)}</p>
                 <span
                   className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full ring-1 ${meta.cls}`}
                 >
-                  {meta.label}
+                  {actorLabel(t, entry.actorType)}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground tabular-nums">
-                {[relativeTime(entry.occurredAt), absolute(entry.occurredAt), entry.actorId ?? '']
+                {[relativeTime(entry.occurredAt, t), absolute(entry.occurredAt), entry.actorId ?? '']
                   .filter(Boolean)
                   .join(' · ')}
               </p>
               {hasDetails && (
                 <details className="group">
                   <summary className="cursor-pointer text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground select-none">
-                    Detalles
+                    {t('inmobiliaria.ai.workspace.traza.detalles')}
                   </summary>
                   {/* Plain <pre> JSON — never raw-HTML sinks (T-34-07-02). */}
                   <pre className="mt-1 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-words max-h-40 overflow-y-auto rounded-md bg-muted/40 p-2">

@@ -262,6 +262,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Comparison panel */}
       <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="overflow-x-auto overscroll-contain">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs font-medium uppercase text-neutral-500 dark:bg-neutral-950/50 dark:text-neutral-400">
             <tr>
@@ -323,6 +324,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             </tr>
           </tbody>
         </table>
+        </div>
       </section>
 
       {/* Hard-block banner */}

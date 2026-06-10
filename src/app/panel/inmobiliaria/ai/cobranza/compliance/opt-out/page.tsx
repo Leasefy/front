@@ -164,6 +164,7 @@ function OptOutContent() {
 
       {items.length > 0 && (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="overflow-x-auto overscroll-contain">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
@@ -228,6 +229,7 @@ function OptOutContent() {
               })}
             </tbody>
           </table>
+          </div>
           {nextCursor && (
             <div className="p-3 border-t border-border bg-muted/20 text-center">
               <button

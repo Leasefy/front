@@ -79,6 +79,7 @@ export function ThresholdVersionsTable({
       {versions.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">—</p>
       ) : (
+        <div className="overflow-x-auto overscroll-contain">
         <table className="w-full text-sm">
           <thead className="bg-muted/10 border-b border-border">
             <tr>
@@ -150,6 +151,7 @@ export function ThresholdVersionsTable({
             })}
           </tbody>
         </table>
+        </div>
       )}
 
       {/* Toast */}

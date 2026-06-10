@@ -19,6 +19,8 @@
  *   Total data cells: 7 × 24 = 168
  */
 
+import { Fragment, useState } from 'react';
+
 import { useI18n } from '@/lib/i18n';
 import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
 import { STUB_CADENCE } from '@/lib/fixtures/cobranza-analytics-stub';
@@ -68,6 +70,10 @@ function cellBgColor(count: number, positiveRate: number, max: number): string {
 export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
   const { t, locale } = useI18n();
 
+  // Tap-to-inspect: the selected cell's details render in a summary line
+  // below the grid (title-only tooltips are dead on touch).
+  const [selected, setSelected] = useState<{ day: number; hour: number } | null>(null);
+
   // Branch A — agency-gate
   if (!data.populated && data.reason === 'agency-gate') {
     return null;
@@ -101,12 +107,28 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
 
   const regionTitle = t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.title');
 
+  const describeCell = (cell: HeatmapCell): string => {
+    const pctDisplay = (cell.positive_outcome_pct * 100).toFixed(0);
+    return isEs
+      ? `${dayLabels[cell.day_of_week]} ${cell.hour}h: ${cell.call_count} llamadas, ${pctDisplay}% positivas`
+      : `${dayLabels[cell.day_of_week]} ${cell.hour}h: ${cell.call_count} calls, ${pctDisplay}% positive`;
+  };
+
+  const selectedCell = selected ? matrix[selected.day][selected.hour] : null;
+
   const grid = (
     <div role="region" aria-label={regionTitle}>
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
         {regionTitle}
       </p>
-      <div className="relative overflow-x-auto">
+      {/* Single focusable scroll wrapper — the 168 cells are NOT in the tab
+          order; keyboard users get the aria-live summary line below. */}
+      <div
+        className="relative overflow-x-auto overscroll-contain"
+        tabIndex={0}
+        role="group"
+        aria-label={regionTitle}
+      >
         <div
           className="grid gap-px"
           style={{ gridTemplateColumns: 'auto repeat(24, minmax(18px, 1fr))' }}
@@ -126,39 +148,57 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
 
           {/* Rows 1..7: day label + 24 data cells */}
           {matrix.map((hourCells, d) => (
-            <>
+            <Fragment key={`row-${d}`}>
               {/* Day label */}
               <div
-                key={`day-${d}`}
                 role="rowheader"
                 className="pr-1.5 text-[10px] text-neutral-500 flex items-center"
               >
                 {dayLabels[d]}
               </div>
 
-              {/* 24 data cells */}
+              {/* 24 data cells — tap/click selects; title kept for desktop hover */}
               {hourCells.map((cell) => {
-                const pctDisplay = (cell.positive_outcome_pct * 100).toFixed(0);
-                const ariaLabel = isEs
-                  ? `${dayLabels[d]} ${cell.hour}h: ${cell.call_count} llamadas, ${pctDisplay}% positivas`
-                  : `${dayLabels[d]} ${cell.hour}h: ${cell.call_count} calls, ${pctDisplay}% positive`;
+                const ariaLabel = describeCell(cell);
+                const isSelected = selected?.day === d && selected?.hour === cell.hour;
 
                 return (
-                  <div
+                  <button
                     key={`cell-${d}-${cell.hour}`}
+                    type="button"
                     role="gridcell"
-                    tabIndex={0}
+                    tabIndex={-1}
                     aria-label={ariaLabel}
+                    aria-pressed={isSelected}
                     title={ariaLabel}
-                    className="aspect-square rounded-[2px] cursor-default focus:outline focus:outline-2 focus:outline-indigo-500"
+                    onClick={() =>
+                      setSelected(isSelected ? null : { day: d, hour: cell.hour })
+                    }
+                    className={
+                      'aspect-square rounded-[2px] ' +
+                      (isSelected
+                        ? 'ring-2 ring-indigo-500 ring-offset-1 relative z-10'
+                        : '')
+                    }
                     style={{ backgroundColor: cellBgColor(cell.call_count, cell.positive_outcome_pct, effectiveMax) }}
                   />
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
       </div>
+      {/* Selected-cell summary line (tap-to-inspect) */}
+      <p
+        aria-live="polite"
+        className="text-xs text-neutral-600 dark:text-neutral-300 mt-1.5 min-h-4"
+      >
+        {selectedCell
+          ? describeCell(selectedCell)
+          : isEs
+            ? 'Toca una celda para ver el detalle'
+            : 'Tap a cell to see details'}
+      </p>
       <p className="text-[10px] text-neutral-400 mt-1">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.legend')}
       </p>

@@ -98,7 +98,7 @@ function renderContent(content: string) {
       // Handle inline bold
       const parts = line.split(/(\*\*.*?\*\*)/g);
       elements.push(
-        <p key={key++} className="text-[15px] leading-[1.85] text-muted-foreground mb-1">
+        <p key={key++} className="text-base sm:text-[15px] leading-[1.85] text-muted-foreground mb-1">
           {parts.map((part, i) =>
             part.startsWith("**") && part.endsWith("**") ? (
               <strong key={i} className="text-foreground font-medium">

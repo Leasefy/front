@@ -84,7 +84,7 @@ export function WhyUsSection() {
         {/* Header */}
         <div className="mb-14 md:mb-20">
           <SectionLabel className="mb-4">Por qué nosotros</SectionLabel>
-          <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic whitespace-nowrap">
+          <h2 className="text-[1.75rem] md:text-[2.5rem] font-heading font-light text-foreground leading-[1.2] tracking-[-0.02em] italic md:whitespace-nowrap">
             Expertos en arriendos en Colombia
           </h2>
         </div>

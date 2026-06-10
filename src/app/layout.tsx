@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
@@ -96,6 +96,13 @@ export const metadata: Metadata = {
   category: "real estate",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#5B5FEF",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -105,7 +112,6 @@ export default function RootLayout({
     <html lang="es" className="lenis" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#5B5FEF" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <OrganizationJsonLd />
         <WebsiteJsonLd />

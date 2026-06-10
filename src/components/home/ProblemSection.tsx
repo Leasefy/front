@@ -175,6 +175,7 @@ export function ProblemSection() {
                 src="/images/people/woman-laptop-kitchen.jpg"
                 alt="Inquilina frustrada con el proceso"
                 fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -219,6 +220,7 @@ export function ProblemSection() {
                 src="/images/people/family-living-room.jpg"
                 alt="Familia en su hogar"
                 fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -263,6 +265,7 @@ export function ProblemSection() {
                 src="/images/people/woman-packing.jpg"
                 alt="Persona preparando mudanza"
                 fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />

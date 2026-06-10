@@ -23,6 +23,7 @@
     --indigo-100: 237 100% 95%;   /* #E5E7FF */
     --indigo-200: 237 100% 90%;   /* #C9CCFF */
     --indigo-300: 237 100% 83%;   /* #A6AAFF */
+    --indigo-400: 238 91% 74%;    /* #8084F9 — interpolated 300↔500 */
     --indigo-500: 238 82% 65%;    /* #5B5FEF */
     --indigo-600: 238 76% 59%;    /* #4A4FE6 */
     --indigo-700: 238 52% 52%;    /* #3E41C9 */
@@ -34,8 +35,12 @@
     --sand-50:  34 47% 96%;       /* #FAF7F2 */
     --sand-100: 34 32% 93%;       /* #F3EEE4 */
     --sand-200: 34 29% 85%;       /* #E7DDCC */
+    --sand-300: 33 26% 78%;       /* #D5C8B8 — interpolated 200↔500 */
+    --sand-400: 31 23% 70%;       /* #C4B3A1 — interpolated 200↔500 */
     --sand-500: 30 20% 63%;       /* #B9A58A */
+    --sand-600: 29 19% 54%;       /* #A08973 — interpolated 500↔700 */
     --sand-700: 28 18% 46%;       /* #8A7761 */
+    --sand-800: 26 18% 36%;       /* #6C5A4B — interpolated 700↔900 */
     --sand-900: 24 17% 26%;       /* #4E4033 */
 
     /* Neutral (warm) */
@@ -576,7 +581,36 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01";
-    overflow-x: hidden;
+    /* clip (vs hidden) avoids creating a scroll container, keeping
+       position: sticky descendants working while still cutting
+       horizontal overflow */
+    overflow-x: clip;
+  }
+
+  html {
+    /* Prevent pull-to-refresh / rubber-band glitches on mobile */
+    overscroll-behavior-y: none;
+  }
+
+  /* Remove the 300ms tap delay / double-tap zoom on interactive elements */
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* iOS zoom guard: Safari auto-zooms when a focused field is < 16px.
+     Scoped to coarse pointers so desktop form densities are untouched. */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
   }
 
   /* Headings use Manrope by default */

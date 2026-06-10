@@ -83,7 +83,7 @@ export function TestimonialsSection() {
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-0.072em] leading-[1.05] mb-10">
               Historias de éxito
             </h2>
 

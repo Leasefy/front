@@ -86,6 +86,10 @@ export function HeroSection() {
   const [searchStep, setMagnifyingGlassStep] = useState(0);
   const [activeValue, setActiveValue] = useState(0);
   const [activeImage, setActiveImage] = useState(0);
+  // Lazy-load crossfade slides: render the first two up front, then mount
+  // the next slide one step ahead of the carousel (monotonic, so the
+  // outgoing slide always stays mounted for the fade-out).
+  const [mountedImages, setMountedImages] = useState(2);
   const router = useRouter();
   const timersRef = useRef<NodeJS.Timeout[]>([]);
 
@@ -104,6 +108,13 @@ export function HeroSection() {
     }, IMAGE_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+
+  // Keep one slide pre-mounted ahead of the active one
+  useEffect(() => {
+    setMountedImages((n) =>
+      Math.min(HERO_IMAGES.length, Math.max(n, activeImage + 2))
+    );
+  }, [activeImage]);
 
   function startMagnifyingGlassSequence(searchQuery: string) {
     if (!searchQuery.trim() || isMagnifyingGlassing) return;
@@ -127,7 +138,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative h-[500px] overflow-hidden bg-black">
+    <section className="relative min-h-[500px] overflow-hidden bg-black">
       {/* Background — crossfade image slideshow */}
       {HERO_IMAGES.map((src, i) => (
         <div
@@ -138,14 +149,16 @@ export function HeroSection() {
             transition: "opacity 4s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          <Image
-            src={src}
-            alt={`Interior ${i + 1}`}
-            fill
-            className="object-cover"
-            priority={i === 0}
-            sizes="100vw"
-          />
+          {i < mountedImages && (
+            <Image
+              src={src}
+              alt={`Interior ${i + 1}`}
+              fill
+              className="object-cover"
+              priority={i === 0}
+              sizes="100vw"
+            />
+          )}
         </div>
       ))}
       {/* Overlays for legibility */}
@@ -154,7 +167,7 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50 z-[1]" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col md:flex-row h-full container-platform">
+      <div className="relative z-10 flex flex-col md:flex-row min-h-[500px] container-platform">
         {/* Left — search area */}
         <div className="flex-1 flex flex-col justify-end pb-6 md:pb-10">
           <div className="max-w-xl space-y-4">
@@ -163,7 +176,7 @@ export function HeroSection() {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em]">
                 De buscar a vivir.
               </h1>
-              <p className="text-base md:text-lg text-white/60 whitespace-nowrap">
+              <p className="text-base md:text-lg text-white/60 sm:whitespace-nowrap">
                 Sin papeleo, sin incertidumbre, sin esperas.
               </p>
             </div>
@@ -184,7 +197,7 @@ export function HeroSection() {
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   placeholder="Busca tu próximo arriendo: 2 hab en Chapinero, estudio amoblado…"
-                  className="flex-1 bg-transparent text-[15px] text-white placeholder:text-white/40 focus:outline-none resize-none min-h-[60px]"
+                  className="flex-1 bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none resize-none min-h-[60px]"
                   disabled={isMagnifyingGlassing}
                   rows={2}
                   onKeyDown={(e) => {

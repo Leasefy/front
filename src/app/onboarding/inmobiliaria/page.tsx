@@ -313,7 +313,7 @@ function OnboardingInmobiliariaContent() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-neutral-100">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <svg viewBox="0 0 207 60" className="h-6 w-auto text-neutral-900" fill="none">
@@ -323,10 +323,10 @@ function OnboardingInmobiliariaContent() {
             </Link>
 
             {/* Progress */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {(fromPublish ? [1, 4] : [1, 2, 3, 4]).map((s, idx, arr) => (
-                  <div key={s} className="flex items-center gap-2">
+                  <div key={s} className="flex items-center gap-1.5 sm:gap-2">
                     <div className={cn(
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
                       step > s ? "bg-indigo-600 text-white uppercase tracking-wide font-mono" :
@@ -336,7 +336,7 @@ function OnboardingInmobiliariaContent() {
                     </div>
                     {idx < arr.length - 1 && (
                       <div className={cn(
-                        "w-6 h-0.5 transition-colors",
+                        "w-3 sm:w-6 h-0.5 transition-colors",
                         step > s ? "bg-indigo-600" : "bg-neutral-200"
                       )} />
                     )}
@@ -346,7 +346,7 @@ function OnboardingInmobiliariaContent() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
+                className="shrink-0 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
                 {t('inmobiliaria.onboarding.register.skip')}
               </button>

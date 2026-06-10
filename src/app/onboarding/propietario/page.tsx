@@ -259,7 +259,7 @@ function OnboardingPropietarioContent() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-neutral-100">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <svg viewBox="0 0 207 60" className="h-6 w-auto text-neutral-900" fill="none">
@@ -269,7 +269,7 @@ function OnboardingPropietarioContent() {
             </Link>
 
             {/* Progress */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
@@ -295,7 +295,7 @@ function OnboardingPropietarioContent() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
+                className="shrink-0 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
                 Saltar
               </button>

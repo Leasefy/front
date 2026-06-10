@@ -37,6 +37,7 @@ import {
   Siren,
   GitMerge,
   ArrowsClockwise,
+  Scales,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -203,6 +204,31 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           href: '/panel/inmobiliaria/ai/cotizador/configuracion',
           icon: SlidersHorizontal,
           module: 'cotizador',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // Avalúos (7º agente): standalone service proxied by the agent backend;
+      // read-only tracking workspace (la inmobiliaria solicita y consulta —
+      // la firma del certificado la gestiona el avaluador Portofino/Leasefy).
+      // Gated by the agent module 'avaluos' with the ABSENT-module = ALLOWED
+      // fallback (see agent-module-access.ts) so either repo merges first.
+      label: t('inmobiliaria.ai.nav.avaluos'),
+      href: '/panel/inmobiliaria/ai/avaluos',
+      icon: Scales,
+      module: 'avaluos',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.avaluosCola'),
+          href: '/panel/inmobiliaria/ai/avaluos/cola',
+          icon: ClipboardText,
+          module: 'avaluos',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.avaluosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/avaluos/configuracion',
+          icon: SlidersHorizontal,
+          module: 'avaluos',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,

@@ -4224,7 +4224,10 @@
         "matchingAnalitica": "Analítica",
         "pagosCola": "Cola humana",
         "pagosConfiguracion": "Configuración",
-        "pagosAnalitica": "Analítica"
+        "pagosAnalitica": "Analítica",
+        "avaluos": "Avalúos",
+        "avaluosCola": "Cola humana",
+        "avaluosConfiguracion": "Configuración"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",

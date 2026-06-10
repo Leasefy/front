@@ -4223,7 +4223,10 @@
         "matchingAnalitica": "Analytics",
         "pagosCola": "Human queue",
         "pagosConfiguracion": "Settings",
-        "pagosAnalitica": "Analytics"
+        "pagosAnalitica": "Analytics",
+        "avaluos": "Appraisals",
+        "avaluosCola": "Human queue",
+        "avaluosConfiguracion": "Settings"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

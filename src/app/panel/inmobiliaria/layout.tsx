@@ -94,7 +94,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
   // `roles` is an optional role-based gate (in addition to module-based gating).
-  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[] };
+  // `adminOnly` is a stricter gate: only super-admins see the item (no role list).
+  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[]; adminOnly?: boolean };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── PRINCIPAL ──
@@ -440,7 +441,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       const next = filtered[idx + 1];
       return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, isAdmin, agencyRole]);
+  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -464,7 +465,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main content area */}
       <div
         className={cn(
-          'transition-all duration-200 pb-20 md:pb-0',
+          // pb-20 reserves space for the mobile bottom nav, which is visible
+          // below lg (same breakpoint where the desktop sidebar appears).
+          'transition-all duration-200 pb-20 lg:pb-0',
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
@@ -473,7 +476,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
-      {/* Mobile bottom navigation — hidden at md+ breakpoints */}
+      {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}

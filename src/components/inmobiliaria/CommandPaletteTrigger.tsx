@@ -31,6 +31,8 @@ export function CommandPaletteTrigger({ className }: CommandPaletteTriggerProps)
       aria-label={t('inmobiliaria.commandPalette.triggerAriaLabel')}
       className={cn(
         'group flex items-center gap-2 h-9 pl-3 pr-2.5',
+        // ≥44px touch target on coarse pointers (visual height unchanged on desktop)
+        '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 [@media(pointer:coarse)]:justify-center',
         'bg-neutral-50 hover:bg-white border border-neutral-200 hover:border-neutral-300',
         'rounded-full transition-colors',
         'text-neutral-400 hover:text-neutral-600',

@@ -48,6 +48,9 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
         onClick={() => router.push(targetPath)}
         className={cn(
           'p-2 rounded-lg',
+          'inline-flex items-center justify-center',
+          // ≥44px touch target on coarse pointers
+          '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
           'text-neutral-400 dark:text-neutral-500',
           'hover:text-neutral-600 dark:hover:text-neutral-300',
           'hover:bg-neutral-100 dark:hover:bg-neutral-800',

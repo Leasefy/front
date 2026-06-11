@@ -37,7 +37,7 @@ function AvaluosCola() {
             <Scales className="w-3.5 h-3.5" aria-hidden="true" />
             {t('inmobiliaria.ai.workspace.pages.avaluos.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.avaluos.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.avaluos.colaDesc')}
           </p>
@@ -49,7 +49,7 @@ function AvaluosCola() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            {t('inmobiliaria.ai.workspace.pages.comun.enCola')}
+            {t('inmobiliaria.ai.workspace.pages.avaluos.colaKpiLabel')}
           </p>
         </div>
       </header>

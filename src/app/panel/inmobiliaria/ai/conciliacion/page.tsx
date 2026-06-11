@@ -9,18 +9,34 @@
  * at ./configuracion (AGENT-WORKSPACE-SPEC §1.4).
  *
  * F10 (SPEC §4): the movimientos + extractos surface now lives INSIDE the
- * workspace at ./movimientos (the legacy /conciliacion URL redirects here)
- * and is linked from the domain slot below.
+ * workspace at ./movimientos (the legacy /conciliacion URL redirects here).
+ *
+ * Jerarquía invertida (patrón avalúos): el domain slot abre con la acción
+ * principal — "Subir extracto del banco" → ./movimientos#upload — seguida de
+ * la sección "¿Cómo funciona?" de 3 pasos.
  */
 
 import Link from 'next/link'
-import { ArrowSquareOut, Bank } from '@phosphor-icons/react'
+import { ArrowsClockwise, Bank, CheckCircle, UploadSimple } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 import { useI18n } from '@/lib/i18n'
+
+const PAGES_NS = 'inmobiliaria.ai.workspace.pages.conciliacion'
+
+/** Anchor into the movimientos page — the dropzone carries id="upload". */
+const SUBIR_EXTRACTO_HREF = '/panel/inmobiliaria/ai/conciliacion/movimientos#upload'
+
+/** "Cómo funciona" — el viaje de la conciliación en 3 pasos. */
+const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
+  { icon: UploadSimple, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
+  { icon: ArrowsClockwise, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
+  { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+]
 
 function ConciliacionSala() {
   const { t } = useI18n()
@@ -32,23 +48,69 @@ function ConciliacionSala() {
   return (
     <SalaAgente
       agente="conciliacion"
-      titulo={t('inmobiliaria.ai.workspace.pages.conciliacion.salaTitulo')}
-      descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.salaDesc')}
+      titulo={t(`${PAGES_NS}.salaTitulo`)}
+      descripcion={t(`${PAGES_NS}.salaDesc`)}
       icon={Bank}
       overview={data}
       isLoading={isLoading}
       error={error}
       colaHref="/panel/inmobiliaria/ai/conciliacion/cola"
       colaCount={colaCount}
+      colaLabel={t(`${PAGES_NS}.colaLabel`)}
     >
-      {/* Domain slot: the movimientos/extractos surface (now ./movimientos) */}
-      <Link
-        href="/panel/inmobiliaria/ai/conciliacion/movimientos"
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
-      >
-        <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
-        {t('inmobiliaria.ai.workspace.pages.conciliacion.verMovimientos')}
-      </Link>
+      {/* Domain slot: acción principal + cómo funciona (patrón avalúos) */}
+      <section className="space-y-4" data-testid="conciliacion-subir-extracto">
+        {/* Acción principal — subir el extracto del banco */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
+              <UploadSimple className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t(`${PAGES_NS}.accionTitle`)}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t(`${PAGES_NS}.accionDesc`)}
+              </p>
+            </div>
+            <Link
+              href={SUBIR_EXTRACTO_HREF}
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
+              data-testid="conciliacion-subir-cta"
+            >
+              {t(`${PAGES_NS}.accionTitle`)}
+              <UploadSimple className="w-4 h-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Cómo funciona — el viaje de la conciliación en 3 pasos */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="conciliacion-como-funciona">
+          <h2 className="text-sm font-semibold text-foreground">
+            {t(`${PAGES_NS}.comoFunciona.title`)}
+          </h2>
+          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {COMO_FUNCIONA_STEPS.map((step, i) => {
+              const StepIcon = step.icon
+              return (
+                <li key={step.titleKey} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                  </div>
+                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                    {t(step.titleKey)}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </section>
     </SalaAgente>
   )
 }

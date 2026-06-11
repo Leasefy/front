@@ -37,7 +37,7 @@ function MatchingCola() {
             <GitMerge className="w-3.5 h-3.5" aria-hidden="true" />
             {t('inmobiliaria.ai.workspace.pages.matching.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.matching.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.matching.colaDesc')}
           </p>
@@ -56,6 +56,7 @@ function MatchingCola() {
 
       {/* Cola humana (transversal component) — opens the case detail */}
       <ColaHumana
+        agente="matching"
         items={items}
         isLoading={isLoading}
         error={error}

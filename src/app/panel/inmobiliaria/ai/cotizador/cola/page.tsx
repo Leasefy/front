@@ -52,6 +52,7 @@ export default function CotizadorColaPage() {
 
       {/* Cola humana (transversal component) — read-only triage, deep-links to detail */}
       <ColaHumana
+        agente="cotizador"
         items={items}
         isLoading={isLoading}
         error={error}

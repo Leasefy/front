@@ -36,7 +36,7 @@ function ConciliacionCola() {
             <Bank className="w-3.5 h-3.5" aria-hidden="true" />
             {t('inmobiliaria.ai.workspace.pages.conciliacion.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
           </p>
@@ -55,12 +55,17 @@ function ConciliacionCola() {
 
       {/* Cola humana (transversal component) — opens the case detail */}
       <ColaHumana
+        agente="conciliacion"
         items={items}
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/conciliacion/${encodeURIComponent(item.id)}`)}
         emptyHint={t('inmobiliaria.ai.workspace.pages.conciliacion.colaEmptyHint')}
+        emptyAction={{
+          label: t('inmobiliaria.ai.workspace.pages.conciliacion.accionTitle'),
+          href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
+        }}
       />
     </div>
   )

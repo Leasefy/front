@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { SquaresFour, Sparkle } from '@phosphor-icons/react';
+import { SquaresFour } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { LeasefyMark } from './LeasefyMark';
 
 type Workspace = 'dashboard' | 'beta';
 
@@ -34,14 +35,12 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
 
   return (
     <div className="flex items-center justify-between">
-      {/* Brand */}
+      {/* Brand — real Leasefy mark (white on dark, brand blue on light) */}
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm">
-          <Sparkle className="w-[18px] h-[18px] text-white" weight="fill" />
-        </div>
+        <LeasefyMark className="w-7 h-auto shrink-0 text-[#1A40FF] dark:text-white" />
         <span className="text-[15px] font-bold text-foreground tracking-tight">
           Leasefy
-          <span className="text-indigo-500 ml-1">AI</span>
+          <span className="text-[#1A40FF] dark:text-indigo-400 ml-1">AI</span>
         </span>
       </div>
 

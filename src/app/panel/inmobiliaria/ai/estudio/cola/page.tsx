@@ -38,9 +38,14 @@ function EstudioCola() {
             <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
             {t('inmobiliaria.ai.workspace.pages.estudio.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}
+          </p>
+          {/* Leyenda de niveles — los items muestran "Nivel A/B/C/D" sin explicación */}
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Niveles:</span>{' '}
+            A = mejor perfil · B = buen perfil · C = perfil ajustado · D = mayor riesgo
           </p>
         </div>
 
@@ -57,6 +62,7 @@ function EstudioCola() {
 
       {/* Cola humana (transversal component) — opens the case detail */}
       <ColaHumana
+        agente="estudio"
         items={items}
         isLoading={isLoading}
         error={error}

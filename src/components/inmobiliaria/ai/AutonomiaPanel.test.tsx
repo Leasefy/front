@@ -115,4 +115,23 @@ describe('AutonomiaPanel — happy path', () => {
     render({ data: { ...DATA, t323: false } })
     expect(container.querySelector('[data-testid="autonomia-t323"]')).toBeNull()
   })
+
+  it('renders the ACTIVE mode hint as visible text (tooltips are invisible on touch)', () => {
+    render({ data: DATA })
+    const hint = container.querySelector('[data-testid="autonomia-modo-hint"]')
+    expect(hint).not.toBeNull()
+    // copiloto is the active mode → its hint shows
+    expect(hint!.textContent).toContain('Sugiere; nada se aplica sin un humano')
+    // the title= tooltips on the pills are kept
+    expect(
+      container.querySelector('[data-testid="autonomia-modo-copiloto"]')!.getAttribute('title'),
+    ).toContain('Sugiere')
+  })
+
+  it('renders the sombra hint when sombra is the active mode', () => {
+    render({ data: { ...DATA, modo: 'sombra' } })
+    expect(container.querySelector('[data-testid="autonomia-modo-hint"]')!.textContent).toContain(
+      'Solo observa y sugiere en silencio',
+    )
+  })
 })

@@ -8,7 +8,6 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import {
   Bank,
-  Plus,
   Info,
   UploadSimple,
   ArrowsClockwise,
@@ -87,12 +86,6 @@ function fmtDate(iso: string | null): string {
   } catch {
     return iso;
   }
-}
-
-/** Mask a party string: keep first 3 chars + *** */
-function maskTercero(s: string | null): string {
-  if (!s) return '—';
-  return s.length <= 3 ? s : `${s.slice(0, 3)}***`;
 }
 
 // ── Reject dialog ───────────────────────────────────────────────────────────
@@ -312,20 +305,11 @@ function ConciliacionContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
-        </div>
-        <button
-          onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
-        >
-          <Plus className="w-4 h-4" weight="bold" />
-          {t(k('new'))}
-        </button>
+      {/* Header — subir extracto (abajo) ES la acción principal; sin CTA extra */}
+      <header className="space-y-2">
+        <SectionLabel>{t(k('label'))}</SectionLabel>
+        <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
+        <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
       </header>
 
       {/* Phase-honest banner */}
@@ -343,7 +327,7 @@ function ConciliacionContent() {
         reconciliation run; matching is async (Inngest), so new suggestions surface
         on a later refresh of the queue below.
       */}
-      <div className="rounded-2xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
+      <div id="upload" className="scroll-mt-24 rounded-2xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
         {/* Bank selector */}
         <div className="flex items-center gap-2">
           <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
@@ -505,7 +489,7 @@ function ConciliacionContent() {
                 const isBusy = busyRow === item.id;
                 const dateStr = fmtDate(item.movement.valueDate ?? item.createdAt);
                 const ref = item.movement.reference ?? item.movement.description ?? '—';
-                const tercero = maskTercero(item.movement.description);
+                const tercero = item.movement.description ?? '—';
                 const valorBanco = fmtCop(item.movement.amountCop);
                 const valorEsperado = item.matchedAmountCop ? fmtCop(item.matchedAmountCop) : '—';
 
@@ -523,7 +507,7 @@ function ConciliacionContent() {
                     <td className="px-5 py-3.5 font-mono text-xs max-w-[140px] truncate" title={ref}>
                       {ref}
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-xs max-w-[120px] truncate" title={item.movement.description ?? ''}>
+                    <td className="px-5 py-3.5 text-xs max-w-[200px] truncate" title={tercero}>
                       {tercero}
                     </td>
                     <td className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>

@@ -9,6 +9,11 @@ interface ChatInputProps {
   onSend: (text: string) => void;
   disabled?: boolean;
   className?: string;
+  /**
+   * default: compact bar docked at the bottom of an active conversation.
+   * hero: the big Manus-style centered card used in the welcome state.
+   */
+  variant?: 'default' | 'hero';
 }
 
 const MAX_ROWS = 5;
@@ -18,7 +23,7 @@ const LINE_HEIGHT = 24;
  * ChatInput - Clean bordered input with auto-resizing textarea.
  * Enter sends, Shift+Enter for newline. Minimal design.
  */
-export function ChatInput({ onSend, disabled = false, className }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, className, variant = 'default' }: ChatInputProps) {
   const { t } = useI18n();
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -54,6 +59,67 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
     },
     [handleSend]
   );
+
+  if (variant === 'hero') {
+    // Manus-style hero card: tall rounded input with the send button anchored
+    // bottom-right. Used centered in the welcome state.
+    return (
+      <div className={cn('w-full', className)}>
+        <div
+          className={cn(
+            'flex flex-col',
+            'px-4 pt-3.5 pb-3',
+            'rounded-[22px]',
+            'bg-white dark:bg-[#18181b]',
+            'border border-neutral-200 dark:border-neutral-700/80',
+            'shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]',
+            'focus-within:border-neutral-300 dark:focus-within:border-neutral-500',
+            'focus-within:shadow-[0_4px_32px_rgba(0,0,0,0.09)] dark:focus-within:shadow-[0_4px_32px_rgba(0,0,0,0.5)]',
+            'transition-all duration-200'
+          )}
+        >
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('beta.chat.placeholder')}
+            disabled={disabled}
+            rows={2}
+            className={cn(
+              'w-full resize-none min-h-[56px]',
+              'bg-transparent',
+              'text-[15px] leading-relaxed',
+              'text-foreground',
+              'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+              'focus:outline-none',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+            style={{ lineHeight: `${LINE_HEIGHT}px` }}
+          />
+          <div className="flex items-center justify-end pt-1">
+            <button
+              onClick={handleSend}
+              disabled={isDisabled}
+              className={cn(
+                'flex-shrink-0',
+                'w-9 h-9 rounded-full',
+                'flex items-center justify-center',
+                "relative before:absolute before:-inset-1.5 before:content-['']",
+                'transition-all duration-150',
+                isDisabled
+                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
+                  : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95'
+              )}
+              aria-label={t('beta.chat.sendButton')}
+            >
+              <ArrowUp className="w-4 h-4" weight="bold" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     // pb resolves to 1rem (= pb-4) on desktop; on devices with a home

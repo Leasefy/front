@@ -19,6 +19,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   Clock,
@@ -62,8 +63,20 @@ export function workspaceVocab(t: TranslateFn, group: string, key: string): stri
 export const severidadLabel = (t: TranslateFn, sev: string): string =>
   workspaceVocab(t, 'severidad', sev)
 
-export const estadoLabel = (t: TranslateFn, estado: string): string =>
-  workspaceVocab(t, 'estado', estado)
+/**
+ * Estado chip label. When `agente` is provided, the per-agent override
+ * `inmobiliaria.ai.workspace.pages.{agente}.estado.{estado}` wins (e.g.
+ * cotizador renders its own domain vocabulary); on a t() miss (key echo)
+ * it degrades to the generic workspace estado vocabulary.
+ */
+export const estadoLabel = (t: TranslateFn, estado: string, agente?: string): string => {
+  if (agente) {
+    const override = `${WORKSPACE_NS}.pages.${agente}.estado.${estado}`
+    const label = t(override)
+    if (label !== override) return label
+  }
+  return workspaceVocab(t, 'estado', estado)
+}
 
 export const flagLabel = (t: TranslateFn, flag: string): string =>
   workspaceVocab(t, 'flag', flag)
@@ -133,6 +146,11 @@ export interface ColaHumanaProps {
   items: WorkItem[]
   isLoading?: boolean
   error?: string | null
+  /**
+   * Agent id used to resolve per-agent estado overrides
+   * (`inmobiliaria.ai.workspace.pages.{agente}.estado.*`) in all estado chips.
+   */
+  agente?: string
   /** Posts the action's body to its endpoint; returns ok/error for toasting. */
   onAction: (
     item: WorkItem,
@@ -141,18 +159,24 @@ export interface ColaHumanaProps {
   ) => Promise<{ ok: boolean; error?: string }>
   /** Optional: open the work-item detail. */
   onOpen?: (item: WorkItem) => void
+  /** Title for the empty state (defaults to the generic "Cola vacía"). */
+  emptyTitle?: string
   /** Copy for the empty state. */
   emptyHint?: string
+  /** Optional CTA below the empty-state hint (small primary pill link). */
+  emptyAction?: { label: string; href: string }
 }
 
 // ── Item card ───────────────────────────────────────────────────────────────
 
 function WorkItemCard({
   item,
+  agente,
   onAction,
   onOpen,
 }: {
   item: WorkItem
+  agente?: string
   onAction: ColaHumanaProps['onAction']
   onOpen?: (item: WorkItem) => void
 }) {
@@ -201,7 +225,7 @@ function WorkItemCard({
             {severidadLabel(t, item.severidad)}
           </span>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {estadoLabel(t, item.estado)}
+            {estadoLabel(t, item.estado, agente)}
           </span>
           {item.flags.map((flag) => {
             // Unknown flags are silently skipped (finite-map fallback).
@@ -331,7 +355,17 @@ function WorkItemCard({
 
 // ── List ────────────────────────────────────────────────────────────────────
 
-export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHint }: ColaHumanaProps) {
+export function ColaHumana({
+  items,
+  isLoading,
+  error,
+  agente,
+  onAction,
+  onOpen,
+  emptyTitle,
+  emptyHint,
+  emptyAction,
+}: ColaHumanaProps) {
   const { t } = useI18n()
   const sorted = useMemo(
     () =>
@@ -371,10 +405,21 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
         data-testid="cola-humana-empty"
       >
         <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-2" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.cola.vacia`)}</p>
+        <p className="text-sm font-medium text-foreground">
+          {emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
         </p>
+        {emptyAction && (
+          <Link
+            href={emptyAction.href}
+            className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+            data-testid="cola-humana-empty-action"
+          >
+            {emptyAction.label}
+          </Link>
+        )}
       </div>
     )
   }
@@ -382,7 +427,7 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
   return (
     <div className="space-y-2" data-testid="cola-humana">
       {sorted.map((item) => (
-        <WorkItemCard key={item.id} item={item} onAction={onAction} onOpen={onOpen} />
+        <WorkItemCard key={item.id} item={item} agente={agente} onAction={onAction} onOpen={onOpen} />
       ))}
     </div>
   )

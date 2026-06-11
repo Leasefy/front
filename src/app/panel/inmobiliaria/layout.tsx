@@ -103,6 +103,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── PRINCIPAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
+    // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
+    // exact match so it doesn't stay highlighted on every subroute.
+    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: Sparkle,       exact: true, module: null },
     { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
     { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
     // ── AGENTES IA ──
@@ -113,42 +116,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: ChatCircleText,
       module: 'cobranza',
       dataTourTarget: 'sidebar-cobranza',
+      // Children ordered by frequency of use (audit 2026-06-11): operación
+      // diaria primero (deudores/escalaciones/pagos/llamadas/cartas/siniestros/
+      // reporte), luego configuración y compliance.
       children: [
-        {
-          label: t('inmobiliaria.ai.nav.arco'),
-          href: '/panel/inmobiliaria/ai/cobranza/arco',
-          icon: ShieldCheck,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.plantillas'),
-          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
-          icon: FileText,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.configuracion'),
-          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          icon: SlidersHorizontal,
-          module: 'cobranza',
-          dataTourTarget: 'sidebar-configuraciones',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.analitica'),
-          href: '/panel/inmobiliaria/ai/cobranza/analitica',
-          icon: ChartLineUp,
-          module: 'cobranza',
-        } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.deudores'),
           href: '/panel/inmobiliaria/ai/cobranza/deudores',
           icon: Users,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.pagos'),
-          href: '/panel/inmobiliaria/ai/cobranza/pagos',
-          icon: CreditCard,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -158,9 +133,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.compliance'),
-          href: '/panel/inmobiliaria/ai/cobranza/compliance',
-          icon: ClipboardText,
+          label: t('inmobiliaria.ai.nav.pagos'),
+          href: '/panel/inmobiliaria/ai/cobranza/pagos',
+          icon: CreditCard,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.llamadas'),
+          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
+          icon: PhoneCall,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -170,10 +151,48 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.llamadas'),
-          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
-          icon: PhoneCall,
+          // Movido dentro del grupo cobranza — antes flotaba top-level.
+          label: t('inmobiliaria.ai.nav.siniestros'),
+          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
+          icon: Siren,
           module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaReporte'),
+          href: '/panel/inmobiliaria/ai/cobranza/reporte',
+          icon: ChartLine,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.plantillas'),
+          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
+          icon: FileText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.analitica'),
+          href: '/panel/inmobiliaria/ai/cobranza/analitica',
+          icon: ChartLineUp,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.compliance'),
+          href: '/panel/inmobiliaria/ai/cobranza/compliance',
+          icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.arco'),
+          href: '/panel/inmobiliaria/ai/cobranza/arco',
+          icon: ShieldCheck,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cobranza',
+          dataTourTarget: 'sidebar-configuraciones',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
@@ -184,6 +203,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       module: 'cotizador',
       dataTourTarget: 'sidebar-cotizador',
       children: [
+        {
+          label: t('inmobiliaria.ai.nav.cotizadorCola'),
+          href: '/panel/inmobiliaria/ai/cotizador/cola',
+          icon: ClipboardText,
+          module: 'cotizador',
+        } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
           href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
@@ -377,7 +402,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },

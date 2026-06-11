@@ -55,6 +55,10 @@ function PagosCaso() {
       colaLabel={t('inmobiliaria.ai.workspace.pages.pagos.casoColaLabel')}
       icon={CurrencyDollar}
       onAction={handleAction}
+      // El resolver de detalle de pagos aún no existe en el backend → el 404
+      // NO es "caso no encontrado": con notFoundAction el componente muestra
+      // "detalle no disponible" + salida real a Tesorería.
+      notFoundAction={{ label: 'Abrir en Tesorería', href: '/panel/inmobiliaria/tesoreria' }}
       crossLink={{
         pregunta: t('inmobiliaria.ai.workspace.pages.pagos.crossPregunta'),
         destino: t('inmobiliaria.ai.workspace.pages.pagos.crossDestino'),

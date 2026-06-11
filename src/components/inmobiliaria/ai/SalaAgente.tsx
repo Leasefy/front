@@ -76,6 +76,16 @@ export interface SalaAgenteProps {
   error?: string | null
   colaHref: string
   colaCount?: number
+  /**
+   * Label for the queue CTA. Defaults to the generic "Ir a la cola" — agents
+   * whose queue isn't an ops queue (e.g. Avalúos = "Mis solicitudes") pass
+   * their own domain vocabulary here.
+   */
+  colaLabel?: string
+  /** Title for the pipeline section (defaults to the generic "Pipeline por estado"). */
+  pipelineTitle?: string
+  /** Body copy for the not-available empty state (defaults to "el agente aún no reporta métricas"). */
+  emptyHint?: string
   /** Extra domain-specific slot rendered between header and metrics. */
   children?: ReactNode
 }
@@ -86,7 +96,10 @@ function OverviewBody({
   overview,
   isLoading,
   error,
-}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error'>) {
+  agente,
+  pipelineTitle,
+  emptyHint,
+}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error' | 'agente' | 'pipelineTitle' | 'emptyHint'>) {
   const { t } = useI18n()
   if (isLoading) {
     return (
@@ -123,7 +136,7 @@ function OverviewBody({
         <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.emptyTitle`)}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {t(`${WORKSPACE_NS}.sala.emptyBody`)}
+          {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
         </p>
       </div>
     )
@@ -153,7 +166,9 @@ function OverviewBody({
 
       {/* Pipeline por estado */}
       <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
-        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.pipelineTitle`)}</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          {pipelineTitle ?? t(`${WORKSPACE_NS}.sala.pipelineTitle`)}
+        </h2>
         {pipelineTotal === 0 ? (
           <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
@@ -170,7 +185,7 @@ function OverviewBody({
                     key={seg.estado}
                     className={`${ESTADO_BAR_CLS[seg.estado] ?? 'bg-neutral-400'} h-full`}
                     style={{ width: `${(seg.count / pipelineTotal) * 100}%` }}
-                    title={`${estadoLabel(t, seg.estado)}: ${seg.count}`}
+                    title={`${estadoLabel(t, seg.estado, agente)}: ${seg.count}`}
                   />
                 ))}
             </div>
@@ -182,7 +197,7 @@ function OverviewBody({
                     aria-hidden="true"
                   />
                   <dt className="text-[11px] text-muted-foreground">
-                    {estadoLabel(t, seg.estado)}
+                    {estadoLabel(t, seg.estado, agente)}
                   </dt>
                   <dd className="text-[11px] font-medium text-foreground tabular-nums">{seg.count}</dd>
                 </div>
@@ -237,6 +252,9 @@ export function SalaAgente({
   error,
   colaHref,
   colaCount,
+  colaLabel,
+  pipelineTitle,
+  emptyHint,
   children,
 }: SalaAgenteProps) {
   const { t } = useI18n()
@@ -261,7 +279,7 @@ export function SalaAgente({
           className="shrink-0 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid="sala-cola-cta"
         >
-          {t(`${WORKSPACE_NS}.sala.irACola`)}
+          {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}
           {typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </Link>
@@ -270,7 +288,14 @@ export function SalaAgente({
       {/* Domain-specific slot */}
       {children}
 
-      <OverviewBody overview={overview} isLoading={isLoading} error={error} />
+      <OverviewBody
+        overview={overview}
+        isLoading={isLoading}
+        error={error}
+        agente={agente}
+        pipelineTitle={pipelineTitle}
+        emptyHint={emptyHint}
+      />
     </div>
   )
 }

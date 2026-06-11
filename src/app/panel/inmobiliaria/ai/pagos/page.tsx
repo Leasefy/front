@@ -16,7 +16,15 @@
  */
 
 import Link from 'next/link'
-import { ArrowSquareOut, CurrencyDollar, PaperPlaneTilt, Wallet } from '@phosphor-icons/react'
+import {
+  ArrowSquareOut,
+  CurrencyDollar,
+  ListChecks,
+  PaperPlaneTilt,
+  Receipt,
+  SealCheck,
+  Wallet,
+} from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -24,6 +32,16 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 import { useI18n } from '@/lib/i18n'
+
+const PAGES_NS = 'inmobiliaria.ai.workspace.pages.pagos'
+
+/** "Cómo funciona" — el viaje de una factura en 4 pasos (patrón avalúos). */
+const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
+  { icon: Receipt, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
+  { icon: ListChecks, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
+  { icon: SealCheck, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+  { icon: PaperPlaneTilt, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+]
 
 /** Deep-ops surfaces the agent prepares work for — framed, never duplicated.
  *  Label/detalle text lives under inmobiliaria.ai.workspace.pages.pagos.ops*. */
@@ -60,8 +78,39 @@ function PagosSala() {
       error={error}
       colaHref="/panel/inmobiliaria/ai/pagos/cola"
       colaCount={colaCount}
+      colaLabel={t(`${PAGES_NS}.colaLabel`)}
     >
-      {/* Domain slot: operaciones profundas — cross-links, no duplicación */}
+      {/* Domain slot: cómo funciona + operaciones profundas */}
+      {/* Cómo funciona — el viaje de una factura en 4 pasos */}
+      <section
+        className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4"
+        data-testid="pagos-como-funciona"
+      >
+        <h2 className="text-sm font-semibold text-foreground">
+          {t(`${PAGES_NS}.comoFunciona.title`)}
+        </h2>
+        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {COMO_FUNCIONA_STEPS.map((step, i) => {
+            const StepIcon = step.icon
+            return (
+              <li key={step.titleKey} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                  </span>
+                  <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                </div>
+                <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  {t(step.titleKey)}
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+              </li>
+            )
+          })}
+        </ol>
+      </section>
+
+      {/* Operaciones profundas — cross-links, no duplicación */}
       <section className="space-y-2" data-testid="pagos-operaciones-profundas">
         <h2 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
           {t('inmobiliaria.ai.workspace.pages.pagos.opsTitle')}

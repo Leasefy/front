@@ -279,13 +279,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <ChatInput onSend={sendMessage} disabled={isBusy} />
         </>
       ) : (
-        <>
-          {/* Empty state with welcome + floating input */}
-          <div className="relative flex-1 overflow-y-auto">
-            <BetaWelcome onPromptClick={sendMessage} />
-          </div>
-          <ChatInput onSend={sendMessage} disabled={isBusy} />
-        </>
+        /* Empty state — Manus-style: greeting + hero input + pills, all centered */
+        <div className="relative flex-1 overflow-y-auto">
+          <BetaWelcome
+            onPromptClick={sendMessage}
+            inputSlot={<ChatInput variant="hero" onSend={sendMessage} disabled={isBusy} />}
+          />
+        </div>
       )}
     </div>
   );

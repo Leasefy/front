@@ -9,8 +9,9 @@
  * Renders: breadcrumb to the cola · header with the ColaHumana
  * estado/severidad/flag vocabulary (t323 included) · left = <AccionSugerida>
  * + contexto blocks (+ optional cross-workspace link card) · right =
- * <TrazaCaso>. Handles loading, error, not-found and already-decided
- * (Decisión block, actions hidden) states.
+ * <TrazaCaso>. Handles loading, error, not-available (the agent doesn't
+ * publish a detail resolver — 404), not-found (the item is missing) and
+ * already-decided (Decisión block, actions hidden) states.
  *
  * Pure like the other primitives: the page owns the hook
  * (useWorkItemDetail) + runWorkItemAction + navigation; this component only
@@ -71,7 +72,10 @@ export interface WorkItemDetalleProps {
   data: WorkItemDetailResponse | null
   isLoading?: boolean
   error?: string | null
-  /** Backend 404 — caso no encontrado (renders the not-found state). */
+  /**
+   * Backend 404 — the agent doesn't publish a detail resolver (yet). Renders
+   * the "Detalle no disponible" state, NOT "Caso no encontrado".
+   */
   notAvailable?: boolean
   /** Href of the agent's cola, used by the breadcrumb + not-found CTA. */
   colaHref: string
@@ -85,6 +89,8 @@ export interface WorkItemDetalleProps {
     body?: Record<string, unknown>,
   ) => Promise<{ ok: boolean; error?: string }>
   crossLink?: WorkItemDetalleCrossLink
+  /** Optional CTA for the not-available/not-found states (pill link). */
+  notFoundAction?: { label: string; href: string }
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -99,6 +105,7 @@ export function WorkItemDetalle({
   icon,
   onAction,
   crossLink,
+  notFoundAction,
 }: WorkItemDetalleProps) {
   const { t } = useI18n()
   // Finite icon maps crash when a key is missing — ALWAYS fall back here.
@@ -147,8 +154,55 @@ export function WorkItemDetalle({
     )
   }
 
-  // ── Not found (404 / missing) ─────────────────────────────────────────────
-  if (!data || notAvailable) {
+  // The CTA out of the empty states: the page's notFoundAction (primary pill)
+  // or the classic "Volver a la cola" link.
+  const emptyStateCta = notFoundAction ? (
+    <Link
+      href={notFoundAction.href}
+      className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+      data-testid="caso-not-found-action"
+    >
+      {notFoundAction.label}
+    </Link>
+  ) : (
+    <Link
+      href={colaHref}
+      className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
+    >
+      {t(`${NS}.volverACola`)}
+    </Link>
+  )
+
+  // ── Not available (404 — the backend doesn't publish the resolver) ────────
+  // Distinct from "Caso no encontrado": the case may exist, but this agent
+  // doesn't expose a detail endpoint yet.
+  if (notAvailable) {
+    return (
+      <div className="p-6 lg:p-8 space-y-4">
+        {backToCola}
+        <div
+          className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+          data-testid="caso-no-disponible"
+        >
+          <Robot
+            className="w-8 h-8 mx-auto text-muted-foreground mb-2"
+            weight="duotone"
+            aria-hidden="true"
+          />
+          <p className="text-sm font-medium text-foreground">
+            {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleBody')}
+          </p>
+          {emptyStateCta}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Not found (the item itself is missing) ────────────────────────────────
+  if (!data) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
         {backToCola}
@@ -163,12 +217,7 @@ export function WorkItemDetalle({
           />
           <p className="text-sm font-medium text-foreground">{t(`${NS}.notFoundTitle`)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.notFoundBody`)}</p>
-          <Link
-            href={colaHref}
-            className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
-          >
-            {t(`${NS}.volverACola`)}
-          </Link>
+          {emptyStateCta}
         </div>
       </div>
     )
@@ -192,7 +241,7 @@ export function WorkItemDetalle({
             {severidadLabel(t, item.severidad)}
           </span>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {estadoLabel(t, item.estado)}
+            {estadoLabel(t, item.estado, item.agente)}
           </span>
           {item.flags.map((flag) => {
             // Unknown flags are silently skipped (finite-map fallback).
@@ -241,7 +290,7 @@ export function WorkItemDetalle({
                     item.estado === 'fallo' ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
                   }`}
                 >
-                  {estadoLabel(t, item.estado)}
+                  {estadoLabel(t, item.estado, item.agente)}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -309,7 +358,7 @@ export function WorkItemDetalle({
         {/* Traza */}
         <aside className="lg:col-span-2 space-y-2">
           <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.trazaTitle`)}</h2>
-          <TrazaCaso entries={traza} />
+          <TrazaCaso entries={traza} agente={item.agente} />
         </aside>
       </div>
     </div>

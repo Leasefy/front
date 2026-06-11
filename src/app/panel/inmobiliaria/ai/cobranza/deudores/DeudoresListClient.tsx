@@ -18,7 +18,7 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Users } from '@phosphor-icons/react'
+import { FileArrowUp, Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
@@ -164,16 +164,33 @@ export default function DeudoresListClient() {
     !error
   ) {
     return (
-      <main className="p-6 lg:p-8">
+      <main className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={Users}
           title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
           description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cobranza.deudores.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          }}
         />
+        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
+            el importador de /portafolio/importar solo carga propiedades, así que
+            la acción degrada a "próximamente" en vez de mentir con un link. */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
+              <FileArrowUp className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t('inmobiliaria.ai.cobranza.deudores.empty.cta.label')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t('inmobiliaria.ai.workspace.pages.cobranza.importarNota')}
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t('inmobiliaria.ai.workspace.pages.cobranza.importarProximamente')}
+            </span>
+          </div>
+        </div>
       </main>
     )
   }

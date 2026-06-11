@@ -55,8 +55,10 @@ function PagosCola() {
         </div>
       </header>
 
-      {/* Cola humana (transversal component) — opens the case detail */}
+      {/* Cola humana (transversal component) — opens the case detail.
+          agente habilita el override de estados por agente (estadoLabel). */}
       <ColaHumana
+        agente="pagos"
         items={items}
         isLoading={isLoading}
         error={error}

@@ -71,6 +71,11 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
     )
   }
 
+  // Visible hint of the ACTIVE mode (the title= tooltips are invisible on
+  // touch). Unknown modo → key echo → render nothing (never the raw key).
+  const activeHintKey = `${NS}.modo.${data.modo}Hint`
+  const activeHint = t(activeHintKey)
+
   return (
     <div className="space-y-4" data-testid="autonomia-panel">
       {/* Mode pills (read-only) */}
@@ -96,6 +101,13 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
           )
         })}
       </div>
+
+      {/* Active-mode hint, visible (tooltips don't exist on touch) */}
+      {activeHint !== activeHintKey && (
+        <p className="text-xs text-muted-foreground" data-testid="autonomia-modo-hint">
+          {activeHint}
+        </p>
+      )}
 
       {/* Read-only nota */}
       {data.nota && (

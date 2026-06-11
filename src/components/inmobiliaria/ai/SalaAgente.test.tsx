@@ -120,7 +120,7 @@ describe('SalaAgente — states', () => {
     render({ overview: null })
     const empty = container.querySelector('[data-testid="sala-agente-empty"]')
     expect(empty).not.toBeNull()
-    expect(empty!.textContent).toContain('El agente aún no reporta métricas')
+    expect(empty!.textContent).toContain('Aún no hay actividad')
     // NOT an error banner
     expect(container.querySelector('[data-testid="sala-agente-error"]')).toBeNull()
   })
@@ -132,7 +132,7 @@ describe('SalaAgente — states', () => {
     expect(container.textContent).toContain('Agente · Conciliación bancaria')
     const cta = container.querySelector('[data-testid="sala-cola-cta"]')
     expect(cta).not.toBeNull()
-    expect(cta!.textContent).toContain('Ir a la cola (12)')
+    expect(cta!.textContent).toContain('Por revisar (12)')
     expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/conciliacion/cola')
 
     // KPI strip with formatted values
@@ -140,12 +140,12 @@ describe('SalaAgente — states', () => {
     expect(container.querySelector('[data-testid="sala-kpi-auto_rate"]')!.textContent).toContain('82,5')
     expect(container.querySelector('[data-testid="sala-kpi-monto"]')!.textContent).toContain('1.250.000')
 
-    // Pipeline legend with estado labels + counts
+    // Pipeline legend with estado labels (conciliacion per-agent override) + counts
     const pipeline = container.querySelector('[data-testid="sala-pipeline"]')
     expect(pipeline).not.toBeNull()
-    expect(pipeline!.textContent).toContain('En revisión')
+    expect(pipeline!.textContent).toContain('En tu revisión')
     expect(pipeline!.textContent).toContain('12')
-    expect(pipeline!.textContent).toContain('Resuelto')
+    expect(pipeline!.textContent).toContain('Conciliado')
 
     // Feed entry with actor badge
     const feed = container.querySelector('[data-testid="sala-feed"]')

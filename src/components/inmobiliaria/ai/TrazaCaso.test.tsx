@@ -38,6 +38,15 @@ const ENTRIES: TrazaEntry[] = [
     occurredAt: new Date().toISOString(),
     details: {},
   },
+  {
+    id: 't3',
+    action: 'scoring_completed',
+    actorType: 'system',
+    actorId: 'pipeline',
+    occurredAt: new Date().toISOString(),
+    // Nested (non-flat) details keep the raw-JSON <pre> rendering.
+    details: { breakdown: { ingresos: 30, historial: 28 } },
+  },
 ]
 
 let container: HTMLDivElement
@@ -102,12 +111,30 @@ describe('TrazaCaso — entries', () => {
     expect(container.textContent).toContain('Agente')
   })
 
-  it('shows collapsible JSON details only when details is non-empty', () => {
+  it('shows collapsible details only when details is non-empty', () => {
     render({ entries: ENTRIES })
     const e1 = container.querySelector('[data-testid="traza-entry-t1"]')!
     const e2 = container.querySelector('[data-testid="traza-entry-t2"]')!
     expect(e1.querySelector('details')).not.toBeNull()
-    expect(e1.querySelector('pre')!.textContent).toContain('matchId')
     expect(e2.querySelector('details')).toBeNull()
+  })
+
+  it('renders flat details as label/value rows and nested details as raw JSON', () => {
+    render({ entries: ENTRIES })
+    const e1 = container.querySelector('[data-testid="traza-entry-t1"]')!
+    const e3 = container.querySelector('[data-testid="traza-entry-t3"]')!
+
+    // Flat object → dl rows, no raw JSON
+    const dl = e1.querySelector('details dl')
+    expect(dl).not.toBeNull()
+    expect(dl!.textContent).toContain('matchId')
+    expect(dl!.textContent).toContain('m1')
+    expect(e1.querySelector('pre')).toBeNull()
+
+    // Nested object → raw <pre> JSON preserved
+    const pre = e3.querySelector('details pre')
+    expect(pre).not.toBeNull()
+    expect(pre!.textContent).toContain('breakdown')
+    expect(e3.querySelector('dl')).toBeNull()
   })
 })

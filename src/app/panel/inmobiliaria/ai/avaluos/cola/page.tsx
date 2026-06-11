@@ -54,14 +54,20 @@ function AvaluosCola() {
         </div>
       </header>
 
-      {/* Cola humana (transversal component) — opens the detail */}
+      {/* Mis solicitudes (transversal component) — opens the detail */}
       <ColaHumana
+        agente="avaluos"
         items={items}
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/avaluos/${encodeURIComponent(item.id)}`)}
+        emptyTitle={t('inmobiliaria.ai.workspace.pages.avaluos.colaEmptyTitle')}
         emptyHint={t('inmobiliaria.ai.workspace.pages.avaluos.colaEmptyHint')}
+        emptyAction={{
+          label: t('inmobiliaria.ai.workspace.pages.avaluos.solicitarCta'),
+          href: '/panel/inmobiliaria/ai/avaluos',
+        }}
       />
     </div>
   )

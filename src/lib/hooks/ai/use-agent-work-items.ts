@@ -79,6 +79,13 @@ export function useAgentWorkItems(
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+    // Upstream proxies (e.g. the standalone avalúos service) can hang when the
+    // service is unreachable — never leave the queue in eternal skeletons.
+    let timedOut = false
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, 12_000)
 
     const url = new URL(`${agentUrl}/api/agency/${agencyId}/ai-hub/work-items`)
     url.searchParams.set('agente', agente)
@@ -92,22 +99,43 @@ export function useAgentWorkItems(
         headers: agentAuthHeaders(),
         signal: controller.signal,
       })
+      if (controller.signal.aborted && !timedOut) return
+      if (res.status === 404) {
+        // Agent not deployed / queue not published yet — friendly empty state,
+        // NOT an error banner (mirrors use-agent-overview's notAvailable).
+        setItems([])
+        setTotal(0)
+        setError(null)
+        return
+      }
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as AgentWorkItemsResponse
-      if (controller.signal.aborted) return
+      if (controller.signal.aborted && !timedOut) return
       setItems(json.items ?? [])
       setTotal(json.total ?? 0)
       setError(null)
     } catch (err) {
-      if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'Failed to fetch work items')
+      if (controller.signal.aborted && !timedOut) return
+      setError(
+        timedOut
+          ? 'timeout'
+          : err instanceof Error
+            ? err.message
+            : 'Failed to fetch work items',
+      )
     } finally {
-      if (!controller.signal.aborted) setIsLoading(false)
+      clearTimeout(timeout)
+      if (!controller.signal.aborted || timedOut) setIsLoading(false)
     }
   }, [agencyId, agente, filters?.status, filters?.page, filters?.pageSize])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) {
+      // Auth/agency context not resolved (or absent): stop the skeletons —
+      // the effect re-runs and fetches as soon as the agency arrives.
+      setIsLoading(false)
+      return
+    }
     void fetchData()
     return () => {
       abortRef.current?.abort()

@@ -20,6 +20,8 @@ import type {
   AgentType,
   AgentExecution,
   ResponseAction,
+  DailyBriefing,
+  BriefingSection,
 } from '@/lib/types/beta-chat';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub-chat[-stream]) ──────
@@ -248,6 +250,11 @@ function agentBaseUrl(): string {
   return base;
 }
 
+/** Whether the agent backend is reachable in this build (dev posture check). */
+export function isAgentConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_AGENT_URL);
+}
+
 function buildBody(message: string, history?: ChatHistoryEntry[]): string {
   return JSON.stringify({
     message,
@@ -314,5 +321,214 @@ export async function streamChatTurn(args: {
     for (const event of events) handleSSEEvent(event, args.handlers);
   } finally {
     reader.releaseLock();
+  }
+}
+
+// ── Daily briefing (GET /api/agency/:id/ai-hub/briefing) ─────────────────────
+//
+// The briefing endpoint is being built by a sibling effort, so the mapper is
+// deliberately TOLERANT: it accepts a `sections[]` payload if present, can
+// synthesize sections from the chat snapshot shape otherwise, and returns
+// `null` for anything unusable — the hook then keeps the mock briefing
+// (fail-open: this PR ships independently of the backend).
+
+/** Loose mirror of the (in-progress) backend briefing payload. */
+export interface BackendBriefingSection {
+  id?: string;
+  title?: string;
+  icon?: string;
+  color?: string;
+  summary?: string;
+  details?: string[];
+  actionLabel?: string;
+  actionContext?: string;
+}
+
+export interface BackendBriefing {
+  id?: string;
+  greeting?: string;
+  overallSummary?: string;
+  sections?: BackendBriefingSection[];
+  snapshot?: BackendSnapshot | null;
+  generatedAt?: string;
+}
+
+/** Icons that BriefingCard's ICON_MAP can actually render (unknown → no icon). */
+const SAFE_BRIEFING_ICONS = new Set([
+  'CurrencyDollar',
+  'FunnelSimple',
+  'Wrench',
+  'FileText',
+  'ChatCircle',
+  'ChartBar',
+  'ListChecks',
+]);
+
+const SAFE_BRIEFING_COLORS = new Set([
+  'emerald',
+  'blue',
+  'amber',
+  'purple',
+  'pink',
+  'indigo',
+]);
+
+/** Default icon/color per well-known section id (cobranza-centric roster). */
+const SECTION_DEFAULTS: Record<string, { icon: string; color: string }> = {
+  cobros: { icon: 'CurrencyDollar', color: 'emerald' },
+  cobranza: { icon: 'CurrencyDollar', color: 'emerald' },
+  escalaciones: { icon: 'ChatCircle', color: 'amber' },
+  prejuridico: { icon: 'FileText', color: 'purple' },
+  llamadas: { icon: 'ChartBar', color: 'blue' },
+};
+
+function formatCop(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function greetingForHour(date: Date): string {
+  const hour = date.getHours();
+  if (hour < 12) return 'Buenos días';
+  if (hour < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+/** Map one backend section if it has the minimum usable shape (title+summary). */
+function mapBriefingSection(raw: BackendBriefingSection): BriefingSection | null {
+  if (typeof raw?.title !== 'string' || typeof raw?.summary !== 'string') return null;
+  const id = typeof raw.id === 'string' && raw.id ? raw.id : raw.title.toLowerCase();
+  const defaults = SECTION_DEFAULTS[id] ?? { icon: 'ListChecks', color: 'blue' };
+  return {
+    id,
+    title: raw.title,
+    icon:
+      typeof raw.icon === 'string' && SAFE_BRIEFING_ICONS.has(raw.icon)
+        ? raw.icon
+        : defaults.icon,
+    color:
+      typeof raw.color === 'string' && SAFE_BRIEFING_COLORS.has(raw.color)
+        ? raw.color
+        : defaults.color,
+    summary: raw.summary,
+    details: Array.isArray(raw.details)
+      ? raw.details.filter((d): d is string => typeof d === 'string')
+      : [],
+    ...(typeof raw.actionLabel === 'string' ? { actionLabel: raw.actionLabel } : {}),
+    ...(typeof raw.actionContext === 'string'
+      ? { actionContext: raw.actionContext }
+      : {}),
+  };
+}
+
+/** Synthesize briefing sections from the chat snapshot (real "Hoy" numbers). */
+export function sectionsFromSnapshot(snapshot: BackendSnapshot): BriefingSection[] {
+  const sections: BriefingSection[] = [
+    {
+      id: 'cobros',
+      title: 'Cobranza',
+      icon: 'CurrencyDollar',
+      color: 'emerald',
+      summary: `${formatCop(snapshot.pagadoHoyCop)} recaudados hoy · ${snapshot.deudoresActivos} deudores en gestión.`,
+      details: [`Llamadas realizadas hoy: ${snapshot.llamadasHoy}.`],
+      actionLabel: 'Cuéntame más sobre cobranza',
+      actionContext:
+        '¿Cómo va la cobranza hoy y qué acciones recomiendas para los deudores en gestión?',
+    },
+  ];
+  if (snapshot.escalacionesPendientes > 0) {
+    sections.push({
+      id: 'escalaciones',
+      title: 'Escalaciones',
+      icon: 'ChatCircle',
+      color: 'amber',
+      summary: `${snapshot.escalacionesPendientes} escalaciones esperando atención de tu equipo.`,
+      details: [],
+      actionLabel: 'Ver escalaciones pendientes',
+      actionContext: '¿Qué escalaciones tengo pendientes y cuáles son las más urgentes?',
+    });
+  }
+  if (snapshot.enPrejuridico > 0) {
+    sections.push({
+      id: 'prejuridico',
+      title: 'Prejurídico',
+      icon: 'FileText',
+      color: 'purple',
+      summary: `${snapshot.enPrejuridico} deudores en etapa prejurídica o posterior.`,
+      details: [],
+      actionLabel: 'Revisar casos prejurídicos',
+      actionContext: '¿Cuál es el estado de los deudores en etapa prejurídica?',
+    });
+  }
+  return sections;
+}
+
+/**
+ * Tolerant backend → `DailyBriefing` mapper. Returns `null` when the payload
+ * has neither usable sections nor a snapshot (caller keeps the mock briefing).
+ */
+export function mapBackendBriefing(raw: unknown): DailyBriefing | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const briefing = raw as BackendBriefing;
+
+  const mappedSections = Array.isArray(briefing.sections)
+    ? briefing.sections
+        .map(mapBriefingSection)
+        .filter((s): s is BriefingSection => s !== null)
+    : [];
+  const sections =
+    mappedSections.length > 0
+      ? mappedSections
+      : briefing.snapshot
+        ? sectionsFromSnapshot(briefing.snapshot)
+        : [];
+  if (sections.length === 0) return null;
+
+  const generatedAt = briefing.generatedAt ?? briefing.snapshot?.generatedAt;
+  const parsedDate = generatedAt ? new Date(generatedAt) : new Date();
+  const date = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
+  return {
+    id:
+      typeof briefing.id === 'string' && briefing.id
+        ? briefing.id
+        : `brief_real_${date.toISOString().slice(0, 10)}`,
+    date,
+    greeting:
+      typeof briefing.greeting === 'string' && briefing.greeting
+        ? briefing.greeting
+        : `${greetingForHour(date)}, este es el resumen de tu inmobiliaria hoy.`,
+    overallSummary:
+      typeof briefing.overallSummary === 'string' && briefing.overallSummary
+        ? briefing.overallSummary
+        : sections.map((s) => s.summary).join(' '),
+    sections,
+    isNew: true,
+  };
+}
+
+/**
+ * Fetch today's real briefing. Fail-open by design: any non-OK status (404
+ * while the endpoint ships, 5xx), network error, or unusable payload resolves
+ * to `null` — never throws — so the caller can keep its mock briefing.
+ */
+export async function fetchBriefing(args: {
+  agencyId: string;
+  signal?: AbortSignal;
+}): Promise<DailyBriefing | null> {
+  try {
+    const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/briefing`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: agentAuthHeaders(),
+      ...(args.signal ? { signal: args.signal } : {}),
+    });
+    if (!res.ok) return null;
+    return mapBackendBriefing(await res.json());
+  } catch {
+    return null;
   }
 }

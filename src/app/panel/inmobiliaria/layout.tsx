@@ -58,6 +58,8 @@ function CommandPaletteShortcuts() {
   const { open, close, isOpen } = useCommandPalette();
   const pathname = usePathname();
   const BETA_PREFIX = '/panel/inmobiliaria/beta';
+  // AI CHAT HOME F3: the chat is also the INICIO at the exact root.
+  const CHAT_ROOT = '/panel/inmobiliaria';
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -66,8 +68,9 @@ function CommandPaletteShortcuts() {
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        // Yield to BetaLayout's useBetaKeyboardShortcuts when inside the beta subtree.
-        if (pathname?.startsWith(BETA_PREFIX)) return;
+        // Yield to BetaLayout's useBetaKeyboardShortcuts inside the chat
+        // (the root inicio + the /beta subtree).
+        if (pathname === CHAT_ROOT || pathname?.startsWith(BETA_PREFIX)) return;
         e.preventDefault();
         if (isOpen) { close(); } else { open(); }
       }
@@ -101,7 +104,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── PRINCIPAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
     { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
     // ── AGENTES IA ──
     { kind: 'section', label: t('inmobiliaria.nav.secAgentes'), href: '#sec-agentes', icon: Sparkle, module: null },
     {

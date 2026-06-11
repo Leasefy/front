@@ -25,10 +25,12 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
     pathname.startsWith('/panel/inmobiliaria') ? '/panel/inmobiliaria' : '/panel'
   );
   const resolvedWorkspace: Workspace = currentWorkspace ?? (
-    pathname.includes('/beta') ? 'beta' : 'dashboard'
+    pathname.includes('/dashboard') ? 'dashboard' : 'beta'
   );
   const isDashboard = resolvedWorkspace === 'dashboard';
-  const targetPath = isDashboard ? `${resolvedBase}/beta` : resolvedBase;
+  // AI CHAT HOME F3: the chat is the root inicio; the classic dashboard moved
+  // to `${base}/dashboard`. Toggle: chat (root) ⇄ classic dashboard.
+  const targetPath = isDashboard ? resolvedBase : `${resolvedBase}/dashboard`;
 
   return (
     <div className="flex items-center justify-between">

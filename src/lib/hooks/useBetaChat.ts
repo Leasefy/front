@@ -13,6 +13,7 @@ import type {
   PendingDecision,
   ResponseMeta,
   BetaPreferences,
+  ActionProposal,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
@@ -26,8 +27,10 @@ import {
   isAgentConfigured,
   suggestedActionToResponseAction,
   backendAgentToFrontType,
+  executeAction,
   type BackendDispatch,
   type BackendSuggestedAction,
+  type BackendActionProposal,
 } from '@/lib/api/ai-hub-chat';
 
 // ============================================================================
@@ -240,6 +243,10 @@ export interface UseBetaChatReturn {
   preferences: BetaPreferences;
   updatePreferences: (partial: Partial<BetaPreferences>) => void;
   resetPreferences: () => void;
+
+  // Action proposals (F5 — human-in-the-loop confirmations)
+  confirmActionProposal: (messageId: string, workItemId: string, reason?: string) => Promise<void>;
+  discardActionProposal: (messageId: string, workItemId: string) => void;
 }
 
 // ============================================================================
@@ -832,6 +839,37 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             liveBlock = { ...liveBlock, agents };
             setActiveAgentBlock(liveBlock);
           },
+          // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
+          onActionProposal: (proposal: BackendActionProposal) => {
+            try {
+              const frontProposal: ActionProposal = {
+                workItemId: proposal.workItemId,
+                colaType: proposal.colaType,
+                action: proposal.action,
+                resumen: proposal.resumen,
+                requiresConfirmation: true,
+                status: 'pending',
+              };
+              setConversations((prev) =>
+                prev.map((c) => {
+                  if (c.id !== args.conversationId) return c;
+                  return {
+                    ...c,
+                    messages: c.messages.map((m) => {
+                      if (m.id !== args.assistantId) return m;
+                      const existing = m.actionProposals ?? [];
+                      // Deduplicate by workItemId (stream may re-send).
+                      if (existing.some((p) => p.workItemId === proposal.workItemId)) return m;
+                      return { ...m, actionProposals: [...existing, frontProposal] };
+                    }),
+                  };
+                })
+              );
+            } catch {
+              // Fail-open: never crash the stream.
+              console.warn('[useBetaChat] failed to apply action_proposal, ignored');
+            }
+          },
           onDone: (f) => {
             collected.final = {
               responseText: f.responseText,
@@ -1135,6 +1173,84 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
+  // Action proposals (F5)
+  // ========================================================================
+
+  /**
+   * Execute a confirmed action proposal. Updates the proposal status to
+   * 'confirming' → 'executed' | 'error' in conversation state.
+   */
+  const confirmActionProposal = useCallback(
+    async (messageId: string, workItemId: string, reason?: string): Promise<void> => {
+      if (!agencyId) throw new Error('No agency');
+
+      // Mark as confirming
+      const updateStatus = (
+        status: ActionProposal['status'],
+        extra?: Partial<ActionProposal>
+      ) => {
+        setConversations((prev) =>
+          prev.map((c) => ({
+            ...c,
+            messages: c.messages.map((m) => {
+              if (m.id !== messageId || !m.actionProposals) return m;
+              return {
+                ...m,
+                actionProposals: m.actionProposals.map((p) =>
+                  p.workItemId === workItemId ? { ...p, status, ...extra } : p
+                ),
+              };
+            }),
+          }))
+        );
+      };
+
+      updateStatus('confirming');
+      try {
+        // Find the action from state to pass to the network call
+        let action: ActionProposal['action'] | undefined;
+        setConversations((prev) => {
+          const msg = prev
+            .flatMap((c) => c.messages)
+            .find((m) => m.id === messageId);
+          action = msg?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
+          return prev;
+        });
+
+        if (!action) throw new Error('Proposal not found');
+        await executeAction({ agencyId, workItemId, action, reason });
+        updateStatus('executed', { result: true });
+      } catch (err) {
+        const error = err instanceof Error ? err.message : 'Error al ejecutar la acción';
+        updateStatus('error', { error });
+        throw err; // re-throw so the card can show the error (if it handles it)
+      }
+    },
+    [agencyId]
+  );
+
+  /** Discard a proposal UI-only (no network call). */
+  const discardActionProposal = useCallback(
+    (messageId: string, workItemId: string) => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) => {
+            if (m.id !== messageId || !m.actionProposals) return m;
+            return {
+              ...m,
+              actionProposals: m.actionProposals.map((p) =>
+                p.workItemId === workItemId ? { ...p, status: 'discarded' as const } : p
+              ),
+            };
+          }),
+        }))
+      );
+    },
+    []
+  );
+
+  // ========================================================================
   // Search / Summaries
   // ========================================================================
 
@@ -1275,5 +1391,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     preferences,
     updatePreferences,
     resetPreferences,
+
+    // Action proposals (F5)
+    confirmActionProposal,
+    discardActionProposal,
   };
 }

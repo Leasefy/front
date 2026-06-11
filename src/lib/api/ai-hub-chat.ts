@@ -32,6 +32,20 @@ export type BackendDispatchAgent =
   | 'estudio'
   | 'matching';
 
+// ── Action Proposal contract (backend → front, F5) ────────────────────────────
+
+export type BackendActionProposalColaType = 'conciliacion' | 'pagos' | 'cobranza';
+export type BackendActionProposalAction = 'confirm' | 'reject' | 'approve' | 'claim' | 'resolve';
+
+/** Shape of the `action_proposal` SSE event data. */
+export interface BackendActionProposal {
+  workItemId: string;
+  colaType: BackendActionProposalColaType;
+  action: BackendActionProposalAction;
+  resumen: string;
+  requiresConfirmation: true;
+}
+
 export type BackendActionTarget =
   | 'cobranza'
   | 'cotizador'
@@ -160,6 +174,8 @@ export interface ChatStreamHandlers {
     taskDescription: string,
   ) => void;
   onDispatchResult?: (dispatch: BackendDispatch) => void;
+  /** Called for each `action_proposal` SSE event (F5). */
+  onActionProposal?: (proposal: BackendActionProposal) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -226,6 +242,33 @@ export function handleSSEEvent(
     case 'dispatch_result':
       if (obj.dispatch) handlers.onDispatchResult?.(obj.dispatch as BackendDispatch);
       break;
+    case 'action_proposal': {
+      // Validate the minimum required fields before forwarding (D-42-03 fail-open).
+      const workItemId = obj.workItemId;
+      const colaType = obj.colaType;
+      const action = obj.action;
+      const resumen = obj.resumen;
+      if (
+        typeof workItemId === 'string' && workItemId &&
+        typeof colaType === 'string' && colaType &&
+        typeof action === 'string' && action &&
+        typeof resumen === 'string' && resumen
+      ) {
+        handlers.onActionProposal?.({
+          workItemId,
+          colaType: colaType as BackendActionProposalColaType,
+          action: action as BackendActionProposalAction,
+          resumen,
+          requiresConfirmation: true,
+        });
+      } else {
+        // Malformed — warn and silently skip (never breaks the stream).
+        if (typeof console !== 'undefined') {
+          console.warn('[ai-hub-chat] malformed action_proposal event ignored', obj);
+        }
+      }
+      break;
+    }
     case 'done':
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
@@ -322,6 +365,47 @@ export async function streamChatTurn(args: {
   } finally {
     reader.releaseLock();
   }
+}
+
+// ── Action execution (POST /api/agency/:id/ai-hub/actions/execute) ───────────
+
+export interface ExecuteActionArgs {
+  agencyId: string;
+  workItemId: string;
+  action: BackendActionProposalAction;
+  reason?: string;
+  signal?: AbortSignal;
+}
+
+/**
+ * Execute a confirmed action proposal. Throws on non-2xx (the caller shows an
+ * inline error on the ActionProposalCard and offers retry).
+ */
+export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/actions/execute`;
+  const body: Record<string, unknown> = {
+    workItemId: args.workItemId,
+    action: args.action,
+  };
+  if (args.reason) body.reason = args.reason;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify(body),
+    ...(args.signal ? { signal: args.signal } : {}),
+  });
+  if (!res.ok) {
+    let message = `execute action ${res.status}`;
+    try {
+      const err = (await res.json()) as Record<string, unknown>;
+      if (typeof err.error === 'string') message = err.error;
+      else if (typeof err.message === 'string') message = err.message;
+    } catch {
+      // ignore parse error — use default message
+    }
+    throw new Error(message);
+  }
+  return res.json();
 }
 
 // ── Daily briefing (GET /api/agency/:id/ai-hub/briefing) ─────────────────────

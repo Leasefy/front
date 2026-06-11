@@ -14,6 +14,7 @@ import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { ResponseCard } from './ResponseCard';
 import { WorkspaceView } from './WorkspaceView';
 import { DecisionCard } from './DecisionCard';
+import { ActionProposalCard } from './ActionProposalCard';
 
 interface ChatContainerProps {
   className?: string;
@@ -47,6 +48,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
     isAgentsRunning,
     retryAgent,
     selectDecisionOption,
+    confirmActionProposal,
+    discardActionProposal,
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
@@ -184,6 +187,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           }
                         />
                       )}
+                      {message.actionProposals?.map((proposal) => (
+                        <ActionProposalCard
+                          key={proposal.workItemId}
+                          proposal={proposal}
+                          onConfirm={(wid, reason) =>
+                            confirmActionProposal(message.id, wid, reason)
+                          }
+                          onDiscard={(wid) => discardActionProposal(message.id, wid)}
+                        />
+                      ))}
                     </div>
                   );
                 }
@@ -210,6 +223,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           }
                         />
                       )}
+                      {message.actionProposals?.map((proposal) => (
+                        <ActionProposalCard
+                          key={proposal.workItemId}
+                          proposal={proposal}
+                          onConfirm={(wid, reason) =>
+                            confirmActionProposal(message.id, wid, reason)
+                          }
+                          onDiscard={(wid) => discardActionProposal(message.id, wid)}
+                        />
+                      ))}
                     </div>
                   );
                 }
@@ -224,6 +247,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         isStreaming
                         streamingContent={streamingContent}
                       />
+                      {/* Action proposals may arrive during streaming */}
+                      {message.actionProposals?.map((proposal) => (
+                        <ActionProposalCard
+                          key={proposal.workItemId}
+                          proposal={proposal}
+                          onConfirm={(wid, reason) =>
+                            confirmActionProposal(message.id, wid, reason)
+                          }
+                          onDiscard={(wid) => discardActionProposal(message.id, wid)}
+                        />
+                      ))}
                     </div>
                   );
                 }
@@ -257,6 +291,18 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         }
                       />
                     )}
+
+                    {/* Action proposals (F5) */}
+                    {message.actionProposals?.map((proposal) => (
+                      <ActionProposalCard
+                        key={proposal.workItemId}
+                        proposal={proposal}
+                        onConfirm={(wid, reason) =>
+                          confirmActionProposal(message.id, wid, reason)
+                        }
+                        onDiscard={(wid) => discardActionProposal(message.id, wid)}
+                      />
+                    ))}
 
                     {/* Legacy assistant bubble */}
                     <AssistantBubble

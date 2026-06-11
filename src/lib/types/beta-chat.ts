@@ -126,6 +126,57 @@ export interface WorkspaceStep {
   agentType?: AgentType;
 }
 
+// ============================================================================
+// Action Proposal Types (F5 — human-in-the-loop confirmations)
+// ============================================================================
+
+/** Cola types that can emit action proposals */
+export type ActionProposalColaType = 'conciliacion' | 'pagos' | 'cobranza';
+
+/** Actions per cola — closed catalog (D-42-03) */
+export type ConciliacionAction = 'confirm' | 'reject';
+export type PagosAction = 'approve' | 'reject';
+export type CobranzaAction = 'claim' | 'resolve';
+export type ActionProposalAction = ConciliacionAction | PagosAction | CobranzaAction;
+
+/**
+ * Whether an action is a "negative" one that should prompt the operator
+ * for an optional reason (reject/resolve).
+ */
+export function isNegativeAction(action: ActionProposalAction): boolean {
+  return action === 'reject' || action === 'resolve';
+}
+
+/** Status of a single action proposal card */
+export type ActionProposalStatus =
+  | 'pending'       // awaiting human decision
+  | 'confirming'    // POST in-flight
+  | 'executed'      // POST succeeded
+  | 'error'         // POST failed (shows retry)
+  | 'discarded';    // user dismissed without calling backend
+
+export interface ActionProposal {
+  /** Work item ID in the backend cola */
+  workItemId: string;
+  /** Which cola this item belongs to */
+  colaType: ActionProposalColaType;
+  /** The proposed action */
+  action: ActionProposalAction;
+  /** Human-readable summary of the work item + proposed action */
+  resumen: string;
+  /** Backend always sends requiresConfirmation: true — kept for forward compat */
+  requiresConfirmation: true;
+  // --- Front-only mutable state ---
+  /** Current UI state for this proposal */
+  status: ActionProposalStatus;
+  /** Optional reason entered by the operator (for negative actions) */
+  reason?: string;
+  /** True once the backend execute call succeeded (payload not stored) */
+  result?: boolean;
+  /** Error message if status === 'error' */
+  error?: string;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -143,6 +194,8 @@ export interface ChatMessage {
   decision?: PendingDecision;
   /** Structured response metadata for rich card display */
   responseMeta?: ResponseMeta;
+  /** Action proposals (F5) — one or more work items awaiting human confirmation */
+  actionProposals?: ActionProposal[];
 }
 
 export interface Conversation {
